@@ -1,0 +1,40 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>pond</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <h1>pond</h1>
+      <span class="status" id="status"></span>
+    </header>
+
+    <section class="quick">
+      <button id="saveCurrent" type="button">Save current page</button>
+      <p class="hint" id="quickHint">Cmd / Ctrl + Shift + S</p>
+    </section>
+
+    <section>
+      <label for="endpoint">Ingest URL</label>
+      <input id="endpoint" type="url" placeholder="https://your-app/api/ingest" />
+
+      <label for="apiKey">API key</label>
+      <input id="apiKey" type="password" placeholder="POND_INGEST_KEY" />
+
+      <fieldset>
+        <legend>Capture</legend>
+        <label><input type="checkbox" data-site="twitter" /> Twitter / X</label>
+        <label><input type="checkbox" data-site="instagram" /> Instagram</label>
+        <label><input type="checkbox" data-site="pinterest" /> Pinterest</label>
+        <label><input type="checkbox" data-site="arena" /> Are.na</label>
+        <label><input type="checkbox" data-site="cosmos" /> Cosmos</label>
+      </fieldset>
+
+      <button id="save" type="button">Save settings</button>
+    </section>
+
+    <script src="../popup.js"></script>
+  </body>
+</html>

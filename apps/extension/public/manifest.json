@@ -1,0 +1,97 @@
+{
+  "manifest_version": 3,
+  "name": "pond",
+  "version": "0.1.0",
+  "description": "Capture saves from Twitter/X, Instagram, Pinterest, Are.na, and Cosmos into one place.",
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "pond"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "permissions": ["storage", "scripting", "contextMenus", "activeTab", "tabs"],
+  "commands": {
+    "save-current-page": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+S",
+        "mac": "Command+Shift+S"
+      },
+      "description": "Save the current page to pond"
+    }
+  },
+  "host_permissions": [
+    "https://x.com/*",
+    "https://twitter.com/*",
+    "https://www.instagram.com/*",
+    "https://www.pinterest.com/*",
+    "https://*.pinterest.com/*",
+    "https://www.are.na/*",
+    "https://are.na/*",
+    "https://www.cosmos.so/*",
+    "https://cosmos.so/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://x.com/*", "https://twitter.com/*"],
+      "js": ["content/twitter.js"],
+      "run_at": "document_start",
+      "world": "ISOLATED"
+    },
+    {
+      "matches": ["https://www.instagram.com/*"],
+      "js": ["content/instagram.js"],
+      "run_at": "document_start",
+      "world": "ISOLATED"
+    },
+    {
+      "matches": ["https://www.instagram.com/*"],
+      "js": ["inject/instagram.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["https://www.pinterest.com/*", "https://*.pinterest.com/*"],
+      "js": ["content/pinterest.js"],
+      "run_at": "document_start",
+      "world": "ISOLATED"
+    },
+    {
+      "matches": ["https://www.pinterest.com/*", "https://*.pinterest.com/*"],
+      "js": ["inject/pinterest.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["https://www.are.na/*", "https://are.na/*"],
+      "js": ["content/arena.js"],
+      "run_at": "document_start",
+      "world": "ISOLATED"
+    },
+    {
+      "matches": ["https://www.are.na/*", "https://are.na/*"],
+      "js": ["inject/arena.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["https://www.cosmos.so/*", "https://cosmos.so/*"],
+      "js": ["content/cosmos.js"],
+      "run_at": "document_start",
+      "world": "ISOLATED"
+    },
+    {
+      "matches": ["https://www.cosmos.so/*", "https://cosmos.so/*"],
+      "js": ["inject/cosmos.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["inject/*.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+node_modules
+.next
+.turbo
+dist
+build
+out
+
+.env
+.env.local
+.env.*.local
+!.env.example
+
+*.log
+.DS_Store
+
+apps/extension/dist
+apps/extension/.output
