@@ -3,6 +3,11 @@ import { app, BrowserWindow, globalShortcut, shell } from "electron";
 import log from "electron-log/main.js";
 import { DEFAULT_INGEST_PORT, IPC } from "../shared/constants";
 import {
+  type AutoVideoStatus,
+  autoVideoQueueSnapshot,
+  subscribeToAutoVideoStatus,
+} from "./core/auto-video";
+import {
   registerSyncActionListener,
   replayPendingTransactions,
 } from "./core/executor";
@@ -39,6 +44,20 @@ function queueTrayRefresh() {
 }
 
 /**
+ * Push an auto-video queue snapshot to every live renderer. Used as the
+ * subscription callback for `subscribeToAutoVideoStatus`. Cheap — the
+ * payload is two arrays of save IDs, sent at most once per queue
+ * mutation.
+ */
+function broadcastAutoVideoStatus(status: AutoVideoStatus): void {
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (!win.isDestroyed()) {
+      win.webContents.send(IPC.autoVideoStatus, status);
+    }
+  }
+}
+
+/**
  * `pond` is a menu-bar / background app first. Register the protocol
  * scheme before `ready`; everything else runs after.
  */
@@ -67,6 +86,15 @@ async function createWindow(): Promise<BrowserWindow> {
   });
 
   win.on("ready-to-show", () => win.show());
+
+  // Catch newly-opened renderers up to the current auto-video queue
+  // state — without this, a window that opens *between* queue mutations
+  // would never see the in-flight downloads it needs to paint badges
+  // for. Cheap (one IPC send), idempotent on the renderer side.
+  win.webContents.on("did-finish-load", () => {
+    if (win.isDestroyed()) return;
+    win.webContents.send(IPC.autoVideoStatus, autoVideoQueueSnapshot());
+  });
 
   win.webContents.setWindowOpenHandler(({ url }) => {
     void shell.openExternal(url);
@@ -147,6 +175,12 @@ app.whenReady().then(async () => {
     );
   }
   registerSyncActionListener(() => queueTrayRefresh());
+
+  // Broadcast auto-video queue snapshots to every renderer. Subscribing
+  // here (rather than from the renderer) means the queue still ticks
+  // even when no window is open — when the user later opens the
+  // library, the next change push will catch them up.
+  subscribeToAutoVideoStatus(broadcastAutoVideoStatus);
 
   // First-run pairing flow: if the window never opened once we still want
   // the user to find the token, so show the window if the app launched

@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useIsVideoDownloading } from "../../pool/downloads";
 import { requestVideoHeal } from "../../pool/heal";
 import { type MediaUnit, pickPrimaryUnit } from "../../pool/media";
 import type { Save } from "../../pool/types";
@@ -36,6 +37,7 @@ import styles from "./styles.module.css";
 export function CardThumb({ save }: { save: Save }) {
   const unit = pickPrimaryUnit(save) ?? buildLegacyUnit(save);
   const [broken, setBroken] = useState(false);
+  const isDownloading = useIsVideoDownloading(save.id);
 
   // Reset the broken flag whenever the picked URL changes — without
   // this, a card that 404'd before a Refresh would keep showing the
@@ -105,6 +107,17 @@ export function CardThumb({ save }: { save: Save }) {
           onError={() => setBroken(true)}
         />
       )}
+      {isDownloading ? (
+        <span
+          className={styles.downloading}
+          role="status"
+          aria-label="Downloading video"
+          title="Downloading video…"
+        >
+          <span className={styles.downloadingDot} aria-hidden="true" />
+          Downloading
+        </span>
+      ) : null}
     </div>
   );
 }

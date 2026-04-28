@@ -243,3 +243,58 @@
   background: rgba(0, 0, 0, 0.55);
   border-radius: 11px;
 }
+
+/* "Downloading video…" indicator overlaid on the carousel media while
+ * yt-dlp is fetching the bytes in the background. Sits in the
+ * top-LEFT corner so it doesn't fight the carousel counter (top-right)
+ * for space when both are visible. Same visual language as the grid
+ * card-thumb badge so the user reads them as the same thing in two
+ * sizes / two surfaces. */
+.downloading {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 2;
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  padding: 4px 10px 4px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.55);
+  border-radius: 999px;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+.downloadingDot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  background: #4ac26b;
+  border-radius: 50%;
+  animation: pondpv-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes pondpv-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(0.85);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .downloadingDot {
+    opacity: 1;
+    animation: none;
+  }
+}

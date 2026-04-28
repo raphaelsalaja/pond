@@ -1,6 +1,7 @@
 import { useSmoothCorners } from "@lisse/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useIsVideoDownloading } from "../../pool/downloads";
 import { requestVideoHeal } from "../../pool/heal";
 import { buildMediaUnits } from "../../pool/media";
 import type { Save } from "../../pool/types";
@@ -537,6 +538,7 @@ interface MediaSlide {
 }
 
 function MediaViewer({ save }: { save: Save }) {
+  const isDownloading = useIsVideoDownloading(save.id);
   // `buildMediaUnits` already does the cover/video pairing — we just
   // re-shape its output to the field names the carousel expects and
   // tack on the legacy fallbacks for rows whose files[] is empty.
@@ -597,6 +599,17 @@ function MediaViewer({ save }: { save: Save }) {
   return (
     <div className={styles.carousel}>
       <div ref={wrapperRef} className={styles.mediaShell}>
+        {isDownloading ? (
+          <span
+            className={styles.downloading}
+            role="status"
+            aria-label="Downloading video"
+            title="Downloading video in the background"
+          >
+            <span className={styles.downloadingDot} aria-hidden="true" />
+            Downloading video…
+          </span>
+        ) : null}
         {slide.isVideo ? (
           <video
             ref={mediaRef as React.RefObject<HTMLVideoElement>}

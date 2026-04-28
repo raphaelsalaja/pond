@@ -69,6 +69,41 @@ const inFlight = new Set<string>();
 /** True while the worker loop is draining `pending`. */
 let draining = false;
 
+/** Snapshot of pending + in-flight save IDs. */
+export interface AutoVideoStatus {
+  pending: string[];
+  inFlight: string[];
+}
+
+type StatusListener = (status: AutoVideoStatus) => void;
+const statusListeners = new Set<StatusListener>();
+
+/**
+ * Subscribe to queue state changes. Listeners fire on every enqueue,
+ * job-pickup, and job-completion so the renderer can paint a
+ * "downloading…" indicator on cards whose video is currently being
+ * materialised by yt-dlp. The callback is called immediately on
+ * subscribe with the current snapshot so consumers don't need a
+ * separate initial-fetch round-trip.
+ */
+export function subscribeToAutoVideoStatus(cb: StatusListener): () => void {
+  statusListeners.add(cb);
+  cb(autoVideoQueueSnapshot());
+  return () => statusListeners.delete(cb);
+}
+
+function notifyStatus(): void {
+  if (statusListeners.size === 0) return;
+  const snap = autoVideoQueueSnapshot();
+  for (const cb of statusListeners) {
+    try {
+      cb(snap);
+    } catch (err) {
+      log.warn("[pond auto-video] status listener threw", err);
+    }
+  }
+}
+
 /**
  * Enqueue a save for background video download. Idempotent — calling
  * twice for the same saveId before the first job runs collapses to one.
@@ -89,6 +124,7 @@ export function enqueueAutoVideoDownload(job: AutoVideoJob): void {
       ...existing,
       force: existing.force === true || job.force === true,
     });
+    notifyStatus();
     return;
   }
   // For force jobs we always enqueue, even if an in-flight job exists,
@@ -96,6 +132,7 @@ export function enqueueAutoVideoDownload(job: AutoVideoJob): void {
   // non-force jobs we early-return as before to keep the queue tight.
   if (inFlight.has(job.saveId) && job.force !== true) return;
   pending.set(job.saveId, job);
+  notifyStatus();
   // Kick the worker off the microtask queue so the caller's HTTP handler
   // can flush its response before we start spawning subprocesses.
   setImmediate(() => {
@@ -115,12 +152,14 @@ async function drain(): Promise<void> {
       const [saveId, job] = next;
       pending.delete(saveId);
       inFlight.add(saveId);
+      notifyStatus();
       try {
         await processJob(job);
       } catch (err) {
         log.warn("[pond auto-video] job threw", saveId, err);
       } finally {
         inFlight.delete(saveId);
+        notifyStatus();
       }
     }
   } finally {

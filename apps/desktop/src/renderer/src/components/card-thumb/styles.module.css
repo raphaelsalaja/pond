@@ -49,3 +49,67 @@
     light-dark(#e4e4e7, #111114) 100%
   );
 }
+
+/* ------------------------------------------------------------------ */
+/* "Downloading…" indicator.                                          */
+/*                                                                    */
+/* Subtle, top-right pill that overlays the thumbnail while yt-dlp is */
+/* downloading the video bytes for this save in the background. The   */
+/* dot pulses so the indicator reads as "still working" without a     */
+/* full spinner; matches the lightweight visual language of the dot   */
+/* indicators used in the preview pane / lightbox.                    */
+/*                                                                    */
+/* `pointer-events: none` so the badge doesn't intercept hover/click  */
+/* on the underlying card.                                            */
+/* ------------------------------------------------------------------ */
+
+.downloading {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  padding: 3px 8px 3px 7px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.62);
+  border-radius: 999px;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+.downloadingDot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background: #4ac26b;
+  border-radius: 50%;
+  animation: ponddl-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes ponddl-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(0.85);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+
+/* Reduced-motion users get a steady glow instead of a pulse so the
+ * indicator stays informative without the animation. */
+@media (prefers-reduced-motion: reduce) {
+  .downloadingDot {
+    opacity: 1;
+    animation: none;
+  }
+}

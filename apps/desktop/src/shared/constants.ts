@@ -60,4 +60,9 @@ export const IPC = {
   // Electron's bundled ffmpeg can't decode). Main re-runs yt-dlp with
   // the corrected H.264-only selector and overwrites the bad bytes.
   videoRedownload: "pond:video-redownload",
+  // Main → renderer broadcast: snapshot of the auto-video queue (saves
+  // currently being downloaded by yt-dlp in the background). Drives the
+  // grid + preview "downloading…" indicator so the user knows their
+  // freshly-saved video is still landing on disk.
+  autoVideoStatus: "pond:auto-video-status",
 } as const;

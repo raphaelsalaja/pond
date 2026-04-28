@@ -188,6 +188,25 @@ const api = {
   > {
     return ipcRenderer.invoke(IPC.videoRedownload, id);
   },
+
+  /**
+   * Subscribe to auto-video queue snapshots. Main pushes one snapshot
+   * per queue mutation (enqueue / pickup / completion); the listener
+   * also gets an initial snapshot when the renderer finishes loading,
+   * so callers don't need to do a separate fetch on first render.
+   *
+   * Returns a disposer.
+   */
+  onVideoDownloadStatus(
+    cb: (status: { pending: string[]; inFlight: string[] }) => void,
+  ): () => void {
+    const listener = (
+      _: unknown,
+      status: { pending: string[]; inFlight: string[] },
+    ) => cb(status);
+    ipcRenderer.on(IPC.autoVideoStatus, listener);
+    return () => ipcRenderer.off(IPC.autoVideoStatus, listener);
+  },
 };
 
 try {
