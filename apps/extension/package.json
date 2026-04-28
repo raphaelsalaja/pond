@@ -28,9 +28,9 @@
     "@pond/schema": "workspace:*"
   },
   "devDependencies": {
-    "@types/chrome": "^0.0.287",
-    "@types/node": "^22.19.17",
-    "typescript": "^5.7.2",
+    "@types/chrome": "^0.1.40",
+    "@types/node": "^25.6.0",
+    "typescript": "^6.0.3",
     "wxt": "^0.20.25"
   }
 }
