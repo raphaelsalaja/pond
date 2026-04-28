@@ -609,6 +609,18 @@ function MediaViewer({ save }: { save: Save }) {
               markBroken(slide.src);
               requestVideoHeal(save.id);
             }}
+            onLoadedMetadata={(e) => {
+              // Codec-unsupported videos (typically pre-codec-fix
+              // AV1/HEVC files) don't always fire `onError` — the
+              // container parses fine but the decoder can't init, so
+              // videoWidth stays at 0. Treat that as broken too so
+              // the auto-heal still kicks off.
+              const v = e.currentTarget;
+              if (v.videoWidth === 0 && v.videoHeight === 0) {
+                markBroken(slide.src);
+                requestVideoHeal(save.id);
+              }
+            }}
           >
             <track kind="captions" />
           </video>

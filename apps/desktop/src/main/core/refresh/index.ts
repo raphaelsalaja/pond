@@ -88,6 +88,12 @@ export async function refreshSave(saveId: string): Promise<RefreshOutcome> {
       try {
         const result = await ingestFromHttp(og.payload, {
           mediaFiles: ytdlpExtras?.mediaFiles,
+          // User-initiated refresh: when yt-dlp produced new bytes,
+          // always overwrite. Without `force: true` the merge in
+          // `refreshExisting` short-circuits whenever the row already
+          // has a (broken) video file on disk — see the codec-heal
+          // path comments on LocalIngestExtras.
+          force: ytdlpExtras !== null,
         });
         await ytdlpExtras?.cleanup();
         return { ok: true, method: "og", created: result.created };
@@ -157,6 +163,11 @@ export async function refreshSave(saveId: string): Promise<RefreshOutcome> {
   try {
     const result = await ingestFromHttp(payload, {
       mediaFiles: ytdlpExtras?.mediaFiles,
+      // Same reasoning as the OG branch above: when yt-dlp landed
+      // fresh bytes for an explicit user refresh, always replace the
+      // current on-disk video — the user's intent is "give me what's
+      // there now", which overrides the merge heuristic.
+      force: ytdlpExtras !== null,
     });
     await ytdlpExtras?.cleanup();
     return { ok: true, method: "hidden-window", created: result.created };

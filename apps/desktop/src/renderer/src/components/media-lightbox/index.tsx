@@ -190,6 +190,18 @@ function LightboxBody({ save, onClose }: { save: Save; onClose: () => void }) {
                 markBroken(slide.src);
                 requestVideoHeal(save.id);
               }}
+              onLoadedMetadata={(e) => {
+                // See the equivalent block in `save-preview` /
+                // `card-thumb`: codec-unsupported videos surface as a
+                // 0×0 metadata frame instead of an error event. Heal
+                // them anyway so users don't have to keep re-clicking
+                // Refresh on cards from before the codec fix.
+                const v = e.currentTarget;
+                if (v.videoWidth === 0 && v.videoHeight === 0) {
+                  markBroken(slide.src);
+                  requestVideoHeal(save.id);
+                }
+              }}
             >
               <track kind="captions" />
             </video>

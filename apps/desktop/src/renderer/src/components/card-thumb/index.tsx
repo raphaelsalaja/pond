@@ -195,6 +195,21 @@ const HoverVideo = forwardRef<
     }
   }, []);
 
+  // Detect codec-unsupported videos that *don't* fire `onError` —
+  // typical with `preload="metadata"` because the decoder isn't set up
+  // until play is pressed. Chromium still parses the container (so
+  // `loadedmetadata` fires) but `videoWidth` stays at 0 when it can't
+  // initialise the decoder. The classic case: AV1 / HEVC saved before
+  // we tightened the yt-dlp format selector. See `pool/heal.ts` for
+  // dedup; the heal IPC is a no-op when the renderer keeps polling.
+  const onLoadedMetadata = useCallback(() => {
+    const el = internalRef.current;
+    if (!el) return;
+    if (el.videoWidth === 0 && el.videoHeight === 0) {
+      onBroken();
+    }
+  }, [onBroken]);
+
   return (
     <video
       ref={internalRef}
@@ -211,6 +226,7 @@ const HoverVideo = forwardRef<
       onFocus={onEnter}
       onBlur={onLeave}
       onError={onBroken}
+      onLoadedMetadata={onLoadedMetadata}
     >
       <track kind="captions" />
     </video>
