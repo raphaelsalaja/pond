@@ -1,0 +1,44 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Europe/London
+    open-pull-requests-limit: 10
+    versioning-strategy: increase
+    commit-message:
+      prefix: build
+      include: scope
+    groups:
+      dev-tooling:
+        patterns:
+          - "@biomejs/*"
+          - "turbo"
+          - "typescript"
+          - "@types/*"
+          - "husky"
+          - "@commitlint/*"
+      electron:
+        patterns:
+          - "electron"
+          - "electron-*"
+          - "@electron/*"
+          - "@electron-toolkit/*"
+      react:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
+          - "react-router-dom"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: ops

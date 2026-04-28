@@ -1,0 +1,19 @@
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.icns binary
+*.dmg binary
+*.exe binary
+*.AppImage binary
+*.deb binary
+*.zip binary
+*.tar binary
+*.tar.gz binary
+
+apps/desktop/resources/bin/yt-dlp binary
+
+pnpm-lock.yaml -diff linguist-generated=true

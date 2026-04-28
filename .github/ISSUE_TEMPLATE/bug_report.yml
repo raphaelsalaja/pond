@@ -1,0 +1,99 @@
+name: Bug report
+description: Something is broken or behaving unexpectedly.
+title: "bug: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug report. The more detail
+        you provide, the faster this can be reproduced and fixed.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug.
+      placeholder: When I do X, Y happens instead of Z.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Minimum steps to reproduce the issue.
+      placeholder: |
+        1. Open the desktop app
+        2. Save a Twitter post
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      multiple: true
+      options:
+        - Desktop app (Electron)
+        - Browser extension
+        - Capture (per-site inject)
+        - Library / on-disk format
+        - SQLite index / search
+        - Ingest API
+        - AI enrichment
+        - Auto-update / release
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: pond-version
+    attributes:
+      label: pond version
+      description: From the tray menu, "About pond" — or the GitHub release tag.
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - macOS (Apple Silicon)
+        - macOS (Intel)
+        - Windows
+        - Linux
+    validations:
+      required: true
+  - type: input
+    id: os-version
+    attributes:
+      label: OS version
+      placeholder: macOS 15.4
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser (if extension-related)
+      placeholder: Chrome 130 / Firefox 132 / Arc
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: |
+        Relevant logs from `~/Library/Logs/pond/` (macOS),
+        `%APPDATA%/pond/logs/` (Windows), or `~/.config/pond/logs/` (Linux).
+        DevTools console output from the renderer is also helpful.
+      render: shell
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of conduct
+      options:
+        - label: I agree to follow this project's [Code of Conduct](https://github.com/raphaelsalaja/pond/blob/main/CODE_OF_CONDUCT.md).
+          required: true

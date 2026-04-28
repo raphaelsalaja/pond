@@ -1,0 +1,7 @@
+# Default reviewer for everything in the repo.
+*                              @raphaelsalaja
+
+# Workflow / release plumbing — tighter watch.
+/.github/                      @raphaelsalaja
+/apps/desktop/electron-builder.yml @raphaelsalaja
+/apps/desktop/scripts/         @raphaelsalaja
