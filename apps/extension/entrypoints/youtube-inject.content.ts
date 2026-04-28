@@ -390,6 +390,53 @@ export default defineContentScript({
       return res;
     };
 
+    // navigator.sendBeacon is increasingly used by YouTube for
+    // fire-and-forget actions (analytics historically, but also some
+    // playlist mutations on the modern polymer client). The browser
+    // never gives us a Response, so we just sniff the outgoing body
+    // and emit synchronously — same classifier as fetch/XHR.
+    if (typeof navigator !== "undefined" && navigator.sendBeacon) {
+      const origBeacon = navigator.sendBeacon.bind(navigator);
+      navigator.sendBeacon = (
+        url: string | URL,
+        data?: BodyInit | null,
+      ): boolean => {
+        const result = origBeacon(url, data);
+        try {
+          const u = typeof url === "string" ? url : url.toString();
+          if (YOUTUBEI_RE.test(u)) {
+            void (async () => {
+              let body: string | null = null;
+              try {
+                if (typeof data === "string") body = data;
+                else if (data instanceof Blob) body = await data.text();
+                else if (data instanceof ArrayBuffer) {
+                  body = new TextDecoder().decode(data);
+                } else if (data && ArrayBuffer.isView(data)) {
+                  body = new TextDecoder().decode(data as Uint8Array);
+                } else if (data instanceof URLSearchParams) {
+                  body = data.toString();
+                } else if (data instanceof FormData) {
+                  const obj: Record<string, string> = {};
+                  data.forEach((v, k) => {
+                    obj[k] = typeof v === "string" ? v : "[file]";
+                  });
+                  body = JSON.stringify(obj);
+                }
+              } catch {
+                /* body unreadable, fall through with null */
+              }
+              await handleYoutubeiPost(u, body, "fetch");
+            })();
+          }
+        } catch (err) {
+          log("warn", "youtube beacon hook", { err: String(err) });
+        }
+        return result;
+      };
+      log("info", "youtube sendBeacon patched");
+    }
+
     const OrigXHR = window.XMLHttpRequest;
     function PatchedXHR(this: XMLHttpRequest) {
       const xhr = new OrigXHR();
@@ -445,6 +492,19 @@ export default defineContentScript({
       harvestGlobals();
     }
 
+    // Loud, single, visually-distinct boot line so you can instantly tell
+    // — from any page console on youtube.com — whether the inject took
+    // effect. If you don't see this line on a fresh tab, the extension
+    // hasn't reloaded; reload at chrome://extensions and hard-refresh.
+    try {
+      console.log(
+        "%c[pond youtube]%c hooks installed → fetch + XHR + sendBeacon",
+        "background:#1f9d55;color:white;padding:2px 4px;border-radius:3px;font-weight:bold",
+        "color:#1f9d55",
+      );
+    } catch {
+      /* fallback handled by log() below */
+    }
     log("info", "youtube inject loaded", { href: location.href });
   },
 });
