@@ -2,8 +2,9 @@ import { spawn } from "node:child_process";
 import { mkdtemp, readdir, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { extname, join } from "node:path";
-import type { Source } from "@pond/schema/db";
+import type { Source, VideoDownloadSettings } from "@pond/schema/db";
 import log from "electron-log/main.js";
+import { getVideoDownloadPrefs } from "../prefs";
 import { binariesAvailable } from "./binaries";
 import { writeNetscapeCookies } from "./cookies";
 
@@ -52,7 +53,6 @@ export interface DownloadedVideo {
 }
 
 const HARD_TIMEOUT_MS = 90_000;
-const MAX_FILESIZE = "200M";
 
 /**
  * Per-source format selector. yt-dlp's selector syntax is documented at
@@ -69,40 +69,53 @@ const MAX_FILESIZE = "200M";
  *   keep us alive when a site has no avc1 stream at all (rare on
  *   modern YouTube; occasionally on niche sources).
  *
- * Resolution cap: 1080p everywhere. 4K streams pull multi-GB
- * intermediates through ffmpeg's mux stage and routinely blow past
- * `--max-filesize 200M` *after* we've already wasted time downloading.
+ * Resolution cap is configurable via Settings → Video downloads. We
+ * apply it inline to every selector branch (yt-dlp evaluates the cap
+ * per-format, not as a post-filter). A `null` cap means "no limit"
+ * and drops the `[height<=N]` predicate — useful for users who want
+ * the original 4K source even though it'll burn disk.
  */
-function formatSelector(source: Source | null): string {
+function formatSelector(
+  source: Source | null,
+  maxHeight: number | null,
+): string {
+  const h = maxHeight ? `[height<=${maxHeight}]` : "";
   switch (source) {
     case "tiktok":
       // TikTok: prefer the no-watermark in-feed stream (`format_note`
       // contains "play") over the watermarked download endpoint, then
       // fall through to any avc1 stream, then anything that fits.
       return [
-        "bv*[ext=mp4][vcodec^=avc1][format_note*=play]+ba[acodec^=mp4a]",
-        "bv*[ext=mp4][vcodec^=avc1]+ba[acodec^=mp4a]",
-        "b[ext=mp4][vcodec^=avc1]",
-        "b[ext=mp4]",
-        "b",
+        `bv*[ext=mp4][vcodec^=avc1][format_note*=play]${h}+ba[acodec^=mp4a]`,
+        `bv*[ext=mp4][vcodec^=avc1]${h}+ba[acodec^=mp4a]`,
+        `b[ext=mp4][vcodec^=avc1]${h}`,
+        `b[ext=mp4]${h}`,
+        `b${h}`,
       ].join("/");
     case "youtube":
       return [
-        "bv*[ext=mp4][vcodec^=avc1][height<=1080]+ba[ext=m4a][acodec^=mp4a]",
-        "b[ext=mp4][vcodec^=avc1][height<=1080]",
-        "bv*[vcodec^=avc1][height<=1080]+ba[acodec^=mp4a]",
-        "b[ext=mp4][height<=1080]",
-        "b[height<=1080]",
+        `bv*[ext=mp4][vcodec^=avc1]${h}+ba[ext=m4a][acodec^=mp4a]`,
+        `b[ext=mp4][vcodec^=avc1]${h}`,
+        `bv*[vcodec^=avc1]${h}+ba[acodec^=mp4a]`,
+        `b[ext=mp4]${h}`,
+        `b${h}`,
       ].join("/");
     default:
       return [
-        "bv*[ext=mp4][vcodec^=avc1]+ba[ext=m4a][acodec^=mp4a]",
-        "b[ext=mp4][vcodec^=avc1]",
-        "bv*[vcodec^=avc1]+ba[acodec^=mp4a]",
-        "b[ext=mp4]",
-        "b",
+        `bv*[ext=mp4][vcodec^=avc1]${h}+ba[ext=m4a][acodec^=mp4a]`,
+        `b[ext=mp4][vcodec^=avc1]${h}`,
+        `bv*[vcodec^=avc1]${h}+ba[acodec^=mp4a]`,
+        `b[ext=mp4]${h}`,
+        `b${h}`,
       ].join("/");
   }
+}
+
+/** Format `--max-filesize` argument, or `null` if no cap is configured. */
+function maxFilesizeArg(prefs: VideoDownloadSettings): string | null {
+  const mb = prefs.maxFileSizeMb;
+  if (mb === null || mb === undefined || mb <= 0) return null;
+  return `${mb}M`;
 }
 
 /**
@@ -135,6 +148,7 @@ export async function downloadVideo(
   };
 
   try {
+    const prefs = await getVideoDownloadPrefs();
     cookies = await writeNetscapeCookies();
     outputDir = await mkdtemp(join(tmpdir(), "pond-ytdlp-out-"));
 
@@ -144,19 +158,19 @@ export async function downloadVideo(
       "--no-progress",
       "--no-part",
       "--restrict-filenames",
-      "--max-filesize",
-      MAX_FILESIZE,
       "--socket-timeout",
       "30",
       "--retries",
       "3",
       "-f",
-      formatSelector(args.source),
+      formatSelector(args.source, prefs.maxHeight),
       "--cookies",
       cookies.path,
       "-o",
       join(outputDir, "%(id)s.%(ext)s"),
     ];
+    const filesize = maxFilesizeArg(prefs);
+    if (filesize) argv.unshift("--max-filesize", filesize);
     if (ffmpeg) {
       argv.push("--ffmpeg-location", ffmpeg);
     } else {

@@ -2,9 +2,11 @@ import { existsSync } from "node:fs";
 import { sep as pathSep, resolve as resolvePath } from "node:path";
 import {
   DEFAULT_AI_AUTONOMY,
+  DEFAULT_VIDEO_DOWNLOAD,
   saves,
   settings as settingsTable,
   tags,
+  type VideoDownloadSettings,
 } from "@pond/schema/db";
 import type { Transaction } from "@pond/schema/tx";
 import { desc, eq, isNotNull } from "drizzle-orm";
@@ -13,6 +15,7 @@ import log from "electron-log/main.js";
 import { IPC } from "../../shared/constants";
 import { redownloadVideoForSave } from "../core/auto-video";
 import { executeBatch, executeTransaction } from "../core/executor";
+import { setVideoDownloadPrefs } from "../core/prefs";
 import {
   disconnectSource,
   isSourceConnected,
@@ -469,19 +472,39 @@ async function runQuery(name: string, raw: unknown): Promise<unknown> {
         .select()
         .from(settingsTable)
         .where(eq(settingsTable.id, "singleton"));
-      if (rows[0]) return rows[0];
+      if (rows[0]) {
+        // `videoDownload` is a recent addition; pre-existing rows from
+        // before the migration ran return `null` from the JSON column
+        // until the user explicitly saves prefs. Materialise defaults so
+        // the renderer never has to special-case `null`.
+        return {
+          ...rows[0],
+          videoDownload: rows[0].videoDownload ?? DEFAULT_VIDEO_DOWNLOAD,
+        };
+      }
       // Seed defaults on first read.
       await db
         .insert(settingsTable)
-        .values({ id: "singleton", aiAutonomy: DEFAULT_AI_AUTONOMY })
+        .values({
+          id: "singleton",
+          aiAutonomy: DEFAULT_AI_AUTONOMY,
+          videoDownload: DEFAULT_VIDEO_DOWNLOAD,
+        })
         .onConflictDoNothing()
         .run();
       return {
         id: "singleton",
         aiAutonomy: DEFAULT_AI_AUTONOMY,
+        videoDownload: DEFAULT_VIDEO_DOWNLOAD,
         libraryRoot: null,
         updatedAt: new Date(),
       };
+    }
+    case "settings.setVideoDownload": {
+      const next = await setVideoDownloadPrefs(
+        params as Partial<VideoDownloadSettings>,
+      );
+      return { ok: true, videoDownload: next };
     }
     case "settings.ingestToken": {
       return { token: await getIngestToken() };

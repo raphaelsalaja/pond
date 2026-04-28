@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../db";
 import { ingestFromHttp } from "./ingest";
+import { getVideoDownloadPrefs } from "./prefs";
 import { supportsYtDlp } from "./refresh/sources";
 import { downloadVideo } from "./refresh/yt-dlp";
 
@@ -118,6 +119,27 @@ function notifyStatus(): void {
  */
 export function enqueueAutoVideoDownload(job: AutoVideoJob): void {
   if (!supportsYtDlp(job.source)) return;
+  // Honour the user's "background video downloads" toggle. Force jobs
+  // (auto-heal of a broken file, manual Refresh from the menu) bypass
+  // this gate — those are explicit user actions where the user is
+  // *asking* for the bytes, not just passively saving a card.
+  if (job.force !== true) {
+    void getVideoDownloadPrefs().then((prefs) => {
+      if (!prefs.enabled) {
+        log.debug(
+          "[pond auto-video] background downloads disabled, skipping",
+          job.saveId,
+        );
+        return;
+      }
+      enqueueResolved(job);
+    });
+    return;
+  }
+  enqueueResolved(job);
+}
+
+function enqueueResolved(job: AutoVideoJob): void {
   const existing = pending.get(job.saveId);
   if (existing) {
     pending.set(job.saveId, {

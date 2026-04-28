@@ -11,6 +11,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Switch,
   useToast,
 } from "../../ui";
 import styles from "./styles.module.css";
@@ -31,12 +32,25 @@ type AuthWalledSource = (typeof AUTH_WALLED_SOURCES)[number]["id"];
 
 type AiAutonomy = "off" | "suggest" | "auto-apply";
 
+interface VideoDownloadPrefs {
+  enabled: boolean;
+  maxHeight: number | null;
+  maxFileSizeMb: number | null;
+}
+
+const DEFAULT_VIDEO_DOWNLOAD: VideoDownloadPrefs = {
+  enabled: true,
+  maxHeight: 1080,
+  maxFileSizeMb: 500,
+};
+
 interface SettingsRow {
   id: string;
   aiAutonomy: {
     tagging: AiAutonomy;
     additionalGuidance: string;
   };
+  videoDownload: VideoDownloadPrefs;
   libraryRoot: string | null;
 }
 
@@ -69,7 +83,12 @@ export function SettingsPage() {
     ]).then(([t, k, s]) => {
       setToken(t.token ?? "");
       setAiKey(k.key ?? "");
-      setSettings(s);
+      // Defensive defaults: pre-migration rows may not include
+      // `videoDownload` until the user explicitly saves prefs.
+      setSettings({
+        ...s,
+        videoDownload: s.videoDownload ?? DEFAULT_VIDEO_DOWNLOAD,
+      });
     });
   }, []);
 
@@ -135,6 +154,35 @@ export function SettingsPage() {
     } catch {
       // No-op: the renderer is the source of truth until main implements
       // this writer; the next page mount will rehydrate from disk.
+    }
+  }
+
+  /**
+   * Patch the videoDownload prefs and persist. We use optimistic UI so
+   * toggling the switch / changing a select feels instant; the main
+   * process round-trip happens in the background and rehydrates state
+   * from the canonical row on success.
+   */
+  async function patchVideoDownload(
+    patch: Partial<VideoDownloadPrefs>,
+  ): Promise<void> {
+    if (!settings) return;
+    const next = { ...settings.videoDownload, ...patch };
+    setSettings({ ...settings, videoDownload: next });
+    try {
+      const r = (await window.pond.query(
+        "settings.setVideoDownload",
+        patch,
+      )) as { ok: true; videoDownload: VideoDownloadPrefs };
+      setSettings((cur) =>
+        cur ? { ...cur, videoDownload: r.videoDownload } : cur,
+      );
+    } catch (err) {
+      toast.add({
+        title: "Couldn't save video preferences",
+        description: String(err),
+        type: "error",
+      });
     }
   }
 
@@ -242,8 +290,142 @@ export function SettingsPage() {
 
       <ConnectedSources />
 
+      {settings ? (
+        <VideoDownloadPrefsSection
+          prefs={settings.videoDownload}
+          onChange={patchVideoDownload}
+          disabled={busy}
+        />
+      ) : null}
+
       <VideoToolsStatus />
     </section>
+  );
+}
+
+/**
+ * User-tunable knobs for the bundled yt-dlp pipeline. Three controls:
+ *
+ *   - Toggle: download videos in the background at all
+ *   - Select: maximum resolution the muxer is allowed to fetch
+ *   - Select: hard size cap to protect against runaway streams
+ *
+ * Defaults (1080p / 500 MB / on) are tuned for the median save: a
+ * Twitter clip, a YouTube short, an IG reel. Heavy-rotation users on
+ * tight disks can dial both caps down; archivists can lift them.
+ *
+ * The H.264-only codec policy is intentionally not user-configurable.
+ * Letting users opt into AV1 / VP9 here would just route them straight
+ * into Electron's `Unsupported pixel format: -1` failure mode and the
+ * auto-heal loop on every save. If that ever changes (Electron picks
+ * up the missing decoders), this is the place to add a fourth select.
+ */
+function VideoDownloadPrefsSection({
+  prefs,
+  onChange,
+  disabled,
+}: {
+  prefs: VideoDownloadPrefs;
+  onChange: (patch: Partial<VideoDownloadPrefs>) => Promise<void>;
+  disabled: boolean;
+}) {
+  const heightValue =
+    prefs.maxHeight === null ? "any" : String(prefs.maxHeight);
+  const sizeValue =
+    prefs.maxFileSizeMb === null ? "any" : String(prefs.maxFileSizeMb);
+
+  return (
+    <div className={styles.group}>
+      <Field>
+        <FieldLabel>Background video downloads</FieldLabel>
+        <FieldDescription>
+          When you save a video card from X, Instagram, TikTok, Cosmos, or
+          YouTube, Pond fetches the original MP4 in the background so you can
+          scrub it offline. Turn this off to keep just the poster image — saves
+          bandwidth and disk if you mostly use Pond as a mood board.
+        </FieldDescription>
+        <div className={styles.row}>
+          <Switch
+            checked={prefs.enabled}
+            disabled={disabled}
+            onCheckedChange={(checked: boolean) =>
+              void onChange({ enabled: checked })
+            }
+          />
+          <span style={{ fontSize: 13, color: "var(--pond-fg)" }}>
+            {prefs.enabled ? "Downloading enabled" : "Disabled"}
+          </span>
+        </div>
+      </Field>
+
+      <Field style={{ marginTop: 16, opacity: prefs.enabled ? 1 : 0.5 }}>
+        <FieldLabel>Maximum resolution</FieldLabel>
+        <FieldDescription>
+          Higher means crisper playback and bigger files. 1080p is the sweet
+          spot for most clips; 4K only matters on cinematic uploads and roughly
+          quadruples the disk footprint.
+        </FieldDescription>
+        <div className={styles.row}>
+          <Select
+            value={heightValue}
+            disabled={disabled || !prefs.enabled}
+            onValueChange={(v) => {
+              if (v === null || v === "any") {
+                void onChange({ maxHeight: null });
+                return;
+              }
+              void onChange({ maxHeight: Number.parseInt(v, 10) });
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="480">480p (small files)</SelectItem>
+              <SelectItem value="720">720p</SelectItem>
+              <SelectItem value="1080">1080p (recommended)</SelectItem>
+              <SelectItem value="1440">1440p</SelectItem>
+              <SelectItem value="2160">2160p / 4K</SelectItem>
+              <SelectItem value="any">Original (no cap)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </Field>
+
+      <Field style={{ marginTop: 16, opacity: prefs.enabled ? 1 : 0.5 }}>
+        <FieldLabel>Maximum file size</FieldLabel>
+        <FieldDescription>
+          A safety net so a 3-hour 1080p stream can't quietly fill the disk.
+          yt-dlp checks the advertised size before downloading and skips
+          anything over the cap.
+        </FieldDescription>
+        <div className={styles.row}>
+          <Select
+            value={sizeValue}
+            disabled={disabled || !prefs.enabled}
+            onValueChange={(v) => {
+              if (v === null || v === "any") {
+                void onChange({ maxFileSizeMb: null });
+                return;
+              }
+              void onChange({ maxFileSizeMb: Number.parseInt(v, 10) });
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="200">200 MB</SelectItem>
+              <SelectItem value="500">500 MB (recommended)</SelectItem>
+              <SelectItem value="1000">1 GB</SelectItem>
+              <SelectItem value="2000">2 GB</SelectItem>
+              <SelectItem value="5000">5 GB</SelectItem>
+              <SelectItem value="any">No cap</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </Field>
+    </div>
   );
 }
 

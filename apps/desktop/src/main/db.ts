@@ -158,6 +158,7 @@ function migrate(sqlite: Database.Database): void {
 		CREATE TABLE IF NOT EXISTS settings (
 			id TEXT PRIMARY KEY DEFAULT 'singleton',
 			ai_autonomy TEXT NOT NULL,
+			video_download TEXT NOT NULL DEFAULT '{"enabled":true,"maxHeight":1080,"maxFileSizeMb":500}',
 			library_root TEXT,
 			onboarded INTEGER NOT NULL DEFAULT 0,
 			updated_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
@@ -174,6 +175,11 @@ function migrate(sqlite: Database.Database): void {
     if (!settingsCols.some((c) => c.name === "onboarded")) {
       sqlite.exec(
         `ALTER TABLE settings ADD COLUMN onboarded INTEGER NOT NULL DEFAULT 0`,
+      );
+    }
+    if (!settingsCols.some((c) => c.name === "video_download")) {
+      sqlite.exec(
+        `ALTER TABLE settings ADD COLUMN video_download TEXT NOT NULL DEFAULT '{"enabled":true,"maxHeight":1080,"maxFileSizeMb":500}'`,
       );
     }
 

@@ -251,11 +251,43 @@ export const DEFAULT_AI_AUTONOMY: AiAutonomy = {
   additionalGuidance: "",
 };
 
+/**
+ * User-tunable knobs for the bundled yt-dlp pipeline.
+ *
+ * - `enabled` toggles the background auto-download queue. Off = the
+ *   extension's poster JPG is the only media that ever lands on disk
+ *   (drastically reduces bandwidth + disk usage). The user can still
+ *   force a single-card download via the Refresh button — that path
+ *   bypasses this flag because it's an explicit user action.
+ * - `maxHeight` caps the resolution we ask yt-dlp to fetch. `null`
+ *   means "no cap"; otherwise we use the standard YouTube ladder
+ *   (480 / 720 / 1080 / 1440 / 2160). Lower = smaller files, faster
+ *   downloads, less GPU on playback.
+ * - `maxFileSizeMb` is yt-dlp's `--max-filesize` guardrail. Prevents
+ *   a runaway 4-hour 1080p stream from filling the disk before we
+ *   notice. `null` removes the cap.
+ */
+export interface VideoDownloadSettings {
+  enabled: boolean;
+  maxHeight: number | null;
+  maxFileSizeMb: number | null;
+}
+
+export const DEFAULT_VIDEO_DOWNLOAD: VideoDownloadSettings = {
+  enabled: true,
+  maxHeight: 1080,
+  maxFileSizeMb: 500,
+};
+
 export const settings = sqliteTable("settings", {
   id: text("id").primaryKey().default("singleton"),
   aiAutonomy: text("ai_autonomy", { mode: "json" })
     .$type<AiAutonomy>()
     .notNull(),
+  videoDownload: text("video_download", { mode: "json" })
+    .$type<VideoDownloadSettings>()
+    .notNull()
+    .default(sql`'${sql.raw(JSON.stringify(DEFAULT_VIDEO_DOWNLOAD))}'`),
   libraryRoot: text("library_root"),
   onboarded: integer("onboarded", { mode: "boolean" }).notNull().default(false),
   updatedAt: integer("updated_at", { mode: "timestamp_ms" })
