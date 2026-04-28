@@ -254,56 +254,147 @@ export default defineContentScript({
     }
 
     /**
-     * Inspect a /youtubei/v1/ POST body and decide whether it represents
-     * a save-worthy action. URL is used only as a label/hint — body
-     * shape is authoritative so future YouTube reshuffles don't break
-     * us. Returns the saves to emit (id + reason) plus a one-line
-     * summary suitable for logging.
+     * Pull every videoId out of a `playlistEditResults` array in the
+     * response body. The shape we look for is:
      *
-     * Matches:
-     *   - Any body whose `playlistId` includes "WL" (Watch Later)
-     *   - Any body containing `ACTION_ADD_VIDEO` action with addedVideoId
-     *   - Any URL hint matching the playlist-edit family + at least one
-     *     addedVideoId/videoId in the body
+     *   playlistEditResults: [
+     *     { playlistEditVideoAddedResultData: { videoId, setVideoId } }
+     *   ]
+     *
+     * Recursively because YouTube occasionally nests the results under
+     * `frameworkUpdates` or other wrapper objects.
+     */
+    function collectEditedVideoIds(node: unknown, out: Set<string>): void {
+      if (!node || typeof node !== "object") return;
+      if (Array.isArray(node)) {
+        for (const x of node) collectEditedVideoIds(x, out);
+        return;
+      }
+      const obj = node as Record<string, unknown>;
+      const added = obj.playlistEditVideoAddedResultData as
+        | Record<string, unknown>
+        | undefined;
+      if (added && typeof added.videoId === "string") {
+        out.add(added.videoId);
+      }
+      for (const v of Object.values(obj)) {
+        if (v && typeof v === "object") collectEditedVideoIds(v, out);
+      }
+    }
+
+    /**
+     * Pull every playlist target out of a response body — specifically
+     * the `refreshPlaylistCommand.listId` and `playlistId` fields YouTube
+     * stamps onto post-mutation actions. Used to detect a save-to-WL
+     * even when the request body was opaque.
+     */
+    function collectAffectedPlaylistIds(node: unknown, out: Set<string>): void {
+      if (!node || typeof node !== "object") return;
+      if (Array.isArray(node)) {
+        for (const x of node) collectAffectedPlaylistIds(x, out);
+        return;
+      }
+      const obj = node as Record<string, unknown>;
+      const refresh = obj.refreshPlaylistCommand as
+        | Record<string, unknown>
+        | undefined;
+      if (refresh && typeof refresh.listId === "string") {
+        out.add(refresh.listId);
+      }
+      if (typeof obj.playlistId === "string") out.add(obj.playlistId);
+      for (const v of Object.values(obj)) {
+        if (v && typeof v === "object") collectAffectedPlaylistIds(v, out);
+      }
+    }
+
+    /**
+     * Inspect a /youtubei/v1/ POST and decide whether it represents a
+     * save-worthy action. URL is used only as a label/hint — request +
+     * response body shape is authoritative so future YouTube reshuffles
+     * don't break us.
+     *
+     * The response body is the most reliable source: regardless of how
+     * the request was encoded (JSON, protobuf, opaque blob), the
+     * response for a successful playlist mutation always carries
+     * `playlistEditResults[*].playlistEditVideoAddedResultData.videoId`
+     * plus an `actions[*].refreshPlaylistCommand.listId` telling us
+     * which playlist was touched (literally "WL" for Watch Later).
+     *
+     * sendBeacon callers pass `responseBody=null` because the browser
+     * gives us no response object — for those we fall back to request
+     * body parsing only.
      */
     function classifyYoutubeiPost(
       url: string,
-      body: string | null,
+      requestBody: string | null,
+      responseBody: string | null,
     ): {
       saves: Array<{ videoId: string; kind: string }>;
       summary: Record<string, unknown>;
     } {
-      const json = readJson(body);
-      const ids = new Set<string>();
-      collectAddedVideoIds(json, ids);
-      const playlistIds = new Set<string>();
-      findPlaylistIds(json, playlistIds);
+      const reqJson = readJson(requestBody);
+      const resJson = readJson(responseBody);
 
-      const isWatchLater = [...playlistIds].some(
-        (p) => p.toUpperCase() === WATCH_LATER_PLAYLIST_ID,
-      );
+      // Request-body signals (some clients still send these legibly).
+      const reqVideoIds = new Set<string>();
+      collectAddedVideoIds(reqJson, reqVideoIds);
+      const reqPlaylistIds = new Set<string>();
+      findPlaylistIds(reqJson, reqPlaylistIds);
       const hasAddVideoAction = anyStringMatches(
-        json,
+        reqJson,
         (s) => s === "ACTION_ADD_VIDEO" || s === "addToPlaylistCommand",
+      );
+
+      // Response-body signals — the canonical "what actually happened".
+      const resVideoIds = new Set<string>();
+      collectEditedVideoIds(resJson, resVideoIds);
+      const resPlaylistIds = new Set<string>();
+      collectAffectedPlaylistIds(resJson, resPlaylistIds);
+
+      const allVideoIds = new Set<string>([...reqVideoIds, ...resVideoIds]);
+      const allPlaylistIds = new Set<string>([
+        ...reqPlaylistIds,
+        ...resPlaylistIds,
+      ]);
+      const isWatchLater = [...allPlaylistIds].some(
+        (p) => p.toUpperCase() === WATCH_LATER_PLAYLIST_ID,
       );
       const looksLikePlaylistEdit = PLAYLIST_EDIT_HINT_RE.test(url);
 
       const summary: Record<string, unknown> = {
         url,
-        playlistIds: [...playlistIds],
-        videoIds: [...ids],
+        playlistIds: [...allPlaylistIds],
+        videoIds: [...allVideoIds],
         isWatchLater,
         hasAddVideoAction,
         urlHint: looksLikePlaylistEdit,
+        // Body-source telemetry. Lets us tell at a glance whether a
+        // future "unmatched" log is missing the request, the response,
+        // or both.
+        bytes: {
+          req: requestBody?.length ?? 0,
+          res: responseBody?.length ?? 0,
+        },
       };
 
-      if (ids.size === 0) return { saves: [], summary };
+      if (allVideoIds.size === 0) return { saves: [], summary };
 
       const saves: Array<{ videoId: string; kind: string }> = [];
-      if (isWatchLater) {
-        for (const id of ids) saves.push({ videoId: id, kind: "watch-later" });
-      } else if (hasAddVideoAction || looksLikePlaylistEdit) {
-        for (const id of ids) saves.push({ videoId: id, kind: "playlist" });
+      // The response confirms the edit succeeded; if `resVideoIds` is
+      // populated at all, treat every entry as a real save (YouTube
+      // doesn't list videos in `playlistEditVideoAddedResultData`
+      // unless the add actually went through).
+      const targets =
+        resVideoIds.size > 0
+          ? resVideoIds
+          : hasAddVideoAction || looksLikePlaylistEdit
+            ? allVideoIds
+            : new Set<string>();
+      for (const id of targets) {
+        saves.push({
+          videoId: id,
+          kind: isWatchLater ? "watch-later" : "playlist",
+        });
       }
       return { saves, summary };
     }
@@ -314,13 +405,22 @@ export default defineContentScript({
      * id found. Logs every POST (matched or not) so the page console
      * shows exactly which YouTube endpoints fired when the user clicked
      * — invaluable for diagnosing future YouTube refactors.
+     *
+     * `responseBody` is the second-stage signal — see classifier comment.
+     * sendBeacon callers pass `null` because the browser doesn't surface
+     * a response.
      */
     async function handleYoutubeiPost(
       url: string,
-      body: string | null,
-      via: "fetch" | "xhr",
+      requestBody: string | null,
+      responseBody: string | null,
+      via: "fetch" | "xhr" | "beacon",
     ) {
-      const { saves, summary } = classifyYoutubeiPost(url, body);
+      const { saves, summary } = classifyYoutubeiPost(
+        url,
+        requestBody,
+        responseBody,
+      );
       if (saves.length > 0) {
         log("info", "youtube save matched", {
           via,
@@ -369,8 +469,24 @@ export default defineContentScript({
             await handleLike(url, await bodyPromise);
           } else if (method === "POST" && YOUTUBEI_RE.test(url)) {
             // Route every InnerTube POST through the body-shape sniffer.
-            // Save endpoints are picked out there; non-saves are dropped.
-            await handleYoutubeiPost(url, await bodyPromise, "fetch");
+            // We clone the response and feed both request + response
+            // bodies into the classifier — the response is the most
+            // reliable source for "what video got added to which
+            // playlist" since modern YouTube sends opaque request
+            // bodies but always returns canonical
+            // `playlistEditResults` arrays.
+            let responseText: string | null = null;
+            try {
+              responseText = await res.clone().text();
+            } catch {
+              /* response stream consumed elsewhere; fall back to req-body only */
+            }
+            await handleYoutubeiPost(
+              url,
+              await bodyPromise,
+              responseText,
+              "fetch",
+            );
           }
           if (PLAYER_RE.test(url)) {
             // Snapshot player/browse responses so we have title/thumb cached
@@ -426,7 +542,7 @@ export default defineContentScript({
               } catch {
                 /* body unreadable, fall through with null */
               }
-              await handleYoutubeiPost(u, body, "fetch");
+              await handleYoutubeiPost(u, body, null, "beacon");
             })();
           }
         } catch (err) {
@@ -456,10 +572,17 @@ export default defineContentScript({
           try {
             if (_method !== "POST") return;
             if (xhr.status < 200 || xhr.status >= 300) return;
+            // `xhr.responseText` is empty for non-text responseTypes
+            // (arraybuffer / blob), in which case we just pass null and
+            // the classifier falls back to request-body parsing only.
+            const responseText =
+              xhr.responseType === "" || xhr.responseType === "text"
+                ? xhr.responseText
+                : null;
             if (LIKE_RE.test(_url)) {
               void handleLike(_url, _body);
             } else if (YOUTUBEI_RE.test(_url)) {
-              void handleYoutubeiPost(_url, _body, "xhr");
+              void handleYoutubeiPost(_url, _body, responseText, "xhr");
             }
             if (PLAYER_RE.test(_url)) {
               harvestVideoDetails(readJson(xhr.responseText));
