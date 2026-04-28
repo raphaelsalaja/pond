@@ -61,7 +61,7 @@
     "@types/react": "^19.0.1",
     "@types/react-dom": "^19.0.2",
     "@vitejs/plugin-react": "^4.3.4",
-    "drizzle-kit": "^0.30.0",
+    "drizzle-kit": "^0.31.10",
     "electron": "^33.2.1",
     "electron-builder": "^25.1.8",
     "electron-vite": "^2.3.0",
