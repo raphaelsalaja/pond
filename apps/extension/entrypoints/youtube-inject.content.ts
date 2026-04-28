@@ -8,9 +8,11 @@ export default defineContentScript({
     (window as any).__pondYoutubeInjected = true;
 
     const POND_EVENT = "pond:capture";
-    const EDIT_PLAYLIST_RE = /\/youtubei\/v1\/browse\/edit_playlist\b/i;
+    const EDIT_PLAYLIST_RE =
+      /\/youtubei\/v1\/(browse\/edit_playlist|playlist\/(add|create)|browse\/edit_playlist_item)\b/i;
     const LIKE_RE = /\/youtubei\/v1\/like\/like\b/i;
-    const PLAYER_RE = /\/youtubei\/v1\/(player|next)\b/i;
+    const PLAYER_RE = /\/youtubei\/v1\/(player|next|browse)\b/i;
+    const VIDEO_ID_RE = /^[\w-]{11}$/;
 
     const videoCache = new Map<string, any>();
 
@@ -22,6 +24,15 @@ export default defineContentScript({
     }
     function log(level: string, message: string, data?: unknown) {
       emit({ kind: "log", level, message, data });
+      // Also surface in the page's DevTools console so you can verify the
+      // hook fired without having to open the extension service-worker.
+      const fn =
+        level === "error"
+          ? console.error
+          : level === "warn"
+            ? console.warn
+            : console.info;
+      fn("[pond youtube]", message, data ?? "");
     }
 
     function readJson(text: string | null) {
@@ -31,6 +42,45 @@ export default defineContentScript({
       } catch {
         return null;
       }
+    }
+
+    /**
+     * Pull the request body out of a `fetch(input, init)` call as a string,
+     * regardless of how the caller built it. YouTube uses every shape under
+     * the sun:
+     *  - `fetch(url, { body: '{"context":...}' })` — plain string
+     *  - `fetch(new Request(url, { body: ... }))` — body lives on the Request
+     *  - URLSearchParams / Blob / typed array — older code paths
+     */
+    async function readBody(
+      input: RequestInfo | URL,
+      init?: RequestInit,
+    ): Promise<string | null> {
+      try {
+        const b = init?.body;
+        if (typeof b === "string") return b;
+        if (b instanceof URLSearchParams) return b.toString();
+        if (b instanceof Blob) return await b.text();
+        if (b instanceof ArrayBuffer) return new TextDecoder().decode(b);
+        if (ArrayBuffer.isView(b)) {
+          return new TextDecoder().decode(b as Uint8Array);
+        }
+        if (b instanceof FormData) {
+          const obj: Record<string, string> = {};
+          b.forEach((v, k) => {
+            obj[k] = typeof v === "string" ? v : "[file]";
+          });
+          return JSON.stringify(obj);
+        }
+        if (input instanceof Request) {
+          // Request bodies are streams — clone before consuming so we don't
+          // break the actual outgoing request.
+          return await input.clone().text();
+        }
+      } catch (err) {
+        log("warn", "readBody failed", { err: String(err) });
+      }
+      return null;
     }
 
     function harvestVideoDetails(obj: any) {
@@ -108,30 +158,63 @@ export default defineContentScript({
       });
     }
 
-    function extractAddVideoIds(body: string | null) {
-      const json = readJson(body);
-      if (!json) return [];
-      const out: string[] = [];
-      const actions = json?.actions;
-      if (Array.isArray(actions)) {
-        for (const a of actions) {
-          if (
-            (a?.action === "ACTION_ADD_VIDEO" ||
-              a?.type === "ACTION_ADD_VIDEO") &&
-            a?.addedVideoId
-          ) {
-            out.push(String(a.addedVideoId));
-          }
+    /**
+     * Walk the parsed body recursively and collect every plausible
+     * `addedVideoId` / `videoId` we find. Permissive on purpose — YouTube
+     * has shipped at least four different action shapes for "add to
+     * playlist" over the years (`ACTION_ADD_VIDEO`, `addToPlaylistRequest`,
+     * nested actions inside `playlistEditPostHandlerActions`, etc.).
+     */
+    function collectAddedVideoIds(node: unknown, out: Set<string>): void {
+      if (!node || typeof node !== "object") return;
+      if (Array.isArray(node)) {
+        for (const x of node) collectAddedVideoIds(x, out);
+        return;
+      }
+      const obj = node as Record<string, unknown>;
+      for (const k of Object.keys(obj)) {
+        const v = obj[k];
+        if (
+          (k === "addedVideoId" || k === "videoId") &&
+          typeof v === "string" &&
+          VIDEO_ID_RE.test(v)
+        ) {
+          out.add(v);
+        } else if (v && typeof v === "object") {
+          collectAddedVideoIds(v, out);
         }
       }
-      return out;
     }
 
-    function extractLikeVideoId(body: string | null) {
+    function extractLikeVideoId(body: string | null): string | null {
       const json = readJson(body);
       const id =
         json?.target?.videoId ?? json?.videoId ?? json?.params?.videoId ?? null;
-      return id ? String(id) : null;
+      return id && VIDEO_ID_RE.test(String(id)) ? String(id) : null;
+    }
+
+    /** Common handler for both fetch and XHR captures. */
+    async function handlePlaylistEdit(
+      url: string,
+      body: string | null,
+      via: "fetch" | "xhr",
+    ) {
+      const ids = new Set<string>();
+      collectAddedVideoIds(readJson(body), ids);
+      log("info", "youtube playlist edit", {
+        via,
+        url,
+        count: ids.size,
+        ids: [...ids],
+        bodyPreview: body ? body.slice(0, 200) : null,
+      });
+      for (const id of ids) void emitSave(id, "playlist");
+    }
+
+    async function handleLike(url: string, body: string | null) {
+      const id = extractLikeVideoId(body);
+      log("info", "youtube like", { url, id });
+      if (id) void emitSave(id, "like");
     }
 
     const origFetch = window.fetch;
@@ -140,26 +223,31 @@ export default defineContentScript({
       const method = (
         init?.method ?? (input instanceof Request ? input.method : "GET")
       ).toUpperCase();
-      const body =
-        init?.body && typeof init.body === "string" ? init.body : null;
+
+      // Read the body BEFORE awaiting fetch — for Request inputs we need to
+      // clone, and for streams we need to peek before they're consumed.
+      const bodyPromise =
+        method === "POST" && typeof url === "string"
+          ? readBody(input, init)
+          : Promise.resolve<string | null>(null);
 
       const res = await origFetch.call(this, input, init);
 
       try {
-        if (typeof url === "string" && res.ok) {
-          if (method === "POST" && EDIT_PLAYLIST_RE.test(url)) {
-            const ids = extractAddVideoIds(body);
-            log("info", "youtube edit_playlist", { ids });
-            for (const id of ids) void emitSave(id, "playlist");
-          } else if (method === "POST" && LIKE_RE.test(url)) {
-            const id = extractLikeVideoId(body);
-            log("info", "youtube like", { id });
-            if (id) void emitSave(id, "like");
-          } else if (PLAYER_RE.test(url)) {
+        if (typeof url === "string") {
+          if (method === "POST" && EDIT_PLAYLIST_RE.test(url) && res.ok) {
+            await handlePlaylistEdit(url, await bodyPromise, "fetch");
+          } else if (method === "POST" && LIKE_RE.test(url) && res.ok) {
+            await handleLike(url, await bodyPromise);
+          } else if (PLAYER_RE.test(url) && res.ok) {
+            // Snapshot player/browse responses so we have title/thumb cached
+            // by the time the user adds to a playlist.
             const clone = res.clone();
             clone
               .text()
-              .then((t) => harvestVideoDetails(readJson(t)))
+              .then((t) => {
+                harvestVideoDetails(readJson(t));
+              })
               .catch(() => {});
           }
         }
@@ -168,6 +256,43 @@ export default defineContentScript({
       }
       return res;
     };
+
+    const OrigXHR = window.XMLHttpRequest;
+    function PatchedXHR(this: XMLHttpRequest) {
+      const xhr = new OrigXHR();
+      let _url = "";
+      let _method = "GET";
+      let _body: string | null = null;
+      const origOpen = xhr.open;
+      const origSend = xhr.send;
+      xhr.open = function (method: string, url: string) {
+        _method = String(method ?? "GET").toUpperCase();
+        _url = String(url ?? "");
+        return origOpen.apply(xhr, arguments as any);
+      };
+      xhr.send = function (body?: Document | XMLHttpRequestBodyInit | null) {
+        _body = typeof body === "string" ? body : null;
+        xhr.addEventListener("load", () => {
+          try {
+            if (_method !== "POST") return;
+            if (xhr.status < 200 || xhr.status >= 300) return;
+            if (EDIT_PLAYLIST_RE.test(_url)) {
+              void handlePlaylistEdit(_url, _body, "xhr");
+            } else if (LIKE_RE.test(_url)) {
+              void handleLike(_url, _body);
+            } else if (PLAYER_RE.test(_url)) {
+              harvestVideoDetails(readJson(xhr.responseText));
+            }
+          } catch (err) {
+            log("warn", "youtube xhr hook", { err: String(err) });
+          }
+        });
+        return origSend.apply(xhr, arguments as any);
+      };
+      return xhr;
+    }
+    PatchedXHR.prototype = OrigXHR.prototype;
+    window.XMLHttpRequest = PatchedXHR as unknown as typeof XMLHttpRequest;
 
     function harvestGlobals() {
       try {
