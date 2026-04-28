@@ -1,17 +1,49 @@
+# dependencies
 node_modules
+
+# build output
 .next
 .turbo
 dist
 build
 out
+*.tsbuildinfo
 
+# env
 .env
 .env.local
 .env.*.local
 !.env.example
 
+# logs / coverage
 *.log
-.DS_Store
+coverage/
 
+# packed tarballs
+*.tgz
+
+# os
+.DS_Store
+Thumbs.db
+
+# editors — track only the shared workspace files
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+
+# extension build artefacts
 apps/extension/dist
 apps/extension/.output
+apps/extension/.wxt
+
+# desktop: yt-dlp is fetched by postinstall, never commit it
+apps/desktop/resources/bin/yt-dlp
+apps/desktop/resources/bin/yt-dlp.exe
+apps/desktop/resources/bin/yt-dlp.tmp
+
+# vercel
+.vercel
+
+# agent caches
+.agents

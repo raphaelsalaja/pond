@@ -1,0 +1,26 @@
+.positioner {
+  z-index: 1100;
+}
+
+.popup {
+  max-width: 220px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: light-dark(#ffffff, #141414);
+  pointer-events: none;
+  outline: none;
+  background: light-dark(#141414, #f5f5f5);
+  border-radius: var(--pond-radius-md);
+  box-shadow: 0 4px 16px -4px rgba(0, 0, 0, 0.25);
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
+}
+
+.popup[data-starting-style],
+.popup[data-ending-style] {
+  opacity: 0;
+  transform: translateY(2px);
+}

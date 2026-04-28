@@ -1,0 +1,77 @@
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 640px;
+  padding: 16px;
+  margin: 0 auto;
+}
+
+.group {
+  padding: 16px;
+  background: var(--pond-card);
+  border: 1px solid var(--pond-border);
+  border-radius: 10px;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.settings code {
+  padding: 1px 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  background: light-dark(rgba(0, 0, 0, 0.05), rgba(255, 255, 255, 0.06));
+  border-radius: 4px;
+}
+
+.sourceList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0;
+  margin: 8px 0 0;
+  list-style: none;
+}
+
+.sourceRow {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: var(--pond-bg);
+  border: 1px solid var(--pond-border);
+  border-radius: 8px;
+}
+
+.sourceMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sourceName {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--pond-fg);
+}
+
+.statusConnected {
+  font-size: 11px;
+  color: light-dark(#1a7f37, #4ac26b);
+}
+
+.statusDisconnected {
+  font-size: 11px;
+  color: var(--pond-muted);
+}
+
+.sourceActions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}

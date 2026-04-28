@@ -1,0 +1,36 @@
+{
+  "name": "@pond/icons",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Local icon set used across the Pond desktop app and extension. Auto-generated TSX wrappers around an SVG sprite.",
+  "license": "MIT",
+  "author": {
+    "name": "Raphael Salaja",
+    "url": "https://github.com/raphaelsalaja"
+  },
+  "homepage": "https://github.com/raphaelsalaja/pond#readme",
+  "bugs": {
+    "url": "https://github.com/raphaelsalaja/pond/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/raphaelsalaja/pond.git",
+    "directory": "icons"
+  },
+  "exports": {
+    "./*": "./*.tsx",
+    "./*/*": "./*/*.tsx"
+  },
+  "scripts": {
+    "convert": "node convert.mjs",
+    "lint": "biome check --fix --unsafe ."
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "svgo": "^3.3.3"
+  }
+}

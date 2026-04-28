@@ -3,10 +3,26 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "description": "Pond browser extension: capture saves from Twitter/X, Instagram, Pinterest, Are.na, Cosmos, TikTok, YouTube and any article into the local Pond library.",
+  "license": "MIT",
+  "author": {
+    "name": "Raphael Salaja",
+    "url": "https://github.com/raphaelsalaja"
+  },
+  "homepage": "https://github.com/raphaelsalaja/pond#readme",
+  "bugs": {
+    "url": "https://github.com/raphaelsalaja/pond/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/raphaelsalaja/pond.git",
+    "directory": "apps/extension"
+  },
   "scripts": {
-    "build": "tsx scripts/build.ts",
-    "dev": "tsx scripts/build.ts --watch",
-    "typecheck": "tsc --noEmit"
+    "build": "wxt build",
+    "dev": "wxt",
+    "typecheck": "tsc --noEmit",
+    "zip": "wxt zip"
   },
   "dependencies": {
     "@pond/schema": "workspace:*"
@@ -14,8 +30,7 @@
   "devDependencies": {
     "@types/chrome": "^0.0.287",
     "@types/node": "^22.19.17",
-    "esbuild": "^0.24.2",
-    "tsx": "^4.19.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "wxt": "^0.20.25"
   }
 }

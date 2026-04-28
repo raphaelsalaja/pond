@@ -1,0 +1,51 @@
+/* ------------------------------------------------------------------ */
+/* CardThumb visuals.                                                 */
+/*                                                                    */
+/* The grid cell reserves a 138px tall media slot (`.pond-card__media`*/
+/* in styles.css) which centers its single child via flexbox. The     */
+/* child is *this* `.thumb` wrapper.                                  */
+/*                                                                    */
+/* `.thumb` is the Lisse wrapper element we own (passed as            */
+/* `wrapperRef` to `useSmoothCorners`). It must be:                   */
+/*   - `position: relative` — Lisse absolutely-positions its SVG      */
+/*     overlay (drop shadow + inner border) inside this container.    */
+/*   - `inline-flex` — so the wrapper shrinks to the inner media's    */
+/*     natural width. The SVG overlay sizes from the wrapper, so if   */
+/*     the wrapper were `width: 100%` we'd get a column-wide drop     */
+/*     shadow / border around a narrow portrait image.                */
+/*   - `max-width: 100%` — caps landscape covers at the column width  */
+/*     instead of overflowing the slot.                               */
+/* ------------------------------------------------------------------ */
+
+.thumb {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  height: 100%;
+}
+
+.media {
+  display: block;
+  max-width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: light-dark(#f4f4f5, #1a1a1f);
+}
+
+/* The placeholder takes the slot's full width so the masonry layout
+ * stays predictable when a save has no cover (or its cover 404s).
+ * Without a fixed dimension `inline-flex` would collapse the wrapper
+ * to zero. We size it to a sensible card-ish aspect (138 tall × 100
+ * wide ≈ 1:1.4) so it reads as "a card with no media" instead of a
+ * thin sliver. */
+.placeholder {
+  width: 100px;
+  height: 100%;
+  background: linear-gradient(
+    135deg,
+    light-dark(#f4f4f5, #1a1a1f) 0%,
+    light-dark(#e4e4e7, #111114) 100%
+  );
+}

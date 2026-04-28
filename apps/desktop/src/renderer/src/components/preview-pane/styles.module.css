@@ -1,0 +1,60 @@
+/* ------------------------------------------------------------------ */
+/* PreviewPane — fixed-width column on the right of the shell. Slides  */
+/* in from the right when the user selects a card (`?id=` present).    */
+/*                                                                    */
+/* Lives outside `<main>` so its scroll is independent — long previews */
+/* don't push the grid around or steal the main scroll position.      */
+/* ------------------------------------------------------------------ */
+
+.pane {
+  position: relative;
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  width: 360px;
+  height: 100%;
+  padding: 0 16px 24px;
+  overflow: hidden;
+  background: var(--pond-bg);
+  border-left: 1px solid var(--pond-border);
+  animation: pane-in 220ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+@keyframes pane-in {
+  from {
+    width: 0;
+    opacity: 0;
+  }
+  to {
+    width: 360px;
+    opacity: 1;
+  }
+}
+
+.toolbar {
+  display: flex;
+  flex-shrink: 0;
+  gap: 4px;
+  align-items: center;
+  justify-content: flex-end;
+  height: 42px;
+  -webkit-app-region: drag;
+}
+
+.toolbar > * {
+  -webkit-app-region: no-drag;
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+  padding-right: 4px;
+  overflow-y: auto;
+}
+
+.empty {
+  margin: 40px 0;
+  font-size: 13px;
+  color: var(--pond-muted);
+  text-align: center;
+}

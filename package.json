@@ -2,22 +2,51 @@
   "name": "pond",
   "private": true,
   "version": "0.1.0",
+  "description": "A local-first archive for everything you save across Twitter/X, Instagram, Pinterest, Are.na, Cosmos, TikTok, YouTube, and any web article.",
+  "license": "MIT",
+  "author": {
+    "name": "Raphael Salaja",
+    "url": "https://github.com/raphaelsalaja"
+  },
+  "homepage": "https://github.com/raphaelsalaja/pond#readme",
+  "bugs": {
+    "url": "https://github.com/raphaelsalaja/pond/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/raphaelsalaja/pond.git"
+  },
   "packageManager": "pnpm@10.15.0",
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
-    "lint": "turbo run lint",
+    "lint": "biome check . --write --unsafe",
+    "lint:check": "biome ci .",
     "typecheck": "turbo run typecheck",
-    "db:generate": "turbo run db:generate",
-    "db:migrate": "turbo run db:migrate",
-    "db:studio": "pnpm --filter @pond/web db:studio"
+    "dist": "turbo run dist",
+    "dist:mac": "pnpm --filter @pond/desktop dist:mac",
+    "dist:win": "pnpm --filter @pond/desktop dist:win",
+    "dist:linux": "pnpm --filter @pond/desktop dist:linux",
+    "prepare": "husky"
   },
   "devDependencies": {
-    "turbo": "^2.3.3",
-    "typescript": "^5.7.2",
-    "@types/node": "^22.10.2"
+    "@biomejs/biome": "2.4.13",
+    "@commitlint/cli": "^20.5.0",
+    "@commitlint/config-conventional": "^20.5.0",
+    "@types/node": "^25.6.0",
+    "husky": "^9.1.7",
+    "turbo": "^2.9.6",
+    "typescript": "^6.0.3"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=20.9",
+    "pnpm": ">=10.0.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "drizzle-orm": "0.36.4",
+      "vite": "^6.3.4",
+      "vite-node": "^3.2.4"
+    }
   }
 }

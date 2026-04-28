@@ -1,0 +1,103 @@
+.welcome {
+  max-width: 640px;
+  padding: 0 16px;
+  margin: 40px auto;
+}
+
+.welcome h2 {
+  margin: 0 0 4px;
+  font-size: 24px;
+}
+
+.lead {
+  margin: 0 0 24px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--pond-muted);
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+
+.steps > li {
+  position: relative;
+  padding: 16px;
+  counter-increment: step;
+  background: var(--pond-card);
+  border: 1px solid var(--pond-border);
+  border-radius: 12px;
+}
+
+.steps > li::before {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  font-size: 12px;
+  color: var(--pond-muted);
+  content: counter(step);
+}
+
+.steps h3 {
+  margin: 0 0 6px;
+  font-size: 14px;
+}
+
+.steps p {
+  margin: 0 0 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--pond-muted);
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.tokenRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 8px 0;
+}
+
+.tokenRow code {
+  flex: 1;
+  padding: 6px 10px;
+  overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  white-space: nowrap;
+  background: light-dark(rgba(0, 0, 0, 0.05), rgba(255, 255, 255, 0.06));
+  border-radius: 4px;
+}
+
+.hint {
+  margin: 8px 0;
+  font-size: 11px;
+  color: var(--pond-muted);
+}
+
+.done {
+  margin-top: 24px;
+  text-align: right;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  white-space: nowrap;
+  border: 0;
+  clip: rect(0, 0, 0, 0);
+}

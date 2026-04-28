@@ -1,0 +1,245 @@
+/* ------------------------------------------------------------------ */
+/* SavePreview — shared content for the right-side preview pane and    */
+/* the dedicated /item/:id route page.                                 */
+/*                                                                    */
+/* Two layout variants share the same internals:                       */
+/*   - `.pane` — narrow, dense, fits inside <PreviewPane>              */
+/*   - `.page` — wider, generous spacing for the dedicated route       */
+/* ------------------------------------------------------------------ */
+
+.preview {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.pane {
+  width: 100%;
+}
+
+.page {
+  max-width: 720px;
+  padding-top: 16px;
+  margin: 0 auto;
+}
+
+.title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--pond-fg);
+  letter-spacing: -0.18px;
+  outline: none;
+}
+
+.title:focus-visible {
+  border-radius: var(--pond-radius-sm);
+  box-shadow:
+    0 0 0 2px var(--pond-bg),
+    0 0 0 4px light-dark(rgba(0, 0, 0, 0.3), rgba(255, 255, 255, 0.3));
+}
+
+.page .title {
+  font-size: 22px;
+}
+
+.meta {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--pond-muted);
+}
+
+.meta a {
+  color: var(--pond-fg-soft);
+  word-break: break-all;
+  text-decoration: none;
+}
+
+.meta a:hover {
+  color: var(--pond-fg);
+  text-decoration: underline;
+}
+
+.description {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--pond-fg-soft);
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag {
+  padding: 2px 8px;
+  font-size: 11px;
+  background: light-dark(rgba(0, 0, 0, 0.05), rgba(255, 255, 255, 0.06));
+  border-radius: 999px;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 12px;
+  margin-top: 4px;
+  border-top: 1px solid var(--pond-border);
+}
+
+.actionsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hint {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--pond-muted);
+}
+
+/* ---- Inline auth CTA -------------------------------------------- */
+/*                                                                    */
+/* Surfaces the per-save sign-in state for auth-walled sources         */
+/* (X / Instagram / Cosmos / TikTok). Lives directly inside the        */
+/* refresh actions block so the user can connect without bouncing      */
+/* out to settings — the toast that previously navigated for them is   */
+/* now informational only.                                             */
+.authRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 10px;
+  background: light-dark(rgba(0, 0, 0, 0.025), rgba(255, 255, 255, 0.03));
+  border-radius: var(--pond-radius-md);
+}
+
+.authStatus {
+  display: inline-flex;
+  flex: 1;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--pond-fg-soft);
+}
+
+.authDot {
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  background: currentColor;
+  border-radius: 50%;
+}
+
+.authStatus[data-state="connected"] {
+  color: light-dark(#1a7f37, #4ac26b);
+}
+
+.authStatus[data-state="disconnected"] {
+  color: light-dark(#9a6700, #d4a72c);
+}
+
+/* ---- Carousel --------------------------------------------------- */
+
+.carousel {
+  position: relative;
+  margin-bottom: 4px;
+}
+
+/* `.mediaShell` is the wrapper element we hand to `useSmoothCorners`
+ * via its `wrapperRef` option. Lisse positions its SVG overlay
+ * absolutely inside this element, so it MUST be `position: relative`
+ * (or anything other than `static`) — without that the drop-shadow /
+ * inner-border SVG escapes and paints over unrelated chrome. */
+.mediaShell {
+  position: relative;
+  display: block;
+  width: 100%;
+  background: light-dark(rgba(0, 0, 0, 0.04), rgba(255, 255, 255, 0.03));
+}
+
+.media {
+  display: block;
+  width: 100%;
+  max-height: 60vh;
+  object-fit: contain;
+}
+
+.page .media {
+  max-height: 70vh;
+}
+
+.nav {
+  position: absolute;
+  top: 50%;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  font-size: 18px;
+  line-height: 1;
+  color: #fff;
+  cursor: pointer;
+  background: rgba(0, 0, 0, 0.55);
+  border: 0;
+  border-radius: 50%;
+  transform: translateY(-50%);
+  transition: background 120ms ease;
+}
+
+.nav:hover {
+  background: rgba(0, 0, 0, 0.75);
+}
+
+.navPrev {
+  left: 8px;
+}
+
+.navNext {
+  right: 8px;
+}
+
+.dots {
+  position: absolute;
+  right: 0;
+  bottom: 10px;
+  left: 0;
+  display: flex;
+  gap: 5px;
+  justify-content: center;
+}
+
+.dot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.45);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
+  transition: background 120ms ease;
+}
+
+.dotActive {
+  background: #fff;
+}
+
+.counter {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: 0.02em;
+  background: rgba(0, 0, 0, 0.55);
+  border-radius: 11px;
+}

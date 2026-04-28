@@ -1,0 +1,54 @@
+.library {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding-top: 16px;
+}
+
+/* ---- Toolbar ----------------------------------------------------- */
+/*
+ * The toolbar groups a page-level title with a single, unobtrusive
+ * search input. The Figma frame doesn't show a header here at all,
+ * but a compact title row anchors the route so users always know
+ * where they are when bouncing between sources.
+ */
+
+.toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.titleRow {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--pond-fg);
+  letter-spacing: -0.3px;
+}
+
+.count {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--pond-muted);
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Active-tag pill — sits next to the search input as a removable chip.
+ * The double-class selector bumps specificity above the wrapped
+ * `<Button>`'s default border-radius. */
+.tagPill.tagPill {
+  border-radius: 999px;
+}

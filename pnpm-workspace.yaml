@@ -1,3 +1,11 @@
 packages:
   - "apps/*"
   - "packages/*"
+  - "icons"
+
+onlyBuiltDependencies:
+  - better-sqlite3
+  - electron
+  - esbuild
+  - ffmpeg-static
+  - keytar

@@ -3,11 +3,27 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "description": "Drizzle + Zod types shared between the Pond desktop app and the browser extension.",
+  "license": "MIT",
+  "author": {
+    "name": "Raphael Salaja",
+    "url": "https://github.com/raphaelsalaja"
+  },
+  "homepage": "https://github.com/raphaelsalaja/pond#readme",
+  "bugs": {
+    "url": "https://github.com/raphaelsalaja/pond/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/raphaelsalaja/pond.git",
+    "directory": "packages/schema"
+  },
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
     "./db": "./src/db.ts",
+    "./tx": "./src/tx.ts",
     "./ingest": "./src/ingest.ts"
   },
   "scripts": {

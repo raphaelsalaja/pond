@@ -13,6 +13,6 @@
     "verbatimModuleSyntax": false,
     "forceConsistentCasingInFileNames": true,
     "allowSyntheticDefaultImports": true,
-    "jsx": "preserve"
+    "jsx": "react-jsx"
   }
 }

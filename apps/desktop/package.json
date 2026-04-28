@@ -1,0 +1,75 @@
+{
+  "name": "@pond/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Pond desktop app: local-first archive with a menu-bar tray, local SQLite index and filesystem library.",
+  "license": "MIT",
+  "author": {
+    "name": "Raphael Salaja",
+    "url": "https://github.com/raphaelsalaja"
+  },
+  "homepage": "https://github.com/raphaelsalaja/pond#readme",
+  "bugs": {
+    "url": "https://github.com/raphaelsalaja/pond/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/raphaelsalaja/pond.git",
+    "directory": "apps/desktop"
+  },
+  "main": "./out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "start": "electron-vite preview",
+    "postinstall": "node ./scripts/rebuild-native.mjs || true && node ./scripts/download-yt-dlp.mjs || true",
+    "rebuild": "node ./scripts/rebuild-native.mjs",
+    "rebuild:sqlite": "electron-rebuild -f -w better-sqlite3",
+    "rebuild:keytar": "electron-rebuild -f -w keytar",
+    "dist": "electron-vite build && electron-builder",
+    "dist:mac": "electron-vite build && electron-builder --mac --arm64 --x64",
+    "dist:mac:arm64": "electron-vite build && electron-builder --mac --arm64",
+    "dist:win": "electron-vite build && electron-builder --win",
+    "dist:linux": "electron-vite build && electron-builder --linux",
+    "db:generate": "ELECTRON_RUN_AS_NODE=1 pnpm exec electron ./node_modules/drizzle-kit/bin.cjs generate",
+    "db:push": "ELECTRON_RUN_AS_NODE=1 pnpm exec electron ./node_modules/drizzle-kit/bin.cjs push",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json"
+  },
+  "dependencies": {
+    "@base-ui-components/react": "1.0.0-rc.0",
+    "@lisse/react": "^0.3.1",
+    "@pond/icons": "workspace:*",
+    "@pond/schema": "workspace:*",
+    "better-sqlite3": "^11.5.0",
+    "drizzle-orm": "0.36.4",
+    "electron-log": "^5.2.0",
+    "electron-updater": "^6.3.9",
+    "ffmpeg-static": "^5.2.0",
+    "hono": "^4.6.14",
+    "keytar": "^7.9.0",
+    "sqlite-vec": "^0.1.7-alpha.2",
+    "ulid": "^2.3.0"
+  },
+  "devDependencies": {
+    "@electron-toolkit/preload": "^3.0.1",
+    "@electron-toolkit/utils": "^3.0.0",
+    "@electron/rebuild": "^3.7.1",
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.0.1",
+    "@types/react-dom": "^19.0.2",
+    "@vitejs/plugin-react": "^4.3.4",
+    "drizzle-kit": "^0.30.0",
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8",
+    "electron-vite": "^2.3.0",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "react-router-dom": "^7.0.2",
+    "typescript": "^5.7.2",
+    "vite": "^5.4.11",
+    "zod": "^3.24.1"
+  }
+}

@@ -1,0 +1,139 @@
+/* ------------------------------------------------------------------ */
+/* MediaLightbox — fullscreen Quick Look-style preview.                */
+/*                                                                    */
+/* The Dialog popup paints the outer frame; this module styles the    */
+/* internal stage (toolbar + media canvas + carousel nav).             */
+/* ------------------------------------------------------------------ */
+
+.stage {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+}
+
+.toolbar {
+  display: flex;
+  flex-shrink: 0;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--pond-border);
+  -webkit-app-region: drag;
+}
+
+.toolbar > * {
+  -webkit-app-region: no-drag;
+}
+
+.titleStrip {
+  display: flex;
+  flex: 1;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--pond-fg);
+  white-space: nowrap;
+}
+
+.counter {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--pond-muted);
+}
+
+/* ---- Media canvas ------------------------------------------------ */
+
+.canvas {
+  position: relative;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  padding: 24px;
+  background: light-dark(rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.45));
+}
+
+/* `.mediaShell` is the wrapper element we hand to `useSmoothCorners`
+ * via its `wrapperRef` option. Lisse may absolutely-position SVG
+ * effects inside this container (when effects are enabled), so it
+ * stays `position: relative`. Inline-flex makes it shrink to the
+ * natural size of the inner `<img>` / `<video>` so the squircle clip
+ * matches what the eye sees in the dim canvas. */
+.mediaShell {
+  position: relative;
+  display: inline-flex;
+  max-width: 100%;
+  max-height: 100%;
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.media {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+/* ---- Carousel arrows -------------------------------------------- */
+
+.nav {
+  position: absolute;
+  top: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  font-size: 22px;
+  line-height: 1;
+  color: #fff;
+  cursor: pointer;
+  background: rgba(0, 0, 0, 0.55);
+  border: 0;
+  border-radius: 50%;
+  transform: translateY(-50%);
+  transition: background 120ms ease;
+}
+
+.nav:hover {
+  background: rgba(0, 0, 0, 0.75);
+}
+
+.navPrev {
+  left: 16px;
+}
+
+.navNext {
+  right: 16px;
+}
+
+/* ---- Empty state ------------------------------------------------- */
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 24px;
+  font-size: 13px;
+  color: var(--pond-muted);
+  text-align: center;
+}
+
+.emptyHint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--pond-muted-2);
+}

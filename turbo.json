@@ -1,26 +1,57 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "ui": "tui",
+  "globalDependencies": ["tsconfig.base.json", "pnpm-workspace.yaml", ".env"],
   "tasks": {
+    "//#check": {},
+    "//#check:fix": {
+      "cache": false
+    },
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+      "inputs": [
+        "src/**",
+        "public/**",
+        "package.json",
+        "tsconfig.json",
+        "next.config.ts",
+        "next.config.js",
+        "tailwind.config.*",
+        "postcss.config.*",
+        "electron.vite.config.ts",
+        "electron-builder.yml"
+      ],
+      "outputs": [".next/**", "!.next/cache/**", "dist/**", "out/**"]
     },
     "dev": {
       "cache": false,
       "persistent": true
     },
     "lint": {
-      "dependsOn": ["^build"]
+      "dependsOn": ["^build"],
+      "inputs": ["src/**", "../../biome.json"],
+      "outputs": []
     },
     "typecheck": {
-      "dependsOn": ["^build"]
+      "dependsOn": ["^build"],
+      "inputs": ["src/**", "tsconfig.json"],
+      "outputs": []
     },
     "db:generate": {
       "cache": false
     },
     "db:migrate": {
       "cache": false
+    },
+    "dist": {
+      "dependsOn": ["build"],
+      "inputs": [
+        "out/**",
+        "electron-builder.yml",
+        "resources/**",
+        "package.json"
+      ],
+      "outputs": ["dist/**"]
     }
   }
 }

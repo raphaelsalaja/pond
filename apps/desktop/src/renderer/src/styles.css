@@ -1,0 +1,320 @@
+/* ------------------------------------------------------------------ */
+/* Design tokens.                                                     */
+/*                                                                    */
+/* Values mirror the Figma library at                                 */
+/* https://www.figma.com/design/NLxAw3YtDXoprS7o5rAMGg/Pond?node-id=1-2 */
+/* with `light-dark()` swatches so the same tokens cover both themes. */
+/* ------------------------------------------------------------------ */
+
+:root {
+  --pond-bg: light-dark(#ffffff, #0e0e0f);
+  --pond-bg-subtle: light-dark(#fafafa, #131316);
+  --pond-fg: light-dark(#141414, #f5f5f5);
+  --pond-fg-soft: light-dark(#787575, #c7c7cc);
+  --pond-muted: light-dark(#949494, #7d7d83);
+  --pond-muted-2: light-dark(#b3b3b3, #6a6a70);
+  --pond-meta: light-dark(#c2c2c2, #5a5a60);
+  --pond-border: light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.08));
+  --pond-border-strong: light-dark(
+    rgba(0, 0, 0, 0.12),
+    rgba(255, 255, 255, 0.14)
+  );
+  --pond-card: light-dark(#ffffff, #17171a);
+  --pond-hover: light-dark(rgba(0, 0, 0, 0.04), rgba(255, 255, 255, 0.05));
+  --pond-active: light-dark(rgba(0, 0, 0, 0.05), rgba(255, 255, 255, 0.08));
+  --pond-radius-sm: 4px;
+  --pond-radius-md: 6px;
+  --pond-radius-lg: 8px;
+  --pond-radius-xl: 12px;
+
+  /* Brand palette mirrors `Brand/*` in the Figma library. */
+  --pond-brand-twitter: #000000;
+  --pond-brand-cosmos: #fcfbfa;
+  --pond-brand-reddit: #ff4500;
+  --pond-brand-arena: #ffffff;
+  --pond-brand-facebook: #0165e0;
+  --pond-brand-pinterest: #e60024;
+  --pond-brand-dribbble: #ea4c89;
+
+  /* Card chrome — outline + soft drop, matches the Figma `media` token. */
+  --pond-card-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.08), 0 2px 2px -1px rgba(0, 0, 0, 0.06);
+  --pond-search-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.05), 0 1px 1px -0.5px rgba(0, 0, 0, 0.05),
+    0 3px 3px -1.5px rgba(0, 0, 0, 0.05);
+  --pond-badge-shadow:
+    inset 0 0 0 0.5px rgba(0, 0, 0, 0.1), inset 0 -1px 1px 0 rgba(0, 0, 0, 0.25);
+
+  font-family:
+    "Inter", ui-sans-serif, system-ui, -apple-system, "SF Pro Text", "Segoe UI",
+    sans-serif;
+  font-feature-settings:
+    "cv11" 1,
+    "ss01" 1;
+  color-scheme: light dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: var(--pond-fg);
+  background: var(--pond-bg);
+}
+
+/* Hide scrollbars across the renderer. Content stays scrollable
+ * (wheel, trackpad, keyboard) — only the visual track + thumb are
+ * suppressed so the chrome stays clean like Eagle / Finder column
+ * view. Apply broadly via `*` so per-component scroll containers
+ * (sidebar, main, preview pane, lightbox canvas) all inherit. */
+*::-webkit-scrollbar {
+  display: none;
+}
+
+* {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ------------------------------------------------------------------ */
+/* Shell chrome — header, sidebar, main content.                       */
+/*                                                                    */
+/* The header is a thin 42px draggable strip; the macOS traffic       */
+/* lights float over it. Body is a 3-column grid so a future preview  */
+/* rail (Figma right-hand pane) can drop in without reflowing.        */
+/* ------------------------------------------------------------------ */
+
+.pond-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--pond-bg);
+}
+
+.pond-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  height: 42px;
+  padding: 0 12px;
+  -webkit-app-region: drag;
+}
+
+.pond-shell--mac .pond-header {
+  /* Reserve space under the floating traffic-light cluster (~16px x,
+   * 12px tall, ~52px wide). 84px keeps interactive controls clear. */
+  padding-left: 84px;
+}
+
+.pond-header__actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  -webkit-app-region: no-drag;
+}
+
+.pond-header__link {
+  padding: 4px 8px;
+  font-size: 12px;
+  color: var(--pond-muted);
+  text-decoration: none;
+  border-radius: var(--pond-radius-md);
+}
+
+.pond-header__link:hover {
+  color: var(--pond-fg);
+  background: var(--pond-hover);
+}
+
+.pond-header__link.active {
+  color: var(--pond-fg);
+  background: var(--pond-active);
+}
+
+/* Body is sidebar + main content + (optional) preview pane on the right.
+ * The pane mounts itself when `?id=` is present in the URL; until then
+ * `<main>` consumes the full remaining width. */
+.pond-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.pond-main {
+  flex: 1;
+  min-width: 0;
+  padding: 0 24px 24px;
+  overflow: auto;
+}
+
+.pond-empty {
+  max-width: 420px;
+  margin: 60px auto;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--pond-muted);
+  text-align: center;
+}
+
+/* ------------------------------------------------------------------ */
+/* Library grid — small Eagle-style tiles with an image, title, and   */
+/* relative timestamp underneath. Each tile renders into a fixed-     */
+/* height media box so cards keep a stable rhythm even with portrait, */
+/* landscape, and square imagery interleaved.                          */
+/* ------------------------------------------------------------------ */
+
+.pond-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 24px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.pond-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+
+/* Cards select via the pane (not navigate). The full tile is a single
+ * <button> so keyboard users can Tab through and press Enter / Space to
+ * preview. Visual chrome strips out the button defaults.
+ *
+ * `user-select: none` keeps double-click clean — without it, the second
+ * click selects the title text instead of firing `onDoubleClick`.       */
+.pond-card__select {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: var(--pond-radius-md);
+  outline: none;
+  user-select: none;
+  text-align: inherit;
+  -webkit-app-region: no-drag;
+}
+
+.pond-card__select:focus-visible {
+  box-shadow:
+    0 0 0 2px var(--pond-bg),
+    0 0 0 4px light-dark(rgba(0, 0, 0, 0.4), rgba(255, 255, 255, 0.45));
+}
+
+.pond-card__media {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 138px;
+}
+
+.pond-card__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+  width: 100%;
+  padding: 0 4px;
+  text-align: center;
+}
+
+.pond-card__title {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--pond-fg-soft);
+  letter-spacing: -0.04px;
+  white-space: nowrap;
+}
+
+.pond-card__time {
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--pond-meta);
+  letter-spacing: -0.04px;
+  white-space: nowrap;
+}
+
+.pond-card__count {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.55);
+  border-radius: 9px;
+  backdrop-filter: blur(6px);
+}
+
+/* Hover-only delete affordance — same chrome as before, restyled to
+ * sit cleanly on the new card layout. */
+.pond-card__delete {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  padding: 3px 7px;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--pond-fg);
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  background: light-dark(rgba(255, 255, 255, 0.85), rgba(0, 0, 0, 0.55));
+  border: 0;
+  border-radius: var(--pond-radius-md);
+  box-shadow: var(--pond-search-shadow);
+  opacity: 0;
+  backdrop-filter: blur(8px);
+  transition: opacity 120ms ease;
+}
+
+.pond-card:hover .pond-card__delete {
+  opacity: 1;
+}
+
+/* Selected state — applied by the parent `<li>`. The media slot picks
+ * up a coloured ring so the chosen tile reads at a glance even when
+ * the preview pane is partially scrolled out of view. */
+.pond-card--selected .pond-card__media::after {
+  position: absolute;
+  inset: -3px;
+  pointer-events: none;
+  content: "";
+  border: 2px solid light-dark(#141414, #f5f5f5);
+  border-radius: calc(var(--pond-radius-sm) + 3px);
+}
+
+.pond-card--selected .pond-card__title {
+  color: var(--pond-fg);
+}
+
+.pond-card__delete:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}

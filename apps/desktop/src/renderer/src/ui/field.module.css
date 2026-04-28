@@ -1,0 +1,33 @@
+/* Field — vertical stack of label, control, and meta lines (description
+ * or validation error). Tight gaps so settings rows stay compact. */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--pond-fg);
+  letter-spacing: -0.04px;
+}
+
+.control {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.description {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--pond-muted);
+}
+
+.error {
+  font-size: 12px;
+  font-weight: 500;
+  color: light-dark(#b3261e, #f2b8b5);
+}
