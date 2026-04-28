@@ -21,7 +21,8 @@
   "scripts": {
     "build": "wxt build",
     "dev": "wxt",
-    "typecheck": "tsc --noEmit",
+    "postinstall": "wxt prepare",
+    "typecheck": "wxt prepare && tsc --noEmit",
     "zip": "wxt zip"
   },
   "dependencies": {
