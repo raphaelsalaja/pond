@@ -8,11 +8,26 @@ export default defineContentScript({
     (window as any).__pondYoutubeInjected = true;
 
     const POND_EVENT = "pond:capture";
-    const EDIT_PLAYLIST_RE =
-      /\/youtubei\/v1\/(browse\/edit_playlist|playlist\/(add|create)|browse\/edit_playlist_item)\b/i;
+    // Any /youtubei/v1/ POST gets sniffed — we used to match a hand-coded
+    // list of paths but YouTube ships at least a half-dozen variants of
+    // "save to playlist" (player Save, tile clock icon, share-panel
+    // checkbox, mobile bottom-sheet, etc.) and they rotate the URL set
+    // every few months. Routing every POST through a single classifier
+    // keeps us future-proof; the body shape is the real signal.
+    const YOUTUBEI_RE = /\/youtubei\/v1\//i;
+    // Sub-classifiers (URL hints — used to decide which handler to run).
+    // None of these are *required* — the body shape is authoritative —
+    // but matching the URL lets us pick the right log label and skip
+    // body parsing for endpoints we know we don't care about.
+    const PLAYLIST_EDIT_HINT_RE =
+      /(edit_playlist|add_to_watch_later|playlist\/(add|create|edit)|share\/get_share_panel)/i;
     const LIKE_RE = /\/youtubei\/v1\/like\/like\b/i;
-    const PLAYER_RE = /\/youtubei\/v1\/(player|next|browse)\b/i;
+    const PLAYER_RE = /\/youtubei\/v1\/(player|next|browse|guide)\b/i;
     const VIDEO_ID_RE = /^[\w-]{11}$/;
+    // YouTube's Watch Later playlist is hard-coded as "WL". Used by the
+    // body sniffer below to detect a save-to-WL even when the URL is
+    // some new variant we haven't seen before.
+    const WATCH_LATER_PLAYLIST_ID = "WL";
 
     const videoCache = new Map<string, any>();
 
@@ -193,22 +208,137 @@ export default defineContentScript({
       return id && VIDEO_ID_RE.test(String(id)) ? String(id) : null;
     }
 
-    /** Common handler for both fetch and XHR captures. */
-    async function handlePlaylistEdit(
+    /**
+     * Walk the parsed body recursively and find the playlist id under
+     * any nested `playlistId` key. Used by the body sniffer to spot
+     * "save to Watch Later" even when YouTube buries it 5 levels deep
+     * under e.g. `actions[0].addToPlaylistCommand.params.playlistId`.
+     */
+    function findPlaylistIds(node: unknown, out: Set<string>): void {
+      if (!node || typeof node !== "object") return;
+      if (Array.isArray(node)) {
+        for (const x of node) findPlaylistIds(x, out);
+        return;
+      }
+      const obj = node as Record<string, unknown>;
+      for (const k of Object.keys(obj)) {
+        const v = obj[k];
+        if (k === "playlistId" && typeof v === "string" && v.length > 0) {
+          out.add(v);
+        } else if (v && typeof v === "object") {
+          findPlaylistIds(v, out);
+        }
+      }
+    }
+
+    /**
+     * True if any string value in the parsed body matches `predicate`.
+     * Cheap recursive walk for spotting `"action": "ACTION_ADD_VIDEO"`
+     * regardless of where YouTube nests it (different surfaces use
+     * different action wrappers).
+     */
+    function anyStringMatches(
+      node: unknown,
+      predicate: (s: string) => boolean,
+    ): boolean {
+      if (typeof node === "string") return predicate(node);
+      if (!node || typeof node !== "object") return false;
+      if (Array.isArray(node)) {
+        for (const x of node) if (anyStringMatches(x, predicate)) return true;
+        return false;
+      }
+      for (const v of Object.values(node)) {
+        if (anyStringMatches(v, predicate)) return true;
+      }
+      return false;
+    }
+
+    /**
+     * Inspect a /youtubei/v1/ POST body and decide whether it represents
+     * a save-worthy action. URL is used only as a label/hint — body
+     * shape is authoritative so future YouTube reshuffles don't break
+     * us. Returns the saves to emit (id + reason) plus a one-line
+     * summary suitable for logging.
+     *
+     * Matches:
+     *   - Any body whose `playlistId` includes "WL" (Watch Later)
+     *   - Any body containing `ACTION_ADD_VIDEO` action with addedVideoId
+     *   - Any URL hint matching the playlist-edit family + at least one
+     *     addedVideoId/videoId in the body
+     */
+    function classifyYoutubeiPost(
+      url: string,
+      body: string | null,
+    ): {
+      saves: Array<{ videoId: string; kind: string }>;
+      summary: Record<string, unknown>;
+    } {
+      const json = readJson(body);
+      const ids = new Set<string>();
+      collectAddedVideoIds(json, ids);
+      const playlistIds = new Set<string>();
+      findPlaylistIds(json, playlistIds);
+
+      const isWatchLater = [...playlistIds].some(
+        (p) => p.toUpperCase() === WATCH_LATER_PLAYLIST_ID,
+      );
+      const hasAddVideoAction = anyStringMatches(
+        json,
+        (s) => s === "ACTION_ADD_VIDEO" || s === "addToPlaylistCommand",
+      );
+      const looksLikePlaylistEdit = PLAYLIST_EDIT_HINT_RE.test(url);
+
+      const summary: Record<string, unknown> = {
+        url,
+        playlistIds: [...playlistIds],
+        videoIds: [...ids],
+        isWatchLater,
+        hasAddVideoAction,
+        urlHint: looksLikePlaylistEdit,
+      };
+
+      if (ids.size === 0) return { saves: [], summary };
+
+      const saves: Array<{ videoId: string; kind: string }> = [];
+      if (isWatchLater) {
+        for (const id of ids) saves.push({ videoId: id, kind: "watch-later" });
+      } else if (hasAddVideoAction || looksLikePlaylistEdit) {
+        for (const id of ids) saves.push({ videoId: id, kind: "playlist" });
+      }
+      return { saves, summary };
+    }
+
+    /**
+     * Common handler for both fetch and XHR. Routes every /youtubei/v1/
+     * POST through `classifyYoutubeiPost` and emits one save per video
+     * id found. Logs every POST (matched or not) so the page console
+     * shows exactly which YouTube endpoints fired when the user clicked
+     * — invaluable for diagnosing future YouTube refactors.
+     */
+    async function handleYoutubeiPost(
       url: string,
       body: string | null,
       via: "fetch" | "xhr",
     ) {
-      const ids = new Set<string>();
-      collectAddedVideoIds(readJson(body), ids);
-      log("info", "youtube playlist edit", {
-        via,
-        url,
-        count: ids.size,
-        ids: [...ids],
-        bodyPreview: body ? body.slice(0, 200) : null,
-      });
-      for (const id of ids) void emitSave(id, "playlist");
+      const { saves, summary } = classifyYoutubeiPost(url, body);
+      if (saves.length > 0) {
+        log("info", "youtube save matched", {
+          via,
+          count: saves.length,
+          ...summary,
+        });
+        for (const s of saves) void emitSave(s.videoId, s.kind);
+      } else {
+        // Quiet by default: only log unmatched POSTs that *look* like
+        // they should have matched. Endpoints like /log_event fire
+        // every few seconds and would drown the console otherwise.
+        if (
+          PLAYLIST_EDIT_HINT_RE.test(url) ||
+          (summary.videoIds as string[]).length > 0
+        ) {
+          log("info", "youtube post unmatched", { via, ...summary });
+        }
+      }
     }
 
     async function handleLike(url: string, body: string | null) {
@@ -234,12 +364,15 @@ export default defineContentScript({
       const res = await origFetch.call(this, input, init);
 
       try {
-        if (typeof url === "string") {
-          if (method === "POST" && EDIT_PLAYLIST_RE.test(url) && res.ok) {
-            await handlePlaylistEdit(url, await bodyPromise, "fetch");
-          } else if (method === "POST" && LIKE_RE.test(url) && res.ok) {
+        if (typeof url === "string" && res.ok) {
+          if (method === "POST" && LIKE_RE.test(url)) {
             await handleLike(url, await bodyPromise);
-          } else if (PLAYER_RE.test(url) && res.ok) {
+          } else if (method === "POST" && YOUTUBEI_RE.test(url)) {
+            // Route every InnerTube POST through the body-shape sniffer.
+            // Save endpoints are picked out there; non-saves are dropped.
+            await handleYoutubeiPost(url, await bodyPromise, "fetch");
+          }
+          if (PLAYER_RE.test(url)) {
             // Snapshot player/browse responses so we have title/thumb cached
             // by the time the user adds to a playlist.
             const clone = res.clone();
@@ -276,11 +409,12 @@ export default defineContentScript({
           try {
             if (_method !== "POST") return;
             if (xhr.status < 200 || xhr.status >= 300) return;
-            if (EDIT_PLAYLIST_RE.test(_url)) {
-              void handlePlaylistEdit(_url, _body, "xhr");
-            } else if (LIKE_RE.test(_url)) {
+            if (LIKE_RE.test(_url)) {
               void handleLike(_url, _body);
-            } else if (PLAYER_RE.test(_url)) {
+            } else if (YOUTUBEI_RE.test(_url)) {
+              void handleYoutubeiPost(_url, _body, "xhr");
+            }
+            if (PLAYER_RE.test(_url)) {
               harvestVideoDetails(readJson(xhr.responseText));
             }
           } catch (err) {

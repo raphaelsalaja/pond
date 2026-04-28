@@ -76,7 +76,18 @@ async function createWindow(): Promise<BrowserWindow> {
   const devUrl = process.env.ELECTRON_RENDERER_URL;
   if (devUrl) {
     await win.loadURL(devUrl);
-    win.webContents.openDevTools({ mode: "detach" });
+    // DevTools is opt-in even in dev — historically we auto-popped it
+    // every launch, but the detached window steals focus from the editor
+    // every restart and most iterations don't need it. Set
+    // POND_OPEN_DEVTOOLS=1 (or POND_DEVTOOLS=1) in your shell to bring it
+    // back automatically; otherwise Cmd+Opt+I from the focused renderer
+    // toggles it on demand.
+    if (
+      process.env.POND_OPEN_DEVTOOLS === "1" ||
+      process.env.POND_DEVTOOLS === "1"
+    ) {
+      win.webContents.openDevTools({ mode: "detach" });
+    }
   } else {
     await win.loadFile(join(__dirname, "../renderer/index.html"));
   }
