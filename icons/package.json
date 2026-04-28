@@ -31,6 +31,6 @@
   },
   "devDependencies": {
     "@types/react": "^19.2.14",
-    "svgo": "^3.3.3"
+    "svgo": "^4.0.1"
   }
 }
