@@ -46,6 +46,18 @@ interface AutoVideoJob {
   source: Source;
   sourceId: string;
   url: string;
+  /**
+   * When true, skip the "save already has a video file" guard and pass
+   * `force: true` to `ingestFromHttp` so the new bytes overwrite the
+   * existing on-disk video. Used by the auto-heal path triggered from
+   * the renderer when a `<video>` element errors (e.g. an AV1/HEVC
+   * file Electron can't decode).
+   *
+   * If a force job is enqueued while a non-force job for the same id
+   * is pending, the force flag is preserved (we OR them together) so
+   * the eventual run does the heavy heal.
+   */
+  force?: boolean;
 }
 
 /** Pending jobs, keyed by saveId so re-enqueues collapse. */
@@ -61,12 +73,28 @@ let draining = false;
  * Enqueue a save for background video download. Idempotent — calling
  * twice for the same saveId before the first job runs collapses to one.
  *
+ * `force: true` jobs override an existing pending non-force job for
+ * the same id. If a force job arrives while one is already in flight,
+ * we re-enqueue so the second download lands after the first finishes
+ * (we can't cancel an in-flight yt-dlp child cleanly).
+ *
  * Returns immediately. The caller does NOT await the download; the
  * point is that the HTTP request thread stays free.
  */
 export function enqueueAutoVideoDownload(job: AutoVideoJob): void {
   if (!supportsYtDlp(job.source)) return;
-  if (inFlight.has(job.saveId) || pending.has(job.saveId)) return;
+  const existing = pending.get(job.saveId);
+  if (existing) {
+    pending.set(job.saveId, {
+      ...existing,
+      force: existing.force === true || job.force === true,
+    });
+    return;
+  }
+  // For force jobs we always enqueue, even if an in-flight job exists,
+  // so the heal definitely runs once with the new selector. For
+  // non-force jobs we early-return as before to keep the queue tight.
+  if (inFlight.has(job.saveId) && job.force !== true) return;
   pending.set(job.saveId, job);
   // Kick the worker off the microtask queue so the caller's HTTP handler
   // can flush its response before we start spawning subprocesses.
@@ -115,7 +143,7 @@ async function processJob(job: AutoVideoJob): Promise<void> {
     return;
   }
   const hasVideo = (current.files ?? []).some((f) => f.kind === "video");
-  if (hasVideo) {
+  if (hasVideo && job.force !== true) {
     log.info(
       "[pond auto-video] save already has a video file, skipping",
       job.saveId,
@@ -127,6 +155,7 @@ async function processJob(job: AutoVideoJob): Promise<void> {
     saveId: job.saveId,
     source: job.source,
     url: job.url,
+    force: job.force === true,
   });
 
   const dl = await downloadVideo({ url: job.url, source: job.source });
@@ -148,14 +177,57 @@ async function processJob(job: AutoVideoJob): Promise<void> {
     };
     await ingestFromHttp(payload, {
       mediaFiles: [{ path: dl.path, mimeType: dl.mimeType }],
+      force: job.force === true,
     });
     log.info("[pond auto-video] merged video into save", {
       saveId: job.saveId,
       bytes: dl.size,
+      force: job.force === true,
     });
   } finally {
     await dl.cleanup();
   }
+}
+
+/**
+ * Look up a save by id and enqueue it for redownload with `force: true`.
+ *
+ * The renderer's auto-heal path (`<video onError>`) calls into here via
+ * IPC. We keep the lookup on the main side so the renderer doesn't need
+ * to know the save's `source`/`sourceId`/`url` — it just hands us an id
+ * and trusts that we'll do the right thing.
+ *
+ * Outcomes:
+ *   - "queued"      — happy path, redownload is now in the queue
+ *   - "not_found"   — save id doesn't exist (race with delete)
+ *   - "no_url"      — save row has no source URL to feed yt-dlp
+ *   - "unsupported" — source isn't in the yt-dlp allowlist (image-only
+ *                     gallery, RSS-style bookmark, etc.) — caller should
+ *                     surface as "nothing we can do" without a retry
+ */
+export async function redownloadVideoForSave(saveId: string): Promise<
+  | { ok: true }
+  | {
+      ok: false;
+      reason: "not_found" | "no_url" | "unsupported";
+    }
+> {
+  const db = await getDb();
+  const rows = await db.select().from(saves).where(eq(saves.id, saveId));
+  const current = rows[0];
+  if (!current) return { ok: false, reason: "not_found" };
+  if (!current.url) return { ok: false, reason: "no_url" };
+  if (!supportsYtDlp(current.source)) {
+    return { ok: false, reason: "unsupported" };
+  }
+  enqueueAutoVideoDownload({
+    saveId: current.id,
+    source: current.source,
+    sourceId: current.sourceId,
+    url: current.url,
+    force: true,
+  });
+  return { ok: true };
 }
 
 /**

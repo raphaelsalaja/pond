@@ -11,6 +11,7 @@ import { desc, eq, isNotNull } from "drizzle-orm";
 import { app, BrowserWindow, clipboard, ipcMain, Menu, shell } from "electron";
 import log from "electron-log/main.js";
 import { IPC } from "../../shared/constants";
+import { redownloadVideoForSave } from "../core/auto-video";
 import { executeBatch, executeTransaction } from "../core/executor";
 import {
   disconnectSource,
@@ -159,6 +160,22 @@ export function registerIpc() {
     } catch (err) {
       log.warn("[pond ipc] sourceStatus failed", err);
       return { ok: false as const, connected: false };
+    }
+  });
+
+  // Renderer auto-heal: fired when a `<video>` errors. We hand the
+  // saveId to the auto-video queue with `force: true`; it re-resolves
+  // the source/url and re-runs yt-dlp with the corrected H.264-only
+  // selector, overwriting the unplayable bytes. The renderer doesn't
+  // need to wait — once the merge tx fires, the pool reconciler
+  // pushes the new sha-bumped URL and the card heals on the next
+  // commit (the broken state resets when `pickedSrc` changes).
+  ipcMain.handle(IPC.videoRedownload, async (_, id: string) => {
+    try {
+      return await redownloadVideoForSave(String(id));
+    } catch (err) {
+      log.warn("[pond ipc] videoRedownload failed", err);
+      return { ok: false as const, reason: "internal_error" as const };
     }
   });
 

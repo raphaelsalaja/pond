@@ -2,6 +2,7 @@ import { useSmoothCorners } from "@lisse/react";
 import XMark from "@pond/icons/outline/xmark";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { requestVideoHeal } from "../../pool/heal";
 import { useSave } from "../../pool/hooks";
 import { buildMediaUnits } from "../../pool/media";
 import type { Save } from "../../pool/types";
@@ -185,7 +186,10 @@ function LightboxBody({ save, onClose }: { save: Save; onClose: () => void }) {
               controls
               autoPlay
               className={styles.media}
-              onError={() => markBroken(slide.src)}
+              onError={() => {
+                markBroken(slide.src);
+                requestVideoHeal(save.id);
+              }}
             >
               <track kind="captions" />
             </video>

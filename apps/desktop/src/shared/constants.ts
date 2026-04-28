@@ -55,4 +55,9 @@ export const IPC = {
   // tell whether refreshing a video card will produce playable bytes.
   videoToolsStatus: "pond:video-tools-status",
   videoToolsReinstall: "pond:video-tools-reinstall",
+  // Renderer → main heal channel. Fired when a `<video>` element errors
+  // (typically because a previous yt-dlp run landed an AV1/HEVC stream
+  // Electron's bundled ffmpeg can't decode). Main re-runs yt-dlp with
+  // the corrected H.264-only selector and overwrites the bad bytes.
+  videoRedownload: "pond:video-redownload",
 } as const;

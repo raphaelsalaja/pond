@@ -1,6 +1,7 @@
 import { useSmoothCorners } from "@lisse/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { requestVideoHeal } from "../../pool/heal";
 import { buildMediaUnits } from "../../pool/media";
 import type { Save } from "../../pool/types";
 import { Button, Tooltip, useToast } from "../../ui";
@@ -604,7 +605,10 @@ function MediaViewer({ save }: { save: Save }) {
             poster={slide.posterUrl}
             controls
             className={styles.media}
-            onError={() => markBroken(slide.src)}
+            onError={() => {
+              markBroken(slide.src);
+              requestVideoHeal(save.id);
+            }}
           >
             <track kind="captions" />
           </video>

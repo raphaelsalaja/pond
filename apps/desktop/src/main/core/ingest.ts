@@ -51,6 +51,20 @@ export interface LocalIngestExtras {
     path: string;
     mimeType?: string;
   }>;
+  /**
+   * Override the merge heuristic in `refreshExisting` so the local
+   * `mediaFiles` always replace whatever's currently stored.
+   *
+   * Used by the auto-heal path: when a `<video>` errors at render time
+   * (e.g. an AV1 file we can't decode in Electron's bundled ffmpeg),
+   * the renderer asks main to redownload with the corrected H.264
+   * selector. The DB row already has a `kind=video` SaveFile pointing
+   * at a real-but-unplayable path on disk, so the usual "differs /
+   * hasMissingFiles / missingVideoButHaveOne" gates would short-circuit
+   * the merge and leave the bad bytes in place. `force: true` skips
+   * those gates and writes the fresh bytes unconditionally.
+   */
+  force?: boolean;
 }
 
 export async function ingestFromHttp(
@@ -234,11 +248,17 @@ async function refreshExisting(
     // video should always materialise it.
     const missingVideoButHaveOne =
       hasLocalFiles && !current.files?.some((f) => f.kind === "video");
+    // `force` is the auto-heal escape hatch — see LocalIngestExtras.
+    // We OR it in last so the heuristic still fires for the normal
+    // refresh paths and only the explicit redownload IPC bypasses
+    // the diff checks.
+    const forceLocal = hasLocalFiles && extras.force === true;
     if (
       differs ||
       hasNoStoredFiles ||
       hasMissingFiles ||
-      missingVideoButHaveOne
+      missingVideoButHaveOne ||
+      forceLocal
     ) {
       if (hasMissingFiles) {
         log.info(

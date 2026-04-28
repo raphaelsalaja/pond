@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { requestVideoHeal } from "../../pool/heal";
 import { type MediaUnit, pickPrimaryUnit } from "../../pool/media";
 import type { Save } from "../../pool/types";
 import styles from "./styles.module.css";
@@ -83,7 +84,16 @@ export function CardThumb({ save }: { save: Save }) {
           src={unit.url}
           posterUrl={unit.posterUrl}
           label={save.title ?? "video"}
-          onBroken={() => setBroken(true)}
+          onBroken={() => {
+            setBroken(true);
+            // Most likely cause of an `<video>` error here is an old
+            // AV1/HEVC download that Electron's bundled ffmpeg can't
+            // decode. Ask main to re-run yt-dlp with the new
+            // H.264-only selector; once the bytes land the pool
+            // reconciler will swap in a fresh sha-bumped URL and the
+            // card heals on the next commit.
+            requestVideoHeal(save.id);
+          }}
         />
       ) : (
         <img

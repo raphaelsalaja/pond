@@ -56,31 +56,52 @@ const MAX_FILESIZE = "200M";
 
 /**
  * Per-source format selector. yt-dlp's selector syntax is documented at
- * https://github.com/yt-dlp/yt-dlp#format-selection. The shape:
- *   bv*[ext=mp4]+ba[ext=m4a] / b[ext=mp4] / b
- * means "best mp4 video + best m4a audio (muxed by ffmpeg) OR best
- * progressive mp4 OR best whatever". The chained fallbacks let us
- * survive sites where the highest-bitrate stream has no plain-mp4
- * variant.
+ * https://github.com/yt-dlp/yt-dlp#format-selection.
  *
- * We default to the same shape for every supported source. Sites
- * known to have quirks (Twitter sometimes serves only HLS, TikTok
- * occasionally serves m3u8 + watermark) get a slight tweak below.
+ * Codec policy (the part that actually matters for playability):
+ *   We constrain to H.264 video (`vcodec^=avc1`) + AAC audio
+ *   (`acodec^=mp4a`) wherever possible. Electron's bundled Chromium
+ *   ffmpeg plays H.264/AAC reliably across all renderer process tabs,
+ *   but barfs with `ffmpeg_common.cc Unsupported pixel format: -1` on
+ *   AV1, HEVC/H.265, and 10-bit VP9. Without these constraints yt-dlp
+ *   happily picks AV1 / HEVC when YouTube and TikTok offer them, and
+ *   the saved card silently fails to render. The chained fallbacks
+ *   keep us alive when a site has no avc1 stream at all (rare on
+ *   modern YouTube; occasionally on niche sources).
+ *
+ * Resolution cap: 1080p everywhere. 4K streams pull multi-GB
+ * intermediates through ffmpeg's mux stage and routinely blow past
+ * `--max-filesize 200M` *after* we've already wasted time downloading.
  */
 function formatSelector(source: Source | null): string {
   switch (source) {
     case "tiktok":
-      // TikTok: prefer the "play_addr" (no-watermark, in-feed) over
-      // "download_addr" which has the burned-in TikTok logo. yt-dlp's
-      // tiktok extractor labels these `play` and `download`.
-      return "bv*[ext=mp4][format_note*=play]+ba/b[ext=mp4]/b";
+      // TikTok: prefer the no-watermark in-feed stream (`format_note`
+      // contains "play") over the watermarked download endpoint, then
+      // fall through to any avc1 stream, then anything that fits.
+      return [
+        "bv*[ext=mp4][vcodec^=avc1][format_note*=play]+ba[acodec^=mp4a]",
+        "bv*[ext=mp4][vcodec^=avc1]+ba[acodec^=mp4a]",
+        "b[ext=mp4][vcodec^=avc1]",
+        "b[ext=mp4]",
+        "b",
+      ].join("/");
     case "youtube":
-      // YouTube: cap at 1080p so we don't accidentally pull a 4K
-      // stream that needs ffmpeg to mux 8 GB of intermediate data
-      // before we hit our --max-filesize ceiling.
-      return "bv*[ext=mp4][height<=1080]+ba[ext=m4a]/b[ext=mp4][height<=1080]/b[height<=1080]";
+      return [
+        "bv*[ext=mp4][vcodec^=avc1][height<=1080]+ba[ext=m4a][acodec^=mp4a]",
+        "b[ext=mp4][vcodec^=avc1][height<=1080]",
+        "bv*[vcodec^=avc1][height<=1080]+ba[acodec^=mp4a]",
+        "b[ext=mp4][height<=1080]",
+        "b[height<=1080]",
+      ].join("/");
     default:
-      return "bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4]/b";
+      return [
+        "bv*[ext=mp4][vcodec^=avc1]+ba[ext=m4a][acodec^=mp4a]",
+        "b[ext=mp4][vcodec^=avc1]",
+        "bv*[vcodec^=avc1]+ba[acodec^=mp4a]",
+        "b[ext=mp4]",
+        "b",
+      ].join("/");
   }
 }
 

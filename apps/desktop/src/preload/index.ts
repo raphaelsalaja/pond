@@ -163,6 +163,31 @@ const api = {
   videoToolsReinstall(): Promise<{ ok: boolean; message: string }> {
     return ipcRenderer.invoke(IPC.videoToolsReinstall);
   },
+
+  /**
+   * Renderer-driven auto-heal for unplayable videos. Called from
+   * `<video onError>` handlers when Electron's bundled ffmpeg fails
+   * to decode a saved file (the canonical case is yt-dlp landing an
+   * AV1 / HEVC stream before our selector tightening). Main re-runs
+   * yt-dlp with the corrected H.264-only selector and overwrites the
+   * stale bytes; the pool sync action that follows triggers a card
+   * re-render with a fresh sha-bumped URL so the new bytes paint.
+   *
+   * Idempotent on the main side — calling twice for the same id while
+   * a download is queued or in flight collapses or sequences cleanly.
+   * The renderer should still dedupe per session to avoid spamming the
+   * IPC channel during the brief window where the broken `<video>` is
+   * still mounted.
+   */
+  redownloadVideo(id: string): Promise<
+    | { ok: true }
+    | {
+        ok: false;
+        reason: "not_found" | "no_url" | "unsupported" | "internal_error";
+      }
+  > {
+    return ipcRenderer.invoke(IPC.videoRedownload, id);
+  },
 };
 
 try {
