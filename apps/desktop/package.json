@@ -44,7 +44,7 @@
     "@tanstack/react-table": "^8.21.3",
     "archiver": "^7.0.1",
     "better-sqlite3": "^11.5.0",
-    "drizzle-orm": "0.36.4",
+    "drizzle-orm": "0.45.2",
     "electron-log": "^5.2.0",
     "electron-updater": "^6.3.9",
     "ffmpeg-static": "^5.2.0",
