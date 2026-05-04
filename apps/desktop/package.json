@@ -48,7 +48,7 @@
     "electron-log": "^5.2.0",
     "electron-updater": "^6.3.9",
     "ffmpeg-static": "^5.2.0",
-    "hono": "^4.6.14",
+    "hono": "^4.12.16",
     "keytar": "^7.9.0",
     "sqlite-vec": "^0.1.7-alpha.2",
     "ulid": "^2.3.0"
