@@ -72,6 +72,19 @@ export function buildExpression(shortcode: string): string {
     const time = article.querySelector<HTMLTimeElement>("time[datetime]");
     if (time?.dateTime) meta.publishedAt = time.dateTime;
 
+    // Page language: IG sets `<html lang>` early enough that we can
+    // pick it up reliably. Cheap to capture; useful as a translate
+    // hint downstream.
+    const htmlLang = document.documentElement.lang?.trim();
+    if (htmlLang) meta.lang = htmlLang;
+
+    // Author handle anchor doubles as the author URL — store both so
+    // the renderer can render a clickable handle without re-deriving.
+    if (typeof out.author === "string") {
+      const handle = (out.author as string).replace(/^@/, "");
+      if (handle) meta.authorUrl = `https://www.instagram.com/${handle}/`;
+    }
+
     const media: Array<Record<string, unknown>> = [];
     const seen = new Set<string>();
     const push = (entry: Record<string, unknown> | undefined) => {
@@ -133,10 +146,16 @@ export function buildExpression(shortcode: string): string {
 export function adapt(raw: unknown): ScrapedHarvest | null {
   if (!raw || typeof raw !== "object") return null;
   const o = raw as Record<string, unknown>;
+  const metaObj =
+    o.meta && typeof o.meta === "object"
+      ? (o.meta as Record<string, unknown>)
+      : undefined;
   return {
     title: typeof o.title === "string" ? o.title : undefined,
     description: typeof o.description === "string" ? o.description : undefined,
     author: typeof o.author === "string" ? o.author : undefined,
+    lang:
+      typeof metaObj?.lang === "string" ? (metaObj.lang as string) : undefined,
     mediaUrl: typeof o.mediaUrl === "string" ? o.mediaUrl : undefined,
     mediaUrls: Array.isArray(o.mediaUrls)
       ? (o.mediaUrls as ScrapedHarvest["mediaUrls"])
@@ -145,10 +164,7 @@ export function adapt(raw: unknown): ScrapedHarvest | null {
       typeof o.mediaType === "string"
         ? (o.mediaType as ScrapedHarvest["mediaType"])
         : undefined,
-    meta:
-      o.meta && typeof o.meta === "object"
-        ? (o.meta as Record<string, unknown>)
-        : undefined,
+    meta: metaObj,
   };
 }
 

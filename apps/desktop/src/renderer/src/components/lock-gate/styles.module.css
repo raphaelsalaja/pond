@@ -1,0 +1,45 @@
+/* App-lock gate. Sits as a full-screen overlay on top of the entire
+ * shell so any rendering happening underneath stays mounted (cheap
+ * unlock-and-resume, no remount of the whole tree). */
+
+.gate {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: light-dark(rgba(255, 255, 255, 0.92), rgba(0, 0, 0, 0.78));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  -webkit-app-region: drag;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  padding: 32px 40px;
+  background: var(--pond-card);
+  border: 1px solid var(--pond-border);
+  border-radius: var(--pond-radius-xl);
+  box-shadow: var(--pond-card-shadow);
+  -webkit-app-region: no-drag;
+}
+
+.title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--pond-fg);
+  letter-spacing: -0.2px;
+}
+
+.subtitle {
+  max-width: 280px;
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--pond-fg-soft);
+  text-align: center;
+}

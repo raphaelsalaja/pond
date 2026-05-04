@@ -1,9 +1,10 @@
 import { useCallback, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { CardThumb } from "../../components/card-thumb";
+import { Card } from "../../components/card-thumb";
 import { optimistic } from "../../pool/bootstrap";
 import { useSaves } from "../../pool/hooks";
 import { pool } from "../../pool/pool";
+import { usePrefs } from "../../pool/prefs";
 import type { Save } from "../../pool/types";
 import {
   AlertDialog,
@@ -35,6 +36,7 @@ import styles from "./styles.module.css";
 export function TrashView() {
   const saves = useSaves();
   const toast = useToast();
+  const [trashPrefs] = usePrefs("trash");
   const [searchParams, setSearchParams] = useSearchParams();
   const [busy, setBusy] = useState<string | null>(null);
   const [bulkBusy, setBulkBusy] = useState(false);
@@ -159,44 +161,54 @@ export function TrashView() {
             >
               Restore All
             </ToolbarButton>
-            <AlertDialog open={confirmEmpty} onOpenChange={setConfirmEmpty}>
-              <AlertDialogTrigger
-                render={
-                  <Button
-                    variant="danger"
-                    disabled={trashed.length === 0 || bulkBusy}
-                  >
-                    Empty Trash
-                  </Button>
-                }
-              />
-              <AlertDialogContent>
-                <AlertDialogTitle>Empty trash?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Permanently delete {trashed.length} item
-                  {trashed.length === 1 ? "" : "s"}. This cannot be undone.
-                </AlertDialogDescription>
-                <AlertDialogActions>
-                  <AlertDialogClose
-                    render={<Button variant="ghost">Cancel</Button>}
-                  />
-                  <AlertDialogClose
-                    render={
-                      <Button
-                        variant="danger"
-                        disabled={bulkBusy}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          void emptyTrash();
-                        }}
-                      >
-                        Delete forever
-                      </Button>
-                    }
-                  />
-                </AlertDialogActions>
-              </AlertDialogContent>
-            </AlertDialog>
+            {trashPrefs.confirmBeforeEmpty ? (
+              <AlertDialog open={confirmEmpty} onOpenChange={setConfirmEmpty}>
+                <AlertDialogTrigger
+                  render={
+                    <Button
+                      variant="danger"
+                      disabled={trashed.length === 0 || bulkBusy}
+                    >
+                      Empty Trash
+                    </Button>
+                  }
+                />
+                <AlertDialogContent>
+                  <AlertDialogTitle>Empty trash?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Permanently delete {trashed.length} item
+                    {trashed.length === 1 ? "" : "s"}. This cannot be undone.
+                  </AlertDialogDescription>
+                  <AlertDialogActions>
+                    <AlertDialogClose
+                      render={<Button variant="ghost">Cancel</Button>}
+                    />
+                    <AlertDialogClose
+                      render={
+                        <Button
+                          variant="danger"
+                          disabled={bulkBusy}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            void emptyTrash();
+                          }}
+                        >
+                          Delete forever
+                        </Button>
+                      }
+                    />
+                  </AlertDialogActions>
+                </AlertDialogContent>
+              </AlertDialog>
+            ) : (
+              <Button
+                variant="danger"
+                disabled={trashed.length === 0 || bulkBusy}
+                onClick={() => void emptyTrash()}
+              >
+                Empty Trash
+              </Button>
+            )}
           </ToolbarGroup>
         </Toolbar>
       </div>
@@ -225,7 +237,7 @@ export function TrashView() {
                 onClick={() => select(save.id)}
                 onDoubleClick={() => focus(save.id)}
               >
-                <CardBody save={save} />
+                <CardBody save={save} selected={selectedId === save.id} />
               </button>
               <div className={styles.cardActions}>
                 <Tooltip content="Restore">
@@ -299,11 +311,14 @@ export function TrashView() {
   );
 }
 
-function CardBody({ save }: { save: Save }) {
+function CardBody({ save, selected }: { save: Save; selected: boolean }) {
   return (
     <>
       <div className="pond-card__media">
-        <CardThumb save={save} />
+        <Card.Root save={save} selection={selected ? "primary" : undefined}>
+          <Card.Media />
+          <Card.DownloadingBadge />
+        </Card.Root>
         {save.files.length > 1 ? (
           <span
             className="pond-card__count"

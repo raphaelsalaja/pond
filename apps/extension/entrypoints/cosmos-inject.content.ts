@@ -12,6 +12,12 @@ export default defineContentScript({
     const SAVE_OP = "EditElementsConnectionsToClusters";
 
     const elementCache = new Map();
+    // Cluster id -> { id, title } cache. Cosmos GraphQL responses
+    // sprinkle cluster nodes (`__typename: "Cluster"` or similar)
+    // through unrelated queries; we cache them so a save mutation
+    // that only sees cluster ids in `clusterIdsToConnect` can still
+    // surface a human-readable title via `raw.cosmos.clusters`.
+    const clusterCache = new Map<string, { id: string; title?: string }>();
     let lastAuthHeader: string | null = null;
     const recent = new Map();
 
@@ -47,7 +53,7 @@ export default defineContentScript({
     /**
      * Walk a JSON tree and collect any node that looks like an Element. Cosmos
      * returns Apollo-style objects with `__typename` set, so we can match
-     * cheaply.
+     * cheaply. Also harvests clusters (boards) for `raw.cosmos.clusters`.
      */
     function harvestElements(node: any, out: Map<string, any>) {
       if (!node || typeof node !== "object") return;
@@ -63,6 +69,28 @@ export default defineContentScript({
         (typeof id === "string" || typeof id === "number")
       ) {
         out.set(String(id), node);
+      }
+      // Cluster nodes show up as `__typename: "Cluster"` (or similar).
+      // Cache id -> title so save mutations can join titles by id.
+      if (
+        typeof t === "string" &&
+        /cluster/i.test(t) &&
+        (typeof id === "string" || typeof id === "number")
+      ) {
+        const sid = String(id);
+        const title =
+          typeof node.title === "string"
+            ? node.title
+            : typeof node.name === "string"
+              ? node.name
+              : undefined;
+        const existing = clusterCache.get(sid);
+        clusterCache.set(sid, {
+          id: sid,
+          ...(title || existing?.title
+            ? { title: title ?? existing?.title }
+            : {}),
+        });
       }
       for (const key of Object.keys(node)) {
         const v = node[key];
@@ -212,7 +240,7 @@ export default defineContentScript({
       return el?.source?.url ?? el?.sourceUrl ?? el?.url ?? el?.link ?? null;
     }
 
-    function emitElement(elementId: string, raw: any) {
+    function emitElement(elementId: string, raw: any, clusterIds?: string[]) {
       const now = Date.now();
       const last = recent.get(elementId) ?? 0;
       if (now - last < 5_000) return;
@@ -255,21 +283,36 @@ export default defineContentScript({
         mediaUrls.push({ url: media.videoUrl, type: "video" });
       }
 
+      // Per-source typed bag — `RawCosmos`-shaped. Clusters land here
+      // so the renderer can render board chips without re-querying.
+      const cosmos: Record<string, unknown> = {};
+      const author = pickAuthor(el);
+      if (author) cosmos.authorName = author;
+      const upstream = pickUpstreamUrl(el);
+      if (upstream) cosmos.upstreamUrl = upstream;
+      if (clusterIds && clusterIds.length > 0) {
+        cosmos.clusters = clusterIds.map((id) => {
+          const cached = clusterCache.get(id);
+          return cached ? { ...cached } : { id };
+        });
+      }
+
       capture({
         source: "cosmos",
         sourceId: String(elementId),
         url: pickSourceUrl(el, elementId),
         title: el?.title ?? el?.name ?? null,
         description: el?.description ?? el?.caption ?? el?.note ?? null,
-        author: pickAuthor(el),
+        author,
         mediaUrl: coverUrl,
         mediaUrls: mediaUrls.length > 0 ? mediaUrls : undefined,
         mediaType: coverUrl ? (coverIsVideo ? "video" : "image") : "link",
         raw: {
           ...(media.videoUrl ? { videoUrl: media.videoUrl } : {}),
           ...(gallery ? { gallery } : {}),
-          ...(pickUpstreamUrl(el) ? { upstreamUrl: pickUpstreamUrl(el) } : {}),
+          ...(upstream ? { upstreamUrl: upstream } : {}),
           element: el,
+          ...(Object.keys(cosmos).length > 0 ? { cosmos } : {}),
         },
       });
     }
@@ -345,16 +388,17 @@ export default defineContentScript({
       if (ids.length === 0 || adding.length === 0) {
         return;
       }
+      const clusterIds = adding.map((c: unknown) => String(c));
       for (const id of ids) {
         const sid = String(id);
         let el = elementCache.get(sid);
         if (!el) el = await fetchElement(sid);
         if (!el) {
           log("warn", "cosmos save with no element data", { elementId: sid });
-          emitElement(sid, null);
+          emitElement(sid, null, clusterIds);
           continue;
         }
-        emitElement(sid, el);
+        emitElement(sid, el, clusterIds);
       }
     }
 

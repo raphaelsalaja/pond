@@ -1,6 +1,7 @@
 import { app, dialog } from "electron";
 import log from "electron-log/main.js";
 import electronUpdaterPkg from "electron-updater";
+import { getPrefs } from "./core/prefs";
 
 const { autoUpdater } = electronUpdaterPkg;
 
@@ -32,6 +33,11 @@ export function registerAutoUpdater() {
   autoUpdater.logger = log;
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
+  // Honour the persisted prefs at boot. Subsequent flips from the
+  // settings page route through `applyUpdaterPrefs` below.
+  void applyUpdaterPrefs().catch((err) =>
+    log.warn("[pond updater] prefs apply failed", err),
+  );
 
   autoUpdater.on("update-available", (info) => {
     log.info("[pond updater] update available", info.version);
@@ -72,4 +78,42 @@ export function registerAutoUpdater() {
       /* polled failures are non-fatal; logged by the handler above */
     });
   }, SIX_HOURS_MS);
+}
+
+/**
+ * Apply the persisted updater prefs to the live `autoUpdater`
+ * instance. Channel = "stable" | "beta" routes the user to the
+ * matching electron-updater channel; auto-install toggles
+ * `autoDownload`. Safe to call from non-packaged builds — early
+ * returns when the updater isn't wired.
+ */
+export async function applyUpdaterPrefs(): Promise<void> {
+  if (!app.isPackaged) return;
+  const prefs = await getPrefs();
+  autoUpdater.allowPrerelease = prefs.updates.channel === "beta";
+  autoUpdater.channel = prefs.updates.channel;
+  autoUpdater.autoDownload = prefs.updates.autoInstall;
+}
+
+/** Manual "Check for updates" button. */
+export async function checkForUpdatesNow(): Promise<{
+  ok: boolean;
+  version?: string;
+  reason?: string;
+}> {
+  if (!app.isPackaged) {
+    return { ok: false, reason: "dev_build" };
+  }
+  try {
+    const result = await autoUpdater.checkForUpdates();
+    return {
+      ok: true,
+      version: result?.updateInfo?.version,
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      reason: err instanceof Error ? err.message : "unknown",
+    };
+  }
 }

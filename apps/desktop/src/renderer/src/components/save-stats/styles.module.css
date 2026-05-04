@@ -1,0 +1,361 @@
+/* ------------------------------------------------------------------ */
+/* SaveStats — unified metadata panel for the preview pane.            */
+/*                                                                    */
+/* Surfaces yt-dlp + per-source `raw.<source>` metrics (views, likes, */
+/* comments, etc.) plus context like channel info, location tags,     */
+/* music attribution, and YouTube chapters. Hides itself when there's */
+/* nothing to display so the preview pane stays compact for items     */
+/* without metadata.                                                  */
+/* ------------------------------------------------------------------ */
+
+.stats {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 12px;
+  margin-top: 4px;
+  border-top: 1px solid var(--pond-border);
+}
+
+/* Inline meta — relative date · duration · dimensions · language */
+.metaRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  align-items: center;
+  font-size: 11px;
+  color: var(--pond-fg-soft);
+}
+
+.metaItem {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  font-variant-numeric: tabular-nums;
+  color: var(--pond-fg-soft);
+}
+
+.metaItem time,
+.metaItem {
+  cursor: default;
+}
+
+.metaBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 600;
+  color: light-dark(#9a6700, #d4a72c);
+  letter-spacing: 0.02em;
+  background: light-dark(rgba(212, 167, 44, 0.12), rgba(212, 167, 44, 0.18));
+  border-radius: 999px;
+}
+
+.liveBadge {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  padding: 1px 8px 1px 6px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-radius: 999px;
+}
+
+.liveBadge[data-state="live"] {
+  color: light-dark(#b3261e, #ff7b72);
+  background: light-dark(rgba(179, 38, 30, 0.12), rgba(255, 123, 114, 0.16));
+}
+
+.liveBadge[data-state="past"] {
+  color: var(--pond-fg-soft);
+  background: var(--pond-hover);
+}
+
+.liveDot {
+  width: 6px;
+  height: 6px;
+  background: currentColor;
+  border-radius: 50%;
+}
+
+.liveBadge[data-state="live"] .liveDot {
+  animation: pondstats-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes pondstats-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(0.85);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .liveBadge[data-state="live"] .liveDot {
+    opacity: 1;
+    animation: none;
+  }
+}
+
+/* Metric chips — icon + compact number + label */
+.metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.metricChip {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  padding: 3px 9px 3px 7px;
+  font-size: 11px;
+  color: var(--pond-fg-soft);
+  cursor: default;
+  background: light-dark(rgba(0, 0, 0, 0.04), rgba(255, 255, 255, 0.05));
+  border-radius: 999px;
+  transition:
+    background 120ms ease,
+    color 120ms ease;
+}
+
+.metricChip:hover {
+  color: var(--pond-fg);
+  background: light-dark(rgba(0, 0, 0, 0.07), rgba(255, 255, 255, 0.08));
+}
+
+.metricValue {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--pond-fg);
+}
+
+.metricLabel {
+  font-size: 10px;
+  color: var(--pond-muted);
+  letter-spacing: 0.02em;
+}
+
+/* Uploader / channel row */
+.uploaderRow {
+  display: flex;
+  align-items: center;
+}
+
+.uploaderLink {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+  padding: 4px 6px;
+  margin-left: -6px;
+  color: var(--pond-fg);
+  text-decoration: none;
+  border-radius: var(--pond-radius-sm);
+  transition: background 120ms ease;
+}
+
+a.uploaderLink:hover {
+  background: var(--pond-hover);
+}
+
+.uploaderAvatar,
+.uploaderAvatarFallback {
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.uploaderAvatarFallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--pond-fg-soft);
+  background: light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.08));
+}
+
+.uploaderText {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.uploaderKind {
+  font-size: 10px;
+  color: var(--pond-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.uploaderName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Extra rows — TikTok music, IG location, Pinterest board, … */
+.extraRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  color: var(--pond-fg-soft);
+}
+
+.extraIcon {
+  display: inline-flex;
+  flex: 0 0 14px;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  color: var(--pond-muted);
+}
+
+.extraText {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.extraMuted {
+  color: var(--pond-muted);
+}
+
+.extraLink {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--pond-fg-soft);
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.extraLink:hover {
+  color: var(--pond-fg);
+  text-decoration: underline;
+}
+
+.extraChips {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+}
+
+.extraChip {
+  display: inline-flex;
+  padding: 1px 8px;
+  font-size: 11px;
+  color: var(--pond-fg-soft);
+  text-decoration: none;
+  background: light-dark(rgba(0, 0, 0, 0.04), rgba(255, 255, 255, 0.05));
+  border-radius: 999px;
+}
+
+a.extraChip:hover {
+  color: var(--pond-fg);
+  background: light-dark(rgba(0, 0, 0, 0.07), rgba(255, 255, 255, 0.08));
+}
+
+/* Chapters — collapsible, click-to-seek */
+.chapters {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.chaptersToggle {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  align-self: flex-start;
+  padding: 0;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--pond-fg-soft);
+  cursor: pointer;
+  background: none;
+  border: 0;
+}
+
+.chaptersToggle:hover {
+  color: var(--pond-fg);
+}
+
+.chaptersList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 0 0;
+  margin: 0;
+  list-style: none;
+}
+
+.chaptersItem {
+  display: flex;
+}
+
+.chaptersBtn {
+  display: grid;
+  flex: 1;
+  grid-template-columns: 56px 1fr;
+  gap: 8px;
+  align-items: center;
+  padding: 4px 6px;
+  margin-left: -6px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--pond-fg-soft);
+  text-align: left;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: var(--pond-radius-sm);
+  transition:
+    background 120ms ease,
+    color 120ms ease;
+}
+
+.chaptersBtn:hover:not(:disabled) {
+  color: var(--pond-fg);
+  background: var(--pond-hover);
+}
+
+.chaptersBtn:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.chaptersTime {
+  font-weight: 550;
+  font-variant-numeric: tabular-nums;
+  color: var(--pond-fg);
+}
+
+.chaptersTitle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

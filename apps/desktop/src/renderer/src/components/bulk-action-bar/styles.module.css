@@ -1,0 +1,46 @@
+.bar {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  z-index: 1000;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 8px;
+  background: light-dark(rgba(255, 255, 255, 0.96), rgba(28, 28, 30, 0.96));
+  border: 1px solid var(--pond-border);
+  border-radius: 14px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 12px 32px rgba(0, 0, 0, 0.18),
+    0 4px 12px rgba(0, 0, 0, 0.12);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  transform: translateX(-50%);
+  animation: bar-rise 180ms ease-out;
+}
+
+.count {
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 550;
+  color: var(--pond-fg);
+  white-space: nowrap;
+}
+
+.divider {
+  width: 1px;
+  height: 18px;
+  background: var(--pond-border);
+}
+
+@keyframes bar-rise {
+  from {
+    transform: translate(-50%, 8px);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+}

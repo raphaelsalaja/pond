@@ -140,6 +140,28 @@ export async function refreshFromOgTags(args: {
     return { ok: false, payload: null, reason: "empty" };
   }
 
+  // Forward-compatible pass-through fields. None of these need a
+  // top-level column today, but they're trivially available in the
+  // already-parsed meta map and useful for the renderer / search
+  // index. Lands under `raw.og.<key>` so adding more is additive.
+  const lang =
+    pickStr([
+      meta["og:locale"],
+      meta["dc.language"],
+      extractTagAttr(head, "html", "lang"),
+    ]) ?? null;
+  const siteName = pickStr([meta["og:site_name"], meta["application-name"]]);
+  const publishedAt = pickStr([
+    meta["article:published_time"],
+    meta["og:article:published_time"],
+    meta.datepublished,
+  ]);
+  const canonicalUrl = pickStr([
+    extractLinkHref(head, "canonical"),
+    meta["og:url"],
+  ]);
+  const keywords = pickStr([meta.keywords, meta.news_keywords]);
+
   const payload: IngestPayload = {
     source: args.source,
     sourceId: args.sourceId,
@@ -156,11 +178,46 @@ export async function refreshFromOgTags(args: {
       kind: "og-refresh",
       capturedAt: new Date().toISOString(),
       og: meta,
+      ...(lang ? { lang } : {}),
+      ...(siteName ? { siteName } : {}),
+      ...(publishedAt ? { publishedAt } : {}),
+      ...(canonicalUrl ? { canonical: canonicalUrl } : {}),
+      ...(keywords ? { keywords } : {}),
       ...(Object.keys(jsonLd).length > 0 ? { jsonLd } : {}),
     },
   };
 
   return { ok: true, payload };
+}
+
+/** Lift a single attribute off a tag (e.g. `<html lang="...">`). */
+function extractTagAttr(
+  html: string,
+  tag: string,
+  attr: string,
+): string | undefined {
+  const re = new RegExp(
+    `<${tag}\\b[^>]*\\b${attr}\\s*=\\s*["']([^"']+)["']`,
+    "i",
+  );
+  const m = html.match(re);
+  if (!m?.[1]) return undefined;
+  return decodeEntities(m[1]).trim();
+}
+
+/** Find `<link rel="<rel>" href="...">` and return the href. */
+function extractLinkHref(html: string, rel: string): string | undefined {
+  const re = new RegExp(
+    `<link\\b[^>]*\\brel\\s*=\\s*["']${rel}["'][^>]*\\bhref\\s*=\\s*["']([^"']+)["']`,
+    "i",
+  );
+  const reverseRe = new RegExp(
+    `<link\\b[^>]*\\bhref\\s*=\\s*["']([^"']+)["'][^>]*\\brel\\s*=\\s*["']${rel}["']`,
+    "i",
+  );
+  const m = html.match(re) ?? html.match(reverseRe);
+  if (!m?.[1]) return undefined;
+  return decodeEntities(m[1]).trim();
 }
 
 async function readBoundedText(

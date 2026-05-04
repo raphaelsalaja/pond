@@ -139,12 +139,56 @@ export default defineContentScript({
       }
 
       const videoUrl = pickVideoUrl(aweme);
+
+      // Per-source typed bag, mirrors `RawTikTok` on the desktop side.
+      const tiktok: Record<string, unknown> = {};
+      if (displayAuthor) tiktok.authorName = displayAuthor;
+      if (typeof username === "string") tiktok.authorHandle = username;
+      const avatar =
+        author?.avatar_thumb?.url_list?.[0] ??
+        author?.avatar_medium?.url_list?.[0] ??
+        author?.avatar_larger?.url_list?.[0] ??
+        null;
+      if (typeof avatar === "string") tiktok.authorAvatar = avatar;
+      if (typeof aweme?.create_time === "number") {
+        // Aweme `create_time` is unix seconds.
+        tiktok.publishedAt = new Date(aweme.create_time * 1000).toISOString();
+      }
+      if (typeof aweme?.video?.duration === "number") {
+        // Duration on TikTok is reported in milliseconds.
+        tiktok.durationSec = Math.round(aweme.video.duration / 1000);
+      }
+      const stats = aweme?.statistics ?? {};
+      const metrics: Record<string, number> = {};
+      if (typeof stats.play_count === "number")
+        metrics.plays = stats.play_count;
+      if (typeof stats.digg_count === "number")
+        metrics.likes = stats.digg_count;
+      if (typeof stats.comment_count === "number") {
+        metrics.comments = stats.comment_count;
+      }
+      if (typeof stats.share_count === "number") {
+        metrics.shares = stats.share_count;
+      }
+      if (typeof stats.download_count === "number") {
+        metrics.downloads = stats.download_count;
+      }
+      if (Object.keys(metrics).length > 0) tiktok.metrics = metrics;
+      const music = aweme?.music ?? null;
+      if (music && typeof music === "object") {
+        const m: Record<string, unknown> = {};
+        if (typeof music.title === "string") m.title = music.title;
+        if (typeof music.author === "string") m.author = music.author;
+        if (music.id != null) m.id = String(music.id);
+        if (Object.keys(m).length > 0) tiktok.music = m;
+      }
+
       capture({
         source: "tiktok",
         sourceId: String(id),
         url,
         title,
-        description: null,
+        description: typeof aweme?.desc === "string" ? aweme.desc : null,
         author: displayAuthor,
         mediaUrl: thumb,
         mediaType: videoUrl ? "video" : thumb ? "image" : "link",
@@ -152,6 +196,7 @@ export default defineContentScript({
           capturedAt: new Date().toISOString(),
           ...(videoUrl ? { videoUrl } : {}),
           ...(aweme ? { aweme } : {}),
+          ...(Object.keys(tiktok).length > 0 ? { tiktok } : {}),
         },
       });
     }

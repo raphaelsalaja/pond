@@ -1,67 +1,79 @@
-/* ------------------------------------------------------------------ */
-/* CardThumb visuals.                                                 */
-/*                                                                    */
-/* The grid cell reserves a 138px tall media slot (`.pond-card__media`*/
-/* in styles.css) which centers its single child via flexbox. The     */
-/* child is *this* `.thumb` wrapper.                                  */
-/*                                                                    */
-/* `.thumb` is the Lisse wrapper element we own (passed as            */
-/* `wrapperRef` to `useSmoothCorners`). It must be:                   */
-/*   - `position: relative` — Lisse absolutely-positions its SVG      */
-/*     overlay (drop shadow + inner border) inside this container.    */
-/*   - `inline-flex` — so the wrapper shrinks to the inner media's    */
-/*     natural width. The SVG overlay sizes from the wrapper, so if   */
-/*     the wrapper were `width: 100%` we'd get a column-wide drop     */
-/*     shadow / border around a narrow portrait image.                */
-/*   - `max-width: 100%` — caps landscape covers at the column width  */
-/*     instead of overflowing the slot.                               */
-/* ------------------------------------------------------------------ */
-
 .thumb {
   position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  max-width: 100%;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+  width: 100%;
   height: 100%;
+  isolation: isolate;
 }
 
 .media {
   display: block;
   max-width: 100%;
-  height: 100%;
-  object-fit: cover;
-  background: light-dark(#f4f4f5, #1a1a1f);
+  max-height: 100%;
+  margin: auto;
+  object-fit: contain;
+  border-radius: var(--pond-radius-lg);
+  box-shadow: var(--pond-card-shadow);
 }
 
-/* The placeholder takes the slot's full width so the masonry layout
- * stays predictable when a save has no cover (or its cover 404s).
- * Without a fixed dimension `inline-flex` would collapse the wrapper
- * to zero. We size it to a sensible card-ish aspect (138 tall × 100
- * wide ≈ 1:1.4) so it reads as "a card with no media" instead of a
- * thin sliver. */
-.placeholder {
-  width: 100px;
+.thumb[data-layout="waterfall"] {
+  height: auto;
+}
+
+.thumb[data-layout="waterfall"] .media {
+  height: auto;
+}
+
+.thumb[data-layout="waterfall"] .media,
+.thumb[data-layout="justified"] .media {
+}
+
+.thumb[data-layout="grid"] {
+  width: auto;
+  max-width: 100%;
   height: 100%;
+  max-height: 100%;
+  aspect-ratio: var(--pond-card-aspect, 1 / 1);
+  border-radius: 4px;
+}
+
+.thumb[data-layout="grid"] .media {
+  border-radius: 4px;
+}
+
+.thumb[data-selection="primary"]::after {
+  position: absolute;
+  inset: -6px;
+  z-index: -1;
+  pointer-events: none;
+  content: "";
+  background: light-dark(#e6f4fe, rgba(96, 165, 250, 0.12));
+  border: 1px dashed light-dark(#0d74ce, #60a5fa);
+  border-radius: 8px;
+}
+
+.thumb[data-selection="multi"]::after {
+  position: absolute;
+  inset: -6px;
+  z-index: -1;
+  pointer-events: none;
+  content: "";
+  border: 1px dotted var(--pond-muted);
+  border-radius: 8px;
+}
+
+.placeholder {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 1 / 1;
   background: linear-gradient(
     135deg,
     light-dark(#f4f4f5, #1a1a1f) 0%,
     light-dark(#e4e4e7, #111114) 100%
   );
 }
-
-/* ------------------------------------------------------------------ */
-/* "Downloading…" indicator.                                          */
-/*                                                                    */
-/* Subtle, top-right pill that overlays the thumbnail while yt-dlp is */
-/* downloading the video bytes for this save in the background. The   */
-/* dot pulses so the indicator reads as "still working" without a     */
-/* full spinner; matches the lightweight visual language of the dot   */
-/* indicators used in the preview pane / lightbox.                    */
-/*                                                                    */
-/* `pointer-events: none` so the badge doesn't intercept hover/click  */
-/* on the underlying card.                                            */
-/* ------------------------------------------------------------------ */
 
 .downloading {
   position: absolute;
@@ -105,8 +117,6 @@
   }
 }
 
-/* Reduced-motion users get a steady glow instead of a pulse so the
- * indicator stays informative without the animation. */
 @media (prefers-reduced-motion: reduce) {
   .downloadingDot {
     opacity: 1;

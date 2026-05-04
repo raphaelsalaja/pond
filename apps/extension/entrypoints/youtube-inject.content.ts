@@ -30,6 +30,14 @@ export default defineContentScript({
     const WATCH_LATER_PLAYLIST_ID = "WL";
 
     const videoCache = new Map<string, any>();
+    // Cache `playerResponse.captions` and `chapters` per videoId so the
+    // emit step can attach them to `raw.youtube` even when the active
+    // ytInitialPlayerResponse has rotated past the saved video.
+    const captionsCache = new Map<string, unknown[]>();
+    const chaptersCache = new Map<
+      string,
+      Array<{ title: string; startSec: number }>
+    >();
 
     function emit(message: unknown) {
       window.postMessage({ type: POND_EVENT, message }, "*");
@@ -107,6 +115,46 @@ export default defineContentScript({
       if (obj.videoId && (obj.title || obj.lengthSeconds || obj.author)) {
         videoCache.set(String(obj.videoId), obj);
       }
+      // Caption tracks: `playerResponse.captions.playerCaptionsTracklistRenderer.captionTracks`.
+      const tracks =
+        obj?.playerCaptionsTracklistRenderer?.captionTracks ??
+        (obj?.captionTracks &&
+        Array.isArray(obj.captionTracks) &&
+        obj.captionTracks.length > 0 &&
+        obj.captionTracks[0]?.languageCode
+          ? obj.captionTracks
+          : null);
+      if (Array.isArray(tracks) && obj?.videoId) {
+        captionsCache.set(String(obj.videoId), tracks);
+      }
+      // Chapter markers can live under
+      // `playerOverlays.playerOverlayRenderer.decoratedPlayerBarRenderer
+      // .decoratedPlayerBarRenderer.playerBar.multiMarkersPlayerBarRenderer
+      // .markersMap[*].value.chapters[*]`. Easier to walk for the shape.
+      if (
+        Array.isArray(obj.chapters) &&
+        obj.chapters[0]?.chapterRenderer?.title
+      ) {
+        const list = obj.chapters
+          .map((ch: any) => {
+            const r = ch?.chapterRenderer;
+            if (!r) return null;
+            const t = r?.title?.simpleText ?? r?.title?.runs?.[0]?.text ?? null;
+            const ms = r?.timeRangeStartMillis;
+            if (typeof t !== "string" || typeof ms !== "number") return null;
+            return { title: t, startSec: Math.round(ms / 1000) };
+          })
+          .filter(Boolean) as Array<{ title: string; startSec: number }>;
+        if (list.length > 0) {
+          // Find a videoId on the closest enclosing object — fall back
+          // to scanning the parent for one. We cache against any video
+          // id we've already seen so we don't have to thread parent
+          // refs through; the next save for that id picks them up.
+          for (const [vid] of videoCache) {
+            if (!chaptersCache.has(vid)) chaptersCache.set(vid, list);
+          }
+        }
+      }
       for (const k of Object.keys(obj)) {
         const v = obj[k];
         if (v && typeof v === "object") harvestVideoDetails(v);
@@ -156,6 +204,46 @@ export default defineContentScript({
         thumb = thumb ?? oembed?.thumbnail_url ?? null;
       }
 
+      // Per-source typed bag — mirrors `RawYoutube` on the desktop side.
+      const youtube: Record<string, unknown> = { kind };
+      if (typeof details?.lengthSeconds === "string") {
+        const n = Number.parseInt(details.lengthSeconds, 10);
+        if (Number.isFinite(n)) youtube.durationSec = n;
+      } else if (typeof details?.lengthSeconds === "number") {
+        youtube.durationSec = details.lengthSeconds;
+      }
+      if (typeof details?.channelId === "string") {
+        youtube.channelId = details.channelId;
+        youtube.channelUrl = `https://www.youtube.com/channel/${details.channelId}`;
+      }
+      if (typeof author === "string") youtube.channelName = author;
+      if (typeof details?.shortDescription === "string") {
+        youtube.shortDescription = details.shortDescription;
+      }
+      if (Array.isArray(details?.keywords)) {
+        youtube.keywords = details.keywords as string[];
+      }
+      const metrics: Record<string, number> = {};
+      if (typeof details?.viewCount === "string") {
+        const n = Number.parseInt(details.viewCount, 10);
+        if (Number.isFinite(n)) metrics.views = n;
+      } else if (typeof details?.viewCount === "number") {
+        metrics.views = details.viewCount;
+      }
+      if (Object.keys(metrics).length > 0) youtube.metrics = metrics;
+      const captions = captionsCache.get(String(videoId));
+      if (Array.isArray(captions) && captions.length > 0) {
+        youtube.captions = captions
+          .map((c: any) => ({
+            lang: typeof c?.languageCode === "string" ? c.languageCode : "",
+            name: c?.name?.simpleText ?? c?.name?.runs?.[0]?.text ?? undefined,
+            vssId: typeof c?.vssId === "string" ? c.vssId : undefined,
+          }))
+          .filter((c: any) => c.lang);
+      }
+      const chapters = chaptersCache.get(String(videoId));
+      if (chapters && chapters.length > 0) youtube.chapters = chapters;
+
       capture({
         source: "youtube",
         sourceId: String(videoId),
@@ -169,6 +257,7 @@ export default defineContentScript({
           capturedAt: new Date().toISOString(),
           kind,
           ...(details ? { videoDetails: details } : {}),
+          youtube,
         },
       });
     }

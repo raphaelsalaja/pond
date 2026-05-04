@@ -62,11 +62,56 @@
   text-decoration: underline;
 }
 
+/* Description body. Source descriptions arrive as plain text with
+ * embedded newlines (YouTube has paragraphs separated by `\n\n`,
+ * tweets by `\n`). `pre-wrap` preserves those breaks while still
+ * allowing the renderer to wrap soft lines. `overflow-wrap` keeps
+ * absurdly long URLs / hashes from overflowing the preview pane. */
 .description {
   margin: 0;
   font-size: 13px;
   line-height: 1.5;
   color: var(--pond-fg-soft);
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.descriptionLink {
+  color: var(--pond-fg);
+  text-decoration: underline;
+  text-decoration-color: var(--pond-border-strong);
+  text-underline-offset: 2px;
+  transition:
+    color 120ms ease,
+    text-decoration-color 120ms ease;
+}
+
+.descriptionLink:hover {
+  color: var(--pond-fg);
+  text-decoration-color: currentColor;
+}
+
+/* Show more / Show less toggle. Inline button styled to read like a
+ * link so it doesn't shout at the user — chrome-light, sits flush
+ * with the body text. */
+.descriptionToggle {
+  display: inline-flex;
+  padding: 0;
+  margin-top: 4px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--pond-fg-soft);
+  cursor: pointer;
+  background: none;
+  border: 0;
+}
+
+.descriptionToggle:hover {
+  color: var(--pond-fg);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .tags {
@@ -76,10 +121,53 @@
 }
 
 .tag {
+  display: inline-flex;
+  align-items: center;
   padding: 2px 8px;
   font-size: 11px;
+  color: var(--pond-fg-soft);
+  text-decoration: none;
+  cursor: pointer;
   background: light-dark(rgba(0, 0, 0, 0.05), rgba(255, 255, 255, 0.06));
+  border: 0;
   border-radius: 999px;
+}
+
+.tag:hover {
+  color: var(--pond-fg);
+  background: light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.1));
+}
+
+.tagWrap {
+  display: inline-flex;
+  align-items: stretch;
+  overflow: hidden;
+  border-radius: 999px;
+}
+
+.tagWrap > .tag {
+  border-radius: 999px 0 0 999px;
+}
+
+.tagRemove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  padding: 0;
+  margin-left: 1px;
+  font: inherit;
+  font-size: 11px;
+  color: var(--pond-meta);
+  cursor: pointer;
+  background: light-dark(rgba(0, 0, 0, 0.05), rgba(255, 255, 255, 0.06));
+  border: 0;
+  border-radius: 0 999px 999px 0;
+}
+
+.tagRemove:hover {
+  color: var(--pond-fg);
+  background: light-dark(rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.12));
 }
 
 .actions {
@@ -95,6 +183,150 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  align-items: center;
+}
+
+.readerLink {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 12px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--pond-fg);
+  text-decoration: none;
+  background: light-dark(rgba(0, 0, 0, 0.05), rgba(255, 255, 255, 0.06));
+  border: 1px solid var(--pond-border);
+  border-radius: var(--pond-radius-sm);
+}
+
+.readerLink:hover {
+  background: light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.08));
+}
+
+.readerMeta {
+  font-size: 11px;
+  color: var(--pond-meta);
+}
+
+.timestampsTitle {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--pond-meta);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.timestampsList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.timestampsItem {
+  display: grid;
+  grid-template-columns: 56px 1fr 24px;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+}
+
+.timestampPos {
+  font-weight: 550;
+  font-variant-numeric: tabular-nums;
+  color: var(--pond-fg);
+}
+
+.timestampNote {
+  color: var(--pond-fg-soft);
+}
+
+.timestampRemove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  font: inherit;
+  font-size: 14px;
+  color: var(--pond-meta);
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+}
+
+.timestampRemove:hover {
+  color: var(--pond-fg);
+  background: var(--pond-hover);
+}
+
+.timestampMark {
+  margin-top: 6px;
+}
+
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.swatch {
+  display: inline-block;
+  width: 22px;
+  height: 22px;
+  cursor: pointer;
+  border: 1px solid var(--pond-border);
+  border-radius: 4px;
+  transition: transform 80ms ease;
+}
+
+.swatch:hover {
+  transform: scale(1.08);
+}
+
+.relatedRail {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.relatedTile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.relatedTile:hover .relatedLabel {
+  color: var(--pond-fg);
+}
+
+.relatedThumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background: light-dark(rgba(0, 0, 0, 0.04), rgba(255, 255, 255, 0.04));
+  border-radius: 4px;
+}
+
+.relatedLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 10px;
+  color: var(--pond-fg-soft);
+  text-align: center;
+  white-space: nowrap;
 }
 
 .hint {
@@ -155,16 +387,20 @@
   margin-bottom: 4px;
 }
 
-/* `.mediaShell` is the wrapper element we hand to `useSmoothCorners`
- * via its `wrapperRef` option. Lisse positions its SVG overlay
- * absolutely inside this element, so it MUST be `position: relative`
- * (or anything other than `static`) — without that the drop-shadow /
- * inner-border SVG escapes and paints over unrelated chrome. */
+/* Rounded media frame for the carousel. `position: relative` so the
+ * `.downloading` badge and the `.nav` arrows can position themselves
+ * inside it; `overflow: hidden` clips the inner image / video to the
+ * border-radius. The pane size is fluid (variant-driven), so the
+ * shadow + 1px ring come from the shared `--pond-card-shadow` token
+ * to stay consistent with the grid thumbs. */
 .mediaShell {
   position: relative;
   display: block;
   width: 100%;
+  overflow: hidden;
   background: light-dark(rgba(0, 0, 0, 0.04), rgba(255, 255, 255, 0.03));
+  border-radius: var(--pond-radius-xl);
+  box-shadow: var(--pond-card-shadow);
 }
 
 .media {

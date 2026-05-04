@@ -1,0 +1,236 @@
+/* ------------------------------------------------------------------ */
+/* Header toolbar                                                     */
+/*                                                                    */
+/* Lives inside the centre column (`<main>`), above the filter chip  */
+/* rail. Three sections — left actions, centre title + zoom, right   */
+/* tools — laid out as a grid so the title floats in the middle of   */
+/* whatever width the column has.                                     */
+/* ------------------------------------------------------------------ */
+
+.toolbar {
+  display: grid;
+  flex-shrink: 0;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+  height: 44px;
+  /* The toolbar's empty space (between sections) doubles as the
+   * window drag handle — without this, the user could only grab the
+   * window from the slim sidebar strip above the traffic lights. */
+  -webkit-app-region: drag;
+}
+
+/* Every direct child opts back out of the drag region so the
+ * interactive controls (buttons, slider, search) keep working. */
+.toolbar > * {
+  -webkit-app-region: no-drag;
+}
+
+.left,
+.right,
+.centre {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.centre {
+  justify-content: center;
+  min-width: 0;
+}
+
+.right {
+  justify-content: flex-end;
+}
+
+/* ---- Generic icon button ----------------------------------------- */
+
+.iconBtn {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  font-size: 14px;
+  color: var(--pond-fg-soft);
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  transition:
+    color 80ms ease,
+    background 80ms ease;
+}
+
+.iconBtn:hover {
+  color: var(--pond-fg);
+  background: var(--pond-hover);
+}
+
+.iconBtn:focus-visible {
+  outline: 2px solid var(--pond-focus, #6c93ff);
+  outline-offset: 1px;
+}
+
+.iconBtnActive {
+  color: var(--pond-fg);
+  background: var(--pond-active);
+}
+
+/* ---- Centre zoom slider ------------------------------------------ */
+
+.zoom {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.zoomBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  font-size: 11px;
+  color: var(--pond-muted);
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  transition:
+    color 80ms ease,
+    background 80ms ease;
+}
+
+.zoomBtn:hover {
+  color: var(--pond-fg);
+  background: var(--pond-hover);
+}
+
+.zoomSlider {
+  width: 96px;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+  background: transparent;
+}
+
+.zoomSlider::-webkit-slider-runnable-track {
+  height: 3px;
+  background: var(--pond-border);
+  border-radius: 999px;
+}
+
+.zoomSlider::-moz-range-track {
+  height: 3px;
+  background: var(--pond-border);
+  border-radius: 999px;
+}
+
+.zoomSlider::-webkit-slider-thumb {
+  width: 12px;
+  height: 12px;
+  margin-top: -4.5px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--pond-fg);
+  border: 0;
+  border-radius: 999px;
+}
+
+.zoomSlider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  background: var(--pond-fg);
+  border: 0;
+  border-radius: 999px;
+}
+
+/* ---- Right cluster ----------------------------------------------- */
+
+.viewToggle {
+  display: inline-flex;
+  gap: 0;
+  align-items: center;
+  padding: 2px;
+  background: var(--pond-hover);
+  border-radius: 8px;
+}
+
+.viewToggle .iconBtn {
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+}
+
+.viewToggle .iconBtn:hover {
+  background: light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.06));
+}
+
+.viewToggle .iconBtnActive {
+  color: var(--pond-fg);
+  background: var(--pond-card);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+/* Hairline separator inside the view toggle pill: visually splits the
+ * four image-layout buttons (waterfall / justified / grid / list) from
+ * the orthogonal "group by" buttons (timeline / color). Stays inside
+ * the pill chrome so it doesn't add extra horizontal padding. */
+.viewToggleDivider {
+  flex-shrink: 0;
+  width: 1px;
+  height: 14px;
+  margin: 0 4px;
+  background: light-dark(rgba(0, 0, 0, 0.12), rgba(255, 255, 255, 0.16));
+}
+
+/* ---- Search input ------------------------------------------------ */
+
+.search {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 220px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 8px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--pond-muted);
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  height: 28px;
+  padding: 0 28px 0 26px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--pond-fg);
+  outline: none;
+  background: var(--pond-hover);
+  border: 0;
+  border-radius: 6px;
+  transition:
+    background 80ms ease,
+    box-shadow 80ms ease;
+}
+
+.searchInput::placeholder {
+  color: var(--pond-muted);
+}
+
+.searchInput:focus {
+  background: var(--pond-card);
+  box-shadow: inset 0 0 0 1px var(--pond-border);
+}
+
+.searchInput::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+}

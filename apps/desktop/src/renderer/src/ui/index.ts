@@ -48,6 +48,15 @@ export {
 export { Input, type InputProps } from "./input";
 export { NumberField } from "./number-field";
 export {
+  Popover,
+  PopoverClose,
+  PopoverContent,
+  PopoverGroupLabel,
+  PopoverItem,
+  PopoverSeparator,
+  PopoverTrigger,
+} from "./popover";
+export {
   Select,
   SelectContent,
   SelectItem,

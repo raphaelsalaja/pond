@@ -23,6 +23,16 @@ export const ingestPayloadSchema = z.object({
   title: z.string().max(500).nullish(),
   description: z.string().max(5000).nullish(),
   author: z.string().max(200).nullish(),
+  /** BCP-47 language tag, promoted from `raw.<source>.lang`. Phase-4. */
+  lang: z.string().max(35).nullish(),
+  /** `og:site_name` / display name. Phase-4 universal field. */
+  siteName: z.string().max(120).nullish(),
+  /** Author-side post timestamp (ISO-8601). Distinct from `savedAt`. */
+  publishedAt: z
+    .string()
+    .datetime()
+    .nullish()
+    .transform((v) => (v ? new Date(v) : undefined)),
   /** Legacy single-media field. Kept so old extension builds still work. */
   mediaUrl: z.string().url().nullish(),
   /**

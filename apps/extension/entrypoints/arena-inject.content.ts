@@ -160,6 +160,42 @@ export default defineContentScript({
       return [];
     }
 
+    function arenaExtras(block: any, channels: any[]) {
+      const arena: Record<string, unknown> = {};
+      if (typeof block?.class === "string") arena.blockClass = block.class;
+      if (typeof block?.created_at === "string") {
+        arena.publishedAt = block.created_at;
+      }
+      const u = block?.user ?? {};
+      if (typeof u.full_name === "string") arena.authorName = u.full_name;
+      if (typeof u.slug === "string") {
+        arena.authorSlug = u.slug;
+        arena.authorUrl = `https://www.are.na/${u.slug}`;
+      }
+      const avatar =
+        u?.avatar_image?.thumb ?? u?.avatar_image?.display ?? u?.avatar ?? null;
+      if (typeof avatar === "string") arena.authorAvatar = avatar;
+      const metrics: Record<string, number> = {};
+      if (typeof block?.connections?.count === "number") {
+        metrics.connections = block.connections.count;
+      } else if (typeof block?.connections_count === "number") {
+        metrics.connections = block.connections_count;
+      }
+      if (typeof block?.comment_count === "number") {
+        metrics.comments = block.comment_count;
+      }
+      if (Object.keys(metrics).length > 0) arena.metrics = metrics;
+      if (channels.length > 0) {
+        arena.channels = channels.map((c) => ({
+          id: c.id ?? undefined,
+          title: c.title ?? undefined,
+          slug: c.slug ?? undefined,
+          href: c.href ?? undefined,
+        }));
+      }
+      return arena;
+    }
+
     async function emitFromGraphql({ requestOp, responseOp }: any) {
       const conn = responseOp?.data?.create_connection;
       const blockId = String(
@@ -189,6 +225,7 @@ export default defineContentScript({
             channels,
             connectable: conn?.connectable ?? null,
             mutation: requestOp?.operationName ?? null,
+            arena: { channels: arenaExtras(null, channels).channels },
           },
         });
         return;
@@ -198,11 +235,13 @@ export default defineContentScript({
       const url =
         block?.source?.url ?? `https://www.are.na/block/${block.id ?? blockId}`;
 
+      const arenaBag = arenaExtras(block, channels);
       const raw: any = {
         via: "graphql+v2-block",
         channels,
         mutation: requestOp?.operationName ?? null,
         block,
+        ...(Object.keys(arenaBag).length > 0 ? { arena: arenaBag } : {}),
       };
       if (media.videoEmbed) raw.videoEmbed = media.videoEmbed;
       if ((media as any).attachment) raw.attachment = (media as any).attachment;
@@ -235,6 +274,7 @@ export default defineContentScript({
       const media = pickMedia(block);
       const url = block?.source?.url ?? `https://www.are.na/block/${block.id}`;
 
+      const arenaBag = arenaExtras(block, []);
       capture({
         source: "arena",
         sourceId: String(block.id),
@@ -244,7 +284,11 @@ export default defineContentScript({
         author: block?.user?.full_name ?? block?.user?.username ?? null,
         mediaUrl: media.url,
         mediaType: media.type,
-        raw: { via: "v2-rest", block },
+        raw: {
+          via: "v2-rest",
+          block,
+          ...(Object.keys(arenaBag).length > 0 ? { arena: arenaBag } : {}),
+        },
       });
     }
 

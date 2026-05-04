@@ -16,6 +16,7 @@ import {
 import { inferKindFromFilename } from "../lib/library";
 import { itemFile } from "../paths";
 import { executeTransaction } from "./executor";
+import { getPrefs } from "./prefs";
 import { recordForUndo } from "./undo";
 
 /**
@@ -71,30 +72,22 @@ export async function ingestFromHttp(
   payload: IngestPayload,
   extras: LocalIngestExtras = {},
 ): Promise<IngestResponse> {
-  const db = await getDb();
+  const _db = await getDb();
 
-  const existing = await db
-    .select()
-    .from(saves)
-    .where(
-      and(
-        eq(saves.source, payload.source),
-        eq(saves.sourceId, payload.sourceId),
-      ),
-    )
-    .limit(1);
+  const prefs = await getPrefs();
+
+  // Source dedup is always (source, sourceId) — that's what makes a
+  // re-bookmark merge into the existing row. The `dedupeByUrl` knob
+  // *also* checks for an existing row with a matching URL when
+  // (source, sourceId) misses, so two extensions saving the same
+  // article via different sourceIds collapse into one save.
+  const existing = await findExisting(payload, prefs.saveBehavior.dedupeByUrl);
 
   const requestedUrls = collectRequestedUrls(payload);
   const avatarUrl = extractAvatarUrl(payload);
 
-  if (existing[0]) {
-    return refreshExisting(
-      existing[0],
-      payload,
-      requestedUrls,
-      avatarUrl,
-      extras,
-    );
+  if (existing) {
+    return refreshExisting(existing, payload, requestedUrls, avatarUrl, extras);
   }
 
   const id = ulid();
@@ -117,6 +110,7 @@ export async function ingestFromHttp(
 
   const savedAt = payload.savedAt ? new Date(payload.savedAt) : new Date();
 
+  const universal = extractUniversalFields(payload);
   const newSave: NewSave = {
     id,
     source: payload.source,
@@ -125,12 +119,15 @@ export async function ingestFromHttp(
     title: payload.title ?? null,
     description: payload.description ?? null,
     author: payload.author ?? null,
+    lang: universal.lang,
+    siteName: universal.siteName,
+    publishedAt: universal.publishedAt,
     notes: null,
     mediaUrl: payload.mediaUrl ?? null,
     blobUrl,
     mediaType: payload.mediaType ?? null,
     rawJson: payload.raw ?? null,
-    tags: payload.tags ?? [],
+    tags: mergeUnique(prefs.saveBehavior.defaultTags, payload.tags ?? []),
     aiTags: [],
     aiCaption: null,
     aiSuggestions: null,
@@ -186,6 +183,22 @@ async function refreshExisting(
   if (payload.mediaType && payload.mediaType !== current.mediaType)
     patch.mediaType = payload.mediaType;
   if (!current.mediaUrl && payload.mediaUrl) patch.mediaUrl = payload.mediaUrl;
+
+  // Phase-4 universal fields. Only fill when blank — user edits never
+  // get clobbered. `publishedAt` is treated as authoritative if the
+  // existing row carries no value or the new value is older (an
+  // earlier timestamp typically means we picked up a more accurate
+  // upstream date than the prior heuristic).
+  const universal = extractUniversalFields(payload);
+  if (!current.lang && universal.lang) patch.lang = universal.lang;
+  if (!current.siteName && universal.siteName) {
+    patch.siteName = universal.siteName;
+  }
+  if (universal.publishedAt) {
+    if (!current.publishedAt || universal.publishedAt < current.publishedAt) {
+      patch.publishedAt = universal.publishedAt;
+    }
+  }
 
   // Merge `raw` top-level keys into existing `rawJson` so re-captures
   // can upgrade an older row with richer source-specific metadata
@@ -383,6 +396,46 @@ function extractAvatarUrl(payload: IngestPayload): string | null {
 }
 
 /**
+ * Phase-4 universal-field extractor. Reads top-level
+ * `payload.{lang,siteName,publishedAt}` first (Zod already coerced
+ * `publishedAt` to a Date), falling back to `raw.<source>.<field>`
+ * for sources whose harvesters still write the legacy nested shape.
+ */
+function extractUniversalFields(payload: IngestPayload): {
+  lang: string | null;
+  siteName: string | null;
+  publishedAt: Date | null;
+} {
+  const raw = payload.raw;
+  const container =
+    raw && typeof raw === "object"
+      ? ((raw as Record<string, unknown>)[payload.source] as
+          | Record<string, unknown>
+          | undefined)
+      : undefined;
+
+  const lang =
+    typeof payload.lang === "string" && payload.lang.length > 0
+      ? payload.lang
+      : typeof container?.lang === "string" && container.lang.length > 0
+        ? (container.lang as string)
+        : null;
+  const siteName =
+    typeof payload.siteName === "string" && payload.siteName.length > 0
+      ? payload.siteName
+      : typeof container?.siteName === "string" && container.siteName.length > 0
+        ? (container.siteName as string)
+        : null;
+  let publishedAt: Date | null =
+    payload.publishedAt instanceof Date ? payload.publishedAt : null;
+  if (!publishedAt && typeof container?.publishedAt === "string") {
+    const parsed = new Date(container.publishedAt as string);
+    if (!Number.isNaN(parsed.getTime())) publishedAt = parsed;
+  }
+  return { lang, siteName, publishedAt };
+}
+
+/**
  * New text is "richer" if the existing field is null/blank, or if the
  * new value is more informative (longer) than what we have.
  */
@@ -498,4 +551,48 @@ async function anyFileMissing(id: string, files: SaveFile[]): Promise<boolean> {
     }
   }
   return false;
+}
+
+/**
+ * Lookup an existing save row by `(source, sourceId)`. When
+ * `dedupeByUrl` is on, also tries an exact URL match in case the
+ * scrapers across sources can't agree on a canonical id (e.g. a
+ * Twitter status URL saved under different sources).
+ */
+async function findExisting(
+  payload: IngestPayload,
+  dedupeByUrl: boolean,
+): Promise<Save | null> {
+  const db = await getDb();
+  const rows = await db
+    .select()
+    .from(saves)
+    .where(
+      and(
+        eq(saves.source, payload.source),
+        eq(saves.sourceId, payload.sourceId),
+      ),
+    )
+    .limit(1);
+  if (rows[0]) return rows[0];
+  if (!dedupeByUrl) return null;
+  const byUrl = await db
+    .select()
+    .from(saves)
+    .where(eq(saves.url, payload.url))
+    .limit(1);
+  return byUrl[0] ?? null;
+}
+
+/** Union two string arrays preserving order, dropping duplicates. */
+function mergeUnique(a: readonly string[], b: readonly string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const x of [...a, ...b]) {
+    if (!x) continue;
+    if (seen.has(x)) continue;
+    seen.add(x);
+    out.push(x);
+  }
+  return out;
 }

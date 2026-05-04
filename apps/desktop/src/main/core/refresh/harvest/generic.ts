@@ -43,6 +43,7 @@ export function buildExpression(): string {
     );
 
     const out: Record<string, unknown> = {};
+    const meta: Record<string, unknown> = {};
     if (title) out.title = title.replace(/\s+/g, " ").trim().slice(0, 500);
     if (description) out.description = description;
     if (author) out.author = author;
@@ -54,6 +55,29 @@ export function buildExpression(): string {
     } else {
       out.mediaType = "link";
     }
+    // Page-wide hints worth keeping for the renderer / search index.
+    // None of these are universal enough yet to deserve a top-level
+    // column; bundle them under `meta` so they ride into `raw.<source>`
+    // via the existing merge.
+    const lang = document.documentElement.lang?.trim();
+    if (lang) {
+      out.lang = lang;
+      meta.lang = lang;
+    }
+    const siteName = metaContent("og:site_name", "application-name");
+    if (siteName) meta.siteName = siteName.trim();
+    const publishedAt = metaContent(
+      "article:published_time",
+      "og:article:published_time",
+      "datePublished",
+    );
+    if (publishedAt) meta.publishedAt = publishedAt;
+    const canonicalEl = document.querySelector<HTMLLinkElement>(
+      'link[rel="canonical"]',
+    );
+    const canonical = canonicalEl?.href?.trim();
+    if (canonical) meta.canonical = canonical;
+    if (Object.keys(meta).length > 0) out.meta = meta;
     return out;
   }
 
@@ -74,10 +98,15 @@ export function adapt(raw: unknown): ScrapedHarvest | null {
   if (!raw || typeof raw !== "object") return null;
   const o = raw as Record<string, unknown>;
   if (!o.title && !o.description && !o.mediaUrl) return null;
+  const metaObj =
+    o.meta && typeof o.meta === "object"
+      ? (o.meta as Record<string, unknown>)
+      : undefined;
   return {
     title: typeof o.title === "string" ? o.title : undefined,
     description: typeof o.description === "string" ? o.description : undefined,
     author: typeof o.author === "string" ? o.author : undefined,
+    lang: typeof o.lang === "string" ? (o.lang as string) : undefined,
     mediaUrl: typeof o.mediaUrl === "string" ? o.mediaUrl : undefined,
     mediaUrls: Array.isArray(o.mediaUrls)
       ? (o.mediaUrls as ScrapedHarvest["mediaUrls"])
@@ -86,6 +115,7 @@ export function adapt(raw: unknown): ScrapedHarvest | null {
       typeof o.mediaType === "string"
         ? (o.mediaType as ScrapedHarvest["mediaType"])
         : undefined,
+    meta: metaObj,
   };
 }
 

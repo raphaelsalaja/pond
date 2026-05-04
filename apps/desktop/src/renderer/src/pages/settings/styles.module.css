@@ -1,26 +1,329 @@
-.settings {
+/* ------------------------------------------------------------------ */
+/* Settings — Linear-style two-column takeover.                        */
+/*                                                                    */
+/* The page fills the entire `pond-takeover` surface (no library      */
+/* sidebar / preview pane). Left rail is fixed-width and stays put;   */
+/* right pane scrolls independently so long sections don't push the   */
+/* navigation off-screen.                                              */
+/* ------------------------------------------------------------------ */
+
+.page {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  background: var(--pond-bg);
+}
+
+/* ---- Left rail --------------------------------------------------- */
+
+.rail {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  max-width: 640px;
-  padding: 16px;
-  margin: 0 auto;
+  padding: 8px 12px 24px;
+  overflow-y: auto;
+  background: var(--pond-bg);
+  border-right: 1px solid var(--pond-border);
 }
 
-.group {
-  padding: 16px;
-  background: var(--pond-card);
-  border: 1px solid var(--pond-border);
-  border-radius: 10px;
+/* macOS hosts the traffic lights at the top-left of the window, which
+ * means they overlap the top of the settings rail. Reserve ~50px and
+ * make that strip draggable so the traffic lights have room and the
+ * user can grab the window from there. Mirrors the library sidebar. */
+:global(.pond-shell--mac) .rail {
+  padding-top: 50px;
+  -webkit-app-region: drag;
 }
+
+:global(.pond-shell--mac) .rail > * {
+  -webkit-app-region: no-drag;
+}
+
+.backButton {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  align-self: flex-start;
+  height: 28px;
+  padding: 0 8px 0 4px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--pond-muted);
+  letter-spacing: -0.04px;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: var(--pond-radius-md);
+  transition:
+    color 80ms ease,
+    background 80ms ease;
+}
+
+.backButton:hover {
+  color: var(--pond-fg);
+  background: var(--pond-hover);
+}
+
+.backButton:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--pond-active);
+}
+
+.navGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.navGroupLabel {
+  display: flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 8px;
+  margin: 0;
+  font-size: 11px;
+  font-weight: 550;
+  color: var(--pond-muted);
+  text-transform: none;
+  letter-spacing: 0.02px;
+}
+
+.navList {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.navItem {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  height: 28px;
+  padding: 0 8px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--pond-muted);
+  text-align: left;
+  letter-spacing: -0.04px;
+  text-decoration: none;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: var(--pond-radius-md);
+  transition:
+    color 80ms ease,
+    background 80ms ease;
+}
+
+.navItem:hover {
+  color: var(--pond-fg);
+  background: var(--pond-hover);
+}
+
+.navItemActive,
+.navItemActive:hover {
+  color: var(--pond-fg);
+  background: var(--pond-active);
+}
+
+.navItemMuted {
+  color: var(--pond-muted-2);
+}
+
+.navIcon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  color: var(--pond-muted);
+}
+
+.navItemActive .navIcon {
+  color: var(--pond-fg);
+}
+
+.navItemLabel {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.railEmpty {
+  padding: 4px 8px;
+  margin: 0;
+  font-size: 12px;
+  color: var(--pond-muted);
+}
+
+/* ---- Content pane ------------------------------------------------ */
+
+.content {
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+  overflow-y: auto;
+}
+
+.contentInner {
+  width: 100%;
+  max-width: 720px;
+  padding: 16px 48px 64px;
+}
+
+/* ---- Section primitives ------------------------------------------ */
+
+.sectionStack {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.sectionHeader {
+  padding-bottom: 8px;
+}
+
+.sectionTitle {
+  margin: 0 0 4px;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--pond-fg);
+  letter-spacing: -0.4px;
+}
+
+.sectionDescription {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--pond-muted);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 4px 0;
+  background: transparent;
+  border-top: 1px solid var(--pond-border);
+}
+
+.cardLead {
+  padding: 14px 0 4px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--pond-muted);
+}
+
+.groupTitle {
+  padding: 16px 0 8px;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pond-fg);
+  letter-spacing: -0.04px;
+}
+
+/* ---- Rows -------------------------------------------------------- */
 
 .row {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0;
+  border-top: 1px solid var(--pond-border);
+}
+
+.row:first-child {
+  border-top: 0;
+}
+
+.rowMeta {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.rowLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--pond-fg);
+  letter-spacing: -0.04px;
+}
+
+.rowDescription {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--pond-muted);
+}
+
+.rowControl {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.stackedRow {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px 0;
+  border-top: 1px solid var(--pond-border);
+}
+
+.stackedRow:first-child {
+  border-top: 0;
+}
+
+.stackedControl {
+  margin-top: 4px;
+}
+
+.inlineRow {
   display: flex;
   gap: 8px;
   align-items: center;
 }
 
-.settings code {
+/* ---- Per-source page header -------------------------------------- */
+
+.sourceHeader {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding-bottom: 8px;
+}
+
+.sourceHeaderBadge {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+}
+
+.sourceHeaderText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* ---- Misc ------------------------------------------------------- */
+
+.contentInner code {
   padding: 1px 6px;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 11px;
@@ -33,7 +336,7 @@
   flex-direction: column;
   gap: 8px;
   padding: 0;
-  margin: 8px 0 0;
+  margin: 12px 0 0;
   list-style: none;
 }
 
@@ -52,6 +355,26 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+.sourceMetaButton {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+}
+
+.sourceMetaButton:focus-visible {
+  outline: 2px solid var(--pond-active);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 .sourceName {

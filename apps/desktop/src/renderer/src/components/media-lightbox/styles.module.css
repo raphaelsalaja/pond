@@ -61,18 +61,19 @@
   background: light-dark(rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.45));
 }
 
-/* `.mediaShell` is the wrapper element we hand to `useSmoothCorners`
- * via its `wrapperRef` option. Lisse may absolutely-position SVG
- * effects inside this container (when effects are enabled), so it
- * stays `position: relative`. Inline-flex makes it shrink to the
- * natural size of the inner `<img>` / `<video>` so the squircle clip
- * matches what the eye sees in the dim canvas. */
+/* Inline-flex so the rounded frame shrinks to the natural size of the
+ * inner `<img>` / `<video>` — the corner clip then matches the visible
+ * media instead of the wider dim canvas. We skip the drop shadow + 1px
+ * ring used elsewhere because they'd just muddy the image against the
+ * dim backdrop. */
 .mediaShell {
   position: relative;
   display: inline-flex;
   max-width: 100%;
   max-height: 100%;
+  overflow: hidden;
   background: rgba(0, 0, 0, 0.04);
+  border-radius: var(--pond-radius-xl);
 }
 
 .media {

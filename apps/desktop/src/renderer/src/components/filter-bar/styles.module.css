@@ -1,0 +1,446 @@
+/* ------------------------------------------------------------------ */
+/* Filter chip rail                                                   */
+/*                                                                    */
+/* Sits inside the centre content column (between the sidebar and    */
+/* preview pane), above the grid. Multi-row wrap so the full Eagle-  */
+/* style chip set always fits without horizontal scroll, no matter   */
+/* how narrow the centre column gets.                                 */
+/* ------------------------------------------------------------------ */
+
+.bar {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--pond-border);
+}
+
+/* ---- Chip --------------------------------------------------------- */
+
+/* Wrapper exists so the close button can sit as a sibling of the
+ * trigger (nested interactives aren't valid HTML) while still sharing
+ * the chip background / radius. The trigger handles the dropdown,
+ * the close button handles removal — both sit on the same row. */
+.chipWrap {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  border-radius: 6px;
+}
+
+.chipWrapActive {
+  background: var(--pond-active);
+  box-shadow: inset 0 0 0 1px var(--pond-border);
+}
+
+.chipWrapScaffold {
+  /* purely a hook for future styling */
+}
+
+.chip {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 6px;
+  align-items: center;
+  height: 26px;
+  padding: 0 8px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--pond-fg-soft);
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  transition:
+    color 80ms ease,
+    background 80ms ease,
+    box-shadow 80ms ease;
+}
+
+.chip:hover {
+  color: var(--pond-fg);
+  background: var(--pond-hover);
+}
+
+.chip:focus-visible {
+  outline: 2px solid var(--pond-focus, #6c93ff);
+  outline-offset: 1px;
+}
+
+.chip[data-state="open"] {
+  color: var(--pond-fg);
+  background: var(--pond-active);
+}
+
+.chipScaffold {
+  color: var(--pond-muted);
+}
+
+.chipActive {
+  color: var(--pond-fg);
+  background: transparent;
+  /* Background lives on `.chipWrapActive` so the sibling close button
+   * shares the pill — the trigger button itself stays transparent. */
+}
+
+.chipActive:hover {
+  background: light-dark(rgba(0, 0, 0, 0.04), rgba(255, 255, 255, 0.04));
+}
+
+.chipIcon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  font-size: 14px;
+}
+
+.chipLabel {
+  white-space: nowrap;
+}
+
+.chipValue {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  padding: 0 6px;
+  margin-left: 2px;
+  font-weight: 500;
+  color: var(--pond-fg);
+  background: light-dark(rgba(0, 0, 0, 0.05), rgba(255, 255, 255, 0.07));
+  border-radius: 4px;
+}
+
+.chipChevron {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  margin-left: 1px;
+  font-size: 11px;
+  color: var(--pond-muted);
+  opacity: 0;
+  transition: opacity 80ms ease;
+}
+
+.chip:hover .chipChevron,
+.chip[data-state="open"] .chipChevron {
+  opacity: 1;
+}
+
+.chipClose {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 22px;
+  padding: 0;
+  margin-right: 4px;
+  font-size: 10px;
+  color: var(--pond-muted);
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  transition:
+    color 80ms ease,
+    background 80ms ease;
+}
+
+.chipClose:hover {
+  color: var(--pond-fg);
+  background: light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.1));
+}
+
+.chipClose:focus-visible {
+  outline: 2px solid var(--pond-focus, #6c93ff);
+  outline-offset: 1px;
+}
+
+.addFilter {
+  width: 26px;
+  padding: 0;
+  margin-left: 2px;
+  color: var(--pond-muted);
+}
+
+.addFilter:hover {
+  color: var(--pond-fg);
+}
+
+/* ---- Dropdown shells --------------------------------------------- */
+
+.popover {
+  width: 280px;
+  padding: 12px;
+}
+
+.dropdown {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dropdownLabel {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 550;
+  color: var(--pond-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.dropdownHint {
+  margin: 0;
+  font-size: 11px;
+  color: var(--pond-muted);
+}
+
+.dropdownEmpty {
+  padding: 12px 4px;
+  margin: 0;
+  font-size: 12px;
+  color: var(--pond-muted);
+  text-align: center;
+}
+
+.dropdownSection {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* ---- Option list (used by Type/Shape/Size/etc.) ------------------ */
+
+.optionList {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.optionRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  height: 28px;
+  padding: 0 6px 0 4px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--pond-fg);
+  text-align: left;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  transition: background 80ms ease;
+}
+
+.optionRow:hover {
+  background: var(--pond-hover);
+}
+
+.optionRowActive {
+  background: var(--pond-active);
+}
+
+.optionCheck {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  font-size: 11px;
+  color: var(--pond-fg);
+}
+
+/* ---- Color swatch grid ------------------------------------------- */
+
+.swatchGrid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+}
+
+.swatch {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  padding: 0;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+  transition: transform 80ms ease;
+}
+
+.swatch:hover {
+  transform: scale(1.06);
+}
+
+.swatchActive {
+  outline: 2px solid var(--pond-fg);
+  outline-offset: 1px;
+}
+
+/* ---- Tag picker --------------------------------------------------- */
+
+.tagList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.tagPill {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  height: 24px;
+  padding: 0 8px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--pond-fg);
+  cursor: pointer;
+  background: light-dark(rgba(0, 0, 0, 0.04), rgba(255, 255, 255, 0.05));
+  border: 0;
+  border-radius: 999px;
+  transition: background 80ms ease;
+}
+
+.tagPill:hover {
+  background: light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.1));
+}
+
+.tagPillActive {
+  color: var(--pond-bg);
+  background: var(--pond-fg);
+}
+
+.tagPillActive:hover {
+  background: var(--pond-fg);
+}
+
+.tagCount {
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  color: var(--pond-muted);
+}
+
+.tagPillActive .tagCount {
+  color: light-dark(rgba(255, 255, 255, 0.7), rgba(0, 0, 0, 0.55));
+}
+
+/* ---- Scaffold body ----------------------------------------------- */
+
+.scaffoldBanner {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  text-align: center;
+  background: var(--pond-hover);
+  border-radius: 8px;
+}
+
+.scaffoldChip {
+  align-self: center;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--pond-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  background: var(--pond-card);
+  border-radius: 999px;
+}
+
+.scaffoldText {
+  font-size: 12px;
+  color: var(--pond-muted);
+}
+
+/* ---- Add-filter popover ------------------------------------------ */
+
+.addPopover {
+  width: 240px;
+  padding: 8px;
+}
+
+.addLabel {
+  padding: 6px 8px 4px;
+  margin: 0;
+  font-size: 11px;
+  font-weight: 550;
+  color: var(--pond-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.addList {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.addItem {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  height: 28px;
+  padding: 0 8px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--pond-fg);
+  text-align: left;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  transition: background 80ms ease;
+}
+
+.addItem:hover {
+  background: var(--pond-hover);
+}
+
+.addItemIcon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  font-size: 14px;
+  color: var(--pond-fg-soft);
+}
+
+.addItemLabel {
+  flex: 1;
+}
+
+.addItemChip {
+  padding: 1px 6px;
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--pond-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: light-dark(rgba(0, 0, 0, 0.05), rgba(255, 255, 255, 0.06));
+  border-radius: 999px;
+}

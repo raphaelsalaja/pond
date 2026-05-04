@@ -42,13 +42,19 @@ export function toIso(v: Isoable): string | null {
 /** Renderer-safe view of a `Save` row: every timestamp is ISO (or null). */
 export type WireSave = Omit<
   Save,
-  "savedAt" | "createdAt" | "archivedAt" | "deletedAt" | "embeddingUpdatedAt"
+  | "savedAt"
+  | "createdAt"
+  | "archivedAt"
+  | "deletedAt"
+  | "embeddingUpdatedAt"
+  | "publishedAt"
 > & {
   savedAt: string;
   createdAt: string;
   archivedAt: string | null;
   deletedAt: string | null;
   embeddingUpdatedAt: string | null;
+  publishedAt: string | null;
 };
 
 export function toWireSave(row: Save): WireSave {
@@ -59,6 +65,7 @@ export function toWireSave(row: Save): WireSave {
     archivedAt: toIso(row.archivedAt),
     deletedAt: toIso(row.deletedAt),
     embeddingUpdatedAt: toIso(row.embeddingUpdatedAt),
+    publishedAt: toIso(row.publishedAt),
   };
 }
 
@@ -93,6 +100,7 @@ function normaliseDataPayload(value: unknown): unknown {
     "archivedAt",
     "deletedAt",
     "embeddingUpdatedAt",
+    "publishedAt",
   ]) {
     if (key in out) out[key] = toIso(out[key] as Isoable);
   }

@@ -86,7 +86,12 @@ export async function refreshSave(saveId: string): Promise<RefreshOutcome> {
           Boolean(og.payload.mediaUrl),
       });
       try {
-        const result = await ingestFromHttp(og.payload, {
+        // Lift the `--write-info-json` sidecar onto `raw.<source>.ytdlp`
+        // so view/like/duration/chapters land on the existing row.
+        const ogPayload = ytdlpExtras?.infoJson
+          ? mergeInfoJsonIntoPayload(og.payload, source, ytdlpExtras.infoJson)
+          : og.payload;
+        const result = await ingestFromHttp(ogPayload, {
           mediaFiles: ytdlpExtras?.mediaFiles,
           // User-initiated refresh: when yt-dlp produced new bytes,
           // always overwrite. Without `force: true` the merge in
@@ -161,7 +166,10 @@ export async function refreshSave(saveId: string): Promise<RefreshOutcome> {
   });
 
   try {
-    const result = await ingestFromHttp(payload, {
+    const finalPayload = ytdlpExtras?.infoJson
+      ? mergeInfoJsonIntoPayload(payload, source, ytdlpExtras.infoJson)
+      : payload;
+    const result = await ingestFromHttp(finalPayload, {
       mediaFiles: ytdlpExtras?.mediaFiles,
       // Same reasoning as the OG branch above: when yt-dlp landed
       // fresh bytes for an explicit user refresh, always replace the
@@ -176,6 +184,28 @@ export async function refreshSave(saveId: string): Promise<RefreshOutcome> {
     log.error("[pond refresh] hidden-window ingest threw", err);
     return { ok: false, reason: "internal_error" };
   }
+}
+
+function mergeInfoJsonIntoPayload(
+  payload: IngestPayload,
+  source: Source,
+  infoJson: Record<string, unknown>,
+): IngestPayload {
+  const rawIn =
+    payload.raw && typeof payload.raw === "object" && payload.raw !== null
+      ? (payload.raw as Record<string, unknown>)
+      : {};
+  const perSourceIn =
+    rawIn[source] && typeof rawIn[source] === "object" && rawIn[source] !== null
+      ? (rawIn[source] as Record<string, unknown>)
+      : {};
+  return {
+    ...payload,
+    raw: {
+      ...rawIn,
+      [source]: { ...perSourceIn, ytdlp: infoJson },
+    },
+  };
 }
 
 /**
@@ -205,6 +235,7 @@ async function maybeDownloadVideo(args: {
 }): Promise<
   | (Required<Pick<LocalIngestExtras, "mediaFiles">> & {
       cleanup: () => Promise<void>;
+      infoJson: Record<string, unknown> | null;
     })
   | null
 > {
@@ -228,6 +259,7 @@ async function maybeDownloadVideo(args: {
   return {
     mediaFiles: [{ path: result.path, mimeType: result.mimeType }],
     cleanup: result.cleanup,
+    infoJson: result.infoJson,
   };
 }
 

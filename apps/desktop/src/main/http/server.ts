@@ -3,6 +3,7 @@ import { app as electronApp } from "electron";
 import log from "electron-log/main.js";
 import { Hono } from "hono";
 import { DEFAULT_INGEST_PORT } from "../../shared/constants";
+import { getPrefs } from "../core/prefs";
 import { getIngestToken } from "../keychain";
 import { itemAddHandler } from "./item-add";
 import { itemGetHandler } from "./item-get";
@@ -24,7 +25,10 @@ import { pairingHandler } from "./pairing";
  * plus third-party web pages on localhost are a real exposure vector.
  */
 
-function isAllowedOrigin(origin: string | undefined): boolean {
+function isAllowedOrigin(
+  origin: string | undefined,
+  extraAllowed: readonly string[],
+): boolean {
   if (!origin) return true; // curl / non-browser clients
   if (origin.startsWith("chrome-extension://")) return true;
   if (origin.startsWith("moz-extension://")) return true;
@@ -35,6 +39,15 @@ function isAllowedOrigin(origin: string | undefined): boolean {
   } catch {
     /* fall through */
   }
+  // The API settings page lets users add additional allowed origins
+  // (e.g. a Raycast extension running its own embedded webview).
+  for (const allowed of extraAllowed) {
+    if (!allowed) continue;
+    if (origin === allowed) return true;
+    if (allowed.endsWith("*") && origin.startsWith(allowed.slice(0, -1))) {
+      return true;
+    }
+  }
   return false;
 }
 
@@ -43,7 +56,8 @@ function buildApp(): Hono {
 
   api.use("*", async (c, next) => {
     const origin = c.req.header("origin");
-    if (origin && isAllowedOrigin(origin)) {
+    const prefs = await getPrefs();
+    if (origin && isAllowedOrigin(origin, prefs.api.allowedOrigins)) {
       c.res.headers.set("Access-Control-Allow-Origin", origin);
       c.res.headers.set("Vary", "Origin");
       c.res.headers.set(
@@ -106,16 +120,19 @@ function buildApp(): Hono {
 export interface RunningServer {
   server: Server;
   port: number;
+  host: string;
   close: () => Promise<void>;
 }
 
 export async function startHttpServer(
   preferredPort = DEFAULT_INGEST_PORT,
+  bind: "loopback" | "lan" = "loopback",
 ): Promise<RunningServer> {
   const hono = buildApp();
+  const host = bind === "lan" ? "0.0.0.0" : "127.0.0.1";
 
   const nodeServer = createServer(async (req, res) => {
-    const url = `http://127.0.0.1:${preferredPort}${req.url ?? "/"}`;
+    const url = `http://${host}:${preferredPort}${req.url ?? "/"}`;
     const headers = new Headers();
     for (const [k, v] of Object.entries(req.headers)) {
       if (Array.isArray(v)) {
@@ -158,19 +175,18 @@ export async function startHttpServer(
 
   await new Promise<void>((resolve, reject) => {
     nodeServer.once("error", reject);
-    nodeServer.listen(preferredPort, "127.0.0.1", () => {
+    nodeServer.listen(preferredPort, host, () => {
       nodeServer.off("error", reject);
       resolve();
     });
   });
 
-  log.info(
-    `[pond http] listening on http://127.0.0.1:${preferredPort}/api/v2/`,
-  );
+  log.info(`[pond http] listening on http://${host}:${preferredPort}/api/v2/`);
 
   return {
     server: nodeServer,
     port: preferredPort,
+    host,
     close: () =>
       new Promise<void>((resolve, reject) => {
         nodeServer.close((err) => (err ? reject(err) : resolve()));

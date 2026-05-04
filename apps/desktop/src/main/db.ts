@@ -83,6 +83,9 @@ function migrate(sqlite: Database.Database): void {
 			title TEXT,
 			description TEXT,
 			author TEXT,
+			lang TEXT,
+			site_name TEXT,
+			published_at INTEGER,
 			notes TEXT,
 			media_url TEXT,
 			blob_url TEXT,
@@ -92,6 +95,12 @@ function migrate(sqlite: Database.Database): void {
 			ai_tags TEXT NOT NULL DEFAULT '[]',
 			ai_caption TEXT,
 			ai_suggestions TEXT,
+			classification TEXT,
+			ai_summary TEXT,
+			article_html TEXT,
+			article_text TEXT,
+			article_reading_minutes INTEGER,
+			annotations TEXT,
 			ocr_text TEXT,
 			dominant_colors TEXT,
 			files TEXT NOT NULL DEFAULT '[]',
@@ -158,11 +167,28 @@ function migrate(sqlite: Database.Database): void {
 		CREATE TABLE IF NOT EXISTS settings (
 			id TEXT PRIMARY KEY DEFAULT 'singleton',
 			ai_autonomy TEXT NOT NULL,
+			ai_provider TEXT,
 			video_download TEXT NOT NULL DEFAULT '{"enabled":true,"maxHeight":1080,"maxFileSizeMb":500}',
+			prefs TEXT,
 			library_root TEXT,
 			onboarded INTEGER NOT NULL DEFAULT 0,
 			updated_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
 		);
+
+		CREATE TABLE IF NOT EXISTS enrich_jobs (
+			id TEXT PRIMARY KEY,
+			save_id TEXT NOT NULL,
+			kind TEXT NOT NULL,
+			state TEXT NOT NULL DEFAULT 'pending',
+			attempts INTEGER NOT NULL DEFAULT 0,
+			last_error TEXT,
+			next_attempt_at INTEGER NOT NULL,
+			created_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+			updated_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+			UNIQUE(save_id, kind)
+		);
+		CREATE INDEX IF NOT EXISTS enrich_jobs_state_idx ON enrich_jobs(state);
+		CREATE INDEX IF NOT EXISTS enrich_jobs_next_idx ON enrich_jobs(next_attempt_at);
 	`);
 
   // Back-fill for databases created before we added new columns. We could
@@ -182,6 +208,12 @@ function migrate(sqlite: Database.Database): void {
         `ALTER TABLE settings ADD COLUMN video_download TEXT NOT NULL DEFAULT '{"enabled":true,"maxHeight":1080,"maxFileSizeMb":500}'`,
       );
     }
+    if (!settingsCols.some((c) => c.name === "ai_provider")) {
+      sqlite.exec(`ALTER TABLE settings ADD COLUMN ai_provider TEXT`);
+    }
+    if (!settingsCols.some((c) => c.name === "prefs")) {
+      sqlite.exec(`ALTER TABLE settings ADD COLUMN prefs TEXT`);
+    }
 
     const savesCols = sqlite
       .prepare(`PRAGMA table_info(saves)`)
@@ -193,12 +225,70 @@ function migrate(sqlite: Database.Database): void {
         `ALTER TABLE saves ADD COLUMN files TEXT NOT NULL DEFAULT '[]'`,
       );
     }
+    // Each new column added below is conditional so re-runs don't
+    // explode on databases that already saw it.
+    for (const [col, sqlStmt] of [
+      ["classification", "ALTER TABLE saves ADD COLUMN classification TEXT"],
+      ["ai_summary", "ALTER TABLE saves ADD COLUMN ai_summary TEXT"],
+      ["article_html", "ALTER TABLE saves ADD COLUMN article_html TEXT"],
+      ["article_text", "ALTER TABLE saves ADD COLUMN article_text TEXT"],
+      [
+        "article_reading_minutes",
+        "ALTER TABLE saves ADD COLUMN article_reading_minutes INTEGER",
+      ],
+      ["annotations", "ALTER TABLE saves ADD COLUMN annotations TEXT"],
+      // Phase 4: universal fields promoted from `raw.<source>`. All
+      // optional / NULL-able so legacy rows survive without back-fill.
+      ["lang", "ALTER TABLE saves ADD COLUMN lang TEXT"],
+      ["site_name", "ALTER TABLE saves ADD COLUMN site_name TEXT"],
+      ["published_at", "ALTER TABLE saves ADD COLUMN published_at INTEGER"],
+    ] as const) {
+      if (!savesCols.some((c) => c.name === col)) {
+        sqlite.exec(sqlStmt);
+      }
+    }
   } catch (err) {
     log.warn("[pond db] column back-fill failed", err);
   }
 
   // FTS5 virtual table mirrors searchable fields. Populated via triggers so
   // the index stays in sync with `saves` without executor-level plumbing.
+  // We rebuild the table + triggers if any of the indexed columns drift
+  // (e.g. after we added article_text). Cheap because FTS5 contentless
+  // indices regenerate from the trigger inserts.
+  const ftsCols = (() => {
+    try {
+      return sqlite.prepare(`PRAGMA table_info(saves_fts)`).all() as Array<{
+        name: string;
+      }>;
+    } catch {
+      return [] as Array<{ name: string }>;
+    }
+  })();
+  const expectedFtsCols = [
+    "id",
+    "title",
+    "description",
+    "author",
+    "ocr_text",
+    "ai_caption",
+    "ai_summary",
+    "article_text",
+    "tag_names",
+  ];
+  const ftsMissing = expectedFtsCols.some(
+    (c) => !ftsCols.some((existing) => existing.name === c),
+  );
+  if (ftsMissing && ftsCols.length > 0) {
+    try {
+      sqlite.exec(`DROP TABLE IF EXISTS saves_fts`);
+      sqlite.exec(`DROP TRIGGER IF EXISTS saves_ai`);
+      sqlite.exec(`DROP TRIGGER IF EXISTS saves_ad`);
+      sqlite.exec(`DROP TRIGGER IF EXISTS saves_au`);
+    } catch (err) {
+      log.warn("[pond db] fts drop failed", err);
+    }
+  }
   sqlite.exec(`
 		CREATE VIRTUAL TABLE IF NOT EXISTS saves_fts USING fts5(
 			id UNINDEXED,
@@ -207,14 +297,22 @@ function migrate(sqlite: Database.Database): void {
 			author,
 			ocr_text,
 			ai_caption,
+			ai_summary,
+			article_text,
 			tag_names,
 			tokenize = 'porter unicode61'
 		);
 
 		CREATE TRIGGER IF NOT EXISTS saves_ai AFTER INSERT ON saves BEGIN
-			INSERT INTO saves_fts(id, title, description, author, ocr_text, ai_caption, tag_names)
-			VALUES (new.id, new.title, new.description, new.author, new.ocr_text, new.ai_caption,
-				COALESCE(replace(replace(replace(new.tags, '[', ''), ']', ''), '"', ''), ''));
+			INSERT INTO saves_fts(
+				id, title, description, author, ocr_text, ai_caption,
+				ai_summary, article_text, tag_names
+			)
+			VALUES (
+				new.id, new.title, new.description, new.author, new.ocr_text, new.ai_caption,
+				new.ai_summary, new.article_text,
+				COALESCE(replace(replace(replace(new.tags, '[', ''), ']', ''), '"', ''), '')
+			);
 		END;
 
 		CREATE TRIGGER IF NOT EXISTS saves_ad AFTER DELETE ON saves BEGIN
@@ -223,25 +321,163 @@ function migrate(sqlite: Database.Database): void {
 
 		CREATE TRIGGER IF NOT EXISTS saves_au AFTER UPDATE ON saves BEGIN
 			DELETE FROM saves_fts WHERE id = old.id;
-			INSERT INTO saves_fts(id, title, description, author, ocr_text, ai_caption, tag_names)
-			VALUES (new.id, new.title, new.description, new.author, new.ocr_text, new.ai_caption,
-				COALESCE(replace(replace(replace(new.tags, '[', ''), ']', ''), '"', ''), ''));
+			INSERT INTO saves_fts(
+				id, title, description, author, ocr_text, ai_caption,
+				ai_summary, article_text, tag_names
+			)
+			VALUES (
+				new.id, new.title, new.description, new.author, new.ocr_text, new.ai_caption,
+				new.ai_summary, new.article_text,
+				COALESCE(replace(replace(replace(new.tags, '[', ''), ']', ''), '"', ''), '')
+			);
 		END;
 	`);
-
-  // Vector index. 1536-dim matches OpenAI text-embedding-3-small. If
-  // sqlite-vec didn't load, this will fail silently — `vec0` is only
-  // available when the extension is loaded.
-  try {
-    sqlite.exec(`
-			CREATE VIRTUAL TABLE IF NOT EXISTS saves_vec USING vec0(
-				save_id TEXT PRIMARY KEY,
-				embedding FLOAT[1536]
-			);
-		`);
-  } catch (err) {
-    log.warn("[pond db] vec0 not created", err);
+  // If the FTS table was dropped, repopulate it from the live saves rows
+  // so search keeps working before any new edit fires the triggers.
+  if (ftsMissing && ftsCols.length > 0) {
+    try {
+      sqlite.exec(`
+				INSERT INTO saves_fts(
+					id, title, description, author, ocr_text, ai_caption,
+					ai_summary, article_text, tag_names
+				)
+				SELECT
+					id, title, description, author, ocr_text, ai_caption,
+					ai_summary, article_text,
+					COALESCE(replace(replace(replace(tags, '[', ''), ']', ''), '"', ''), '')
+				FROM saves
+			`);
+    } catch (err) {
+      log.warn("[pond db] fts rebuild failed", err);
+    }
   }
+
+  // Vector index. The dim depends on the configured embedding model,
+  // so we read it from settings. Default 768 covers the local
+  // `nomic-embed-text` story; OpenAI users get 1536 once they pick
+  // `text-embedding-3-small` in the AI settings page (which triggers
+  // a re-embed via `recreateVecTable`).
+  try {
+    ensureVecTable(sqlite);
+  } catch (err) {
+    log.warn("[pond db] vec0 setup failed", err);
+  }
+}
+
+/**
+ * Read the embedding dim from `settings.ai_provider` and create
+ * `saves_vec` with the right `FLOAT[<dim>]` shape. Only runs at startup
+ * — schema changes mid-session go through `recreateVecTable` instead.
+ */
+function ensureVecTable(sqlite: Database.Database): void {
+  const dim = readEmbeddingDim(sqlite);
+  const existing = sqlite
+    .prepare(
+      `SELECT name FROM sqlite_master WHERE type='table' AND name='saves_vec'`,
+    )
+    .get() as { name: string } | undefined;
+  if (!existing) {
+    sqlite.exec(
+      `CREATE VIRTUAL TABLE saves_vec USING vec0(
+        save_id TEXT PRIMARY KEY,
+        embedding FLOAT[${dim}]
+      )`,
+    );
+    return;
+  }
+  // Drop + recreate when the configured dim disagrees with what we
+  // stored in the meta cache. This wipes the embeddings; the worker
+  // re-runs `embed` jobs on next sweep.
+  const storedDim = readMetaDim(sqlite);
+  if (storedDim !== null && storedDim !== dim) {
+    log.warn(
+      `[pond db] embedding dim changed (${storedDim} -> ${dim}); recreating vec0`,
+    );
+    sqlite.exec(`DROP TABLE saves_vec`);
+    sqlite.exec(
+      `CREATE VIRTUAL TABLE saves_vec USING vec0(
+        save_id TEXT PRIMARY KEY,
+        embedding FLOAT[${dim}]
+      )`,
+    );
+    sqlite
+      .prepare(
+        `UPDATE saves SET embedding_updated_at = NULL WHERE embedding_updated_at IS NOT NULL`,
+      )
+      .run();
+  }
+  writeMetaDim(sqlite, dim);
+}
+
+/**
+ * Drop and recreate `saves_vec` with a new dimension. Called from the
+ * AI settings page when the user switches embedding model. Wipes
+ * embeddings — the worker re-runs `embed` jobs across the library.
+ */
+export async function recreateVecTable(): Promise<void> {
+  const db = await getDb();
+  const raw = db.$raw;
+  const dim = readEmbeddingDim(raw);
+  raw.exec(`DROP TABLE IF EXISTS saves_vec`);
+  raw.exec(
+    `CREATE VIRTUAL TABLE saves_vec USING vec0(
+      save_id TEXT PRIMARY KEY,
+      embedding FLOAT[${dim}]
+    )`,
+  );
+  raw
+    .prepare(
+      `UPDATE saves SET embedding_updated_at = NULL WHERE embedding_updated_at IS NOT NULL`,
+    )
+    .run();
+  writeMetaDim(raw, dim);
+  log.info(`[pond db] recreated vec0 at dim=${dim}`);
+}
+
+/** Tiny `pond_meta(key,value)` helper used to remember the live vec dim. */
+function readMetaDim(sqlite: Database.Database): number | null {
+  try {
+    sqlite.exec(
+      `CREATE TABLE IF NOT EXISTS pond_meta (key TEXT PRIMARY KEY, value TEXT)`,
+    );
+    const row = sqlite
+      .prepare(`SELECT value FROM pond_meta WHERE key = 'vec_dim'`)
+      .get() as { value: string } | undefined;
+    if (!row) return null;
+    const n = Number.parseInt(row.value, 10);
+    return Number.isFinite(n) ? n : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeMetaDim(sqlite: Database.Database, dim: number): void {
+  try {
+    sqlite
+      .prepare(
+        `INSERT INTO pond_meta(key, value) VALUES('vec_dim', ?)
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
+      )
+      .run(String(dim));
+  } catch {
+    /* ignore */
+  }
+}
+
+function readEmbeddingDim(sqlite: Database.Database): number {
+  try {
+    const row = sqlite
+      .prepare(`SELECT ai_provider FROM settings WHERE id = 'singleton'`)
+      .get() as { ai_provider: string | null } | undefined;
+    if (!row?.ai_provider) return 768;
+    const parsed = JSON.parse(row.ai_provider) as { embeddingDim?: number };
+    if (typeof parsed.embeddingDim === "number" && parsed.embeddingDim > 0) {
+      return parsed.embeddingDim;
+    }
+  } catch {
+    /* fall through */
+  }
+  return 768;
 }
 
 async function ensureLibraryMetadata(): Promise<void> {

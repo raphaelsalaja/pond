@@ -24,7 +24,8 @@
     ".": "./src/index.ts",
     "./db": "./src/db.ts",
     "./tx": "./src/tx.ts",
-    "./ingest": "./src/ingest.ts"
+    "./ingest": "./src/ingest.ts",
+    "./raw": "./src/raw.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

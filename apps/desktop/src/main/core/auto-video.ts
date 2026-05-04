@@ -230,11 +230,15 @@ async function processJob(job: AutoVideoJob): Promise<void> {
     // Merge into the existing save via the standard ingest path. We
     // re-build the minimum payload from the row so the merge logic in
     // refreshExisting() doesn't downgrade title/description (it only
-    // overwrites fields when the new value is "richer").
+    // overwrites fields when the new value is "richer"). Lift the
+    // `--write-info-json` sidecar's curated subset onto
+    // `raw.<source>.ytdlp` so view/like/duration/chapters surface
+    // without an extra extractor call.
     const payload: IngestPayload = {
       source: job.source,
       sourceId: job.sourceId,
       url: job.url,
+      ...(dl.infoJson ? { raw: { [job.source]: { ytdlp: dl.infoJson } } } : {}),
     };
     await ingestFromHttp(payload, {
       mediaFiles: [{ path: dl.path, mimeType: dl.mimeType }],

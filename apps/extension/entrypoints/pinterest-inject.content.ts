@@ -287,6 +287,10 @@ export default defineContentScript({
       }
       if (!out.gallery && extra.gallery) out.gallery = extra.gallery;
       if (!out.url && extra.url) out.url = extra.url;
+      // Shallow-merge per-source typed bag.
+      if (extra.pinterest) {
+        out.pinterest = { ...(out.pinterest ?? {}), ...extra.pinterest };
+      }
       return out;
     }
 
@@ -330,6 +334,47 @@ export default defineContentScript({
       const u = pinData.pinner ?? pinData.native_creator;
       if (u && typeof u.username === "string") author = `@${u.username}`;
 
+      // Per-source typed bag — mirrors `RawPinterest` on the desktop side
+      // so the renderer can feature-detect counts / board / domain.
+      const pinterest: Record<string, unknown> = {};
+      if (u && typeof u.full_name === "string")
+        pinterest.authorName = u.full_name;
+      if (u && typeof u.image_medium_url === "string") {
+        pinterest.authorAvatar = u.image_medium_url;
+      } else if (u && typeof u.image_small_url === "string") {
+        pinterest.authorAvatar = u.image_small_url;
+      }
+      if (u && typeof u.username === "string") {
+        pinterest.authorUrl = `https://www.pinterest.com/${u.username}/`;
+      }
+      const board = pinData.board;
+      if (board && typeof board === "object") {
+        const b: Record<string, unknown> = {};
+        if (board.id) b.id = String(board.id);
+        if (typeof board.name === "string") b.name = board.name;
+        if (typeof board.url === "string") {
+          b.url = board.url.startsWith("http")
+            ? board.url
+            : `https://www.pinterest.com${board.url}`;
+        }
+        if (Object.keys(b).length > 0) pinterest.board = b;
+      }
+      const metrics: Record<string, number> = {};
+      if (typeof pinData.repin_count === "number") {
+        metrics.repins = pinData.repin_count;
+      }
+      if (typeof pinData.comment_count === "number") {
+        metrics.comments = pinData.comment_count;
+      }
+      if (Object.keys(metrics).length > 0) pinterest.metrics = metrics;
+      if (typeof pinData.created_at === "string") {
+        pinterest.publishedAt = pinData.created_at;
+      }
+      if (typeof pinData.domain === "string") pinterest.domain = pinData.domain;
+      if (pinData.rich_summary && typeof pinData.rich_summary === "object") {
+        pinterest.richSummary = pinData.rich_summary;
+      }
+
       const out: any = {
         url,
         title,
@@ -337,6 +382,7 @@ export default defineContentScript({
         author,
         mediaUrl: null,
         mediaType: null,
+        ...(Object.keys(pinterest).length > 0 ? { pinterest } : {}),
       };
 
       if (pinData.story_pin_data) {
@@ -414,6 +460,7 @@ export default defineContentScript({
       if (ctx?.gallery && ctx.gallery.length > 1) {
         payload.raw.gallery = ctx.gallery;
       }
+      if (ctx?.pinterest) payload.raw.pinterest = ctx.pinterest;
 
       capture(payload);
 

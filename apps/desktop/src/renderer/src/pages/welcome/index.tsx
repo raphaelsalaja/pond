@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Button,
@@ -13,6 +13,19 @@ import {
   useToast,
 } from "../../ui";
 import styles from "./styles.module.css";
+
+type BackfillSource = "twitter";
+
+interface BackfillEntry {
+  state: "idle" | "running" | "done" | "error" | "auth_required";
+  message?: string;
+  progress?: { current: number; total: number };
+  lastSyncedAt: string | null;
+}
+
+const BACKFILL_SOURCES: ReadonlyArray<{ id: BackfillSource; label: string }> = [
+  { id: "twitter", label: "Twitter / X bookmarks" },
+];
 
 /**
  * First-run onboarding. Three beats:
@@ -134,6 +147,16 @@ export function WelcomePage() {
             appear in your library within a second.
           </p>
         </li>
+
+        <li>
+          <h3>Backfill from connected sources</h3>
+          <p>
+            Already have bookmarks elsewhere? Connect a source from{" "}
+            <strong>Settings → Connected accounts</strong> and Pond will scrape
+            your full history into the local library.
+          </p>
+          <BackfillPanel />
+        </li>
       </ol>
 
       <div className={styles.done}>
@@ -141,6 +164,153 @@ export function WelcomePage() {
           I'm set up → Open library
         </Button>
       </div>
+    </div>
+  );
+}
+
+/**
+ * First-run backfill panel. One row per supported list-harvest source —
+ * fires `syncSource(<src>, { mode: "backfill" })` on click and renders
+ * progress via `IPC.syncStatus`. Sources the user hasn't connected yet
+ * get a "Connect first" CTA so the button can't no-op silently.
+ */
+function BackfillPanel() {
+  const toast = useToast();
+  const [connections, setConnections] = useState<
+    Partial<Record<BackfillSource, boolean>>
+  >({});
+  const [entries, setEntries] = useState<
+    Partial<Record<BackfillSource, BackfillEntry>>
+  >({});
+
+  const refreshStatus = useCallback(async (src: BackfillSource) => {
+    const s = await window.pond.syncStatus(src).catch(() => null);
+    if (!s?.ok) return;
+    setEntries((prev) => ({
+      ...prev,
+      [src]: {
+        state: s.running ? "running" : "idle",
+        lastSyncedAt: s.lastSyncedAt ?? null,
+      },
+    }));
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      for (const { id } of BACKFILL_SOURCES) {
+        const r = await window.pond.sourceStatus(id).catch(() => null);
+        if (!active) return;
+        setConnections((prev) => ({
+          ...prev,
+          [id]: r?.ok ? r.connected : false,
+        }));
+        await refreshStatus(id);
+      }
+    })();
+    const off = window.pond.onSyncStatus((upd) => {
+      const src = BACKFILL_SOURCES.find((s) => s.id === upd.source);
+      if (!src) return;
+      setEntries((prev) => ({
+        ...prev,
+        [src.id]: {
+          state: upd.state,
+          message: upd.message,
+          progress: upd.progress,
+          lastSyncedAt: upd.lastSyncedAt ?? prev[src.id]?.lastSyncedAt ?? null,
+        },
+      }));
+    });
+    return () => {
+      active = false;
+      off();
+    };
+  }, [refreshStatus]);
+
+  async function startBackfill(src: BackfillSource) {
+    const r = await window.pond.syncRunNow(src, "backfill");
+    if (!r.ok) {
+      toast.add({
+        title:
+          r.reason === "already_running"
+            ? "Backfill already running"
+            : "Couldn't start backfill",
+        type: r.reason === "already_running" ? "info" : "error",
+      });
+    }
+  }
+
+  async function connect(src: BackfillSource) {
+    await window.pond.connectSource(src);
+    const r = await window.pond.sourceStatus(src).catch(() => null);
+    setConnections((prev) => ({
+      ...prev,
+      [src]: r?.ok ? r.connected : false,
+    }));
+  }
+
+  return (
+    <div>
+      {BACKFILL_SOURCES.map(({ id, label }) => {
+        const connected = connections[id];
+        const entry = entries[id];
+        const isRunning = entry?.state === "running";
+        const pct = entry?.progress
+          ? Math.min(
+              100,
+              Math.max(
+                0,
+                Math.round(
+                  (entry.progress.current / Math.max(entry.progress.total, 1)) *
+                    100,
+                ),
+              ),
+            )
+          : null;
+        return (
+          <div key={id}>
+            <div className={styles.backfillRow}>
+              <div className={styles.backfillLabel}>
+                <span>{label}</span>
+                <span className={styles.backfillStatus}>
+                  {connected === false
+                    ? "Not connected"
+                    : entry?.state === "running"
+                      ? (entry.message ?? "Syncing…")
+                      : entry?.state === "error"
+                        ? `Failed: ${entry.message ?? "unknown"}`
+                        : entry?.state === "auth_required"
+                          ? "Sign in required"
+                          : entry?.lastSyncedAt
+                            ? "Up to date"
+                            : "Ready"}
+                </span>
+              </div>
+              {connected === false ? (
+                <Button size="sm" onClick={() => void connect(id)}>
+                  Connect
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  disabled={isRunning}
+                  onClick={() => void startBackfill(id)}
+                >
+                  {isRunning ? "Running…" : "Backfill all"}
+                </Button>
+              )}
+            </div>
+            {pct !== null ? (
+              <div className={styles.backfillBar}>
+                <span
+                  className={styles.backfillBarFill}
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+            ) : null}
+          </div>
+        );
+      })}
     </div>
   );
 }

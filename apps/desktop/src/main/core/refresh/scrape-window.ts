@@ -2,7 +2,41 @@ import type { Source } from "@pond/schema/db";
 import { BrowserWindow, type Cookie, session } from "electron";
 import log from "electron-log/main.js";
 import { harvesterFor } from "./harvest";
+import {
+  arenaProfileUrl,
+  buildArenaListExpression,
+} from "./harvest/arena-list";
+import {
+  buildCosmosListExpression,
+  COSMOS_LIST_URL,
+} from "./harvest/cosmos-list";
+import {
+  buildInstagramListExpression,
+  instagramSavedUrl,
+} from "./harvest/instagram-list";
+import type { ListHarvestArgs, ListHarvestResult } from "./harvest/list-types";
+import {
+  buildPinterestListExpression,
+  pinterestProfileUrl,
+} from "./harvest/pinterest-list";
+import {
+  buildRedditListExpression,
+  redditSavedUrl,
+} from "./harvest/reddit-list";
+import {
+  buildTiktokListExpression,
+  tiktokFavouritesUrl,
+} from "./harvest/tiktok-list";
+import {
+  type BookmarksHarvestArgs,
+  type BookmarksHarvestResult,
+  buildBookmarksExpression,
+} from "./harvest/twitter-bookmarks";
 import type { ScrapedHarvest } from "./harvest/types";
+import {
+  buildYoutubeListExpression,
+  YOUTUBE_LIST_URLS,
+} from "./harvest/youtube-list";
 import { homeUrlForSource } from "./sources";
 
 /**
@@ -129,6 +163,197 @@ export async function harvestUrl(args: HarvestArgs): Promise<HarvestResult> {
 }
 
 /**
+ * Generic per-source list harvester. Each Phase-3 source ships its own
+ * `harvest/<source>-list.ts` with a `build<Source>ListExpression(args)`
+ * builder; we navigate the hidden window to a source-specific list URL,
+ * eval the expression, and return the typed `ListHarvestResult`.
+ *
+ * Sources that need account-specific URLs (Are.na/Pinterest/Instagram/
+ * Reddit/TikTok all key off the user's handle/slug) accept an
+ * `accountKey` argument the orchestrator resolves before calling.
+ */
+export interface SourceListArgs extends ListHarvestArgs {
+  /** Per-source profile slug. Required for sources whose list URL needs it. */
+  accountKey?: string;
+}
+
+export async function harvestSourceList(
+  source: Source,
+  args: SourceListArgs,
+): Promise<ListHarvestResult> {
+  const win = ensureHidden();
+  const target = listUrlForSource(source, args.accountKey);
+  if (!target) {
+    return { ok: false, reason: "no_match" };
+  }
+  try {
+    const navOk = await navigateWithTimeout(win, target, NAV_TIMEOUT_MS);
+    if (!navOk) {
+      return { ok: false, reason: "timeout" };
+    }
+    if (looksLikeAuthWall(win.webContents.getURL())) {
+      return { ok: false, reason: "auth_required" };
+    }
+    const expr = buildListExpressionFor(source, args);
+    if (!expr) {
+      return { ok: false, reason: "no_match" };
+    }
+    const raw = await Promise.race([
+      win.webContents.executeJavaScript(expr, true),
+      sleep(90_000).then(() => "__pond_list_timeout__"),
+    ]);
+    if (raw === "__pond_list_timeout__") {
+      log.warn("[pond list]", source, "harvest timed out");
+      return { ok: false, reason: "timeout" };
+    }
+    if (!raw || typeof raw !== "object") {
+      return { ok: false, reason: "no_match" };
+    }
+    return raw as ListHarvestResult;
+  } catch (err) {
+    log.warn("[pond list]", source, "unexpected error", err);
+    return { ok: false, reason: "timeout" };
+  }
+}
+
+function listUrlForSource(
+  source: Source,
+  accountKey: string | undefined,
+): string | null {
+  switch (source) {
+    case "youtube":
+      return YOUTUBE_LIST_URLS[0];
+    case "cosmos":
+      return COSMOS_LIST_URL;
+    case "arena":
+      return accountKey ? arenaProfileUrl(accountKey) : null;
+    case "pinterest":
+      return accountKey ? pinterestProfileUrl(accountKey) : null;
+    case "instagram":
+      return accountKey ? instagramSavedUrl(accountKey) : null;
+    case "reddit":
+      return accountKey ? redditSavedUrl(accountKey) : null;
+    case "tiktok":
+      return accountKey ? tiktokFavouritesUrl(accountKey) : null;
+    case "twitter":
+    case "article":
+      return null;
+  }
+}
+
+function buildListExpressionFor(
+  source: Source,
+  args: ListHarvestArgs,
+): string | null {
+  switch (source) {
+    case "youtube":
+      return buildYoutubeListExpression(args);
+    case "cosmos":
+      return buildCosmosListExpression(args);
+    case "arena":
+      return buildArenaListExpression(args);
+    case "pinterest":
+      return buildPinterestListExpression(args);
+    case "instagram":
+      return buildInstagramListExpression(args);
+    case "reddit":
+      return buildRedditListExpression(args);
+    case "tiktok":
+      return buildTiktokListExpression(args);
+    case "twitter":
+    case "article":
+      return null;
+  }
+}
+
+/**
+ * YouTube exposes Watch Later (`WL`) and Liked (`LL`) on separate
+ * URLs. This helper lets the orchestrator opt into a follow-up pass
+ * once the first list returns.
+ */
+export async function harvestYoutubeLikedList(
+  args: ListHarvestArgs,
+): Promise<ListHarvestResult> {
+  const win = ensureHidden();
+  try {
+    const navOk = await navigateWithTimeout(
+      win,
+      YOUTUBE_LIST_URLS[1],
+      NAV_TIMEOUT_MS,
+    );
+    if (!navOk) return { ok: false, reason: "timeout" };
+    if (looksLikeAuthWall(win.webContents.getURL())) {
+      return { ok: false, reason: "auth_required" };
+    }
+    const expr = buildYoutubeListExpression(args);
+    const raw = await Promise.race([
+      win.webContents.executeJavaScript(expr, true),
+      sleep(90_000).then(() => "__pond_yt_ll_timeout__"),
+    ]);
+    if (raw === "__pond_yt_ll_timeout__") {
+      return { ok: false, reason: "timeout" };
+    }
+    if (!raw || typeof raw !== "object") {
+      return { ok: false, reason: "no_match" };
+    }
+    return raw as ListHarvestResult;
+  } catch (err) {
+    log.warn("[pond list] youtube LL unexpected error", err);
+    return { ok: false, reason: "timeout" };
+  }
+}
+
+/**
+ * Drive the hidden window to the user's Twitter bookmarks list and run
+ * the bookmarks harvester. Reuses the same persistent partition as
+ * `harvestUrl` so it picks up the user's cookies; `BookmarksHarvestArgs`
+ * controls dedup + cap behaviour. Detects auth wall the same way
+ * (Twitter redirects to `/i/flow/login`).
+ *
+ * Twitter keeps a bespoke entry point because it predates the generic
+ * `harvestSourceList()` driver and produces a `BookmarksHarvestResult`
+ * shape with `tweetId` rather than `sourceId`. The orchestrator
+ * funnels both through the same dedupe + per-item enrichment loop.
+ */
+export async function harvestTwitterBookmarks(
+  args: BookmarksHarvestArgs,
+): Promise<BookmarksHarvestResult> {
+  const win = ensureHidden();
+  try {
+    const navOk = await navigateWithTimeout(
+      win,
+      "https://x.com/i/bookmarks",
+      NAV_TIMEOUT_MS,
+    );
+    if (!navOk) {
+      return { ok: false, reason: "timeout" };
+    }
+    if (looksLikeAuthWall(win.webContents.getURL())) {
+      return { ok: false, reason: "auth_required" };
+    }
+    const expr = buildBookmarksExpression(args);
+    // Bookmarks scrape can take ~30s on a logged-in account with hundreds
+    // of items, so we give it a longer timeout than the per-tweet
+    // harvester. Still capped so a hung page doesn't pin the window.
+    const raw = await Promise.race([
+      win.webContents.executeJavaScript(expr, true),
+      sleep(90_000).then(() => "__pond_bookmarks_timeout__"),
+    ]);
+    if (raw === "__pond_bookmarks_timeout__") {
+      log.warn("[pond bookmarks] harvest timed out");
+      return { ok: false, reason: "timeout" };
+    }
+    if (!raw || typeof raw !== "object") {
+      return { ok: false, reason: "no_match" };
+    }
+    return raw as BookmarksHarvestResult;
+  } catch (err) {
+    log.warn("[pond bookmarks] unexpected error", err);
+    return { ok: false, reason: "timeout" };
+  }
+}
+
+/**
  * Pop a *visible* window pointed at the source's login URL. The user
  * signs in there; cookies land in the same `persist:pond-scrapers`
  * partition the hidden window uses, so subsequent refreshes are
@@ -172,6 +397,21 @@ export async function signInToSource(source: Source): Promise<{ ok: boolean }> {
   await new Promise<void>((resolve) => {
     win.once("closed", () => resolve());
   });
+
+  // Kick an immediate incremental sync the moment the user finishes
+  // sign-in. Without this the cron picks them up within ~60s anyway,
+  // but the perceived latency on a fresh connect (esp. Twitter) is
+  // jarring. Lazy-imported to avoid the `sync` ↔ `scrape-window`
+  // module cycle; fire-and-forget so the connect IPC isn't blocked.
+  if (await isSourceConnected(source)) {
+    void import("../sync")
+      .then(({ syncSource }) =>
+        syncSource(source, { mode: "incremental", trigger: "manual" }),
+      )
+      .catch((err) =>
+        log.warn("[pond refresh:signin] post-signin sync threw", err),
+      );
+  }
 
   return { ok: true };
 }
@@ -285,6 +525,8 @@ function primaryDomainForSource(source: Source): string | null {
       return ".are.na";
     case "youtube":
       return ".youtube.com";
+    case "reddit":
+      return ".reddit.com";
     case "article":
       return null;
   }

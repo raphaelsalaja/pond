@@ -1,4 +1,3 @@
-import ArrowUpRight from "@pond/icons/outline/arrow-up-right";
 import XMark from "@pond/icons/outline/xmark";
 import { useCallback, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -8,8 +7,11 @@ import { SavePreview } from "../save-preview";
 import styles from "./styles.module.css";
 
 /**
- * Right-side preview pane (Eagle-style). Reads `?id=<saveId>` from
- * the URL and slides in when present. Cards in `<SavesView>` and
+ * Right-side preview pane (Eagle-style). The third column of the
+ * shell — only mounted when something is actually selected so the
+ * layout collapses to two columns (sidebar | content) at rest.
+ *
+ * Reads `?id=<saveId>` from the URL. Cards in `<SavesView>` and
  * `<TrashView>` flip the search param via `useSearchParams` instead
  * of navigating, so the grid stays mounted.
  *
@@ -17,11 +19,6 @@ import styles from "./styles.module.css";
  *   - back/forward navigates between selected saves
  *   - deep-linkable (`pond://item?id=…` could land directly here)
  *   - all sibling list views see the same selection
- *
- * The pane lives in the shell (`<App>`) so it overlays consistently
- * regardless of which list view is mounted. It renders nothing when
- * no `?id=` is set, so list views without selection take the full
- * width of `<main>`.
  */
 export function PreviewPane() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -35,15 +32,9 @@ export function PreviewPane() {
     setSearchParams(next, { replace: true });
   }, [searchParams, setSearchParams]);
 
-  const expand = useCallback(() => {
-    if (!id) return;
-    const next = new URLSearchParams(searchParams);
-    next.set("focus", id);
-    setSearchParams(next, { replace: true });
-  }, [id, searchParams, setSearchParams]);
-
-  // ESC closes the pane. Only listen while open so we don't fight with
-  // dialogs / menus that have their own ESC handling.
+  // ESC clears the selection. Only listen while a save is selected so
+  // we don't fight with dialogs / menus that have their own ESC
+  // handling.
   useEffect(() => {
     if (!id) return;
     const onKey = (e: KeyboardEvent) => {
@@ -56,26 +47,15 @@ export function PreviewPane() {
   if (!id) return null;
 
   return (
-    <aside className={styles.pane} aria-label="Preview">
+    <aside className={styles.pane} aria-label="Inspector">
       <div className={styles.toolbar}>
-        <Tooltip content="Open fullscreen (double-click card)">
-          <Button
-            variant="ghost"
-            size="sm"
-            iconOnly
-            onClick={expand}
-            aria-label="Open fullscreen preview"
-          >
-            <ArrowUpRight width={14} height={14} />
-          </Button>
-        </Tooltip>
-        <Tooltip content="Close preview (Esc)">
+        <Tooltip content="Clear selection (Esc)">
           <Button
             variant="ghost"
             size="sm"
             iconOnly
             onClick={close}
-            aria-label="Close preview"
+            aria-label="Clear selection"
           >
             <XMark width={14} height={14} />
           </Button>

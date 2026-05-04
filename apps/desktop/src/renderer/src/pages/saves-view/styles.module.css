@@ -5,50 +5,233 @@
   padding-top: 16px;
 }
 
-/* ---- Toolbar ----------------------------------------------------- */
-/*
- * The toolbar groups a page-level title with a single, unobtrusive
- * search input. The Figma frame doesn't show a header here at all,
- * but a compact title row anchors the route so users always know
- * where they are when bouncing between sources.
- */
+/* ------------------------------------------------------------------ */
+/* List view — Eagle-style sortable table.                            */
+/*                                                                    */
+/* A real `<table>` so the browser handles column alignment, semantic */
+/* sorting (aria-sort), and arrow-key navigation between rows for     */
+/* free. Header row stays visible while the body scrolls (sticky      */
+/* top). Selected row picks up an accent-tinted background instead    */
+/* of the global hover wash so it reads at a glance.                  */
+/* ------------------------------------------------------------------ */
 
-.toolbar {
+.table {
+  width: 100%;
+  font-size: 12px;
+  table-layout: auto;
+  border-collapse: collapse;
+}
+
+.table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--pond-fg-soft);
+  text-align: left;
+  user-select: none;
+  background: var(--pond-bg);
+  border-bottom: 1px solid var(--pond-border);
+}
+
+.colHeader {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  width: 100%;
+  padding: 8px 12px;
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+}
+
+.colHeader:hover {
+  color: var(--pond-fg);
+}
+
+.sortIndicator {
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+.table tbody tr {
+  cursor: pointer;
+  border-bottom: 1px solid var(--pond-border);
+}
+
+.table tbody tr:hover {
+  background: var(--pond-hover);
+}
+
+.table tbody tr[aria-selected="true"] {
+  background: color-mix(in srgb, var(--pond-accent) 14%, transparent);
+}
+
+/* Column-level rules first, then any cascade overrides further down,
+ * so source order matches ascending specificity (Biome's
+ * `noDescendingSpecificity`). */
+.colThumb {
+  width: 36px;
+  padding: 4px 6px 4px 12px;
+}
+
+.colName {
+  max-width: 360px;
+  color: var(--pond-fg);
+  word-break: break-word;
+}
+
+.colTags {
+  max-width: 240px;
+}
+
+.colDim,
+.colExt,
+.colSize,
+.colDate {
+  white-space: nowrap;
+}
+
+.colDate {
+  font-variant-numeric: tabular-nums;
+}
+
+.colMuted {
+  color: var(--pond-meta);
+}
+
+.colHeader {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  width: 100%;
+  padding: 8px 12px;
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+}
+
+.colHeader:hover {
+  color: var(--pond-fg);
+}
+
+.listThumb {
+  display: block;
+  width: 24px;
+  height: 24px;
+  overflow: hidden;
+  background: light-dark(rgba(0, 0, 0, 0.04), rgba(255, 255, 255, 0.04));
+  border-radius: 3px;
+}
+
+/* The CardThumb renders an internal wrapper with its own border-radius
+ * and shadow; collapse those for the tiny list-mode thumb. `:where()`
+ * keeps the selector's specificity at (0,1,0). */
+:where(.listThumb > *) {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  box-shadow: none;
+}
+
+.listThumb img,
+.listThumb video {
+  object-fit: cover;
+}
+
+.tagChips {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.tagChip {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 6px;
+  font-size: 10px;
+  color: var(--pond-fg-soft);
+  background: light-dark(rgba(0, 0, 0, 0.04), rgba(255, 255, 255, 0.04));
+  border-radius: 3px;
+}
+
+.tagChipMore {
+  font-size: 10px;
+  color: var(--pond-meta);
+}
+
+.extChip {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 6px;
+  font-size: 10px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--pond-fg-soft);
+  text-transform: uppercase;
+  background: light-dark(rgba(0, 0, 0, 0.05), rgba(255, 255, 255, 0.06));
+  border-radius: 3px;
+}
+
+/* Cascade overrides for selected rows — defined last so source order
+ * matches their higher specificity. */
+.table tbody tr[aria-selected="true"] .colName {
+  font-weight: 550;
+  color: var(--pond-accent);
+}
+
+.table tbody td {
+  padding: 6px 12px;
+  vertical-align: middle;
+  color: var(--pond-fg-soft);
+}
+
+/* Timeline + Color views — share the same heading + grouped grid look. */
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.timelineSection {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.titleRow {
+.timelineHeading {
   display: flex;
-  gap: 8px;
-  align-items: baseline;
-}
-
-.title {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--pond-fg);
-  letter-spacing: -0.3px;
-}
-
-.count {
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-  color: var(--pond-muted);
-}
-
-.filters {
-  display: flex;
-  flex-wrap: wrap;
   gap: 8px;
   align-items: center;
+  padding: 0 16px;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--pond-fg-soft);
+  text-transform: capitalize;
+  letter-spacing: 0.04em;
 }
 
-/* Active-tag pill — sits next to the search input as a removable chip.
- * The double-class selector bumps specificity above the wrapped
- * `<Button>`'s default border-radius. */
-.tagPill.tagPill {
-  border-radius: 999px;
+.timelineCount {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--pond-meta);
+}
+
+.swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 1px solid var(--pond-border);
+  border-radius: 2px;
 }

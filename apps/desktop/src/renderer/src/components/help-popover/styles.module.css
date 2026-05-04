@@ -1,0 +1,96 @@
+/* ------------------------------------------------------------------ */
+/* Help popover — the floating "?" launcher anchored to the bottom-    */
+/* left of the sidebar. Trigger is a 32×32 circular button; the popup  */
+/* uses the shared `<Popover>` chrome with light item overrides.        */
+/* ------------------------------------------------------------------ */
+
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  font: inherit;
+  color: var(--pond-fg-soft);
+  cursor: pointer;
+  background: light-dark(#ececef, rgba(255, 255, 255, 0.08));
+  border: 0;
+  border-radius: 999px;
+  box-shadow:
+    0 0 0 1px light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.06)),
+    0 4px 10px -4px rgba(0, 0, 0, 0.2);
+  transition:
+    color 80ms ease,
+    background 80ms ease,
+    transform 120ms ease;
+}
+
+.trigger:hover {
+  color: var(--pond-fg);
+  background: light-dark(#dfdfe2, rgba(255, 255, 255, 0.12));
+  transform: translateY(-1px);
+}
+
+.trigger:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--pond-bg),
+    0 0 0 4px light-dark(rgba(0, 0, 0, 0.4), rgba(255, 255, 255, 0.45));
+}
+
+/* Slightly wider than the default popover so the "G then S" hint and
+ * external-link arrow have breathing room. */
+.menu {
+  min-width: 280px;
+}
+
+/* ---- "What's new" row ------------------------------------------- */
+
+.whatsNewRow {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  height: 28px;
+  padding: 0 8px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--pond-fg-soft);
+  text-align: left;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: var(--pond-radius-md);
+  transition: background 80ms ease;
+}
+
+.whatsNewRow:hover,
+.whatsNewRow:focus-visible {
+  color: var(--pond-fg);
+  outline: none;
+  background: var(--pond-hover);
+}
+
+.whatsNewDot {
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  margin-left: 5px;
+  background: var(--pond-muted);
+  border-radius: 999px;
+}
+
+.whatsNewLabel {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.whatsNewMeta {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  color: var(--pond-muted);
+}

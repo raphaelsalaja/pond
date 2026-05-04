@@ -7,16 +7,37 @@
 /* ------------------------------------------------------------------ */
 
 .sidebar {
+  position: relative;
   display: flex;
   flex-shrink: 0;
   flex-direction: column;
-  gap: 12px;
   width: 224px;
   height: 100%;
-  padding: 0 12px 24px;
-  overflow-y: auto;
   background: var(--pond-bg);
   border-radius: var(--pond-radius-xl);
+}
+
+/* Scrolling region: hosts the logo + all groups. `min-height: 0` is
+ * required so the flex child can actually shrink and scroll instead
+ * of pushing the footer out of view. */
+.scroll {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  padding: 12px 12px 0;
+  overflow-y: auto;
+}
+
+/* Footer: home for the help launcher. Sits outside the scrolling
+ * region so it's always pinned to the bottom-left of the sidebar
+ * regardless of source-list length. */
+.footer {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  padding: 12px;
 }
 
 /* ---- Logo --------------------------------------------------------- */
@@ -48,46 +69,6 @@
   letter-spacing: -0.28px;
 }
 
-/* ---- Search box --------------------------------------------------- */
-
-.search {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 32px;
-  padding: 0 8px 0 12px;
-  font: inherit;
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-  background: var(--pond-card);
-  border: 0;
-  border-radius: var(--pond-radius-lg);
-  box-shadow: var(--pond-search-shadow);
-}
-
-.searchPlaceholder {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--pond-muted-2);
-  letter-spacing: -0.09px;
-}
-
-.searchKbd {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 16px;
-  padding: 0 4px;
-  font-family:
-    "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  font-size: 11px;
-  color: var(--pond-muted-2);
-  letter-spacing: -0.09px;
-  background: rgba(0, 0, 0, 0.05);
-  border-radius: 2px;
-}
-
 /* ---- Sections ----------------------------------------------------- */
 
 .group {
@@ -106,6 +87,16 @@
   font-weight: 550;
   color: var(--pond-muted);
   letter-spacing: 0.01px;
+}
+
+.subgroupLabel {
+  padding: 4px 6px 2px;
+  margin: 6px 0 0;
+  font-size: 10px;
+  font-weight: 550;
+  color: var(--pond-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 /* ---- Items -------------------------------------------------------- */
@@ -199,4 +190,24 @@
   margin: 0;
   font-size: 12px;
   color: var(--pond-muted);
+}
+
+/* ---- macOS traffic-light reservation ----------------------------- */
+
+/* macOS hosts the traffic lights at the top-left of the window, which
+ * means they overlap the top of the sidebar. Reserve ~50px on the
+ * scrolling region's top edge and make the sidebar itself draggable
+ * so the traffic-light strip behaves as a window-grab area. */
+:global(.pond-shell--mac) .sidebar {
+  -webkit-app-region: drag;
+}
+
+:global(.pond-shell--mac) .scroll {
+  padding-top: 50px;
+}
+
+/* Interactive children inside the sidebar opt back out of the drag
+ * region so clicks reach the navigation rows and the help button. */
+:global(.pond-shell--mac) .sidebar > * {
+  -webkit-app-region: no-drag;
 }

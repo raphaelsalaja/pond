@@ -25,6 +25,7 @@ export const SOURCES = [
   "cosmos",
   "tiktok",
   "youtube",
+  "reddit",
   "article",
 ] as const;
 export type Source = (typeof SOURCES)[number];
@@ -69,6 +70,50 @@ export interface AiSuggestion<T> {
 export interface AiSuggestionsForSave {
   tags?: AiSuggestion<string[]>;
   caption?: AiSuggestion<string>;
+  ocr?: AiSuggestion<string>;
+  classification?: AiSuggestion<SaveClassification>;
+  summary?: AiSuggestion<string>;
+}
+
+/**
+ * Mymind-style classification of what the save *is*. Drives reader mode,
+ * card chrome, and filter chips. Free-form `other` covers anything the
+ * classifier isn't sure about.
+ */
+export const SAVE_CLASSIFICATIONS = [
+  "article",
+  "product",
+  "recipe",
+  "quote",
+  "video",
+  "image",
+  "code",
+  "other",
+] as const;
+export type SaveClassification = (typeof SAVE_CLASSIFICATIONS)[number];
+
+/** Where a highlight starts/ends in the cleaned article text. */
+export interface TextHighlight {
+  id: string;
+  start: number;
+  end: number;
+  text: string;
+  note?: string;
+  color?: string;
+  createdAt: string;
+}
+
+/** Single bookmark on a video timeline. */
+export interface VideoTimestamp {
+  id: string;
+  timeSec: number;
+  note: string;
+  createdAt: string;
+}
+
+export interface SaveAnnotations {
+  highlights?: TextHighlight[];
+  timestamps?: VideoTimestamp[];
 }
 
 export const saves = sqliteTable(
@@ -81,6 +126,22 @@ export const saves = sqliteTable(
     title: text("title"),
     description: text("description"),
     author: text("author"),
+    /**
+     * Page language (BCP-47), promoted from `raw.<source>.lang` /
+     * `<html lang>` / OG. Phase-4 universal field. Optional; older
+     * rows pre-migration carry `null`.
+     */
+    lang: text("lang"),
+    /**
+     * Human display name of the source site (`og:site_name` on
+     * articles, `"Twitter / X"` on tweets, etc.). Promoted from
+     * `raw.<source>.siteName`. Phase-4 universal field.
+     */
+    siteName: text("site_name"),
+    /** Author-side post timestamp (ISO-8601 string in metadata.json,
+     * Date here). Distinct from `savedAt` (user save time) and
+     * `createdAt` (row insert time). */
+    publishedAt: integer("published_at", { mode: "timestamp_ms" }),
     notes: text("notes"),
     mediaUrl: text("media_url"),
     /** `pond://<id>/<file>` URI resolving to the local copy in the library. */
@@ -98,6 +159,31 @@ export const saves = sqliteTable(
     aiCaption: text("ai_caption"),
     aiSuggestions: text("ai_suggestions", { mode: "json" })
       .$type<AiSuggestionsForSave | null>()
+      .default(null),
+    /**
+     * AI-assigned content type — drives reader mode and card chrome.
+     * `null` until the classifier has run for this save.
+     */
+    classification: text("classification").$type<SaveClassification | null>(),
+    /** Short AI-generated summary used in cards and the inbox preview. */
+    aiSummary: text("ai_summary"),
+    /**
+     * Cleaned article HTML extracted at ingest time via Readability.
+     * Stored alongside the index so reader mode works offline forever.
+     * `null` for non-article saves.
+     */
+    articleHtml: text("article_html"),
+    /** Plain-text version of the article body, for FTS + AI summarisation. */
+    articleText: text("article_text"),
+    /** Article reading-time estimate in minutes. */
+    articleReadingMinutes: integer("article_reading_minutes"),
+    /**
+     * User annotations: text highlights, video timestamps. Stored as
+     * a single JSON blob so the on-disk `metadata.json` stays
+     * self-contained. See `SaveAnnotations`.
+     */
+    annotations: text("annotations", { mode: "json" })
+      .$type<SaveAnnotations | null>()
       .default(null),
     ocrText: text("ocr_text"),
     dominantColors: text("dominant_colors", { mode: "json" })
@@ -238,7 +324,12 @@ export const libraryScan = sqliteTable("library_scan", {
     .default(sql`(unixepoch() * 1000)`),
 });
 
-export const AI_AUTONOMY_LEVELS = ["off", "suggest", "auto-apply"] as const;
+export const AI_AUTONOMY_LEVELS = [
+  "off",
+  "suggest",
+  "auto-apply",
+  "auto",
+] as const;
 export type AiAutonomyLevel = (typeof AI_AUTONOMY_LEVELS)[number];
 
 export interface AiAutonomy {
@@ -246,10 +337,112 @@ export interface AiAutonomy {
   additionalGuidance: string;
 }
 
+/**
+ * `suggest` is the README-philosophy default — every AI write lands in
+ * `aiSuggestions` first and the user accepts it from the inbox. Users
+ * can flip to `auto` for silent enrichment after they trust the model.
+ */
 export const DEFAULT_AI_AUTONOMY: AiAutonomy = {
-  tagging: "auto-apply",
+  tagging: "suggest",
   additionalGuidance: "",
 };
+
+/**
+ * Provider tier for the enrichment worker. The job code never touches
+ * this directly — it goes through `enrich/provider.ts` which returns
+ * an OpenAI-compatible HTTP client based on this config.
+ */
+export const AI_PROVIDER_KINDS = ["off", "local", "gateway", "direct"] as const;
+export type AiProviderKind = (typeof AI_PROVIDER_KINDS)[number];
+
+export interface AiProviderConfig {
+  kind: AiProviderKind;
+  /** Default `http://127.0.0.1:11434/v1` for Ollama / LM Studio. */
+  baseUrl: string;
+  /**
+   * Model identifiers per task. Lets the user pick a smaller text-only
+   * model for summary while keeping a vision model for caption + OCR.
+   */
+  models: {
+    vision: string;
+    summary: string;
+    embedding: string;
+  };
+  /**
+   * Embedding output dimension. Has to match the model — local
+   * `nomic-embed-text` is 768, OpenAI `text-embedding-3-small` is 1536.
+   * Switching dims triggers a re-embed flow that recreates `saves_vec`.
+   */
+  embeddingDim: number;
+  /** USD per day budget cap; cloud tiers only. `null` = unlimited. */
+  dailyBudgetUsd: number | null;
+  /** When false, never send images to a cloud provider. Local always sends. */
+  sendImages: boolean;
+}
+
+/** Sensible default — Local Ollama with the most common small models. */
+export const DEFAULT_AI_PROVIDER: AiProviderConfig = {
+  kind: "off",
+  baseUrl: "http://127.0.0.1:11434/v1",
+  models: {
+    vision: "llava:7b",
+    summary: "llama3.2:3b",
+    embedding: "nomic-embed-text",
+  },
+  embeddingDim: 768,
+  dailyBudgetUsd: null,
+  sendImages: true,
+};
+
+/**
+ * Background enrichment queue. One row per pending / failed job. Each
+ * job is keyed by `(saveId, kind)` so retries idempotently overwrite.
+ */
+export const ENRICH_JOB_KINDS = [
+  "colors",
+  "article",
+  "vision",
+  "embed",
+] as const;
+export type EnrichJobKind = (typeof ENRICH_JOB_KINDS)[number];
+
+export const ENRICH_JOB_STATES = [
+  "pending",
+  "running",
+  "done",
+  "error",
+  "skipped",
+] as const;
+export type EnrichJobState = (typeof ENRICH_JOB_STATES)[number];
+
+export const enrichJobs = sqliteTable(
+  "enrich_jobs",
+  {
+    id: text("id").primaryKey(),
+    saveId: text("save_id").notNull(),
+    kind: text("kind").$type<EnrichJobKind>().notNull(),
+    state: text("state").$type<EnrichJobState>().notNull().default("pending"),
+    attempts: integer("attempts").notNull().default(0),
+    lastError: text("last_error"),
+    nextAttemptAt: integer("next_attempt_at", {
+      mode: "timestamp_ms",
+    }).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
+  },
+  (t) => ({
+    saveKindUnique: unique("enrich_jobs_save_kind_unique").on(t.saveId, t.kind),
+    stateIdx: index("enrich_jobs_state_idx").on(t.state),
+    nextIdx: index("enrich_jobs_next_idx").on(t.nextAttemptAt),
+  }),
+);
+
+export type EnrichJob = typeof enrichJobs.$inferSelect;
+export type NewEnrichJob = typeof enrichJobs.$inferInsert;
 
 /**
  * User-tunable knobs for the bundled yt-dlp pipeline.
@@ -279,15 +472,245 @@ export const DEFAULT_VIDEO_DOWNLOAD: VideoDownloadSettings = {
   maxFileSizeMb: 500,
 };
 
+/**
+ * Cadence options for the per-source background sync. Floor is
+ * 15 minutes — anything tighter risks rate-limiting / soft-bans on
+ * the upstream sources, and provides no real value for a personal
+ * archive.
+ */
+export const SYNC_CADENCES = ["off", "15min", "hourly", "6h", "daily"] as const;
+export type SyncCadence = (typeof SYNC_CADENCES)[number];
+
+/**
+ * Per-source sync settings. Initially populated for Twitter only; other
+ * sources stay at `cadence: "off"` until their bookmarks/saves
+ * harvesters land. Persisted under `prefs.sync[<source>]`.
+ *
+ * - `enabled` is the master switch for the source. Defaults to `false`
+ *   so adding sync to the codebase doesn't immediately start hitting
+ *   live sites for users who never opt in.
+ * - `cadence` is the cron schedule. The cron itself is registered in
+ *   `main/index.ts → registerSyncCron` and only fires when both
+ *   `enabled === true` and `cadence !== "off"`.
+ * - `lastSyncedAt` is the ISO-string tail of the last successful run.
+ *   The orchestrator updates it after each successful pass.
+ * - `lastError` is set when the most recent run hit a known terminal
+ *   condition (auth wall, fatal navigation error). Cleared on next
+ *   success.
+ */
+export interface SourceSyncPrefs {
+  enabled: boolean;
+  cadence: SyncCadence;
+  lastSyncedAt: string | null;
+  lastError: string | null;
+}
+
+export const DEFAULT_SOURCE_SYNC_PREFS: SourceSyncPrefs = {
+  enabled: false,
+  cadence: "off",
+  lastSyncedAt: null,
+  lastError: null,
+};
+
+/**
+ * Section-keyed user preferences blob. Stored as one JSON column on the
+ * `settings` singleton. We intentionally keep this separate from the
+ * already-typed columns above (`aiAutonomy`, `aiProvider`, `videoDownload`)
+ * so adding a new pref bucket never costs a migration.
+ *
+ * See [the settings overhaul plan](settings-page-overhaul) for which
+ * page each sub-key powers.
+ */
+export interface Prefs {
+  preferences: {
+    theme: "system" | "light" | "dark";
+    pointerCursors: boolean;
+    convertEmoticons: boolean;
+  };
+  profile: {
+    displayName: string;
+    avatarPath: string | null;
+  };
+  notifications: {
+    saveComplete: boolean;
+    refreshFailed: boolean;
+    aiSuggestion: boolean;
+    videoDone: boolean;
+    sound: boolean;
+  };
+  security: {
+    /** macOS-only; no-op on other platforms. */
+    touchIdOnLaunch: boolean;
+    /** `null` = never auto-lock. */
+    autoLockMinutes: number | null;
+  };
+  trash: {
+    /** `null` = never auto-empty. */
+    autoEmptyDays: number | null;
+    confirmBeforeEmpty: boolean;
+  };
+  library: {
+    /** Friendly display name shown in the title bar / exports. */
+    displayName: string;
+  };
+  quickCapture: {
+    menuBarIcon: boolean;
+    /** Electron Accelerator string (e.g. `CommandOrControl+Shift+S`). */
+    hotkey: string;
+    launchAtLogin: boolean;
+  };
+  saveBehavior: {
+    autoTag: boolean;
+    dedupeByUrl: boolean;
+    /** Tags applied to every new save before any AI runs. */
+    defaultTags: string[];
+  };
+  search: {
+    hybrid: boolean;
+    recencyBoost: boolean;
+    resultLimit: number;
+  };
+  captions: {
+    autoAltText: boolean;
+    videoTranscripts: boolean;
+    /** BCP-47 hint passed to vision/transcription jobs. */
+    language: string;
+  };
+  backups: {
+    schedule: "never" | "daily" | "weekly" | "monthly";
+    /** How many snapshot zips to keep before pruning the oldest. */
+    retainCount: number;
+  };
+  api: {
+    port: number;
+    bindAddress: "loopback" | "lan";
+    allowedOrigins: string[];
+  };
+  updates: {
+    channel: "stable" | "beta";
+    autoInstall: boolean;
+  };
+  developer: {
+    verboseLogging: boolean;
+  };
+  /**
+   * AI personality knobs — folded into the AI page rather than being a
+   * sibling settings bucket so all model behaviour lives together.
+   */
+  aiPersonality: {
+    tone: "neutral" | "playful" | "terse" | "academic";
+    tagStyle: "kebab" | "snake" | "natural";
+    systemPrompt: string;
+  };
+  /**
+   * Per-source background sync settings. Each entry is a `SourceSyncPrefs`
+   * record; absent entries default to off. The runtime checks
+   * `prefs.sync[source]?.enabled === true` before scheduling anything,
+   * so sources we haven't built harvesters for stay dormant by default.
+   */
+  sync: Partial<Record<Source, SourceSyncPrefs>>;
+}
+
+export const DEFAULT_PREFS: Prefs = {
+  preferences: {
+    theme: "system",
+    pointerCursors: false,
+    convertEmoticons: true,
+  },
+  profile: {
+    displayName: "",
+    avatarPath: null,
+  },
+  notifications: {
+    saveComplete: true,
+    refreshFailed: true,
+    aiSuggestion: true,
+    videoDone: true,
+    sound: false,
+  },
+  security: {
+    touchIdOnLaunch: false,
+    autoLockMinutes: null,
+  },
+  trash: {
+    autoEmptyDays: null,
+    confirmBeforeEmpty: true,
+  },
+  library: {
+    displayName: "My Pond",
+  },
+  quickCapture: {
+    // Pond is a menu-bar app first -- the tray is the primary surface,
+    // so default it on. Users who explicitly hide it via Settings → Quick
+    // capture keep that override because the persisted prefs blob wins
+    // over DEFAULT_PREFS in mergePrefs().
+    menuBarIcon: true,
+    hotkey: "CommandOrControl+Shift+S",
+    launchAtLogin: false,
+  },
+  saveBehavior: {
+    autoTag: true,
+    dedupeByUrl: true,
+    defaultTags: [],
+  },
+  search: {
+    hybrid: true,
+    recencyBoost: false,
+    resultLimit: 200,
+  },
+  captions: {
+    autoAltText: true,
+    videoTranscripts: false,
+    language: "en",
+  },
+  backups: {
+    schedule: "never",
+    retainCount: 4,
+  },
+  api: {
+    port: 41610,
+    bindAddress: "loopback",
+    allowedOrigins: [],
+  },
+  updates: {
+    channel: "stable",
+    autoInstall: true,
+  },
+  developer: {
+    verboseLogging: false,
+  },
+  aiPersonality: {
+    tone: "neutral",
+    tagStyle: "kebab",
+    systemPrompt: "",
+  },
+  sync: {},
+};
+
 export const settings = sqliteTable("settings", {
   id: text("id").primaryKey().default("singleton"),
   aiAutonomy: text("ai_autonomy", { mode: "json" })
     .$type<AiAutonomy>()
     .notNull(),
+  /**
+   * Provider tier + model picks + budget knobs. Single source of truth
+   * for the enrichment worker. See `AiProviderConfig`.
+   */
+  aiProvider: text("ai_provider", { mode: "json" })
+    .$type<AiProviderConfig>()
+    .notNull()
+    .default(sql`'${sql.raw(JSON.stringify(DEFAULT_AI_PROVIDER))}'`),
   videoDownload: text("video_download", { mode: "json" })
     .$type<VideoDownloadSettings>()
     .notNull()
     .default(sql`'${sql.raw(JSON.stringify(DEFAULT_VIDEO_DOWNLOAD))}'`),
+  /**
+   * Section-keyed user preferences. See `Prefs` interface.
+   */
+  prefs: text("prefs", { mode: "json" })
+    .$type<Prefs>()
+    .notNull()
+    .default(sql`'${sql.raw(JSON.stringify(DEFAULT_PREFS))}'`),
   libraryRoot: text("library_root"),
   onboarded: integer("onboarded", { mode: "boolean" }).notNull().default(false),
   updatedAt: integer("updated_at", { mode: "timestamp_ms" })

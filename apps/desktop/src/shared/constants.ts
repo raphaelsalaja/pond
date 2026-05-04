@@ -65,4 +65,12 @@ export const IPC = {
   // grid + preview "downloading…" indicator so the user knows their
   // freshly-saved video is still landing on disk.
   autoVideoStatus: "pond:auto-video-status",
+  // Background sync controls. The orchestrator opens the user's logged-in
+  // bookmarks page in the hidden scrape window, dedupes against the local
+  // saves table, and ingests new items through the regular harvester →
+  // ingest pipeline. The renderer surfaces controls per source under
+  // Settings → Connected accounts → <source> and via the Cmd+K palette.
+  syncRunNow: "pond:sync-run-now",
+  syncCancel: "pond:sync-cancel",
+  syncStatus: "pond:sync-status",
 } as const;

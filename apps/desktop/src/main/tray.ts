@@ -43,7 +43,30 @@ export function currentTray(): TrayHandle | null {
   return handle;
 }
 
+let lastOpts: TrayOptions | null = null;
+
+/**
+ * Toggle the tray icon. Settings → Quick capture flips the
+ * `prefs.quickCapture.menuBarIcon` switch which routes here. We
+ * destroy the existing icon when hidden so it disappears from the
+ * menu bar instantly, and recreate from cached options on
+ * re-enable.
+ */
+export async function setTrayVisible(visible: boolean): Promise<void> {
+  if (visible) {
+    if (handle) return;
+    if (!lastOpts) return;
+    await ensureTray(lastOpts);
+    return;
+  }
+  if (handle) {
+    handle.destroy();
+    handle = null;
+  }
+}
+
 export async function ensureTray(opts: TrayOptions): Promise<TrayHandle> {
+  lastOpts = opts;
   if (handle) return handle;
 
   let tray: Tray;

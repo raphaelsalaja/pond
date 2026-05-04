@@ -207,6 +207,59 @@ const api = {
     ipcRenderer.on(IPC.autoVideoStatus, listener);
     return () => ipcRenderer.off(IPC.autoVideoStatus, listener);
   },
+
+  /**
+   * Background-sync IPC. Manual fires from the source settings page
+   * and the Cmd+K command palette. The renderer subscribes to status
+   * updates separately via `onSyncStatus` and reads a one-shot
+   * snapshot via `syncStatus`.
+   */
+  syncRunNow(
+    source: string,
+    mode?: "incremental" | "backfill",
+  ): Promise<{ ok: true } | { ok: false; reason: "already_running" }> {
+    return ipcRenderer.invoke(IPC.syncRunNow, source, mode);
+  },
+
+  syncCancel(source: string): Promise<{ ok: boolean }> {
+    return ipcRenderer.invoke(IPC.syncCancel, source);
+  },
+
+  /** Snapshot of the current sync state for `<source>`. */
+  syncStatus(source: string): Promise<{
+    ok: boolean;
+    running: boolean;
+    enabled: boolean;
+    cadence: string;
+    lastSyncedAt: string | null;
+    lastError: string | null;
+  }> {
+    return ipcRenderer.invoke(IPC.syncStatus, source);
+  },
+
+  /**
+   * Subscribe to the per-source sync orchestrator's status events.
+   * Main fires one update per state transition (start / progress /
+   * done / error / auth_required); pure additive — listeners that
+   * don't care about a given source can filter on `update.source`.
+   *
+   * Returns a disposer.
+   */
+  onSyncStatus(
+    cb: (update: {
+      source: string;
+      state: "idle" | "running" | "done" | "error" | "auth_required";
+      message?: string;
+      progress?: { current: number; total: number };
+      lastSyncedAt?: string | null;
+      lastError?: string | null;
+    }) => void,
+  ): () => void {
+    const listener = (_: unknown, update: Parameters<typeof cb>[0]) =>
+      cb(update);
+    ipcRenderer.on(IPC.syncStatus, listener);
+    return () => ipcRenderer.off(IPC.syncStatus, listener);
+  },
 };
 
 try {

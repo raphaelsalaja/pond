@@ -325,6 +325,10 @@ export default defineContentScript({
 
     function emitCapture(ctx: any, via: string) {
       const raw: any = { via, capturedAt: new Date().toISOString() };
+      // Per-source typed bag — ingest namespaces by `payload.source` so
+      // anything we put under `raw.instagram` lands as `RawInstagram` on
+      // the save without a schema migration.
+      const ig: Record<string, unknown> = {};
       if (ctx.videoUrl) raw.videoUrl = ctx.videoUrl;
       if (ctx.mediaId) raw.mediaId = String(ctx.mediaId);
 
@@ -335,18 +339,40 @@ export default defineContentScript({
         if (cached.mediaType) ctx.mediaType = cached.mediaType;
         if (cached.gallery && cached.gallery.length > 1) {
           raw.gallery = cached.gallery;
+          ig.media = cached.gallery;
         }
         if (cached.caption) {
           ctx.description = cached.caption;
           ctx.title = cached.caption.replace(/\s+/g, " ").slice(0, 200);
         }
         if (cached.author && !ctx.author) ctx.author = cached.author;
+
+        const ex = cached.extras ?? {};
+        if (ex.fullName) ig.authorName = ex.fullName;
+        if (ex.profilePicUrl) ig.authorAvatar = ex.profilePicUrl;
+        if (typeof ex.isVerified === "boolean") ig.verified = ex.isVerified;
+        if (ex.metrics && Object.keys(ex.metrics).length > 0) {
+          ig.metrics = ex.metrics;
+        }
+        if (typeof ex.isPaidPartnership === "boolean") {
+          ig.isPaidPartnership = ex.isPaidPartnership;
+        }
+        if (ex.location) ig.location = ex.location;
+        if (ex.takenAtIso) ig.publishedAt = ex.takenAtIso;
       }
 
       if (raw.videoUrl && /^blob:/i.test(raw.videoUrl)) delete raw.videoUrl;
       if (ctx.mediaUrl && /^blob:/i.test(ctx.mediaUrl)) {
         ctx.mediaUrl = cached?.imageUrl ?? null;
       }
+
+      // Author URL is always derivable from the handle.
+      const handle = ctx.author ? String(ctx.author).replace(/^@/, "") : null;
+      if (handle) ig.authorUrl = `https://www.instagram.com/${handle}/`;
+      // Page language from `<html lang>` — best-effort, cheap.
+      const htmlLang = document.documentElement?.lang?.trim();
+      if (htmlLang) ig.lang = htmlLang;
+      if (Object.keys(ig).length > 0) raw.instagram = ig;
 
       // Build the ordered media list for the server. Prefer the cached
       // gallery (carousel) when present; fall back to the single cover.
@@ -452,15 +478,71 @@ export default defineContentScript({
 
     function carouselItem(child: any) {
       if (!child || typeof child !== "object") return null;
+      const altText =
+        typeof child.accessibility_caption === "string"
+          ? child.accessibility_caption
+          : undefined;
+      const dur =
+        typeof child.video_duration === "number"
+          ? Math.round(child.video_duration)
+          : undefined;
       if (child.media_type === 2) {
         const v = pickBestVideo(child.video_versions);
         const img = pickBestImage(child.image_versions2);
         if (!v && !img) return null;
-        return { type: "video", url: img || v, videoUrl: v };
+        return {
+          type: "video",
+          url: img || v,
+          videoUrl: v,
+          ...(altText ? { altText } : {}),
+          ...(dur ? { durationSec: dur } : {}),
+        };
       }
       const img = pickBestImage(child.image_versions2);
       if (!img) return null;
-      return { type: "image", url: img };
+      return {
+        type: "image",
+        url: img,
+        ...(altText ? { altText } : {}),
+      };
+    }
+
+    // Pick the richer fields off a node we recognise as a single post or
+    // a single carousel child. Lands on `raw.instagram.{...}` via the
+    // emit step — additive, never breaking older saves.
+    function nodeExtras(node: any) {
+      const u = node?.user ?? node?.owner ?? null;
+      const extras: any = {};
+      if (u && typeof u.full_name === "string") extras.fullName = u.full_name;
+      if (u && typeof u.profile_pic_url === "string") {
+        extras.profilePicUrl = u.profile_pic_url;
+      }
+      if (u && typeof u.is_verified === "boolean") {
+        extras.isVerified = u.is_verified;
+      }
+      const metrics: Record<string, number> = {};
+      if (typeof node?.like_count === "number") metrics.likes = node.like_count;
+      if (typeof node?.comment_count === "number") {
+        metrics.comments = node.comment_count;
+      }
+      if (typeof node?.play_count === "number") metrics.plays = node.play_count;
+      if (Object.keys(metrics).length > 0) extras.metrics = metrics;
+      if (typeof node?.is_paid_partnership === "boolean") {
+        extras.isPaidPartnership = node.is_paid_partnership;
+      }
+      const loc = node?.location;
+      if (loc && typeof loc.name === "string") extras.location = loc.name;
+      if (typeof node?.taken_at === "number") {
+        // IG `taken_at` is unix seconds.
+        extras.takenAtIso = new Date(node.taken_at * 1000).toISOString();
+      }
+      if (typeof node?.accessibility_caption === "string") {
+        extras.accessibilityCaption = node.accessibility_caption;
+      }
+      if (typeof node?.video_duration === "number") {
+        extras.videoDurationSec = Math.round(node.video_duration);
+      }
+      return extras;
     }
 
     function normalizeMedia(node: any) {
@@ -472,6 +554,7 @@ export default defineContentScript({
       const out: any = { code, pk };
       out.author = authorFrom(node);
       out.caption = captionFrom(node);
+      out.extras = nodeExtras(node);
 
       if (node.media_type === 8 && Array.isArray(node.carousel_media)) {
         out.gallery = node.carousel_media.map(carouselItem).filter(Boolean);

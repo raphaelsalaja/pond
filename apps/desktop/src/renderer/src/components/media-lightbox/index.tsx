@@ -1,6 +1,5 @@
-import { useSmoothCorners } from "@lisse/react";
 import XMark from "@pond/icons/outline/xmark";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { requestVideoHeal } from "../../pool/heal";
 import { useSave } from "../../pool/hooks";
@@ -8,13 +7,6 @@ import { buildMediaUnits } from "../../pool/media";
 import type { Save } from "../../pool/types";
 import { Button, Dialog, DialogContent, Tooltip } from "../../ui";
 import styles from "./styles.module.css";
-
-/**
- * Squircle config for the fullscreen viewer. Larger radius (14) gives
- * the curve room to breathe at lightbox scale; the smoothing is the
- * same Apple-feel default used everywhere else.
- */
-const LIGHTBOX_SQUIRCLE = { radius: 14, smoothing: 0.6 } as const;
 
 /**
  * Fullscreen media preview triggered by double-clicking a card.
@@ -127,16 +119,6 @@ function LightboxBody({ save, onClose }: { save: Save; onClose: () => void }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [slides.length]);
 
-  // Hook-driven squircle (same pattern as the grid + preview pane). We
-  // skip Lisse's auto-effects here because the lightbox sits over a dim
-  // canvas backdrop where a drop shadow would just muddy the image.
-  const wrapperRef = useRef<HTMLDivElement>(null);
-  const mediaRef = useRef<HTMLElement>(null);
-  useSmoothCorners(mediaRef, LIGHTBOX_SQUIRCLE, {
-    wrapperRef,
-    autoEffects: false,
-  });
-
   if (slides.length === 0) {
     return (
       <div className={styles.empty}>
@@ -176,10 +158,9 @@ function LightboxBody({ save, onClose }: { save: Save; onClose: () => void }) {
       </div>
 
       <div className={styles.canvas}>
-        <div ref={wrapperRef} className={styles.mediaShell}>
+        <div className={styles.mediaShell}>
           {slide.isVideo ? (
             <video
-              ref={mediaRef as React.RefObject<HTMLVideoElement>}
               key={slide.src}
               src={slide.src}
               poster={slide.posterUrl}
@@ -207,7 +188,6 @@ function LightboxBody({ save, onClose }: { save: Save; onClose: () => void }) {
             </video>
           ) : (
             <img
-              ref={mediaRef as React.RefObject<HTMLImageElement>}
               key={slide.src}
               src={slide.src}
               alt={save.title ?? ""}

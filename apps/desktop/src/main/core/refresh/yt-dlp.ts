@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
-import { mkdtemp, readdir, rm, stat } from "node:fs/promises";
+import { mkdtemp, readdir, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { extname, join } from "node:path";
+import { basename, extname, join } from "node:path";
 import type { Source, VideoDownloadSettings } from "@pond/schema/db";
 import log from "electron-log/main.js";
 import { getVideoDownloadPrefs } from "../prefs";
@@ -48,6 +48,13 @@ export interface DownloadedVideo {
   mimeType: string;
   /** File size in bytes. */
   size: number;
+  /**
+   * yt-dlp `--write-info-json` sidecar, lifted from disk before
+   * `cleanup()` runs. Caller can merge interesting fields into
+   * `raw.<source>` (view_count / like_count / duration / chapters).
+   * `null` when the sidecar was missing or unreadable.
+   */
+  infoJson: Record<string, unknown> | null;
   /** Caller MUST invoke this in a finally{} to remove the tmpdir. */
   cleanup: () => Promise<void>;
 }
@@ -158,6 +165,11 @@ export async function downloadVideo(
       "--no-progress",
       "--no-part",
       "--restrict-filenames",
+      // Persist the per-video metadata sidecar so the post-download
+      // merge can lift `view_count`, `like_count`, `duration`,
+      // `chapters`, `uploader_id` etc. into `raw.<source>` without a
+      // second extractor run.
+      "--write-info-json",
       "--socket-timeout",
       "30",
       "--retries",
@@ -205,11 +217,13 @@ export async function downloadVideo(
       return null;
     }
 
+    const infoJson = await readInfoJson(outputDir, produced.path);
     log.info("[pond yt-dlp] wrote", produced.path, `(${produced.size} bytes)`);
     return {
       path: produced.path,
       mimeType: produced.mimeType,
       size: produced.size,
+      infoJson,
       cleanup,
     };
   } catch (err) {
@@ -218,6 +232,117 @@ export async function downloadVideo(
     return null;
   }
 }
+
+/**
+ * Read the `--write-info-json` sidecar, then lift the curated subset of
+ * fields downstream callers actually need. yt-dlp dumps a *huge*
+ * payload (per-format ladders, raw extractor blob, …); we only return
+ * the curated dict so the rest can be GC'd before the cleanup step.
+ *
+ * The keep-list mirrors `RawYtdlp` in `packages/schema/src/raw.ts` —
+ * keep them aligned. New fields are additive: an extractor that
+ * doesn't expose `repost_count` simply omits the key, and downstream
+ * consumers feature-detect.
+ *
+ * Returns `null` when the sidecar is missing or unparseable — callers
+ * already treat the value as best-effort.
+ */
+async function readInfoJson(
+  dir: string,
+  videoPath: string,
+): Promise<Record<string, unknown> | null> {
+  const stem = basename(videoPath, extname(videoPath));
+  const sidecar = join(dir, `${stem}.info.json`);
+  try {
+    const raw = await readFile(sidecar, "utf8");
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const out: Record<string, unknown> = {};
+    for (const k of YTDLP_KEEP_KEYS) {
+      const v = parsed[k];
+      if (v !== undefined && v !== null) out[k] = v;
+    }
+    return Object.keys(out).length > 0 ? out : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Fields lifted from the `--write-info-json` sidecar onto
+ * `raw.<source>.ytdlp`. Mirrors `RawYtdlp` — when adding a key here,
+ * add it to the typed shape too. Order kept loosely grouped (identity
+ * → metrics → time → format → music → playlist) for diff readability.
+ */
+const YTDLP_KEEP_KEYS = [
+  // identity / extractor envelope
+  "id",
+  "title",
+  "description",
+  "thumbnail",
+  "webpage_url",
+  "original_url",
+  "extractor",
+  "extractor_key",
+
+  // engagement metrics
+  "view_count",
+  "like_count",
+  "dislike_count",
+  "comment_count",
+  "repost_count",
+  "concurrent_view_count",
+  "average_rating",
+
+  // duration + author
+  "duration",
+  "uploader",
+  "uploader_id",
+  "uploader_url",
+  "channel",
+  "channel_id",
+  "channel_url",
+
+  // time + lifecycle
+  "upload_date",
+  "release_date",
+  "release_timestamp",
+  "timestamp",
+  "live_status",
+  "was_live",
+  "availability",
+  "age_limit",
+
+  // format hints (helps diagnose codec / pixel-format playback bugs)
+  "width",
+  "height",
+  "fps",
+  "format_note",
+  "vcodec",
+  "acodec",
+  "filesize",
+  "filesize_approx",
+  "tbr",
+
+  // music videos (auto-populated by YouTube extractor on VEVO etc.)
+  "track",
+  "artist",
+  "album",
+  "genre",
+  "release_year",
+
+  // misc classifiers
+  "language",
+  "tags",
+  "categories",
+  "chapters",
+
+  // playlist context (when yt-dlp was given a playlist URL)
+  "playlist",
+  "playlist_id",
+  "playlist_title",
+  "playlist_index",
+  "n_entries",
+] as const;
 
 interface ProcOutcome {
   code: number;
@@ -284,15 +409,20 @@ async function pickProducedFile(
   if (entries.length === 0) return null;
 
   const sized = await Promise.all(
-    entries.map(async (name) => {
-      const full = join(dir, name);
-      try {
-        const s = await stat(full);
-        return { path: full, size: s.size };
-      } catch {
-        return null;
-      }
-    }),
+    entries
+      // Skip the info-json sidecar so it can never accidentally be
+      // chosen as the produced file (largest-by-bytes is paranoid
+      // enough to handle this regardless, but be explicit).
+      .filter((name) => !/\.info\.json$/i.test(name))
+      .map(async (name) => {
+        const full = join(dir, name);
+        try {
+          const s = await stat(full);
+          return { path: full, size: s.size };
+        } catch {
+          return null;
+        }
+      }),
   );
   const valid = sized.filter(
     (e): e is { path: string; size: number } => e !== null && e.size > 0,

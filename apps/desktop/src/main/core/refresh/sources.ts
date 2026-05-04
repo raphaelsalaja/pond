@@ -56,6 +56,15 @@ export function classifyUrl(rawUrl: string): {
   ) {
     return { source: "youtube", authWalled: false };
   }
+  if (
+    host === "reddit.com" ||
+    host === "www.reddit.com" ||
+    host === "old.reddit.com" ||
+    host === "new.reddit.com" ||
+    host.endsWith(".reddit.com")
+  ) {
+    return { source: "reddit", authWalled: true };
+  }
   return { source: null, authWalled: false };
 }
 
@@ -80,6 +89,8 @@ export function homeUrlForSource(source: Source): string {
       return "https://www.are.na/log-in";
     case "youtube":
       return "https://accounts.google.com/ServiceLogin?service=youtube";
+    case "reddit":
+      return "https://www.reddit.com/login";
     case "article":
       return "about:blank";
   }
@@ -108,6 +119,7 @@ export function supportsYtDlp(source: Source | null): boolean {
       return true;
     case "pinterest":
     case "arena":
+    case "reddit":
     case "article":
       return false;
   }
@@ -133,6 +145,8 @@ export function sourceLabel(source: Source): string {
       return "TikTok";
     case "youtube":
       return "YouTube";
+    case "reddit":
+      return "Reddit";
     case "article":
       return "Article";
   }

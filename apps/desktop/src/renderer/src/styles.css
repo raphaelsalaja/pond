@@ -22,6 +22,11 @@
   --pond-card: light-dark(#ffffff, #17171a);
   --pond-hover: light-dark(rgba(0, 0, 0, 0.04), rgba(255, 255, 255, 0.05));
   --pond-active: light-dark(rgba(0, 0, 0, 0.05), rgba(255, 255, 255, 0.08));
+  /* Accent (selection rings, focus highlight, list-row "you are here"
+   * tint). Mirrors the blue used in the Eagle reference screenshots
+   * and stays within reach of WCAG AA against `--pond-bg` in both
+   * themes. */
+  --pond-accent: light-dark(#3b82f6, #60a5fa);
   --pond-radius-sm: 4px;
   --pond-radius-md: 6px;
   --pond-radius-lg: 8px;
@@ -39,6 +44,12 @@
   /* Card chrome — outline + soft drop, matches the Figma `media` token. */
   --pond-card-shadow:
     0 0 0 1px rgba(0, 0, 0, 0.08), 0 2px 2px -1px rgba(0, 0, 0, 0.06);
+  /* Caption colours, mirrors the Figma library card spec
+   * (`#787575` / `#c2c2c2` for title + date in light mode). The dark
+   * counterparts are tuned to roughly the inverse perceived lightness
+   * so contrast against `--pond-bg` stays comparable. */
+  --pond-card-title: light-dark(#787575, #a8a8a8);
+  --pond-card-time: light-dark(#c2c2c2, #6a6a6a);
   --pond-search-shadow:
     0 0 0 1px rgba(0, 0, 0, 0.05), 0 1px 1px -0.5px rgba(0, 0, 0, 0.05),
     0 3px 3px -1.5px rgba(0, 0, 0, 0.05);
@@ -52,6 +63,29 @@
     "cv11" 1,
     "ss01" 1;
   color-scheme: light dark;
+}
+
+/* Theme override — Preferences page writes `data-theme` on <html> when
+ * the user picks a fixed scheme. Setting `color-scheme` on a single
+ * value is what light-dark() in the rest of the file keys off, so this
+ * is the only switch we need; no token duplication.
+ */
+html[data-theme="light"] {
+  color-scheme: light;
+}
+html[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+/* Pointer-cursor preference flips every interactive element that we
+ * normally render with the default cursor over to a hand. Local-first
+ * touch — saves a setting up to ToastProvider / Hero. */
+html[data-pointer-cursors="true"] button,
+html[data-pointer-cursors="true"] a,
+html[data-pointer-cursors="true"] [role="button"],
+html[data-pointer-cursors="true"] [role="menuitem"],
+html[data-pointer-cursors="true"] [role="option"] {
+  cursor: pointer;
 }
 
 html,
@@ -80,67 +114,28 @@ body,
 }
 
 /* ------------------------------------------------------------------ */
-/* Shell chrome — header, sidebar, main content.                       */
+/* Shell chrome — three full-height columns: sidebar | main | inspect. */
 /*                                                                    */
-/* The header is a thin 42px draggable strip; the macOS traffic       */
-/* lights float over it. Body is a 3-column grid so a future preview  */
-/* rail (Figma right-hand pane) can drop in without reflowing.        */
+/* No top strip. The macOS traffic lights float in the very top-left  */
+/* of the window, which means they sit over the sidebar; the sidebar  */
+/* reserves vertical space for them via `.pond-shell--mac` overrides   */
+/* in `sidebar/styles.module.css`.                                    */
 /* ------------------------------------------------------------------ */
 
 .pond-shell {
   display: flex;
-  flex-direction: column;
   height: 100%;
   background: var(--pond-bg);
 }
 
-.pond-header {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  height: 42px;
-  padding: 0 12px;
-  -webkit-app-region: drag;
-}
-
-.pond-shell--mac .pond-header {
-  /* Reserve space under the floating traffic-light cluster (~16px x,
-   * 12px tall, ~52px wide). 84px keeps interactive controls clear. */
-  padding-left: 84px;
-}
-
-.pond-header__actions {
-  display: flex;
-  gap: 4px;
-  align-items: center;
-  -webkit-app-region: no-drag;
-}
-
-.pond-header__link {
-  padding: 4px 8px;
-  font-size: 12px;
-  color: var(--pond-muted);
-  text-decoration: none;
-  border-radius: var(--pond-radius-md);
-}
-
-.pond-header__link:hover {
-  color: var(--pond-fg);
-  background: var(--pond-hover);
-}
-
-.pond-header__link.active {
-  color: var(--pond-fg);
-  background: var(--pond-active);
-}
-
-/* Body is sidebar + main content + (optional) preview pane on the right.
- * The pane mounts itself when `?id=` is present in the URL; until then
- * `<main>` consumes the full remaining width. */
-.pond-body {
+/* Takeover surface used by the Settings view. Settings owns its own
+ * two-column layout (categories on the left, content on the right);
+ * its left rail handles the traffic-light reservation. */
+.pond-takeover {
   display: flex;
   flex: 1;
   min-height: 0;
+  background: var(--pond-bg);
 }
 
 .pond-main {
@@ -160,19 +155,60 @@ body,
 }
 
 /* ------------------------------------------------------------------ */
-/* Library grid — small Eagle-style tiles with an image, title, and   */
-/* relative timestamp underneath. Each tile renders into a fixed-     */
-/* height media box so cards keep a stable rhythm even with portrait, */
-/* landscape, and square imagery interleaved.                          */
+/* Library grid — Eagle-style image library with four layout modes.   */
+/*                                                                    */
+/* Every list adds `pond-grid` plus one of the modifier classes:      */
+/*   - `.pond-grid--waterfall` — equal column widths, variable card   */
+/*     heights via CSS multi-column. Card height comes from the       */
+/*     cover's natural aspect ratio (`--pond-card-aspect`).           */
+/*   - `.pond-grid--grid` — uniform square tiles via CSS Grid. The    */
+/*     image is *contained* inside the square (no crop) so portrait   */
+/*     and landscape covers letterbox against `.media`'s background.  */
+/*                                                                    */
+/* Justified mode is rendered by its own `<JustifiedView>` component  */
+/* (see `pages/saves-view/justified.tsx`). It can't be CSS-only       */
+/* because picking row breaks needs aspect-ratio-aware packing in JS. */
+/*                                                                    */
+/* `--pond-grid-min` (set by the toolbar zoom slider in               */
+/* `header-toolbar/index.tsx → useZoom`) plays a different role per   */
+/* mode: column width in waterfall, row height in justified, cell     */
+/* min-width / cell height in grid.                                   */
 /* ------------------------------------------------------------------ */
 
 .pond-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 24px;
   padding: 0;
   margin: 0;
   list-style: none;
+}
+
+/* Waterfall — Pinterest-style masonry. Tighter column gap matches the
+ * Eagle reference; vertical gap is set by `.pond-card`'s
+ * `margin-bottom` because CSS multi-column doesn't honour `gap` for
+ * the in-column axis. */
+.pond-grid--waterfall {
+  columns: var(--pond-grid-min, 130px);
+  column-gap: 12px;
+}
+
+/* Grid — uniform square tiles. Image is contained, not cropped. */
+.pond-grid--grid {
+  display: grid;
+  grid-template-columns: repeat(
+      auto-fill,
+      minmax(var(--pond-grid-min, 130px), 1fr)
+    );
+  gap: 12px;
+}
+
+/* Justified — rendered by `<JustifiedView>` (see
+ * `pages/saves-view/justified.tsx`). The packer assigns each `<li>`
+ * an inline `width` and a `--pond-justified-h` CSS variable for the
+ * row height; flex-wrap then breaks rows naturally because every
+ * row's widths sum to the container width. */
+.pond-grid--justified {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .pond-card {
@@ -181,6 +217,15 @@ body,
   flex-direction: column;
   gap: 12px;
   align-items: center;
+}
+
+/* Waterfall cards live inside CSS columns, so they need
+ * `break-inside: avoid` to never split across a column boundary. */
+.pond-grid--waterfall .pond-card {
+  width: 100%;
+  margin-bottom: 16px;
+  break-inside: avoid;
+  -webkit-column-break-inside: avoid;
 }
 
 /* Cards select via the pane (not navigate). The full tile is a single
@@ -214,13 +259,39 @@ body,
     0 0 0 4px light-dark(rgba(0, 0, 0, 0.4), rgba(255, 255, 255, 0.45));
 }
 
+/* The media slot is the visible card chrome (rounded image + shadow
+ * + selection ring). Its dimensions are decided by the parent layout
+ * mode:
+ *   - waterfall: no fixed height — the image inside drives the slot's
+ *     height via `width: 100%; height: auto` (see
+ *     `card-thumb/styles.module.css`). Chrome hugs the image with no
+ *     letterbox, even when the cover's stored aspect is missing or
+ *     stale (Pinterest covers don't always report dimensions until
+ *     the bytes hit `<img>`).
+ *   - justified: explicit row height set inline by `JustifiedView`.
+ *   - grid: forced 1:1 square; portrait + landscape covers letterbox
+ *     against `.media`'s background. */
 .pond-card__media {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
-  height: 138px;
+}
+
+.pond-grid--grid .pond-card__media {
+  /* Square slot, image is contained inside (no crop). Portrait /
+   * landscape covers letterbox against the slot background. */
+  aspect-ratio: 1 / 1;
+}
+
+/* JustifiedView sets the row height as an inline CSS variable on the
+ * `<li>`. The slot consumes it; aspect-ratio is forced off so the
+ * height value wins. Width is already 100% from the base rule, and
+ * the card's outer width was set inline by the packer. */
+.pond-grid--justified .pond-card__media {
+  height: var(--pond-justified-h, var(--pond-grid-min, 130px));
+  aspect-ratio: auto;
 }
 
 .pond-card__meta {
@@ -229,25 +300,31 @@ body,
   gap: 4px;
   align-items: center;
   width: 100%;
-  padding: 0 4px;
+  padding: 0 2px;
   text-align: center;
 }
 
 .pond-card__title {
-  max-width: 100%;
+  /* Multi-line wrap (max 2 lines), no ellipsis truncation — matches
+   * the reference where long titles wrap rather than getting clipped. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  width: 100%;
   overflow: hidden;
-  text-overflow: ellipsis;
+  -webkit-line-clamp: 2;
   font-size: 10px;
   font-weight: 500;
-  color: var(--pond-fg-soft);
+  line-height: 1.3;
+  color: var(--pond-card-title);
   letter-spacing: -0.04px;
-  white-space: nowrap;
+  word-break: break-word;
 }
 
 .pond-card__time {
   font-size: 10px;
   font-weight: 400;
-  color: var(--pond-meta);
+  font-variant-numeric: tabular-nums;
+  color: var(--pond-card-time);
   letter-spacing: -0.04px;
   white-space: nowrap;
 }
@@ -298,23 +375,75 @@ body,
   opacity: 1;
 }
 
-/* Selected state — applied by the parent `<li>`. The media slot picks
- * up a coloured ring so the chosen tile reads at a glance even when
- * the preview pane is partially scrolled out of view. */
-.pond-card--selected .pond-card__media::after {
-  position: absolute;
-  inset: -3px;
-  pointer-events: none;
-  content: "";
-  border: 2px solid light-dark(#141414, #f5f5f5);
-  border-radius: calc(var(--pond-radius-sm) + 3px);
-}
-
+/* Selected state — applied by the parent `<li>`. The dashed-blue halo
+ * itself is drawn on `.thumb::after` (see
+ * `components/card-thumb/styles.module.css`) so it traces the actual
+ * image bounds rather than the (square in grid mode) media slot. The
+ * caption flips to a high-contrast black/white so the focus carries
+ * through to the title underneath even on dim displays. */
 .pond-card--selected .pond-card__title {
-  color: var(--pond-fg);
+  color: light-dark(#000, #fff);
 }
 
 .pond-card__delete:disabled {
   cursor: not-allowed;
   opacity: 0.5;
+}
+
+/* Multi-select checkbox — appears top-left on hover and persists once
+ * any cards are selected. Sits in the same stacking context as the
+ * delete chip but on the left so they don't overlap. */
+.pond-card__checkbox {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  background: light-dark(rgba(255, 255, 255, 0.92), rgba(0, 0, 0, 0.6));
+  border: 1px solid var(--pond-border);
+  border-radius: 6px;
+  box-shadow: var(--pond-search-shadow);
+  opacity: 0;
+  backdrop-filter: blur(8px);
+  transition:
+    opacity 120ms ease,
+    background 120ms ease,
+    border-color 120ms ease;
+}
+
+.pond-card:hover .pond-card__checkbox,
+.pond-card--multi .pond-card__checkbox,
+.pond-grid--multiselect .pond-card__checkbox {
+  opacity: 1;
+}
+
+.pond-card--multi .pond-card__checkbox {
+  color: light-dark(#fff, #141414);
+  background: light-dark(#141414, #f5f5f5);
+  border-color: light-dark(#141414, #f5f5f5);
+}
+
+.pond-card__checkmark {
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Multi-select armed-but-not-selected indicator is drawn on
+ * `.thumb::after` (see `components/card-thumb/styles.module.css`) so
+ * it traces the image bounds, matching the dashed-blue selection
+ * halo's geometry. */
+
+.pond-card--dimmed .pond-card__media,
+.pond-card--dimmed .pond-card__meta {
+  opacity: 0.55;
+  transition: opacity 120ms ease;
 }

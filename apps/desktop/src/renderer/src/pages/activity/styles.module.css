@@ -1,0 +1,25 @@
+.page {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  padding: 24px 32px 64px;
+  overflow-y: auto;
+}
+
+.header {
+  margin-bottom: 16px;
+}
+
+.title {
+  margin: 0 0 4px;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--pond-fg);
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 12px;
+  color: var(--pond-meta);
+}
