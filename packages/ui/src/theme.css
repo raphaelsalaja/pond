@@ -1,0 +1,122 @@
+@import "@radix-ui/themes/tokens/colors/slate.css";
+@import "@radix-ui/themes/tokens/colors/gray.css";
+@import "@radix-ui/themes/tokens/colors/gold.css";
+@import "@radix-ui/themes/tokens/colors/bronze.css";
+@import "@radix-ui/themes/tokens/colors/brown.css";
+@import "@radix-ui/themes/tokens/colors/yellow.css";
+@import "@radix-ui/themes/tokens/colors/amber.css";
+@import "@radix-ui/themes/tokens/colors/orange.css";
+@import "@radix-ui/themes/tokens/colors/tomato.css";
+@import "@radix-ui/themes/tokens/colors/red.css";
+@import "@radix-ui/themes/tokens/colors/ruby.css";
+@import "@radix-ui/themes/tokens/colors/crimson.css";
+@import "@radix-ui/themes/tokens/colors/pink.css";
+@import "@radix-ui/themes/tokens/colors/plum.css";
+@import "@radix-ui/themes/tokens/colors/purple.css";
+@import "@radix-ui/themes/tokens/colors/violet.css";
+@import "@radix-ui/themes/tokens/colors/iris.css";
+@import "@radix-ui/themes/tokens/colors/indigo.css";
+@import "@radix-ui/themes/tokens/colors/blue.css";
+@import "@radix-ui/themes/tokens/colors/cyan.css";
+@import "@radix-ui/themes/tokens/colors/teal.css";
+@import "@radix-ui/themes/tokens/colors/jade.css";
+@import "@radix-ui/themes/tokens/colors/green.css";
+@import "@radix-ui/themes/tokens/colors/grass.css";
+@import "@radix-ui/themes/tokens/colors/lime.css";
+@import "@radix-ui/themes/tokens/colors/mint.css";
+@import "@radix-ui/themes/tokens/colors/sky.css";
+@import "@radix-ui/colors/black-alpha.css";
+@import "@radix-ui/colors/white-alpha.css";
+
+:root {
+  --ds-gray-1: var(--gray-1);
+  --ds-gray-2: var(--gray-2);
+  --ds-gray-3: var(--gray-3);
+  --ds-gray-4: var(--gray-4);
+  --ds-gray-5: var(--gray-5);
+  --ds-gray-6: var(--gray-6);
+  --ds-gray-7: var(--gray-7);
+  --ds-gray-8: var(--gray-8);
+  --ds-gray-9: var(--gray-9);
+  --ds-gray-10: var(--gray-10);
+  --ds-gray-11: var(--gray-11);
+  --ds-gray-12: var(--gray-12);
+  --ds-gray-a1: var(--gray-a1);
+  --ds-gray-a2: var(--gray-a2);
+  --ds-gray-a3: var(--gray-a3);
+  --ds-gray-a4: var(--gray-a4);
+  --ds-gray-a5: var(--gray-a5);
+  --ds-gray-a6: var(--gray-a6);
+  --ds-gray-a7: var(--gray-a7);
+  --ds-gray-a8: var(--gray-a8);
+  --ds-gray-a9: var(--gray-a9);
+  --ds-gray-a10: var(--slate-a10);
+  --ds-gray-a11: var(--gray-a11);
+  --ds-gray-a12: var(--gray-a12);
+  --ds-gray-surface: var(--gray-surface);
+  --ds-gray-indicator: var(--gray-indicator);
+  --ds-gray-track: var(--gray-track);
+
+  --ds-accent-1: var(--sky-1);
+  --ds-accent-2: var(--sky-2);
+  --ds-accent-3: var(--sky-3);
+  --ds-accent-4: var(--sky-4);
+  --ds-accent-5: var(--sky-5);
+  --ds-accent-6: var(--sky-6);
+  --ds-accent-7: var(--sky-7);
+  --ds-accent-8: var(--sky-8);
+  --ds-accent-9: var(--sky-9);
+  --ds-accent-10: var(--sky-10);
+  --ds-accent-11: var(--sky-11);
+  --ds-accent-12: var(--sky-12);
+  --ds-accent-a1: var(--sky-a1);
+  --ds-accent-a2: var(--sky-a2);
+  --ds-accent-a3: var(--sky-a3);
+  --ds-accent-a4: var(--sky-a4);
+  --ds-accent-a5: var(--sky-a5);
+  --ds-accent-a6: var(--sky-a6);
+  --ds-accent-a7: var(--sky-a7);
+  --ds-accent-a8: var(--sky-a8);
+  --ds-accent-a9: var(--sky-a9);
+  --ds-accent-a10: var(--sky-a10);
+  --ds-accent-a11: var(--sky-a11);
+  --ds-accent-a12: var(--sky-a12);
+}
+
+:root {
+  --ds-background-color: light-dark(#fff, #000);
+}
+
+@supports (color: color(display-p3 1 1 1)) {
+  @media (color-gamut: p3) {
+    :root {
+      --ds-background-color: light-dark(
+        color(display-p3 1 1 1),
+        color(display-p3 0 0 0)
+      );
+    }
+  }
+}
+
+:root {
+  --ds-radius-sm: 4px;
+  --ds-radius-md: 6px;
+  --ds-radius-lg: 8px;
+  --ds-radius-xl: 12px;
+
+  --ds-shadow-card:
+    0 0 0 1px rgba(0, 0, 0, 0.08), 0 2px 2px -1px rgba(0, 0, 0, 0.06);
+  --ds-shadow-search:
+    0 0 0 1px rgba(0, 0, 0, 0.05), 0 1px 1px -0.5px rgba(0, 0, 0, 0.05),
+    0 3px 3px -1.5px rgba(0, 0, 0, 0.05);
+  --ds-shadow-badge:
+    inset 0 0 0 0.5px rgba(0, 0, 0, 0.1), inset 0 -1px 1px 0 rgba(0, 0, 0, 0.25);
+
+  --ds-brand-twitter: #000000;
+  --ds-brand-cosmos: #fcfbfa;
+  --ds-brand-reddit: #ff4500;
+  --ds-brand-arena: #ffffff;
+  --ds-brand-facebook: #0165e0;
+  --ds-brand-pinterest: #e60024;
+  --ds-brand-dribbble: #ea4c89;
+}

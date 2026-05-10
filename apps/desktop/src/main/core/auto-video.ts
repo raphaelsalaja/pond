@@ -7,6 +7,7 @@ import { ingestFromHttp } from "./ingest";
 import { getVideoDownloadPrefs } from "./prefs";
 import { supportsYtDlp } from "./refresh/sources";
 import { downloadVideo } from "./refresh/yt-dlp";
+import { isAutoVideoBlockedByStorageGuard } from "./storage-watcher";
 
 /**
  * Background queue that materialises the playable video bytes for a save
@@ -124,6 +125,10 @@ export function enqueueAutoVideoDownload(job: AutoVideoJob): void {
   // this gate — those are explicit user actions where the user is
   // *asking* for the bytes, not just passively saving a card.
   if (job.force !== true) {
+    if (isAutoVideoBlockedByStorageGuard()) {
+      log.debug("[pond auto-video] storage guard active, skipping", job.saveId);
+      return;
+    }
     void getVideoDownloadPrefs().then((prefs) => {
       if (!prefs.enabled) {
         log.debug(

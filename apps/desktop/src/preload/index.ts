@@ -7,33 +7,59 @@ import { IPC } from "../shared/constants";
  * "Transactions, Object Pool & sync actions".
  */
 
+/**
+ * Mirrors `RefreshBackfillStatus` in `main/core/refresh/backfill.ts`.
+ * Kept inline here so the renderer doesn't have to reach into main —
+ * the preload is the canonical wire-shape boundary.
+ */
+export interface RefreshBackfillStatusWire {
+  state: "idle" | "running" | "done" | "error" | "cancelled";
+  total: number;
+  current: number;
+  succeeded: number;
+  failed: number;
+  authRequired: string[];
+  startedAt: string | null;
+  finishedAt: string | null;
+  options: { source?: string | null; onlyMissing?: boolean };
+  message?: string;
+}
+
+/**
+ * Mirrors `StorageGuardStatus` in `main/core/storage-watcher.ts`.
+ * Stays inline here so the preload is the single source of truth for
+ * the renderer-facing wire shape.
+ */
+export interface StorageGuardStatusWire {
+  state: "ok" | "warn" | "exceeded";
+  pondBytes: number;
+  capBytes: number | null;
+  warnBytes: number | null;
+  action: "warn" | "pauseSync" | "pauseVideo";
+  appliedAt: string;
+}
+
 const api = {
-  /** Hit the executor with a single typed transaction. */
   tx(tx: unknown): Promise<unknown> {
     return ipcRenderer.invoke(IPC.tx, tx);
   },
 
-  /** Coalesce N transactions into one DB transaction. */
   batch(txs: unknown[]): Promise<unknown[]> {
     return ipcRenderer.invoke(IPC.txBatch, txs);
   },
 
-  /** Undo the most recent transaction (Cmd-Z). */
   undo(): Promise<unknown> {
     return ipcRenderer.invoke(IPC.undo);
   },
 
-  /** Redo (Cmd-Shift-Z). */
   redo(): Promise<unknown> {
     return ipcRenderer.invoke(IPC.redo);
   },
 
-  /** Read-only queries (list saves, search, ...). */
   query(name: string, params?: unknown): Promise<unknown> {
     return ipcRenderer.invoke(IPC.query, name, params);
   },
 
-  /** Subscribe to sync-action broadcasts from the executor. */
   onSyncAction(cb: (action: unknown) => void): () => void {
     const listener = (_: unknown, action: unknown) => cb(action);
     ipcRenderer.on(IPC.syncAction, listener);
@@ -47,12 +73,31 @@ const api = {
     return () => ipcRenderer.off(IPC.nav, listener);
   },
 
-  /** Basic app metadata. */
+  /**
+   * Main -> renderer pump for the Edit menu's Undo / Redo items. Main
+   * already fired native text-input undo via `webContents.undo()`
+   * before sending this event; the renderer's job is to also run
+   * pond's transactional undo when focus is not inside an editable
+   * element. See `App.tsx` for the activeElement check.
+   */
+  onEditUndoRequested(cb: () => void): () => void {
+    const listener = () => cb();
+    ipcRenderer.on(IPC.editUndoRequested, listener);
+    return () => ipcRenderer.off(IPC.editUndoRequested, listener);
+  },
+
+  onEditRedoRequested(cb: () => void): () => void {
+    const listener = () => cb();
+    ipcRenderer.on(IPC.editRedoRequested, listener);
+    return () => ipcRenderer.off(IPC.editRedoRequested, listener);
+  },
+
   appInfo(): Promise<{
     name: string;
     version: string;
     platform: string;
     arch: string;
+    username: string;
   }> {
     return ipcRenderer.invoke(IPC.appInfo);
   },
@@ -79,7 +124,6 @@ const api = {
     return ipcRenderer.invoke(IPC.revealSave, id, fileIndex);
   },
 
-  /** Open a save's file with the OS default handler (e.g. Preview, VLC). */
   openSaveFile(
     id: string,
     fileIndex?: number,
@@ -120,6 +164,49 @@ const api = {
       }
   > {
     return ipcRenderer.invoke(IPC.refreshSave, id);
+  },
+
+  /**
+   * Bulk metadata refresh entry point. Walks every existing save
+   * (optionally filtered) and re-runs the per-save refresh pipeline
+   * against each row. Returns immediately after the worker is enqueued;
+   * progress streams over `onRefreshBackfillStatus`.
+   *
+   * `source` accepts a concrete source slug or `null` for "All sources".
+   * `onlyMissing` narrows to rows whose mediaUrl/title/description are
+   * still null — the right setting for "I just upgraded a harvester,
+   * only retry the rows that came back empty before".
+   */
+  refreshBackfillStart(opts?: {
+    source?: string | null;
+    onlyMissing?: boolean;
+  }): Promise<
+    | { ok: true; total: number }
+    | { ok: false; reason: "already_running" | "no_saves" }
+  > {
+    return ipcRenderer.invoke(IPC.refreshBackfillStart, opts ?? {});
+  },
+
+  refreshBackfillCancel(): Promise<{ ok: boolean }> {
+    return ipcRenderer.invoke(IPC.refreshBackfillCancel);
+  },
+
+  refreshBackfillStatus(): Promise<RefreshBackfillStatusWire> {
+    return ipcRenderer.invoke(IPC.refreshBackfillStatus);
+  },
+
+  /**
+   * Subscribe to refresh-backfill progress events. One push per row
+   * processed, plus terminal `done` / `cancelled` / `error` events.
+   * Returns a disposer.
+   */
+  onRefreshBackfillStatus(
+    cb: (status: RefreshBackfillStatusWire) => void,
+  ): () => void {
+    const listener = (_: unknown, status: RefreshBackfillStatusWire) =>
+      cb(status);
+    ipcRenderer.on(IPC.refreshBackfillStatus, listener);
+    return () => ipcRenderer.off(IPC.refreshBackfillStatus, listener);
   },
 
   /**
@@ -216,16 +303,14 @@ const api = {
    */
   syncRunNow(
     source: string,
-    mode?: "incremental" | "backfill",
   ): Promise<{ ok: true } | { ok: false; reason: "already_running" }> {
-    return ipcRenderer.invoke(IPC.syncRunNow, source, mode);
+    return ipcRenderer.invoke(IPC.syncRunNow, source);
   },
 
   syncCancel(source: string): Promise<{ ok: boolean }> {
     return ipcRenderer.invoke(IPC.syncCancel, source);
   },
 
-  /** Snapshot of the current sync state for `<source>`. */
   syncStatus(source: string): Promise<{
     ok: boolean;
     running: boolean;
@@ -259,6 +344,20 @@ const api = {
       cb(update);
     ipcRenderer.on(IPC.syncStatus, listener);
     return () => ipcRenderer.off(IPC.syncStatus, listener);
+  },
+
+  /**
+   * Subscribe to the storage guard watcher's status events. The
+   * watcher fires on its configured cadence (default 5 min) plus
+   * synchronously after the renderer applies new prefs via
+   * `storage.applyGuardPrefs`. The Settings → Storage page uses
+   * this to render an "All clear / approaching limit / exceeded"
+   * indicator without polling.
+   */
+  onStorageStatus(cb: (status: StorageGuardStatusWire) => void): () => void {
+    const listener = (_: unknown, status: StorageGuardStatusWire) => cb(status);
+    ipcRenderer.on(IPC.storageStatus, listener);
+    return () => ipcRenderer.off(IPC.storageStatus, listener);
   },
 };
 

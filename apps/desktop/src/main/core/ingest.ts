@@ -133,6 +133,7 @@ export async function ingestFromHttp(
     aiSuggestions: null,
     ocrText: null,
     dominantColors: null,
+    blurDataUrl: null,
     coverIndex: 0,
     width: null,
     height: null,
@@ -584,7 +585,6 @@ async function findExisting(
   return byUrl[0] ?? null;
 }
 
-/** Union two string arrays preserving order, dropping duplicates. */
 function mergeUnique(a: readonly string[], b: readonly string[]): string[] {
   const seen = new Set<string>();
   const out: string[] = [];

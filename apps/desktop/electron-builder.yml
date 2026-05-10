@@ -2,13 +2,13 @@ appId: so.pond.desktop
 productName: pond
 copyright: "Copyright © 2026 Raphael Salaja"
 asar: true
-# Native .node binaries (better-sqlite3, keytar, sqlite-vec) can't live
-# inside the asar archive or dlopen() can't find them.
+# Native .node binaries (better-sqlite3, @napi-rs/keyring, sqlite-vec)
+# can't live inside the asar archive or dlopen() can't find them.
 asarUnpack:
   - resources/**
   - "**/*.node"
   - "**/node_modules/better-sqlite3/**"
-  - "**/node_modules/keytar/**"
+  - "**/node_modules/@napi-rs/keyring*/**"
   - "**/node_modules/sqlite-vec*/**"
 
 directories:
@@ -49,8 +49,9 @@ extraMetadata:
 
 # electron-builder rebuilds native modules against the packaged Electron
 # ABI before bundling. Combined with the `postinstall` script in
-# package.json this gives us clean `better-sqlite3` + `keytar` binaries
-# on dev install AND on CI.
+# package.json this gives us a clean `better-sqlite3` binary on dev
+# install AND on CI. `@napi-rs/keyring` ships prebuilt across the
+# Electron ABI matrix, so it doesn't need a rebuild step.
 npmRebuild: true
 
 mac:

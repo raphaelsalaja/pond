@@ -1,0 +1,108 @@
+.root {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  padding: 0 10px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ds-gray-12);
+  letter-spacing: -0.04px;
+  cursor: pointer;
+  background: var(--ds-gray-2);
+  border: 0;
+  border-radius: var(--ds-radius-md);
+  outline: none;
+  box-shadow: var(--ds-shadow-search);
+  transition:
+    background 80ms ease,
+    color 80ms ease,
+    box-shadow 80ms ease;
+  user-select: none;
+  -webkit-app-region: no-drag;
+
+  &:hover:not([data-disabled]) {
+    background: var(--ds-gray-a3);
+  }
+
+  &:active:not([data-disabled]) {
+    background: var(--ds-gray-a4);
+  }
+
+  &:focus-visible {
+    box-shadow:
+      0 0 0 2px var(--ds-gray-1),
+      0 0 0 4px var(--ds-gray-a8);
+  }
+
+  &[data-disabled] {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  &[data-size="sm"] {
+    height: 24px;
+    padding: 0 8px;
+    font-size: 11px;
+  }
+
+  &[data-size="lg"] {
+    height: 32px;
+    padding: 0 14px;
+    font-size: 13px;
+  }
+
+  &[data-icon] {
+    width: 28px;
+    padding: 0;
+  }
+
+  &[data-size="sm"][data-icon] {
+    width: 24px;
+  }
+
+  &[data-size="lg"][data-icon] {
+    width: 32px;
+  }
+
+  &[data-variant="ghost"] {
+    background: transparent;
+    box-shadow: none;
+  }
+
+  &[data-variant="ghost"]:hover:not([data-disabled]) {
+    background: var(--ds-gray-a2);
+  }
+
+  &[data-variant="ghost"]:active:not([data-disabled]) {
+    background: var(--ds-gray-a2);
+  }
+
+  &[data-variant="primary"] {
+    color: var(--ds-gray-1);
+    background: var(--ds-gray-12);
+    box-shadow: none;
+  }
+
+  &[data-variant="primary"]:hover:not([data-disabled]) {
+    background: var(--ds-gray-12);
+    filter: brightness(1.1);
+  }
+
+  &[data-variant="danger"] {
+    color: light-dark(#b3261e, #f2b8b5);
+    background: transparent;
+    box-shadow: none;
+  }
+
+  &[data-variant="danger"]:hover:not([data-disabled]) {
+    background: light-dark(rgba(179, 38, 30, 0.08), rgba(242, 184, 181, 0.1));
+  }
+
+  &[data-variant="danger"]:active:not([data-disabled]) {
+    background: light-dark(rgba(179, 38, 30, 0.14), rgba(242, 184, 181, 0.15));
+  }
+}

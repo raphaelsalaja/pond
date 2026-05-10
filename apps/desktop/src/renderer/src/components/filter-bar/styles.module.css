@@ -1,96 +1,110 @@
 /* ------------------------------------------------------------------ */
-/* Filter chip rail                                                   */
-/*                                                                    */
-/* Sits inside the centre content column (between the sidebar and    */
-/* preview pane), above the grid. Multi-row wrap so the full Eagle-  */
-/* style chip set always fits without horizontal scroll, no matter   */
-/* how narrow the centre column gets.                                 */
+/* Bar — filter chip container                                          */
 /* ------------------------------------------------------------------ */
 
 .bar {
   display: flex;
   flex-shrink: 0;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 6px;
   align-items: center;
   padding: 12px 0;
-  border-bottom: 1px solid var(--pond-border);
+  border-bottom: 1px solid var(--ds-gray-a4);
 }
 
-/* ---- Chip --------------------------------------------------------- */
-
-/* Wrapper exists so the close button can sit as a sibling of the
- * trigger (nested interactives aren't valid HTML) while still sharing
- * the chip background / radius. The trigger handles the dropdown,
- * the close button handles removal — both sit on the same row. */
-.chipWrap {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  border-radius: 6px;
-}
-
-.chipWrapActive {
-  background: var(--pond-active);
-  box-shadow: inset 0 0 0 1px var(--pond-border);
-}
-
-.chipWrapScaffold {
-  /* purely a hook for future styling */
-}
+/* ------------------------------------------------------------------ */
+/* Chip — multi-segment pill                                            */
+/* ------------------------------------------------------------------ */
+/*                                                                      */
+/* Chip is `[label] [operator] [value] [×]`. Each segment is its own    */
+/* clickable button so it can open its own popover; segments share a    */
+/* rounded-rect background with vertical 1px dividers between them      */
+/* (Linear-style).                                                      */
 
 .chip {
   display: inline-flex;
   flex-shrink: 0;
+  align-items: stretch;
+  height: 28px;
+  overflow: hidden;
+  background: var(--ds-gray-a3);
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px var(--ds-gray-a4);
+
+  /* Belt-and-braces: make sure the chip and everything inside is
+   * clickable even when an ancestor opts the area into a window
+   * drag region. Without this, the macOS drag handler swallows the
+   * click before React sees it. */
+  -webkit-app-region: no-drag;
+}
+
+.chip-segment {
+  display: inline-flex;
+  flex-shrink: 0;
   gap: 6px;
   align-items: center;
-  height: 26px;
+  height: 100%;
   padding: 0 8px;
   font: inherit;
   font-size: 12px;
   font-weight: 500;
-  color: var(--pond-fg-soft);
-  cursor: pointer;
+  color: var(--ds-gray-12);
+  white-space: nowrap;
+  cursor: default;
+  user-select: none;
   background: transparent;
   border: 0;
-  border-radius: 6px;
-  transition:
-    color 80ms ease,
-    background 80ms ease,
-    box-shadow 80ms ease;
+  touch-action: manipulation;
+  transition: background 80ms ease;
+  -webkit-app-region: no-drag;
+
+  &:hover {
+    background: var(--ds-gray-a5);
+  }
+
+  &:focus-visible {
+    outline: none;
+    background: var(--ds-gray-a5);
+    box-shadow: inset 0 0 0 2px var(--ds-accent-8);
+  }
+
+  &[data-state="open"] {
+    background: var(--ds-gray-a6);
+  }
+
+  &[data-popup-open] {
+    background: var(--ds-gray-a6);
+  }
 }
 
-.chip:hover {
-  color: var(--pond-fg);
-  background: var(--pond-hover);
+.chip-segment + .chip-segment {
+  box-shadow: inset 1px 0 0 var(--ds-gray-a4);
 }
 
-.chip:focus-visible {
-  outline: 2px solid var(--pond-focus, #6c93ff);
-  outline-offset: 1px;
+.chip-dimension {
+  color: var(--ds-gray-12);
 }
 
-.chip[data-state="open"] {
-  color: var(--pond-fg);
-  background: var(--pond-active);
+.chip-operator {
+  font-weight: 450;
+  color: var(--ds-gray-11);
 }
 
-.chipScaffold {
-  color: var(--pond-muted);
+.chip-value {
+  color: var(--ds-gray-12);
 }
 
-.chipActive {
-  color: var(--pond-fg);
-  background: transparent;
-  /* Background lives on `.chipWrapActive` so the sibling close button
-   * shares the pill — the trigger button itself stays transparent. */
+.chip-close {
+  width: 24px;
+  padding: 0;
+  color: var(--ds-gray-11);
+
+  &:hover {
+    color: var(--ds-gray-12);
+  }
 }
 
-.chipActive:hover {
-  background: light-dark(rgba(0, 0, 0, 0.04), rgba(255, 255, 255, 0.04));
-}
-
-.chipIcon {
+.chip-icon {
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
@@ -98,349 +112,197 @@
   width: 14px;
   height: 14px;
   font-size: 14px;
+  color: var(--ds-gray-11);
 }
 
-.chipLabel {
-  white-space: nowrap;
-}
-
-.chipValue {
+/* Coloured-dot row used by the Color filter's chip value segment. */
+.chip-color-dots {
   display: inline-flex;
-  gap: 4px;
+  gap: 3px;
   align-items: center;
-  padding: 0 6px;
-  margin-left: 2px;
+}
+
+.chip-color-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+
+/* ------------------------------------------------------------------ */
+/* Add filter "+" trigger                                               */
+/* ------------------------------------------------------------------ */
+
+.add-filter {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 6px;
+  align-items: center;
+  height: 28px;
+  padding: 0 8px;
+  font: inherit;
+  font-size: 12px;
   font-weight: 500;
-  color: var(--pond-fg);
-  background: light-dark(rgba(0, 0, 0, 0.05), rgba(255, 255, 255, 0.07));
-  border-radius: 4px;
-}
-
-.chipChevron {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  margin-left: 1px;
-  font-size: 11px;
-  color: var(--pond-muted);
-  opacity: 0;
-  transition: opacity 80ms ease;
-}
-
-.chip:hover .chipChevron,
-.chip[data-state="open"] .chipChevron {
-  opacity: 1;
-}
-
-.chipClose {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 22px;
-  padding: 0;
-  margin-right: 4px;
-  font-size: 10px;
-  color: var(--pond-muted);
-  cursor: pointer;
+  color: var(--ds-gray-11);
+  touch-action: manipulation;
+  cursor: default;
   background: transparent;
   border: 0;
-  border-radius: 4px;
+  border-radius: 6px;
   transition:
     color 80ms ease,
     background 80ms ease;
+
+  &:hover {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-a3);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ds-accent-8);
+    outline-offset: 1px;
+  }
+
+  &[data-popup-open] {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-a3);
+  }
 }
 
-.chipClose:hover {
-  color: var(--pond-fg);
-  background: light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.1));
-}
-
-.chipClose:focus-visible {
-  outline: 2px solid var(--pond-focus, #6c93ff);
-  outline-offset: 1px;
-}
-
-.addFilter {
-  width: 26px;
+.add-filter-icon-only {
+  width: 28px;
   padding: 0;
-  margin-left: 2px;
-  color: var(--pond-muted);
 }
 
-.addFilter:hover {
-  color: var(--pond-fg);
-}
+/* ------------------------------------------------------------------ */
+/* Clear all                                                            */
+/* ------------------------------------------------------------------ */
 
-/* ---- Dropdown shells --------------------------------------------- */
-
-.popover {
-  width: 280px;
-  padding: 12px;
-}
-
-.dropdown {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.dropdownLabel {
-  margin: 0;
-  font-size: 11px;
-  font-weight: 550;
-  color: var(--pond-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-}
-
-.dropdownHint {
-  margin: 0;
-  font-size: 11px;
-  color: var(--pond-muted);
-}
-
-.dropdownEmpty {
-  padding: 12px 4px;
-  margin: 0;
-  font-size: 12px;
-  color: var(--pond-muted);
-  text-align: center;
-}
-
-.dropdownSection {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-/* ---- Option list (used by Type/Shape/Size/etc.) ------------------ */
-
-.optionList {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.optionRow {
-  display: flex;
-  gap: 8px;
-  align-items: center;
+.clear-all {
   height: 28px;
-  padding: 0 6px 0 4px;
+  padding: 0 8px;
   font: inherit;
   font-size: 12px;
   font-weight: 500;
-  color: var(--pond-fg);
-  text-align: left;
-  cursor: pointer;
-  background: transparent;
-  border: 0;
-  border-radius: 5px;
-  transition: background 80ms ease;
-}
-
-.optionRow:hover {
-  background: var(--pond-hover);
-}
-
-.optionRowActive {
-  background: var(--pond-active);
-}
-
-.optionCheck {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 14px;
-  height: 14px;
-  font-size: 11px;
-  color: var(--pond-fg);
-}
-
-/* ---- Color swatch grid ------------------------------------------- */
-
-.swatchGrid {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 6px;
-}
-
-.swatch {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 1;
-  padding: 0;
-  cursor: pointer;
+  color: var(--ds-gray-11);
+  touch-action: manipulation;
+  cursor: default;
   background: transparent;
   border: 0;
   border-radius: 6px;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
-  transition: transform 80ms ease;
+  transition:
+    color 80ms ease,
+    background 80ms ease;
+
+  &:hover {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-a3);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ds-accent-8);
+    outline-offset: 1px;
+  }
 }
 
-.swatch:hover {
-  transform: scale(1.06);
-}
+/* ------------------------------------------------------------------ */
+/* Menu popups (chip value + Add filter submenu + operator)             */
+/* ------------------------------------------------------------------ */
+/*                                                                      */
+/* `.value-popup` is the bare popup shell used by both the chip value   */
+/* pill and the Add filter `Menu.SubmenuRoot`s. Each picker provides    */
+/* its own width + padding, so the popup itself is transparent chrome.  */
 
-.swatchActive {
-  outline: 2px solid var(--pond-fg);
-  outline-offset: 1px;
-}
-
-/* ---- Tag picker --------------------------------------------------- */
-
-.tagList {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  max-height: 220px;
-  overflow-y: auto;
-}
-
-.tagPill {
-  display: inline-flex;
-  gap: 5px;
-  align-items: center;
-  height: 24px;
-  padding: 0 8px;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--pond-fg);
-  cursor: pointer;
-  background: light-dark(rgba(0, 0, 0, 0.04), rgba(255, 255, 255, 0.05));
-  border: 0;
-  border-radius: 999px;
-  transition: background 80ms ease;
-}
-
-.tagPill:hover {
-  background: light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.1));
-}
-
-.tagPillActive {
-  color: var(--pond-bg);
-  background: var(--pond-fg);
-}
-
-.tagPillActive:hover {
-  background: var(--pond-fg);
-}
-
-.tagCount {
-  font-size: 10px;
-  font-variant-numeric: tabular-nums;
-  color: var(--pond-muted);
-}
-
-.tagPillActive .tagCount {
-  color: light-dark(rgba(255, 255, 255, 0.7), rgba(0, 0, 0, 0.55));
-}
-
-/* ---- Scaffold body ----------------------------------------------- */
-
-.scaffoldBanner {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 16px;
-  text-align: center;
-  background: var(--pond-hover);
-  border-radius: 8px;
-}
-
-.scaffoldChip {
-  align-self: center;
-  padding: 2px 8px;
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--pond-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  background: var(--pond-card);
-  border-radius: 999px;
-}
-
-.scaffoldText {
-  font-size: 12px;
-  color: var(--pond-muted);
-}
-
-/* ---- Add-filter popover ------------------------------------------ */
-
-.addPopover {
-  width: 240px;
-  padding: 8px;
-}
-
-.addLabel {
-  padding: 6px 8px 4px;
-  margin: 0;
-  font-size: 11px;
-  font-weight: 550;
-  color: var(--pond-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-}
-
-.addList {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
+.value-popup {
+  min-width: auto;
   padding: 0;
-  margin: 0;
-  list-style: none;
 }
 
-.addItem {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  width: 100%;
-  height: 28px;
-  padding: 0 8px;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--pond-fg);
-  text-align: left;
-  cursor: pointer;
-  background: transparent;
-  border: 0;
-  border-radius: 5px;
-  transition: background 80ms ease;
+.operator-popup {
+  min-width: 120px;
 }
 
-.addItem:hover {
-  background: var(--pond-hover);
-}
-
-.addItemIcon {
+/* Submenu trigger chevron — appended to the right of the label inside
+ * the Add filter menu's `Menu.SubmenuTrigger`. Mirrors Linear's submenu
+ * affordance. */
+.submenu-chevron {
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  width: 14px;
-  height: 14px;
-  font-size: 14px;
-  color: var(--pond-fg-soft);
+  width: 12px;
+  height: 12px;
+  margin-left: auto;
+  color: var(--ds-gray-10);
 }
 
-.addItemLabel {
+/* ------------------------------------------------------------------ */
+/* Add filter — global search                                          */
+/* ------------------------------------------------------------------ */
+/*                                                                      */
+/* The popup grows a search input pinned to the top, a flat ranked     */
+/* list below, and small badges (counts, kbd hint, color swatch dots) */
+/* that need to share styling regardless of which surface mounts the   */
+/* menu (header toolbar vs inline chip-bar AddTrigger).                */
+
+.search-row {
+  display: flex;
+  flex-shrink: 0;
+  gap: 6px;
+  align-items: center;
+  padding: 2px 2px 6px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--ds-gray-a3);
+}
+
+.search-row > :first-child {
   flex: 1;
 }
 
-.addItemChip {
-  padding: 1px 6px;
-  font-size: 9px;
-  font-weight: 600;
-  color: var(--pond-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  background: light-dark(rgba(0, 0, 0, 0.05), rgba(255, 255, 255, 0.06));
+.kbd {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  font-family:
+    "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ds-gray-11);
+  background: var(--ds-gray-a3);
+  border-radius: 3px;
+}
+
+.breadcrumb {
+  font-weight: 450;
+  color: var(--ds-gray-11);
+}
+
+.count {
+  flex-shrink: 0;
+  padding-left: 8px;
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 450;
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-11);
+}
+
+.swatch-dot {
+  display: inline-flex;
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--ds-gray-a4);
   border-radius: 999px;
+}
+
+.empty {
+  padding: 16px 12px;
+  font-size: 12px;
+  color: var(--ds-gray-11);
+  text-align: center;
 }

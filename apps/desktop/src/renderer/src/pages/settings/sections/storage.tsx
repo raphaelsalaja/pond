@@ -1,13 +1,9 @@
-import { useEffect, useState } from "react";
-import { Button, useToast } from "../../../ui";
-import styles from "../styles.module.css";
-import {
-  Row,
-  SectionHeader,
-  SectionStack,
-  SettingsCard,
-  StackedRow,
-} from "./_shared";
+import { Button, Input, Select, Switch, useToast } from "@pond/ui";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Settings } from "@/components/settings";
+import styles from "@/pages/settings/styles.module.css";
+import { usePrefs } from "@/pool/prefs";
+import type { StorageGuardStatusWire } from "../../../../../preload";
 import { DEFAULT_VIDEO_DOWNLOAD, type SettingsRow } from "./_types";
 
 interface IntegrityReport {
@@ -18,16 +14,88 @@ interface IntegrityReport {
   totalOnDisk: number;
 }
 
+interface StorageSnapshotWire {
+  pondBytes: number;
+  breakdown: {
+    items: number;
+    videoCache: number;
+    thumbs: number;
+    meta: number;
+    db: number;
+    other: number;
+  };
+  deviceTotalBytes: number;
+  deviceFreeBytes: number;
+  deviceUsedByOthersBytes: number;
+  libraryRoot: string;
+  computedAt: string;
+}
+
+type BreakdownKey = keyof StorageSnapshotWire["breakdown"];
+
+const BREAKDOWN_LABELS: Record<BreakdownKey, string> = {
+  items: "Items",
+  videoCache: "Video cache",
+  thumbs: "Thumbnails",
+  meta: "Metadata",
+  db: "Database",
+  other: "Other",
+};
+
+const BREAKDOWN_SEGMENT_CLASS: Record<BreakdownKey, string> = {
+  items: styles["usage-bar-segment-items"] ?? "",
+  videoCache: styles["usage-bar-segment-video-cache"] ?? "",
+  thumbs: styles["usage-bar-segment-thumbs"] ?? "",
+  meta: styles["usage-bar-segment-meta"] ?? "",
+  db: styles["usage-bar-segment-db"] ?? "",
+  other: styles["usage-bar-segment-other"] ?? "",
+};
+
+const BREAKDOWN_ORDER: BreakdownKey[] = [
+  "items",
+  "videoCache",
+  "thumbs",
+  "meta",
+  "db",
+  "other",
+];
+
+const ACTION_LABELS: Record<
+  "warn" | "pauseSync" | "pauseVideo",
+  { label: string; description: string }
+> = {
+  warn: { label: "Notify Me", description: "Show a warning only." },
+  pauseSync: {
+    label: "Pause Source Syncs",
+    description: "Stop background syncs until usage drops.",
+  },
+  pauseVideo: {
+    label: "Pause Auto Video Downloads",
+    description: "Skip yt-dlp until usage drops.",
+  },
+};
+
 /**
- * Library storage. Ships the full action surface for the on-disk
- * library — open in Finder, rescan, move to a new location, run an
- * integrity check, and trigger an export.
+ * Library storage. Top sections show how much disk Pond is using and
+ * let the user enforce a soft warning / hard cap with a configurable
+ * action when crossed. The original action surface — open in Finder,
+ * rescan, move, integrity check, exports — is preserved below.
  */
 export function StorageSection() {
   const toast = useToast();
   const [settings, setSettings] = useState<SettingsRow | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [report, setReport] = useState<IntegrityReport | null>(null);
+
+  const [snapshot, setSnapshot] = useState<StorageSnapshotWire | null>(null);
+  const [snapshotLoading, setSnapshotLoading] = useState(true);
+  const [snapshotError, setSnapshotError] = useState<string | null>(null);
+
+  const [storagePrefs, patchStorage] = usePrefs("storage");
+  const [libraryPrefs, patchLibrary] = usePrefs("library");
+  const [guardStatus, setGuardStatus] = useState<StorageGuardStatusWire | null>(
+    null,
+  );
 
   useEffect(() => {
     void window.pond.query("settings.get", {}).then((s) => {
@@ -37,6 +105,34 @@ export function StorageSection() {
         videoDownload: row.videoDownload ?? DEFAULT_VIDEO_DOWNLOAD,
       });
     });
+  }, []);
+
+  const fetchSnapshot = useCallback(async () => {
+    setSnapshotLoading(true);
+    setSnapshotError(null);
+    try {
+      const next = (await window.pond.query(
+        "storage.snapshot",
+        {},
+      )) as StorageSnapshotWire;
+      setSnapshot(next);
+    } catch (err) {
+      setSnapshotError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSnapshotLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void fetchSnapshot();
+  }, [fetchSnapshot]);
+
+  useEffect(() => {
+    void window.pond.query("storage.guardState", {}).then((s) => {
+      if (s) setGuardStatus(s as StorageGuardStatusWire);
+    });
+    const off = window.pond.onStorageStatus((s) => setGuardStatus(s));
+    return off;
   }, []);
 
   async function withBusy(key: string, fn: () => Promise<void>) {
@@ -56,9 +152,10 @@ export function StorageSection() {
       };
       toast.add({
         title: "Library rescanned",
-        description: `${res.total} items (${res.updated} updated).`,
+        description: `${res.total}\u00A0items, ${res.updated}\u00A0updated.`,
         type: "success",
       });
+      await fetchSnapshot();
     });
   }
 
@@ -114,7 +211,7 @@ export function StorageSection() {
         title: drift === 0 ? "Library is clean" : "Drift detected",
         description:
           drift === 0
-            ? `${res.totalIndexed} items match on disk and in the index.`
+            ? `${res.totalIndexed}\u00A0items match on disk and in the index.`
             : `${res.orphans.length} on disk only · ${res.missing.length} indexed only.`,
         type: drift === 0 ? "success" : "warning",
       });
@@ -167,90 +264,553 @@ export function StorageSection() {
     });
   }
 
+  function applyStoragePrefsPatch(patch: Partial<typeof storagePrefs>) {
+    patchStorage(patch);
+    void window.pond.query("storage.applyGuardPrefs", {}).catch(() => {
+      // Watcher rearm errors get logged in main; UI stays responsive.
+    });
+  }
+
+  const usagePercents = useMemo(() => {
+    if (!snapshot || snapshot.deviceTotalBytes <= 0) return null;
+    const total = snapshot.deviceTotalBytes;
+    const segments: { key: string; pct: number; className: string }[] = [];
+    for (const key of BREAKDOWN_ORDER) {
+      const bytes = snapshot.breakdown[key];
+      if (bytes <= 0) continue;
+      segments.push({
+        key,
+        pct: (bytes / total) * 100,
+        className: BREAKDOWN_SEGMENT_CLASS[key],
+      });
+    }
+    const otherDevice = Math.max(0, snapshot.deviceUsedByOthersBytes);
+    if (otherDevice > 0) {
+      segments.push({
+        key: "device-others",
+        pct: (otherDevice / total) * 100,
+        className: styles["usage-bar-segment-device"] ?? "",
+      });
+    }
+    return segments;
+  }, [snapshot]);
+
   return (
-    <SectionStack>
-      <SectionHeader
-        title="Storage"
-        description="Where your saves live on disk and how Pond manages them."
-      />
+    <Settings.Page>
+      <Settings.Header>
+        <Settings.Title>Storage</Settings.Title>
+        <Settings.Description>
+          Where saves live on disk and how Pond manages them.
+        </Settings.Description>
+      </Settings.Header>
 
-      <SettingsCard title="Library location">
-        <StackedRow
-          label="Source of truth"
-          description={
-            <code>{settings?.libraryRoot ?? "~/Pond/My Pond.library/"}</code>
-          }
-        >
-          <div className={styles.inlineRow}>
-            <Button size="sm" onClick={() => void openInFinder()}>
-              Open in Finder
-            </Button>
-            <Button
-              size="sm"
-              disabled={busy === "rescan"}
-              onClick={() => void rescan()}
-            >
-              Rescan library
-            </Button>
-            <Button
-              size="sm"
-              disabled={busy === "move"}
-              onClick={() => void move()}
-            >
-              Move library…
-            </Button>
+      <Settings.Section>
+        <Settings.SectionTitle>Disk Usage</Settings.SectionTitle>
+        <div className={styles["usage-headline"]}>
+          <div className={styles["usage-stat"]}>
+            <span className={styles["usage-stat-value"]}>
+              {snapshot ? formatBytes(snapshot.pondBytes) : "…"}
+            </span>
+            <span className={styles["usage-stat-label"]}>used by Pond</span>
           </div>
-        </StackedRow>
-      </SettingsCard>
+          <div className={styles["usage-stat"]}>
+            <span className={styles["usage-stat-value"]}>
+              {snapshot ? formatBytes(snapshot.deviceFreeBytes) : "…"}
+            </span>
+            <span className={styles["usage-stat-label"]}>
+              free on this device
+            </span>
+          </div>
+          {snapshot ? (
+            <div className={styles["usage-stat"]}>
+              <span className={styles["usage-stat-value"]}>
+                {formatBytes(snapshot.deviceTotalBytes)}
+              </span>
+              <span className={styles["usage-stat-label"]}>
+                total on this device
+              </span>
+            </div>
+          ) : null}
+        </div>
+        <div className={styles["usage-bar"]} aria-hidden>
+          {usagePercents
+            ? usagePercents.map((seg) => (
+                <div
+                  key={seg.key}
+                  className={[styles["usage-bar-segment"], seg.className]
+                    .filter(Boolean)
+                    .join(" ")}
+                  style={{ flexBasis: `${seg.pct}%` }}
+                  title={`${seg.key}: ${seg.pct.toFixed(1)}%`}
+                />
+              ))
+            : null}
+        </div>
+        <div className={styles["usage-legend"]}>
+          {BREAKDOWN_ORDER.map((key) => (
+            <div className={styles["usage-legend-item"]} key={key}>
+              <span className={styles["usage-legend-label"]}>
+                <span
+                  className={[
+                    styles["usage-legend-swatch"],
+                    BREAKDOWN_SEGMENT_CLASS[key],
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                />
+                {BREAKDOWN_LABELS[key]}
+              </span>
+              <span className={styles["usage-legend-value"]}>
+                {snapshot
+                  ? formatBytes(snapshot.breakdown[key])
+                  : snapshotLoading
+                    ? "Calculating…"
+                    : "…"}
+              </span>
+            </div>
+          ))}
+          <div className={styles["usage-legend-item"]}>
+            <span className={styles["usage-legend-label"]}>
+              <span
+                className={[
+                  styles["usage-legend-swatch"],
+                  styles["usage-bar-segment-device"],
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+              />
+              Other apps
+            </span>
+            <span className={styles["usage-legend-value"]}>
+              {snapshot ? formatBytes(snapshot.deviceUsedByOthersBytes) : "…"}
+            </span>
+          </div>
+        </div>
+        {snapshotError ? (
+          <p className={styles["usage-error"]}>{snapshotError}</p>
+        ) : null}
+        <div className={styles["usage-refresh-row"]}>
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled={snapshotLoading}
+            onClick={() => void fetchSnapshot()}
+            className={styles["usage-refresh-button"]}
+          >
+            {snapshotLoading ? "Calculating…" : "Refresh Usage"}
+          </Button>
+        </div>
+      </Settings.Section>
 
-      <SettingsCard title="Integrity">
-        <Row
-          label="Verify integrity"
-          description={
-            report
-              ? `Last run: ${report.totalIndexed} indexed, ${report.totalOnDisk} on disk · ${report.orphans.length} orphan, ${report.missing.length} missing`
-              : "Compare metadata.json files on disk against the SQLite index."
-          }
-          control={
-            <Button
-              size="sm"
-              disabled={busy === "verify"}
-              onClick={() => void verify()}
-            >
-              {busy === "verify" ? "Checking…" : "Run check"}
-            </Button>
-          }
-        />
-      </SettingsCard>
+      <Settings.Section>
+        <Settings.SectionTitle>Storage Limits</Settings.SectionTitle>
+        <Settings.List>
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>Enforce a Storage Limit</Settings.ItemTitle>
+              <Settings.ItemDescription>
+                Apply an action when the library crosses your cap.
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <Switch.Root
+                checked={storagePrefs.guardsEnabled}
+                onCheckedChange={(v) =>
+                  applyStoragePrefsPatch({ guardsEnabled: v })
+                }
+              />
+            </Settings.ItemControl>
+          </Settings.Item>
 
-      <SettingsCard title="Export">
-        <Row
-          label="Library zip"
-          description="One archive containing every items/<id>.info folder plus the library metadata."
-          control={
-            <Button
-              size="sm"
-              disabled={busy === "export-zip"}
-              onClick={() => void exportZip()}
-            >
-              {busy === "export-zip" ? "Zipping…" : "Export as zip"}
-            </Button>
-          }
+          {storagePrefs.guardsEnabled ? (
+            <>
+              <Settings.Item>
+                <Settings.ItemDetails>
+                  <Settings.ItemTitle>No Hard Cap</Settings.ItemTitle>
+                  <Settings.ItemDescription>
+                    Pond never blocks new saves. Only the warn threshold fires.
+                  </Settings.ItemDescription>
+                </Settings.ItemDetails>
+                <Settings.ItemControl>
+                  <Switch.Root
+                    checked={storagePrefs.maxLibraryGb === null}
+                    onCheckedChange={(v) =>
+                      applyStoragePrefsPatch({
+                        maxLibraryGb: v
+                          ? null
+                          : (storagePrefs.maxLibraryGb ?? 50),
+                      })
+                    }
+                  />
+                </Settings.ItemControl>
+              </Settings.Item>
+
+              {storagePrefs.maxLibraryGb !== null ? (
+                <Settings.Item>
+                  <Settings.ItemDetails>
+                    <Settings.ItemTitle>Max Library Size</Settings.ItemTitle>
+                    <Settings.ItemDescription>
+                      The configured action fires once usage reaches this many
+                      GB.
+                    </Settings.ItemDescription>
+                  </Settings.ItemDetails>
+                  <Settings.ItemControl>
+                    <div className={styles["inline-row"]}>
+                      <Input.Root
+                        data-size="sm"
+                        type="number"
+                        min={1}
+                        max={1000}
+                        value={String(storagePrefs.maxLibraryGb ?? 50)}
+                        onChange={(e) =>
+                          applyStoragePrefsPatch({
+                            maxLibraryGb: clamp(
+                              Number(e.target.value) || 50,
+                              1,
+                              1000,
+                            ),
+                          })
+                        }
+                        style={{ width: 96 }}
+                      />
+                      <span className={styles["usage-stat-label"]}>GB</span>
+                    </div>
+                  </Settings.ItemControl>
+                </Settings.Item>
+              ) : null}
+
+              {storagePrefs.maxLibraryGb !== null ? (
+                <Settings.Item>
+                  <Settings.ItemDetails>
+                    <Settings.ItemTitle>Warn At</Settings.ItemTitle>
+                    <Settings.ItemDescription>
+                      Surface a warning once usage crosses this percentage of
+                      the cap.
+                    </Settings.ItemDescription>
+                  </Settings.ItemDetails>
+                  <Settings.ItemControl>
+                    <div className={styles["inline-row"]}>
+                      <Input.Root
+                        data-size="sm"
+                        type="number"
+                        min={50}
+                        max={100}
+                        value={String(storagePrefs.warnAtPercent)}
+                        onChange={(e) =>
+                          applyStoragePrefsPatch({
+                            warnAtPercent: clamp(
+                              Number(e.target.value) || 80,
+                              50,
+                              100,
+                            ),
+                          })
+                        }
+                        style={{ width: 96 }}
+                      />
+                      <span className={styles["usage-stat-label"]}>%</span>
+                    </div>
+                  </Settings.ItemControl>
+                </Settings.Item>
+              ) : null}
+
+              <Settings.Item>
+                <Settings.ItemDetails>
+                  <Settings.ItemTitle>Action When Exceeded</Settings.ItemTitle>
+                  <Settings.ItemDescription>
+                    {ACTION_LABELS[storagePrefs.action].description}
+                  </Settings.ItemDescription>
+                </Settings.ItemDetails>
+                <Settings.ItemControl>
+                  <Select.Root
+                    value={storagePrefs.action}
+                    onValueChange={(v) =>
+                      applyStoragePrefsPatch({
+                        action: v as "warn" | "pauseSync" | "pauseVideo",
+                      })
+                    }
+                  >
+                    <Select.Trigger>
+                      <Select.Value>
+                        {ACTION_LABELS[storagePrefs.action].label}
+                      </Select.Value>
+                    </Select.Trigger>
+                    <Select.Content>
+                      <Select.Item value="warn">
+                        {ACTION_LABELS.warn.label}
+                      </Select.Item>
+                      <Select.Item value="pauseSync">
+                        {ACTION_LABELS.pauseSync.label}
+                      </Select.Item>
+                      <Select.Item value="pauseVideo">
+                        {ACTION_LABELS.pauseVideo.label}
+                      </Select.Item>
+                    </Select.Content>
+                  </Select.Root>
+                </Settings.ItemControl>
+              </Settings.Item>
+
+              <Settings.Item>
+                <Settings.ItemDetails>
+                  <Settings.ItemTitle>Watch Interval</Settings.ItemTitle>
+                  <Settings.ItemDescription>
+                    {"How often Pond recomputes usage. 1 to 60\u00A0minutes."}
+                  </Settings.ItemDescription>
+                </Settings.ItemDetails>
+                <Settings.ItemControl>
+                  <div className={styles["inline-row"]}>
+                    <Input.Root
+                      data-size="sm"
+                      type="number"
+                      min={1}
+                      max={60}
+                      value={String(storagePrefs.watchIntervalMinutes)}
+                      onChange={(e) =>
+                        applyStoragePrefsPatch({
+                          watchIntervalMinutes: clamp(
+                            Number(e.target.value) || 5,
+                            1,
+                            60,
+                          ),
+                        })
+                      }
+                      style={{ width: 96 }}
+                    />
+                    <span className={styles["usage-stat-label"]}>min</span>
+                  </div>
+                </Settings.ItemControl>
+              </Settings.Item>
+            </>
+          ) : null}
+        </Settings.List>
+        <GuardStatusRow
+          status={guardStatus}
+          enabled={storagePrefs.guardsEnabled}
         />
-        <Row
-          label="Metadata as JSON"
-          description="Plain JSON files for easy migration to other tools — one file per save plus a manifest."
-          control={
-            <Button
-              size="sm"
-              disabled={busy === "export-json"}
-              onClick={() => void exportJson()}
-            >
-              {busy === "export-json" ? "Writing…" : "Export as JSON"}
-            </Button>
-          }
-        />
-      </SettingsCard>
-    </SectionStack>
+      </Settings.Section>
+
+      <Settings.Section>
+        <Settings.SectionTitle>Library Identity</Settings.SectionTitle>
+        <Settings.List>
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>Display Name</Settings.ItemTitle>
+              <Settings.ItemDescription>
+                Cosmetic label shown in chrome and exports.
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <Input.Root
+                data-size="sm"
+                placeholder="My Pond"
+                value={libraryPrefs.displayName}
+                onChange={(e) => patchLibrary({ displayName: e.target.value })}
+              />
+            </Settings.ItemControl>
+          </Settings.Item>
+        </Settings.List>
+      </Settings.Section>
+
+      <Settings.Section>
+        <Settings.SectionTitle>Library Location</Settings.SectionTitle>
+        <Settings.List>
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>Source of Truth</Settings.ItemTitle>
+              <Settings.ItemDescription>
+                <code>
+                  {settings?.libraryRoot ?? "~/Pond/My Pond.library/"}
+                </code>
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <div className={styles["inline-row"]}>
+                <Button size="sm" onClick={() => void openInFinder()}>
+                  Open in Finder
+                </Button>
+                <Button
+                  size="sm"
+                  disabled={busy === "rescan"}
+                  onClick={() => void rescan()}
+                >
+                  Rescan Library
+                </Button>
+                <Button
+                  size="sm"
+                  disabled={busy === "move"}
+                  onClick={() => void move()}
+                >
+                  Move Library…
+                </Button>
+              </div>
+            </Settings.ItemControl>
+          </Settings.Item>
+        </Settings.List>
+      </Settings.Section>
+
+      <Settings.Section>
+        <Settings.SectionTitle>Integrity</Settings.SectionTitle>
+        <Settings.List>
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>Verify Integrity</Settings.ItemTitle>
+              <Settings.ItemDescription>
+                {report
+                  ? `Last run: ${report.totalIndexed} indexed, ${report.totalOnDisk} on disk · ${report.orphans.length} orphan, ${report.missing.length} missing`
+                  : "Compare the metadata.json files on disk against the SQLite index."}
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <Button
+                size="sm"
+                disabled={busy === "verify"}
+                onClick={() => void verify()}
+              >
+                {busy === "verify" ? "Checking…" : "Run Check"}
+              </Button>
+            </Settings.ItemControl>
+          </Settings.Item>
+        </Settings.List>
+      </Settings.Section>
+
+      <Settings.Section>
+        <Settings.SectionTitle>Export</Settings.SectionTitle>
+        <Settings.List>
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>Library Zip</Settings.ItemTitle>
+              <Settings.ItemDescription>
+                One archive containing every <code>items/&lt;id&gt;.info</code>{" "}
+                folder plus the library metadata.
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <Button
+                size="sm"
+                disabled={busy === "export-zip"}
+                onClick={() => void exportZip()}
+              >
+                {busy === "export-zip" ? "Zipping…" : "Export as Zip"}
+              </Button>
+            </Settings.ItemControl>
+          </Settings.Item>
+
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>Metadata as JSON</Settings.ItemTitle>
+              <Settings.ItemDescription>
+                One JSON file per save plus a manifest. Easy to migrate to other
+                tools.
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <Button
+                size="sm"
+                disabled={busy === "export-json"}
+                onClick={() => void exportJson()}
+              >
+                {busy === "export-json" ? "Writing…" : "Export as JSON"}
+              </Button>
+            </Settings.ItemControl>
+          </Settings.Item>
+        </Settings.List>
+      </Settings.Section>
+    </Settings.Page>
   );
+}
+
+function GuardStatusRow({
+  status,
+  enabled,
+}: {
+  status: StorageGuardStatusWire | null;
+  enabled: boolean;
+}) {
+  if (!enabled) {
+    return (
+      <div className={styles["status-row"]}>
+        <span className={styles["status-dot"]} aria-hidden />
+        <span>Guards are off. Pond won't block new saves.</span>
+      </div>
+    );
+  }
+  if (!status) {
+    return (
+      <div className={styles["status-row"]}>
+        <span className={styles["status-dot"]} aria-hidden />
+        <span>Waiting for the next check…</span>
+      </div>
+    );
+  }
+
+  if (status.state === "ok") {
+    return (
+      <div className={styles["status-row"]}>
+        <span
+          className={[styles["status-dot"], styles["status-dot-ok"]]
+            .filter(Boolean)
+            .join(" ")}
+          aria-hidden
+        />
+        <span>All clear. Using {formatBytes(status.pondBytes)}.</span>
+      </div>
+    );
+  }
+
+  if (status.state === "warn") {
+    const pct = pctOfCap(status);
+    return (
+      <div className={styles["status-row"]}>
+        <span
+          className={[styles["status-dot"], styles["status-dot-warn"]]
+            .filter(Boolean)
+            .join(" ")}
+          aria-hidden
+        />
+        <span>
+          Approaching limit. Using {formatBytes(status.pondBytes)}
+          {pct !== null ? ` (${pct}% of cap)` : ""}.
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles["status-row"]}>
+      <span
+        className={[styles["status-dot"], styles["status-dot-error"]]
+          .filter(Boolean)
+          .join(" ")}
+        aria-hidden
+      />
+      <span>Limit exceeded. {ACTION_LABELS[status.action].description}</span>
+    </div>
+  );
+}
+
+function pctOfCap(status: StorageGuardStatusWire): number | null {
+  if (!status.capBytes || status.capBytes <= 0) return null;
+  return Math.min(100, Math.round((status.pondBytes / status.capBytes) * 100));
+}
+
+function clamp(value: number, min: number, max: number): number {
+  if (!Number.isFinite(value)) return min;
+  return Math.max(min, Math.min(max, Math.floor(value)));
+}
+
+/**
+ * Pretty-print a byte count using the largest appropriate binary unit.
+ * Two significant digits feels right for the numbers we surface here
+ * — anything more is precision the user can't action on.
+ */
+function formatBytes(n: number): string {
+  if (!Number.isFinite(n) || n <= 0) return "0\u00A0B";
+  const KB = 1024;
+  const MB = KB * 1024;
+  const GB = MB * 1024;
+  const TB = GB * 1024;
+  if (n >= TB) return `${(n / TB).toFixed(2)}\u00A0TB`;
+  if (n >= GB) return `${(n / GB).toFixed(2)}\u00A0GB`;
+  if (n >= MB) return `${(n / MB).toFixed(1)}\u00A0MB`;
+  if (n >= KB) return `${(n / KB).toFixed(1)}\u00A0KB`;
+  return `${n}\u00A0B`;
 }

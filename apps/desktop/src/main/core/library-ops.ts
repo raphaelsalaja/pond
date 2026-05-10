@@ -98,7 +98,6 @@ export async function moveLibrary(dest: string): Promise<string> {
   const src = libraryRoot();
   if (!existsSync(dest)) await mkdir(dest, { recursive: true });
 
-  // Source already lives under dest? Nothing to do.
   const srcResolved = src.replace(/\/$/, "");
   const destResolved = dest.replace(/\/$/, "");
   if (srcResolved === destResolved) return src;

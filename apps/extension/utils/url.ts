@@ -176,6 +176,7 @@ const HOST_LABELS: Record<Source, string> = {
   cosmos: "Cosmos",
   tiktok: "TikTok",
   youtube: "YouTube",
+  reddit: "Reddit",
   article: "Article",
 };
 

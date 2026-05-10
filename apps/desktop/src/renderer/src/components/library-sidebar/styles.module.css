@@ -1,0 +1,121 @@
+.account-trigger {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 6px;
+  align-items: center;
+  align-self: stretch;
+  height: var(--sidebar-account-height, 32px);
+  padding: 0 6px;
+  font: inherit;
+  color: var(--ds-gray-12);
+  text-align: left;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: var(--sidebar-row-radius, 6px);
+  transition:
+    background 80ms ease,
+    color 80ms ease;
+
+  &:hover {
+    background: var(--ds-gray-a2);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--ds-gray-a3);
+  }
+
+  &[data-popup-open] {
+    background: var(--ds-gray-a2);
+  }
+}
+
+.account-avatar {
+  flex-shrink: 0;
+  width: var(--sidebar-icon-slot, 18px);
+  height: var(--sidebar-icon-slot, 18px);
+  background: var(--ds-accent-3);
+  border-radius: var(--ds-radius-sm);
+}
+
+.account-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 14px;
+  font-weight: 550;
+  color: var(--ds-gray-12);
+  letter-spacing: -0.09px;
+  white-space: nowrap;
+}
+
+.account-caret {
+  flex-shrink: 0;
+  color: var(--ds-gray-10);
+  opacity: 0;
+  transition:
+    color 80ms ease,
+    opacity 80ms ease;
+
+  .account-trigger:hover & {
+    opacity: 1;
+  }
+
+  .account-trigger[data-popup-open] & {
+    color: var(--ds-gray-12);
+    opacity: 1;
+  }
+}
+
+.account-menu {
+  min-width: 280px;
+}
+
+.whats-new-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  height: 28px;
+  padding: 0 8px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--ds-gray-11);
+  text-align: left;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: var(--ds-radius-md);
+  transition: background 80ms ease;
+
+  &:hover,
+  &:focus-visible {
+    color: var(--ds-gray-12);
+    outline: none;
+    background: var(--ds-gray-a3);
+  }
+}
+
+.whats-new-dot {
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  margin-left: 5px;
+  background: var(--ds-gray-10);
+  border-radius: 999px;
+}
+
+.whats-new-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.whats-new-meta {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  color: var(--ds-gray-11);
+}

@@ -1,4 +1,5 @@
-import type { SaveFile } from "./types";
+import type { RawSaveMetadata } from "@pond/schema/raw";
+import type { Save, SaveFile } from "./types";
 
 /**
  * Build a `pond://<id>/<path>?v=<bust>` URL for a save's on-disk file.
@@ -23,6 +24,44 @@ export function buildPondUrl(saveId: string, file: SaveFile): string {
   const base = `pond://${saveId}/${file.path}`;
   const bust = cacheBuster(file);
   return bust ? `${base}?v=${bust}` : base;
+}
+
+/**
+ * Resolve the best author-avatar URL for a save.
+ *
+ * The ingest pipeline always tries to pull the scraped `raw.<source>.authorAvatar`
+ * onto disk as a `kind: "avatar"` `SaveFile` (see `fetchAvatarToTxFile` in
+ * `apps/desktop/src/main/lib/blob.ts`). We strongly prefer that local copy:
+ *
+ *   - works offline,
+ *   - survives the upstream user changing their profile photo (Twitter rotates
+ *     the `_400x400` URL on every change), and
+ *   - sidesteps hotlink / referer / rate-limit blocks on third-party CDNs.
+ *
+ * Falls back to the original `rawJson.<source>.authorAvatar` URL only for
+ * older saves whose avatars predate the local-file feature, so the chrome
+ * still renders something while the next refresh hydrates the on-disk copy.
+ *
+ * Returns `null` when no avatar is known on either path — callers render the
+ * deterministic colour dot instead.
+ */
+export function pickAuthorAvatarUrl(save: Save): string | null {
+  const local = (save.files ?? []).find((f) => f.kind === "avatar");
+  if (local) return buildPondUrl(save.id, local);
+
+  const raw = (save.rawJson ?? null) as RawSaveMetadata | null;
+  if (!raw) return null;
+  const candidates: Array<string | undefined> = [
+    raw.twitter?.authorAvatar,
+    raw.instagram?.authorAvatar,
+    raw.tiktok?.authorAvatar,
+    raw.pinterest?.authorAvatar,
+    raw.arena?.authorAvatar,
+  ];
+  for (const url of candidates) {
+    if (typeof url === "string" && url.trim().length > 0) return url;
+  }
+  return null;
 }
 
 function cacheBuster(file: SaveFile): string | null {

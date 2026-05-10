@@ -8,4 +8,3 @@ onlyBuiltDependencies:
   - electron
   - esbuild
   - ffmpeg-static
-  - keytar

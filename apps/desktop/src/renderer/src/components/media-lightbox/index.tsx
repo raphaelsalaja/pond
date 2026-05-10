@@ -1,27 +1,14 @@
-import XMark from "@pond/icons/outline/xmark";
+import { IconXmarkOutline18 } from "@pond/icons/outline";
+import { Button, Dialog, Tooltip } from "@pond/ui";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { requestVideoHeal } from "../../pool/heal";
-import { useSave } from "../../pool/hooks";
-import { buildMediaUnits } from "../../pool/media";
-import type { Save } from "../../pool/types";
-import { Button, Dialog, DialogContent, Tooltip } from "../../ui";
+import { requestVideoHeal } from "@/pool/heal";
+import { useSave } from "@/pool/hooks";
+import { buildMediaUnits } from "@/pool/media";
+import type { Save } from "@/pool/types";
 import styles from "./styles.module.css";
 
-/**
- * Fullscreen media preview triggered by double-clicking a card.
- *
- * URL contract:
- *   - `?focus=<saveId>` opens the lightbox for that save
- *   - clearing the param closes it
- *
- * Why a separate URL param from the side pane (`?id=`):
- *   - both can be open simultaneously (single-click selects → side pane,
- *     double-click expands → lightbox over the top)
- *   - back/forward steps in/out of the lightbox without losing the
- *     surrounding selection state
- */
-export function MediaLightbox() {
+function Root() {
   const [searchParams, setSearchParams] = useSearchParams();
   const focusId = searchParams.get("focus");
   const save = useSave(focusId ?? undefined);
@@ -35,35 +22,29 @@ export function MediaLightbox() {
   const open = focusId !== null;
 
   return (
-    <Dialog
+    <Dialog.Root
       open={open}
       onOpenChange={(next) => {
         if (!next) close();
       }}
     >
-      <DialogContent size="fullscreen">
+      <Dialog.Content data-size="fullscreen">
         {save ? (
-          <LightboxBody save={save} onClose={close} />
+          <Body save={save} onClose={close} />
         ) : (
-          <div className={styles.empty}>
+          <Empty>
             <p>Save not found.</p>
             <Button onClick={close}>Close</Button>
-          </div>
+          </Empty>
         )}
-      </DialogContent>
-    </Dialog>
+      </Dialog.Content>
+    </Dialog.Root>
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Body — media stage + close button. Metadata stays in the side pane;  */
-/* this view is laser-focused on "look at the thing big".              */
-/* ------------------------------------------------------------------ */
-
-function LightboxBody({ save, onClose }: { save: Save; onClose: () => void }) {
+function Body({ save, onClose }: { save: Save; onClose: () => void }) {
   // `buildMediaUnits` already pairs videos with their poster JPGs and
-  // dedupes — see `pool/media.ts`. We just adapt the shape and tack on
-  // the legacy fallbacks.
+  // dedupes — see `pool/media.ts`.
   const allSlides = useMemo<MediaSlide[]>(() => {
     const units = buildMediaUnits(save);
     const out: MediaSlide[] = units.map((u) => ({
@@ -80,8 +61,8 @@ function LightboxBody({ save, onClose }: { save: Save; onClose: () => void }) {
     return out;
   }, [save]);
 
-  // Drop slides whose `pond://` URL 404s in this session so the user
-  // never sees the giant "broken image" icon over the dim canvas. The
+  // Drop slides whose `pond://` URL 404s in this session so users
+  // never see the giant "broken image" icon over the dim canvas. The
   // grid thumbs do the same trick — see `card-thumb/index.tsx`.
   const [broken, setBroken] = useState<ReadonlySet<string>>(
     () => new Set<string>(),
@@ -103,7 +84,7 @@ function LightboxBody({ save, onClose }: { save: Save; onClose: () => void }) {
 
   // Arrow-key carousel nav while the lightbox is mounted. ESC is owned
   // by Base UI's Dialog (which calls our `onOpenChange(false)` →
-  // `close()`), so we don't need to handle it here.
+  // `close()`), so don't handle it here.
   useEffect(() => {
     if (slides.length < 2) return;
     const onKey = (e: KeyboardEvent) => {
@@ -121,11 +102,11 @@ function LightboxBody({ save, onClose }: { save: Save; onClose: () => void }) {
 
   if (slides.length === 0) {
     return (
-      <div className={styles.empty}>
+      <Empty>
         <p>{save.title ?? save.url}</p>
-        <p className={styles.emptyHint}>No local media to preview.</p>
+        <EmptyHint>No local media to preview.</EmptyHint>
         <Button onClick={onClose}>Close</Button>
-      </div>
+      </Empty>
     );
   }
 
@@ -134,31 +115,31 @@ function LightboxBody({ save, onClose }: { save: Save; onClose: () => void }) {
   const hasMany = slides.length > 1;
 
   return (
-    <div className={styles.stage}>
-      <div className={styles.toolbar}>
-        <span className={styles.titleStrip}>
+    <Stage>
+      <Toolbar>
+        <TitleStrip>
           {save.title ?? save.url}
           {hasMany ? (
-            <span className={styles.counter}>
+            <Counter>
               {index + 1} / {slides.length}
-            </span>
+            </Counter>
           ) : null}
-        </span>
-        <Tooltip content="Close (Esc)">
+        </TitleStrip>
+        <Tooltip.Root content="Close (Esc)">
           <Button
             variant="ghost"
             size="sm"
-            iconOnly
+            icon
             onClick={onClose}
             aria-label="Close preview"
           >
-            <XMark width={14} height={14} />
+            <IconXmarkOutline18 width={14} height={14} />
           </Button>
-        </Tooltip>
-      </div>
+        </Tooltip.Root>
+      </Toolbar>
 
-      <div className={styles.canvas}>
-        <div className={styles.mediaShell}>
+      <Canvas>
+        <MediaShell>
           {slide.isVideo ? (
             <video
               key={slide.src}
@@ -172,11 +153,10 @@ function LightboxBody({ save, onClose }: { save: Save; onClose: () => void }) {
                 requestVideoHeal(save.id);
               }}
               onLoadedMetadata={(e) => {
-                // See the equivalent block in `save-preview` /
-                // `card-thumb`: codec-unsupported videos surface as a
-                // 0×0 metadata frame instead of an error event. Heal
-                // them anyway so users don't have to keep re-clicking
-                // Refresh on cards from before the codec fix.
+                // Codec-unsupported videos surface as a 0×0 metadata
+                // frame instead of an error event. Heal them anyway so
+                // users don't keep re-clicking Refresh on cards from
+                // before the codec fix.
                 const v = e.currentTarget;
                 if (v.videoWidth === 0 && v.videoHeight === 0) {
                   markBroken(slide.src);
@@ -195,38 +175,157 @@ function LightboxBody({ save, onClose }: { save: Save; onClose: () => void }) {
               onError={() => markBroken(slide.src)}
             />
           )}
-        </div>
+        </MediaShell>
 
         {hasMany ? (
           <>
-            <Tooltip content="Previous (←)" side="right">
-              <button
-                type="button"
-                className={`${styles.nav} ${styles.navPrev}`}
+            <Tooltip.Root content="Previous (←)" side="right">
+              <Nav
+                data-side="prev"
+                aria-label="Previous"
                 onClick={() =>
                   setIndex((i) => (i - 1 + slides.length) % slides.length)
                 }
-                aria-label="Previous"
               >
                 ‹
-              </button>
-            </Tooltip>
-            <Tooltip content="Next (→)" side="left">
-              <button
-                type="button"
-                className={`${styles.nav} ${styles.navNext}`}
-                onClick={() => setIndex((i) => (i + 1) % slides.length)}
+              </Nav>
+            </Tooltip.Root>
+            <Tooltip.Root content="Next (→)" side="left">
+              <Nav
+                data-side="next"
                 aria-label="Next"
+                onClick={() => setIndex((i) => (i + 1) % slides.length)}
               >
                 ›
-              </button>
-            </Tooltip>
+              </Nav>
+            </Tooltip.Root>
           </>
         ) : null}
-      </div>
-    </div>
+      </Canvas>
+    </Stage>
   );
 }
+
+interface StageProps extends React.ComponentPropsWithoutRef<"div"> {}
+
+function Stage({ className, ...props }: StageProps) {
+  return (
+    <div
+      className={[styles.stage, className ?? ""].filter(Boolean).join(" ")}
+      {...props}
+    />
+  );
+}
+
+interface ToolbarProps extends React.ComponentPropsWithoutRef<"div"> {}
+
+function Toolbar({ className, ...props }: ToolbarProps) {
+  return (
+    <div
+      className={[styles.toolbar, className ?? ""].filter(Boolean).join(" ")}
+      {...props}
+    />
+  );
+}
+
+interface TitleStripProps extends React.ComponentPropsWithoutRef<"span"> {}
+
+function TitleStrip({ className, ...props }: TitleStripProps) {
+  return (
+    <span
+      className={[styles["title-strip"], className ?? ""]
+        .filter(Boolean)
+        .join(" ")}
+      {...props}
+    />
+  );
+}
+
+interface CounterProps extends React.ComponentPropsWithoutRef<"span"> {}
+
+function Counter({ className, ...props }: CounterProps) {
+  return (
+    <span
+      className={[styles.counter, className ?? ""].filter(Boolean).join(" ")}
+      {...props}
+    />
+  );
+}
+
+interface CanvasProps extends React.ComponentPropsWithoutRef<"div"> {}
+
+function Canvas({ className, ...props }: CanvasProps) {
+  return (
+    <div
+      className={[styles.canvas, className ?? ""].filter(Boolean).join(" ")}
+      {...props}
+    />
+  );
+}
+
+interface MediaShellProps extends React.ComponentPropsWithoutRef<"div"> {}
+
+function MediaShell({ className, ...props }: MediaShellProps) {
+  return (
+    <div
+      className={[styles["media-shell"], className ?? ""]
+        .filter(Boolean)
+        .join(" ")}
+      {...props}
+    />
+  );
+}
+
+interface NavProps extends React.ComponentPropsWithoutRef<"button"> {
+  "data-side": "prev" | "next";
+}
+
+function Nav({ className, type = "button", ...props }: NavProps) {
+  return (
+    <button
+      type={type}
+      className={[styles.nav, className ?? ""].filter(Boolean).join(" ")}
+      {...props}
+    />
+  );
+}
+
+interface EmptyProps extends React.ComponentPropsWithoutRef<"div"> {}
+
+function Empty({ className, ...props }: EmptyProps) {
+  return (
+    <div
+      className={[styles.empty, className ?? ""].filter(Boolean).join(" ")}
+      {...props}
+    />
+  );
+}
+
+interface EmptyHintProps extends React.ComponentPropsWithoutRef<"p"> {}
+
+function EmptyHint({ className, ...props }: EmptyHintProps) {
+  return (
+    <p
+      className={[styles["empty-hint"], className ?? ""]
+        .filter(Boolean)
+        .join(" ")}
+      {...props}
+    />
+  );
+}
+
+export const MediaLightbox = {
+  Root,
+  Stage,
+  Toolbar,
+  TitleStrip,
+  Counter,
+  Canvas,
+  MediaShell,
+  Nav,
+  Empty,
+  EmptyHint,
+};
 
 interface MediaSlide {
   src: string;

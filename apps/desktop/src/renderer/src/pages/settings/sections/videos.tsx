@@ -1,19 +1,17 @@
-import { useEffect, useState } from "react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  Switch,
-  useToast,
-} from "../../../ui";
-import { Row, SectionHeader, SectionStack, SettingsCard } from "./_shared";
+import { Button, Select, Switch, useToast } from "@pond/ui";
+import { useCallback, useEffect, useState } from "react";
+import { Settings } from "@/components/settings";
+import styles from "@/pages/settings/styles.module.css";
 import {
   DEFAULT_VIDEO_DOWNLOAD,
   type SettingsRow,
   type VideoDownloadPrefs,
 } from "./_types";
+
+interface VideoToolsStatus {
+  ytdlp: { available: boolean; path: string | null };
+  ffmpeg: { available: boolean; path: string | null };
+}
 
 /**
  * Background video download tuning — toggle + max resolution + max
@@ -25,6 +23,8 @@ export function VideosSection() {
   const toast = useToast();
   const [settings, setSettings] = useState<SettingsRow | null>(null);
   const [busy, setBusy] = useState(false);
+  const [toolsStatus, setToolsStatus] = useState<VideoToolsStatus | null>(null);
+  const [reinstalling, setReinstalling] = useState(false);
 
   useEffect(() => {
     void window.pond.query("settings.get", {}).then((s) => {
@@ -35,6 +35,34 @@ export function VideosSection() {
       });
     });
   }, []);
+
+  const refreshTools = useCallback(async () => {
+    const r = await window.pond.videoToolsStatus().catch(() => null);
+    if (!r?.ok) {
+      setToolsStatus(null);
+      return;
+    }
+    setToolsStatus({ ytdlp: r.ytdlp, ffmpeg: r.ffmpeg });
+  }, []);
+
+  useEffect(() => {
+    void refreshTools();
+  }, [refreshTools]);
+
+  const reinstallTools = useCallback(async () => {
+    setReinstalling(true);
+    try {
+      const r = await window.pond.videoToolsReinstall();
+      toast.add({
+        title: r.ok ? "yt-dlp ready" : "Couldn't install yt-dlp",
+        description: r.message,
+        type: r.ok ? "success" : "error",
+      });
+      await refreshTools();
+    } finally {
+      setReinstalling(false);
+    }
+  }, [refreshTools, toast]);
 
   async function patchVideoDownload(patch: Partial<VideoDownloadPrefs>) {
     if (!settings) return;
@@ -51,8 +79,11 @@ export function VideosSection() {
       );
     } catch (err) {
       toast.add({
-        title: "Couldn't save video preferences",
-        description: String(err),
+        title: "Couldn't save preferences",
+        description:
+          err instanceof Error
+            ? err.message
+            : "Try again. If it keeps happening, check Developer › Open Log Directory.",
         type: "error",
       });
     } finally {
@@ -62,9 +93,11 @@ export function VideosSection() {
 
   if (!settings) {
     return (
-      <SectionStack>
-        <SectionHeader title="Videos" />
-      </SectionStack>
+      <Settings.Page>
+        <Settings.Header>
+          <Settings.Title>Videos</Settings.Title>
+        </Settings.Header>
+      </Settings.Page>
     );
   }
 
@@ -75,87 +108,172 @@ export function VideosSection() {
     prefs.maxFileSizeMb === null ? "any" : String(prefs.maxFileSizeMb);
 
   return (
-    <SectionStack>
-      <SectionHeader
-        title="Videos"
-        description="Control how Pond downloads videos from saved cards in the background."
-      />
+    <Settings.Page>
+      <Settings.Header>
+        <Settings.Title>Videos</Settings.Title>
+        <Settings.Description>
+          How Pond downloads videos in the background.
+        </Settings.Description>
+      </Settings.Header>
 
-      <SettingsCard title="Background video downloads">
-        <Row
-          label="Download videos"
-          description="When you save a video card from X, Instagram, TikTok, Cosmos, or YouTube, Pond fetches the original MP4 in the background so you can scrub it offline."
-          control={
-            <Switch
-              checked={prefs.enabled}
-              disabled={busy}
-              onCheckedChange={(checked: boolean) =>
-                void patchVideoDownload({ enabled: checked })
-              }
-            />
-          }
-        />
-        <Row
-          label="Maximum resolution"
-          description="Higher means crisper playback and bigger files. 1080p is the sweet spot for most clips."
-          control={
-            <Select
-              value={heightValue}
-              disabled={busy || !prefs.enabled}
-              onValueChange={(v) => {
-                if (v === null || v === "any") {
-                  void patchVideoDownload({ maxHeight: null });
-                  return;
+      <Settings.Section>
+        <Settings.SectionTitle>
+          Background Video Downloads
+        </Settings.SectionTitle>
+        <Settings.List>
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>Download Videos</Settings.ItemTitle>
+              <Settings.ItemDescription>
+                Fetch the original MP4 from saves on X, Instagram, TikTok,
+                Cosmos, and YouTube for offline playback.
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <Switch.Root
+                checked={prefs.enabled}
+                disabled={busy}
+                onCheckedChange={(checked: boolean) =>
+                  void patchVideoDownload({ enabled: checked })
                 }
-                void patchVideoDownload({ maxHeight: Number.parseInt(v, 10) });
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="480">480p (small files)</SelectItem>
-                <SelectItem value="720">720p</SelectItem>
-                <SelectItem value="1080">1080p (recommended)</SelectItem>
-                <SelectItem value="1440">1440p</SelectItem>
-                <SelectItem value="2160">2160p / 4K</SelectItem>
-                <SelectItem value="any">Original (no cap)</SelectItem>
-              </SelectContent>
-            </Select>
-          }
-        />
-        <Row
-          label="Maximum file size"
-          description="A safety net so a 3-hour 1080p stream can't quietly fill the disk."
-          control={
-            <Select
-              value={sizeValue}
-              disabled={busy || !prefs.enabled}
-              onValueChange={(v) => {
-                if (v === null || v === "any") {
-                  void patchVideoDownload({ maxFileSizeMb: null });
-                  return;
-                }
-                void patchVideoDownload({
-                  maxFileSizeMb: Number.parseInt(v, 10),
-                });
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="200">200 MB</SelectItem>
-                <SelectItem value="500">500 MB (recommended)</SelectItem>
-                <SelectItem value="1000">1 GB</SelectItem>
-                <SelectItem value="2000">2 GB</SelectItem>
-                <SelectItem value="5000">5 GB</SelectItem>
-                <SelectItem value="any">No cap</SelectItem>
-              </SelectContent>
-            </Select>
-          }
-        />
-      </SettingsCard>
-    </SectionStack>
+              />
+            </Settings.ItemControl>
+          </Settings.Item>
+
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>Maximum Resolution</Settings.ItemTitle>
+              <Settings.ItemDescription>
+                Higher resolutions mean crisper playback and bigger files. 1080p
+                suits most clips.
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <Select.Root
+                value={heightValue}
+                disabled={busy || !prefs.enabled}
+                onValueChange={(v) => {
+                  if (v === null || v === "any") {
+                    void patchVideoDownload({ maxHeight: null });
+                    return;
+                  }
+                  void patchVideoDownload({
+                    maxHeight: Number.parseInt(v, 10),
+                  });
+                }}
+              >
+                <Select.Trigger>
+                  <Select.Value />
+                </Select.Trigger>
+                <Select.Content>
+                  <Select.Item value="480">480p (Small Files)</Select.Item>
+                  <Select.Item value="720">720p</Select.Item>
+                  <Select.Item value="1080">1080p (Recommended)</Select.Item>
+                  <Select.Item value="1440">1440p</Select.Item>
+                  <Select.Item value="2160">2160p / 4K</Select.Item>
+                  <Select.Item value="any">Original (No Cap)</Select.Item>
+                </Select.Content>
+              </Select.Root>
+            </Settings.ItemControl>
+          </Settings.Item>
+
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>Maximum File Size</Settings.ItemTitle>
+              <Settings.ItemDescription>
+                Cap each download so a long stream can't fill the disk.
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <Select.Root
+                value={sizeValue}
+                disabled={busy || !prefs.enabled}
+                onValueChange={(v) => {
+                  if (v === null || v === "any") {
+                    void patchVideoDownload({ maxFileSizeMb: null });
+                    return;
+                  }
+                  void patchVideoDownload({
+                    maxFileSizeMb: Number.parseInt(v, 10),
+                  });
+                }}
+              >
+                <Select.Trigger>
+                  <Select.Value />
+                </Select.Trigger>
+                <Select.Content>
+                  <Select.Item value="200">{"200\u00A0MB"}</Select.Item>
+                  <Select.Item value="500">
+                    {"500\u00A0MB (Recommended)"}
+                  </Select.Item>
+                  <Select.Item value="1000">{"1\u00A0GB"}</Select.Item>
+                  <Select.Item value="2000">{"2\u00A0GB"}</Select.Item>
+                  <Select.Item value="5000">{"5\u00A0GB"}</Select.Item>
+                  <Select.Item value="any">No Cap</Select.Item>
+                </Select.Content>
+              </Select.Root>
+            </Settings.ItemControl>
+          </Settings.Item>
+        </Settings.List>
+      </Settings.Section>
+
+      <Settings.Section>
+        <Settings.SectionTitle>Video Tools</Settings.SectionTitle>
+        <Settings.ItemDescription>
+          Bundled <code>yt-dlp</code> and <code>ffmpeg</code> let Refresh save
+          the MP4 alongside its poster. Without them, video saves stay still
+          images.
+        </Settings.ItemDescription>
+        {toolsStatus ? (
+          <ul className={styles["source-list"]}>
+            <li className={styles["source-row"]}>
+              <div className={styles["source-meta"]}>
+                <span className={styles["source-name"]}>yt-dlp</span>
+                <span
+                  className={
+                    toolsStatus.ytdlp.available
+                      ? styles["status-connected"]
+                      : styles["status-disconnected"]
+                  }
+                >
+                  {toolsStatus.ytdlp.available ? "Installed" : "Missing"}
+                </span>
+              </div>
+              <div className={styles["source-actions"]}>
+                <Button
+                  size="sm"
+                  disabled={reinstalling}
+                  onClick={() => void reinstallTools()}
+                >
+                  {reinstalling
+                    ? "Installing…"
+                    : toolsStatus.ytdlp.available
+                      ? "Reinstall"
+                      : "Install"}
+                </Button>
+              </div>
+            </li>
+            <li className={styles["source-row"]}>
+              <div className={styles["source-meta"]}>
+                <span className={styles["source-name"]}>ffmpeg</span>
+                <span
+                  className={
+                    toolsStatus.ffmpeg.available
+                      ? styles["status-connected"]
+                      : styles["status-disconnected"]
+                  }
+                >
+                  {toolsStatus.ffmpeg.available ? "Installed" : "Missing"}
+                </span>
+              </div>
+            </li>
+          </ul>
+        ) : (
+          <Settings.ItemDescription>
+            Couldn't read tool status. Restart Pond to retry.
+          </Settings.ItemDescription>
+        )}
+      </Settings.Section>
+    </Settings.Page>
   );
 }

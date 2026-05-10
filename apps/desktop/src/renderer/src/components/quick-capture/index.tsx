@@ -1,30 +1,9 @@
+import { Button, Dialog, Field, Input, useToast } from "@pond/ui";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import {
-  Button,
-  Dialog,
-  DialogContent,
-  Field,
-  FieldLabel,
-  Input,
-  useToast,
-} from "../../ui";
 import styles from "./styles.module.css";
 
-const HOTKEY = "S"; // Cmd/Ctrl + Shift + S
-
-/**
- * In-renderer Spotlight-style quick-capture surface. Bound to
- * Cmd+Shift+S inside the focused window. We intentionally don't ship a
- * separate BrowserWindow for v1 — the modal pattern is fast enough on
- * macOS, keeps focus management simple, and survives sleep/wake without
- * the OS reaping a long-lived hidden window.
- *
- * The hotkey reads from the system clipboard on open and pre-fills the
- * URL field if the clipboard holds a valid URL — that one detail is the
- * difference between "feels magical" and "another form to fill in".
- */
-export function QuickCapture() {
+function Root() {
   const [open, setOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -34,24 +13,6 @@ export function QuickCapture() {
   const [note, setNote] = useState("");
   const [tags, setTags] = useState("");
   const [busy, setBusy] = useState(false);
-
-  // Open via either Cmd+Shift+S or a `?capture=1` query param. The
-  // query param is what the future tray menu will navigate to so menu
-  // bar invocations and hotkey invocations share a code path.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const meta = e.metaKey || e.ctrlKey;
-      if (!meta || !e.shiftKey) return;
-      if (e.key.toUpperCase() !== HOTKEY) return;
-      e.preventDefault();
-      void primeFromClipboard().then((seed) => {
-        if (seed) setUrl(seed);
-        setOpen(true);
-      });
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
 
   useEffect(() => {
     if (searchParams.get("capture") === "1") {
@@ -65,7 +26,6 @@ export function QuickCapture() {
     }
   }, [searchParams, setSearchParams]);
 
-  // Auto-focus when opening so the user can start typing immediately.
   useEffect(() => {
     if (!open) return;
     const t = setTimeout(() => inputRef.current?.focus(), 30);
@@ -105,7 +65,7 @@ export function QuickCapture() {
         description: "Pond is fetching the rich metadata in the background.",
         type: "success",
       });
-      if (result.id) navigate(`/?id=${result.id}`);
+      if (result.id) navigate(`/save/${result.id}`);
       reset();
       setOpen(false);
     } finally {
@@ -114,22 +74,19 @@ export function QuickCapture() {
   }, [url, note, tags, toast, navigate, reset]);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent size="default">
-        <form
-          className={styles.form}
+    <Dialog.Root open={open} onOpenChange={setOpen}>
+      <Dialog.Content>
+        <Form
           onSubmit={(e) => {
             e.preventDefault();
             void submit();
           }}
         >
-          <h2 className={styles.title}>Quick save</h2>
-          <p className={styles.hint}>
-            Paste a URL — Pond will fetch the rest in the background.
-          </p>
-          <Field>
-            <FieldLabel>URL</FieldLabel>
-            <Input
+          <Title>Quick save</Title>
+          <Hint>Paste a URL — Pond will fetch the rest in the background.</Hint>
+          <Field.Root>
+            <Field.Label>URL</Field.Label>
+            <Input.Root
               ref={inputRef}
               value={url}
               onChange={(e) => setUrl(e.target.value)}
@@ -137,27 +94,26 @@ export function QuickCapture() {
               autoComplete="off"
               spellCheck={false}
             />
-          </Field>
-          <Field>
-            <FieldLabel>Note (optional)</FieldLabel>
-            <Input
+          </Field.Root>
+          <Field.Root>
+            <Field.Label>Note (optional)</Field.Label>
+            <Input.Root
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="Why are you saving this?"
             />
-          </Field>
-          <Field>
-            <FieldLabel>Tags (optional)</FieldLabel>
-            <Input
+          </Field.Root>
+          <Field.Root>
+            <Field.Label>Tags (optional)</Field.Label>
+            <Input.Root
               value={tags}
               onChange={(e) => setTags(e.target.value)}
               placeholder="design, inspiration, todo"
             />
-          </Field>
-          <div className={styles.actions}>
+          </Field.Root>
+          <Actions>
             <Button
               variant="ghost"
-              size="md"
               onClick={() => {
                 reset();
                 setOpen(false);
@@ -168,18 +124,69 @@ export function QuickCapture() {
             </Button>
             <Button
               variant="primary"
-              size="md"
               type="submit"
               disabled={busy || !url.trim()}
             >
               {busy ? "Saving…" : "Save"}
             </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+          </Actions>
+        </Form>
+      </Dialog.Content>
+    </Dialog.Root>
   );
 }
+
+interface FormProps extends React.ComponentPropsWithoutRef<"form"> {}
+
+function Form({ className, ...props }: FormProps) {
+  return (
+    <form
+      className={[styles.form, className ?? ""].filter(Boolean).join(" ")}
+      {...props}
+    />
+  );
+}
+
+interface TitleProps extends React.ComponentPropsWithoutRef<"h2"> {}
+
+function Title({ className, ...props }: TitleProps) {
+  return (
+    <h2
+      className={[styles.title, className ?? ""].filter(Boolean).join(" ")}
+      {...props}
+    />
+  );
+}
+
+interface HintProps extends React.ComponentPropsWithoutRef<"p"> {}
+
+function Hint({ className, ...props }: HintProps) {
+  return (
+    <p
+      className={[styles.hint, className ?? ""].filter(Boolean).join(" ")}
+      {...props}
+    />
+  );
+}
+
+interface ActionsProps extends React.ComponentPropsWithoutRef<"div"> {}
+
+function Actions({ className, ...props }: ActionsProps) {
+  return (
+    <div
+      className={[styles.actions, className ?? ""].filter(Boolean).join(" ")}
+      {...props}
+    />
+  );
+}
+
+export const QuickCapture = {
+  Root,
+  Form,
+  Title,
+  Hint,
+  Actions,
+};
 
 async function primeFromClipboard(): Promise<string | null> {
   try {
@@ -187,15 +194,12 @@ async function primeFromClipboard(): Promise<string | null> {
     if (!text) return null;
     const trimmed = text.trim();
     try {
-      // Throws on invalid URL — we only seed when the clipboard genuinely
-      // contains a URL so we don't shove arbitrary text into the field.
       new URL(trimmed);
       return trimmed;
     } catch {
       return null;
     }
   } catch {
-    // Clipboard read can be blocked; that's fine.
     return null;
   }
 }

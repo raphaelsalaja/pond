@@ -15,24 +15,12 @@ export interface ActivityRow {
   created_at: string | number;
 }
 
-interface Props {
-  /** Filter to a single save id (per-item drawer). `null` shows the firehose. */
+interface RootProps extends React.ComponentPropsWithoutRef<"ul"> {
   saveId: string | null;
-  /** Cap on rows. */
   limit?: number;
 }
 
-/**
- * Renders the most recent `sync_actions` rows. Used in two contexts:
- *   - per-item drawer in `<SavePreview>` (filtered by save id)
- *   - library-wide activity page (unfiltered)
- *
- * Each row produces a one-line summary: actor + verb + (optional) field
- * delta. We deliberately keep the verb mapping shallow — Linear-grade
- * narration ("renamed `tag1` → `tag2`", "added 3 highlights") is a v2
- * follow-up that needs structured patches in the sync action payload.
- */
-export function ActivityList({ saveId, limit = 50 }: Props) {
+function Root({ saveId, limit = 50, className, ...props }: RootProps) {
   const [rows, setRows] = useState<ActivityRow[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -54,11 +42,15 @@ export function ActivityList({ saveId, limit = 50 }: Props) {
   }, [saveId, limit]);
 
   if (loading) return <p className={styles.empty}>Loading activity…</p>;
-  if (rows.length === 0)
+  if (rows.length === 0) {
     return <p className={styles.empty}>No activity yet.</p>;
+  }
 
   return (
-    <ul className={styles.list}>
+    <ul
+      className={[styles.list, className ?? ""].filter(Boolean).join(" ")}
+      {...props}
+    >
       {rows.map((row) => (
         <li key={row.id} className={styles.item}>
           <span className={styles.dot} data-actor={row.actor} aria-hidden />
@@ -66,7 +58,7 @@ export function ActivityList({ saveId, limit = 50 }: Props) {
             <span className={styles.summary}>
               {summary(row)}
               {!saveId ? (
-                <Link to={`/?id=${row.model_id}`} className={styles.itemLink}>
+                <Link to={`/save/${row.model_id}`} className={styles.link}>
                   {" "}
                   · open
                 </Link>
@@ -79,6 +71,10 @@ export function ActivityList({ saveId, limit = 50 }: Props) {
     </ul>
   );
 }
+
+export const ActivityList = {
+  Root,
+};
 
 function summary(row: ActivityRow): string {
   const actor = actorLabel(row.actor);

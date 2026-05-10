@@ -1,0 +1,202 @@
+/* ------------------------------------------------------------------ */
+/* Integrations index — Linear-style search + cards grid.              */
+/*                                                                    */
+/* The page mostly composes existing `Settings.*` primitives, but the */
+/* card grid and search input have no equivalent in that toolkit so   */
+/* their styles live here. Tokens stay aligned with the rest of the   */
+/* settings surface (pond-border, pond-bg-subtle, pond-radius-*).     */
+/* ------------------------------------------------------------------ */
+
+.search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ds-gray-10);
+  pointer-events: none;
+}
+
+.search-input {
+  width: 100%;
+  height: 32px;
+  padding: 0 12px 0 32px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 450;
+  color: var(--ds-gray-12);
+  outline: none;
+  background: var(--ds-gray-2);
+  border: 1px solid var(--ds-gray-a4);
+  border-radius: 8px;
+  transition:
+    border-color 80ms ease,
+    box-shadow 80ms ease;
+}
+
+.search-input::placeholder {
+  color: var(--ds-gray-10);
+}
+
+.search-input:focus-visible {
+  border-color: var(--ds-gray-a6);
+  box-shadow: 0 0 0 3px var(--ds-gray-a3);
+}
+
+/* ---- Enabled rows ------------------------------------------------ */
+
+.enabled-item {
+  padding: 0;
+}
+
+.enabled-link {
+  display: flex;
+  flex: 1;
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+  padding: 16px;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  text-decoration: none;
+  background: transparent;
+  border: 0;
+  border-radius: inherit;
+}
+
+.enabled-link:hover {
+  background: var(--ds-gray-2);
+}
+
+.enabled-link:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--ds-gray-a8);
+}
+
+.enabled-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ds-gray-10);
+}
+
+/* ---- Cards grid -------------------------------------------------- */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  color: inherit;
+  text-decoration: none;
+  background: var(--ds-gray-1);
+  border: 1px solid var(--ds-gray-a4);
+  border-radius: 10px;
+  transition:
+    background 80ms ease,
+    border-color 80ms ease,
+    box-shadow 80ms ease;
+}
+
+.card:hover {
+  background: var(--ds-gray-2);
+  border-color: var(--ds-gray-a5);
+}
+
+.card:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--ds-gray-a8);
+}
+
+.card-head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.card-title {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--ds-gray-12);
+}
+
+.card-description {
+  font-size: 12px;
+  font-weight: 450;
+  line-height: 1.45;
+  color: var(--ds-gray-11);
+}
+
+.enabled-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: light-dark(#1a7f37, #4ac26b);
+  letter-spacing: -0.04px;
+  background: light-dark(rgba(26, 127, 55, 0.1), rgba(74, 194, 107, 0.14));
+  border-radius: 4px;
+}
+
+.empty {
+  padding: 24px 16px;
+  font-size: 13px;
+  color: var(--ds-gray-11);
+  text-align: center;
+  background: var(--ds-gray-2);
+  border: 1px dashed var(--ds-gray-a4);
+  border-radius: 8px;
+}
+
+/* ---- Source detail header --------------------------------------- */
+
+.detail-header {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding-inline: var(--settings-padding-inline-inset);
+}
+
+.detail-header-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+/* ---- Status / inline action row -------------------------------- */
+
+.inline-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.status-connected {
+  font-size: 13px;
+  font-weight: 500;
+  color: light-dark(#1a7f37, #4ac26b);
+}
+
+.status-disconnected {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ds-gray-11);
+}

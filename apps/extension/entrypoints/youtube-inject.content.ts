@@ -557,7 +557,6 @@ export default defineContentScript({
           if (method === "POST" && LIKE_RE.test(url)) {
             await handleLike(url, await bodyPromise);
           } else if (method === "POST" && YOUTUBEI_RE.test(url)) {
-            // Route every InnerTube POST through the body-shape sniffer.
             // We clone the response and feed both request + response
             // bodies into the classifier — the response is the most
             // reliable source for "what video got added to which

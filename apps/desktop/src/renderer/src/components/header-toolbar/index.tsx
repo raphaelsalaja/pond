@@ -1,327 +1,311 @@
-import { useCallback, useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { Tooltip } from "../../ui";
 import {
-  ArrowsCycleIcon,
-  FilterToggleIcon,
-  GridViewIcon,
-  HeaderPlusIcon,
-  JustifiedViewIcon,
-  ListViewIcon,
-  PinIcon,
-  SearchIcon,
-  SidebarToggleIcon,
-  WaterfallViewIcon,
-  ZoomMinusIcon,
-  ZoomPlusIcon,
-} from "../filter-bar/icons";
+  IconBarsFilterOutline18,
+  IconGridOutline18,
+  IconMagnifierOutline18,
+  IconMinusOutline18,
+  IconPlusOutline18,
+} from "@pond/icons/outline";
+import { EMPTY_QUERY, type Predicate } from "@pond/schema/filters/types";
+import { readQuery, writeQuery } from "@pond/schema/filters/url";
+import { Menu, Tooltip } from "@pond/ui";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { appendPredicate } from "@/components/filter-bar/helpers";
+import {
+  AddFilterMenu,
+  useFilterHotkey,
+} from "@/components/filter-bar/registry";
+import { LayoutPopover } from "@/components/layout-popover";
+import { SavedFilters } from "@/components/saved-filters";
 import styles from "./styles.module.css";
 
-/**
- * Eagle-style top toolbar that sits inside `.pond-header`. From left
- * to right:
- *
- *   [+ refresh sidebar] [zoom slider] [view filter search pin]
- *
- * The toolbar is informational+navigational only — the actual filter
- * chips live in `<FilterBar>` immediately below. We keep the two
- * surfaces split so the chip rail can be toggled independently of
- * the toolbar (the funnel button on the right hides/shows it).
- *
- * Most secondary buttons (`+`, sidebar toggle, list view, pin) are
- * intentionally inert today — they're scaffolded so the chrome looks
- * complete; the wires get added when the underlying features land.
- */
+const SEARCH_DEBOUNCE_MS = 150;
 
-export interface HeaderToolbarProps {
-  /** Toggled by the funnel button. Lifted up so `<App>` can hide the
-   * filter rail entirely when off. */
-  filtersVisible: boolean;
-  onToggleFilters: () => void;
-}
-
-export function HeaderToolbar({
-  filtersVisible,
-  onToggleFilters,
-}: HeaderToolbarProps) {
-  const navigate = useNavigate();
+function Root() {
   const [params, setParams] = useSearchParams();
   const [zoom, setZoom] = useZoom();
-  const view = (params.get("view") ?? "waterfall") as
-    | "waterfall"
-    | "justified"
-    | "grid"
-    | "list"
-    | "timeline"
-    | "color";
-  const search = params.get("q") ?? "";
 
-  function setSearch(next: string) {
-    const p = new URLSearchParams(params);
-    if (next) p.set("q", next);
-    else p.delete("q");
-    setParams(p, { replace: true });
-  }
+  // Local state for the search input — the URL is the source of truth
+  // for the *committed* query, but we keep keystrokes local and only
+  // write to `useSearchParams` after the user stops typing. Writing
+  // every keystroke to the URL re-runs every consumer of
+  // `useSearchParams` (this toolbar, FilterBar, SavesView, …) on each
+  // character, which is the noisiest source of chrome re-renders
+  // while the library is live.
+  const urlSearch = params.get("q") ?? "";
+  const [search, setSearchLocal] = useState(urlSearch);
+  useEffect(() => {
+    setSearchLocal(urlSearch);
+  }, [urlSearch]);
 
-  const setView = useCallback(
-    (
-      next: "waterfall" | "justified" | "grid" | "list" | "timeline" | "color",
-    ) => {
-      const p = new URLSearchParams(params);
-      if (next === "waterfall") p.delete("view");
-      else p.set("view", next);
-      setParams(p, { replace: true });
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    },
+    [],
+  );
+
+  const onSearchChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const next = e.target.value;
+      setSearchLocal(next);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        // Function form so we read the freshest params at write time —
+        // avoids clobbering filter chips the user might have toggled
+        // mid-typing.
+        setParams(
+          (prev) => {
+            const p = new URLSearchParams(prev);
+            if (next) p.set("q", next);
+            else p.delete("q");
+            return p;
+          },
+          { replace: true },
+        );
+      }, SEARCH_DEBOUNCE_MS);
+    },
+    [setParams],
+  );
+
+  const [filterOpen, setFilterOpen] = useState(false);
+  const filterInputRef = useRef<HTMLInputElement>(null);
+
+  const addFilter = useCallback(
+    (predicate: Predicate) => {
+      const current = readQuery(params);
+      const next = appendPredicate(
+        current.kind === "and" ? current : EMPTY_QUERY,
+        predicate,
+      );
+      setParams(writeQuery(params, next), { replace: true });
     },
     [params, setParams],
   );
 
-  function notify() {
-    /* placeholder for unwired buttons */
-  }
+  useFilterHotkey(() => {
+    setFilterOpen(true);
+    requestAnimationFrame(() => filterInputRef.current?.focus());
+  });
 
   return (
-    <div className={styles.toolbar} role="toolbar" aria-label="Library toolbar">
-      <div className={styles.left}>
-        <Tooltip content="New save" side="bottom">
-          <button
-            type="button"
-            className={styles.iconBtn}
-            aria-label="New save"
-            onClick={notify}
-          >
-            <HeaderPlusIcon width="0.95em" height="0.95em" />
-          </button>
-        </Tooltip>
-        <Tooltip content="Reload library" side="bottom">
-          <button
-            type="button"
-            className={styles.iconBtn}
-            aria-label="Reload"
-            onClick={() => navigate(0)}
-          >
-            <ArrowsCycleIcon width="0.95em" height="0.95em" />
-          </button>
-        </Tooltip>
-        <Tooltip content="Toggle sidebar" side="bottom">
-          <button
-            type="button"
-            className={styles.iconBtn}
-            aria-label="Toggle sidebar"
-            onClick={notify}
-          >
-            <SidebarToggleIcon width="0.95em" height="0.95em" />
-          </button>
-        </Tooltip>
-      </div>
+    <Toolbar>
+      <Search>
+        <SearchIcon>
+          <IconMagnifierOutline18 width="0.85em" height="0.85em" />
+        </SearchIcon>
+        <SearchInput
+          type="search"
+          placeholder="Search"
+          value={search}
+          onChange={onSearchChange}
+          aria-label="Search saves"
+        />
+      </Search>
 
-      <div className={styles.centre}>
-        <div className={styles.zoom}>
-          <button
-            type="button"
-            className={styles.zoomBtn}
-            aria-label="Smaller tiles"
-            onClick={() => setZoom(Math.max(80, zoom - 20))}
-          >
-            <ZoomMinusIcon width="0.7em" height="0.7em" />
-          </button>
-          <input
-            type="range"
-            min={80}
-            max={280}
-            step={10}
-            value={zoom}
-            aria-label="Tile size"
-            onChange={(e) => setZoom(Number(e.target.value))}
-            className={styles.zoomSlider}
+      <Right>
+        <ZoomControls value={zoom} onChange={setZoom} />
+        <SavedFilters.Root />
+        <Tooltip.Root content="View options" side="bottom">
+          <LayoutPopover.Root
+            trigger={
+              <IconButton aria-label="View options">
+                <IconGridOutline18 width="0.95em" height="0.95em" />
+              </IconButton>
+            }
           />
-          <button
-            type="button"
-            className={styles.zoomBtn}
-            aria-label="Larger tiles"
-            onClick={() => setZoom(Math.min(280, zoom + 20))}
-          >
-            <ZoomPlusIcon width="0.7em" height="0.7em" />
-          </button>
-        </div>
-      </div>
+        </Tooltip.Root>
+        <Tooltip.Root content="Add filter" side="bottom">
+          <Menu.Root open={filterOpen} onOpenChange={setFilterOpen}>
+            <Menu.Trigger
+              render={
+                <IconButton aria-label="Add filter">
+                  <IconBarsFilterOutline18 width="0.95em" height="0.95em" />
+                </IconButton>
+              }
+            />
+            <Menu.Portal>
+              <Menu.Positioner side="bottom" align="end" sideOffset={6}>
+                <Menu.Popup>
+                  <AddFilterMenu
+                    onCommit={addFilter}
+                    inputRef={filterInputRef}
+                  />
+                </Menu.Popup>
+              </Menu.Positioner>
+            </Menu.Portal>
+          </Menu.Root>
+        </Tooltip.Root>
+      </Right>
+    </Toolbar>
+  );
+}
 
-      <div className={styles.right}>
-        <div className={styles.viewToggle}>
-          <Tooltip content="Waterfall view" side="bottom">
-            <button
-              type="button"
-              className={[
-                styles.iconBtn,
-                view === "waterfall" ? styles.iconBtnActive : "",
-              ]
-                .filter(Boolean)
-                .join(" ")}
-              aria-label="Waterfall view"
-              aria-pressed={view === "waterfall"}
-              onClick={() => setView("waterfall")}
-            >
-              <WaterfallViewIcon width="0.95em" height="0.95em" />
-            </button>
-          </Tooltip>
-          <Tooltip content="Justified view" side="bottom">
-            <button
-              type="button"
-              className={[
-                styles.iconBtn,
-                view === "justified" ? styles.iconBtnActive : "",
-              ]
-                .filter(Boolean)
-                .join(" ")}
-              aria-label="Justified view"
-              aria-pressed={view === "justified"}
-              onClick={() => setView("justified")}
-            >
-              <JustifiedViewIcon width="0.95em" height="0.95em" />
-            </button>
-          </Tooltip>
-          <Tooltip content="Grid view" side="bottom">
-            <button
-              type="button"
-              className={[
-                styles.iconBtn,
-                view === "grid" ? styles.iconBtnActive : "",
-              ]
-                .filter(Boolean)
-                .join(" ")}
-              aria-label="Grid view"
-              aria-pressed={view === "grid"}
-              onClick={() => setView("grid")}
-            >
-              <GridViewIcon width="0.95em" height="0.95em" />
-            </button>
-          </Tooltip>
-          <Tooltip content="List view" side="bottom">
-            <button
-              type="button"
-              className={[
-                styles.iconBtn,
-                view === "list" ? styles.iconBtnActive : "",
-              ]
-                .filter(Boolean)
-                .join(" ")}
-              aria-label="List view"
-              aria-pressed={view === "list"}
-              onClick={() => setView("list")}
-            >
-              <ListViewIcon width="0.95em" height="0.95em" />
-            </button>
-          </Tooltip>
-          <span className={styles.viewToggleDivider} aria-hidden />
-          <Tooltip content="Timeline (group by save date)" side="bottom">
-            <button
-              type="button"
-              className={[
-                styles.iconBtn,
-                view === "timeline" ? styles.iconBtnActive : "",
-              ]
-                .filter(Boolean)
-                .join(" ")}
-              aria-label="Timeline view"
-              aria-pressed={view === "timeline"}
-              onClick={() => setView("timeline")}
-            >
-              <span aria-hidden style={{ fontSize: 11, fontWeight: 600 }}>
-                ☷
-              </span>
-            </button>
-          </Tooltip>
-          <Tooltip content="Group by dominant color" side="bottom">
-            <button
-              type="button"
-              className={[
-                styles.iconBtn,
-                view === "color" ? styles.iconBtnActive : "",
-              ]
-                .filter(Boolean)
-                .join(" ")}
-              aria-label="Color view"
-              aria-pressed={view === "color"}
-              onClick={() => setView("color")}
-            >
-              <span aria-hidden style={{ fontSize: 12, fontWeight: 600 }}>
-                ◐
-              </span>
-            </button>
-          </Tooltip>
-        </div>
+interface ToolbarProps extends React.ComponentPropsWithoutRef<"div"> {}
 
-        <Tooltip
-          content={filtersVisible ? "Hide filters" : "Show filters"}
-          side="bottom"
+function Toolbar({ className, ...props }: ToolbarProps) {
+  return (
+    <div
+      role="toolbar"
+      aria-label="Library toolbar"
+      className={[styles.toolbar, className ?? ""].filter(Boolean).join(" ")}
+      {...props}
+    />
+  );
+}
+
+interface SearchProps extends React.ComponentPropsWithoutRef<"div"> {}
+
+function Search({ className, ...props }: SearchProps) {
+  return (
+    <div
+      className={[styles.search, className ?? ""].filter(Boolean).join(" ")}
+      {...props}
+    />
+  );
+}
+
+interface SearchIconProps extends React.ComponentPropsWithoutRef<"span"> {}
+
+function SearchIcon({ className, ...props }: SearchIconProps) {
+  return (
+    <span
+      aria-hidden
+      className={[styles["search-icon"], className ?? ""]
+        .filter(Boolean)
+        .join(" ")}
+      {...props}
+    />
+  );
+}
+
+interface SearchInputProps extends React.ComponentPropsWithoutRef<"input"> {}
+
+function SearchInput({ className, ...props }: SearchInputProps) {
+  return (
+    <input
+      className={[styles["search-input"], className ?? ""]
+        .filter(Boolean)
+        .join(" ")}
+      {...props}
+    />
+  );
+}
+
+interface RightProps extends React.ComponentPropsWithoutRef<"div"> {}
+
+function Right({ className, ...props }: RightProps) {
+  return (
+    <div
+      className={[styles.right, className ?? ""].filter(Boolean).join(" ")}
+      {...props}
+    />
+  );
+}
+
+interface IconButtonProps extends React.ComponentPropsWithoutRef<"button"> {
+  "data-active"?: "true" | undefined;
+}
+
+function IconButton({ className, type = "button", ...props }: IconButtonProps) {
+  return (
+    <button
+      type={type}
+      className={[styles["icon-btn"], className ?? ""]
+        .filter(Boolean)
+        .join(" ")}
+      {...props}
+    />
+  );
+}
+
+export const HeaderToolbar = {
+  Root,
+  Toolbar,
+  Search,
+  SearchIcon,
+  SearchInput,
+  Right,
+  IconButton,
+};
+
+const ZOOM_MIN = 80;
+const ZOOM_MAX = 240;
+const ZOOM_STEP = 10;
+const ZOOM_DEFAULT = 130;
+
+interface ZoomControlsProps {
+  value: number;
+  onChange: (next: number) => void;
+}
+
+/**
+ * Eagle-style zoom slider for the grid. Drives `--grid-min`, which the
+ * masonry packer and CSS layouts already react to. Higher value = wider
+ * minimum column = fewer columns + bigger cards (the column count steps
+ * down at thresholds the same way `repeat(auto-fit, minmax(N, 1fr))`
+ * does).
+ */
+function ZoomControls({ value, onChange }: ZoomControlsProps) {
+  const clamp = useCallback(
+    (n: number) => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, n)),
+    [],
+  );
+  const step = useCallback(
+    (delta: number) => onChange(clamp(value + delta)),
+    [clamp, onChange, value],
+  );
+  return (
+    <fieldset className={styles.zoom}>
+      <legend className={styles["sr-only"]}>Grid zoom</legend>
+      <Tooltip.Root content="Smaller cards" side="bottom">
+        <IconButton
+          aria-label="Smaller cards"
+          onClick={() => step(-ZOOM_STEP)}
+          disabled={value <= ZOOM_MIN}
         >
-          <button
-            type="button"
-            className={[
-              styles.iconBtn,
-              filtersVisible ? styles.iconBtnActive : "",
-            ]
-              .filter(Boolean)
-              .join(" ")}
-            aria-label="Toggle filters"
-            aria-pressed={filtersVisible}
-            onClick={onToggleFilters}
-          >
-            <FilterToggleIcon width="0.95em" height="0.95em" />
-          </button>
-        </Tooltip>
-
-        <div className={styles.search}>
-          <span className={styles.searchIcon} aria-hidden>
-            <SearchIcon width="0.85em" height="0.85em" />
-          </span>
-          <input
-            type="search"
-            placeholder="Search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className={styles.searchInput}
-            aria-label="Search saves"
-          />
-        </div>
-
-        <Tooltip content="Pin (coming soon)" side="bottom">
-          <button
-            type="button"
-            className={styles.iconBtn}
-            aria-label="Pin"
-            onClick={notify}
-          >
-            <PinIcon width="0.95em" height="0.95em" />
-          </button>
-        </Tooltip>
-      </div>
-    </div>
+          <IconMinusOutline18 width="0.85em" height="0.85em" />
+        </IconButton>
+      </Tooltip.Root>
+      <input
+        type="range"
+        min={ZOOM_MIN}
+        max={ZOOM_MAX}
+        step={ZOOM_STEP}
+        value={value}
+        onChange={(e) => onChange(clamp(Number(e.target.value)))}
+        aria-label="Grid zoom"
+        className={styles["zoom-slider"]}
+      />
+      <Tooltip.Root content="Larger cards" side="bottom">
+        <IconButton
+          aria-label="Larger cards"
+          onClick={() => step(ZOOM_STEP)}
+          disabled={value >= ZOOM_MAX}
+        >
+          <IconPlusOutline18 width="0.85em" height="0.85em" />
+        </IconButton>
+      </Tooltip.Root>
+    </fieldset>
   );
 }
 
 /**
- * Hook that owns the grid tile size. Persists to localStorage so the
- * pref survives reloads, and writes a CSS custom property on the
- * document root so `pond-grid` reads it without any prop drilling.
- *
- * `--pond-grid-min` plays a different role per layout mode:
- *   - waterfall → column width (the IMAGE grows in width, height
- *     follows from each cover's natural aspect ratio).
- *   - justified → row height (each row of cards is this tall, widths
- *     vary with aspect to pack flush).
- *   - grid       → cell min-width and (square) cell height — the
- *     classic Eagle "uniform tiles" zoom.
+ * Hook that keeps the grid tile size pref in sync with localStorage and
+ * the `--grid-min` CSS variable. Consumed by the zoom slider above and
+ * any future keyboard / command-palette shortcuts.
  */
 function useZoom(): [number, (next: number) => void] {
   const [zoom, setZoomState] = useState<number>(() => {
-    if (typeof window === "undefined") return 130;
+    if (typeof window === "undefined") return ZOOM_DEFAULT;
     const raw = window.localStorage.getItem("pond.gridZoom");
     const parsed = raw ? Number.parseInt(raw, 10) : NaN;
-    return Number.isFinite(parsed) ? parsed : 130;
+    return Number.isFinite(parsed) ? parsed : ZOOM_DEFAULT;
   });
 
   useEffect(() => {
-    document.documentElement.style.setProperty("--pond-grid-min", `${zoom}px`);
+    document.documentElement.style.setProperty("--grid-min", `${zoom}px`);
     try {
       window.localStorage.setItem("pond.gridZoom", String(zoom));
     } catch {

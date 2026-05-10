@@ -1,3 +1,4 @@
+import { join } from "node:path";
 import type { Source } from "@pond/schema/db";
 import { BrowserWindow, type Cookie, session } from "electron";
 import log from "electron-log/main.js";
@@ -28,10 +29,12 @@ import {
   tiktokFavouritesUrl,
 } from "./harvest/tiktok-list";
 import {
+  type BookmarksEntry,
   type BookmarksHarvestArgs,
   type BookmarksHarvestResult,
   buildBookmarksExpression,
 } from "./harvest/twitter-bookmarks";
+import { parseBookmarksResponses } from "./harvest/twitter-bookmarks-graphql";
 import type { ScrapedHarvest } from "./harvest/types";
 import {
   buildYoutubeListExpression,
@@ -84,6 +87,12 @@ function ensureHidden(): BrowserWindow {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      // The scrape preload installs an XHR-prototype hook in the page
+      // main world via `webFrame.executeJavaScript`. The hook captures
+      // Twitter Bookmarks GraphQL responses for the harvester to drain.
+      // Loaded for every page we navigate to; the hook self-skips if
+      // the URL doesn't match.
+      preload: join(__dirname, "../preload/scrape.cjs"),
       // Block plugins / pop-ups from random sites we navigate to.
       plugins: false,
       webgl: false,
@@ -315,8 +324,29 @@ export async function harvestYoutubeLikedList(
  * shape with `tweetId` rather than `sourceId`. The orchestrator
  * funnels both through the same dedupe + per-item enrichment loop.
  */
+/**
+ * Live progress emitted from the in-page walker. The main-process
+ * poller polls `globalThis.__pondHarvestStats` at ~1.5s cadence and
+ * forwards each tick to the orchestrator via `onProgress`.
+ */
+export interface BookmarksHarvestProgress {
+  /** "hydrate" while waiting for the bookmarks list to paint, "scroll" once it's walking. */
+  phase: "hydrate" | "scroll";
+  /** Distinct tweet ids walked so far. */
+  seen: number;
+  /** Subset of `seen` that isn't already in the local DB. */
+  fresh: number;
+  /** Articles currently in the DOM (virtualised so this drifts). */
+  articles: number;
+  /** GraphQL Bookmarks responses captured so far. */
+  captures: number;
+  /** Scroll iterations executed by the in-page loop. */
+  scrolls: number;
+}
+
 export async function harvestTwitterBookmarks(
   args: BookmarksHarvestArgs,
+  opts: { onProgress?: (p: BookmarksHarvestProgress) => void } = {},
 ): Promise<BookmarksHarvestResult> {
   const win = ensureHidden();
   try {
@@ -325,20 +355,69 @@ export async function harvestTwitterBookmarks(
       "https://x.com/i/bookmarks",
       NAV_TIMEOUT_MS,
     );
-    if (!navOk) {
-      return { ok: false, reason: "timeout" };
-    }
+    if (!navOk) return { ok: false, reason: "timeout" };
     if (looksLikeAuthWall(win.webContents.getURL())) {
       return { ok: false, reason: "auth_required" };
     }
     const expr = buildBookmarksExpression(args);
-    // Bookmarks scrape can take ~30s on a logged-in account with hundreds
-    // of items, so we give it a longer timeout than the per-tweet
-    // harvester. Still capped so a hung page doesn't pin the window.
+
+    // Live progress poller. The in-page walker writes its current
+    // state into `globalThis.__pondHarvestStats` on every hydrate
+    // tick / scroll iteration. We `executeJavaScript` a tiny read
+    // every 1.5s alongside the heavy harvest call — Chromium happily
+    // interleaves these on the same webContents because the harvest
+    // is `await`ing setTimeout between scrolls. Each poll that shows
+    // movement gets forwarded to `onProgress` so the orchestrator
+    // can update the toast in real time. Without this the user sees
+    // "Looking at your Twitter bookmarks…" frozen for the entire
+    // run; large libraries can take minutes.
+    let lastSeen = -1;
+    let lastPhase: BookmarksHarvestProgress["phase"] | null = null;
+    let stopPolling = false;
+    const pollInterval = setInterval(() => {
+      if (stopPolling) return;
+      void win.webContents
+        .executeJavaScript(
+          "JSON.stringify(globalThis.__pondHarvestStats ?? null)",
+          true,
+        )
+        .then((raw) => {
+          if (typeof raw !== "string" || raw === "null") return;
+          let stats: Omit<BookmarksHarvestProgress, "phase"> & {
+            phase: "hydrate" | "scroll" | "done";
+          };
+          try {
+            stats = JSON.parse(raw);
+          } catch {
+            return;
+          }
+          if (stats.phase === "done") return;
+          const moved = stats.seen !== lastSeen || stats.phase !== lastPhase;
+          if (!moved) return;
+          lastSeen = stats.seen;
+          lastPhase = stats.phase;
+          opts.onProgress?.({
+            phase: stats.phase,
+            seen: stats.seen,
+            fresh: stats.fresh,
+            articles: stats.articles,
+            captures: stats.captures,
+            scrolls: stats.scrolls,
+          });
+        })
+        .catch(() => {});
+    }, 1500);
+
+    // The in-page scroll loop runs for up to ~5 minutes
+    // (`SCROLL_DEADLINE_MS` in `twitter-bookmarks.ts`), so the outer
+    // timeout is sized to comfortably cover that plus hydration slack.
     const raw = await Promise.race([
       win.webContents.executeJavaScript(expr, true),
-      sleep(90_000).then(() => "__pond_bookmarks_timeout__"),
-    ]);
+      sleep(6 * 60_000).then(() => "__pond_bookmarks_timeout__"),
+    ]).finally(() => {
+      stopPolling = true;
+      clearInterval(pollInterval);
+    });
     if (raw === "__pond_bookmarks_timeout__") {
       log.warn("[pond bookmarks] harvest timed out");
       return { ok: false, reason: "timeout" };
@@ -346,7 +425,47 @@ export async function harvestTwitterBookmarks(
     if (!raw || typeof raw !== "object") {
       return { ok: false, reason: "no_match" };
     }
-    return raw as BookmarksHarvestResult;
+    const result = raw as BookmarksHarvestResult;
+    if (!result.ok) return result;
+
+    // Parse every Bookmarks GraphQL response the preload's XHR hook
+    // captured during the scroll, then merge the rich payload into
+    // the DOM-discovered entries. The DOM walker is the discovery
+    // floor — every visible card has an entry — and the GraphQL data
+    // is enrichment laid on top. If the hook captured nothing (CSP
+    // edge case, hook installed too late on the very first request,
+    // Twitter changed shape) we still ingest every visible bookmark
+    // with slim card data.
+    const rich = parseBookmarksResponses(result.captures);
+    const merged: BookmarksEntry[] = result.entries.map((entry) => {
+      const r = rich.get(entry.tweetId);
+      if (!r) return entry;
+      const firstLine = r.fullText.split(/\n+/)[0]?.trim() ?? "";
+      const richTitle =
+        firstLine.length === 0
+          ? entry.title
+          : firstLine.length <= 90
+            ? firstLine
+            : `${firstLine.slice(0, 89).trimEnd()}…`;
+      return {
+        ...entry,
+        title: richTitle ?? entry.title,
+        description: r.fullText || entry.description,
+        author: r.author.handle ? `@${r.author.handle}` : entry.author,
+        mediaUrls: r.media.length > 0 ? r.media : entry.mediaUrls,
+        mediaUrl: r.media[0]?.url ?? entry.mediaUrl,
+        rich: r,
+      };
+    });
+    log.info(
+      `[pond bookmarks] DOM=${result.entries.length} rich=${rich.size} merged=${merged.length} captures=${result.captures.length}`,
+    );
+    return {
+      ok: true,
+      entries: merged,
+      captures: result.captures,
+      reachedEnd: result.reachedEnd,
+    };
   } catch (err) {
     log.warn("[pond bookmarks] unexpected error", err);
     return { ok: false, reason: "timeout" };
@@ -380,6 +499,11 @@ export async function signInToSource(source: Source): Promise<{ ok: boolean }> {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      // Same preload as the hidden scrape window — the user might
+      // scroll their bookmarks list inside the sign-in popup before
+      // closing it, in which case we'll happily capture whatever
+      // GraphQL fires.
+      preload: join(__dirname, "../preload/scrape.cjs"),
     },
   });
   // Keep popups inside this same window — don't spawn new top-level
@@ -398,16 +522,14 @@ export async function signInToSource(source: Source): Promise<{ ok: boolean }> {
     win.once("closed", () => resolve());
   });
 
-  // Kick an immediate incremental sync the moment the user finishes
-  // sign-in. Without this the cron picks them up within ~60s anyway,
-  // but the perceived latency on a fresh connect (esp. Twitter) is
-  // jarring. Lazy-imported to avoid the `sync` ↔ `scrape-window`
-  // module cycle; fire-and-forget so the connect IPC isn't blocked.
+  // Kick an immediate sync the moment the user finishes sign-in.
+  // Without this the cron picks them up within ~60s anyway, but the
+  // perceived latency on a fresh connect (esp. Twitter) is jarring.
+  // Lazy-imported to avoid the `sync` ↔ `scrape-window` module cycle;
+  // fire-and-forget so the connect IPC isn't blocked.
   if (await isSourceConnected(source)) {
     void import("../sync")
-      .then(({ syncSource }) =>
-        syncSource(source, { mode: "incremental", trigger: "manual" }),
-      )
+      .then(({ syncSource }) => syncSource(source, { trigger: "manual" }))
       .catch((err) =>
         log.warn("[pond refresh:signin] post-signin sync threw", err),
       );

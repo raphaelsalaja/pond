@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { isBootReady, subscribeBootReady } from "./bootstrap";
 import { pool, subscribeToAll, subscribeToId } from "./pool";
 import type { Save } from "./types";
 
@@ -23,4 +24,14 @@ export function useSaves(): Save[] {
     () => pool.snapshot(),
   );
   return snapshot;
+}
+
+/**
+ * `true` once the pool has finished its first cache load + reconcile
+ * pass against main. Use this to gate empty-state copy: an empty pool
+ * during boot is *unknown* (cache might be cold), while an empty pool
+ * after boot is genuinely empty.
+ */
+export function useBootReady(): boolean {
+  return useSyncExternalStore(subscribeBootReady, isBootReady, isBootReady);
 }

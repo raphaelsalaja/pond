@@ -201,7 +201,6 @@ export function harvestSource(): string {
       );
     }
 
-    // ----- relationships ---------------------------------------------------
     // `Replying to @x` block lives outside the focused article on the
     // status page; finding any of these selectors means the focused
     // tweet is a reply.
@@ -277,7 +276,6 @@ export function harvestSource(): string {
       meta.conversationId = tweetId;
     }
 
-    // ----- engagement metrics ---------------------------------------------
     // Twitter buckets all four counters under `<button data-testid="reply"
     // | "retweet" | "like" | "viewCount">`. The unabbreviated number
     // lives on the wrapper's `aria-label`; we parse "1,234 Replies" etc.
@@ -314,7 +312,6 @@ export function harvestSource(): string {
     if (bookmarks !== undefined) metrics.bookmarks = bookmarks;
     if (Object.keys(metrics).length > 0) meta.metrics = metrics;
 
-    // ----- media -----------------------------------------------------------
     const media: Array<Record<string, unknown>> = [];
     const seen = new Set<string>();
     const push = (m: Record<string, unknown> | undefined) => {

@@ -19,8 +19,6 @@ export default defineContentScript({
       emit({ kind: "log", level, message, data });
     }
 
-    // ---------- save-mutation detection ----------
-
     const SAVE_RE =
       /\/resource\/(?:Repin|RepinSave|BoardPickerSave|UserPin|Pin)Resource\/create\/?(?:\?|$)/i;
 
@@ -62,8 +60,6 @@ export default defineContentScript({
         null;
       return id ? { pinId: String(id), raw: json } : null;
     }
-
-    // ---------- pin lookups ----------
 
     function getCookie(name: string) {
       const m = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]+)`));
@@ -154,8 +150,6 @@ export default defineContentScript({
       p.finally(() => inflight.delete(pinId));
       return p;
     }
-
-    // ---------- payload normalisation ----------
 
     function pickLargestImage(images: any) {
       if (!images || typeof images !== "object") return null;
@@ -419,8 +413,6 @@ export default defineContentScript({
       return out;
     }
 
-    // ---------- emit ----------
-
     const emitted = new Set();
 
     async function handleSave(pinId: string, raw: any) {
@@ -472,8 +464,6 @@ export default defineContentScript({
         gallery: payload.raw.gallery?.length ?? 0,
       });
     }
-
-    // ---------- network hooks ----------
 
     function isSaveUrl(url: string) {
       return typeof url === "string" && SAVE_RE.test(url);

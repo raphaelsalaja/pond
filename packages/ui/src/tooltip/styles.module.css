@@ -1,0 +1,26 @@
+.positioner {
+  z-index: 1100;
+}
+
+.popup {
+  max-width: 220px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--ds-gray-1);
+  pointer-events: none;
+  outline: none;
+  background: var(--ds-gray-12);
+  border-radius: var(--ds-radius-md);
+  box-shadow: 0 4px 16px -4px rgba(0, 0, 0, 0.25);
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
+
+  &[data-starting-style],
+  &[data-ending-style] {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+}

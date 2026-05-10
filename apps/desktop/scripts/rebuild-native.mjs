@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Manual native rebuild for `better-sqlite3`, `keytar`, `sqlite-vec`.
+ * Manual native rebuild for `better-sqlite3` (and historically `keytar`).
  *
  * Run this whenever:
  *  - you bumped the `electron` version in package.json
@@ -12,6 +12,11 @@
  * packages with native bindings, picking up the current Electron version
  * from `node_modules/electron/package.json` so we don't need a hard-coded
  * version in two places.
+ *
+ * `@napi-rs/keyring` is a NAPI module distributed with prebuilt binaries
+ * across every Electron-supported ABI, so it doesn't need to be rebuilt
+ * here. `sqlite-vec` ships its own prebuilds too. Only `better-sqlite3`
+ * needs an electron-version-specific rebuild today.
  */
 
 import { spawn } from "node:child_process";
@@ -54,7 +59,7 @@ async function main() {
       "--version",
       version,
       "--only",
-      "better-sqlite3,keytar",
+      "better-sqlite3",
       "--force",
     ],
     { cwd: appRoot },

@@ -30,23 +30,16 @@
     "prepare": "husky"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.13",
-    "@commitlint/cli": "^20.5.0",
-    "@commitlint/config-conventional": "^20.5.0",
+    "@biomejs/biome": "2.4.14",
+    "@commitlint/cli": "^20.5.3",
+    "@commitlint/config-conventional": "^20.5.3",
     "@types/node": "^25.6.0",
     "husky": "^9.1.7",
-    "turbo": "^2.9.8",
+    "turbo": "^2.9.9",
     "typescript": "^6.0.3"
   },
   "engines": {
     "node": ">=20.9",
     "pnpm": ">=10.0.0"
-  },
-  "pnpm": {
-    "overrides": {
-      "drizzle-orm": "0.36.4",
-      "vite": "^6.3.4",
-      "vite-node": "^3.2.4"
-    }
   }
 }

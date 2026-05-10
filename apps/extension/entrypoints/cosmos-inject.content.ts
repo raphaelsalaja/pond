@@ -438,7 +438,6 @@ export default defineContentScript({
       }
     }
 
-    // ---- fetch hook -----------------------------------------------------------
     const origFetch = window.fetch;
     (window as any).fetch = async function (input: any, init: any) {
       const url = typeof input === "string" ? input : input?.url;
@@ -492,7 +491,6 @@ export default defineContentScript({
       return res;
     };
 
-    // ---- XHR hook -------------------------------------------------------------
     const Xhr = window.XMLHttpRequest;
     const origOpen = Xhr.prototype.open;
     const origSend = Xhr.prototype.send;

@@ -1,0 +1,9 @@
+/* Single-line text input shell, used by string-typed fields
+ * (`creator`, `url`). */
+
+.body {
+  display: flex;
+  flex-direction: column;
+  width: 240px;
+  padding: 6px;
+}

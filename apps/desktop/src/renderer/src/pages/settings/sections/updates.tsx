@@ -1,16 +1,7 @@
+import { Button, Select, Switch, useToast } from "@pond/ui";
 import { useCallback, useEffect, useState } from "react";
-import { usePrefs } from "../../../pool/prefs";
-import {
-  Button,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  Switch,
-  useToast,
-} from "../../../ui";
-import { Row, SectionHeader, SectionStack, SettingsCard } from "./_shared";
+import { Settings } from "@/components/settings";
+import { usePrefs } from "@/pool/prefs";
 
 interface AppInfo {
   version: string;
@@ -58,7 +49,7 @@ export function UpdatesSection() {
           title: "Update check failed",
           description:
             r.reason === "dev_build"
-              ? "Update checks are disabled in development builds."
+              ? "Dev builds don't check the update server. Run a release build."
               : r.reason,
           type: "warning",
         });
@@ -67,7 +58,7 @@ export function UpdatesSection() {
       toast.add({
         title: r.version
           ? `Update available: ${r.version}`
-          : "You're on the latest version",
+          : "Pond is up to date",
         type: "success",
       });
     } finally {
@@ -76,57 +67,74 @@ export function UpdatesSection() {
   }
 
   return (
-    <SectionStack>
-      <SectionHeader
-        title="Updates"
-        description={
-          info
+    <Settings.Page>
+      <Settings.Header>
+        <Settings.Title>Updates</Settings.Title>
+        <Settings.Description>
+          {info
             ? `You're running Pond ${info.version}.`
-            : "Choose your update channel and check for new versions."
-        }
-      />
+            : "Pick a release channel and check for new builds."}
+        </Settings.Description>
+      </Settings.Header>
 
-      <SettingsCard title="Update channel">
-        <Row
-          label="Channel"
-          description="Stable ships every few weeks; beta gets fixes (and the occasional bug) sooner."
-          control={
-            <Select
-              value={prefs.channel}
-              onValueChange={(v) =>
-                onPatch({ channel: v as "stable" | "beta" })
-              }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="stable">Stable</SelectItem>
-                <SelectItem value="beta">Beta</SelectItem>
-              </SelectContent>
-            </Select>
-          }
-        />
-        <Row
-          label="Auto-install updates"
-          description="Download updates as they appear and apply them on next launch. Off keeps the existing version until you click Check below."
-          control={
-            <Switch
-              checked={prefs.autoInstall}
-              onCheckedChange={(v) => onPatch({ autoInstall: v })}
-            />
-          }
-        />
-        <Row
-          label="Check for updates"
-          description="Asks the update server right now whether a newer build is available."
-          control={
-            <Button size="sm" onClick={checkNow} disabled={busy}>
-              {busy ? "Checking…" : "Check now"}
-            </Button>
-          }
-        />
-      </SettingsCard>
-    </SectionStack>
+      <Settings.Section>
+        <Settings.SectionTitle>Update Channel</Settings.SectionTitle>
+        <Settings.List>
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>Channel</Settings.ItemTitle>
+              <Settings.ItemDescription>
+                Stable ships every few weeks. Beta gets fixes sooner.
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <Select.Root
+                value={prefs.channel}
+                onValueChange={(v) =>
+                  onPatch({ channel: v as "stable" | "beta" })
+                }
+              >
+                <Select.Trigger>
+                  <Select.Value />
+                </Select.Trigger>
+                <Select.Content>
+                  <Select.Item value="stable">Stable</Select.Item>
+                  <Select.Item value="beta">Beta</Select.Item>
+                </Select.Content>
+              </Select.Root>
+            </Settings.ItemControl>
+          </Settings.Item>
+
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>Auto-Install Updates</Settings.ItemTitle>
+              <Settings.ItemDescription>
+                Download updates as they appear. Apply on next launch.
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <Switch.Root
+                checked={prefs.autoInstall}
+                onCheckedChange={(v) => onPatch({ autoInstall: v })}
+              />
+            </Settings.ItemControl>
+          </Settings.Item>
+
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>Check for Updates</Settings.ItemTitle>
+              <Settings.ItemDescription>
+                Ping the update server for a newer build.
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <Button size="sm" onClick={checkNow} disabled={busy}>
+                {busy ? "Checking…" : "Check Now"}
+              </Button>
+            </Settings.ItemControl>
+          </Settings.Item>
+        </Settings.List>
+      </Settings.Section>
+    </Settings.Page>
   );
 }

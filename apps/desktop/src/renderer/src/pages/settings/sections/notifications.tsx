@@ -1,6 +1,6 @@
-import { usePrefs } from "../../../pool/prefs";
-import { Switch } from "../../../ui";
-import { Row, SectionHeader, SectionStack, SettingsCard } from "./_shared";
+import { Switch } from "@pond/ui";
+import { Settings } from "@/components/settings";
+import { usePrefs } from "@/pool/prefs";
 
 /**
  * Notifications section. Each switch maps to a `category` tag the
@@ -12,67 +12,101 @@ export function NotificationsSection() {
   const [prefs, patch] = usePrefs("notifications");
 
   return (
-    <SectionStack>
-      <SectionHeader
-        title="Notifications"
-        description="Pick which background events surface as a toast and whether they make a sound."
-      />
+    <Settings.Page>
+      <Settings.Header>
+        <Settings.Title>Notifications</Settings.Title>
+        <Settings.Description>
+          Choose which background events surface as a toast.
+        </Settings.Description>
+      </Settings.Header>
 
-      <SettingsCard title="App notifications">
-        <Row
-          label="Save complete"
-          description="When a card finishes ingesting from the extension or quick capture."
-          control={
-            <Switch
-              checked={prefs.saveComplete}
-              onCheckedChange={(v) => patch({ saveComplete: v })}
-            />
-          }
-        />
-        <Row
-          label="Video download finished"
-          description="When yt-dlp finishes pulling a video in the background."
-          control={
-            <Switch
-              checked={prefs.videoDone}
-              onCheckedChange={(v) => patch({ videoDone: v })}
-            />
-          }
-        />
-        <Row
-          label="AI suggestion ready"
-          description="When the enrichment worker drops a suggestion into the inbox."
-          control={
-            <Switch
-              checked={prefs.aiSuggestion}
-              onCheckedChange={(v) => patch({ aiSuggestion: v })}
-            />
-          }
-        />
-        <Row
-          label="Refresh failures"
-          description="When metadata refresh hits an auth wall or rate limit."
-          control={
-            <Switch
-              checked={prefs.refreshFailed}
-              onCheckedChange={(v) => patch({ refreshFailed: v })}
-            />
-          }
-        />
-      </SettingsCard>
+      <Settings.Section>
+        <Settings.SectionTitle>Channels</Settings.SectionTitle>
+        <Settings.List>
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>Save Completed</Settings.ItemTitle>
+              <Settings.ItemDescription>
+                Notifies you when a save finishes ingesting from the extension
+                or quick capture.
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <Switch.Root
+                checked={prefs.saveComplete}
+                onCheckedChange={(v) => patch({ saveComplete: v })}
+              />
+            </Settings.ItemControl>
+          </Settings.Item>
 
-      <SettingsCard title="Sound">
-        <Row
-          label="Play chime on toast"
-          description="A short 880Hz tick when a toast lands. Off by default."
-          control={
-            <Switch
-              checked={prefs.sound}
-              onCheckedChange={(v) => patch({ sound: v })}
-            />
-          }
-        />
-      </SettingsCard>
-    </SectionStack>
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>Video Download Finished</Settings.ItemTitle>
+              <Settings.ItemDescription>
+                Notifies you when yt-dlp finishes pulling a video.
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <Switch.Root
+                checked={prefs.videoDone}
+                onCheckedChange={(v) => patch({ videoDone: v })}
+              />
+            </Settings.ItemControl>
+          </Settings.Item>
+
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>AI Suggestion Ready</Settings.ItemTitle>
+              <Settings.ItemDescription>
+                Notifies you when the enrichment worker drops a suggestion into
+                the inbox.
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <Switch.Root
+                checked={prefs.aiSuggestion}
+                onCheckedChange={(v) => patch({ aiSuggestion: v })}
+              />
+            </Settings.ItemControl>
+          </Settings.Item>
+
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>Refresh Failures</Settings.ItemTitle>
+              <Settings.ItemDescription>
+                Notifies you when metadata refresh hits an auth wall or rate
+                limit.
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <Switch.Root
+                checked={prefs.refreshFailed}
+                onCheckedChange={(v) => patch({ refreshFailed: v })}
+              />
+            </Settings.ItemControl>
+          </Settings.Item>
+        </Settings.List>
+      </Settings.Section>
+
+      <Settings.Section>
+        <Settings.SectionTitle>Sound</Settings.SectionTitle>
+        <Settings.List>
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>Chime on Toast</Settings.ItemTitle>
+              <Settings.ItemDescription>
+                {"Plays a short 880\u00A0Hz tick when a toast lands."}
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <Switch.Root
+                checked={prefs.sound}
+                onCheckedChange={(v) => patch({ sound: v })}
+              />
+            </Settings.ItemControl>
+          </Settings.Item>
+        </Settings.List>
+      </Settings.Section>
+    </Settings.Page>
   );
 }

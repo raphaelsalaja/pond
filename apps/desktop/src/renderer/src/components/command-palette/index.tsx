@@ -1,9 +1,9 @@
+import { Dialog, Input } from "@pond/ui";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSaves } from "../../pool/hooks";
-import { useSearchResults } from "../../pool/search";
-import type { Save } from "../../pool/types";
-import { Dialog, DialogContent, Input } from "../../ui";
+import { useSaves } from "@/pool/hooks";
+import { useSearchResults } from "@/pool/search";
+import type { Save } from "@/pool/types";
 import styles from "./styles.module.css";
 
 interface ActionItem {
@@ -40,20 +40,7 @@ interface TagItem {
 
 type Item = ActionItem | NavItem | SaveItem | TagItem;
 
-/**
- * Cmd-K palette. Mounted once at the shell; toggled by `Cmd+K` (or
- * `Ctrl+K` on Linux/Windows). Searches across:
- *
- *   - built-in actions (open settings, run backfill, etc.)
- *   - navigation entries (Library, Inbox, Activity, Trash)
- *   - saves (FTS5-backed via `useSearchResults`)
- *   - tags (in-memory pool)
- *
- * Selection model is the standard arrow-key + Enter combo, with
- * keyboard-first focus management — no mouse hover steals the active
- * row index until the user actually moves the cursor over the list.
- */
-export function CommandPalette() {
+function Root() {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [active, setActive] = useState(0);
@@ -62,9 +49,8 @@ export function CommandPalette() {
   const saves = useSaves();
   const search = useSearchResults(q);
 
-  // Hotkey listener — needs to fire even while inputs elsewhere have
-  // focus (Cmd+K is universally "open the palette"), so we don't bail
-  // when target is an input.
+  // Hotkey listener fires even while inputs elsewhere have focus —
+  // Cmd+K is universally "open the palette", don't bail on input target.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const meta = e.metaKey || e.ctrlKey;
@@ -78,9 +64,7 @@ export function CommandPalette() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  // Reset state on close. We keep the palette mounted so re-opening is
-  // instant; clearing the query on close avoids the "wait, why does
-  // this say `recipe`?" surprise.
+  // Reset query on close so re-opening starts fresh.
   useEffect(() => {
     if (open) {
       setQ("");
@@ -136,6 +120,16 @@ export function CommandPalette() {
       },
       {
         kind: "action",
+        id: "a-refresh-metadata",
+        label: "Refresh metadata for all saves",
+        hint: "Action",
+        run: () => {
+          close();
+          void window.pond.refreshBackfillStart({});
+        },
+      },
+      {
+        kind: "action",
         id: "a-undo",
         label: "Undo last action",
         hint: "Cmd+Z",
@@ -151,18 +145,13 @@ export function CommandPalette() {
         hint: "Action",
         run: () => {
           close();
-          // Fire an incremental run by default. The Settings page has
-          // its own "Backfill all" button for the rare full re-walk.
-          void window.pond.syncRunNow("twitter", "incremental");
+          void window.pond.syncRunNow("twitter");
         },
       },
     ],
     [close],
   );
 
-  // Build the merged item list. Saves come from FTS when query is non-
-  // empty, otherwise we show the most recent few saves so the palette
-  // is useful even for "open something I saved 5 minutes ago".
   const items = useMemo<Item[]>(() => {
     const needle = q.trim().toLowerCase();
     const matchesQuery = (label: string) =>
@@ -179,7 +168,7 @@ export function CommandPalette() {
         id: `s-${s.id}`,
         label: s.title ?? s.url,
         hint: hostname(s.url),
-        to: `/?id=${s.id}`,
+        to: `/save/${s.id}`,
       }));
 
     const tagSet = new Set<string>();
@@ -237,11 +226,11 @@ export function CommandPalette() {
   );
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className={styles.dialog}>
-        <div className={styles.shell}>
-          <div className={styles.searchRow}>
-            <Input
+    <Dialog.Root open={open} onOpenChange={setOpen}>
+      <Dialog.Content className={styles.dialog}>
+        <Shell>
+          <SearchRow>
+            <Input.Root
               ref={inputRef}
               value={q}
               onChange={(e) => setQ(e.target.value)}
@@ -250,41 +239,143 @@ export function CommandPalette() {
               autoComplete="off"
               spellCheck={false}
             />
-          </div>
-          <ul className={styles.list}>
+          </SearchRow>
+          <List>
             {items.length === 0 ? (
-              <li className={styles.empty}>No matches</li>
+              <Empty>No matches</Empty>
             ) : (
               items.map((item, i) => (
-                <li
+                <ListItem
                   key={item.id}
-                  className={[
-                    styles.item,
-                    i === active ? styles.itemActive : "",
-                  ]
-                    .filter(Boolean)
-                    .join(" ")}
+                  data-active={i === active ? "true" : undefined}
                 >
-                  <button
-                    type="button"
-                    className={styles.itemBtn}
+                  <ItemButton
                     onMouseEnter={() => setActive(i)}
                     onClick={() => run(item)}
                   >
-                    <span className={styles.itemLabel}>{item.label}</span>
-                    {item.hint ? (
-                      <span className={styles.itemHint}>{item.hint}</span>
-                    ) : null}
-                  </button>
-                </li>
+                    <ItemLabel>{item.label}</ItemLabel>
+                    {item.hint ? <ItemHint>{item.hint}</ItemHint> : null}
+                  </ItemButton>
+                </ListItem>
               ))
             )}
-          </ul>
-        </div>
-      </DialogContent>
-    </Dialog>
+          </List>
+        </Shell>
+      </Dialog.Content>
+    </Dialog.Root>
   );
 }
+
+interface ShellProps extends React.ComponentPropsWithoutRef<"div"> {}
+
+function Shell({ className, ...props }: ShellProps) {
+  return (
+    <div
+      className={[styles.shell, className ?? ""].filter(Boolean).join(" ")}
+      {...props}
+    />
+  );
+}
+
+interface SearchRowProps extends React.ComponentPropsWithoutRef<"div"> {}
+
+function SearchRow({ className, ...props }: SearchRowProps) {
+  return (
+    <div
+      className={[styles["search-row"], className ?? ""]
+        .filter(Boolean)
+        .join(" ")}
+      {...props}
+    />
+  );
+}
+
+interface ListProps extends React.ComponentPropsWithoutRef<"ul"> {}
+
+function List({ className, ...props }: ListProps) {
+  return (
+    <ul
+      className={[styles.list, className ?? ""].filter(Boolean).join(" ")}
+      {...props}
+    />
+  );
+}
+
+interface ListItemProps extends React.ComponentPropsWithoutRef<"li"> {
+  "data-active"?: "true" | undefined;
+}
+
+function ListItem({ className, ...props }: ListItemProps) {
+  return (
+    <li
+      className={[styles.item, className ?? ""].filter(Boolean).join(" ")}
+      {...props}
+    />
+  );
+}
+
+interface ItemButtonProps extends React.ComponentPropsWithoutRef<"button"> {}
+
+function ItemButton({ className, type = "button", ...props }: ItemButtonProps) {
+  return (
+    <button
+      type={type}
+      className={[styles["item-btn"], className ?? ""]
+        .filter(Boolean)
+        .join(" ")}
+      {...props}
+    />
+  );
+}
+
+interface ItemLabelProps extends React.ComponentPropsWithoutRef<"span"> {}
+
+function ItemLabel({ className, ...props }: ItemLabelProps) {
+  return (
+    <span
+      className={[styles["item-label"], className ?? ""]
+        .filter(Boolean)
+        .join(" ")}
+      {...props}
+    />
+  );
+}
+
+interface ItemHintProps extends React.ComponentPropsWithoutRef<"span"> {}
+
+function ItemHint({ className, ...props }: ItemHintProps) {
+  return (
+    <span
+      className={[styles["item-hint"], className ?? ""]
+        .filter(Boolean)
+        .join(" ")}
+      {...props}
+    />
+  );
+}
+
+interface EmptyProps extends React.ComponentPropsWithoutRef<"li"> {}
+
+function Empty({ className, ...props }: EmptyProps) {
+  return (
+    <li
+      className={[styles.empty, className ?? ""].filter(Boolean).join(" ")}
+      {...props}
+    />
+  );
+}
+
+export const CommandPalette = {
+  Root,
+  Shell,
+  SearchRow,
+  List,
+  Item: ListItem,
+  ItemButton,
+  ItemLabel,
+  ItemHint,
+  Empty,
+};
 
 function hostname(url: string): string {
   try {

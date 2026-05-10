@@ -1,0 +1,119 @@
+.positioner {
+  z-index: 1100;
+}
+
+.popup {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 240px;
+  max-width: var(--available-width);
+  padding: 6px;
+  outline: none;
+  background: var(--ds-gray-2);
+  border-radius: var(--ds-radius-lg);
+  box-shadow:
+    0 0 0 1px var(--ds-gray-a4),
+    0 12px 12px -6px rgba(0, 0, 0, 0.25);
+  transform-origin: var(--transform-origin);
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
+
+  &[data-starting-style],
+  &[data-ending-style] {
+    opacity: 0;
+    transform: scale(0.97) translateY(-2px);
+  }
+}
+
+.item {
+  position: relative;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  height: 32px;
+  padding: 0 8px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ds-gray-12);
+  text-align: left;
+  touch-action: manipulation;
+  cursor: default;
+  user-select: none;
+  background: transparent;
+  border: 0;
+  border-radius: var(--ds-radius-md);
+  isolation: isolate;
+
+  &::before {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    content: "";
+    background: var(--ds-gray-a3);
+    border-radius: inherit;
+    opacity: 0;
+    transition: opacity 80ms ease;
+  }
+
+  &:hover::before,
+  &[data-highlighted]::before,
+  &:focus-visible::before {
+    opacity: 1;
+  }
+
+  &:focus-visible {
+    outline: none;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}
+
+.item-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: var(--ds-gray-11);
+}
+
+.item-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.item-kbd {
+  flex-shrink: 0;
+  padding: 1px 5px;
+  font-family:
+    "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 11px;
+  color: var(--ds-gray-11);
+  letter-spacing: -0.04px;
+  background: var(--ds-gray-a3);
+  border-radius: 3px;
+}
+
+.group-label {
+  padding: 10px 8px 4px;
+  font-size: 11px;
+  font-weight: 550;
+  color: var(--ds-gray-11);
+  letter-spacing: 0.02px;
+}
+
+.separator {
+  height: 1px;
+  margin: 4px 2px;
+  background: var(--ds-gray-a4);
+  border: 0;
+}

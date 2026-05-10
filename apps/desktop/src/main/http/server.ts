@@ -25,22 +25,31 @@ import { pairingHandler } from "./pairing";
  * plus third-party web pages on localhost are a real exposure vector.
  */
 
+/**
+ * Decide whether to echo `Access-Control-Allow-*` for the given
+ * Origin. We deliberately do NOT echo for missing/`null` origins
+ * (curl, non-browser clients) — those still get served, but without
+ * CORS headers, which means a browser making a cross-site request
+ * with `omit` credentials still can't read the body.
+ *
+ * Loopback origins (localhost / 127.0.0.1) are always trusted.
+ * Browser-extension origins are trusted (the pond extension lives
+ * there). Everything else has to be on the user-configured
+ * `prefs.api.allowedOrigins` allowlist.
+ */
 function isAllowedOrigin(
   origin: string | undefined,
   extraAllowed: readonly string[],
 ): boolean {
-  if (!origin) return true; // curl / non-browser clients
+  if (!origin || origin === "null") return false;
   if (origin.startsWith("chrome-extension://")) return true;
   if (origin.startsWith("moz-extension://")) return true;
-  if (origin === "null") return true; // file://
   try {
     const u = new URL(origin);
     if (u.hostname === "localhost" || u.hostname === "127.0.0.1") return true;
   } catch {
     /* fall through */
   }
-  // The API settings page lets users add additional allowed origins
-  // (e.g. a Raycast extension running its own embedded webview).
   for (const allowed of extraAllowed) {
     if (!allowed) continue;
     if (origin === allowed) return true;
@@ -49,6 +58,33 @@ function isAllowedOrigin(
     }
   }
   return false;
+}
+
+/**
+ * In-memory per-IP auth-failure tracker. We reset the counter on a
+ * successful auth, so a legitimate client that mistypes once isn't
+ * locked out. After `MAX_FAILURES` failures inside `WINDOW_MS`, the
+ * IP is rejected outright for the remainder of the window. Cheap
+ * defense against a slow brute-force on the bearer token if it ever
+ * leaks; defense-in-depth, since the token itself is 192 bits.
+ */
+const AUTH_FAILURES = new Map<string, { count: number; resetAt: number }>();
+const AUTH_WINDOW_MS = 5 * 60_000;
+const AUTH_MAX_FAILURES = 10;
+
+function recordAuthFailure(ip: string): boolean {
+  const now = Date.now();
+  const entry = AUTH_FAILURES.get(ip);
+  if (!entry || entry.resetAt < now) {
+    AUTH_FAILURES.set(ip, { count: 1, resetAt: now + AUTH_WINDOW_MS });
+    return false;
+  }
+  entry.count += 1;
+  return entry.count > AUTH_MAX_FAILURES;
+}
+
+function clearAuthFailure(ip: string): void {
+  AUTH_FAILURES.delete(ip);
 }
 
 function buildApp(): Hono {
@@ -88,12 +124,32 @@ function buildApp(): Hono {
     c: Parameters<Parameters<Hono["use"]>[1]>[0],
     next: () => Promise<void>,
   ) => {
+    const ip =
+      c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ||
+      // Hono's `c.req.raw` is a `Request`, but the underlying Node
+      // socket address lives on the Node request we wrap below; we
+      // pass it through via a custom header.
+      c.req.header("x-pond-remote") ||
+      "unknown";
+    const blocked = AUTH_FAILURES.get(ip);
+    if (
+      blocked &&
+      blocked.resetAt > Date.now() &&
+      blocked.count > AUTH_MAX_FAILURES
+    ) {
+      return c.json({ status: "error", error: "rate_limited" }, 429);
+    }
     const auth = c.req.header("authorization") ?? "";
     const expected = await getIngestToken();
     const presented = auth.replace(/^Bearer\s+/i, "");
     if (!expected || !presented || presented !== expected) {
+      const tripped = recordAuthFailure(ip);
+      if (tripped) {
+        log.warn("[pond http] rate limited after repeated auth failures", ip);
+      }
       return c.json({ status: "error", error: "unauthorized" }, 401);
     }
+    clearAuthFailure(ip);
     await next();
   };
 
@@ -141,6 +197,12 @@ export async function startHttpServer(
         headers.set(k, v);
       }
     }
+    // Surface the Node socket's remote address as a header so the
+    // Hono handlers can rate-limit per IP. Stripped from any value
+    // the client may have set so callers can't forge it.
+    headers.delete("x-pond-remote");
+    const remote = req.socket?.remoteAddress;
+    if (remote) headers.set("x-pond-remote", remote);
     const init: RequestInit & { duplex?: "half" } = {
       method: req.method ?? "GET",
       headers,

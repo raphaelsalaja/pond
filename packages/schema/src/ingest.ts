@@ -32,7 +32,8 @@ export const ingestPayloadSchema = z.object({
     .string()
     .datetime()
     .nullish()
-    .transform((v) => (v ? new Date(v) : undefined)),
+    .transform((v) => (v ? new Date(v) : undefined))
+    .optional(),
   /** Legacy single-media field. Kept so old extension builds still work. */
   mediaUrl: z.string().url().nullish(),
   /**
@@ -47,7 +48,8 @@ export const ingestPayloadSchema = z.object({
     .string()
     .datetime()
     .optional()
-    .transform((v) => (v ? new Date(v) : undefined)),
+    .transform((v) => (v ? new Date(v) : undefined))
+    .optional(),
   raw: z.unknown().optional(),
 });
 

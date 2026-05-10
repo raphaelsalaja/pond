@@ -1,5 +1,12 @@
-import { join } from "node:path";
-import { app, BrowserWindow, globalShortcut, Menu, shell } from "electron";
+import { join, resolve as resolvePath } from "node:path";
+import {
+  app,
+  BrowserWindow,
+  globalShortcut,
+  Menu,
+  session,
+  shell,
+} from "electron";
 import log from "electron-log/main.js";
 import { DEFAULT_INGEST_PORT, IPC } from "../shared/constants";
 import {
@@ -8,7 +15,7 @@ import {
   subscribeToAutoVideoStatus,
 } from "./core/auto-video";
 import { startBackupCron } from "./core/backups";
-import { startEnrichWorker } from "./core/enrich";
+import { enqueueBackfill, startEnrichWorker } from "./core/enrich";
 import {
   registerSyncActionListener,
   replayPendingTransactions,
@@ -16,15 +23,23 @@ import {
 import { emptyTrashOlderThan } from "./core/library-ops";
 import { getPrefs, invalidatePrefs } from "./core/prefs";
 import { isSourceConnected } from "./core/refresh";
+import {
+  type RefreshBackfillStatus,
+  subscribeRefreshBackfillStatus,
+} from "./core/refresh/backfill";
 import { disposeHiddenWindow } from "./core/refresh/scrape-window";
 import { reconcileLibrary } from "./core/scan";
+import {
+  startStorageWatcher,
+  stopStorageWatcher,
+} from "./core/storage-watcher";
 import {
   patchSourceSync,
   type SyncStatusUpdate,
   subscribeToSyncStatus,
   syncSource,
 } from "./core/sync";
-import { canRedo, canUndo, redo, undo } from "./core/undo";
+import { migrateTwitterRawShape } from "./core/sync/migrate-twitter-raw";
 import { getDb } from "./db";
 import { type RunningServer, startHttpServer } from "./http/server";
 import { registerIpc } from "./ipc";
@@ -82,30 +97,201 @@ function broadcastSyncStatus(status: SyncStatusUpdate): void {
 }
 
 /**
+ * Push every refresh-backfill orchestrator status event to every live
+ * renderer. Same shape as `broadcastSyncStatus`: subscribe in main
+ * once at startup so the events keep flowing whether or not a window
+ * is open. The Settings → Storage progress bar reads from this stream.
+ */
+function broadcastRefreshBackfillStatus(status: RefreshBackfillStatus): void {
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (!win.isDestroyed()) {
+      win.webContents.send(IPC.refreshBackfillStatus, status);
+    }
+  }
+}
+
+/**
  * `pond` is a menu-bar / background app first. Register the protocol
  * scheme before `ready`; everything else runs after.
  */
 registerScheme();
 
+/**
+ * Single-instance lock. Without this, two instances would clash on
+ * the fixed HTTP port, the global hotkey, and the tray; deep-link
+ * launches on Windows/Linux would silently spawn a second process
+ * that immediately exits. Must run before `app.whenReady`.
+ */
+const gotSingleInstanceLock = app.requestSingleInstanceLock();
+if (!gotSingleInstanceLock) {
+  app.quit();
+}
+
+/**
+ * Register `pond://` as a system-wide protocol so URLs the
+ * Integrations settings page documents (`pond://item/<id>`,
+ * `pond://search?q=…`, `pond://capture?url=…`, `pond://pair?…`)
+ * actually open the app when invoked from Raycast / Apple Shortcuts /
+ * Slack. Run at module load so the OS sees us before the first
+ * `whenReady` tick.
+ */
+if (process.defaultApp) {
+  if (process.argv.length >= 2) {
+    app.setAsDefaultProtocolClient("pond", process.execPath, [
+      resolvePath(process.argv[1] ?? ""),
+    ]);
+  }
+} else {
+  app.setAsDefaultProtocolClient("pond");
+}
+
+/**
+ * Deep-link handler. Routes `pond://…` URLs to the renderer via the
+ * existing `IPC.nav` channel. Each branch maps a documented URL shape
+ * to the in-app route the renderer already knows how to render.
+ *
+ *   pond://item/<id>            → /save/<id>
+ *   pond://search?q=<query>     → /search?q=<query>
+ *   pond://capture?url=<url>    → /quick-capture?url=<url>
+ *   pond://pair?token=<token>   → /settings/api?token=<token>
+ *
+ * Unknown shapes fall through to a no-op so a malformed link from a
+ * third-party tool doesn't crash anything. Logged at info so the user
+ * can debug from the log file.
+ */
+let pendingDeepLink: string | null = null;
+function handleDeepLink(url: string): void {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "pond:") return;
+    let route: string | null = null;
+    if (parsed.hostname === "item") {
+      const id = parsed.pathname.replace(/^\//, "");
+      if (id) route = `/save/${encodeURIComponent(id)}`;
+    } else if (parsed.hostname === "search") {
+      const q = parsed.searchParams.get("q") ?? "";
+      route = `/search?q=${encodeURIComponent(q)}`;
+    } else if (parsed.hostname === "capture") {
+      const target = parsed.searchParams.get("url") ?? "";
+      route = `/quick-capture?url=${encodeURIComponent(target)}`;
+    } else if (parsed.hostname === "pair") {
+      const token = parsed.searchParams.get("token") ?? "";
+      route = `/settings/api${token ? `?token=${encodeURIComponent(token)}` : ""}`;
+    }
+    if (!route) {
+      log.info("[pond deep-link] ignored", url);
+      return;
+    }
+    log.info("[pond deep-link] route", route);
+    const target =
+      mainWindow && !mainWindow.isDestroyed()
+        ? mainWindow
+        : (BrowserWindow.getAllWindows().find((w) => !w.isDestroyed()) ?? null);
+    if (!target) {
+      // Window not up yet (cold-launch via deep link). Stash the
+      // route and replay it once `createWindow` finishes.
+      pendingDeepLink = route;
+      return;
+    }
+    if (target.isMinimized()) target.restore();
+    target.show();
+    target.focus();
+    target.webContents.send(IPC.nav, route);
+  } catch (err) {
+    log.warn("[pond deep-link] parse failed", url, err);
+  }
+}
+
+// macOS: deep-link launches arrive here.
+app.on("open-url", (event, url) => {
+  event.preventDefault();
+  handleDeepLink(url);
+});
+
+// Windows / Linux: deep-link launches start a second process, which
+// the single-instance lock kills. The killed process's argv arrives
+// here on the running instance.
+app.on("second-instance", (_event, argv) => {
+  const url = argv.find((a) => a.startsWith("pond://"));
+  if (url) handleDeepLink(url);
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.show();
+    mainWindow.focus();
+  }
+});
+
+/**
+ * Lock down session-level defaults that Electron leaves open.
+ *
+ * 1. Permission requests: deny everything by default. The hidden
+ *    scrape window navigates to arbitrary user-saved URLs and to
+ *    social-login pages — Chromium's default is to *prompt*, which
+ *    blocks an offscreen window forever. The main renderer is our
+ *    own code; if it ever needs a permission we'll opt into it
+ *    explicitly here.
+ *
+ * 2. Production CSP: the renderer's `<meta http-equiv="CSP">` allows
+ *    `'unsafe-eval'` because Vite dev's HMR needs it. We strip
+ *    `'unsafe-eval'` and narrow `connect-src` for packaged builds
+ *    by injecting a tighter `Content-Security-Policy` header on
+ *    every renderer response.
+ */
+function configureSessionDefaults(): void {
+  const denyAll: Parameters<
+    Electron.Session["setPermissionRequestHandler"]
+  >[0] = (_wc, _permission, callback) => callback(false);
+  session.defaultSession.setPermissionRequestHandler(denyAll);
+  try {
+    session
+      .fromPartition("persist:pond-scrapers")
+      .setPermissionRequestHandler(denyAll);
+  } catch (err) {
+    log.warn("[pond] scrapers session permission handler failed", err);
+  }
+
+  if (app.isPackaged) {
+    const PROD_CSP = [
+      "default-src 'self' pond:",
+      "img-src 'self' data: blob: pond: https:",
+      "media-src 'self' data: blob: pond: https:",
+      "style-src 'self' 'unsafe-inline'",
+      "script-src 'self'",
+      "connect-src 'self' http://127.0.0.1:* pond: https:",
+      "font-src 'self' data:",
+      "object-src 'none'",
+      "frame-ancestors 'none'",
+      "base-uri 'self'",
+    ].join("; ");
+    session.defaultSession.webRequest.onHeadersReceived((details, cb) => {
+      const headers = { ...(details.responseHeaders ?? {}) };
+      // Strip any inherited CSP so ours is canonical.
+      for (const key of Object.keys(headers)) {
+        if (key.toLowerCase() === "content-security-policy") {
+          delete headers[key];
+        }
+      }
+      headers["Content-Security-Policy"] = [PROD_CSP];
+      cb({ responseHeaders: headers });
+    });
+  }
+}
+
 async function createWindow(): Promise<BrowserWindow> {
   const isMac = process.platform === "darwin";
+
   const win = new BrowserWindow({
     width: 1280,
     height: 800,
     show: false,
     autoHideMenuBar: true,
-    // Linear-style chrome: hide the OS titlebar and let the traffic
-    // lights float over our own header. Mac only — other platforms get
-    // the default frame, which already renders flush.
     titleBarStyle: isMac ? "hiddenInset" : "default",
-    // The cluster is ~12px tall, so y = (headerHeight - 12) / 2 keeps
-    // them optically centered. Bar is 44px → y = 16.
-    trafficLightPosition: isMac ? { x: 16, y: 16 } : undefined,
+    trafficLightPosition: isMac ? { x: 16, y: 24 } : undefined,
     webPreferences: {
-      preload: join(__dirname, "../preload/index.mjs"),
+      preload: join(__dirname, "../preload/index.cjs"),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false,
+      sandbox: true,
     },
   });
 
@@ -118,6 +304,13 @@ async function createWindow(): Promise<BrowserWindow> {
   win.webContents.on("did-finish-load", () => {
     if (win.isDestroyed()) return;
     win.webContents.send(IPC.autoVideoStatus, autoVideoQueueSnapshot());
+    // Replay a deep link that arrived before any window was up
+    // (cold-launch via `open-url` on macOS).
+    if (pendingDeepLink) {
+      const route = pendingDeepLink;
+      pendingDeepLink = null;
+      win.webContents.send(IPC.nav, route);
+    }
   });
 
   win.webContents.setWindowOpenHandler(({ url }) => {
@@ -126,6 +319,39 @@ async function createWindow(): Promise<BrowserWindow> {
   });
 
   const devUrl = process.env.ELECTRON_RENDERER_URL;
+
+  // Block any in-window navigation away from the trusted renderer
+  // origin. A renderer that's tricked into `window.location = "https://
+  // attacker.com/"` (XSS, malicious save metadata, dropped HTML file)
+  // would otherwise navigate the chrome of the trusted window and
+  // inherit the preload context. Foreign URLs get bounced to the
+  // user's default browser instead, matching the windowOpenHandler
+  // policy above.
+  win.webContents.on("will-navigate", (event, url) => {
+    const allowed = (() => {
+      if (devUrl && url.startsWith(devUrl)) return true;
+      if (url.startsWith("file://")) return true;
+      if (url.startsWith("pond://")) return true;
+      // about:blank fires here on first paint of some embeddings;
+      // harmless and we never load it ourselves.
+      if (url === "about:blank") return true;
+      return false;
+    })();
+    if (!allowed) {
+      event.preventDefault();
+      log.warn("[pond] blocked navigation away from trusted origin", url);
+      const u = (() => {
+        try {
+          return new URL(url);
+        } catch {
+          return null;
+        }
+      })();
+      if (u && (u.protocol === "http:" || u.protocol === "https:")) {
+        void shell.openExternal(u.toString());
+      }
+    }
+  });
   if (devUrl) {
     await win.loadURL(devUrl);
     // DevTools is opt-in even in dev — historically we auto-popped it
@@ -151,19 +377,7 @@ app.whenReady().then(async () => {
   const paths = resolvePaths();
   log.info("[pond] paths", paths);
 
-  // Register `pond://` as a system-wide protocol so the URLs the
-  // Integrations settings page documents (pond://item/<id>,
-  // pond://search?q=…, pond://capture?url=…) actually open the app
-  // when invoked from Raycast / Apple Shortcuts / Slack.
-  if (process.defaultApp) {
-    if (process.argv.length >= 2) {
-      app.setAsDefaultProtocolClient("pond", process.execPath, [
-        require("node:path").resolve(process.argv[1] ?? ""),
-      ]);
-    }
-  } else {
-    app.setAsDefaultProtocolClient("pond");
-  }
+  configureSessionDefaults();
 
   await ensureIngestToken();
   registerProtocol();
@@ -172,6 +386,13 @@ app.whenReady().then(async () => {
   try {
     await getDb();
     await replayPendingTransactions();
+    // One-shot data migration: rows imported by older twitter-bookmarks
+    // sync builds had `raw.twitter` set to the verbatim API tweet, so
+    // metric chips never rendered. Cheap idempotent walk; bails after
+    // the first run via an in-process flag.
+    void migrateTwitterRawShape().catch((err) =>
+      log.warn("[pond] twitter raw migration failed", err),
+    );
     // Run the library reconcile in the background so the first window
     // frame isn't blocked on disk scanning.
     void reconcileLibrary().catch((err) => log.warn("[pond] scan failed", err));
@@ -179,6 +400,13 @@ app.whenReady().then(async () => {
     // does nothing useful when AI provider is `off` except for the
     // always-local colour extraction job.
     startEnrichWorker();
+    // One-shot enrich backfill so libraries created before a new
+    // always-local field landed (currently `blur_data_url`) pick the
+    // value up without an explicit user action. Gated by `pond_meta`
+    // so we walk the rows once per schema version, not every launch.
+    void backfillEnrichOnce().catch((err) =>
+      log.warn("[pond] enrich backfill failed", err),
+    );
   } catch (err) {
     log.error("[pond] db init failed", err);
   }
@@ -193,12 +421,14 @@ app.whenReady().then(async () => {
     log.error("[pond] http server failed to start", err);
   }
 
-  registerUndoHotkeys();
-  registerQuickSaveHotkey();
+  registerSummonHotkey();
   registerAutoUpdater();
   registerTrashCron();
   registerSyncCron();
   startBackupCron();
+  void startStorageWatcher().catch((err) =>
+    log.warn("[pond] storage watcher failed to start", err),
+  );
   installAppMenu();
 
   const openLibrary = async () => {
@@ -242,6 +472,7 @@ app.whenReady().then(async () => {
   // library, the next change push will catch them up.
   subscribeToAutoVideoStatus(broadcastAutoVideoStatus);
   subscribeToSyncStatus(broadcastSyncStatus);
+  subscribeRefreshBackfillStatus(broadcastRefreshBackfillStatus);
 
   // First-run pairing flow: if the window never opened once we still want
   // the user to find the token, so show the window if the app launched
@@ -431,8 +662,35 @@ function installAppMenu() {
     {
       label: "Edit",
       submenu: [
-        { role: "undo" as const },
-        { role: "redo" as const },
+        // Custom Undo / Redo. We deliberately avoid `role: "undo"` /
+        // `role: "redo"` because pond has its own transactional undo
+        // stack (see `core/undo.ts`) on top of native text-input undo.
+        // The click handler fires native input undo first (so typing
+        // in a text field behaves normally) and then asks the renderer
+        // to run pond undo iff focus is outside an editable element.
+        // Menu accelerators only fire when the app is focused, so
+        // Cmd+Z no longer leaks into VSCode / other apps the way it
+        // did when this was registered via `globalShortcut`.
+        {
+          label: "Undo",
+          accelerator: "CommandOrControl+Z",
+          click: () => {
+            const win = BrowserWindow.getFocusedWindow();
+            if (!win || win.isDestroyed()) return;
+            win.webContents.undo();
+            win.webContents.send(IPC.editUndoRequested);
+          },
+        },
+        {
+          label: "Redo",
+          accelerator: isMac ? "Command+Shift+Z" : "Control+Y",
+          click: () => {
+            const win = BrowserWindow.getFocusedWindow();
+            if (!win || win.isDestroyed()) return;
+            win.webContents.redo();
+            win.webContents.send(IPC.editRedoRequested);
+          },
+        },
         { type: "separator" as const },
         { role: "cut" as const },
         { role: "copy" as const },
@@ -453,10 +711,19 @@ function installAppMenu() {
     {
       label: "View",
       submenu: [
-        { role: "reload" as const },
-        { role: "forceReload" as const },
-        { role: "toggleDevTools" as const },
-        { type: "separator" as const },
+        // Reload + DevTools belong to dev only. In production they
+        // expose the running renderer to anyone with momentary
+        // physical access; not worth the convenience for the
+        // handful of users who'd actually want to debug a packaged
+        // build (those can launch with POND_OPEN_DEVTOOLS=1).
+        ...(!app.isPackaged
+          ? [
+              { role: "reload" as const },
+              { role: "forceReload" as const },
+              { role: "toggleDevTools" as const },
+              { type: "separator" as const },
+            ]
+          : []),
         { role: "resetZoom" as const },
         { role: "zoomIn" as const },
         { role: "zoomOut" as const },
@@ -479,34 +746,11 @@ function installAppMenu() {
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
 
-function registerUndoHotkeys() {
-  const undoAccel = process.platform === "darwin" ? "Command+Z" : "Control+Z";
-  const redoAccel =
-    process.platform === "darwin" ? "Command+Shift+Z" : "Control+Shift+Z";
-  globalShortcut.register(undoAccel, async () => {
-    if (!BrowserWindow.getFocusedWindow()) return;
-    if (!canUndo()) return;
-    await undo();
-  });
-  globalShortcut.register(redoAccel, async () => {
-    if (!BrowserWindow.getFocusedWindow()) return;
-    if (!canRedo()) return;
-    await redo();
-  });
-}
-
 /**
  * Cmd+Shift+L pops the library from anywhere (system-wide). Eagle uses
  * Cmd+Shift+E but we pick `L` for "Library" to avoid stomping Eagle
  * when both are installed.
- *
- * The quick-capture accelerator is user-configurable through Settings
- * → Quick capture. We store the currently registered string so we can
- * unregister cleanly when the user picks a new one without leaking
- * accelerators across re-registers.
  */
-let registeredCaptureAccel: string | null = null;
-
 async function summonMainWindow() {
   if (!mainWindow || mainWindow.isDestroyed()) {
     mainWindow = await createWindow();
@@ -516,46 +760,49 @@ async function summonMainWindow() {
   mainWindow.focus();
 }
 
-function registerQuickSaveHotkey() {
+function registerSummonHotkey() {
   const isMac = process.platform === "darwin";
   const summonAccel = isMac ? "Command+Shift+L" : "Control+Shift+L";
-  const ok1 = globalShortcut.register(summonAccel, summonMainWindow);
-  if (!ok1) log.warn(`[pond] summon hotkey ${summonAccel} not registered`);
-
-  // Capture hotkey starts with whatever the prefs say. We don't fail
-  // hard if the OS rejects it — the user can pick another accelerator
-  // from settings.
-  void registerCaptureHotkeyFromPrefs();
-}
-
-export async function registerCaptureHotkeyFromPrefs() {
-  invalidatePrefs();
-  const prefs = await getPrefs();
-  const accel = prefs.quickCapture.hotkey || "CommandOrControl+Shift+S";
-  if (registeredCaptureAccel && registeredCaptureAccel !== accel) {
-    try {
-      globalShortcut.unregister(registeredCaptureAccel);
-    } catch {
-      /* unregister failures are non-fatal */
-    }
-  }
-  if (registeredCaptureAccel === accel) return;
-  const ok = globalShortcut.register(accel, async () => {
-    await summonMainWindow();
-    mainWindow?.webContents.send(IPC.nav, "/?capture=1");
-  });
-  if (!ok) {
-    log.warn(`[pond] quick-capture hotkey ${accel} not registered`);
-    registeredCaptureAccel = null;
-    return;
-  }
-  registeredCaptureAccel = accel;
+  const ok = globalShortcut.register(summonAccel, summonMainWindow);
+  if (!ok) log.warn(`[pond] summon hotkey ${summonAccel} not registered`);
 }
 
 /**
- * Apply prefs.quickCapture and prefs.security to the main process at
- * boot. Centralised so prefs writes from the renderer can trigger the
- * same wiring through `applyPrefsAtRuntime`.
+ * Walk every active save and re-enqueue any always-local enrichment
+ * job whose output column is still null. Used to backfill a new
+ * column (most recently `blur_data_url`) into libraries that finished
+ * their initial enrichment pass before the column existed.
+ *
+ * Gated by a `pond_meta` sentinel so we don't pay the row scan on
+ * every launch — bumping the version below re-runs the walk once.
+ */
+const ENRICH_BACKFILL_VERSION = "3";
+async function backfillEnrichOnce(): Promise<void> {
+  const db = await getDb();
+  const raw = db.$raw;
+  raw.exec(
+    `CREATE TABLE IF NOT EXISTS pond_meta (key TEXT PRIMARY KEY, value TEXT)`,
+  );
+  const row = raw
+    .prepare(`SELECT value FROM pond_meta WHERE key = 'enrich_backfill'`)
+    .get() as { value: string } | undefined;
+  if (row?.value === ENRICH_BACKFILL_VERSION) return;
+  const result = await enqueueBackfill();
+  if (result.scheduled > 0) {
+    log.info("[pond] enrich backfill queued", result.scheduled, "jobs");
+  }
+  raw
+    .prepare(
+      `INSERT INTO pond_meta(key, value) VALUES('enrich_backfill', ?)
+       ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
+    )
+    .run(ENRICH_BACKFILL_VERSION);
+}
+
+/**
+ * Apply prefs.quickCapture to the main process at boot. Centralised
+ * so prefs writes from the renderer can trigger the same wiring
+ * through `applyPrefsAtRuntime`.
  */
 export async function applyPrefsAtRuntime() {
   invalidatePrefs();
@@ -565,7 +812,6 @@ export async function applyPrefsAtRuntime() {
     openAtLogin: prefs.quickCapture.launchAtLogin,
     openAsHidden: true,
   });
-  await registerCaptureHotkeyFromPrefs();
 }
 
 /**
@@ -601,15 +847,23 @@ app.on("window-all-closed", () => {
     app.dock?.hide();
     return;
   }
-  // Windows / Linux: no tray icon keeps us alive reliably on exit, so
-  // closing the window also terminates the process. Power users who
-  // want background behaviour can pin pond to the tray.
-  // On tray-supported platforms you may want to comment this out.
+  // Windows / Linux: only quit when the tray isn't running. With the
+  // tray alive (the user enabled "Show menu-bar icon" or the default
+  // first-run pref), closing the last window keeps the background
+  // process up so the global hotkey, sync cron, and HTTP server keep
+  // ticking — matching the behaviour the launch-at-login + open-as-
+  // hidden flow promises.
+  if (tray) return;
   app.quit();
 });
 
 app.on("before-quit", async () => {
   globalShortcut.unregisterAll();
+  try {
+    stopStorageWatcher();
+  } catch (err) {
+    log.warn("[pond] storage watcher stop failed", err);
+  }
   try {
     disposeHiddenWindow();
   } catch (err) {

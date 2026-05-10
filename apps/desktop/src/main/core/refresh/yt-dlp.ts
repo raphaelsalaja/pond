@@ -274,7 +274,6 @@ async function readInfoJson(
  * → metrics → time → format → music → playlist) for diff readability.
  */
 const YTDLP_KEEP_KEYS = [
-  // identity / extractor envelope
   "id",
   "title",
   "description",
@@ -284,7 +283,6 @@ const YTDLP_KEEP_KEYS = [
   "extractor",
   "extractor_key",
 
-  // engagement metrics
   "view_count",
   "like_count",
   "dislike_count",
@@ -293,7 +291,6 @@ const YTDLP_KEEP_KEYS = [
   "concurrent_view_count",
   "average_rating",
 
-  // duration + author
   "duration",
   "uploader",
   "uploader_id",
@@ -302,7 +299,6 @@ const YTDLP_KEEP_KEYS = [
   "channel_id",
   "channel_url",
 
-  // time + lifecycle
   "upload_date",
   "release_date",
   "release_timestamp",
@@ -330,7 +326,6 @@ const YTDLP_KEEP_KEYS = [
   "genre",
   "release_year",
 
-  // misc classifiers
   "language",
   "tags",
   "categories",

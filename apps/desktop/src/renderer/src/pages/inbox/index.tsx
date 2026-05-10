@@ -1,9 +1,11 @@
+import { Button, Tooltip, useToast } from "@pond/ui";
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Card } from "../../components/card-thumb";
-import { useSaves } from "../../pool/hooks";
-import type { AiSuggestion, Save } from "../../pool/types";
-import { Button, Tooltip, useToast } from "../../ui";
+import { Card } from "@/components/card-thumb";
+import { EmptyState } from "@/components/empty-state";
+import { LibraryChrome, Shell } from "@/components/shell";
+import { useSaves } from "@/pool/hooks";
+import type { AiSuggestion, Save } from "@/pool/types";
 import styles from "./styles.module.css";
 
 type Field = "tags" | "caption" | "ocr" | "classification" | "summary";
@@ -101,39 +103,46 @@ export function InboxPage() {
 
   if (inbox.length === 0) {
     return (
-      <div className={styles.empty}>
-        <h1 className={styles.title}>Inbox is clear</h1>
-        <p>
-          When the AI worker proposes tags, captions, or summaries, they'll land
-          here for you to review.
-        </p>
-        <Link to="/" className={styles.backLink}>
-          ← Back to library
-        </Link>
-      </div>
+      <Shell.Main>
+        <LibraryChrome />
+        <EmptyState.Root data-tone="page">
+          <EmptyState.Title>Inbox is clear</EmptyState.Title>
+          <EmptyState.Description>
+            When the AI worker proposes tags, captions, or summaries,
+            they&rsquo;ll land here for you to review.
+          </EmptyState.Description>
+          <EmptyState.Actions>
+            <Link to="/">← Back to library</Link>
+          </EmptyState.Actions>
+        </EmptyState.Root>
+      </Shell.Main>
     );
   }
 
   return (
-    <div className={styles.page}>
-      <header className={styles.header}>
-        <h1 className={styles.title}>Inbox</h1>
-        <p className={styles.subtitle}>
-          {inbox.length} save{inbox.length === 1 ? "" : "s"} waiting for review.
-        </p>
-      </header>
-      <ul className={styles.list}>
-        {inbox.map((save) => (
-          <InboxRow
-            key={save.id}
-            save={save}
-            busy={busyId === save.id}
-            onAccept={accept}
-            onReject={reject}
-          />
-        ))}
-      </ul>
-    </div>
+    <Shell.Main>
+      <LibraryChrome />
+      <div className={styles.page}>
+        <header className={styles.header}>
+          <h1 className={styles.title}>Inbox</h1>
+          <p className={styles.subtitle}>
+            {inbox.length} save{inbox.length === 1 ? "" : "s"} waiting for
+            review.
+          </p>
+        </header>
+        <ul className={styles.list}>
+          {inbox.map((save) => (
+            <InboxRow
+              key={save.id}
+              save={save}
+              busy={busyId === save.id}
+              onAccept={accept}
+              onReject={reject}
+            />
+          ))}
+        </ul>
+      </div>
+    </Shell.Main>
   );
 }
 
@@ -148,14 +157,14 @@ function InboxRow({ save, busy, onAccept, onReject }: InboxRowProps) {
   const sug = save.aiSuggestions ?? {};
   return (
     <li className={styles.row}>
-      <Link to={`/?id=${save.id}`} className={styles.thumb}>
+      <Link to={`/save/${save.id}`} className={styles.thumb}>
         <Card.Root save={save}>
           <Card.Media />
           <Card.DownloadingBadge />
         </Card.Root>
       </Link>
       <div className={styles.body}>
-        <Link to={`/?id=${save.id}`} className={styles.headline}>
+        <Link to={`/save/${save.id}`} className={styles.headline}>
           {save.title ?? save.url}
         </Link>
         <p className={styles.url}>{save.url}</p>
@@ -195,18 +204,18 @@ function SuggestionRow({
 }) {
   return (
     <div className={styles.suggestion}>
-      <div className={styles.suggestionHead}>
-        <span className={styles.fieldLabel}>{FIELD_LABEL[field]}</span>
+      <div className={styles["suggestion-head"]}>
+        <span className={styles["field-label"]}>{FIELD_LABEL[field]}</span>
         {entry.reasoning ? (
-          <Tooltip content={entry.reasoning} side="top">
-            <span className={styles.fieldHint}>why?</span>
-          </Tooltip>
+          <Tooltip.Root content={entry.reasoning} side="top">
+            <span className={styles["field-hint"]}>why?</span>
+          </Tooltip.Root>
         ) : null}
       </div>
-      <div className={styles.suggestionValue}>
+      <div className={styles["suggestion-value"]}>
         {renderValue(field, entry.value)}
       </div>
-      <div className={styles.suggestionActions}>
+      <div className={styles["suggestion-actions"]}>
         <Button size="sm" disabled={busy} onClick={onAccept}>
           Accept
         </Button>

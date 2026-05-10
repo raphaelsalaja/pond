@@ -9,11 +9,12 @@ need to get started.
 - **pnpm** 10+ (managed via the `packageManager` field — `corepack enable`
   is the easiest path)
 
-The desktop app builds native modules (`better-sqlite3`, `keytar`)
-against Electron on first install via
-`apps/desktop/scripts/rebuild-native.mjs`. On macOS you'll need Xcode
-Command Line Tools (`xcode-select --install`); on Linux the standard
-`build-essential` toolchain.
+The desktop app builds the `better-sqlite3` native module against
+Electron on first install via `apps/desktop/scripts/rebuild-native.mjs`.
+`@napi-rs/keyring` ships prebuilt across the Electron ABI matrix and
+needs no rebuild. On macOS you'll need Xcode Command Line Tools
+(`xcode-select --install`); on Linux the standard `build-essential`
+toolchain.
 
 ## Setup
 

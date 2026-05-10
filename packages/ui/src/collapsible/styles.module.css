@@ -1,0 +1,39 @@
+.trigger {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  padding: 4px 0;
+  font: inherit;
+  font-size: 12px;
+  color: var(--ds-gray-11);
+  cursor: pointer;
+  outline: none;
+  background: transparent;
+  border: 0;
+
+  &::before {
+    display: inline-block;
+    font-size: 9px;
+    content: "▸";
+    transition: transform 140ms ease;
+  }
+
+  &[data-panel-open]::before {
+    transform: rotate(90deg);
+  }
+
+  &:hover {
+    color: var(--ds-gray-12);
+  }
+}
+
+.panel {
+  height: var(--collapsible-panel-height);
+  overflow: hidden;
+  transition: height 200ms ease;
+
+  &[data-starting-style],
+  &[data-ending-style] {
+    height: 0;
+  }
+}

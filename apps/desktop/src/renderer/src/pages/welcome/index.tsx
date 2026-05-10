@@ -1,29 +1,25 @@
-import { useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   Button,
   Collapsible,
-  CollapsiblePanel,
-  CollapsibleTrigger,
   Field,
-  FieldDescription,
-  FieldLabel,
   Input,
   NumberField,
   useToast,
-} from "../../ui";
+} from "@pond/ui";
+import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import styles from "./styles.module.css";
 
-type BackfillSource = "twitter";
+type SyncSource = "twitter";
 
-interface BackfillEntry {
+interface SyncEntry {
   state: "idle" | "running" | "done" | "error" | "auth_required";
   message?: string;
   progress?: { current: number; total: number };
   lastSyncedAt: string | null;
 }
 
-const BACKFILL_SOURCES: ReadonlyArray<{ id: BackfillSource; label: string }> = [
+const SYNC_SOURCES: ReadonlyArray<{ id: SyncSource; label: string }> = [
   { id: "twitter", label: "Twitter / X bookmarks" },
 ];
 
@@ -90,11 +86,13 @@ export function WelcomePage() {
         <li>
           <h3>Pair it with this app</h3>
           <p>Click the pond icon in your browser, paste the pairing link:</p>
-          <Field>
-            <FieldLabel className={styles.srOnly}>Pairing link</FieldLabel>
+          <Field.Root>
+            <Field.Label className={styles["sr-only"]}>
+              Pairing link
+            </Field.Label>
             <div className={styles.row}>
-              <Input
-                variant="code"
+              <Input.Root
+                data-variant="code"
                 readOnly
                 value={pairing ?? "generating…"}
                 onFocus={(e) => e.currentTarget.select()}
@@ -106,12 +104,12 @@ export function WelcomePage() {
                 Copy link
               </Button>
             </div>
-          </Field>
+          </Field.Root>
 
-          <Collapsible>
-            <CollapsibleTrigger>Or copy token manually</CollapsibleTrigger>
-            <CollapsiblePanel>
-              <div className={styles.tokenRow}>
+          <Collapsible.Root>
+            <Collapsible.Trigger>Or copy token manually</Collapsible.Trigger>
+            <Collapsible.Panel>
+              <div className={styles["token-row"]}>
                 <code>{token ?? "…"}</code>
                 <Button
                   size="sm"
@@ -124,20 +122,24 @@ export function WelcomePage() {
               <p className={styles.hint}>
                 Endpoint: <code>http://127.0.0.1:{port}/api/v2/item/add</code>
               </p>
-              <Field>
-                <FieldLabel>Port</FieldLabel>
-                <NumberField
+              <Field.Root>
+                <Field.Label>Port</Field.Label>
+                <NumberField.Root
                   value={port}
                   onValueChange={(v) => setPort(v ?? 41610)}
                   min={1024}
                   max={65535}
-                />
-                <FieldDescription>
+                >
+                  <NumberField.Decrement />
+                  <NumberField.Input />
+                  <NumberField.Increment />
+                </NumberField.Root>
+                <Field.Description>
                   Change only if 41610 is taken on your machine.
-                </FieldDescription>
-              </Field>
-            </CollapsiblePanel>
-          </Collapsible>
+                </Field.Description>
+              </Field.Root>
+            </Collapsible.Panel>
+          </Collapsible.Root>
         </li>
 
         <li>
@@ -149,13 +151,13 @@ export function WelcomePage() {
         </li>
 
         <li>
-          <h3>Backfill from connected sources</h3>
+          <h3>Sync your connected sources</h3>
           <p>
             Already have bookmarks elsewhere? Connect a source from{" "}
             <strong>Settings → Connected accounts</strong> and Pond will scrape
             your full history into the local library.
           </p>
-          <BackfillPanel />
+          <SyncPanel />
         </li>
       </ol>
 
@@ -169,21 +171,21 @@ export function WelcomePage() {
 }
 
 /**
- * First-run backfill panel. One row per supported list-harvest source —
- * fires `syncSource(<src>, { mode: "backfill" })` on click and renders
- * progress via `IPC.syncStatus`. Sources the user hasn't connected yet
- * get a "Connect first" CTA so the button can't no-op silently.
+ * First-run sync panel. One row per supported list-harvest source —
+ * fires `syncSource(<src>)` on click and renders progress via
+ * `IPC.syncStatus`. Sources the user hasn't connected yet get a
+ * "Connect first" CTA so the button can't no-op silently.
  */
-function BackfillPanel() {
+function SyncPanel() {
   const toast = useToast();
   const [connections, setConnections] = useState<
-    Partial<Record<BackfillSource, boolean>>
+    Partial<Record<SyncSource, boolean>>
   >({});
   const [entries, setEntries] = useState<
-    Partial<Record<BackfillSource, BackfillEntry>>
+    Partial<Record<SyncSource, SyncEntry>>
   >({});
 
-  const refreshStatus = useCallback(async (src: BackfillSource) => {
+  const refreshStatus = useCallback(async (src: SyncSource) => {
     const s = await window.pond.syncStatus(src).catch(() => null);
     if (!s?.ok) return;
     setEntries((prev) => ({
@@ -198,7 +200,7 @@ function BackfillPanel() {
   useEffect(() => {
     let active = true;
     void (async () => {
-      for (const { id } of BACKFILL_SOURCES) {
+      for (const { id } of SYNC_SOURCES) {
         const r = await window.pond.sourceStatus(id).catch(() => null);
         if (!active) return;
         setConnections((prev) => ({
@@ -209,7 +211,7 @@ function BackfillPanel() {
       }
     })();
     const off = window.pond.onSyncStatus((upd) => {
-      const src = BACKFILL_SOURCES.find((s) => s.id === upd.source);
+      const src = SYNC_SOURCES.find((s) => s.id === upd.source);
       if (!src) return;
       setEntries((prev) => ({
         ...prev,
@@ -227,20 +229,20 @@ function BackfillPanel() {
     };
   }, [refreshStatus]);
 
-  async function startBackfill(src: BackfillSource) {
-    const r = await window.pond.syncRunNow(src, "backfill");
+  async function startSync(src: SyncSource) {
+    const r = await window.pond.syncRunNow(src);
     if (!r.ok) {
       toast.add({
         title:
           r.reason === "already_running"
-            ? "Backfill already running"
-            : "Couldn't start backfill",
+            ? "Sync already running"
+            : "Couldn't start sync",
         type: r.reason === "already_running" ? "info" : "error",
       });
     }
   }
 
-  async function connect(src: BackfillSource) {
+  async function connect(src: SyncSource) {
     await window.pond.connectSource(src);
     const r = await window.pond.sourceStatus(src).catch(() => null);
     setConnections((prev) => ({
@@ -251,7 +253,7 @@ function BackfillPanel() {
 
   return (
     <div>
-      {BACKFILL_SOURCES.map(({ id, label }) => {
+      {SYNC_SOURCES.map(({ id, label }) => {
         const connected = connections[id];
         const entry = entries[id];
         const isRunning = entry?.state === "running";
@@ -269,10 +271,10 @@ function BackfillPanel() {
           : null;
         return (
           <div key={id}>
-            <div className={styles.backfillRow}>
-              <div className={styles.backfillLabel}>
+            <div className={styles["backfill-row"]}>
+              <div className={styles["backfill-label"]}>
                 <span>{label}</span>
-                <span className={styles.backfillStatus}>
+                <span className={styles["backfill-status"]}>
                   {connected === false
                     ? "Not connected"
                     : entry?.state === "running"
@@ -294,16 +296,16 @@ function BackfillPanel() {
                 <Button
                   size="sm"
                   disabled={isRunning}
-                  onClick={() => void startBackfill(id)}
+                  onClick={() => void startSync(id)}
                 >
-                  {isRunning ? "Running…" : "Backfill all"}
+                  {isRunning ? "Syncing…" : "Sync all"}
                 </Button>
               )}
             </div>
             {pct !== null ? (
-              <div className={styles.backfillBar}>
+              <div className={styles["backfill-bar"]}>
                 <span
-                  className={styles.backfillBarFill}
+                  className={styles["backfill-bar-fill"]}
                   style={{ width: `${pct}%` }}
                 />
               </div>

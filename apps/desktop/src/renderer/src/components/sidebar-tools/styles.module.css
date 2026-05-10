@@ -1,0 +1,25 @@
+.popup {
+  width: 280px;
+  max-width: var(--available-width);
+}
+
+.empty {
+  padding: 6px 8px 10px;
+  font-size: 12px;
+  color: var(--ds-gray-10);
+}
+
+.row {
+  gap: 8px;
+}
+
+.row-source {
+  flex-shrink: 0;
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11px;
+  color: var(--ds-gray-10);
+  text-transform: capitalize;
+  white-space: nowrap;
+}

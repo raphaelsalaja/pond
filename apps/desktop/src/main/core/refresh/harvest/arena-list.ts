@@ -76,11 +76,7 @@ async function inPageArenaList(
   }
 
   ingest(collect());
-  if (
-    collected.size >= args.maxItems ||
-    (args.mode === "incremental" &&
-      Array.from(collected.values()).some((r) => known.has(r.sourceId)))
-  ) {
+  if (collected.size >= args.maxItems) {
     return {
       ok: true,
       entries: Array.from(collected.values()),
@@ -97,15 +93,8 @@ async function inPageArenaList(
       behavior: "instant" as ScrollBehavior,
     });
     await new Promise((r) => setTimeout(r, 700));
-    const { sawKnown, full } = ingest(collect());
+    const { full } = ingest(collect());
     if (full) {
-      return {
-        ok: true,
-        entries: Array.from(collected.values()),
-        reachedEnd: false,
-      };
-    }
-    if (args.mode === "incremental" && sawKnown) {
       return {
         ok: true,
         entries: Array.from(collected.values()),

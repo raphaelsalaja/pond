@@ -1,236 +1,179 @@
-/* ------------------------------------------------------------------ */
-/* Header toolbar                                                     */
-/*                                                                    */
-/* Lives inside the centre column (`<main>`), above the filter chip  */
-/* rail. Three sections — left actions, centre title + zoom, right   */
-/* tools — laid out as a grid so the title floats in the middle of   */
-/* whatever width the column has.                                     */
-/* ------------------------------------------------------------------ */
-
 .toolbar {
-  display: grid;
+  display: flex;
   flex-shrink: 0;
-  grid-template-columns: auto 1fr auto;
   gap: 12px;
   align-items: center;
-  height: 44px;
-  /* The toolbar's empty space (between sections) doubles as the
-   * window drag handle — without this, the user could only grab the
-   * window from the slim sidebar strip above the traffic lights. */
+  justify-content: space-between;
   -webkit-app-region: drag;
-}
 
-/* Every direct child opts back out of the drag region so the
- * interactive controls (buttons, slider, search) keep working. */
-.toolbar > * {
-  -webkit-app-region: no-drag;
-}
-
-.left,
-.right,
-.centre {
-  display: flex;
-  gap: 4px;
-  align-items: center;
-}
-
-.centre {
-  justify-content: center;
-  min-width: 0;
+  & > * {
+    -webkit-app-region: no-drag;
+  }
 }
 
 .right {
-  justify-content: flex-end;
-}
-
-/* ---- Generic icon button ----------------------------------------- */
-
-.iconBtn {
-  display: inline-flex;
+  display: flex;
   flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  font-size: 14px;
-  color: var(--pond-fg-soft);
-  cursor: pointer;
-  background: transparent;
-  border: 0;
-  border-radius: 6px;
-  transition:
-    color 80ms ease,
-    background 80ms ease;
-}
-
-.iconBtn:hover {
-  color: var(--pond-fg);
-  background: var(--pond-hover);
-}
-
-.iconBtn:focus-visible {
-  outline: 2px solid var(--pond-focus, #6c93ff);
-  outline-offset: 1px;
-}
-
-.iconBtnActive {
-  color: var(--pond-fg);
-  background: var(--pond-active);
-}
-
-/* ---- Centre zoom slider ------------------------------------------ */
-
-.zoom {
-  display: inline-flex;
   gap: 4px;
   align-items: center;
 }
 
-.zoomBtn {
+.icon-btn {
   display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
-  font-size: 11px;
-  color: var(--pond-muted);
+  width: 24px;
+  height: 24px;
+  font-size: 14px;
+  color: var(--ds-gray-11);
   cursor: pointer;
   background: transparent;
   border: 0;
-  border-radius: 5px;
+  border-radius: 4px;
   transition:
     color 80ms ease,
     background 80ms ease;
+
+  &:hover {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-a3);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ds-accent-8);
+    outline-offset: 1px;
+  }
+
+  &[data-active="true"] {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-a4);
+  }
+
+  &:disabled {
+    color: var(--ds-gray-8);
+    cursor: default;
+    background: transparent;
+  }
 }
 
-.zoomBtn:hover {
-  color: var(--pond-fg);
-  background: var(--pond-hover);
-}
-
-.zoomSlider {
-  width: 96px;
-  height: 4px;
-  -webkit-appearance: none;
-  appearance: none;
-  cursor: pointer;
-  background: transparent;
-}
-
-.zoomSlider::-webkit-slider-runnable-track {
-  height: 3px;
-  background: var(--pond-border);
-  border-radius: 999px;
-}
-
-.zoomSlider::-moz-range-track {
-  height: 3px;
-  background: var(--pond-border);
-  border-radius: 999px;
-}
-
-.zoomSlider::-webkit-slider-thumb {
-  width: 12px;
-  height: 12px;
-  margin-top: -4.5px;
-  -webkit-appearance: none;
-  appearance: none;
-  background: var(--pond-fg);
-  border: 0;
-  border-radius: 999px;
-}
-
-.zoomSlider::-moz-range-thumb {
-  width: 12px;
-  height: 12px;
-  background: var(--pond-fg);
-  border: 0;
-  border-radius: 999px;
-}
-
-/* ---- Right cluster ----------------------------------------------- */
-
-.viewToggle {
+.zoom {
   display: inline-flex;
-  gap: 0;
-  align-items: center;
-  padding: 2px;
-  background: var(--pond-hover);
-  border-radius: 8px;
-}
-
-.viewToggle .iconBtn {
-  width: 24px;
-  height: 24px;
-  border-radius: 5px;
-}
-
-.viewToggle .iconBtn:hover {
-  background: light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.06));
-}
-
-.viewToggle .iconBtnActive {
-  color: var(--pond-fg);
-  background: var(--pond-card);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
-}
-
-/* Hairline separator inside the view toggle pill: visually splits the
- * four image-layout buttons (waterfall / justified / grid / list) from
- * the orthogonal "group by" buttons (timeline / color). Stays inside
- * the pill chrome so it doesn't add extra horizontal padding. */
-.viewToggleDivider {
   flex-shrink: 0;
-  width: 1px;
-  height: 14px;
-  margin: 0 4px;
-  background: light-dark(rgba(0, 0, 0, 0.12), rgba(255, 255, 255, 0.16));
+  gap: 2px;
+  align-items: center;
+  min-width: 0;
+  padding: 0;
+  margin: 0 2px 0 0;
+  border: 0;
 }
 
-/* ---- Search input ------------------------------------------------ */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  white-space: nowrap;
+  border: 0;
+  clip-path: inset(50%);
+}
+
+.zoom-slider {
+  width: 88px;
+  height: 24px;
+  margin: 0;
+  appearance: none;
+  background: transparent;
+
+  &:focus-visible {
+    outline: 2px solid var(--ds-accent-8);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  &::-webkit-slider-runnable-track {
+    height: 3px;
+    background: var(--ds-gray-a4);
+    border-radius: 999px;
+  }
+
+  &::-moz-range-track {
+    height: 3px;
+    background: var(--ds-gray-a4);
+    border-radius: 999px;
+  }
+
+  &::-webkit-slider-thumb {
+    width: 12px;
+    height: 12px;
+    margin-top: -4.5px;
+    appearance: none;
+    background: var(--ds-gray-12);
+    border: 0;
+    border-radius: 50%;
+    transition: transform 80ms ease;
+  }
+
+  &::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    background: var(--ds-gray-12);
+    border: 0;
+    border-radius: 50%;
+    transition: transform 80ms ease;
+  }
+
+  &:hover::-webkit-slider-thumb {
+    transform: scale(1.1);
+  }
+
+  &:hover::-moz-range-thumb {
+    transform: scale(1.1);
+  }
+}
 
 .search {
   position: relative;
   display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
-  width: 220px;
+  width: 256px;
+  height: 28px;
+  background: var(--ds-gray-2);
+  border-radius: 6px;
+  box-shadow: var(--ds-shadow-search);
 }
 
-.searchIcon {
+.search-icon {
   position: absolute;
   left: 8px;
   display: inline-flex;
   align-items: center;
-  color: var(--pond-muted);
+  color: var(--ds-gray-10);
   pointer-events: none;
 }
 
-.searchInput {
+.search-input {
   width: 100%;
-  height: 28px;
-  padding: 0 28px 0 26px;
+  height: 100%;
+  padding: 0 8px 0 26px;
   font: inherit;
-  font-size: 12px;
-  color: var(--pond-fg);
+  font-size: 13px;
+  color: var(--ds-gray-12);
+  letter-spacing: -0.04px;
   outline: none;
-  background: var(--pond-hover);
+  background: transparent;
   border: 0;
   border-radius: 6px;
-  transition:
-    background 80ms ease,
-    box-shadow 80ms ease;
-}
 
-.searchInput::placeholder {
-  color: var(--pond-muted);
-}
+  &::placeholder {
+    color: var(--ds-gray-10);
+  }
 
-.searchInput:focus {
-  background: var(--pond-card);
-  box-shadow: inset 0 0 0 1px var(--pond-border);
-}
-
-.searchInput::-webkit-search-cancel-button {
-  -webkit-appearance: none;
-  appearance: none;
+  &::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+    appearance: none;
+  }
 }

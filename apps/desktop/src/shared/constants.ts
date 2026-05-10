@@ -13,7 +13,7 @@ export const DEFAULT_LIBRARY_NAME = "My Pond";
 /** Schema version baked into every `metadata.json` we write. Bump on breaking changes. */
 export const LIBRARY_SCHEMA_VERSION = 1;
 
-/** Keychain service identifier used by `keytar`. */
+/** Keychain service identifier used by `@napi-rs/keyring`. */
 export const KEYCHAIN_SERVICE = "so.pond.desktop";
 
 /** Keychain account names. */
@@ -23,7 +23,6 @@ export const KEYCHAIN_AI_GATEWAY_KEY = "ai-gateway-api-key";
 /** Custom protocol we register for `pond://<itemId>/<file>` URLs. */
 export const POND_PROTOCOL = "pond";
 
-/** IPC channel names. */
 export const IPC = {
   tx: "pond:tx",
   txBatch: "pond:tx-batch",
@@ -45,6 +44,14 @@ export const IPC = {
   // merge into the existing save. Replaces the old "open the URL in a
   // browser and rely on the extension" flow for the common case.
   refreshSave: "pond:refresh-save",
+  // Bulk metadata refresh. Walks every existing save (optionally
+  // filtered by source / "missing fields only") and re-runs the
+  // `refreshSave` pipeline against each row. The renderer reads a
+  // one-shot snapshot via `invoke(refreshBackfillStatus)` and
+  // subscribes to push events on the same channel.
+  refreshBackfillStart: "pond:refresh-backfill-start",
+  refreshBackfillCancel: "pond:refresh-backfill-cancel",
+  refreshBackfillStatus: "pond:refresh-backfill-status",
   // Connected-sources UX. The desktop keeps a persistent session
   // partition so the user can sign in once per source from settings.
   sourceConnect: "pond:source-connect",
@@ -73,4 +80,21 @@ export const IPC = {
   syncRunNow: "pond:sync-run-now",
   syncCancel: "pond:sync-cancel",
   syncStatus: "pond:sync-status",
+  // Main → renderer broadcast: storage guard state. The watcher in
+  // `core/storage-watcher.ts` ticks on a configurable cadence; each
+  // tick (as well as every renderer-driven `applyStorageWatcherPrefs`
+  // call) emits a `StorageGuardStatus` so the Settings → Storage
+  // page can render an "All clear / approaching limit / exceeded"
+  // indicator without polling.
+  storageStatus: "pond:storage-status",
+  // Main → renderer pump for the Edit menu's Undo / Redo items. We
+  // intentionally do NOT use `globalShortcut.register` for Cmd+Z —
+  // that hijacks the shortcut OS-wide and breaks undo in every other
+  // app while pond is running. Instead the menu accelerator fires the
+  // click handler in main; main calls `webContents.undo/redo()` so
+  // native input undo still works in focused text fields, and emits
+  // these events so the renderer can run pond's transactional undo
+  // when focus is *outside* an editable element.
+  editUndoRequested: "pond:edit-undo-requested",
+  editRedoRequested: "pond:edit-redo-requested",
 } as const;

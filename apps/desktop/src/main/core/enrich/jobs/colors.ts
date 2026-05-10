@@ -4,16 +4,30 @@ import log from "electron-log/main.js";
 import { itemFile } from "../../../paths";
 
 /**
- * Always-local dominant-colour extraction. Decodes the cover image with
- * Electron's `nativeImage` (no extra native deps required), downsamples
- * to 64x64, quantises to a 4-bit-per-channel histogram, and returns the
- * top N most common colours by weight.
+ * Always-local cover analysis. Decodes the cover image with Electron's
+ * `nativeImage` (no extra native deps required) and uses the same
+ * decoded buffer to produce two outputs:
  *
- * Cheap (~30ms per image on M-series) and never touches the network.
+ *   - `dominantColors`  — top hues by weight, used by Color view
+ *     bucketing and the placeholder tint fallback.
+ *   - `blurDataUrl`     — `data:image/jpeg` of a 16-px JPEG, painted
+ *     behind the lazy-loaded `<img>` so the card slot already shows a
+ *     blurred snapshot of its own content (Next.js `placeholder="blur"`
+ *     / Eagle behaviour). ~600 bytes per save; ~6MB for a 10k library.
+ *
+ * Cheap (~30ms per cover on M-series) and never touches the network.
  */
-export async function extractDominantColors(
-  save: Save,
-): Promise<DominantColor[] | null> {
+export interface CoverAnalysis {
+  dominantColors: DominantColor[];
+  blurDataUrl: string | null;
+  /** Decoded cover pixel dimensions. Persisted into `save.width` /
+   * `save.height` so renderer packers don't need to wait on the
+   * `<img>` to load before reserving the right slot height. */
+  width: number;
+  height: number;
+}
+
+export async function analyseCover(save: Save): Promise<CoverAnalysis | null> {
   const cover = pickCoverFile(save);
   if (!cover) return null;
   const path = itemFile(save.id, cover);
@@ -25,35 +39,58 @@ export async function extractDominantColors(
     return null;
   }
 
-  // `nativeImage` is the cheapest decoder we have access to from main
-  // without pulling sharp. It handles JPEG / PNG / WebP and returns
-  // raw RGBA bytes after a downscale.
   const { nativeImage } = await import("electron");
-  let img = nativeImage.createFromBuffer(buf);
-  if (img.isEmpty()) return null;
-  const size = img.getSize();
+  const decoded = nativeImage.createFromBuffer(buf);
+  if (decoded.isEmpty()) return null;
+  const size = decoded.getSize();
   if (size.width === 0 || size.height === 0) return null;
 
+  const dominantColors = extractDominantColorsFromBitmap(decoded);
+  const blurDataUrl = makeBlurDataUrl(decoded, size);
+  if (dominantColors.length === 0 && !blurDataUrl) return null;
+  return {
+    dominantColors,
+    blurDataUrl,
+    width: size.width,
+    height: size.height,
+  };
+}
+
+/**
+ * Back-compat wrapper. Older call sites still ask for "just the
+ * colors"; everything new should call `analyseCover` so we don't
+ * decode the same cover twice.
+ */
+export async function extractDominantColors(
+  save: Save,
+): Promise<DominantColor[] | null> {
+  const result = await analyseCover(save);
+  if (!result) return null;
+  return result.dominantColors.length > 0 ? result.dominantColors : null;
+}
+
+function extractDominantColorsFromBitmap(
+  source: Electron.NativeImage,
+): DominantColor[] {
   const targetW = 64;
+  const size = source.getSize();
   const targetH = Math.max(1, Math.round((size.height / size.width) * targetW));
-  img = img.resize({ width: targetW, height: targetH, quality: "good" });
-  const bitmap = img.getBitmap();
-  if (bitmap.length === 0) return null;
+  const img = source.resize({
+    width: targetW,
+    height: targetH,
+    quality: "good",
+  });
+  const bitmap = img.toBitmap();
+  if (bitmap.length === 0) return [];
 
-  // Electron returns BGRA on macOS/Windows, RGBA on Linux. Test the
-  // first pixel against a known orientation: we don't have one, so just
-  // probe the platform.
   const isBgra = process.platform === "darwin" || process.platform === "win32";
-
-  // Quantise to 5 bits per channel (32 buckets) — gives ~32k bins, plenty
-  // for 64x64 imagery.
   const buckets = new Map<
     number,
     { count: number; r: number; g: number; b: number }
   >();
   for (let i = 0; i + 3 < bitmap.length; i += 4) {
     const a = bitmap[i + 3] ?? 255;
-    if (a < 32) continue; // mostly-transparent
+    if (a < 32) continue;
     const r = isBgra ? (bitmap[i + 2] ?? 0) : (bitmap[i] ?? 0);
     const g = bitmap[i + 1] ?? 0;
     const b = isBgra ? (bitmap[i] ?? 0) : (bitmap[i + 2] ?? 0);
@@ -68,12 +105,12 @@ export async function extractDominantColors(
       buckets.set(key, { count: 1, r, g, b });
     }
   }
-  if (buckets.size === 0) return null;
+  if (buckets.size === 0) return [];
   const sorted = Array.from(buckets.values()).sort((a, b) => b.count - a.count);
   const top = sorted.slice(0, 6);
   const totalCount = top.reduce((acc, x) => acc + x.count, 0);
-  if (totalCount === 0) return null;
-  const result: DominantColor[] = top.map((bucket) => ({
+  if (totalCount === 0) return [];
+  return top.map((bucket) => ({
     hex: `#${rgbToHex(
       Math.round(bucket.r / bucket.count),
       Math.round(bucket.g / bucket.count),
@@ -81,7 +118,33 @@ export async function extractDominantColors(
     )}`,
     weight: bucket.count / totalCount,
   }));
-  return result;
+}
+
+/**
+ * Tiny blurred preview as a `data:image/jpeg;base64,...` URL, sized so
+ * the renderer can paint it as a 100% width / height backdrop with
+ * `filter: blur(...)` and have it look like a snapshot of the actual
+ * cover. We hold the long edge at 16px so the file lands around
+ * 400-700 bytes after JPEG quality 35 — small enough to ship inline
+ * with the row and load synchronously.
+ */
+function makeBlurDataUrl(
+  source: Electron.NativeImage,
+  size: { width: number; height: number },
+): string | null {
+  try {
+    const longEdge = 16;
+    const ratio = size.width / size.height;
+    const w = ratio >= 1 ? longEdge : Math.max(1, Math.round(longEdge * ratio));
+    const h = ratio >= 1 ? Math.max(1, Math.round(longEdge / ratio)) : longEdge;
+    const tiny = source.resize({ width: w, height: h, quality: "good" });
+    const jpeg = tiny.toJPEG(35);
+    if (jpeg.length === 0) return null;
+    return `data:image/jpeg;base64,${jpeg.toString("base64")}`;
+  } catch (err) {
+    log.warn("[pond enrich/colors] blur preview failed", err);
+    return null;
+  }
 }
 
 function rgbToHex(r: number, g: number, b: number): string {

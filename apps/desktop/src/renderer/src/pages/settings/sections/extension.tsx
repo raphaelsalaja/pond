@@ -1,7 +1,7 @@
+import { Button, Input, useToast } from "@pond/ui";
 import { useEffect, useState } from "react";
-import { Button, Input, useToast } from "../../../ui";
-import styles from "../styles.module.css";
-import { SectionHeader, SectionStack, SettingsCard } from "./_shared";
+import { Settings } from "@/components/settings";
+import styles from "@/pages/settings/styles.module.css";
 
 /**
  * Browser-extension pairing. Token rotation lives here because
@@ -30,7 +30,7 @@ export function ExtensionSection() {
       setToken(next.token);
       toast.add({
         title: "Token rotated",
-        description: "Update the extension popup with the new token.",
+        description: "Paste the new token into the extension popup.",
         type: "success",
       });
     } finally {
@@ -39,45 +39,55 @@ export function ExtensionSection() {
   }
 
   return (
-    <SectionStack>
-      <SectionHeader
-        title="Browser extension"
-        description="Pair the Pond browser extension so saves from the web land in your library."
-      />
+    <Settings.Page>
+      <Settings.Header>
+        <Settings.Title>Browser Extension</Settings.Title>
+        <Settings.Description>
+          Pair the browser extension so web saves land here.
+        </Settings.Description>
+      </Settings.Header>
 
-      <SettingsCard title="Pairing token">
-        <div className={styles.stackedRow}>
-          <span className={styles.rowDescription}>
-            Paste this token into the extension popup on first run. Rotate the
-            token to revoke access across all installs.
-          </span>
-          <div className={styles.inlineRow}>
-            <Input
-              variant="code"
-              size="sm"
-              readOnly
-              value={token}
-              onFocus={(e) => e.currentTarget.select()}
-            />
-            <Button
-              size="sm"
-              disabled={busy}
-              onClick={() => {
-                void navigator.clipboard.writeText(token);
-                toast.add({ title: "Token copied", type: "success" });
-              }}
-            >
-              Copy
-            </Button>
-            <Button size="sm" disabled={busy} onClick={rotate}>
-              Rotate
-            </Button>
-          </div>
-          <span className={styles.rowDescription}>
-            Ingest endpoint: <code>http://127.0.0.1:41610/api/v2/item/add</code>
-          </span>
-        </div>
-      </SettingsCard>
-    </SectionStack>
+      <Settings.Section>
+        <Settings.SectionTitle>Pairing Token</Settings.SectionTitle>
+        <Settings.List>
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemDescription>
+                Paste into the extension popup on first run. Rotate to revoke
+                access across every install.
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <div className={styles["inline-row"]}>
+                <Input.Root
+                  data-variant="code"
+                  data-size="sm"
+                  readOnly
+                  value={token}
+                  onFocus={(e) => e.currentTarget.select()}
+                />
+                <Button
+                  size="sm"
+                  disabled={busy}
+                  onClick={() => {
+                    void navigator.clipboard.writeText(token);
+                    toast.add({ title: "Token copied", type: "success" });
+                  }}
+                >
+                  Copy
+                </Button>
+                <Button size="sm" disabled={busy} onClick={rotate}>
+                  Rotate
+                </Button>
+              </div>
+              <Settings.ItemDescription>
+                Ingest endpoint:{" "}
+                <code>http://127.0.0.1:41610/api/v2/item/add</code>
+              </Settings.ItemDescription>
+            </Settings.ItemControl>
+          </Settings.Item>
+        </Settings.List>
+      </Settings.Section>
+    </Settings.Page>
   );
 }

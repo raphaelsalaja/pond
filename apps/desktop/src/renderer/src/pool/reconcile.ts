@@ -96,6 +96,7 @@ export function normalise(raw: Partial<Save> | null | undefined): Save | null {
     height: raw.height ?? null,
     fileSize: raw.fileSize ?? null,
     dominantColors: raw.dominantColors ?? null,
+    blurDataUrl: raw.blurDataUrl ?? null,
     tags: raw.tags ?? [],
     aiTags: raw.aiTags ?? [],
     aiCaption: raw.aiCaption ?? null,

@@ -3,9 +3,10 @@ import type { Source } from "@pond/schema/db";
 /**
  * Lowest-common-denominator inputs every list-harvester accepts.
  *
- * `knownIds` is the set of `<source>:<sourceId>` ids the local DB
- * already has — incremental mode bails the moment one shows up in
- * the scroll. `maxItems` is a hard ceiling per run so a runaway
+ * Sync has exactly one mode: walk the user's full list and surface
+ * every entry not in `knownIds`. `knownIds` lets the harvester keep
+ * its dedupe set warm so a virtualised re-render doesn't double-emit
+ * the same row. `maxItems` is a per-run safety ceiling so a runaway
  * page can't pin the harvester forever.
  *
  * Mirrors the shape of `BookmarksHarvestArgs` in `twitter-bookmarks.ts`.
@@ -15,7 +16,6 @@ import type { Source } from "@pond/schema/db";
  */
 export interface ListHarvestArgs {
   knownIds: string[];
-  mode: "incremental" | "backfill";
   maxItems: number;
 }
 

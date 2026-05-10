@@ -1,32 +1,85 @@
-import { useEffect, useState } from "react";
+import { Toast, Tooltip, useToast } from "@pond/ui";
+import { useEffect, useRef } from "react";
 import {
-  HashRouter,
-  Route,
-  Routes,
-  useLocation,
-  useNavigate,
+  createHashRouter,
+  Navigate,
+  type RouteObject,
+  RouterProvider,
+  useParams,
 } from "react-router-dom";
 import type { PondApi } from "../../preload";
-import { BulkActionBar } from "./components/bulk-action-bar";
-import { CommandPalette } from "./components/command-palette";
-import { FilterBar } from "./components/filter-bar";
-import { HeaderToolbar } from "./components/header-toolbar";
-import { LockGate } from "./components/lock-gate";
-import { MediaLightbox } from "./components/media-lightbox";
-import { PreviewPane } from "./components/preview-pane";
-import { QuickCapture } from "./components/quick-capture";
-import { Sidebar } from "./components/sidebar";
-import { ThemeApplier } from "./components/theme-applier";
+import {
+  AppRoot,
+  LibraryLayout,
+  SettingsLayout,
+  StandaloneLayout,
+} from "./components/shell";
 import { ActivityPage } from "./pages/activity";
 import { InboxPage } from "./pages/inbox";
-import { ItemDetail } from "./pages/item-detail";
 import { ReaderPage } from "./pages/reader";
+import { SaveDetailPage } from "./pages/save-detail-page";
 import { SavesView } from "./pages/saves-view";
-import { SettingsPage } from "./pages/settings";
+import { DEFAULT_SECTION, SECTIONS } from "./pages/settings/registry";
+import { SourceSection } from "./pages/settings/sections/source";
 import { TrashView } from "./pages/trash-view";
 import { WelcomePage } from "./pages/welcome";
-import { hydratePool, subscribeToSyncActions } from "./pool/bootstrap";
-import { ToastProvider, TooltipProvider } from "./ui";
+import { getPrefsSnapshot } from "./pool/prefs";
+
+/**
+ * Chimes once per new toast when `prefs.notifications.sound` is on.
+ * Watches the toast manager's queue length rather than wrapping
+ * `add()` so `@pond/ui` stays a pass-through over Base's manager.
+ */
+function ToastChime() {
+  const { toasts } = useToast();
+  const last = useRef(toasts.length);
+  useEffect(() => {
+    if (toasts.length > last.current) {
+      if (getPrefsSnapshot()?.notifications?.sound) playChime();
+    }
+    last.current = toasts.length;
+  }, [toasts.length]);
+  return null;
+}
+
+let chimeCtx: AudioContext | null = null;
+function playChime(): void {
+  try {
+    if (!chimeCtx) {
+      const Ctx =
+        (window as unknown as { AudioContext?: typeof AudioContext })
+          .AudioContext ??
+        (window as unknown as { webkitAudioContext?: typeof AudioContext })
+          .webkitAudioContext;
+      if (!Ctx) return;
+      chimeCtx = new Ctx();
+    }
+    const ctx = chimeCtx;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.frequency.value = 880;
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.05, ctx.currentTime + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.3);
+  } catch {
+    /* swallow — chime is decorative */
+  }
+}
+
+/**
+ * Backwards-compatibility redirect for `/item/:id`. Old tray menu
+ * entries, `pond://` deep links, and any in-flight system
+ * notifications still target the legacy URL — translate them to the
+ * new unified `/save/:id` surface.
+ */
+function ItemRedirect() {
+  const { id } = useParams<{ id: string }>();
+  return <Navigate to={id ? `/save/${id}` : "/"} replace />;
+}
 
 declare global {
   interface Window {
@@ -34,147 +87,110 @@ declare global {
   }
 }
 
-interface AppInfo {
-  name: string;
-  version: string;
-  platform: string;
-  arch: string;
-}
+const settingsChildren: RouteObject[] = [
+  {
+    index: true,
+    element: <Navigate to={`/settings/${DEFAULT_SECTION.path}`} replace />,
+  },
+  ...SECTIONS.map(
+    (section): RouteObject => ({
+      path: section.path,
+      element: <section.component />,
+    }),
+  ),
+  { path: "integrations/:source", element: <SourceSection /> },
+  {
+    path: "*",
+    element: <Navigate to={`/settings/${DEFAULT_SECTION.path}`} replace />,
+  },
+];
+
+// Bare path-only child — `<SaveDetail>` is rendered directly inside
+// the parent list views (always-mounted inspector). Keeping the route
+// definition lets `useParams().id` propagate through to the inspector
+// when the URL has a trailing `/save/:id`.
+const saveSplitChild: RouteObject = {
+  path: "save/:id",
+};
+
+const router = createHashRouter([
+  {
+    element: <AppRoot />,
+    children: [
+      {
+        element: <LibraryLayout />,
+        children: [
+          {
+            path: "/",
+            element: <SavesView />,
+            children: [saveSplitChild],
+          },
+          {
+            path: "source/:source",
+            element: <SavesView mode="source" />,
+            children: [saveSplitChild],
+          },
+          {
+            path: "untagged",
+            element: <SavesView mode="untagged" />,
+            children: [saveSplitChild],
+          },
+          {
+            path: "recents",
+            element: <SavesView mode="recents" />,
+            children: [saveSplitChild],
+          },
+          {
+            path: "random",
+            element: <SavesView mode="random" />,
+            children: [saveSplitChild],
+          },
+          {
+            path: "trash",
+            element: <TrashView />,
+            children: [saveSplitChild],
+          },
+          // Linear-style detail page. One route per list mode so the
+          // breadcrumb (`<DetailHeader>`) can derive the parent context
+          // from the URL prefix and `useListContext()` can rebuild the
+          // same filtered list the grid was showing.
+          { path: "detail/:id", element: <SaveDetailPage /> },
+          {
+            path: "source/:source/detail/:id",
+            element: <SaveDetailPage />,
+          },
+          { path: "untagged/detail/:id", element: <SaveDetailPage /> },
+          { path: "recents/detail/:id", element: <SaveDetailPage /> },
+          { path: "random/detail/:id", element: <SaveDetailPage /> },
+          { path: "trash/detail/:id", element: <SaveDetailPage /> },
+          { path: "inbox", element: <InboxPage /> },
+          { path: "activity", element: <ActivityPage /> },
+          { path: "item/:id", element: <ItemRedirect /> },
+        ],
+      },
+      {
+        path: "settings",
+        element: <SettingsLayout />,
+        children: settingsChildren,
+      },
+      {
+        element: <StandaloneLayout />,
+        children: [
+          { path: "welcome", element: <WelcomePage /> },
+          { path: "read/:id", element: <ReaderPage /> },
+        ],
+      },
+    ],
+  },
+]);
 
 export function App() {
-  const [info, setInfo] = useState<AppInfo | null>(null);
-  const [ready, setReady] = useState(false);
-  const [onboarded, setOnboarded] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    void window.pond.appInfo().then(setInfo);
-    subscribeToSyncActions();
-    void hydratePool().then(() => setReady(true));
-    void window.pond.query("settings.onboarded").then((v) => {
-      setOnboarded(Boolean(v));
-    });
-  }, []);
-
   return (
-    <TooltipProvider>
-      <ToastProvider>
-        <HashRouter>
-          <ThemeApplier />
-          <LockGate>
-            <Shell info={info} ready={ready} onboarded={onboarded} />
-          </LockGate>
-        </HashRouter>
-      </ToastProvider>
-    </TooltipProvider>
-  );
-}
-
-function Shell({
-  info,
-  ready,
-  onboarded,
-}: {
-  info: AppInfo | null;
-  ready: boolean;
-  onboarded: boolean | null;
-}) {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [filtersVisible, setFiltersVisible] = useState(true);
-  useEffect(() => {
-    const off = window.pond.onNavigate((path) => navigate(path));
-    return off;
-  }, [navigate]);
-  useEffect(() => {
-    // First-run redirect. We only auto-push once we've actually
-    // received the onboarded flag (it comes back async).
-    if (onboarded === false) navigate("/welcome", { replace: true });
-  }, [onboarded, navigate]);
-  // Cmd/Ctrl+, → Settings, the macOS-standard "Preferences…" hotkey.
-  // Listens at the window so it fires from any focus context, including
-  // inputs (matching native behaviour).
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const meta = e.metaKey || e.ctrlKey;
-      if (!meta) return;
-      if (e.key !== ",") return;
-      e.preventDefault();
-      navigate("/settings");
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [navigate]);
-
-  const isMac = info?.platform === "darwin";
-
-  // Settings is a takeover view (no library sidebar / preview pane),
-  // mirroring the Linear pattern. The page itself owns the column
-  // that hosts the macOS traffic lights — see SettingsPage's left
-  // rail.
-  const isTakeover = location.pathname.startsWith("/settings");
-
-  if (isTakeover) {
-    return (
-      <div className={`pond-shell ${isMac ? "pond-shell--mac" : ""}`.trim()}>
-        <div className="pond-takeover">
-          <Routes>
-            <Route path="/settings/*" element={<SettingsPage />} />
-          </Routes>
-        </div>
-        <CommandPalette />
-      </div>
-    );
-  }
-
-  // Welcome / Item detail / Reader mount in the shell but hide the
-  // library toolbar + filter rail — they're single-purpose surfaces
-  // that own their own chrome.
-  const showLibraryChrome =
-    !location.pathname.startsWith("/welcome") &&
-    !location.pathname.startsWith("/item") &&
-    !location.pathname.startsWith("/read");
-
-  return (
-    <div className={`pond-shell ${isMac ? "pond-shell--mac" : ""}`.trim()}>
-      <Sidebar />
-      <main className="pond-main">
-        {showLibraryChrome ? (
-          <HeaderToolbar
-            filtersVisible={filtersVisible}
-            onToggleFilters={() => setFiltersVisible((v) => !v)}
-          />
-        ) : null}
-        {/* Filter rail lives inside the centre column (Eagle layout)
-         * so it doesn't visually overlap the sidebar or preview pane.
-         * The toolbar's funnel button still hides it via
-         * `filtersVisible`. */}
-        {showLibraryChrome && filtersVisible ? <FilterBar /> : null}
-        {ready ? (
-          <Routes>
-            <Route path="/" element={<SavesView />} />
-            <Route
-              path="/source/:source"
-              element={<SavesView mode="source" />}
-            />
-            <Route path="/trash" element={<TrashView />} />
-            <Route path="/inbox" element={<InboxPage />} />
-            <Route path="/activity" element={<ActivityPage />} />
-            <Route path="/item/:id" element={<ItemDetail />} />
-            <Route path="/read/:id" element={<ReaderPage />} />
-            <Route path="/welcome" element={<WelcomePage />} />
-          </Routes>
-        ) : (
-          <p className="pond-empty">Hydrating library…</p>
-        )}
-      </main>
-      {/* Inspector is the third column. Always mounted on library
-       * routes so the three-column layout (sidebar | content |
-       * inspector) is stable even before anything is selected. */}
-      {showLibraryChrome ? <PreviewPane /> : null}
-      <MediaLightbox />
-      <BulkActionBar />
-      <QuickCapture />
-      <CommandPalette />
-    </div>
+    <Tooltip.Provider>
+      <Toast.Provider>
+        <ToastChime />
+        <RouterProvider router={router} />
+      </Toast.Provider>
+    </Tooltip.Provider>
   );
 }

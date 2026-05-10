@@ -1,36 +1,42 @@
 .reader {
+  --reader-bg: var(--ds-gray-1);
+  --reader-fg: var(--ds-gray-12);
+  --reader-fg-soft: var(--ds-gray-11);
+  --reader-meta: var(--ds-gray-9);
+  --reader-border: var(--ds-gray-a4);
+
   display: flex;
   flex: 1;
   flex-direction: column;
   min-width: 0;
   min-height: 0;
   overflow: hidden;
-  color: var(--pond-fg);
-  background: var(--pond-bg);
+  color: var(--reader-fg);
+  background: var(--reader-bg);
 }
 
-.themeSepia {
-  --pond-bg: #f7efe1;
-  --pond-fg: #2b2018;
-  --pond-fg-soft: #5b4a3b;
-  --pond-meta: #8a7864;
-  --pond-border: rgba(43, 32, 24, 0.18);
+.theme-sepia {
+  --reader-bg: #f7efe1;
+  --reader-fg: #2b2018;
+  --reader-fg-soft: #5b4a3b;
+  --reader-meta: #8a7864;
+  --reader-border: rgba(43, 32, 24, 0.18);
 }
 
-.themeDark {
-  --pond-bg: #0e0e10;
-  --pond-fg: #ececec;
-  --pond-fg-soft: #b9b9bf;
-  --pond-meta: #8a8a90;
-  --pond-border: rgba(255, 255, 255, 0.1);
+.theme-dark {
+  --reader-bg: #0e0e10;
+  --reader-fg: #ececec;
+  --reader-fg-soft: #b9b9bf;
+  --reader-meta: #8a8a90;
+  --reader-border: rgba(255, 255, 255, 0.1);
 }
 
-.themeHc {
-  --pond-bg: #ffffff;
-  --pond-fg: #000000;
-  --pond-fg-soft: #1a1a1a;
-  --pond-meta: #2a2a2a;
-  --pond-border: #000;
+.theme-hc {
+  --reader-bg: #ffffff;
+  --reader-fg: #000000;
+  --reader-fg-soft: #1a1a1a;
+  --reader-meta: #2a2a2a;
+  --reader-border: #000;
 }
 
 .toolbar {
@@ -39,48 +45,48 @@
   align-items: center;
   gap: 12px;
   padding: 10px 16px;
-  border-bottom: 1px solid var(--pond-border);
+  border-bottom: 1px solid var(--reader-border);
   -webkit-app-region: drag;
 }
 
-.toolbarLeft,
-.toolbarCenter,
-.toolbarRight {
+.toolbar-left,
+.toolbar-center,
+.toolbar-right {
   display: flex;
   align-items: center;
   gap: 8px;
   -webkit-app-region: no-drag;
 }
 
-.toolbarRight {
+.toolbar-right {
   justify-content: flex-end;
 }
 
-.toolbarCenter {
+.toolbar-center {
   justify-content: center;
 }
 
 .back {
   font-size: 12px;
-  color: var(--pond-fg-soft);
+  color: var(--reader-fg-soft);
   text-decoration: none;
 }
 
 .back:hover {
-  color: var(--pond-fg);
+  color: var(--reader-fg);
 }
 
 .divider {
   width: 1px;
   height: 16px;
-  background: var(--pond-border);
+  background: var(--reader-border);
 }
 
-.sizeReadout {
+.size-readout {
   min-width: 36px;
   font-size: 11px;
   font-variant-numeric: tabular-nums;
-  color: var(--pond-meta);
+  color: var(--reader-meta);
   text-align: center;
 }
 
@@ -88,10 +94,10 @@
   padding: 4px 8px;
   font: inherit;
   font-size: 11px;
-  color: var(--pond-fg);
+  color: var(--reader-fg);
   cursor: pointer;
   background: transparent;
-  border: 1px solid var(--pond-border);
+  border: 1px solid var(--reader-border);
   border-radius: 6px;
 }
 
@@ -101,7 +107,7 @@
   padding: 40px 48px 96px;
   margin: 0 auto;
   overflow-y: auto;
-  color: var(--pond-fg);
+  color: var(--reader-fg);
 }
 
 .title {
@@ -114,13 +120,13 @@
 .byline {
   margin: 0 0 32px;
   font-size: 0.78em;
-  color: var(--pond-meta);
+  color: var(--reader-meta);
 }
 
 .byline a {
   color: inherit;
   text-decoration: underline;
-  text-decoration-color: var(--pond-border);
+  text-decoration-color: var(--reader-border);
   text-underline-offset: 2px;
 }
 
@@ -128,16 +134,16 @@
   padding: 14px 16px;
   margin: 0 0 28px;
   background: light-dark(rgba(0, 0, 0, 0.04), rgba(255, 255, 255, 0.04));
-  border-left: 2px solid var(--pond-fg-soft);
+  border-left: 2px solid var(--reader-fg-soft);
   border-radius: 6px;
 }
 
-.summaryLabel {
+.summary-label {
   display: block;
   margin-bottom: 4px;
   font-size: 0.7em;
   font-weight: 600;
-  color: var(--pond-meta);
+  color: var(--reader-meta);
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
@@ -175,14 +181,14 @@
   padding: 0 0 0 16px;
   margin: 1.4em 0;
   font-style: italic;
-  color: var(--pond-fg-soft);
-  border-left: 2px solid var(--pond-border);
+  color: var(--reader-fg-soft);
+  border-left: 2px solid var(--reader-border);
 }
 
 .body :global(a) {
   color: inherit;
   text-decoration: underline;
-  text-decoration-color: var(--pond-border);
+  text-decoration-color: var(--reader-border);
   text-underline-offset: 2px;
 }
 
@@ -196,7 +202,7 @@
 
 .body :global(pre),
 .body :global(code) {
-  font-family: var(--pond-font-mono, ui-monospace, "SF Mono", Menlo, monospace);
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
   font-size: 0.92em;
 }
 
@@ -217,45 +223,30 @@
   margin-bottom: 0.4em;
 }
 
-.empty {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  align-items: flex-start;
-  padding: 32px 0;
-  color: var(--pond-fg-soft);
-}
-
-.hint {
-  margin: 0;
-  font-size: 0.82em;
-  color: var(--pond-meta);
-}
-
 .loading {
   margin: 32px 0;
   font-size: 0.85em;
-  color: var(--pond-meta);
+  color: var(--reader-meta);
 }
 
-.highlightsRail {
+.highlights-rail {
   padding: 16px 20px;
   margin: 48px 0 0;
   background: light-dark(rgba(0, 0, 0, 0.03), rgba(255, 255, 255, 0.03));
-  border-top: 1px solid var(--pond-border);
+  border-top: 1px solid var(--reader-border);
   border-radius: 8px;
 }
 
-.highlightsTitle {
+.highlights-title {
   margin: 0 0 12px;
   font-size: 0.7em;
   font-weight: 600;
-  color: var(--pond-meta);
+  color: var(--reader-meta);
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
 
-.highlightsList {
+.highlights-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -264,7 +255,7 @@
   list-style: none;
 }
 
-.highlightsItem {
+.highlights-item {
   display: grid;
   grid-template-columns: 12px 1fr auto;
   gap: 10px;
@@ -272,20 +263,20 @@
   font-size: 0.85em;
 }
 
-.highlightSwatch {
+.highlight-swatch {
   width: 8px;
   height: 14px;
   margin-top: 4px;
   border-radius: 2px;
 }
 
-.highlightQuote {
+.highlight-quote {
   font-style: italic;
   line-height: 1.4;
-  color: var(--pond-fg-soft);
+  color: var(--reader-fg-soft);
 }
 
-.highlightRemove {
+.highlight-remove {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -294,14 +285,14 @@
   padding: 0;
   font: inherit;
   font-size: 14px;
-  color: var(--pond-meta);
+  color: var(--reader-meta);
   cursor: pointer;
   background: transparent;
   border: 0;
   border-radius: 4px;
 }
 
-.highlightRemove:hover {
-  color: var(--pond-fg);
-  background: var(--pond-hover);
+.highlight-remove:hover {
+  color: var(--reader-fg);
+  background: var(--ds-gray-a3);
 }

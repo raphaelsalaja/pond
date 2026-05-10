@@ -1,33 +1,41 @@
-/* ------------------------------------------------------------------ */
-/* SourceBadge — branded square tile rendered at 18×18 by default.     */
-/*                                                                    */
-/* The component sets `width` / `height` inline to support the larger */
-/* sizes used by per-source settings pages; the box-shadow ring + the */
-/* colour-on-background contrast all live here so consumers don't have */
-/* to re-apply them.                                                   */
-/* ------------------------------------------------------------------ */
+.root {
+  --source-badge-size: 18px;
+  --source-badge-glyph-size: 10px;
 
-.badge {
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
+  width: var(--source-badge-size);
+  height: var(--source-badge-size);
   font-size: 10px;
   font-weight: 600;
-  border-radius: var(--pond-radius-sm);
-  box-shadow: var(--pond-badge-shadow);
+  border-radius: var(--ds-radius-sm);
+  box-shadow: var(--ds-shadow-badge);
+
+  &[data-fallback="true"] {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-a3);
+  }
+
+  &[data-ring="true"] {
+    box-shadow:
+      var(--ds-shadow-badge),
+      inset 0 0 0 0.5px var(--ds-gray-a4);
+  }
+
+  &[data-size="md"] {
+    --source-badge-size: 22px;
+    --source-badge-glyph-size: 12px;
+  }
+
+  &[data-size="lg"] {
+    --source-badge-size: 36px;
+    --source-badge-glyph-size: 20px;
+  }
 }
 
-/* Cosmos / Are.na sit on near-white fills; the inset shadow alone
- * doesn't give enough definition. Add a hairline ring so the badge
- * still reads as a discrete glyph at any size. */
-.badgeRing {
-  box-shadow:
-    var(--pond-badge-shadow),
-    inset 0 0 0 0.5px rgba(0, 0, 0, 0.1);
-}
-
-.badgeFallback {
-  color: var(--pond-fg);
-  background: light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.1));
+.glyph {
+  width: var(--source-badge-glyph-size);
+  height: var(--source-badge-glyph-size);
 }

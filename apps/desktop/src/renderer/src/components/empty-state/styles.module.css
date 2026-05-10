@@ -1,0 +1,43 @@
+.root {
+  --empty-state-max-width: 420px;
+  --empty-state-padding-block: 60px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  max-width: var(--empty-state-max-width);
+  padding: var(--empty-state-padding-block) 16px;
+  margin: 0 auto;
+  text-align: center;
+
+  &[data-tone="page"] {
+    --empty-state-padding-block: 80px;
+  }
+
+  &[data-tone="inline"] {
+    --empty-state-padding-block: 32px;
+  }
+}
+
+.title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 550;
+  color: var(--ds-gray-12);
+}
+
+.description {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ds-gray-11);
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 8px;
+}

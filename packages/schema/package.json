@@ -25,16 +25,23 @@
     "./db": "./src/db.ts",
     "./tx": "./src/tx.ts",
     "./ingest": "./src/ingest.ts",
-    "./raw": "./src/raw.ts"
+    "./raw": "./src/raw.ts",
+    "./filters": "./src/filters/index.ts",
+    "./filters/types": "./src/filters/types.ts",
+    "./filters/meta": "./src/filters/meta.ts",
+    "./filters/url": "./src/filters/url.ts",
+    "./filters/migrate": "./src/filters/migrate.ts",
+    "./filters/match": "./src/filters/match.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "drizzle-orm": "^0.36.4",
-    "zod": "^3.24.1"
+    "drizzle-orm": "^0.45.2",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
-    "typescript": "^5.7.2"
+    "@types/node": "^25.6.0",
+    "typescript": "^6.0.3"
   }
 }

@@ -1,0 +1,38 @@
+/* Number-typed field picker — search + preset list + custom range row. */
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: 240px;
+  padding: 6px;
+}
+
+.search {
+  padding-bottom: 6px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--ds-gray-a3);
+}
+
+.empty {
+  padding: 12px 10px;
+  font-size: 12px;
+  color: var(--ds-gray-11);
+  text-align: center;
+}
+
+.range {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 6px 4px 4px;
+}
+
+.range > * {
+  flex: 1;
+}
+
+.dash {
+  font-size: 12px;
+  color: var(--ds-gray-11);
+}

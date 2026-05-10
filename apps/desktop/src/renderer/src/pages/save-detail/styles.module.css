@@ -1,0 +1,74 @@
+.pane {
+  position: relative;
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  width: 224px;
+  height: 100%;
+  padding: 12px;
+  overflow: hidden;
+}
+
+.toolbar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: flex-end;
+  height: 32px;
+  -webkit-app-region: drag;
+
+  & > * {
+    -webkit-app-region: no-drag;
+  }
+}
+
+.toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  font-size: 14px;
+  color: var(--ds-gray-11);
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  transition:
+    color 80ms ease,
+    background 80ms ease;
+
+  &:hover {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-a3);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ds-accent-8);
+    outline-offset: 1px;
+  }
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.empty {
+  margin: 40px 0;
+  font-size: 12px;
+  color: var(--ds-gray-11);
+  text-align: center;
+}
+
+/* macOS hosts the traffic lights at the top-left of the window. The
+ * detail pane lives on the right, so we only need to make the toolbar
+ * empty space draggable — no padding reservation needed. */
+:global([data-platform="mac"]) .pane {
+  -webkit-app-region: drag;
+}
+
+:global([data-platform="mac"]) .pane > * {
+  -webkit-app-region: no-drag;
+}

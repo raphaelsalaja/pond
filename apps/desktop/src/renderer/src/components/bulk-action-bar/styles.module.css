@@ -8,7 +8,7 @@
   align-items: center;
   padding: 6px 8px;
   background: light-dark(rgba(255, 255, 255, 0.96), rgba(28, 28, 30, 0.96));
-  border: 1px solid var(--pond-border);
+  border: 1px solid var(--ds-gray-a4);
   border-radius: 14px;
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.06) inset,
@@ -24,14 +24,14 @@
   padding: 0 10px;
   font-size: 12px;
   font-weight: 550;
-  color: var(--pond-fg);
+  color: var(--ds-gray-12);
   white-space: nowrap;
 }
 
 .divider {
   width: 1px;
   height: 18px;
-  background: var(--pond-border);
+  background: var(--ds-gray-a4);
 }
 
 @keyframes bar-rise {

@@ -1,72 +1,66 @@
-import Arena from "@pond/icons/social-media/are-na";
-import Cosmos from "@pond/icons/social-media/cosmos";
-import Dribbble from "@pond/icons/social-media/dribble";
-import Instagram from "@pond/icons/social-media/instagram";
-import Pinterest from "@pond/icons/social-media/pinterest";
-import XTwitter from "@pond/icons/social-media/x-twitter";
-import type { ComponentType, SVGProps } from "react";
+import {
+  IconArena,
+  IconCosmos,
+  IconDribbble,
+  IconInstagram,
+  IconPinterest,
+  IconXTwitter,
+} from "@pond/icons/social-media";
+import type { IconComponent } from "@pond/icons/types";
+import type { SVGProps } from "react";
 import styles from "./styles.module.css";
 
-/**
- * Per-source brand metadata. Values lifted directly from the Figma
- * `Brand/*` tokens — keep `background` matching `var(--pond-brand-*)`
- * tokens defined in `styles.css` so theme changes propagate.
- *
- * Some brands (Cosmos, Are.na) sit on near-white fills; the optional
- * `ring` flag adds a hairline 1px border so the badge still reads as
- * a discrete glyph against a light background.
- */
 export interface SourceMeta {
   label: string;
   background: string;
   foreground: string;
-  Icon: ComponentType<SVGProps<SVGSVGElement>>;
+  Icon: IconComponent;
   ring?: boolean;
 }
 
 export const SOURCE_REGISTRY: Record<string, SourceMeta> = {
   twitter: {
     label: "X / Twitter",
-    background: "var(--pond-brand-twitter)",
+    background: "var(--ds-brand-twitter)",
     foreground: "#ffffff",
-    Icon: XTwitter,
+    Icon: IconXTwitter,
   },
   x: {
     label: "X / Twitter",
-    background: "var(--pond-brand-twitter)",
+    background: "var(--ds-brand-twitter)",
     foreground: "#ffffff",
-    Icon: XTwitter,
+    Icon: IconXTwitter,
   },
   cosmos: {
     label: "Cosmos",
-    background: "var(--pond-brand-cosmos)",
+    background: "var(--ds-brand-cosmos)",
     foreground: "#141414",
-    Icon: Cosmos,
+    Icon: IconCosmos,
     ring: true,
   },
   reddit: {
     label: "Reddit",
-    background: "var(--pond-brand-reddit)",
+    background: "var(--ds-brand-reddit)",
     foreground: "#ffffff",
     Icon: RedditMark,
   },
   arena: {
     label: "Are.na",
-    background: "var(--pond-brand-arena)",
+    background: "var(--ds-brand-arena)",
     foreground: "#141414",
-    Icon: Arena,
+    Icon: IconArena,
     ring: true,
   },
   "are.na": {
     label: "Are.na",
-    background: "var(--pond-brand-arena)",
+    background: "var(--ds-brand-arena)",
     foreground: "#141414",
-    Icon: Arena,
+    Icon: IconArena,
     ring: true,
   },
   facebook: {
     label: "Facebook",
-    background: "var(--pond-brand-facebook)",
+    background: "var(--ds-brand-facebook)",
     foreground: "#ffffff",
     Icon: FacebookMark,
   },
@@ -75,13 +69,13 @@ export const SOURCE_REGISTRY: Record<string, SourceMeta> = {
     background:
       "radial-gradient(circle at 30% 110%, #ffd600 0%, #ff6930 30%, #fe3b36 50%, transparent 80%), radial-gradient(circle at 90% 110%, #1b9df5 0%, #7017ff 40%, #ed00c0 70%, #ff1b90 100%)",
     foreground: "#ffffff",
-    Icon: Instagram,
+    Icon: IconInstagram,
   },
   pinterest: {
     label: "Pinterest",
-    background: "var(--pond-brand-pinterest)",
+    background: "var(--ds-brand-pinterest)",
     foreground: "#ffffff",
-    Icon: Pinterest,
+    Icon: IconPinterest,
   },
   tiktok: {
     label: "TikTok",
@@ -97,9 +91,9 @@ export const SOURCE_REGISTRY: Record<string, SourceMeta> = {
   },
   dribbble: {
     label: "Dribbble",
-    background: "var(--pond-brand-dribbble)",
+    background: "var(--ds-brand-dribbble)",
     foreground: "#ffffff",
-    Icon: Dribbble,
+    Icon: IconDribbble,
   },
 };
 
@@ -113,33 +107,22 @@ export function getSourceLabel(source: string): string {
   return source.charAt(0).toUpperCase() + source.slice(1);
 }
 
-interface SourceBadgeProps {
+interface RootProps extends React.ComponentPropsWithoutRef<"span"> {
   source: string;
-  /** Pixel size of the badge tile (square). Defaults to 18 to match the sidebar. */
-  size?: number;
-  /** Glyph size inside the badge. Defaults to 10. */
-  glyphSize?: number;
+  "data-size"?: "sm" | "md" | "lg";
 }
 
-/**
- * Branded 18×18 tile used by the library sidebar AND the settings
- * source-list. Falls back to a neutral letter tile for sources we
- * don't have a brand mark for so newly-added scrapers don't fall
- * off the visual grid.
- */
-export function SourceBadge({
-  source,
-  size = 18,
-  glyphSize = 10,
-}: SourceBadgeProps) {
+function Root({ source, style, title, ...props }: RootProps) {
   const meta = getSourceMeta(source);
   if (!meta) {
     return (
       <span
-        className={`${styles.badge} ${styles.badgeFallback}`}
         aria-hidden
-        title={source}
-        style={{ width: size, height: size }}
+        title={title ?? source}
+        data-fallback="true"
+        className={styles.root}
+        style={style}
+        {...props}
       >
         {source.charAt(0).toUpperCase()}
       </span>
@@ -148,19 +131,21 @@ export function SourceBadge({
   const { Icon, background, foreground, ring } = meta;
   return (
     <span
-      className={`${styles.badge} ${ring ? styles.badgeRing : ""}`.trim()}
       aria-hidden
-      style={{ background, color: foreground, width: size, height: size }}
+      title={title ?? meta.label}
+      data-ring={ring ? "true" : undefined}
+      className={styles.root}
+      style={{ background, color: foreground, ...style }}
+      {...props}
     >
-      <Icon width={glyphSize} height={glyphSize} />
+      <Icon className={styles.glyph} />
     </span>
   );
 }
 
-/* -------------------------------------------------------------------- */
-/* Inline brand marks for sources without packaged icons.               */
-/* All kept tiny so they slot into the 10×10 badge with no resizing.    */
-/* -------------------------------------------------------------------- */
+export const SourceBadge = {
+  Root,
+};
 
 function RedditMark(props: SVGProps<SVGSVGElement>) {
   return (

@@ -1,5 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import type { Save } from "../../pool/types";
+import { Library } from "@/components/library";
+import type { Save } from "@/pool/types";
+import { aspectFor } from "./aspect";
 
 /**
  * Justified gallery layout — equal row heights *within a row*, variable
@@ -22,16 +24,6 @@ import type { Save } from "../../pool/types";
 
 const TARGET_ROW_HEIGHT = 180;
 const ITEM_GAP = 12;
-
-/** Aspect ratio for a save's cover, clamped to a sane range so a
- * panorama or extreme portrait can't stretch a row down to one tile. */
-export function aspectFor(save: Save): number {
-  const cover = save.files[save.coverIndex ?? 0];
-  const w = cover?.width ?? save.width ?? null;
-  const h = cover?.height ?? save.height ?? null;
-  if (!w || !h) return 1;
-  return Math.min(2.5, Math.max(0.4, w / h));
-}
 
 interface PackedItem {
   save: Save;
@@ -102,11 +94,31 @@ export function JustifiedView({
 
   useEffect(() => {
     if (!ref.current) return;
+    let raf = 0;
+    let pending: number | null = null;
+    // rAF-batch so a window-resize drag doesn't fire `packRows` once
+    // per RO callback (potentially multiple per frame). We coalesce
+    // bursts to the next animation frame and only commit if the width
+    // actually changed.
     const ro = new ResizeObserver((entries) => {
-      for (const e of entries) setWidth(e.contentRect.width);
+      const last = entries[entries.length - 1];
+      if (!last) return;
+      pending = last.contentRect.width;
+      if (raf !== 0) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        if (pending !== null) {
+          const next = pending;
+          pending = null;
+          setWidth((prev) => (prev === next ? prev : next));
+        }
+      });
     });
     ro.observe(ref.current);
-    return () => ro.disconnect();
+    return () => {
+      ro.disconnect();
+      if (raf !== 0) cancelAnimationFrame(raf);
+    };
   }, []);
 
   const packed = useMemo(
@@ -115,17 +127,8 @@ export function JustifiedView({
   );
 
   return (
-    <ul
-      ref={ref}
-      className={[
-        "pond-grid",
-        "pond-grid--justified",
-        multiSelectActive ? "pond-grid--multiselect" : "",
-      ]
-        .filter(Boolean)
-        .join(" ")}
-    >
+    <Library.Grid ref={ref} layout="justified" multiSelect={multiSelectActive}>
       {packed.map(({ save, width: w, height: h }) => renderCard(save, w, h))}
-    </ul>
+    </Library.Grid>
   );
 }

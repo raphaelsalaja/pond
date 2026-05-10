@@ -13,7 +13,7 @@ import { getDb } from "../../db";
 import { executeTransaction, registerSyncActionListener } from "../executor";
 import { getAiProviderConfig } from "../prefs";
 import { extractArticle, summariseArticle } from "./jobs/article";
-import { extractDominantColors } from "./jobs/colors";
+import { analyseCover } from "./jobs/colors";
 import { enrichEmbedding } from "./jobs/embed";
 import { enrichVision } from "./jobs/vision";
 import { getProviderClient } from "./provider";
@@ -146,17 +146,41 @@ async function runColors(
     await markSkipped(jobId, "save_not_found");
     return;
   }
-  if (save.dominantColors && (save.dominantColors as unknown[]).length > 0) {
+  const hasColors =
+    Array.isArray(save.dominantColors) && save.dominantColors.length > 0;
+  const hasBlur =
+    typeof save.blurDataUrl === "string" && save.blurDataUrl.length > 0;
+  const hasDims =
+    typeof save.width === "number" &&
+    save.width > 0 &&
+    typeof save.height === "number" &&
+    save.height > 0;
+  if (hasColors && hasBlur && hasDims) {
     await markDone(jobId);
     return;
   }
   try {
-    const colours = await extractDominantColors(save);
-    if (!colours || colours.length === 0) {
-      await markSkipped(jobId, "no_colors");
+    const result = await analyseCover(save);
+    if (!result) {
+      await markSkipped(jobId, "no_cover");
       return;
     }
-    await applyPatch(save, { dominantColors: colours }, "ai-colors");
+    const patch: Partial<NewSave> = {};
+    if (!hasColors && result.dominantColors.length > 0) {
+      patch.dominantColors = result.dominantColors;
+    }
+    if (!hasBlur && result.blurDataUrl) {
+      patch.blurDataUrl = result.blurDataUrl;
+    }
+    if (!hasDims && result.width > 0 && result.height > 0) {
+      patch.width = result.width;
+      patch.height = result.height;
+    }
+    if (Object.keys(patch).length === 0) {
+      await markSkipped(jobId, "no_change");
+      return;
+    }
+    await applyPatch(save, patch, "ai-colors");
     await markDone(jobId);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -320,7 +344,6 @@ async function mapVisionToPatch(
     }
     return patch;
   }
-  // suggest mode: dump everything into aiSuggestions for the inbox.
   const suggestions: AiSuggestionsForSave = {
     ...((save.aiSuggestions as AiSuggestionsForSave | null) ?? {}),
   };

@@ -5,9 +5,12 @@ import {
   DEFAULT_PREFS,
   DEFAULT_VIDEO_DOWNLOAD,
   type Prefs,
+  type SavedFilterView,
   settings as settingsTable,
   type VideoDownloadSettings,
 } from "@pond/schema/db";
+import { migrateLegacyParams } from "@pond/schema/filters/migrate";
+import { writeQuery } from "@pond/schema/filters/url";
 import { eq } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../db";
@@ -194,7 +197,36 @@ export async function getPrefs(): Promise<Prefs> {
       .from(settingsTable)
       .where(eq(settingsTable.id, "singleton"));
     const stored = rows[0]?.prefs;
-    cachedPrefs = mergePrefs(DEFAULT_PREFS, stored);
+    const merged = mergePrefs(DEFAULT_PREFS, stored);
+    const { changed: filtersChanged, prefs: filtersMigrated } =
+      migrateSavedFilters(merged);
+    const { changed: syncChanged, prefs: migrated } =
+      scrubLegacySyncFields(filtersMigrated);
+    const changed = filtersChanged || syncChanged;
+    cachedPrefs = migrated;
+    if (changed) {
+      // Persist back so the migration only runs once per install.
+      // Errors here aren't fatal — we cache the migrated value
+      // either way and the next save attempt will retry.
+      await db
+        .insert(settingsTable)
+        .values({
+          id: "singleton",
+          aiAutonomy: DEFAULT_AI_AUTONOMY,
+          prefs: migrated,
+        })
+        .onConflictDoUpdate({
+          target: settingsTable.id,
+          set: { prefs: migrated, updatedAt: new Date() },
+        })
+        .run();
+      if (filtersChanged) {
+        log.info("[pond prefs] migrated legacy saved filter views");
+      }
+      if (syncChanged) {
+        log.info("[pond prefs] scrubbed legacy backfillState from sync prefs");
+      }
+    }
     return cachedPrefs;
   } catch (err) {
     log.warn("[pond prefs] failed to read prefs, using defaults", err);
@@ -256,6 +288,88 @@ function mergePrefs(
     }
   }
   return out as unknown as Prefs;
+}
+
+/**
+ * One-shot migration: rewrite every saved view's `params` from the
+ * legacy URL keys (`tag=foo`, `source=arena`, `imported=1mo`, …)
+ * into the new compact form (`f.tags=every:foo`, `f.source=in:arena`,
+ * `f.savedAt=gte:-P30D`, …). Run on first read so existing libraries
+ * pick the new shape up automatically.
+ *
+ * Returns `{ changed }` so the caller can persist back when the
+ * migration actually mutated anything.
+ */
+function migrateSavedFilters(prefs: Prefs): {
+  changed: boolean;
+  prefs: Prefs;
+} {
+  const saved = prefs.views?.saved ?? [];
+  if (saved.length === 0) return { changed: false, prefs };
+  let changed = false;
+  const next: SavedFilterView[] = saved.map((view) => {
+    const params = view.params ?? {};
+    if (isAlreadyMigrated(params)) return view;
+    const query = migrateLegacyParams(params);
+    if (!query) return view;
+    const out = writeQuery(new URLSearchParams(), query);
+    const flat: Record<string, string> = {};
+    for (const [k, v] of out.entries()) flat[k] = v;
+    changed = true;
+    return { ...view, params: flat, updatedAt: Date.now() };
+  });
+  return changed
+    ? { changed: true, prefs: { ...prefs, views: { saved: next } } }
+    : { changed: false, prefs };
+}
+
+function isAlreadyMigrated(params: Record<string, string>): boolean {
+  for (const key of Object.keys(params)) {
+    if (key === "q" || key.startsWith("f.")) return true;
+  }
+  return false;
+}
+
+/**
+ * One-shot scrub: sync used to carry a `backfillState` field on every
+ * source's prefs to gate "incremental vs backfill" mode promotion.
+ * That whole concept is gone — there's just one sync that walks the
+ * full list — so any leftover `backfillState` keys in the persisted
+ * prefs blob are stale and need to disappear, otherwise users whose
+ * field got wedged at `"complete"` would have no way to recover
+ * (the value was previously what kept the cron from doing anything
+ * useful).
+ *
+ * Pure data scrub; doesn't touch the rest of `prefs.sync`.
+ */
+function scrubLegacySyncFields(prefs: Prefs): {
+  changed: boolean;
+  prefs: Prefs;
+} {
+  const sync = prefs.sync as
+    | Record<string, Record<string, unknown>>
+    | undefined;
+  if (!sync || typeof sync !== "object") return { changed: false, prefs };
+  let changed = false;
+  const next: Record<string, Record<string, unknown>> = {};
+  for (const [source, cfg] of Object.entries(sync)) {
+    if (!cfg || typeof cfg !== "object") {
+      next[source] = cfg;
+      continue;
+    }
+    if ("backfillState" in cfg) {
+      const { backfillState: _drop, ...rest } = cfg;
+      next[source] = rest;
+      changed = true;
+    } else {
+      next[source] = cfg;
+    }
+  }
+  if (!changed) return { changed: false, prefs };
+  return {
+    changed: true,
+    prefs: { ...prefs, sync: next as Prefs["sync"] },
+  };
 }
 
 function normalizeProvider(value: AiProviderConfig): AiProviderConfig {

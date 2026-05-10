@@ -366,7 +366,6 @@ export default defineContentScript({
         ctx.mediaUrl = cached?.imageUrl ?? null;
       }
 
-      // Author URL is always derivable from the handle.
       const handle = ctx.author ? String(ctx.author).replace(/^@/, "") : null;
       if (handle) ig.authorUrl = `https://www.instagram.com/${handle}/`;
       // Page language from `<html lang>` — best-effort, cheap.
@@ -416,7 +415,6 @@ export default defineContentScript({
       });
     }
 
-    // ---------- GraphQL response harvest (post media + carousels) ----------
     const POST_CACHE = new Map<string, any>();
     const POST_CACHE_LIMIT = 500;
 
@@ -644,8 +642,6 @@ export default defineContentScript({
       },
       true,
     );
-
-    // ---------- (2) GraphQL save-mutation hook ----------
 
     function mediaIdToShortcode(id: string) {
       try {

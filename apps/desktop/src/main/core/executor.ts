@@ -120,7 +120,6 @@ export async function executeTransaction(
   const txRowId = ulid();
   const batchId = tx.meta?.batchId ?? null;
 
-  // Step 1: cache-before-commit.
   raw
     .prepare(`INSERT INTO __transactions (id, batch_id, tx) VALUES (?, ?, ?)`)
     .run(txRowId, batchId, JSON.stringify(tx));
@@ -333,6 +332,9 @@ function mapPatchToMetadata(patch: Partial<SaveRow>): {
   if (patch.width !== undefined) top.width = patch.width;
   if (patch.height !== undefined) top.height = patch.height;
   if (patch.fileSize !== undefined) top.size = patch.fileSize;
+  if (patch.dominantColors !== undefined) {
+    top.palettes = patch.dominantColors ?? [];
+  }
   if (patch.archivedAt !== undefined) {
     top.archivedAt =
       patch.archivedAt instanceof Date
@@ -347,6 +349,7 @@ function mapPatchToMetadata(patch: Partial<SaveRow>): {
   if (patch.coverIndex !== undefined) pond.coverIndex = patch.coverIndex;
   if (patch.ocrText !== undefined) pond.ocrText = patch.ocrText;
   if (patch.rawJson !== undefined) pond.rawSource = patch.rawJson;
+  if (patch.blurDataUrl !== undefined) pond.blurDataUrl = patch.blurDataUrl;
 
   return { top, pond };
 }

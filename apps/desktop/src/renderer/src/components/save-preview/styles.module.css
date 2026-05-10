@@ -1,12 +1,3 @@
-/* ------------------------------------------------------------------ */
-/* SavePreview — shared content for the right-side preview pane and    */
-/* the dedicated /item/:id route page.                                 */
-/*                                                                    */
-/* Two layout variants share the same internals:                       */
-/*   - `.pane` — narrow, dense, fits inside <PreviewPane>              */
-/*   - `.page` — wider, generous spacing for the dedicated route       */
-/* ------------------------------------------------------------------ */
-
 .preview {
   display: flex;
   flex-direction: column;
@@ -14,7 +5,288 @@
 }
 
 .pane {
+  gap: 0;
   width: 100%;
+}
+
+.pane > * {
+  flex-shrink: 0;
+}
+
+.pane-cover {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 200px;
+  padding: 0;
+  margin-bottom: 0;
+  font: inherit;
+  color: inherit;
+  cursor: zoom-in;
+  background: transparent;
+  border: 0;
+
+  &:focus-visible {
+    outline: 2px solid var(--ds-accent-8);
+    outline-offset: 2px;
+    border-radius: var(--ds-radius-sm);
+  }
+}
+
+.pane-cover[data-text-tweet="true"] {
+  height: auto;
+  aspect-ratio: 4 / 3;
+  padding: 0 4px;
+}
+
+.pane-cover-img {
+  display: block;
+  max-width: 100%;
+  max-height: 150px;
+  object-fit: contain;
+  border-radius: var(--ds-radius-sm);
+  box-shadow: var(--ds-shadow-card);
+}
+
+.pane-title {
+  width: 100%;
+  padding: 12px 0 4px;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  font-weight: 550;
+  font-feature-settings:
+    "lnum" 1,
+    "tnum" 1;
+  line-height: 1.5;
+  color: var(--ds-gray-12);
+  letter-spacing: -0.04px;
+  white-space: nowrap;
+}
+
+.pane-author {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  padding: 0 0 12px;
+  font-size: 12px;
+  font-weight: 500;
+  font-feature-settings:
+    "lnum" 1,
+    "tnum" 1;
+  color: var(--ds-gray-11);
+  letter-spacing: 0.01px;
+}
+
+.pane-author-dot {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  overflow: hidden;
+  border-radius: 999px;
+}
+
+.pane-author-avatar {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.pane-author-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pane-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 0;
+  border-top: 1px solid var(--ds-gray-a4);
+}
+
+.pane-section-header {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 550;
+  font-feature-settings:
+    "lnum" 1,
+    "tnum" 1;
+  color: var(--ds-gray-12);
+  letter-spacing: 0.01px;
+}
+
+.pane-description {
+  font-size: 12px;
+  font-weight: 400;
+  font-feature-settings:
+    "lnum" 1,
+    "tnum" 1;
+  line-height: 1.5;
+  color: var(--ds-gray-11);
+  letter-spacing: 0.01px;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+
+  &[data-clamped="true"] {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    -webkit-line-clamp: 4;
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      #000 50%,
+      rgba(0, 0, 0, 0.2) 100%
+    );
+    mask-image: linear-gradient(to bottom, #000 50%, rgba(0, 0, 0, 0.2) 100%);
+  }
+}
+
+.pane-read-more {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  align-self: flex-start;
+  padding: 0;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 550;
+  font-feature-settings:
+    "lnum" 1,
+    "tnum" 1;
+  color: var(--ds-gray-12);
+  letter-spacing: 0.01px;
+  cursor: pointer;
+  background: none;
+  border: 0;
+
+  &:hover {
+    color: var(--ds-gray-12);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+}
+
+.pane-read-more-icon {
+  transition: transform 120ms ease;
+
+  &[data-rotate="true"] {
+    transform: rotate(180deg);
+  }
+}
+
+.pane-button {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 28px;
+  padding: 0 8px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 550;
+  font-feature-settings:
+    "lnum" 1,
+    "tnum" 1;
+  color: var(--ds-gray-12);
+  letter-spacing: 0.01px;
+  cursor: pointer;
+  background: var(--ds-gray-a4);
+  border: 0;
+  border-radius: var(--ds-radius-md);
+  transition: background 80ms ease;
+
+  &:hover:not(:disabled) {
+    background: var(--ds-gray-a6);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}
+
+.pane-button-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  color: var(--ds-gray-11);
+}
+
+.pane > .pane-button + .pane-section {
+  margin-top: 0;
+}
+
+.pane > .pane-button {
+  margin: 12px 0;
+}
+
+.pane-section .pane-button {
+  margin-top: 4px;
+}
+
+.pane-row-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.pane-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  height: 26px;
+  padding: 0 6px;
+  font-size: 12px;
+  font-weight: 450;
+  font-feature-settings:
+    "lnum" 1,
+    "tnum" 1;
+  line-height: 1.5;
+  color: var(--ds-gray-11);
+  letter-spacing: 0.01px;
+
+  &[data-alt="true"] {
+    background: var(--ds-gray-2);
+  }
+}
+
+.pane-row-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  height: 12px;
+  color: var(--ds-gray-11);
+}
+
+.pane-row-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 450;
+  color: var(--ds-gray-11);
+  white-space: nowrap;
+}
+
+.pane-row-value {
+  font-weight: 450;
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-12);
+  text-align: right;
 }
 
 .page {
@@ -28,16 +300,16 @@
   font-size: 17px;
   font-weight: 600;
   line-height: 1.3;
-  color: var(--pond-fg);
+  color: var(--ds-gray-12);
   letter-spacing: -0.18px;
   outline: none;
 }
 
 .title:focus-visible {
-  border-radius: var(--pond-radius-sm);
+  border-radius: var(--ds-radius-sm);
   box-shadow:
-    0 0 0 2px var(--pond-bg),
-    0 0 0 4px light-dark(rgba(0, 0, 0, 0.3), rgba(255, 255, 255, 0.3));
+    0 0 0 2px var(--ds-gray-1),
+    0 0 0 4px var(--ds-gray-a8);
 }
 
 .page .title {
@@ -48,73 +320,66 @@
   margin: 0;
   font-size: 12px;
   line-height: 1.5;
-  color: var(--pond-muted);
+  color: var(--ds-gray-11);
 }
 
 .meta a {
-  color: var(--pond-fg-soft);
+  color: var(--ds-gray-11);
   word-break: break-all;
   text-decoration: none;
+
+  &:hover {
+    color: var(--ds-gray-12);
+    text-decoration: underline;
+  }
 }
 
-.meta a:hover {
-  color: var(--pond-fg);
-  text-decoration: underline;
-}
-
-/* Description body. Source descriptions arrive as plain text with
- * embedded newlines (YouTube has paragraphs separated by `\n\n`,
- * tweets by `\n`). `pre-wrap` preserves those breaks while still
- * allowing the renderer to wrap soft lines. `overflow-wrap` keeps
- * absurdly long URLs / hashes from overflowing the preview pane. */
 .description {
   margin: 0;
   font-size: 13px;
   line-height: 1.5;
-  color: var(--pond-fg-soft);
+  color: var(--ds-gray-11);
   word-break: break-word;
   overflow-wrap: anywhere;
   white-space: pre-wrap;
 }
 
-.descriptionLink {
-  color: var(--pond-fg);
+.description-link {
+  color: var(--ds-gray-12);
   text-decoration: underline;
-  text-decoration-color: var(--pond-border-strong);
+  text-decoration-color: var(--ds-gray-a6);
   text-underline-offset: 2px;
   transition:
     color 120ms ease,
     text-decoration-color 120ms ease;
+
+  &:hover {
+    color: var(--ds-gray-12);
+    text-decoration-color: currentColor;
+  }
 }
 
-.descriptionLink:hover {
-  color: var(--pond-fg);
-  text-decoration-color: currentColor;
-}
-
-/* Show more / Show less toggle. Inline button styled to read like a
- * link so it doesn't shout at the user — chrome-light, sits flush
- * with the body text. */
-.descriptionToggle {
+.description-toggle {
   display: inline-flex;
   padding: 0;
   margin-top: 4px;
   font: inherit;
   font-size: 12px;
   font-weight: 600;
-  color: var(--pond-fg-soft);
+  color: var(--ds-gray-11);
   cursor: pointer;
   background: none;
   border: 0;
-}
 
-.descriptionToggle:hover {
-  color: var(--pond-fg);
-  text-decoration: underline;
-  text-underline-offset: 2px;
+  &:hover {
+    color: var(--ds-gray-12);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
 }
 
 .tags {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
@@ -125,31 +390,36 @@
   align-items: center;
   padding: 2px 8px;
   font-size: 11px;
-  color: var(--pond-fg-soft);
+  color: var(--ds-gray-11);
   text-decoration: none;
   cursor: pointer;
-  background: light-dark(rgba(0, 0, 0, 0.05), rgba(255, 255, 255, 0.06));
+  background: var(--ds-gray-a3);
   border: 0;
   border-radius: 999px;
+
+  &:hover {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-a4);
+  }
 }
 
-.tag:hover {
-  color: var(--pond-fg);
-  background: light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.1));
+.tag-ai {
+  font-style: italic;
+  opacity: 0.7;
 }
 
-.tagWrap {
+.tag-wrap {
   display: inline-flex;
   align-items: stretch;
   overflow: hidden;
   border-radius: 999px;
 }
 
-.tagWrap > .tag {
+.tag-wrap > .tag {
   border-radius: 999px 0 0 999px;
 }
 
-.tagRemove {
+.tag-remove {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -158,16 +428,37 @@
   margin-left: 1px;
   font: inherit;
   font-size: 11px;
-  color: var(--pond-meta);
+  color: var(--ds-gray-11);
   cursor: pointer;
-  background: light-dark(rgba(0, 0, 0, 0.05), rgba(255, 255, 255, 0.06));
+  background: var(--ds-gray-a3);
   border: 0;
   border-radius: 0 999px 999px 0;
+
+  &:hover {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-a4);
+  }
 }
 
-.tagRemove:hover {
-  color: var(--pond-fg);
-  background: light-dark(rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.12));
+.tag-input {
+  flex: 1;
+  min-width: 80px;
+}
+
+.tag-suggestions {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  left: 0;
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
+  margin-top: 4px;
+  background: var(--ds-gray-1);
+  border: 1px solid var(--ds-gray-a4);
+  border-radius: 6px;
 }
 
 .actions {
@@ -176,49 +467,49 @@
   gap: 6px;
   padding-top: 12px;
   margin-top: 4px;
-  border-top: 1px solid var(--pond-border);
+  border-top: 1px solid var(--ds-gray-a4);
 }
 
-.actionsRow {
+.actions-row {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
 }
 
-.readerLink {
+.reader-link {
   display: inline-flex;
   align-items: center;
   height: 28px;
   padding: 0 12px;
   font: inherit;
   font-size: 12px;
-  color: var(--pond-fg);
+  color: var(--ds-gray-12);
   text-decoration: none;
-  background: light-dark(rgba(0, 0, 0, 0.05), rgba(255, 255, 255, 0.06));
-  border: 1px solid var(--pond-border);
-  border-radius: var(--pond-radius-sm);
+  background: var(--ds-gray-a3);
+  border: 1px solid var(--ds-gray-a4);
+  border-radius: var(--ds-radius-sm);
+
+  &:hover {
+    background: var(--ds-gray-a4);
+  }
 }
 
-.readerLink:hover {
-  background: light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.08));
-}
-
-.readerMeta {
+.reader-meta {
   font-size: 11px;
-  color: var(--pond-meta);
+  color: var(--ds-gray-11);
 }
 
-.timestampsTitle {
+.timestamps-title {
   margin: 0;
   font-size: 11px;
   font-weight: 600;
-  color: var(--pond-meta);
+  color: var(--ds-gray-11);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
-.timestampsList {
+.timestamps-list {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -227,7 +518,7 @@
   list-style: none;
 }
 
-.timestampsItem {
+.timestamps-item {
   display: grid;
   grid-template-columns: 56px 1fr 24px;
   gap: 8px;
@@ -235,17 +526,17 @@
   font-size: 12px;
 }
 
-.timestampPos {
+.timestamp-pos {
   font-weight: 550;
   font-variant-numeric: tabular-nums;
-  color: var(--pond-fg);
+  color: var(--ds-gray-12);
 }
 
-.timestampNote {
-  color: var(--pond-fg-soft);
+.timestamp-note {
+  color: var(--ds-gray-11);
 }
 
-.timestampRemove {
+.timestamp-remove {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -254,19 +545,19 @@
   padding: 0;
   font: inherit;
   font-size: 14px;
-  color: var(--pond-meta);
+  color: var(--ds-gray-11);
   cursor: pointer;
   background: transparent;
   border: 0;
   border-radius: 4px;
+
+  &:hover {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-a3);
+  }
 }
 
-.timestampRemove:hover {
-  color: var(--pond-fg);
-  background: var(--pond-hover);
-}
-
-.timestampMark {
+.timestamp-mark {
   margin-top: 6px;
 }
 
@@ -282,78 +573,71 @@
   width: 22px;
   height: 22px;
   cursor: pointer;
-  border: 1px solid var(--pond-border);
+  border: 1px solid var(--ds-gray-a4);
   border-radius: 4px;
   transition: transform 80ms ease;
+
+  &:hover {
+    transform: scale(1.08);
+  }
 }
 
-.swatch:hover {
-  transform: scale(1.08);
-}
-
-.relatedRail {
+.related-rail {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 6px;
 }
 
-.relatedTile {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  color: inherit;
-  text-decoration: none;
-}
-
-.relatedTile:hover .relatedLabel {
-  color: var(--pond-fg);
-}
-
-.relatedThumb {
+.related-thumb {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
   aspect-ratio: 1 / 1;
   overflow: hidden;
-  background: light-dark(rgba(0, 0, 0, 0.04), rgba(255, 255, 255, 0.04));
+  background: var(--ds-gray-a3);
   border-radius: 4px;
 }
 
-.relatedLabel {
+.related-label {
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 10px;
-  color: var(--pond-fg-soft);
+  color: var(--ds-gray-11);
   text-align: center;
   white-space: nowrap;
+}
+
+.related-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: inherit;
+  text-decoration: none;
+
+  &:hover .related-label {
+    color: var(--ds-gray-12);
+  }
 }
 
 .hint {
   margin: 0;
   font-size: 11px;
   line-height: 1.5;
-  color: var(--pond-muted);
+  color: var(--ds-gray-11);
 }
 
-/* ---- Inline auth CTA -------------------------------------------- */
-/*                                                                    */
-/* Surfaces the per-save sign-in state for auth-walled sources         */
-/* (X / Instagram / Cosmos / TikTok). Lives directly inside the        */
-/* refresh actions block so the user can connect without bouncing      */
-/* out to settings — the toast that previously navigated for them is   */
-/* now informational only.                                             */
-.authRow {
+.auth-row {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
   padding: 8px 10px;
-  background: light-dark(rgba(0, 0, 0, 0.025), rgba(255, 255, 255, 0.03));
-  border-radius: var(--pond-radius-md);
+  background: var(--ds-gray-a3);
+  border-radius: var(--ds-radius-md);
 }
 
-.authStatus {
+.auth-status {
   display: inline-flex;
   flex: 1;
   gap: 6px;
@@ -361,10 +645,18 @@
   min-width: 0;
   font-size: 11px;
   line-height: 1.4;
-  color: var(--pond-fg-soft);
+  color: var(--ds-gray-11);
+
+  &[data-state="connected"] {
+    color: light-dark(#1a7f37, #4ac26b);
+  }
+
+  &[data-state="disconnected"] {
+    color: light-dark(#9a6700, #d4a72c);
+  }
 }
 
-.authDot {
+.auth-dot {
   flex-shrink: 0;
   width: 6px;
   height: 6px;
@@ -372,35 +664,19 @@
   border-radius: 50%;
 }
 
-.authStatus[data-state="connected"] {
-  color: light-dark(#1a7f37, #4ac26b);
-}
-
-.authStatus[data-state="disconnected"] {
-  color: light-dark(#9a6700, #d4a72c);
-}
-
-/* ---- Carousel --------------------------------------------------- */
-
 .carousel {
   position: relative;
   margin-bottom: 4px;
 }
 
-/* Rounded media frame for the carousel. `position: relative` so the
- * `.downloading` badge and the `.nav` arrows can position themselves
- * inside it; `overflow: hidden` clips the inner image / video to the
- * border-radius. The pane size is fluid (variant-driven), so the
- * shadow + 1px ring come from the shared `--pond-card-shadow` token
- * to stay consistent with the grid thumbs. */
-.mediaShell {
+.media-shell {
   position: relative;
   display: block;
   width: 100%;
   overflow: hidden;
-  background: light-dark(rgba(0, 0, 0, 0.04), rgba(255, 255, 255, 0.03));
-  border-radius: var(--pond-radius-xl);
-  box-shadow: var(--pond-card-shadow);
+  background: var(--ds-gray-a3);
+  border-radius: var(--ds-radius-xl);
+  box-shadow: var(--ds-shadow-card);
 }
 
 .media {
@@ -429,18 +705,18 @@
   border-radius: 50%;
   transform: translateY(-50%);
   transition: background 120ms ease;
-}
 
-.nav:hover {
-  background: rgba(0, 0, 0, 0.75);
-}
+  &:hover {
+    background: rgba(0, 0, 0, 0.75);
+  }
 
-.navPrev {
-  left: 8px;
-}
+  &[data-side="prev"] {
+    left: 8px;
+  }
 
-.navNext {
-  right: 8px;
+  &[data-side="next"] {
+    right: 8px;
+  }
 }
 
 .dots {
@@ -461,10 +737,10 @@
   border-radius: 50%;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
   transition: background 120ms ease;
-}
 
-.dotActive {
-  background: #fff;
+  &[data-active="true"] {
+    background: #fff;
+  }
 }
 
 .counter {
@@ -480,12 +756,6 @@
   border-radius: 11px;
 }
 
-/* "Downloading video…" indicator overlaid on the carousel media while
- * yt-dlp is fetching the bytes in the background. Sits in the
- * top-LEFT corner so it doesn't fight the carousel counter (top-right)
- * for space when both are visible. Same visual language as the grid
- * card-thumb badge so the user reads them as the same thing in two
- * sizes / two surfaces. */
 .downloading {
   position: absolute;
   top: 10px;
@@ -506,7 +776,7 @@
   backdrop-filter: blur(6px);
 }
 
-.downloadingDot {
+.downloading-dot {
   display: inline-block;
   width: 7px;
   height: 7px;
@@ -529,7 +799,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .downloadingDot {
+  .downloading-dot {
     opacity: 1;
     animation: none;
   }

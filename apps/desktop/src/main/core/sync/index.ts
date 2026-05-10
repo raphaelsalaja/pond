@@ -4,17 +4,20 @@ import {
   type SourceSyncPrefs,
   saves,
 } from "@pond/schema/db";
+import type { RawTwitter, TwitterMediaItem } from "@pond/schema/raw";
 import { and, eq, inArray } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../../db";
 import { ingestFromHttp } from "../ingest";
 import { getPrefs, setPrefs } from "../prefs";
+import type { BookmarksEntry } from "../refresh/harvest/twitter-bookmarks";
 import {
   harvestSourceList,
   harvestTwitterBookmarks,
   harvestUrl,
   harvestYoutubeLikedList,
 } from "../refresh/scrape-window";
+import { isSyncBlockedByStorageGuard } from "../storage-watcher";
 
 /**
  * Background-sync orchestrator.
@@ -36,10 +39,7 @@ import {
  * source-bookmarks harvester needs to satisfy.
  */
 
-export type SyncMode = "incremental" | "backfill";
-
 export interface SyncOptions {
-  mode?: SyncMode;
   /**
    * Surface a manual run vs. a scheduled run in logs / status events.
    * The orchestrator doesn't behave differently between the two, but
@@ -92,7 +92,7 @@ function emit(update: SyncStatusUpdate): void {
  */
 export async function getSourceSync(source: Source): Promise<SourceSyncPrefs> {
   const prefs = await getPrefs();
-  return prefs.sync[source] ?? { ...DEFAULT_SOURCE_SYNC_PREFS };
+  return { ...DEFAULT_SOURCE_SYNC_PREFS, ...prefs.sync[source] };
 }
 
 /**
@@ -105,8 +105,11 @@ export async function patchSourceSync(
   patch: Partial<SourceSyncPrefs>,
 ): Promise<SourceSyncPrefs> {
   const prefs = await getPrefs();
-  const current = prefs.sync[source] ?? { ...DEFAULT_SOURCE_SYNC_PREFS };
-  const next: SourceSyncPrefs = { ...current, ...patch };
+  const next: SourceSyncPrefs = {
+    ...DEFAULT_SOURCE_SYNC_PREFS,
+    ...prefs.sync[source],
+    ...patch,
+  };
   await setPrefs({ sync: { ...prefs.sync, [source]: next } });
   return next;
 }
@@ -130,9 +133,12 @@ export async function syncAllSources(opts: SyncOptions = {}): Promise<void> {
 }
 
 /**
- * Run the per-source sync pipeline. Currently only `twitter` is
- * implemented; calling `syncSource` for any other source is a no-op
- * that records `lastError = "unsupported"`.
+ * Run the per-source sync pipeline. Sync's contract is "ensure every
+ * item on the source's list is in the local library" — there is no
+ * incremental-vs-backfill mode. Cron ticks and the "Sync Now" button
+ * fan into the same operation. Currently `twitter` and the seven
+ * list-harvest sources are wired up; anything else records
+ * `lastError = "unsupported"`.
  */
 export async function syncSource(
   source: Source,
@@ -142,14 +148,29 @@ export async function syncSource(
     log.info("[pond sync] already running, ignoring", source);
     return;
   }
+  if (isSyncBlockedByStorageGuard()) {
+    log.info(
+      "[pond sync] blocked by storage guard, skipping",
+      source,
+      opts.trigger ?? "manual",
+    );
+    emit({
+      source,
+      state: "error",
+      message:
+        "Paused — Pond storage cap reached. Free space or raise the cap.",
+      lastError: "storage_cap_exceeded",
+    });
+    return;
+  }
   const controller = new AbortController();
   inFlight.set(source, controller);
   emit({ source, state: "running", message: "Starting…" });
   try {
     if (source === "twitter") {
-      await syncTwitter(opts, controller.signal);
+      await syncTwitter(controller.signal);
     } else if (LIST_HARVEST_SOURCES.has(source)) {
-      await syncListSource(source, opts, controller.signal);
+      await syncListSource(source, controller.signal);
     } else {
       await patchSourceSync(source, { lastError: "unsupported" });
       emit({
@@ -250,16 +271,16 @@ function handleFromUrl(source: Source, url: string): string | null {
   }
 }
 
-const LIST_BACKFILL_CAP = 1_000;
-const LIST_INCREMENTAL_CAP = 200;
+// Per-run safety cap. Sync walks the full list every time, but if a
+// source has thousands of saves we don't want a single run to chew on
+// it forever — bail at 5k entries so the run terminates and the next
+// cron tick (or "Sync Now") picks up whatever's left.
+const LIST_MAX_ITEMS = 5_000;
 
 async function syncListSource(
   source: Source,
-  opts: SyncOptions,
   signal: AbortSignal,
 ): Promise<void> {
-  const mode: SyncMode = opts.mode ?? "incremental";
-
   const db = await getDb();
   const knownRows = await db
     .select({ sourceId: saves.sourceId })
@@ -267,7 +288,7 @@ async function syncListSource(
     .where(eq(saves.source, source));
   const knownIds = new Set<string>(knownRows.map((r) => r.sourceId));
   log.info(
-    `[pond sync:${source}] starting (${mode}); ${knownIds.size} items already in library`,
+    `[pond sync:${source}] starting; ${knownIds.size} items already in library`,
   );
   emit({
     source,
@@ -300,8 +321,7 @@ async function syncListSource(
 
   const harvest = await harvestSourceList(source, {
     knownIds: Array.from(knownIds),
-    mode,
-    maxItems: mode === "backfill" ? LIST_BACKFILL_CAP : LIST_INCREMENTAL_CAP,
+    maxItems: LIST_MAX_ITEMS,
     accountKey,
   });
   if (signal.aborted) return;
@@ -332,8 +352,7 @@ async function syncListSource(
   if (source === "youtube") {
     const liked = await harvestYoutubeLikedList({
       knownIds: Array.from(knownIds),
-      mode,
-      maxItems: mode === "backfill" ? LIST_BACKFILL_CAP : LIST_INCREMENTAL_CAP,
+      maxItems: LIST_MAX_ITEMS,
     });
     if (liked.ok) {
       const seen = new Set(combined.map((e) => e.sourceId));
@@ -434,19 +453,76 @@ async function syncListSource(
 /* Twitter implementation.                                             */
 /* ------------------------------------------------------------------ */
 
-const TWITTER_BACKFILL_CAP = 1_000;
-const TWITTER_INCREMENTAL_CAP = 200;
+// Per-run safety cap. Twitter virtualises the bookmarks list so memory
+// stays bounded; the limit is purely so a runaway page can't pin the
+// scroll forever. 5k comfortably covers any user we've seen.
+const TWITTER_MAX_ITEMS = 5_000;
 
-async function syncTwitter(
-  opts: SyncOptions,
-  signal: AbortSignal,
-): Promise<void> {
+/**
+ * Map a `BookmarksEntry` (rich GraphQL data + DOM fallback) into the
+ * exact `RawTwitter` shape the renderer's `mergeTwitter` expects, so
+ * the metric chips (likes / reposts / replies / bookmarks / views)
+ * actually render. Without this re-shape the renderer reads
+ * `raw.twitter.metrics.likes` from a verbatim API blob whose likes
+ * live at `legacy.favorite_count`, and every chip silently disappears.
+ *
+ * The verbatim API tweet is preserved on `__verbatim` (open extension
+ * point on `RawSaveMetadata`) for future code that wants the raw bag.
+ */
+function buildRawForBookmark(entry: BookmarksEntry): {
+  capturedAt: string;
+  twitter: RawTwitter;
+  __verbatim?: unknown;
+} {
+  const capturedAt = new Date().toISOString();
+  const twitter: RawTwitter = {};
+  if (entry.bookmarkedAt) twitter.bookmarkedAt = entry.bookmarkedAt;
+
+  const r = entry.rich;
+  if (!r) return { capturedAt, twitter };
+
+  if (r.author.name) twitter.authorName = r.author.name;
+  if (r.author.handle) twitter.authorUrl = `https://x.com/${r.author.handle}`;
+
+  twitter.metrics = {
+    likes: r.metrics.likes,
+    retweets: r.metrics.retweets,
+    replies: r.metrics.replies,
+    views: r.metrics.views,
+    bookmarks: r.metrics.bookmarks,
+  };
+
+  if (r.media.length > 0) {
+    const media: TwitterMediaItem[] = r.media.map((m) => ({
+      url: m.url,
+      type: m.type === "video" ? "video" : "image",
+      poster: m.poster,
+    }));
+    twitter.media = media;
+  }
+
+  if (r.quoted) {
+    twitter.isQuote = true;
+    twitter.quotedTweet = {
+      tweetId: r.quoted.tweetId,
+      author: r.quoted.author.handle
+        ? `@${r.quoted.author.handle}`
+        : r.quoted.author.name || undefined,
+      authorName: r.quoted.author.name || undefined,
+      text: r.quoted.fullText || undefined,
+      url: r.quoted.url,
+    };
+  }
+
+  return { capturedAt, twitter, __verbatim: r.raw };
+}
+
+async function syncTwitter(signal: AbortSignal): Promise<void> {
   const source: Source = "twitter";
-  const mode: SyncMode = opts.mode ?? "incremental";
 
-  // Step 1: read every existing twitter sourceId so the harvester can
-  // bail out the moment it hits a known tweet (incremental mode) and
-  // we can dedupe new ids before kicking off per-tweet harvests.
+  // Read every existing twitter sourceId so the harvester can keep its
+  // dedupe set warm against virtualised re-renders, and so we can
+  // filter known ids out before ingesting.
   const db = await getDb();
   const knownRows = await db
     .select({ sourceId: saves.sourceId })
@@ -454,7 +530,7 @@ async function syncTwitter(
     .where(eq(saves.source, source));
   const knownIds = new Set<string>(knownRows.map((r) => r.sourceId));
   log.info(
-    `[pond sync:twitter] starting (${mode}); ${knownIds.size} tweets already in library`,
+    `[pond sync:twitter] starting; ${knownIds.size} tweets already in library`,
   );
   emit({
     source,
@@ -462,21 +538,38 @@ async function syncTwitter(
     message: `Looking at your Twitter bookmarks…`,
   });
 
-  // Step 2: scrape the bookmarks list.
-  const harvest = await harvestTwitterBookmarks({
-    knownIds: Array.from(knownIds),
-    mode,
-    maxItems:
-      mode === "backfill" ? TWITTER_BACKFILL_CAP : TWITTER_INCREMENTAL_CAP,
-  });
+  // Scroll the bookmarks list. Entries are read directly from the
+  // rendered DOM cards — id, url, author, snippet text, cover image —
+  // no per-tweet network fetches, no rate-limit surface.
+  //
+  // The harvester polls its in-page state and reports back via
+  // `onProgress` so the toast can move from "Looking at your Twitter
+  // bookmarks…" → "Found 23 bookmarks…" as the scroll loop walks the
+  // virtualised list. A big library otherwise sits silent for minutes.
+  const harvest = await harvestTwitterBookmarks(
+    {
+      knownIds: Array.from(knownIds),
+      maxItems: TWITTER_MAX_ITEMS,
+    },
+    {
+      onProgress: (p) => {
+        if (signal.aborted) return;
+        const message =
+          p.phase === "hydrate"
+            ? "Loading your Twitter bookmarks…"
+            : p.fresh > 0
+              ? `Found ${p.fresh} new bookmark${p.fresh === 1 ? "" : "s"}…`
+              : `Scanned ${p.seen} bookmark${p.seen === 1 ? "" : "s"}…`;
+        emit({ source, state: "running", message });
+      },
+    },
+  );
   if (signal.aborted) return;
 
   if (!harvest.ok) {
     if (harvest.reason === "auth_required") {
       log.info("[pond sync:twitter] auth wall");
-      await patchSourceSync(source, {
-        lastError: "auth_required",
-      });
+      await patchSourceSync(source, { lastError: "auth_required" });
       emit({
         source,
         state: "auth_required",
@@ -485,10 +578,10 @@ async function syncTwitter(
       });
       return;
     }
+    // `no_match` and `timeout` are soft failures — leave `lastSyncedAt`
+    // untouched so the next cron tick retries from a clean slate.
     log.warn("[pond sync:twitter] harvest failed", harvest.reason);
-    await patchSourceSync(source, {
-      lastError: harvest.reason,
-    });
+    await patchSourceSync(source, { lastError: harvest.reason });
     emit({
       source,
       state: "error",
@@ -498,18 +591,12 @@ async function syncTwitter(
     return;
   }
 
-  // Step 3: dedupe against the local library. The bookmarks harvester
-  // already terminates on known ids in incremental mode; we re-check
-  // here so a backfill run doesn't enqueue per-tweet harvests for
-  // bookmarks the user already has.
   const fresh = harvest.entries.filter((e) => !knownIds.has(e.tweetId));
+
   if (fresh.length === 0) {
     log.info("[pond sync:twitter] nothing new");
     const lastSyncedAt = new Date().toISOString();
-    await patchSourceSync(source, {
-      lastSyncedAt,
-      lastError: null,
-    });
+    await patchSourceSync(source, { lastSyncedAt, lastError: null });
     emit({
       source,
       state: "done",
@@ -528,76 +615,47 @@ async function syncTwitter(
     progress: { current: 0, total: fresh.length },
   });
 
-  // Step 4: walk the new ids one at a time. Per-tweet harvest reuses the
-  // same hidden window so we don't pay a new BrowserWindow cost; the
-  // bookmarks scrape navigated us to the bookmarks list, but each
-  // `harvestUrl` call drives the window to the per-tweet permalink
-  // before scraping. Errors per-tweet are swallowed (we just skip and
-  // continue) — a single bad tweet shouldn't fail the run.
+  // Each entry already carries everything `ingestFromHttp` needs from
+  // the rendered card. No network here, so the loop is fast. Per-entry
+  // failures are swallowed; a single bad row shouldn't fail the run.
   let processed = 0;
+  let imported = 0;
   for (const entry of fresh) {
     if (signal.aborted) {
       log.info("[pond sync:twitter] aborted by user");
       return;
     }
     try {
-      const harv = await harvestUrl({
-        url: entry.url,
+      await ingestFromHttp({
         source,
         sourceId: entry.tweetId,
+        url: entry.url,
+        title: entry.title,
+        description: entry.description,
+        author: entry.author,
+        mediaUrl: entry.mediaUrl,
+        mediaUrls: entry.mediaUrls,
+        // `savedAt` is the user-interaction timestamp. The card's
+        // `<time datetime>` is the original tweet time, not the
+        // bookmark time — Twitter doesn't expose the latter in the
+        // rendered DOM. Use it when present; fall back to ingest time.
+        savedAt: entry.bookmarkedAt ? new Date(entry.bookmarkedAt) : new Date(),
+        // `raw.twitter` MUST be a `RawTwitter` blob (the renderer's
+        // `mergeTwitter` reads `raw.twitter.metrics.likes` etc.). The
+        // verbatim API tweet would shape-mismatch and silently strip
+        // every metric chip from the UI, so build a typed
+        // `RawTwitter` here from the parsed `RichTweet`. The verbatim
+        // API tweet still gets stashed under `__verbatim` for future
+        // code that wants the unfiltered payload.
+        raw: { kind: "twitter-sync", ...buildRawForBookmark(entry) },
       });
-      if (harv.ok && harv.harvest) {
-        // Stamp the bookmarks-list timestamp onto the per-tweet payload
-        // so the renderer can show "bookmarked 3 days ago" without a
-        // second scrape. Lands under `raw.twitter.bookmarkedAt`.
-        const meta = harv.harvest.meta ?? {};
-        if (entry.bookmarkedAt) {
-          (meta as Record<string, unknown>).bookmarkedAt = entry.bookmarkedAt;
-        }
-        await ingestFromHttp({
-          source,
-          sourceId: entry.tweetId,
-          url: entry.url,
-          title: harv.harvest.title,
-          description: harv.harvest.description,
-          author: harv.harvest.author,
-          mediaUrl: harv.harvest.mediaUrl,
-          mediaUrls: harv.harvest.mediaUrls,
-          mediaType: harv.harvest.mediaType,
-          // Use the bookmarks-list timestamp as the user-interaction
-          // timestamp (`savedAt`). When Twitter omits it (rare), fall
-          // back to the moment we ingested. `IngestPayload['savedAt']`
-          // is post-transform here, so we pass a Date directly rather
-          // than the string a Zod parse would normalise.
-          savedAt: entry.bookmarkedAt
-            ? new Date(entry.bookmarkedAt)
-            : new Date(),
-          raw: {
-            kind: "twitter-sync",
-            capturedAt: new Date().toISOString(),
-            twitter: meta,
-          },
-        });
-      } else if (harv.reason === "auth_required") {
-        // Lost the session mid-run. Bubble up so the user re-connects.
-        log.warn("[pond sync:twitter] auth required mid-run");
-        await patchSourceSync(source, { lastError: "auth_required" });
-        emit({
-          source,
-          state: "auth_required",
-          message: "Lost Twitter session — please re-connect.",
-          lastError: "auth_required",
-        });
-        return;
-      } else {
-        log.info(
-          "[pond sync:twitter] skip tweet",
-          entry.tweetId,
-          harv.reason ?? "no_payload",
-        );
-      }
+      imported += 1;
     } catch (err) {
-      log.warn("[pond sync:twitter] per-tweet failure", entry.tweetId, err);
+      log.warn(
+        "[pond sync:twitter] per-tweet ingest failure",
+        entry.tweetId,
+        err,
+      );
     }
     processed += 1;
     emit({
@@ -609,15 +667,12 @@ async function syncTwitter(
   }
 
   const lastSyncedAt = new Date().toISOString();
-  await patchSourceSync(source, {
-    lastSyncedAt,
-    lastError: null,
-  });
-  log.info(`[pond sync:twitter] done; imported ${processed}`);
+  await patchSourceSync(source, { lastSyncedAt, lastError: null });
+  log.info(`[pond sync:twitter] done; imported ${imported}`);
   emit({
     source,
     state: "done",
-    message: `Imported ${processed} bookmark${processed === 1 ? "" : "s"}.`,
+    message: `Imported ${imported} bookmark${imported === 1 ? "" : "s"}.`,
     progress: { current: processed, total: fresh.length },
     lastSyncedAt,
     lastError: null,

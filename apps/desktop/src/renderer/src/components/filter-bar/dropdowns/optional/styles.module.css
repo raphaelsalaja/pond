@@ -1,0 +1,22 @@
+/* Boolean toggle for `optional`-typed fields. */
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: 200px;
+  padding: 6px;
+}
+
+.search {
+  padding-bottom: 6px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--ds-gray-a3);
+}
+
+.empty {
+  padding: 12px 10px;
+  font-size: 12px;
+  color: var(--ds-gray-11);
+  text-align: center;
+}

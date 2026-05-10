@@ -19,8 +19,6 @@ export default defineContentScript({
       emit({ kind: "log", level, message, data });
     }
 
-    // ---------- detection ----------
-
     const GRAPHQL_RE = /\/graphql(?:\?|$)/i;
     const CONN_RE = /\/v2\/channels\/[^/]+\/connections(?:\?|$|\/)/;
     const BLOCK_RE = /\/v2\/channels\/[^/]+\/blocks(?:\?|$|\/)/;
@@ -68,8 +66,6 @@ export default defineContentScript({
       }
       return null;
     }
-
-    // ---------- block enrichment ----------
 
     const blockCache = new Map();
     async function fetchBlock(blockId: string) {
@@ -123,8 +119,6 @@ export default defineContentScript({
       if (block?.source?.url) return { url: null, type: "link" };
       return { url: null, type: "link" };
     }
-
-    // ---------- emit ----------
 
     const recent = new Map();
     function isDuplicate(key: string) {
@@ -297,8 +291,6 @@ export default defineContentScript({
       const block = json.block ?? json.connectable ?? (json.id ? json : null);
       if (block) emitFromRestBlock(block);
     }
-
-    // ---------- network hooks ----------
 
     function handleResponse(
       url: string,

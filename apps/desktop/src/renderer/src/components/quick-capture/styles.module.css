@@ -9,13 +9,13 @@
   margin: 0;
   font-size: 16px;
   font-weight: 600;
-  color: var(--pond-fg);
+  color: var(--ds-gray-12);
 }
 
 .hint {
   margin: -10px 0 6px;
   font-size: 12px;
-  color: var(--pond-meta);
+  color: var(--ds-gray-11);
 }
 
 .actions {

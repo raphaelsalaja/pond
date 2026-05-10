@@ -20,8 +20,21 @@ export default defineConfig({
   preload: {
     plugins: [externalizeDepsPlugin({ exclude: ["@pond/schema"] })],
     build: {
+      // The renderer's `webPreferences.sandbox` is true. Sandboxed
+      // preload scripts must be CommonJS — Chromium's renderer sandbox
+      // does not support ESM `import` at preload load time. Emit a
+      // single `.cjs` bundle (the package's `type: "module"` would
+      // otherwise force `.js` to be ESM).
       rollupOptions: {
-        input: resolve(__dirname, "src/preload/index.ts"),
+        input: {
+          index: resolve(__dirname, "src/preload/index.ts"),
+          scrape: resolve(__dirname, "src/preload/scrape.cjs.ts"),
+        },
+        output: {
+          format: "cjs",
+          entryFileNames: "[name].cjs",
+          chunkFileNames: "[name].cjs",
+        },
       },
     },
   },
@@ -30,12 +43,14 @@ export default defineConfig({
     plugins: [react()],
     resolve: {
       alias: {
-        "@renderer": resolve(__dirname, "src/renderer/src"),
+        "@": resolve(__dirname, "src/renderer/src"),
         "@shared": resolve(__dirname, "src/shared"),
-        // `@pond/icons` ships .tsx source only (no compile step). Point
-        // the package specifier directly at the source folder so Vite's
-        // default extension resolution picks up `.tsx` files for subpath
-        // imports like `@pond/icons/social-media/x-twitter`.
+        // `@pond/icons` ships .ts barrel files (`fill/index.ts`,
+        // `fill-duo/index.ts`, `outline/index.ts`, `social-media/index.ts`)
+        // that re-export from the Nucleo packages. Aliasing the package
+        // specifier to the source folder lets Vite's default extension
+        // resolution pick up the barrels via subpath imports like
+        // `@pond/icons/fill-duo` and `@pond/icons/types`.
         "@pond/icons": resolve(__dirname, "../../icons"),
       },
     },

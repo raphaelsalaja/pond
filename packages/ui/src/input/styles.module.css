@@ -1,0 +1,51 @@
+.root {
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+  padding: 0 12px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ds-gray-12);
+  letter-spacing: -0.04px;
+  background: var(--ds-gray-2);
+  border: 0;
+  border-radius: var(--ds-radius-lg);
+  box-shadow: var(--ds-shadow-search);
+  outline: none;
+  transition: box-shadow 80ms ease;
+  -webkit-app-region: no-drag;
+
+  &::placeholder {
+    color: var(--ds-gray-10);
+  }
+
+  &:focus-visible {
+    box-shadow:
+      var(--ds-shadow-search),
+      0 0 0 2px var(--ds-gray-a8);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  &[data-size="sm"] {
+    height: 26px;
+    padding: 0 10px;
+    font-size: 12px;
+  }
+
+  &[data-size="lg"] {
+    height: 36px;
+    padding: 0 14px;
+    font-size: 14px;
+  }
+
+  &[data-variant="code"] {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12px;
+    letter-spacing: 0;
+  }
+}

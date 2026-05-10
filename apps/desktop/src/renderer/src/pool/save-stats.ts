@@ -11,8 +11,9 @@ import type {
   RawYoutube,
   RawYtdlp,
 } from "@pond/schema/raw";
-import { unixSecondsToIso, ytdlpDateToIso } from "../lib/format";
+import { unixSecondsToIso, ytdlpDateToIso } from "@/lib/format";
 import type { Save } from "./types";
+import { pickAuthorAvatarUrl } from "./url";
 
 /**
  * Source-agnostic, display-ready snapshot of every metric / metadata
@@ -156,6 +157,16 @@ export function extractSaveStats(save: Save): SaveStats {
 
   if (save.author && !stats.uploader?.name) {
     stats.uploader = { ...stats.uploader, name: save.author };
+  }
+
+  // Local-first avatar override. The per-source mergers above always
+  // assign the remote `raw.<source>.authorAvatar` URL, but we'd rather
+  // serve the cached `pond://<id>/avatar.<ext>` whenever the ingest
+  // pipeline managed to pull the bytes onto disk — see `pickAuthorAvatarUrl`
+  // for the rationale.
+  const localAvatar = pickAuthorAvatarUrl(save);
+  if (localAvatar) {
+    stats.uploader = { ...stats.uploader, avatar: localAvatar };
   }
 
   return stats;

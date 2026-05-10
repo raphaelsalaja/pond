@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { copyFile, mkdir } from "node:fs/promises";
+import { userInfo } from "node:os";
 import { extname, sep as pathSep, resolve as resolvePath } from "node:path";
 import type { Source } from "@pond/schema/db";
 import {
@@ -10,6 +11,7 @@ import {
   tags,
   type VideoDownloadSettings,
 } from "@pond/schema/db";
+import { buildWhere, type Query } from "@pond/schema/filters";
 import type { Transaction } from "@pond/schema/tx";
 import { desc, eq, isNotNull } from "drizzle-orm";
 import {
@@ -20,7 +22,6 @@ import {
   ipcMain,
   Menu,
   shell,
-  systemPreferences,
 } from "electron";
 import log from "electron-log/main.js";
 import { IPC } from "../../shared/constants";
@@ -41,6 +42,11 @@ import {
   refreshSave,
   signInToSource,
 } from "../core/refresh";
+import {
+  cancelRefreshBackfill,
+  getRefreshBackfillStatus,
+  startRefreshBackfill,
+} from "../core/refresh/backfill";
 import {
   binariesAvailable,
   invalidateBinariesCache,
@@ -64,40 +70,107 @@ import {
 import { toWireSave, toWireSaves } from "./wire";
 
 /**
+ * Trusted sender allowlist. Every IPC handler runs through `safeHandle`
+ * below, which calls `assertTrustedSender(event)` on entry. Without
+ * this check, a renderer that's tricked into navigating to a foreign
+ * origin (XSS, malicious save metadata) would inherit full executor
+ * access — `tx`, `txBatch`, `query` give you write access to the whole
+ * library.
+ *
+ * The trusted set is the dev URL (when set), `file://` (production
+ * renderer), and `pond://` (custom protocol used for media). Matches
+ * the policy in the main window's `will-navigate` guard.
+ */
+function isTrustedSender(event: Electron.IpcMainInvokeEvent): boolean {
+  const url = event.senderFrame?.url ?? "";
+  if (!url) return false;
+  const devUrl = process.env.ELECTRON_RENDERER_URL;
+  if (devUrl && url.startsWith(devUrl)) return true;
+  if (url.startsWith("file://")) return true;
+  if (url.startsWith("pond://")) return true;
+  return false;
+}
+
+/**
+ * Drop-in replacement for `ipcMain.handle` that rejects untrusted
+ * senders before the handler body runs. Logs the offending URL once
+ * so a real navigation bug doesn't fail silently.
+ */
+function safeHandle<Args extends unknown[], R>(
+  channel: string,
+  handler: (event: Electron.IpcMainInvokeEvent, ...args: Args) => R,
+): void {
+  ipcMain.handle(channel, (event, ...args) => {
+    if (!isTrustedSender(event)) {
+      log.warn(
+        "[pond ipc] rejected untrusted sender",
+        channel,
+        event.senderFrame?.url ?? "<no url>",
+      );
+      throw new Error("untrusted sender");
+    }
+    return handler(event, ...(args as Args));
+  });
+}
+
+/**
  * The renderer's only way into the executor. Every handler here is a thin
  * wrapper — the real work lives in `core/executor.ts`.
  */
 export function registerIpc() {
-  ipcMain.handle(IPC.appInfo, () => ({
-    name: "pond",
-    version: app.getVersion(),
-    platform: process.platform,
-    arch: process.arch,
-  }));
+  safeHandle(IPC.appInfo, () => {
+    // `os.userInfo().username` is the POSIX login on macOS / Linux and
+    // the SAM account name on Windows — never the human-friendly full
+    // name. The sidebar renders it as the workspace owner; we humanise
+    // it lightly (drop dots/dashes/underscores, title-case each token)
+    // so common usernames like `raphael.salaja` show up as
+    // `Raphael Salaja`.
+    let username = "Pond";
+    try {
+      const raw = userInfo().username;
+      if (raw) {
+        username = raw
+          .split(/[._-]/)
+          .filter(Boolean)
+          .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+          .join(" ");
+      }
+    } catch {
+      // userInfo() can throw on some sandboxed environments — safe to
+      // ignore and fall through to the default workspace label.
+    }
+    return {
+      name: "pond",
+      version: app.getVersion(),
+      platform: process.platform,
+      arch: process.arch,
+      username,
+    };
+  });
 
-  ipcMain.handle(IPC.tx, async (_, tx: Transaction) => {
+  safeHandle(IPC.tx, async (_, tx: Transaction) => {
     const action = await executeTransaction(tx);
     recordForUndo(tx);
     return action;
   });
 
-  ipcMain.handle(IPC.txBatch, async (_, txs: Transaction[]) => {
+  safeHandle(IPC.txBatch, async (_, txs: Transaction[]) => {
     const actions = await executeBatch(txs);
     for (const tx of txs) recordForUndo(tx);
     return actions;
   });
 
-  ipcMain.handle(IPC.undo, async () => {
+  safeHandle(IPC.undo, async () => {
     const ok = await undo();
     return { ok, canUndo: canUndo(), canRedo: canRedo() };
   });
 
-  ipcMain.handle(IPC.redo, async () => {
+  safeHandle(IPC.redo, async () => {
     const ok = await redo();
     return { ok, canUndo: canUndo(), canRedo: canRedo() };
   });
 
-  ipcMain.handle(IPC.query, async (event, name: string, params: unknown) => {
+  safeHandle(IPC.query, async (event, name: string, params: unknown) => {
     try {
       return await runQuery(name, params, event);
     } catch (err) {
@@ -110,7 +183,7 @@ export function registerIpc() {
   // before handing off to `shell.openExternal` so a compromised
   // renderer can't weaponise this into launching file:// / custom
   // handlers.
-  ipcMain.handle(IPC.openExternal, async (_, url: string) => {
+  safeHandle(IPC.openExternal, async (_, url: string) => {
     try {
       const parsed = new URL(String(url));
       if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
@@ -124,31 +197,28 @@ export function registerIpc() {
     }
   });
 
-  ipcMain.handle(IPC.revealSave, async (_, id: string, fileIndex?: number) => {
+  safeHandle(IPC.revealSave, async (_, id: string, fileIndex?: number) => {
     const target = await resolveSaveFilePath(id, fileIndex);
     if (!target.ok) return target;
     shell.showItemInFolder(target.path);
     return { ok: true as const };
   });
 
-  ipcMain.handle(
-    IPC.openSaveFile,
-    async (_, id: string, fileIndex?: number) => {
-      const target = await resolveSaveFilePath(id, fileIndex);
-      if (!target.ok) return target;
-      const err = await shell.openPath(target.path);
-      if (err) {
-        log.warn("[pond ipc] openSaveFile failed", err);
-        return { ok: false as const, reason: err };
-      }
-      return { ok: true as const };
-    },
-  );
+  safeHandle(IPC.openSaveFile, async (_, id: string, fileIndex?: number) => {
+    const target = await resolveSaveFilePath(id, fileIndex);
+    if (!target.ok) return target;
+    const err = await shell.openPath(target.path);
+    if (err) {
+      log.warn("[pond ipc] openSaveFile failed", err);
+      return { ok: false as const, reason: err };
+    }
+    return { ok: true as const };
+  });
 
   // In-app metadata refresh. Returns a structured outcome the renderer
   // uses to decide whether to show a success toast, an error toast, or
   // a "Connect <source>" prompt that links into Settings.
-  ipcMain.handle(IPC.refreshSave, async (_, id: string) => {
+  safeHandle(IPC.refreshSave, async (_, id: string) => {
     try {
       return await refreshSave(String(id));
     } catch (err) {
@@ -157,7 +227,42 @@ export function registerIpc() {
     }
   });
 
-  ipcMain.handle(IPC.sourceConnect, async (_, source: string) => {
+  // Bulk metadata refresh: walks every existing save (with optional
+  // source / missing-only filter) and re-runs the per-save pipeline.
+  // Fire-and-forget — progress streams over `IPC.refreshBackfillStatus`.
+  safeHandle(
+    IPC.refreshBackfillStart,
+    async (
+      _,
+      opts: {
+        source?: string | null;
+        onlyMissing?: boolean;
+      } = {},
+    ) => {
+      try {
+        return await startRefreshBackfill({
+          source: (opts?.source ?? null) as Source | null,
+          onlyMissing: Boolean(opts?.onlyMissing),
+        });
+      } catch (err) {
+        log.error("[pond ipc] refreshBackfillStart failed", err);
+        return { ok: false as const, reason: "already_running" as const };
+      }
+    },
+  );
+
+  safeHandle(IPC.refreshBackfillCancel, async () => {
+    cancelRefreshBackfill();
+    return { ok: true as const };
+  });
+
+  // One-shot status read so a freshly-mounted Settings page can paint
+  // the current run state without waiting for the next push event.
+  safeHandle(IPC.refreshBackfillStatus, async () => {
+    return getRefreshBackfillStatus();
+  });
+
+  safeHandle(IPC.sourceConnect, async (_, source: string) => {
     try {
       // `signInToSource` already kicks an incremental sync after the
       // sign-in window closes (when cookies are present), so the IPC
@@ -171,7 +276,7 @@ export function registerIpc() {
     }
   });
 
-  ipcMain.handle(IPC.sourceDisconnect, async (_, source: string) => {
+  safeHandle(IPC.sourceDisconnect, async (_, source: string) => {
     try {
       return await disconnectSource(
         source as Parameters<typeof disconnectSource>[0],
@@ -182,7 +287,7 @@ export function registerIpc() {
     }
   });
 
-  ipcMain.handle(IPC.sourceStatus, async (_, source: string) => {
+  safeHandle(IPC.sourceStatus, async (_, source: string) => {
     try {
       const connected = await isSourceConnected(
         source as Parameters<typeof isSourceConnected>[0],
@@ -198,28 +303,25 @@ export function registerIpc() {
   // both fan in here; the orchestrator deduplicates concurrent
   // requests for the same source so a quick double-click can't
   // launch two scrapes.
-  ipcMain.handle(IPC.syncRunNow, async (_, source: string, mode?: string) => {
+  safeHandle(IPC.syncRunNow, async (_, source: string) => {
     const src = source as Source;
     if (isSyncing(src)) {
       return { ok: false as const, reason: "already_running" as const };
     }
     // Fire-and-forget so the renderer doesn't block on the full
     // bookmarks scrape; status updates stream over `IPC.syncStatus`.
-    void syncSource(src, {
-      mode: mode === "backfill" ? "backfill" : "incremental",
-      trigger: "manual",
-    });
+    void syncSource(src, { trigger: "manual" });
     return { ok: true as const };
   });
 
-  ipcMain.handle(IPC.syncCancel, async (_, source: string) => {
+  safeHandle(IPC.syncCancel, async (_, source: string) => {
     cancelSync(source as Source);
     return { ok: true as const };
   });
 
   // One-shot status read so a freshly opened renderer can paint
   // "Last synced 3h ago" without waiting for the next push event.
-  ipcMain.handle(IPC.syncStatus, async (_, source: string) => {
+  safeHandle(IPC.syncStatus, async (_, source: string) => {
     const src = source as Source;
     const cfg = await getSourceSync(src);
     return {
@@ -239,7 +341,7 @@ export function registerIpc() {
   // need to wait — once the merge tx fires, the pool reconciler
   // pushes the new sha-bumped URL and the card heals on the next
   // commit (the broken state resets when `pickedSrc` changes).
-  ipcMain.handle(IPC.videoRedownload, async (_, id: string) => {
+  safeHandle(IPC.videoRedownload, async (_, id: string) => {
     try {
       return await redownloadVideoForSave(String(id));
     } catch (err) {
@@ -248,7 +350,7 @@ export function registerIpc() {
     }
   });
 
-  ipcMain.handle(IPC.videoToolsStatus, async () => {
+  safeHandle(IPC.videoToolsStatus, async () => {
     const { ytdlp, ffmpeg } = binariesAvailable();
     return {
       ok: true as const,
@@ -264,7 +366,7 @@ export function registerIpc() {
   // The `invalidateBinariesCache` call after the re-run forces the
   // next `binariesAvailable()` lookup to re-stat the disk so the UI
   // can transition straight from "Missing" → "Available".
-  ipcMain.handle(IPC.videoToolsReinstall, async () => {
+  safeHandle(IPC.videoToolsReinstall, async () => {
     try {
       const { reinstallYtDlp } = await import("../core/refresh/install");
       const result = await reinstallYtDlp();
@@ -276,7 +378,7 @@ export function registerIpc() {
     }
   });
 
-  ipcMain.handle(IPC.saveContextMenu, async (event, id: string) => {
+  safeHandle(IPC.saveContextMenu, async (event, id: string) => {
     try {
       const win = BrowserWindow.fromWebContents(event.sender) ?? undefined;
       const db = await getDb();
@@ -491,6 +593,30 @@ async function runQuery(
         .limit(limit);
       return toWireSaves(rows);
     }
+    case "saves.find": {
+      // Declarative filter pipeline: the renderer ships an AST
+      // (`Query`) and we compile it to a single Drizzle WHERE clause
+      // via `buildWhere`. Empty queries fall through and return the
+      // unfiltered set, mirroring `saves.list`'s behaviour. We always
+      // narrow against `deletedAt is null` here so the chip bar's
+      // result count matches what the grid actually renders.
+      const limit = Math.min(Number(params.limit ?? 1000), 5000);
+      const query = (params.query ?? null) as Query | null;
+      const where = query ? buildWhere(query) : undefined;
+      const rows = where
+        ? await db
+            .select()
+            .from(saves)
+            .where(where)
+            .orderBy(desc(saves.savedAt))
+            .limit(limit)
+        : await db
+            .select()
+            .from(saves)
+            .orderBy(desc(saves.savedAt))
+            .limit(limit);
+      return toWireSaves(rows);
+    }
     case "saves.emptyTrash": {
       // Hard-delete every row currently in the trash. Each row gets its
       // own purge tx so undo can theoretically resurrect a single item;
@@ -550,8 +676,45 @@ async function runQuery(
       if (items.length === 0) return { ok: false, error: "no_items" };
       const { ingestFromHttp } = await import("../core/ingest");
       const ids: string[] = [];
+      // Defense in depth: even though contextIsolation guarantees
+      // these paths come from our own renderer, an XSS via untrusted
+      // save metadata could otherwise turn this handler into an
+      // arbitrary-file-read primitive. Restrict to the OS-managed
+      // user directories where browser drops actually originate.
+      const allowedRoots = (() => {
+        const roots: string[] = [];
+        for (const key of [
+          "downloads",
+          "pictures",
+          "documents",
+          "desktop",
+          "music",
+          "videos",
+          "home",
+        ] as const) {
+          try {
+            const p = app.getPath(key);
+            if (p) roots.push(resolvePath(p));
+          } catch {
+            /* unsupported on this platform; skip */
+          }
+        }
+        return roots;
+      })();
+      const isUnderAllowedRoot = (p: string): boolean => {
+        const abs = resolvePath(p);
+        return allowedRoots.some(
+          (root) => abs === root || abs.startsWith(root + pathSep),
+        );
+      };
       for (const it of items) {
         if (!it.path || !existsSync(it.path)) continue;
+        if (!isUnderAllowedRoot(it.path)) {
+          log.warn("[pond ipc] dropFiles refused path outside user dirs", {
+            path: it.path,
+          });
+          continue;
+        }
         const sid = `drop-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
         const isImage =
           (it.type ?? "").startsWith("image/") ||
@@ -674,7 +837,6 @@ async function runQuery(
           videoDownload: rows[0].videoDownload ?? DEFAULT_VIDEO_DOWNLOAD,
         };
       }
-      // Seed defaults on first read.
       await db
         .insert(settingsTable)
         .values({
@@ -778,36 +940,6 @@ async function runQuery(
     case "profile.clearAvatar": {
       await setPrefs({ profile: { avatarPath: null } });
       return { ok: true as const };
-    }
-    case "security.touchIdSupported": {
-      // Touch ID is macOS-only and requires the laptop to actually
-      // have the sensor. Returns `false` everywhere else so the UI
-      // can hide the row without platform-specific code in the
-      // renderer.
-      if (process.platform !== "darwin") {
-        return { ok: true as const, supported: false };
-      }
-      try {
-        const supported = systemPreferences.canPromptTouchID();
-        return { ok: true as const, supported };
-      } catch {
-        return { ok: true as const, supported: false };
-      }
-    }
-    case "security.promptTouchId": {
-      if (process.platform !== "darwin") {
-        return { ok: false as const, reason: "unsupported" as const };
-      }
-      try {
-        const reason = String(params.reason ?? "Unlock Pond");
-        await systemPreferences.promptTouchID(reason);
-        return { ok: true as const };
-      } catch (err) {
-        return {
-          ok: false as const,
-          reason: err instanceof Error ? err.message : "denied",
-        };
-      }
     }
     case "settings.setAiGatewayKey": {
       await setAiGatewayKey(String(params.key ?? ""));
@@ -990,7 +1122,17 @@ async function runQuery(
       return await checkForUpdatesNow();
     }
     case "developer.openLogs": {
-      const err = await shell.openPath(app.getPath("logs"));
+      const logsDir = app.getPath("logs");
+      // electron-log seeds the directory the first time it writes,
+      // but a freshly installed copy that hasn't logged anything yet
+      // would otherwise resolve to a missing path and `openPath`
+      // would silently no-op.
+      try {
+        await mkdir(logsDir, { recursive: true });
+      } catch (err) {
+        log.warn("[pond ipc] logs mkdir failed", err);
+      }
+      const err = await shell.openPath(logsDir);
       if (err) return { ok: false as const, reason: err };
       return { ok: true as const };
     }
@@ -1011,7 +1153,26 @@ async function runQuery(
           width: 900,
           height: 600,
           title: "Pond IPC inspector",
-          webPreferences: { contextIsolation: true, sandbox: true },
+          webPreferences: {
+            contextIsolation: true,
+            sandbox: true,
+            nodeIntegration: false,
+          },
+        });
+        // Inspector is intentionally static — no popups, no
+        // navigation, no `<webview>` embeds. Bounce any link clicks
+        // to the system browser, deny everything else.
+        inspector.webContents.setWindowOpenHandler(({ url }) => {
+          if (url.startsWith("http:") || url.startsWith("https:")) {
+            void shell.openExternal(url);
+          }
+          return { action: "deny" };
+        });
+        inspector.webContents.on("will-navigate", (event, url) => {
+          if (!url.startsWith("data:")) {
+            event.preventDefault();
+            log.warn("[pond ipc] inspector blocked navigation", url);
+          }
         });
         await inspector.loadURL(
           `data:text/html;charset=utf-8,${encodeURIComponent(
@@ -1065,24 +1226,20 @@ async function runQuery(
       }
       return { ok: true as const };
     }
-    case "quickCapture.testHotkey": {
-      // Validate that an Electron Accelerator string can actually be
-      // registered before persisting it. Avoids leaving the user in
-      // a state where they think they bound a hotkey that the OS
-      // silently refused.
-      const { globalShortcut } = await import("electron");
-      const accel = String(params.accelerator ?? "");
-      if (!accel) return { ok: false as const, reason: "empty" as const };
-      try {
-        const ok = globalShortcut.register(accel, () => {});
-        if (ok) globalShortcut.unregister(accel);
-        return { ok };
-      } catch (err) {
-        return {
-          ok: false as const,
-          reason: err instanceof Error ? err.message : "invalid",
-        };
-      }
+    case "storage.snapshot": {
+      const { getStorageSnapshot } = await import("../core/storage-stats");
+      return await getStorageSnapshot();
+    }
+    case "storage.applyGuardPrefs": {
+      const { applyStorageWatcherPrefs } = await import(
+        "../core/storage-watcher"
+      );
+      await applyStorageWatcherPrefs();
+      return { ok: true as const };
+    }
+    case "storage.guardState": {
+      const { getStorageGuardState } = await import("../core/storage-watcher");
+      return getStorageGuardState();
     }
     case "saves.search": {
       const q = String(params.q ?? "").trim();
@@ -1207,7 +1364,6 @@ async function runQuery(
       return toWireSaves(ordered);
     }
     case "saves.activity": {
-      // Last N sync_actions, optionally filtered by save id.
       const id = params.saveId ? String(params.saveId) : null;
       const limit = Math.min(Number(params.limit ?? 50), 500);
       const where = id

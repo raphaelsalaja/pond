@@ -10,15 +10,6 @@ export default defineConfig({
     description:
       "Capture saves from Twitter/X, Instagram, Pinterest, Are.na, Cosmos, TikTok, YouTube, and web articles into one place.",
     permissions: ["storage", "scripting", "contextMenus", "activeTab", "tabs"],
-    commands: {
-      "save-current-page": {
-        suggested_key: {
-          default: "Ctrl+Shift+S",
-          mac: "Command+Shift+S",
-        },
-        description: "Save the current page to pond",
-      },
-    },
     host_permissions: [
       "https://x.com/*",
       "https://twitter.com/*",

@@ -1,54 +1,35 @@
-import CircleUser from "@pond/icons/fill/circle-user";
-import MediaPlay from "@pond/icons/fill/media-play";
-import ClockRotateClockwise from "@pond/icons/fill-duo/clock-rotate-clockwise";
-import Code from "@pond/icons/fill-duo/code";
-import ConnectedDots from "@pond/icons/fill-duo/connected-dots";
-import Dial from "@pond/icons/fill-duo/dial";
-import Download from "@pond/icons/fill-duo/download";
-import Equalizer from "@pond/icons/fill-duo/equalizer";
-import Layers from "@pond/icons/fill-duo/layers";
-import Slider from "@pond/icons/fill-duo/slider";
-import Sparkle from "@pond/icons/fill-duo/sparkle";
-import Stack from "@pond/icons/fill-duo/stack";
-import WindowCode2 from "@pond/icons/fill-duo/window-code-2";
-import Markdown from "@pond/icons/outline/markdown";
-import type { ComponentType, SVGProps } from "react";
 import {
-  BellIcon,
-  CloudIcon,
-  CompassIcon,
-  InfoIcon,
-  LightningIcon,
-  LockIcon,
-  RefreshIcon,
-  TagIcon,
-  TrashIcon,
-} from "./icons";
+  IconBellOutline18,
+  IconBoltOutline18,
+  IconCircleInfoOutline18,
+  IconClockRotateClockwiseOutline18,
+  IconCloudOutline18,
+  IconConnectedDotsOutline18,
+  IconLayersOutline18,
+  IconMediaPlayOutline18,
+  IconSliderOutline18,
+  IconSparkleOutline18,
+  IconStackOutline18,
+  IconTagOutline18,
+  IconTrash2ContentOutline18,
+  IconWindowCode2Outline18,
+} from "@pond/icons/outline";
+import type { IconComponent } from "@pond/icons/types";
+import type { ComponentType } from "react";
 import { AboutSection } from "./sections/about";
 import { AiSection } from "./sections/ai";
-import { ApiSection } from "./sections/api";
 import { BackupsSection } from "./sections/backups";
-import { CaptionsSection } from "./sections/captions";
-import { ConnectedAccountsSection } from "./sections/connected-accounts";
 import { DeveloperSection } from "./sections/developer";
-import { EmbeddingsSection } from "./sections/embeddings";
 import { ExtensionSection } from "./sections/extension";
-import { ImportExportSection } from "./sections/import-export";
 import { IntegrationsSection } from "./sections/integrations";
-import { LibrarySection } from "./sections/library";
 import { NotificationsSection } from "./sections/notifications";
 import { PreferencesSection } from "./sections/preferences";
-import { ProfileSection } from "./sections/profile";
 import { QuickCaptureSection } from "./sections/quick-capture";
-import { ResetSection } from "./sections/reset";
 import { SaveBehaviorSection } from "./sections/save-behavior";
-import { SearchSection } from "./sections/search";
-import { SecuritySection } from "./sections/security";
 import { StorageSection } from "./sections/storage";
 import { TagsSection } from "./sections/tags";
 import { TrashPrefsSection } from "./sections/trash";
 import { UpdatesSection } from "./sections/updates";
-import { VideoToolsSection } from "./sections/video-tools";
 import { VideosSection } from "./sections/videos";
 
 /**
@@ -67,16 +48,14 @@ export type SectionGroup =
   | "library"
   | "capture"
   | "features"
-  | "media"
-  | "administration"
-  | "advanced";
+  | "system";
 
 export interface SectionDef {
   id: string;
   /** Path segment after `/settings/` (no leading slash). */
   path: string;
   label: string;
-  icon: ComponentType<SVGProps<SVGSVGElement>>;
+  icon: IconComponent;
   group: SectionGroup;
   component: ComponentType;
 }
@@ -87,41 +66,17 @@ export const SECTIONS: SectionDef[] = [
     id: "preferences",
     path: "preferences",
     label: "Preferences",
-    icon: Slider,
+    icon: IconSliderOutline18,
     group: "personal",
     component: PreferencesSection,
-  },
-  {
-    id: "profile",
-    path: "profile",
-    label: "Profile",
-    icon: CircleUser,
-    group: "personal",
-    component: ProfileSection,
   },
   {
     id: "notifications",
     path: "notifications",
     label: "Notifications",
-    icon: BellIcon,
+    icon: IconBellOutline18,
     group: "personal",
     component: NotificationsSection,
-  },
-  {
-    id: "security",
-    path: "security",
-    label: "Security & access",
-    icon: LockIcon,
-    group: "personal",
-    component: SecuritySection,
-  },
-  {
-    id: "connected-accounts",
-    path: "connected-accounts",
-    label: "Connected accounts",
-    icon: ConnectedDots,
-    group: "personal",
-    component: ConnectedAccountsSection,
   },
 
   /* -------- Library -------- */
@@ -129,7 +84,7 @@ export const SECTIONS: SectionDef[] = [
     id: "storage",
     path: "storage",
     label: "Storage",
-    icon: Stack,
+    icon: IconStackOutline18,
     group: "library",
     component: StorageSection,
   },
@@ -137,7 +92,7 @@ export const SECTIONS: SectionDef[] = [
     id: "tags",
     path: "tags",
     label: "Tags",
-    icon: TagIcon,
+    icon: IconTagOutline18,
     group: "library",
     component: TagsSection,
   },
@@ -145,51 +100,59 @@ export const SECTIONS: SectionDef[] = [
     id: "trash-prefs",
     path: "trash-prefs",
     label: "Trash",
-    icon: TrashIcon,
+    icon: IconTrash2ContentOutline18,
     group: "library",
     component: TrashPrefsSection,
   },
   {
-    id: "library-identity",
-    path: "library-identity",
-    label: "Library identity",
-    icon: CompassIcon,
+    id: "backups",
+    path: "backups",
+    label: "Backups",
+    icon: IconCloudOutline18,
     group: "library",
-    component: LibrarySection,
-  },
-  {
-    id: "import-export",
-    path: "import-export",
-    label: "Import & export",
-    icon: Download,
-    group: "library",
-    component: ImportExportSection,
+    component: BackupsSection,
   },
 
   /* -------- Capture -------- */
   {
     id: "extension",
     path: "extension",
-    label: "Browser extension",
-    icon: WindowCode2,
+    label: "Browser Extension",
+    icon: IconWindowCode2Outline18,
     group: "capture",
     component: ExtensionSection,
   },
   {
     id: "quick-capture",
     path: "quick-capture",
-    label: "Quick capture",
-    icon: LightningIcon,
+    label: "Quick Capture",
+    icon: IconBoltOutline18,
     group: "capture",
     component: QuickCaptureSection,
   },
   {
     id: "save-behavior",
     path: "save-behavior",
-    label: "Save behavior",
-    icon: Layers,
+    label: "Save Behavior",
+    icon: IconLayersOutline18,
     group: "capture",
     component: SaveBehaviorSection,
+  },
+  {
+    id: "integrations",
+    path: "integrations",
+    label: "Integrations",
+    icon: IconConnectedDotsOutline18,
+    group: "capture",
+    component: IntegrationsSection,
+  },
+  {
+    id: "videos",
+    path: "videos",
+    label: "Videos",
+    icon: IconMediaPlayOutline18,
+    group: "capture",
+    component: VideosSection,
   },
 
   /* -------- Features -------- */
@@ -197,111 +160,35 @@ export const SECTIONS: SectionDef[] = [
     id: "ai",
     path: "ai",
     label: "AI & Agents",
-    icon: Sparkle,
+    icon: IconSparkleOutline18,
     group: "features",
     component: AiSection,
   },
-  {
-    id: "embeddings",
-    path: "embeddings",
-    label: "Embeddings",
-    icon: Equalizer,
-    group: "features",
-    component: EmbeddingsSection,
-  },
-  {
-    id: "search",
-    path: "search",
-    label: "Search",
-    icon: ConnectedDots,
-    group: "features",
-    component: SearchSection,
-  },
-  {
-    id: "captions",
-    path: "captions",
-    label: "Captions",
-    icon: Markdown,
-    group: "features",
-    component: CaptionsSection,
-  },
-  {
-    id: "integrations",
-    path: "integrations",
-    label: "URL scheme & Shortcuts",
-    icon: ConnectedDots,
-    group: "features",
-    component: IntegrationsSection,
-  },
 
-  /* -------- Media -------- */
-  {
-    id: "videos",
-    path: "videos",
-    label: "Videos",
-    icon: MediaPlay,
-    group: "media",
-    component: VideosSection,
-  },
-  {
-    id: "video-tools",
-    path: "video-tools",
-    label: "Video tools",
-    icon: Dial,
-    group: "media",
-    component: VideoToolsSection,
-  },
-
-  /* -------- Administration -------- */
-  {
-    id: "api",
-    path: "api",
-    label: "API",
-    icon: Code,
-    group: "administration",
-    component: ApiSection,
-  },
-  {
-    id: "backups",
-    path: "backups",
-    label: "Backups",
-    icon: CloudIcon,
-    group: "administration",
-    component: BackupsSection,
-  },
+  /* -------- System -------- */
   {
     id: "updates",
     path: "updates",
     label: "Updates",
-    icon: ClockRotateClockwise,
-    group: "administration",
+    icon: IconClockRotateClockwiseOutline18,
+    group: "system",
     component: UpdatesSection,
   },
-
-  /* -------- Advanced -------- */
   {
     id: "developer",
     path: "developer",
     label: "Developer",
-    icon: WindowCode2,
-    group: "advanced",
+    icon: IconWindowCode2Outline18,
+    group: "system",
     component: DeveloperSection,
   },
   {
     id: "about",
     path: "about",
     label: "About",
-    icon: InfoIcon,
-    group: "advanced",
+    icon: IconCircleInfoOutline18,
+    group: "system",
     component: AboutSection,
-  },
-  {
-    id: "reset",
-    path: "reset",
-    label: "Reset",
-    icon: RefreshIcon,
-    group: "advanced",
-    component: ResetSection,
   },
 ];
 
@@ -310,9 +197,7 @@ export const GROUP_ORDER: readonly SectionGroup[] = [
   "library",
   "capture",
   "features",
-  "media",
-  "administration",
-  "advanced",
+  "system",
 ] as const;
 
 /**
@@ -324,9 +209,7 @@ export const GROUP_LABELS: Record<SectionGroup, string | null> = {
   library: "Library",
   capture: "Capture",
   features: "Features",
-  media: "Media",
-  administration: "Administration",
-  advanced: "Advanced",
+  system: "System",
 };
 
 export function sectionsByGroup(group: SectionGroup): SectionDef[] {

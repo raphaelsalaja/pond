@@ -1,0 +1,50 @@
+.root {
+  display: inline-flex;
+}
+
+.group {
+  display: inline-flex;
+  align-items: stretch;
+  height: 28px;
+  overflow: hidden;
+  background: var(--ds-gray-2);
+  border-radius: var(--ds-radius-md);
+  box-shadow: var(--ds-shadow-search);
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--ds-gray-11);
+  cursor: pointer;
+  outline: none;
+  background: transparent;
+  border: 0;
+
+  &:hover:not(:disabled) {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-a3);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+  }
+}
+
+.input {
+  width: 64px;
+  padding: 0 6px;
+  font: inherit;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-12);
+  text-align: center;
+  outline: none;
+  background: transparent;
+  border: 0;
+}

@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import * as schema from "@pond/schema/db";
+import { registerSqliteFunctions } from "@pond/schema/filters";
 import Database from "better-sqlite3";
 import { sql } from "drizzle-orm";
 import {
@@ -58,6 +59,11 @@ export async function getDb(): Promise<Db> {
     );
   }
 
+  // Register custom SQL scalars (e.g. `color_distance`) used by the
+  // declarative filter pipeline. Must run before the first query that
+  // touches them — i.e. before any `saves.find` IPC call lands.
+  registerSqliteFunctions(sqlite);
+
   migrate(sqlite);
 
   const drizzled = drizzle(sqlite, { schema });
@@ -103,6 +109,7 @@ function migrate(sqlite: Database.Database): void {
 			annotations TEXT,
 			ocr_text TEXT,
 			dominant_colors TEXT,
+			blur_data_url TEXT,
 			files TEXT NOT NULL DEFAULT '[]',
 			cover_index INTEGER NOT NULL DEFAULT 0,
 			width INTEGER,
@@ -242,6 +249,7 @@ function migrate(sqlite: Database.Database): void {
       ["lang", "ALTER TABLE saves ADD COLUMN lang TEXT"],
       ["site_name", "ALTER TABLE saves ADD COLUMN site_name TEXT"],
       ["published_at", "ALTER TABLE saves ADD COLUMN published_at INTEGER"],
+      ["blur_data_url", "ALTER TABLE saves ADD COLUMN blur_data_url TEXT"],
     ] as const) {
       if (!savesCols.some((c) => c.name === col)) {
         sqlite.exec(sqlStmt);

@@ -1,213 +1,215 @@
-/* ------------------------------------------------------------------ */
-/* Sidebar layout — 224px column with logo, search, and grouped nav.   */
-/*                                                                    */
-/* All measurements lifted from the Figma `Sidebar` frame so spacing  */
-/* matches 1:1 with the wireframe; padding is 12px all round, vertical */
-/* gap between groups 12px.                                            */
-/* ------------------------------------------------------------------ */
+.root {
+  --sidebar-width: 224px;
+  --sidebar-padding: 12px;
+  --sidebar-padding-inline-inset: 6px;
+  --sidebar-row-gap: 8px;
+  --sidebar-row-radius: var(--ds-radius-md);
+  --sidebar-toolbar-height: 32px;
+  --sidebar-account-height: 32px;
+  --sidebar-item-height: 28px;
+  --sidebar-icon-slot: 18px;
+  --sidebar-mac-inset: 16px;
 
-.sidebar {
   position: relative;
   display: flex;
   flex-shrink: 0;
   flex-direction: column;
-  width: 224px;
+  width: var(--sidebar-width);
   height: 100%;
-  background: var(--pond-bg);
-  border-radius: var(--pond-radius-xl);
+  view-transition-name: app-sidebar;
 }
 
-/* Scrolling region: hosts the logo + all groups. `min-height: 0` is
- * required so the flex child can actually shrink and scroll instead
- * of pushing the footer out of view. */
 .scroll {
   display: flex;
   flex: 1;
   flex-direction: column;
   gap: 12px;
   min-height: 0;
-  padding: 12px 12px 0;
+  padding: var(--sidebar-padding);
   overflow-y: auto;
 }
 
-/* Footer: home for the help launcher. Sits outside the scrolling
- * region so it's always pinned to the bottom-left of the sidebar
- * regardless of source-list length. */
-.footer {
+.toolbar {
   display: flex;
   flex-shrink: 0;
+  gap: 2px;
   align-items: center;
-  padding: 12px;
+  justify-content: flex-end;
+  height: var(--sidebar-toolbar-height);
+  padding-left: var(--sidebar-padding-inline-inset);
 }
 
-/* ---- Logo --------------------------------------------------------- */
-
-.logo {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  height: 32px;
-  padding: 0 6px;
-  border-radius: var(--pond-radius-md);
-}
-
-.logoMark {
+.toolbar-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
-  color: var(--pond-fg);
-  background: light-dark(#f3f3f3, rgba(255, 255, 255, 0.08));
-  border-radius: var(--pond-radius-sm);
-}
-
-.logoText {
+  width: 24px;
+  height: 24px;
   font-size: 14px;
-  font-weight: 600;
-  color: var(--pond-fg);
-  letter-spacing: -0.28px;
+  color: var(--ds-gray-11);
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  transition:
+    color 80ms ease,
+    background 80ms ease;
+
+  &:hover {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-a2);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ds-accent-8);
+    outline-offset: 1px;
+  }
 }
 
-/* ---- Sections ----------------------------------------------------- */
+.back {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 6px;
+  align-items: center;
+  align-self: flex-start;
+  height: var(--sidebar-item-height);
+  padding-inline: var(--sidebar-padding-inline-inset);
+  margin-inline-end: auto;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ds-gray-11);
+  letter-spacing: -0.04px;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: var(--sidebar-row-radius);
+  transition:
+    color 80ms ease,
+    background 80ms ease;
+
+  &:hover {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-a2);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--ds-gray-a4);
+  }
+}
+
+:global([data-platform="mac"]) .back {
+  -webkit-app-region: no-drag;
+}
+
+.header {
+  display: flex;
+  flex-shrink: 0;
+  gap: 6px;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--sidebar-account-height);
+
+  border-radius: var(--sidebar-row-radius);
+}
+
+.header-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 6px;
+  align-items: center;
+}
 
 .group {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
 }
 
-.groupLabel {
+.group-label {
   display: flex;
   align-items: center;
   height: 24px;
-  padding: 0 6px;
+  padding-inline: var(--sidebar-padding-inline-inset);
   margin: 0;
   font-size: 12px;
   font-weight: 550;
-  color: var(--pond-muted);
+  color: var(--ds-gray-11);
   letter-spacing: 0.01px;
 }
 
-.subgroupLabel {
-  padding: 4px 6px 2px;
-  margin: 6px 0 0;
-  font-size: 10px;
-  font-weight: 550;
-  color: var(--pond-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-/* ---- Items -------------------------------------------------------- */
-
-.item {
+.item,
+.link {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
-  height: 28px;
-  padding: 0 6px;
+  height: var(--sidebar-item-height);
+  padding-inline: var(--sidebar-padding-inline-inset);
   font-size: 13px;
   font-weight: 550;
-  color: var(--pond-muted);
+  color: var(--ds-gray-11);
   letter-spacing: -0.04px;
   text-decoration: none;
-  border-radius: var(--pond-radius-md);
+  border-radius: var(--sidebar-row-radius);
   transition:
     background 80ms ease,
     color 80ms ease;
 }
 
-.item:hover {
-  color: var(--pond-fg);
-  background: var(--pond-hover);
+.link {
+  &:hover {
+    color: var(--ds-gray-12);
+  }
+
+  &[aria-current="page"],
+  &[aria-current="page"]:hover,
+  &[data-active="true"],
+  &[data-active="true"]:hover {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-a2);
+  }
 }
 
-.itemActive,
-.itemActive:hover {
-  color: var(--pond-fg);
-  background: var(--pond-active);
-}
-
-.itemMuted {
-  color: var(--pond-muted);
-}
-
-.itemIcon {
+.item-icon,
+.link-icon {
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
-  color: var(--pond-muted);
+  width: var(--sidebar-icon-slot);
+  height: var(--sidebar-icon-slot);
+  color: inherit;
 }
 
-.itemActive .itemIcon {
-  color: var(--pond-fg);
+.item[aria-current="page"] .item-icon,
+.link[aria-current="page"] .link-icon,
+.link[data-active="true"] .link-icon {
+  color: var(--ds-gray-12);
 }
 
-.itemLabel {
+.item-label,
+.link-label {
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* ---- Source badges (the 18×18 brand tile) ------------------------- */
-
-.badge {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  font-size: 10px;
-  font-weight: 600;
-  border-radius: var(--pond-radius-sm);
-  box-shadow: var(--pond-badge-shadow);
-}
-
-/* Cosmos / Are.na sit on near-white fills, so the inset shadow alone
- * doesn't give enough definition. Add a hairline ring so the badge
- * still reads as a discrete glyph at this size. */
-.badgeRing {
-  box-shadow:
-    var(--pond-badge-shadow),
-    inset 0 0 0 0.5px rgba(0, 0, 0, 0.1);
-}
-
-.badgeFallback {
-  color: var(--pond-fg);
-  background: light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.1));
-}
-
-/* ---- Empties ------------------------------------------------------ */
-
-.empty {
-  padding: 4px 6px;
-  margin: 0;
-  font-size: 12px;
-  color: var(--pond-muted);
-}
-
-/* ---- macOS traffic-light reservation ----------------------------- */
-
-/* macOS hosts the traffic lights at the top-left of the window, which
- * means they overlap the top of the sidebar. Reserve ~50px on the
- * scrolling region's top edge and make the sidebar itself draggable
- * so the traffic-light strip behaves as a window-grab area. */
-:global(.pond-shell--mac) .sidebar {
+:global([data-platform="mac"]) .root,
+:global([data-platform="mac"]) .scroll,
+:global([data-platform="mac"]) .toolbar {
   -webkit-app-region: drag;
 }
 
-:global(.pond-shell--mac) .scroll {
-  padding-top: 50px;
+:global([data-platform="mac"]) .scroll {
+  padding-top: var(--sidebar-mac-inset);
 }
 
-/* Interactive children inside the sidebar opt back out of the drag
- * region so clicks reach the navigation rows and the help button. */
-:global(.pond-shell--mac) .sidebar > * {
+:global([data-platform="mac"]) .scroll > * {
+  -webkit-app-region: no-drag;
+}
+
+:global([data-platform="mac"]) .toolbar-button {
   -webkit-app-region: no-drag;
 }

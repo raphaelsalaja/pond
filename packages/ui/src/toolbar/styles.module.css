@@ -1,0 +1,30 @@
+.root {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+}
+
+.group {
+  display: flex;
+  flex: 1;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 0;
+
+  &[data-align="center"] {
+    justify-content: center;
+  }
+
+  &[data-align="end"] {
+    justify-content: flex-end;
+  }
+}
+
+.separator {
+  width: 1px;
+  height: 18px;
+  background: var(--ds-gray-a4);
+}

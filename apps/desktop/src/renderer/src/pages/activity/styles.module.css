@@ -15,11 +15,11 @@
   margin: 0 0 4px;
   font-size: 22px;
   font-weight: 600;
-  color: var(--pond-fg);
+  color: var(--ds-gray-12);
 }
 
 .subtitle {
   margin: 0;
   font-size: 12px;
-  color: var(--pond-meta);
+  color: var(--ds-gray-9);
 }

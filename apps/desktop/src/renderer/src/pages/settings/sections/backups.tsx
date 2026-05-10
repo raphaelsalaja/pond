@@ -1,22 +1,7 @@
+import { Button, Input, Select, useToast } from "@pond/ui";
 import { useCallback, useEffect, useState } from "react";
-import { usePrefs } from "../../../pool/prefs";
-import {
-  Button,
-  Input,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  useToast,
-} from "../../../ui";
-import {
-  Row,
-  SectionHeader,
-  SectionStack,
-  SettingsCard,
-  StackedRow,
-} from "./_shared";
+import { Settings } from "@/components/settings";
+import { usePrefs } from "@/pool/prefs";
 
 interface Snapshot {
   path: string;
@@ -79,110 +64,141 @@ export function BackupsSection() {
   }
 
   return (
-    <SectionStack>
-      <SectionHeader
-        title="Backups"
-        description="Periodic local snapshots of your library. Default is off — zips can balloon disk usage fast."
-      />
+    <Settings.Page>
+      <Settings.Header>
+        <Settings.Title>Backups</Settings.Title>
+        <Settings.Description>
+          Schedule periodic zips of your library. Off by default.
+        </Settings.Description>
+      </Settings.Header>
 
-      <SettingsCard title="Schedule">
-        <Row
-          label="Snapshot frequency"
-          description="The cron runs once an hour and fires a snapshot when this much time has passed since the last one."
-          control={
-            <Select
-              value={prefs.schedule}
-              onValueChange={(v) =>
-                patch({
-                  schedule: v as "never" | "daily" | "weekly" | "monthly",
-                })
-              }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="never">Never</SelectItem>
-                <SelectItem value="daily">Daily</SelectItem>
-                <SelectItem value="weekly">Weekly</SelectItem>
-                <SelectItem value="monthly">Monthly</SelectItem>
-              </SelectContent>
-            </Select>
-          }
-        />
-        <Row
-          label="Retain"
-          description="How many snapshot zips to keep before pruning the oldest."
-          control={
-            <Input
-              size="sm"
-              type="number"
-              value={String(prefs.retainCount)}
-              onChange={(e) =>
-                patch({
-                  retainCount: Math.max(
-                    1,
-                    Math.min(50, Number(e.target.value) || 4),
-                  ),
-                })
-              }
-              style={{ width: 96 }}
-            />
-          }
-        />
-      </SettingsCard>
+      <Settings.Section>
+        <Settings.SectionTitle>Schedule</Settings.SectionTitle>
+        <Settings.List>
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>Snapshot Frequency</Settings.ItemTitle>
+              <Settings.ItemDescription>
+                An hourly cron fires a snapshot once this much time has passed
+                since the last one.
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <Select.Root
+                value={prefs.schedule}
+                onValueChange={(v) =>
+                  patch({
+                    schedule: v as "never" | "daily" | "weekly" | "monthly",
+                  })
+                }
+              >
+                <Select.Trigger>
+                  <Select.Value />
+                </Select.Trigger>
+                <Select.Content>
+                  <Select.Item value="never">Never</Select.Item>
+                  <Select.Item value="daily">Daily</Select.Item>
+                  <Select.Item value="weekly">Weekly</Select.Item>
+                  <Select.Item value="monthly">Monthly</Select.Item>
+                </Select.Content>
+              </Select.Root>
+            </Settings.ItemControl>
+          </Settings.Item>
 
-      <SettingsCard title="Manual">
-        <Row
-          label="Snapshot now"
-          description="Write a one-off zip of the library into _snapshots/ outside the schedule."
-          control={
-            <Button size="sm" onClick={snapshotNow} disabled={busy}>
-              {busy ? "Zipping…" : "Snapshot now"}
-            </Button>
-          }
-        />
-      </SettingsCard>
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>Retain</Settings.ItemTitle>
+              <Settings.ItemDescription>
+                How many snapshot zips to keep before pruning the oldest.
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <Input.Root
+                data-size="sm"
+                type="number"
+                value={String(prefs.retainCount)}
+                onChange={(e) =>
+                  patch({
+                    retainCount: Math.max(
+                      1,
+                      Math.min(50, Number(e.target.value) || 4),
+                    ),
+                  })
+                }
+                style={{ width: 96 }}
+              />
+            </Settings.ItemControl>
+          </Settings.Item>
+        </Settings.List>
+      </Settings.Section>
 
-      <SettingsCard title="Existing snapshots">
-        {snapshots.length === 0 ? (
-          <StackedRow
-            label="No snapshots yet"
-            description="They'll appear here once the cron fires or you create one manually."
-          >
-            <span />
-          </StackedRow>
-        ) : (
-          snapshots.map((s) => (
-            <Row
-              key={s.filename}
-              label={s.filename}
-              description={`${formatBytes(s.size)} · ${new Date(s.createdAt).toLocaleString()}`}
-              control={
-                <div style={{ display: "flex", gap: 6 }}>
-                  <Button size="sm" onClick={() => void reveal(s.filename)}>
-                    Reveal
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => void deleteSnapshot(s.filename)}
-                  >
-                    Delete
-                  </Button>
-                </div>
-              }
-            />
-          ))
-        )}
-      </SettingsCard>
-    </SectionStack>
+      <Settings.Section>
+        <Settings.SectionTitle>Manual</Settings.SectionTitle>
+        <Settings.List>
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>Snapshot Now</Settings.ItemTitle>
+              <Settings.ItemDescription>
+                Write a one-off zip into <code>_snapshots/</code> outside the
+                schedule.
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <Button size="sm" onClick={snapshotNow} disabled={busy}>
+                {busy ? "Zipping…" : "Snapshot Now"}
+              </Button>
+            </Settings.ItemControl>
+          </Settings.Item>
+        </Settings.List>
+      </Settings.Section>
+
+      <Settings.Section>
+        <Settings.SectionTitle>Existing Snapshots</Settings.SectionTitle>
+        <Settings.List>
+          {snapshots.length === 0 ? (
+            <Settings.Item>
+              <Settings.ItemDetails>
+                <Settings.ItemTitle>No Snapshots Yet</Settings.ItemTitle>
+                <Settings.ItemDescription>
+                  They appear here once the schedule fires or you create one.
+                </Settings.ItemDescription>
+              </Settings.ItemDetails>
+            </Settings.Item>
+          ) : (
+            snapshots.map((s) => (
+              <Settings.Item key={s.filename}>
+                <Settings.ItemDetails>
+                  <Settings.ItemTitle>{s.filename}</Settings.ItemTitle>
+                  <Settings.ItemDescription>
+                    {`${formatBytes(s.size)} · ${new Date(s.createdAt).toLocaleString()}`}
+                  </Settings.ItemDescription>
+                </Settings.ItemDetails>
+                <Settings.ItemControl>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <Button size="sm" onClick={() => void reveal(s.filename)}>
+                      Reveal
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => void deleteSnapshot(s.filename)}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </Settings.ItemControl>
+              </Settings.Item>
+            ))
+          )}
+        </Settings.List>
+      </Settings.Section>
+    </Settings.Page>
   );
 }
 
 function formatBytes(n: number): string {
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
-  if (n < 1024 * 1024 * 1024) return `${(n / 1024 / 1024).toFixed(1)} MB`;
-  return `${(n / 1024 / 1024 / 1024).toFixed(2)} GB`;
+  if (n < 1024) return `${n}\u00A0B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)}\u00A0KB`;
+  if (n < 1024 * 1024 * 1024) return `${(n / 1024 / 1024).toFixed(1)}\u00A0MB`;
+  return `${(n / 1024 / 1024 / 1024).toFixed(2)}\u00A0GB`;
 }

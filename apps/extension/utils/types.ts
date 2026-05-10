@@ -23,6 +23,7 @@ export interface PondSettings {
     | "cosmos"
     | "tiktok"
     | "youtube"
+    | "reddit"
     | "article",
     boolean
   >;
@@ -39,6 +40,7 @@ export const DEFAULT_SETTINGS: PondSettings = {
     cosmos: true,
     tiktok: true,
     youtube: true,
+    reddit: true,
     article: true,
   },
 };

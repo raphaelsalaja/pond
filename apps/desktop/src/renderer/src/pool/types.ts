@@ -93,6 +93,12 @@ export interface Save {
   fileSize?: number | null;
   /** AI-extracted dominant cover colours (sorted by weight). */
   dominantColors?: DominantColor[] | null;
+  /**
+   * `data:image/jpeg;base64,...` of a tiny blurred preview of the
+   * cover. Painted behind the lazy-loaded `<img>` so the slot already
+   * shows a blurred version of its own content while bytes stream in.
+   */
+  blurDataUrl?: string | null;
   tags: string[];
   aiTags: string[];
   aiCaption: string | null;

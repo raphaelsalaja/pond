@@ -1,13 +1,7 @@
+import { Button, Input, Switch } from "@pond/ui";
 import { useState } from "react";
-import { usePrefs } from "../../../pool/prefs";
-import { Button, Input, Switch } from "../../../ui";
-import {
-  Row,
-  SectionHeader,
-  SectionStack,
-  SettingsCard,
-  StackedRow,
-} from "./_shared";
+import { Settings } from "@/components/settings";
+import { usePrefs } from "@/pool/prefs";
 
 /**
  * Save behavior. The ingest pipeline (`apps/desktop/src/main/core/
@@ -40,89 +34,111 @@ export function SaveBehaviorSection() {
   }
 
   return (
-    <SectionStack>
-      <SectionHeader
-        title="Save behavior"
-        description="Defaults Pond applies whenever a new save lands."
-      />
+    <Settings.Page>
+      <Settings.Header>
+        <Settings.Title>Save Behavior</Settings.Title>
+        <Settings.Description>
+          Defaults applied to every new save.
+        </Settings.Description>
+      </Settings.Header>
 
-      <SettingsCard title="Defaults">
-        <Row
-          label="Auto-tag new saves"
-          description="Run AI tagging on every incoming save. Off keeps the lightweight palette + reading-time jobs running."
-          control={
-            <Switch
-              checked={prefs.autoTag}
-              onCheckedChange={(v) => patch({ autoTag: v })}
-            />
-          }
-        />
-        <Row
-          label="Deduplicate by URL"
-          description="When a re-bookmark misses on (source, sourceId), also try an exact URL match before creating a new save."
-          control={
-            <Switch
-              checked={prefs.dedupeByUrl}
-              onCheckedChange={(v) => patch({ dedupeByUrl: v })}
-            />
-          }
-        />
+      <Settings.Section>
+        <Settings.SectionTitle>Defaults</Settings.SectionTitle>
+        <Settings.List>
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>Auto-Tag New Saves</Settings.ItemTitle>
+              <Settings.ItemDescription>
+                Run AI tagging on every incoming save. Palette and reading-time
+                jobs always run.
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <Switch.Root
+                checked={prefs.autoTag}
+                onCheckedChange={(v) => patch({ autoTag: v })}
+              />
+            </Settings.ItemControl>
+          </Settings.Item>
 
-        <StackedRow
-          label="Default tags"
-          description="Applied to every new save before any AI runs. Type a tag and press Enter."
-        >
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {prefs.defaultTags.map((t) => (
-              <span
-                key={t}
-                style={{
-                  padding: "2px 8px",
-                  borderRadius: 999,
-                  fontSize: 12,
-                  background: "var(--pond-bg-subtle)",
-                  border: "1px solid var(--pond-border)",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6,
-                }}
-              >
-                {t}
-                <button
-                  type="button"
-                  onClick={() => removeTag(t)}
-                  style={{
-                    border: "none",
-                    background: "transparent",
-                    color: "var(--pond-fg-soft)",
-                    cursor: "pointer",
-                    padding: 0,
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>Deduplicate by URL</Settings.ItemTitle>
+              <Settings.ItemDescription>
+                On a re-bookmark miss for <code>(source, sourceId)</code>, match
+                by exact URL before creating a new save.
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <Switch.Root
+                checked={prefs.dedupeByUrl}
+                onCheckedChange={(v) => patch({ dedupeByUrl: v })}
+              />
+            </Settings.ItemControl>
+          </Settings.Item>
+
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>Default Tags</Settings.ItemTitle>
+              <Settings.ItemDescription>
+                Applied to every new save before any AI runs. Press Enter to
+                add.
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {prefs.defaultTags.map((t) => (
+                  <span
+                    key={t}
+                    style={{
+                      padding: "2px 8px",
+                      borderRadius: 999,
+                      fontSize: 12,
+                      background: "var(--ds-gray-2)",
+                      border: "1px solid var(--ds-gray-a4)",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                    }}
+                  >
+                    {t}
+                    <button
+                      type="button"
+                      onClick={() => removeTag(t)}
+                      style={{
+                        border: "none",
+                        background: "transparent",
+                        color: "var(--ds-gray-11)",
+                        cursor: "pointer",
+                        padding: 0,
+                      }}
+                      aria-label={`Remove ${t}`}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+                <Input.Root
+                  data-size="sm"
+                  placeholder="Add Tag…"
+                  value={chip}
+                  onChange={(e) => setChip(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addTag();
+                    }
                   }}
-                  aria-label={`Remove ${t}`}
-                >
-                  ×
-                </button>
-              </span>
-            ))}
-            <Input
-              size="sm"
-              placeholder="Add tag…"
-              value={chip}
-              onChange={(e) => setChip(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  addTag();
-                }
-              }}
-              style={{ flex: 1, minWidth: 120 }}
-            />
-            <Button size="sm" onClick={addTag}>
-              Add
-            </Button>
-          </div>
-        </StackedRow>
-      </SettingsCard>
-    </SectionStack>
+                  style={{ flex: 1, minWidth: 120 }}
+                />
+                <Button size="sm" onClick={addTag}>
+                  Add
+                </Button>
+              </div>
+            </Settings.ItemControl>
+          </Settings.Item>
+        </Settings.List>
+      </Settings.Section>
+    </Settings.Page>
   );
 }

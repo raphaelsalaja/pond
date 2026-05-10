@@ -1,9 +1,10 @@
+import { Button, Tooltip } from "@pond/ui";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { addHighlight, removeHighlight } from "../../pool/annotations";
-import { useSave } from "../../pool/hooks";
-import type { Save, TextHighlight } from "../../pool/types";
-import { Button, Tooltip } from "../../ui";
+import { EmptyState } from "@/components/empty-state";
+import { addHighlight, removeHighlight } from "@/pool/annotations";
+import { useSave } from "@/pool/hooks";
+import type { Save, TextHighlight } from "@/pool/types";
 import styles from "./styles.module.css";
 
 type FontStack = "serif" | "sans" | "mono";
@@ -124,11 +125,11 @@ export function ReaderPage() {
   const themeClass = useMemo(() => {
     switch (prefs.theme) {
       case "sepia":
-        return styles.themeSepia;
+        return styles["theme-sepia"];
       case "dark":
-        return styles.themeDark;
+        return styles["theme-dark"];
       case "high-contrast":
-        return styles.themeHc;
+        return styles["theme-hc"];
       default:
         return "";
     }
@@ -148,20 +149,22 @@ export function ReaderPage() {
   const fontFamily = useMemo(() => {
     switch (prefs.font) {
       case "sans":
-        return "var(--pond-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif)";
+        return "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
       case "mono":
-        return "var(--pond-font-mono, ui-monospace, 'SF Mono', Menlo, monospace)";
+        return "ui-monospace, 'SF Mono', Menlo, monospace";
       default:
-        return "var(--pond-font-serif, Georgia, 'Iowan Old Style', 'Palatino', serif)";
+        return "Georgia, 'Iowan Old Style', 'Palatino', serif";
     }
   }, [prefs.font]);
 
   if (!save) {
     return (
-      <div className="pond-empty">
-        <p>Save not found.</p>
-        <Link to="/">← back to library</Link>
-      </div>
+      <EmptyState.Root data-tone="page">
+        <EmptyState.Title>Save not found</EmptyState.Title>
+        <EmptyState.Actions>
+          <Link to="/">← back to library</Link>
+        </EmptyState.Actions>
+      </EmptyState.Root>
     );
   }
 
@@ -173,35 +176,35 @@ export function ReaderPage() {
   return (
     <div className={`${styles.reader} ${themeClass}`.trim()}>
       <header className={styles.toolbar}>
-        <div className={styles.toolbarLeft}>
-          <Link to={`/?id=${save.id}`} className={styles.back}>
+        <div className={styles["toolbar-left"]}>
+          <Link to={`/save/${save.id}`} className={styles.back}>
             ← Back
           </Link>
         </div>
-        <div className={styles.toolbarCenter}>
-          <Tooltip content="Decrease text size">
+        <div className={styles["toolbar-center"]}>
+          <Tooltip.Root content="Decrease text size">
             <Button
               size="sm"
               variant="ghost"
-              iconOnly
+              icon
               aria-label="Smaller text"
               onClick={() => update({ size: clamp(prefs.size - 1, 14, 28) })}
             >
               A−
             </Button>
-          </Tooltip>
-          <span className={styles.sizeReadout}>{prefs.size}px</span>
-          <Tooltip content="Increase text size">
+          </Tooltip.Root>
+          <span className={styles["size-readout"]}>{prefs.size}px</span>
+          <Tooltip.Root content="Increase text size">
             <Button
               size="sm"
               variant="ghost"
-              iconOnly
+              icon
               aria-label="Bigger text"
               onClick={() => update({ size: clamp(prefs.size + 1, 14, 28) })}
             >
               A+
             </Button>
-          </Tooltip>
+          </Tooltip.Root>
           <span className={styles.divider} />
           <select
             className={styles.select}
@@ -235,8 +238,8 @@ export function ReaderPage() {
             <option value="high-contrast">High contrast</option>
           </select>
         </div>
-        <div className={styles.toolbarRight}>
-          <Tooltip content="Open original page in browser">
+        <div className={styles["toolbar-right"]}>
+          <Tooltip.Root content="Open original page in browser">
             <Button
               size="sm"
               variant="ghost"
@@ -247,7 +250,7 @@ export function ReaderPage() {
             >
               Original
             </Button>
-          </Tooltip>
+          </Tooltip.Root>
         </div>
       </header>
 
@@ -282,7 +285,7 @@ export function ReaderPage() {
 
         {content?.summary ? (
           <aside className={styles.summary}>
-            <span className={styles.summaryLabel}>AI summary</span>
+            <span className={styles["summary-label"]}>AI summary</span>
             <p>{content.summary}</p>
           </aside>
         ) : null}
@@ -292,16 +295,23 @@ export function ReaderPage() {
         ) : hasArticle && content?.html ? (
           <ReaderBody save={save} html={content.html} />
         ) : (
-          <div className={styles.empty}>
-            <p>No reader copy cached for this save yet.</p>
-            <Button onClick={runExtraction} disabled={extracting || !save.url}>
-              {extracting ? "Queuing…" : "Run extraction"}
-            </Button>
-            <p className={styles.hint}>
+          <EmptyState.Root data-tone="inline">
+            <EmptyState.Description>
+              No reader copy cached for this save yet.
+            </EmptyState.Description>
+            <EmptyState.Actions>
+              <Button
+                onClick={runExtraction}
+                disabled={extracting || !save.url}
+              >
+                {extracting ? "Queuing…" : "Run extraction"}
+              </Button>
+            </EmptyState.Actions>
+            <EmptyState.Description>
               The AI worker will fetch the page, strip the chrome, and cache a
               clean copy locally. Reload this view once it finishes.
-            </p>
-          </div>
+            </EmptyState.Description>
+          </EmptyState.Root>
         )}
       </article>
     </div>
@@ -447,29 +457,29 @@ function ReaderBody({ save, html }: ReaderBodyProps) {
         </button>
       ) : null}
       {highlights.length > 0 ? (
-        <aside className={styles.highlightsRail}>
-          <h3 className={styles.highlightsTitle}>
+        <aside className={styles["highlights-rail"]}>
+          <h3 className={styles["highlights-title"]}>
             {highlights.length} highlight{highlights.length === 1 ? "" : "s"}
           </h3>
-          <ul className={styles.highlightsList}>
+          <ul className={styles["highlights-list"]}>
             {highlights.map((h) => (
-              <li key={h.id} className={styles.highlightsItem}>
+              <li key={h.id} className={styles["highlights-item"]}>
                 <span
-                  className={styles.highlightSwatch}
+                  className={styles["highlight-swatch"]}
                   style={{ background: h.color ?? HIGHLIGHT_PALETTE[0] }}
                   aria-hidden
                 />
-                <span className={styles.highlightQuote}>"{h.quote}"</span>
-                <Tooltip content="Remove">
+                <span className={styles["highlight-quote"]}>"{h.quote}"</span>
+                <Tooltip.Root content="Remove">
                   <button
                     type="button"
-                    className={styles.highlightRemove}
+                    className={styles["highlight-remove"]}
                     onClick={() => void removeHighlight(save, h.id)}
                     aria-label="Remove highlight"
                   >
                     ×
                   </button>
-                </Tooltip>
+                </Tooltip.Root>
               </li>
             ))}
           </ul>

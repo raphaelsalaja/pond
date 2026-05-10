@@ -1,0 +1,323 @@
+/* ------------------------------------------------------------------ */
+/* Saved filters trigger button (header toolbar)                        */
+/* ------------------------------------------------------------------ */
+
+.trigger {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  font-size: 14px;
+  color: var(--ds-gray-11);
+  touch-action: manipulation;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  transition:
+    color 80ms ease,
+    background 80ms ease;
+
+  &:hover {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-a3);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ds-accent-8);
+    outline-offset: 1px;
+  }
+
+  &[data-popup-open] {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-a4);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Menu body                                                            */
+/* ------------------------------------------------------------------ */
+
+.popover {
+  width: 280px;
+  padding: 0;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  max-height: 360px;
+  overflow: hidden;
+}
+
+.search-wrap {
+  padding: 6px;
+  border-bottom: 1px solid var(--ds-gray-a3);
+}
+
+.search {
+  height: 28px;
+  font-size: 13px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-height: 0;
+  padding: 4px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-padding-block: 0.5rem;
+}
+
+.empty {
+  padding: 16px 12px;
+  margin: 0;
+  font-size: 12px;
+  color: var(--ds-gray-11);
+  text-align: center;
+}
+
+/* ------------------------------------------------------------------ */
+/* Saved-filter row                                                     */
+/* ------------------------------------------------------------------ */
+/*                                                                      */
+/* Two side-by-side buttons inside a flex wrapper: the apply button     */
+/* fills the row, the `…` menu fades in on hover / focus-within.        */
+/* Nesting buttons isn't valid, so the wrapper carries the hover state. */
+
+.row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  user-select: none;
+  border-radius: 5px;
+  isolation: isolate;
+
+  &::before {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    content: "";
+    background: var(--ds-gray-a3);
+    border-radius: inherit;
+    opacity: 0;
+    transition: opacity 80ms ease;
+  }
+
+  &:hover::before,
+  &:focus-within::before,
+  &[data-applied]::before,
+  &:has([data-popup-open])::before {
+    opacity: 1;
+  }
+}
+
+.row-main {
+  display: flex;
+  flex: 1;
+  gap: 8px;
+  align-items: center;
+  height: 30px;
+  padding: 0 8px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ds-gray-12);
+  text-align: left;
+  touch-action: manipulation;
+  cursor: default;
+  outline: none;
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+}
+
+.row-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  font-size: 14px;
+  color: var(--ds-gray-11);
+}
+
+.row-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row-check {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  color: var(--ds-gray-12);
+}
+
+/* Inline rename — replaces the row main button while editing. */
+.row-input-wrap {
+  display: flex;
+  flex: 1;
+  gap: 8px;
+  align-items: center;
+  height: 30px;
+  padding: 0 8px;
+}
+
+.row-input {
+  flex: 1;
+  width: 0;
+  min-width: 0;
+  height: 22px;
+  padding: 0 6px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ds-gray-12);
+  outline: 1.5px solid var(--ds-accent-8);
+  background: var(--ds-gray-1);
+  border: 0;
+  border-radius: 4px;
+}
+
+.row-menu-trigger {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-right: 4px;
+  font-size: 12px;
+  color: var(--ds-gray-11);
+  touch-action: manipulation;
+  cursor: default;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  opacity: 0;
+  transition:
+    background 80ms ease,
+    color 80ms ease,
+    opacity 80ms ease;
+
+  &:hover {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-a4);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ds-accent-8);
+    outline-offset: 1px;
+    opacity: 1;
+  }
+
+  &[data-popup-open] {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-a4);
+    opacity: 1;
+  }
+}
+
+.row:hover .row-menu-trigger,
+.row:focus-within .row-menu-trigger {
+  opacity: 1;
+}
+
+/* ------------------------------------------------------------------ */
+/* Row context menu                                                     */
+/* ------------------------------------------------------------------ */
+/*                                                                      */
+/* The menu chrome (popup, items, icons) comes from `@pond/ui`'s        */
+/* Menu primitive. Only the local overrides live here: a tighter        */
+/* popup width and the destructive "Delete" colour.                     */
+
+.menu {
+  width: 140px;
+  padding: 4px;
+}
+
+.menu-item-danger {
+  color: #e34a4a;
+
+  &::before {
+    background: rgba(227, 74, 74, 0.12);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Footer — Save this filter                                            */
+/* ------------------------------------------------------------------ */
+
+.footer {
+  padding: 4px;
+  border-top: 1px solid var(--ds-gray-a3);
+}
+
+.footer-action {
+  position: relative;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  height: 30px;
+  padding: 0 8px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ds-gray-12);
+  text-align: left;
+  touch-action: manipulation;
+  cursor: default;
+  user-select: none;
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  isolation: isolate;
+
+  &::before {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    content: "";
+    background: var(--ds-gray-a3);
+    border-radius: inherit;
+    opacity: 0;
+    transition: opacity 80ms ease;
+  }
+
+  &:hover::before,
+  &:focus-visible::before {
+    opacity: 1;
+  }
+
+  &:focus-visible {
+    outline: none;
+  }
+}
+
+.footer-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  font-size: 14px;
+  color: var(--ds-gray-11);
+}
+
+.footer-input {
+  height: 30px;
+  font-size: 13px;
+}

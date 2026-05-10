@@ -1,124 +1,345 @@
-import { useMemo, useState } from "react";
+import {
+  IconCheckOutline18,
+  IconPlusOutline18,
+  IconXmarkOutline18,
+} from "@pond/icons/outline";
+import { FIELD_META } from "@pond/schema/filters/meta";
+import {
+  COMPARATORS_BY_TYPE,
+  type ComparatorId,
+  EMPTY_QUERY,
+  type Predicate,
+  type Query,
+} from "@pond/schema/filters/types";
+import { readQuery, writeQuery } from "@pond/schema/filters/url";
+import { Menu } from "@pond/ui";
+import { useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Popover, PopoverContent, PopoverTrigger } from "../../ui";
-import { FilterChip } from "./chip";
-import { activeFilterIds, type FilterId, readFilters } from "./filters";
-import { PlusIcon } from "./icons";
-import { FILTER_DEFS, getFilterDef } from "./registry";
+import {
+  appendPredicate,
+  predicateIsActive,
+  replacePredicate,
+  topLevelPredicates,
+} from "./helpers";
+import {
+  AddFilterMenu,
+  COMPARATOR_LABELS,
+  dropdownFor,
+  FIELD_ICONS,
+} from "./registry";
 import styles from "./styles.module.css";
 
-export type { FilterId } from "./filters";
-
 /**
- * Eagle-style filter chip rail. Renders the canonical row of chips
- * (one per filter definition) plus an "Add filter" overflow popover
- * for chips that aren't on the visible row by default.
+ * Filter bar — renders one chip per top-level predicate in the
+ * URL-encoded `Query`, plus an "Add filter" menu and a "Clear"
+ * button.
  *
- * The rail is purely visual — every chip reads/writes its value via
- * URL search params, so the bar can mount in any layout (currently
- * the global header) and stay in sync with `<SavesView>`.
+ * The whole component is a thin lens over the URL: every edit goes
+ * through `setSearchParams(writeQuery(prev, nextAst))` so deep
+ * links carry the active filter exactly. Saved-filter views write
+ * the same params shape so a one-click apply from the popover
+ * mirrors what the chip bar would have produced.
  */
-export function FilterBar() {
-  const [params] = useSearchParams();
-  const filters = readFilters(params);
-  const active = useMemo(() => new Set(activeFilterIds(filters)), [filters]);
-  return (
-    <div className={styles.bar} role="toolbar" aria-label="Filters">
-      {FILTER_DEFS.map((def) => (
-        <FilterChip
-          key={def.id}
-          id={def.id}
-          variant={active.has(def.id) ? "active" : "passive"}
-        />
-      ))}
-      <AddFilterMenu />
-    </div>
-  );
-}
+function Root({ className, ...props }: React.ComponentPropsWithoutRef<"div">) {
+  const [params, setParams] = useSearchParams();
+  const query = useMemo(() => readQuery(params), [params]);
+  const predicates = topLevelPredicates(query).map((p, idx) => ({ p, idx }));
+  const active = predicates.filter(({ p }) => predicateIsActive(p));
+  if (active.length === 0) return null;
 
-/**
- * The trailing `+` button. Mirrors Eagle's "Add filter" affordance —
- * clicking pops a list of every defined filter (including scaffolds,
- * marked as such), and selecting one scrolls/focuses the existing
- * chip in the bar. We don't need to persist the "added" state since
- * every chip is always rendered; this menu primarily serves as a
- * keyboard-reachable index for users who don't want to scan the row.
- */
-function AddFilterMenu() {
-  const [open, setOpen] = useState(false);
-  function jumpTo(id: FilterId) {
-    setOpen(false);
-    queueMicrotask(() => {
-      const target = document.querySelector<HTMLElement>(
-        `[data-filter-id="${id}"]`,
-      );
-      target?.scrollIntoView({
-        behavior: "smooth",
-        block: "nearest",
-        inline: "center",
-      });
-      target?.focus({ preventScroll: true });
-    });
+  function commit(next: Query) {
+    setParams(writeQuery(params, next), { replace: true });
+  }
+
+  function clearAll() {
+    commit(EMPTY_QUERY);
   }
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger
+    <Bar className={className} {...props}>
+      {active.map(({ p, idx }) => (
+        <Chip
+          key={`${p.field}-${idx}`}
+          predicate={p}
+          onChange={(next) => commit(replacePredicate(query, idx, next))}
+        />
+      ))}
+      <AddTrigger
+        onCommit={(predicate) => commit(appendPredicate(query, predicate))}
+      />
+      <ClearAll onClick={clearAll} />
+    </Bar>
+  );
+}
+
+interface BarProps extends React.ComponentPropsWithoutRef<"div"> {}
+
+function Bar({ className, ...props }: BarProps) {
+  return (
+    <div
+      role="toolbar"
+      aria-label="Active filters"
+      className={[styles.bar, className ?? ""].filter(Boolean).join(" ")}
+      {...props}
+    />
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Chip                                                                */
+/* ------------------------------------------------------------------ */
+
+interface ChipProps {
+  predicate: Predicate;
+  onChange: (next: Predicate | null) => void;
+}
+
+/**
+ * Multi-segment chip — `[label] [comparator] [value] [×]`. Each
+ * segment owns its own popover so the user can swap one piece
+ * without touching the others.
+ */
+function Chip({ predicate, onChange }: ChipProps) {
+  const meta = FIELD_META[predicate.field];
+  const Icon = FIELD_ICONS[predicate.field];
+  const Dropdown = dropdownFor(predicate.field);
+  const allowed = COMPARATORS_BY_TYPE[meta.type];
+
+  const preview = describePredicate(predicate);
+
+  return (
+    <span className={styles.chip} data-filter-id={predicate.field}>
+      <button
+        type="button"
+        className={[styles["chip-segment"], styles["chip-dimension"]].join(" ")}
+        aria-label={meta.label}
+      >
+        <span className={styles["chip-icon"]} aria-hidden>
+          <Icon width="1em" height="1em" />
+        </span>
+        {meta.label}
+      </button>
+
+      <ComparatorSegment
+        cmp={predicate.cmp}
+        negate={Boolean(predicate.negate)}
+        allowed={allowed}
+        onChange={(nextCmp, nextNegate) =>
+          onChange({
+            ...predicate,
+            cmp: nextCmp,
+            ...(nextNegate ? { negate: true } : { negate: undefined }),
+          })
+        }
+      />
+
+      <ValueSegment label={meta.label} preview={preview}>
+        <Dropdown predicate={predicate} onChange={onChange} />
+      </ValueSegment>
+
+      <button
+        type="button"
+        aria-label={`Remove ${meta.label} filter`}
+        className={[styles["chip-segment"], styles["chip-close"]].join(" ")}
+        onClick={() => onChange(null)}
+      >
+        <IconXmarkOutline18 width="0.7em" height="0.7em" />
+      </button>
+    </span>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Comparator segment                                                  */
+/* ------------------------------------------------------------------ */
+
+interface ComparatorSegmentProps {
+  cmp: ComparatorId;
+  negate: boolean;
+  allowed: readonly ComparatorId[];
+  onChange: (cmp: ComparatorId, negate: boolean) => void;
+}
+
+function ComparatorSegment({
+  cmp,
+  negate,
+  allowed,
+  onChange,
+}: ComparatorSegmentProps) {
+  const label = negate
+    ? `not ${COMPARATOR_LABELS[cmp]}`
+    : COMPARATOR_LABELS[cmp];
+  return (
+    <Menu.Root>
+      <Menu.Trigger
+        className={[styles["chip-segment"], styles["chip-operator"]].join(" ")}
+        aria-label="Comparator"
+      >
+        {label}
+      </Menu.Trigger>
+      <Menu.Portal>
+        <Menu.Positioner align="start" side="bottom" sideOffset={6}>
+          <Menu.Popup className={styles["operator-popup"]}>
+            <Menu.RadioGroup
+              value={cmp}
+              onValueChange={(next) => onChange(next as ComparatorId, false)}
+            >
+              {allowed.map((id) => (
+                <Menu.RadioItem key={id} value={id}>
+                  <Menu.RadioItemIndicator>
+                    <IconCheckOutline18 width="0.85em" height="0.85em" />
+                  </Menu.RadioItemIndicator>
+                  {COMPARATOR_LABELS[id]}
+                </Menu.RadioItem>
+              ))}
+            </Menu.RadioGroup>
+            <Menu.Separator />
+            <Menu.CheckboxItem
+              checked={negate}
+              onCheckedChange={(checked) => onChange(cmp, Boolean(checked))}
+            >
+              <Menu.ItemLabel>Invert</Menu.ItemLabel>
+            </Menu.CheckboxItem>
+          </Menu.Popup>
+        </Menu.Positioner>
+      </Menu.Portal>
+    </Menu.Root>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Value segment                                                       */
+/* ------------------------------------------------------------------ */
+
+interface ValueSegmentProps {
+  label: string;
+  preview: string;
+  children: React.ReactNode;
+}
+
+function ValueSegment({ label, preview, children }: ValueSegmentProps) {
+  return (
+    <Menu.Root>
+      <Menu.Trigger
+        className={[styles["chip-segment"], styles["chip-value"]].join(" ")}
+        aria-label={`${label} value`}
+      >
+        {preview || "any"}
+      </Menu.Trigger>
+      <Menu.Portal>
+        <Menu.Positioner align="start" side="bottom" sideOffset={6}>
+          <Menu.Popup className={styles["value-popup"]}>{children}</Menu.Popup>
+        </Menu.Positioner>
+      </Menu.Portal>
+    </Menu.Root>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Add filter trigger                                                  */
+/* ------------------------------------------------------------------ */
+
+interface AddTriggerProps extends React.ComponentPropsWithoutRef<"button"> {
+  onCommit: (predicate: Predicate) => void;
+}
+
+function AddTrigger({ onCommit, className, ...props }: AddTriggerProps) {
+  return (
+    <Menu.Root>
+      <Menu.Trigger
         render={
           <button
             type="button"
-            className={`${styles.chip} ${styles.addFilter}`}
+            className={[
+              styles["add-filter"],
+              styles["add-filter-icon-only"],
+              className ?? "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
             aria-label="Add filter"
+            {...props}
           >
-            <span className={styles.chipIcon} aria-hidden>
-              <PlusIcon width="0.85em" height="0.85em" />
+            <span className={styles["chip-icon"]} aria-hidden>
+              <IconPlusOutline18 width="0.85em" height="0.85em" />
             </span>
           </button>
         }
       />
-      <PopoverContent
-        align="end"
-        side="bottom"
-        sideOffset={6}
-        className={styles.addPopover}
-      >
-        <p className={styles.addLabel}>Add filter</p>
-        <ul className={styles.addList}>
-          {FILTER_DEFS.map((def) => {
-            const Icon = def.icon;
-            const isScaffold = def.status === "scaffold";
-            return (
-              <li key={def.id}>
-                <button
-                  type="button"
-                  className={styles.addItem}
-                  onClick={() => jumpTo(def.id)}
-                >
-                  <span className={styles.addItemIcon} aria-hidden>
-                    <Icon width="1em" height="1em" />
-                  </span>
-                  <span className={styles.addItemLabel}>{def.label}</span>
-                  {isScaffold ? (
-                    <span className={styles.addItemChip}>Soon</span>
-                  ) : null}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      </PopoverContent>
-    </Popover>
+      <Menu.Portal>
+        <Menu.Positioner side="bottom" align="end" sideOffset={6}>
+          <Menu.Popup>
+            <AddFilterMenu onCommit={onCommit} />
+          </Menu.Popup>
+        </Menu.Positioner>
+      </Menu.Portal>
+    </Menu.Root>
   );
 }
 
-/**
- * Read-only helper — exported so other surfaces (e.g. the saves view
- * empty-state messaging) can decide whether to show "no matches" vs.
- * "no saves yet".
- */
-export function useActiveFilterCount(): number {
-  const [params] = useSearchParams();
-  return activeFilterIds(readFilters(params)).length;
+/* ------------------------------------------------------------------ */
+/* Clear all                                                           */
+/* ------------------------------------------------------------------ */
+
+interface ClearAllProps extends React.ComponentPropsWithoutRef<"button"> {}
+
+function ClearAll({ className, type = "button", ...props }: ClearAllProps) {
+  return (
+    <button
+      type={type}
+      className={[styles["clear-all"], className ?? ""]
+        .filter(Boolean)
+        .join(" ")}
+      {...props}
+    >
+      Clear
+    </button>
+  );
 }
 
-export { getFilterDef, readFilters };
+export const FilterBar = {
+  Root,
+  Bar,
+  Chip,
+  AddTrigger,
+  ClearAll,
+};
+
+export function useActiveFilterCount(): number {
+  const [params] = useSearchParams();
+  return useMemo(() => {
+    const query = readQuery(params);
+    return topLevelPredicates(query).filter(predicateIsActive).length;
+  }, [params]);
+}
+
+/* ------------------------------------------------------------------ */
+/* Predicate preview                                                   */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Compact human-readable preview of a predicate's value, used as
+ * the chip's value-segment label. Mirrors what the legacy filter
+ * bar's `previewValue` returned per filter, but driven off the AST
+ * so we don't need a per-field switch.
+ */
+function describePredicate(p: Predicate): string {
+  const v = p.value;
+  if (p.cmp === "exists") return v === false ? "not set" : "set";
+  if (p.cmp === "near" && typeof v === "object" && v !== null) {
+    const hex = String((v as { hex?: unknown }).hex ?? "");
+    return hex ? `#${hex}` : "any";
+  }
+  if (Array.isArray(v)) {
+    if (p.cmp === "between") {
+      const [lo, hi] = v;
+      return `${lo}–${hi}`;
+    }
+    if (v.length === 0) return "any";
+    if (v.length === 1) return String(v[0]);
+    return `${v.length} values`;
+  }
+  if (typeof v === "string") return v || "any";
+  if (typeof v === "number") return String(v);
+  return "any";
+}

@@ -1,3 +1,4 @@
+import { Tooltip } from "@pond/ui";
 import type { RefObject, SVGProps } from "react";
 import { useMemo, useState } from "react";
 import {
@@ -5,36 +6,17 @@ import {
   formatFullNumber,
   formatHms,
   formatRelativeTime,
-} from "../../lib/format";
-import { extractSaveStats, type SaveMetricKey } from "../../pool/save-stats";
-import type { Save } from "../../pool/types";
-import { Tooltip } from "../../ui";
+} from "@/lib/format";
+import { extractSaveStats, type SaveMetricKey } from "@/pool/save-stats";
+import type { Save } from "@/pool/types";
 import styles from "./styles.module.css";
 
-interface SaveStatsProps {
+interface RootProps {
   save: Save;
-  /**
-   * The video element rendered by `<MediaViewer>` (if any). When
-   * present, clicking a chapter seeks the player to that timestamp.
-   * Optional — chapters still render as a static list when no video
-   * is mounted (e.g. the user is on the audio-only fallback or an
-   * error state).
-   */
   videoRef?: RefObject<HTMLVideoElement | null>;
 }
 
-/**
- * Surface the per-source metadata Pond already captures for every save:
- * yt-dlp view/like/comment counts, Twitter engagement, Instagram likes,
- * TikTok play counts, YouTube chapters, music attribution, location
- * tags, etc. The full mapping lives in
- * [`pool/save-stats.ts`](apps/desktop/src/renderer/src/pool/save-stats.ts).
- *
- * The panel hides itself entirely when the save has nothing useful to
- * show (e.g. a freshly captured Cosmos element with no metrics) so the
- * preview pane stays compact for media-only items.
- */
-export function SaveStats({ save, videoRef }: SaveStatsProps) {
+function Root({ save, videoRef }: RootProps) {
   const stats = useMemo(() => extractSaveStats(save), [save]);
 
   const relative = formatRelativeTime(stats.publishedAt);
@@ -80,29 +62,32 @@ export function SaveStats({ save, videoRef }: SaveStatsProps) {
   return (
     <section className={styles.stats} aria-label="Save statistics">
       {hasMeta ? (
-        <div className={styles.metaRow}>
+        <div className={styles["meta-row"]}>
           {stats.liveStatus ? <LiveBadge status={stats.liveStatus} /> : null}
           {relative ? (
-            <Tooltip content={absolute ?? undefined}>
-              <time className={styles.metaItem} dateTime={stats.publishedAt}>
+            <Tooltip.Root content={absolute ?? undefined}>
+              <time
+                className={styles["meta-item"]}
+                dateTime={stats.publishedAt}
+              >
                 {relative}
               </time>
-            </Tooltip>
+            </Tooltip.Root>
           ) : null}
           {typeof stats.durationSec === "number" ? (
-            <span className={styles.metaItem}>
+            <span className={styles["meta-item"]}>
               <MetricIcon name="duration" />
               {formatHms(stats.durationSec)}
             </span>
           ) : null}
           {dimensions ? (
-            <span className={styles.metaItem}>{dimensions}</span>
+            <span className={styles["meta-item"]}>{dimensions}</span>
           ) : null}
           {language ? (
-            <span className={styles.metaItem}>{language}</span>
+            <span className={styles["meta-item"]}>{language}</span>
           ) : null}
           {stats.isPaidPartnership ? (
-            <span className={styles.metaBadge}>Paid partnership</span>
+            <span className={styles["meta-badge"]}>Paid partnership</span>
           ) : null}
         </div>
       ) : null}
@@ -110,18 +95,18 @@ export function SaveStats({ save, videoRef }: SaveStatsProps) {
       {stats.metrics.length > 0 ? (
         <div className={styles.metrics}>
           {stats.metrics.map((m) => (
-            <Tooltip
+            <Tooltip.Root
               key={m.key}
               content={`${formatFullNumber(m.value)} ${m.label.toLowerCase()}`}
             >
-              <span className={styles.metricChip}>
+              <span className={styles["metric-chip"]}>
                 <MetricIcon name={m.key} />
-                <span className={styles.metricValue}>
+                <span className={styles["metric-value"]}>
                   {formatCompactNumber(m.value)}
                 </span>
-                <span className={styles.metricLabel}>{m.label}</span>
+                <span className={styles["metric-label"]}>{m.label}</span>
               </span>
-            </Tooltip>
+            </Tooltip.Root>
           ))}
         </div>
       ) : null}
@@ -130,10 +115,13 @@ export function SaveStats({ save, videoRef }: SaveStatsProps) {
 
       {stats.music?.title || stats.music?.author ? (
         <ExtraRow icon={<MetricIcon name="music" />}>
-          <span className={styles.extraText}>
+          <span className={styles["extra-text"]}>
             {stats.music.title ?? "Original sound"}
             {stats.music.author ? (
-              <span className={styles.extraMuted}> — {stats.music.author}</span>
+              <span className={styles["extra-muted"]}>
+                {" "}
+                — {stats.music.author}
+              </span>
             ) : null}
           </span>
         </ExtraRow>
@@ -141,16 +129,16 @@ export function SaveStats({ save, videoRef }: SaveStatsProps) {
 
       {stats.musicVideo?.track || stats.musicVideo?.artist ? (
         <ExtraRow icon={<MetricIcon name="music" />}>
-          <span className={styles.extraText}>
+          <span className={styles["extra-text"]}>
             {stats.musicVideo.track ?? "Track"}
             {stats.musicVideo.artist ? (
-              <span className={styles.extraMuted}>
+              <span className={styles["extra-muted"]}>
                 {" "}
                 — {stats.musicVideo.artist}
               </span>
             ) : null}
             {stats.musicVideo.album ? (
-              <span className={styles.extraMuted}>
+              <span className={styles["extra-muted"]}>
                 {" "}
                 · {stats.musicVideo.album}
               </span>
@@ -161,13 +149,13 @@ export function SaveStats({ save, videoRef }: SaveStatsProps) {
 
       {stats.location ? (
         <ExtraRow icon={<MetricIcon name="location" />}>
-          <span className={styles.extraText}>{stats.location}</span>
+          <span className={styles["extra-text"]}>{stats.location}</span>
         </ExtraRow>
       ) : null}
 
       {stats.subreddit ? (
         <ExtraRow icon={<MetricIcon name="hash" />}>
-          <span className={styles.extraText}>r/{stats.subreddit}</span>
+          <span className={styles["extra-text"]}>r/{stats.subreddit}</span>
         </ExtraRow>
       ) : null}
 
@@ -178,19 +166,19 @@ export function SaveStats({ save, videoRef }: SaveStatsProps) {
               href={stats.board.url}
               target="_blank"
               rel="noreferrer"
-              className={styles.extraLink}
+              className={styles["extra-link"]}
             >
               {stats.board.name ?? stats.board.url}
             </a>
           ) : (
-            <span className={styles.extraText}>{stats.board.name}</span>
+            <span className={styles["extra-text"]}>{stats.board.name}</span>
           )}
         </ExtraRow>
       ) : null}
 
       {stats.arenaChannels?.length ? (
         <ExtraRow icon={<MetricIcon name="hash" />}>
-          <span className={styles.extraChips}>
+          <span className={styles["extra-chips"]}>
             {stats.arenaChannels.map((c, i) => {
               const label = c.title ?? c.href ?? "channel";
               return c.href ? (
@@ -200,7 +188,7 @@ export function SaveStats({ save, videoRef }: SaveStatsProps) {
                   href={c.href}
                   target="_blank"
                   rel="noreferrer"
-                  className={styles.extraChip}
+                  className={styles["extra-chip"]}
                 >
                   {label}
                 </a>
@@ -208,7 +196,7 @@ export function SaveStats({ save, videoRef }: SaveStatsProps) {
                 <span
                   // biome-ignore lint/suspicious/noArrayIndexKey: see above
                   key={`${label}-${i}`}
-                  className={styles.extraChip}
+                  className={styles["extra-chip"]}
                 >
                   {label}
                 </span>
@@ -220,9 +208,9 @@ export function SaveStats({ save, videoRef }: SaveStatsProps) {
 
       {stats.cosmosClusters?.length ? (
         <ExtraRow icon={<MetricIcon name="hash" />}>
-          <span className={styles.extraChips}>
+          <span className={styles["extra-chips"]}>
             {stats.cosmosClusters.map((c) => (
-              <span key={c.id} className={styles.extraChip}>
+              <span key={c.id} className={styles["extra-chip"]}>
                 {c.title ?? c.id}
               </span>
             ))}
@@ -237,9 +225,9 @@ export function SaveStats({ save, videoRef }: SaveStatsProps) {
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Sub-components                                                     */
-/* ------------------------------------------------------------------ */
+export const SaveStats = {
+  Root,
+};
 
 function UploaderRow({
   stats,
@@ -259,37 +247,37 @@ function UploaderRow({
         <img
           src={avatar}
           alt=""
-          className={styles.uploaderAvatar}
+          className={styles["uploader-avatar"]}
           loading="lazy"
           onError={(e) => {
             e.currentTarget.style.display = "none";
           }}
         />
       ) : (
-        <span className={styles.uploaderAvatarFallback} aria-hidden="true">
+        <span className={styles["uploader-avatar-fallback"]} aria-hidden="true">
           {(name ?? "?").slice(0, 1).toUpperCase()}
         </span>
       )}
-      <span className={styles.uploaderText}>
-        <span className={styles.uploaderKind}>{channelLabel}</span>
-        <span className={styles.uploaderName}>{name ?? url}</span>
+      <span className={styles["uploader-text"]}>
+        <span className={styles["uploader-kind"]}>{channelLabel}</span>
+        <span className={styles["uploader-name"]}>{name ?? url}</span>
       </span>
     </>
   );
 
   return (
-    <div className={styles.uploaderRow}>
+    <div className={styles["uploader-row"]}>
       {url ? (
         <a
           href={url}
           target="_blank"
           rel="noreferrer"
-          className={styles.uploaderLink}
+          className={styles["uploader-link"]}
         >
           {inner}
         </a>
       ) : (
-        <span className={styles.uploaderLink}>{inner}</span>
+        <span className={styles["uploader-link"]}>{inner}</span>
       )}
     </div>
   );
@@ -317,30 +305,30 @@ function Chapters({
     <div className={styles.chapters}>
       <button
         type="button"
-        className={styles.chaptersToggle}
+        className={styles["chapters-toggle"]}
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
       >
         <ChevronIcon open={open} /> Chapters ({chapters.length})
       </button>
       {open ? (
-        <ul className={styles.chaptersList}>
+        <ul className={styles["chapters-list"]}>
           {chapters.map((c, i) => (
             <li
               // biome-ignore lint/suspicious/noArrayIndexKey: chapters are stable per save
               key={`${c.startSec}-${i}`}
-              className={styles.chaptersItem}
+              className={styles["chapters-item"]}
             >
               <button
                 type="button"
-                className={styles.chaptersBtn}
+                className={styles["chapters-btn"]}
                 onClick={() => onSeek(c.startSec)}
                 disabled={!videoRef?.current}
               >
-                <span className={styles.chaptersTime}>
+                <span className={styles["chapters-time"]}>
                   {formatHms(c.startSec)}
                 </span>
-                <span className={styles.chaptersTitle}>{c.title}</span>
+                <span className={styles["chapters-title"]}>{c.title}</span>
               </button>
             </li>
           ))}
@@ -362,8 +350,11 @@ function LiveBadge({ status }: { status: string }) {
         ? "Upcoming"
         : status;
   return (
-    <span className={styles.liveBadge} data-state={isLive ? "live" : "past"}>
-      <span className={styles.liveDot} aria-hidden="true" />
+    <span
+      className={styles["live-badge"]}
+      data-state={isLive ? "live" : "past"}
+    >
+      <span className={styles["live-dot"]} aria-hidden="true" />
       {label}
     </span>
   );
@@ -377,8 +368,8 @@ function ExtraRow({
   children: React.ReactNode;
 }) {
   return (
-    <div className={styles.extraRow}>
-      <span className={styles.extraIcon} aria-hidden="true">
+    <div className={styles["extra-row"]}>
+      <span className={styles["extra-icon"]} aria-hidden="true">
         {icon}
       </span>
       {children}

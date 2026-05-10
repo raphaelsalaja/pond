@@ -94,11 +94,7 @@ async function inPageRedditList(
   }
 
   ingest(collect());
-  if (
-    collected.size >= args.maxItems ||
-    (args.mode === "incremental" &&
-      Array.from(collected.values()).some((r) => known.has(r.sourceId)))
-  ) {
+  if (collected.size >= args.maxItems) {
     return {
       ok: true,
       entries: Array.from(collected.values()),
@@ -116,15 +112,8 @@ async function inPageRedditList(
     if (!next) break;
     next.click();
     await new Promise((r) => setTimeout(r, 1500));
-    const { sawKnown, full } = ingest(collect());
+    const { full } = ingest(collect());
     if (full) {
-      return {
-        ok: true,
-        entries: Array.from(collected.values()),
-        reachedEnd: false,
-      };
-    }
-    if (args.mode === "incremental" && sawKnown) {
       return {
         ok: true,
         entries: Array.from(collected.values()),

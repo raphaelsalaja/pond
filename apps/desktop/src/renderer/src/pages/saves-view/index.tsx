@@ -1,3 +1,5 @@
+import { readQuery } from "@pond/schema/filters/url";
+import { Tooltip, useToast } from "@pond/ui";
 import {
   createColumnHelper,
   flexRender,
@@ -9,27 +11,36 @@ import {
   type Updater,
   useReactTable,
 } from "@tanstack/react-table";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useLocation,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
 import {
   Card,
   type CardLayout,
   type CardSelection,
-} from "../../components/card-thumb";
-import { applyFilters, readFilters } from "../../components/filter-bar/filters";
-import { optimistic } from "../../pool/bootstrap";
-import { useSaves } from "../../pool/hooks";
-import { pool } from "../../pool/pool";
-import { useSearchResults } from "../../pool/search";
-import {
-  selection,
-  useIsSelected,
-  useSelectionSize,
-} from "../../pool/selection";
-import type { Save } from "../../pool/types";
-import { Button, Tooltip, useToast } from "../../ui";
+  isTextOnlyTweet,
+} from "@/components/card-thumb";
+import { type GridLayout, Library } from "@/components/library";
+import { useRecents } from "@/components/recents";
+import { LibraryChrome, Shell } from "@/components/shell";
+import { SourceBadge } from "@/components/source-badge";
+import { useDisplayPrefs } from "@/lib/display-prefs";
+import { readViewPref, writeViewPref } from "@/lib/view-prefs";
+import { SaveDetail } from "@/pages/save-detail";
+import { optimistic } from "@/pool/bootstrap";
+import { useBootReady, useSaves } from "@/pool/hooks";
+import { pool } from "@/pool/pool";
+import { useSearchResults } from "@/pool/search";
+import { selection, useIsSelected, useSelectionSize } from "@/pool/selection";
+import type { Save } from "@/pool/types";
+import { useFilteredSaves } from "@/pool/use-filtered-saves";
 import { JustifiedView } from "./justified";
 import styles from "./styles.module.css";
+import { WaterfallView } from "./waterfall";
 
 declare module "@tanstack/react-table" {
   interface ColumnMeta<TData extends RowData, TValue> {
@@ -39,10 +50,13 @@ declare module "@tanstack/react-table" {
 
 interface SavesViewProps {
   /**
-   * - `library` — every active save (default).
-   * - `source`  — active saves whose `source` matches `:source` param.
+   * - `library`  — every active save (default).
+   * - `source`   — active saves whose `source` matches `:source` param.
+   * - `untagged` — active saves that have no tags yet.
+   * - `recents`  — saves you've recently opened, ordered by last visit.
+   * - `random`   — every active save in a stable shuffled order (per mount).
    */
-  mode?: "library" | "source";
+  mode?: "library" | "source" | "untagged" | "recents" | "random";
 }
 
 /**
@@ -52,20 +66,37 @@ interface SavesViewProps {
  * Optional `?tag=<tag>` query param narrows further; the sidebar tag
  * chips drive that. `<TweetCard>` keeps its own card chrome for
  * `save.source === "twitter"`; everything else uses the Eagle-style
- * tile defined in `styles.css`.
+ * tile from `Library.Item.*`.
  */
 export function SavesView({ mode = "library" }: SavesViewProps) {
   const saves = useSaves();
-  const params = useParams<{ source?: string }>();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const bootReady = useBootReady();
+  const params = useParams<{ source?: string; id?: string }>();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const location = useLocation();
   const toast = useToast();
-  const filters = readFilters(searchParams);
+  const query = useMemo(() => readQuery(searchParams), [searchParams]);
   const q = searchParams.get("q") ?? "";
   const [busy, setBusy] = useState<string | null>(null);
 
   const sourceFilter = mode === "source" ? (params.source ?? "") : "";
-  const selectedId = searchParams.get("id");
-  const viewMode = (searchParams.get("view") ?? "waterfall") as
+  const selectedId = params.id ?? null;
+  const recents = useRecents();
+  const recentsOrder = useMemo(() => {
+    if (mode !== "recents") return null;
+    const map = new Map<string, number>();
+    for (let i = 0; i < recents.length; i++) {
+      const entry = recents[i];
+      if (entry) map.set(entry.saveId, i);
+    }
+    return map;
+  }, [mode, recents]);
+
+  const randomSeed = useMemo(() => Math.random().toString(36).slice(2), []);
+  const viewMode = (searchParams.get("view") ??
+    readViewPref("view") ??
+    "waterfall") as
     | "waterfall"
     | "justified"
     | "grid"
@@ -75,23 +106,39 @@ export function SavesView({ mode = "library" }: SavesViewProps) {
   const selectionSize = useSelectionSize();
   const multiSelectActive = selectionSize > 0;
 
-  const select = useCallback(
-    (id: string) => {
-      const next = new URLSearchParams(searchParams);
-      next.set("id", id);
-      setSearchParams(next, { replace: true });
-    },
-    [searchParams, setSearchParams],
+  // Strip any trailing `/save/:id` so re-selecting from a detail URL
+  // doesn't double up. Result is the parent list URL — `/`, `/source/...`,
+  // `/trash` — that we'll re-anchor the new save segment onto.
+  const listBase = location.pathname.replace(/\/save\/[^/]+\/?$/, "") || "/";
+  const buildSavePath = useCallback(
+    (id: string) =>
+      listBase === "/" ? `/save/${id}` : `${listBase}/save/${id}`,
+    [listBase],
+  );
+  const buildDetailPath = useCallback(
+    (id: string) =>
+      listBase === "/" ? `/detail/${id}` : `${listBase}/detail/${id}`,
+    [listBase],
   );
 
+  const select = useCallback(
+    (id: string) => {
+      navigate(buildSavePath(id));
+    },
+    [buildSavePath, navigate],
+  );
+
+  // Double-click opens the full detail page. Filter / search params on
+  // the parent list URL come along so pagination, sort and breadcrumb
+  // re-derive the same view the user came from.
   const focus = useCallback(
     (id: string) => {
-      const next = new URLSearchParams(searchParams);
-      next.set("id", id);
-      next.set("focus", id);
-      setSearchParams(next, { replace: true });
+      navigate({
+        pathname: buildDetailPath(id),
+        search: searchParams.toString(),
+      });
     },
-    [searchParams, setSearchParams],
+    [buildDetailPath, navigate, searchParams],
   );
 
   // FTS5-backed search; returns `null` when the query is empty and we
@@ -101,18 +148,58 @@ export function SavesView({ mode = "library" }: SavesViewProps) {
   // substring filter ever did.
   const search = useSearchResults(q);
 
-  const filtered = useMemo(() => {
+  const narrowed = useMemo(() => {
     const base = search.results ?? saves;
-    let rows = base.filter((save) => {
+    const filteredList = base.filter((save) => {
       if (save.deletedAt) return false;
       if (sourceFilter && save.source.toLowerCase() !== sourceFilter) {
         return false;
       }
+      if (mode === "untagged" && save.tags.length > 0) return false;
+      if (mode === "recents" && !recentsOrder?.has(save.id)) return false;
       return true;
     });
-    rows = applyFilters(rows, filters);
-    return rows;
-  }, [saves, search.results, sourceFilter, filters]);
+
+    if (mode === "recents" && recentsOrder) {
+      // Most-recently-visited first; recordVisit() puts the latest entry
+      // at index 0 so we can sort by the recents map directly.
+      return filteredList.sort(
+        (a, b) =>
+          (recentsOrder.get(a.id) ?? Infinity) -
+          (recentsOrder.get(b.id) ?? Infinity),
+      );
+    }
+
+    if (mode === "random") {
+      // Stable shuffle: hash each save id together with a per-mount seed
+      // so the order survives re-renders but resets when you re-enter
+      // /random.
+      return filteredList.sort(
+        (a, b) =>
+          hashShuffleKey(a.id, randomSeed) - hashShuffleKey(b.id, randomSeed),
+      );
+    }
+
+    return filteredList;
+  }, [saves, search.results, sourceFilter, mode, recentsOrder, randomSeed]);
+
+  // Recents and random modes carry their own ordering inside
+  // `narrowed`; ignore the URL sort there so the toolbar can't fight
+  // those views' intentional shuffles. Everything else honours
+  // `?sort` + `?dir` so the View options popover is meaningful for
+  // grid views, not just list.
+  const sortOpts = useMemo(() => {
+    if (mode === "recents" || mode === "random") return undefined;
+    const rawSort =
+      searchParams.get("sort") ?? readViewPref("sort") ?? "savedAt";
+    const sortKey: "savedAt" | "title" | "fileSize" =
+      rawSort === "title" || rawSort === "fileSize" ? rawSort : "savedAt";
+    const rawDir = searchParams.get("dir") ?? readViewPref("dir");
+    const sortDir: "asc" | "desc" = rawDir === "asc" ? "asc" : "desc";
+    return { sortKey, sortDir };
+  }, [mode, searchParams]);
+
+  const filtered = useFilteredSaves(narrowed, query, sortOpts);
 
   const filteredIds = useMemo(() => filtered.map((r) => r.id), [filtered]);
 
@@ -179,33 +266,39 @@ export function SavesView({ mode = "library" }: SavesViewProps) {
     selection.clear();
   }, [mode, sourceFilter]);
 
-  async function moveToTrash(id: string) {
-    const prev = pool.get(id);
-    if (!prev) return;
-    const nowIso = new Date().toISOString();
-    setBusy(id);
-    try {
-      await optimistic(
-        () => {
-          pool.upsert({ ...prev, deletedAt: nowIso } as typeof prev);
-        },
-        () => {
-          pool.upsert(prev);
-        },
-        async () =>
-          window.pond.tx({
-            kind: "trash",
-            model: "save",
-            id,
-          }),
-      );
-      toast.add({ title: "Moved to trash", type: "success" });
-    } finally {
-      setBusy(null);
-    }
-  }
+  // Stable across renders so `<SaveCard onTrash={...}>` can rely on
+  // React.memo bailing when nothing else changed. `setBusy` is a
+  // useState setter (stable). `toast` is the Base UI manager
+  // (stable for the lifetime of the provider).
+  const moveToTrash = useCallback(
+    async (id: string) => {
+      const prev = pool.get(id);
+      if (!prev) return;
+      const nowIso = new Date().toISOString();
+      setBusy(id);
+      try {
+        await optimistic(
+          () => {
+            pool.upsert({ ...prev, deletedAt: nowIso } as typeof prev);
+          },
+          () => {
+            pool.upsert(prev);
+          },
+          async () =>
+            window.pond.tx({
+              kind: "trash",
+              model: "save",
+              id,
+            }),
+        );
+        toast.add({ title: "Moved to trash", type: "success" });
+      } finally {
+        setBusy(null);
+      }
+    },
+    [toast],
+  );
 
-  // Drag-in: dropping URLs / images / files onto the grid ingests them.
   const onDragOver = useCallback((e: React.DragEvent) => {
     if (!e.dataTransfer) return;
     const types = Array.from(e.dataTransfer.types ?? []);
@@ -250,7 +343,6 @@ export function SavesView({ mode = "library" }: SavesViewProps) {
         return;
       }
 
-      // URL list (browser drop) — quick-add each.
       const uri = dt.getData("text/uri-list") || dt.getData("text/plain");
       if (uri) {
         const lines = uri
@@ -271,97 +363,148 @@ export function SavesView({ mode = "library" }: SavesViewProps) {
     [toast],
   );
 
+  const renderJustifiedCard = useCallback(
+    (save: Save, w: number, h: number) => (
+      <SaveCard
+        key={save.id}
+        save={save}
+        selectedId={selectedId}
+        busy={busy === save.id}
+        multiSelectActive={multiSelectActive}
+        layout="justified"
+        onClick={handleCardClick}
+        onDoubleClick={focus}
+        onTrash={moveToTrash}
+        packedWidth={w}
+        packedHeight={h}
+      />
+    ),
+    [selectedId, busy, multiSelectActive, handleCardClick, focus, moveToTrash],
+  );
+
+  const renderWaterfallCard = useCallback(
+    (
+      save: Save,
+      packed: { top: number; left: number; width: number; height: number },
+    ) => (
+      <SaveCard
+        key={save.id}
+        save={save}
+        selectedId={selectedId}
+        busy={busy === save.id}
+        multiSelectActive={multiSelectActive}
+        layout="waterfall"
+        onClick={handleCardClick}
+        onDoubleClick={focus}
+        onTrash={moveToTrash}
+        packedWidth={packed.width}
+        packedHeight={packed.height}
+        packedTop={packed.top}
+        packedLeft={packed.left}
+      />
+    ),
+    [selectedId, busy, multiSelectActive, handleCardClick, focus, moveToTrash],
+  );
+
+  // Map the legacy view modes onto the simplified Library context. The
+  // group / waterfall / justified / color paths still render their own
+  // wrappers below — Library.Root is the canonical wrapper for the
+  // grid + list pair we expose in the UI.
+  const libraryView = viewMode === "list" ? "list" : "grid";
+
   return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: drop target — keyboard upload lives in the toolbar's "Add" button
-    <div
-      className={styles.library}
-      onDragOver={onDragOver}
-      onDrop={(e) => void onDrop(e)}
-    >
-      {filtered.length === 0 ? (
-        <div className="pond-empty">
-          <p>No matches. Try a different search or clear the filter.</p>
-        </div>
-      ) : viewMode === "list" ? (
-        <ListView
-          saves={filtered}
-          selectedId={selectedId}
-          onClick={handleCardClick}
-          onDoubleClick={focus}
-        />
-      ) : viewMode === "timeline" ? (
-        <TimelineView
-          saves={filtered}
-          layout="waterfall"
-          selectedId={selectedId}
-          busy={busy}
-          multiSelectActive={multiSelectActive}
-          onClick={handleCardClick}
-          onDoubleClick={focus}
-          onTrash={moveToTrash}
-        />
-      ) : viewMode === "color" ? (
-        <ColorView
-          saves={filtered}
-          layout="waterfall"
-          selectedId={selectedId}
-          busy={busy}
-          multiSelectActive={multiSelectActive}
-          onClick={handleCardClick}
-          onDoubleClick={focus}
-          onTrash={moveToTrash}
-        />
-      ) : viewMode === "justified" ? (
-        <JustifiedView
-          saves={filtered}
-          multiSelectActive={multiSelectActive}
-          renderCard={(save, w, h) => (
-            <SaveCard
-              key={save.id}
-              save={save}
+    <>
+      <Shell.Main>
+        <LibraryChrome />
+        <Library.Root
+          view={libraryView}
+          onDragOver={onDragOver}
+          onDrop={(e) => void onDrop(e)}
+        >
+          {filtered.length === 0 ? (
+            // Stay silent while the pool is hydrating from the local
+            // cache + reconciling against main. Without this gate a
+            // cold cache (first launch, post-clear) flashes the "No
+            // matches" copy in the moment between mount and the live
+            // SQLite snapshot landing — misleading because the user
+            // hasn't actually filtered anything down.
+            !bootReady ? null : saves.length === 0 ? (
+              <Library.Empty>
+                No saves yet. Drop a link, image, or file to get started.
+              </Library.Empty>
+            ) : (
+              <Library.Empty>
+                No matches. Try a different search or clear the filter.
+              </Library.Empty>
+            )
+          ) : viewMode === "list" ? (
+            <ListView
+              saves={filtered}
               selectedId={selectedId}
-              busy={busy === save.id}
+              onClick={handleCardClick}
+              onDoubleClick={focus}
+            />
+          ) : viewMode === "timeline" ? (
+            <TimelineView
+              saves={filtered}
+              selectedId={selectedId}
+              busy={busy}
               multiSelectActive={multiSelectActive}
-              layout="justified"
               onClick={handleCardClick}
               onDoubleClick={focus}
               onTrash={moveToTrash}
-              style={
-                {
-                  width: `${w}px`,
-                  ["--pond-justified-h" as never]: `${h}px`,
-                } as React.CSSProperties
-              }
             />
+          ) : viewMode === "color" ? (
+            <ColorView
+              saves={filtered}
+              selectedId={selectedId}
+              busy={busy}
+              multiSelectActive={multiSelectActive}
+              onClick={handleCardClick}
+              onDoubleClick={focus}
+              onTrash={moveToTrash}
+            />
+          ) : viewMode === "justified" ? (
+            <JustifiedView
+              saves={filtered}
+              multiSelectActive={multiSelectActive}
+              renderCard={renderJustifiedCard}
+            />
+          ) : viewMode === "waterfall" ? (
+            <WaterfallView
+              saves={filtered}
+              multiSelectActive={multiSelectActive}
+              renderCard={renderWaterfallCard}
+            />
+          ) : (
+            <Library.Grid
+              layout={viewMode as GridLayout}
+              multiSelect={multiSelectActive}
+            >
+              {filtered.map((save) => (
+                <SaveCard
+                  key={save.id}
+                  save={save}
+                  selectedId={selectedId}
+                  busy={busy === save.id}
+                  multiSelectActive={multiSelectActive}
+                  layout={viewMode as CardLayout}
+                  onClick={handleCardClick}
+                  onDoubleClick={focus}
+                  onTrash={moveToTrash}
+                />
+              ))}
+            </Library.Grid>
           )}
-        />
-      ) : (
-        <ul className={gridClassName(viewMode, multiSelectActive)}>
-          {filtered.map((save) => (
-            <SaveCard
-              key={save.id}
-              save={save}
-              selectedId={selectedId}
-              busy={busy === save.id}
-              multiSelectActive={multiSelectActive}
-              layout={viewMode as CardLayout}
-              onClick={handleCardClick}
-              onDoubleClick={focus}
-              onTrash={moveToTrash}
-            />
-          ))}
-        </ul>
-      )}
-    </div>
+        </Library.Root>
+      </Shell.Main>
+      <SaveDetail />
+    </>
   );
 }
 
-type GridLayout = "waterfall" | "justified" | "grid";
-
 interface GroupViewProps {
   saves: Save[];
-  /** Layout used inside each group section (default waterfall). */
-  layout: GridLayout;
   selectedId: string | null;
   busy: string | null;
   multiSelectActive: boolean;
@@ -371,18 +514,43 @@ interface GroupViewProps {
 }
 
 /**
- * Map a `view` URL value to the `pond-grid--*` modifier class. Used by
- * the top-level renderer and the Timeline / Color group views so every
- * `<ul class="pond-grid">` picks up the right layout in one place.
+ * Per-section waterfall renderer used by `TimelineView` / `ColorView`.
+ * Each group section gets its own packed grid so cards within a day /
+ * hue bucket stay column-balanced and source-ordered. The renderer
+ * lives here (not on `WaterfallView`) because it closes over the group
+ * view props.
  */
-function gridClassName(layout: GridLayout, multiSelect: boolean): string {
-  return [
-    "pond-grid",
-    `pond-grid--${layout}`,
-    multiSelect ? "pond-grid--multiselect" : "",
-  ]
-    .filter(Boolean)
-    .join(" ");
+function useGroupedWaterfallRenderer({
+  selectedId,
+  busy,
+  multiSelectActive,
+  onClick,
+  onDoubleClick,
+  onTrash,
+}: Omit<GroupViewProps, "saves">) {
+  return useCallback(
+    (
+      save: Save,
+      packed: { top: number; left: number; width: number; height: number },
+    ) => (
+      <SaveCard
+        key={save.id}
+        save={save}
+        selectedId={selectedId}
+        busy={busy === save.id}
+        multiSelectActive={multiSelectActive}
+        layout="waterfall"
+        onClick={onClick}
+        onDoubleClick={onDoubleClick}
+        onTrash={onTrash}
+        packedWidth={packed.width}
+        packedHeight={packed.height}
+        packedTop={packed.top}
+        packedLeft={packed.left}
+      />
+    ),
+    [selectedId, busy, multiSelectActive, onClick, onDoubleClick, onTrash],
+  );
 }
 
 /**
@@ -432,11 +600,12 @@ function ListView({
   onDoubleClick: (id: string) => void;
 }) {
   const [params, setParams] = useSearchParams();
-  const rawSort = params.get("sort") ?? "savedAt";
+  const rawSort = params.get("sort") ?? readViewPref("sort") ?? "savedAt";
   const sortKey: SortKey = SORT_KEYS.has(rawSort as SortKey)
     ? (rawSort as SortKey)
     : "savedAt";
-  const sortDir: "asc" | "desc" = params.get("dir") === "asc" ? "asc" : "desc";
+  const rawDir = params.get("dir") ?? readViewPref("dir");
+  const sortDir: "asc" | "desc" = rawDir === "asc" ? "asc" : "desc";
 
   const sorting = useMemo<SortingState>(
     () => [{ id: sortKey, desc: sortDir === "desc" }],
@@ -453,10 +622,13 @@ function ListView({
       const next = typeof updater === "function" ? updater(sorting) : updater;
       const item = next[0] ?? sorting[0];
       if (!item) return;
+      const dir: "asc" | "desc" = item.desc ? "desc" : "asc";
       const p = new URLSearchParams(params);
       p.set("sort", item.id);
-      p.set("dir", item.desc ? "desc" : "asc");
+      p.set("dir", dir);
       setParams(p, { replace: true });
+      writeViewPref("sort", item.id);
+      writeViewPref("dir", dir);
     },
     [params, setParams, sorting],
   );
@@ -468,7 +640,7 @@ function ListView({
         id: "thumbnail",
         header: () => null,
         cell: ({ row }) => (
-          <span className={styles.listThumb}>
+          <span className={styles["list-thumb"]}>
             <Card.Root save={row.original}>
               <Card.Media />
               <Card.DownloadingBadge />
@@ -476,7 +648,7 @@ function ListView({
           </span>
         ),
         enableSorting: false,
-        meta: { className: styles.colThumb },
+        meta: { className: styles["col-thumb"] },
       }),
       helper.accessor((save) => (save.title ?? save.url ?? "").toLowerCase(), {
         id: "title",
@@ -484,7 +656,7 @@ function ListView({
         cell: ({ row }) => row.original.title ?? row.original.url,
         sortingFn: localeSort,
         sortDescFirst: false,
-        meta: { className: styles.colName },
+        meta: { className: styles["col-name"] },
       }),
       helper.accessor((save) => save.tags.join(",").toLowerCase(), {
         id: "tags",
@@ -492,17 +664,17 @@ function ListView({
         cell: ({ row }) => {
           const save = row.original;
           if (save.tags.length === 0) {
-            return <span className={styles.colMuted}>—</span>;
+            return <span className={styles["col-muted"]}>—</span>;
           }
           return (
-            <span className={styles.tagChips}>
+            <span className={styles["tag-chips"]}>
               {save.tags.slice(0, 6).map((t) => (
-                <span key={t} className={styles.tagChip}>
+                <span key={t} className={styles["tag-chip"]}>
                   {t}
                 </span>
               ))}
               {save.tags.length > 6 ? (
-                <span className={styles.tagChipMore}>
+                <span className={styles["tag-chip-more"]}>
                   +{save.tags.length - 6}
                 </span>
               ) : null}
@@ -511,7 +683,7 @@ function ListView({
         },
         sortingFn: localeSort,
         sortDescFirst: false,
-        meta: { className: styles.colTags },
+        meta: { className: styles["col-tags"] },
       }),
       helper.accessor(
         (save) => {
@@ -537,7 +709,7 @@ function ListView({
           sortingFn: "basic",
           sortUndefined: "last",
           sortDescFirst: false,
-          meta: { className: styles.colDim },
+          meta: { className: styles["col-dim"] },
         },
       ),
       helper.accessor((save) => extensionFor(save), {
@@ -545,11 +717,11 @@ function ListView({
         header: "Extension",
         cell: ({ row }) => {
           const ext = extensionFor(row.original).toUpperCase();
-          return ext ? <span className={styles.extChip}>{ext}</span> : "—";
+          return ext ? <span className={styles["ext-chip"]}>{ext}</span> : "—";
         },
         sortingFn: localeSort,
         sortDescFirst: false,
-        meta: { className: styles.colExt },
+        meta: { className: styles["col-ext"] },
       }),
       helper.accessor(
         (save) => {
@@ -568,7 +740,7 @@ function ListView({
           sortingFn: "basic",
           sortUndefined: "last",
           sortDescFirst: true,
-          meta: { className: styles.colSize },
+          meta: { className: styles["col-size"] },
         },
       ),
       helper.accessor(
@@ -583,7 +755,7 @@ function ListView({
           sortingFn: "basic",
           sortUndefined: "last",
           sortDescFirst: true,
-          meta: { className: styles.colDate },
+          meta: { className: styles["col-date"] },
         },
       ),
     ];
@@ -627,7 +799,7 @@ function ListView({
                 <th key={header.id} className={className} aria-sort={ariaSort}>
                   <button
                     type="button"
-                    className={styles.colHeader}
+                    className={styles["col-header"]}
                     onClick={header.column.getToggleSortingHandler()}
                   >
                     {flexRender(
@@ -635,7 +807,7 @@ function ListView({
                       header.getContext(),
                     )}
                     {sortedDir ? (
-                      <span aria-hidden className={styles.sortIndicator}>
+                      <span aria-hidden className={styles["sort-indicator"]}>
                         {sortedDir === "asc" ? "↑" : "↓"}
                       </span>
                     ) : null}
@@ -712,26 +884,17 @@ function TimelineView(props: GroupViewProps) {
     }
     return Array.from(buckets.entries()).sort((a, b) => (a[0] < b[0] ? 1 : -1));
   }, [props.saves]);
+  const renderCard = useGroupedWaterfallRenderer(props);
   return (
     <div className={styles.timeline}>
       {groups.map(([day, items]) => (
-        <section key={day} className={styles.timelineSection}>
-          <h3 className={styles.timelineHeading}>{formatDay(day)}</h3>
-          <ul className={gridClassName(props.layout, props.multiSelectActive)}>
-            {items.map((save) => (
-              <SaveCard
-                key={save.id}
-                save={save}
-                selectedId={props.selectedId}
-                busy={props.busy === save.id}
-                multiSelectActive={props.multiSelectActive}
-                layout={props.layout}
-                onClick={props.onClick}
-                onDoubleClick={props.onDoubleClick}
-                onTrash={props.onTrash}
-              />
-            ))}
-          </ul>
+        <section key={day} className={styles["timeline-section"]}>
+          <h3 className={styles["timeline-heading"]}>{formatDay(day)}</h3>
+          <WaterfallView
+            saves={items}
+            multiSelectActive={props.multiSelectActive}
+            renderCard={renderCard}
+          />
         </section>
       ))}
     </div>
@@ -774,34 +937,25 @@ function ColorView(props: GroupViewProps) {
       (a, b) => order.indexOf(a[0]) - order.indexOf(b[0]),
     );
   }, [props.saves]);
+  const renderCard = useGroupedWaterfallRenderer(props);
   return (
     <div className={styles.timeline}>
       {groups.map(([bucket, items]) => (
-        <section key={bucket} className={styles.timelineSection}>
-          <h3 className={styles.timelineHeading}>
+        <section key={bucket} className={styles["timeline-section"]}>
+          <h3 className={styles["timeline-heading"]}>
             <span
               className={styles.swatch}
               style={{ background: bucketSwatch(bucket) }}
               aria-hidden
             />
             {bucket}
-            <span className={styles.timelineCount}>{items.length}</span>
+            <span className={styles["timeline-count"]}>{items.length}</span>
           </h3>
-          <ul className={gridClassName(props.layout, props.multiSelectActive)}>
-            {items.map((save) => (
-              <SaveCard
-                key={save.id}
-                save={save}
-                selectedId={props.selectedId}
-                busy={props.busy === save.id}
-                multiSelectActive={props.multiSelectActive}
-                layout={props.layout}
-                onClick={props.onClick}
-                onDoubleClick={props.onDoubleClick}
-                onTrash={props.onTrash}
-              />
-            ))}
-          </ul>
+          <WaterfallView
+            saves={items}
+            multiSelectActive={props.multiSelectActive}
+            renderCard={renderCard}
+          />
         </section>
       ))}
     </div>
@@ -901,17 +1055,27 @@ interface SaveCardProps {
   onClick: (id: string, e: React.MouseEvent) => void;
   onDoubleClick: (id: string) => void;
   onTrash: (id: string) => void;
-  /** Inline style applied to the outer `<li>` — used by JustifiedView
-   * to set the packed `width` and a `--pond-justified-h` CSS var. */
-  style?: React.CSSProperties;
+  /** Packer-driven outer width / media height in pixels. Used by the
+   * waterfall and justified layouts (both pre-compute slot sizes in
+   * JS). Numbers — not a style object — so React.memo can shallow-
+   * compare reliably. */
+  packedWidth?: number;
+  packedHeight?: number;
+  /** Waterfall packer also publishes an absolute position so the
+   * grid stays row-major across resizes. Justified leaves these
+   * undefined and lets flex-wrap place its rows. */
+  packedTop?: number;
+  packedLeft?: number;
 }
 
 /**
  * Splitting the card into its own component lets each row subscribe to
  * its individual `useIsSelected` slice without re-rendering every other
- * card on every selection change.
+ * card on every selection change. Wrapped in `React.memo` — combined
+ * with the pool's in-place patching (`pool.ts`) and stable parent
+ * callbacks, an unrelated row update no longer re-renders this card.
  */
-function SaveCard({
+const SaveCard = memo(function SaveCard({
   save,
   selectedId,
   busy,
@@ -920,28 +1084,41 @@ function SaveCard({
   onClick,
   onDoubleClick,
   onTrash,
-  style,
+  packedWidth,
+  packedHeight,
+  packedTop,
+  packedLeft,
 }: SaveCardProps) {
   const isMulti = useIsSelected(save.id);
   const isPrimary = selectedId === save.id;
-  // Primary wins when both are true — matches the old CSS's
-  // `:not(.pond-card--selected)` precedence on the multi halo.
+  // Primary wins when both are true — matches the precedence the
+  // selection halo had under the old global CSS.
   const cardSelection: CardSelection | undefined = isPrimary
     ? "primary"
     : isMulti
       ? "multi"
       : undefined;
+
+  const liStyle = useMemo<React.CSSProperties | undefined>(() => {
+    if (packedWidth == null || packedHeight == null) return undefined;
+    const base: React.CSSProperties = {
+      width: `${packedWidth}px`,
+      ["--packed-h" as never]: `${packedHeight}px`,
+    };
+    if (packedTop != null && packedLeft != null) {
+      base.position = "absolute";
+      base.top = `${packedTop}px`;
+      base.left = `${packedLeft}px`;
+    }
+    return base;
+  }, [packedWidth, packedHeight, packedTop, packedLeft]);
+
   return (
-    <li
-      className={[
-        "pond-card",
-        isPrimary ? "pond-card--selected" : "",
-        isMulti ? "pond-card--multi" : "",
-        multiSelectActive && !isMulti ? "pond-card--dimmed" : "",
-      ]
-        .filter(Boolean)
-        .join(" ")}
-      style={style}
+    <Library.Item
+      selected={isPrimary}
+      multi={isMulti}
+      dimmed={multiSelectActive && !isMulti}
+      style={liStyle}
       draggable={save.files.length > 0}
       onDragStart={(e) => {
         // Hand the drag off to Electron so the OS sees a real `file:`
@@ -960,36 +1137,25 @@ function SaveCard({
         void window.pond.showSaveContextMenu(save.id);
       }}
     >
-      <button
-        type="button"
-        className="pond-card__checkbox"
+      <Library.Item.Checkbox
+        checked={isMulti}
         aria-label={isMulti ? "Deselect" : "Select"}
-        aria-pressed={isMulti}
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
           selection.toggle(save.id);
           if (selection.has(save.id)) selection.setAnchor(save.id);
         }}
-      >
-        <span aria-hidden className="pond-card__checkmark">
-          {isMulti ? "✓" : ""}
-        </span>
-      </button>
-      <button
-        type="button"
-        className="pond-card__select"
+      />
+      <Library.Item.Select
         aria-pressed={isPrimary}
         onClick={(e) => onClick(save.id, e)}
         onDoubleClick={() => onDoubleClick(save.id)}
       >
-        <CardBody save={save} layout={layout} selection={cardSelection} />
-      </button>
-      <Tooltip content="Move to Trash">
-        <Button
-          variant="default"
-          size="sm"
-          className="pond-card__delete"
+        <SaveCardBody save={save} layout={layout} selection={cardSelection} />
+      </Library.Item.Select>
+      <Tooltip.Root content="Move to Trash">
+        <Library.Item.Delete
           disabled={busy}
           onClick={(e) => {
             e.preventDefault();
@@ -998,22 +1164,21 @@ function SaveCard({
           aria-label="Move to Trash"
         >
           Delete
-        </Button>
-      </Tooltip>
-    </li>
+        </Library.Item.Delete>
+      </Tooltip.Root>
+    </Library.Item>
   );
-}
+});
 
 /**
  * Card body shared by every source. The media slot's dimensions are
- * decided by the active layout mode (`pond-grid--<mode>` in
- * `styles.css`); we just publish the cover's natural aspect ratio
- * here as two inline CSS custom properties so each layout can size
- * the slot accordingly:
+ * decided by the active layout mode (`Library.Grid layout="…"`); we
+ * just publish the cover's natural aspect ratio here as two inline
+ * CSS custom properties so each layout can size the slot accordingly:
  *
- *   - `--pond-card-aspect`     → the `aspect-ratio: w / h` token used
+ *   - `--card-aspect`     → the `aspect-ratio: w / h` token used
  *     by waterfall to pick a cell height from the column width.
- *   - `--pond-card-aspect-num` → the same value as a unitless number
+ *   - `--card-aspect-num` → the same value as a unitless number
  *     used by justified's flex math to pick a cell width from the row
  *     height.
  *
@@ -1021,7 +1186,7 @@ function SaveCard({
  * rows pre-Phase 4 ingest, or covers whose dims didn't survive the
  * scrape).
  */
-function CardBody({
+const SaveCardBody = memo(function SaveCardBody({
   save,
   layout,
   selection,
@@ -1033,38 +1198,58 @@ function CardBody({
   const cover = save.files[save.coverIndex ?? 0];
   const w = cover?.width ?? save.width ?? null;
   const h = cover?.height ?? save.height ?? null;
+  // Text-only tweets render <Card.Tweet> instead of media. Give them a
+  // landscape default so the body has room to breathe without making
+  // the waterfall column heights wildly inconsistent.
+  const textTweet = isTextOnlyTweet(save);
   /* Clamp to a sane range so panoramas / extreme portraits don't
    * stretch a justified row into a single tile or shrink a waterfall
    * card to a sliver. */
-  const ratio = w && h ? Math.min(2.5, Math.max(0.4, w / h)) : 1;
-  const mediaStyle = {
-    "--pond-card-aspect": w && h ? `${w} / ${h}` : "1 / 1",
-    "--pond-card-aspect-num": String(ratio),
-  } as React.CSSProperties;
+  const ratio =
+    w && h ? Math.min(2.5, Math.max(0.4, w / h)) : textTweet ? 4 / 3 : 1;
+  const mediaStyle = useMemo<React.CSSProperties>(
+    () =>
+      ({
+        "--card-aspect": w && h ? `${w} / ${h}` : textTweet ? "4 / 3" : "1 / 1",
+        "--card-aspect-num": String(ratio),
+      }) as React.CSSProperties,
+    [w, h, ratio, textTweet],
+  );
+  const prefs = useDisplayPrefs();
+  const showMeta = prefs.name || prefs.date;
   return (
     <>
-      <div className="pond-card__media" style={mediaStyle}>
+      <Library.Item.Media style={mediaStyle}>
         <Card.Root save={save} layout={layout} selection={selection}>
           <Card.Media />
           <Card.DownloadingBadge />
         </Card.Root>
-        {save.files.length > 1 ? (
-          <span
-            className="pond-card__count"
-            role="status"
-            aria-label={`${save.files.length} media files`}
-          >
+        {prefs.fileCount && save.files.length > 1 ? (
+          <Library.Item.Count aria-label={`${save.files.length} media files`}>
             {save.files.length}
-          </span>
+          </Library.Item.Count>
         ) : null}
-      </div>
-      <div className="pond-card__meta">
-        <span className="pond-card__title">{save.title ?? save.url}</span>
-        <span className="pond-card__time">{formatAbsolute(save.savedAt)}</span>
-      </div>
+        {prefs.sourceBadge ? (
+          <Library.Item.SourceBadge>
+            <SourceBadge.Root source={save.source} data-size="sm" />
+          </Library.Item.SourceBadge>
+        ) : null}
+      </Library.Item.Media>
+      {showMeta ? (
+        <Library.Item.Meta>
+          {prefs.name ? (
+            <Library.Item.Title>{save.title ?? save.url}</Library.Item.Title>
+          ) : null}
+          {prefs.date ? (
+            <Library.Item.Time>
+              {formatAbsolute(save.savedAt)}
+            </Library.Item.Time>
+          ) : null}
+        </Library.Item.Meta>
+      ) : null}
     </>
   );
-}
+});
 
 /**
  * Absolute "YYYY/MM/DD HH:MM" timestamp used in the cards (Eagle-style)
@@ -1082,4 +1267,16 @@ function formatAbsolute(iso: string): string {
   const hh = String(d.getHours()).padStart(2, "0");
   const mi = String(d.getMinutes()).padStart(2, "0");
   return `${yyyy}/${mm}/${dd} ${hh}:${mi}`;
+}
+
+// FNV-1a-ish hash of `id + seed`, used as a sort key for the /random
+// view. Cheap and deterministic for a given seed, so the shuffle stays
+// stable across re-renders while the user is on the page.
+function hashShuffleKey(id: string, seed: string): number {
+  const s = `${id}:${seed}`;
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < s.length; i++) {
+    h = Math.imul(h ^ s.charCodeAt(i), 16777619);
+  }
+  return h >>> 0;
 }

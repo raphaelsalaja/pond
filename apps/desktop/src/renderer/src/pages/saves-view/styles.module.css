@@ -28,14 +28,14 @@
   z-index: 1;
   font-size: 11px;
   font-weight: 500;
-  color: var(--pond-fg-soft);
+  color: var(--ds-gray-11);
   text-align: left;
   user-select: none;
-  background: var(--pond-bg);
-  border-bottom: 1px solid var(--pond-border);
+  background: var(--ds-gray-1);
+  border-bottom: 1px solid var(--ds-gray-a4);
 }
 
-.colHeader {
+.col-header {
   display: inline-flex;
   gap: 4px;
   align-items: center;
@@ -49,62 +49,62 @@
   border: 0;
 }
 
-.colHeader:hover {
-  color: var(--pond-fg);
+.col-header:hover {
+  color: var(--ds-gray-12);
 }
 
-.sortIndicator {
+.sort-indicator {
   font-size: 10px;
   opacity: 0.7;
 }
 
 .table tbody tr {
   cursor: pointer;
-  border-bottom: 1px solid var(--pond-border);
+  border-bottom: 1px solid var(--ds-gray-a4);
 }
 
 .table tbody tr:hover {
-  background: var(--pond-hover);
+  background: var(--ds-gray-a3);
 }
 
 .table tbody tr[aria-selected="true"] {
-  background: color-mix(in srgb, var(--pond-accent) 14%, transparent);
+  background: color-mix(in srgb, var(--ds-accent-9) 14%, transparent);
 }
 
 /* Column-level rules first, then any cascade overrides further down,
  * so source order matches ascending specificity (Biome's
  * `noDescendingSpecificity`). */
-.colThumb {
+.col-thumb {
   width: 36px;
   padding: 4px 6px 4px 12px;
 }
 
-.colName {
+.col-name {
   max-width: 360px;
-  color: var(--pond-fg);
+  color: var(--ds-gray-12);
   word-break: break-word;
 }
 
-.colTags {
+.col-tags {
   max-width: 240px;
 }
 
-.colDim,
-.colExt,
-.colSize,
-.colDate {
+.col-dim,
+.col-ext,
+.col-size,
+.col-date {
   white-space: nowrap;
 }
 
-.colDate {
+.col-date {
   font-variant-numeric: tabular-nums;
 }
 
-.colMuted {
-  color: var(--pond-meta);
+.col-muted {
+  color: var(--ds-gray-9);
 }
 
-.colHeader {
+.col-header {
   display: inline-flex;
   gap: 4px;
   align-items: center;
@@ -118,11 +118,11 @@
   border: 0;
 }
 
-.colHeader:hover {
-  color: var(--pond-fg);
+.col-header:hover {
+  color: var(--ds-gray-12);
 }
 
-.listThumb {
+.list-thumb {
   display: block;
   width: 24px;
   height: 24px;
@@ -134,42 +134,42 @@
 /* The CardThumb renders an internal wrapper with its own border-radius
  * and shadow; collapse those for the tiny list-mode thumb. `:where()`
  * keeps the selector's specificity at (0,1,0). */
-:where(.listThumb > *) {
+:where(.list-thumb > *) {
   width: 100%;
   height: 100%;
   border-radius: inherit;
   box-shadow: none;
 }
 
-.listThumb img,
-.listThumb video {
+.list-thumb img,
+.list-thumb video {
   object-fit: cover;
 }
 
-.tagChips {
+.tag-chips {
   display: inline-flex;
   flex-wrap: wrap;
   gap: 4px;
   align-items: center;
 }
 
-.tagChip {
+.tag-chip {
   display: inline-flex;
   align-items: center;
   height: 18px;
   padding: 0 6px;
   font-size: 10px;
-  color: var(--pond-fg-soft);
+  color: var(--ds-gray-11);
   background: light-dark(rgba(0, 0, 0, 0.04), rgba(255, 255, 255, 0.04));
   border-radius: 3px;
 }
 
-.tagChipMore {
+.tag-chip-more {
   font-size: 10px;
-  color: var(--pond-meta);
+  color: var(--ds-gray-9);
 }
 
-.extChip {
+.ext-chip {
   display: inline-flex;
   align-items: center;
   height: 18px;
@@ -177,7 +177,7 @@
   font-size: 10px;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
-  color: var(--pond-fg-soft);
+  color: var(--ds-gray-11);
   text-transform: uppercase;
   background: light-dark(rgba(0, 0, 0, 0.05), rgba(255, 255, 255, 0.06));
   border-radius: 3px;
@@ -185,15 +185,15 @@
 
 /* Cascade overrides for selected rows — defined last so source order
  * matches their higher specificity. */
-.table tbody tr[aria-selected="true"] .colName {
+.table tbody tr[aria-selected="true"] .col-name {
   font-weight: 550;
-  color: var(--pond-accent);
+  color: var(--ds-accent-9);
 }
 
 .table tbody td {
   padding: 6px 12px;
   vertical-align: middle;
-  color: var(--pond-fg-soft);
+  color: var(--ds-gray-11);
 }
 
 /* Timeline + Color views — share the same heading + grouped grid look. */
@@ -203,13 +203,13 @@
   gap: 24px;
 }
 
-.timelineSection {
+.timeline-section {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.timelineHeading {
+.timeline-heading {
   display: flex;
   gap: 8px;
   align-items: center;
@@ -217,21 +217,21 @@
   margin: 0;
   font-size: 12px;
   font-weight: 600;
-  color: var(--pond-fg-soft);
+  color: var(--ds-gray-11);
   text-transform: capitalize;
   letter-spacing: 0.04em;
 }
 
-.timelineCount {
+.timeline-count {
   font-size: 10px;
   font-weight: 500;
-  color: var(--pond-meta);
+  color: var(--ds-gray-9);
 }
 
 .swatch {
   display: inline-block;
   width: 10px;
   height: 10px;
-  border: 1px solid var(--pond-border);
+  border: 1px solid var(--ds-gray-a4);
   border-radius: 2px;
 }

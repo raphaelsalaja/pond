@@ -1,46 +1,31 @@
-/* ------------------------------------------------------------------ */
-/* SaveStats — unified metadata panel for the preview pane.            */
-/*                                                                    */
-/* Surfaces yt-dlp + per-source `raw.<source>` metrics (views, likes, */
-/* comments, etc.) plus context like channel info, location tags,     */
-/* music attribution, and YouTube chapters. Hides itself when there's */
-/* nothing to display so the preview pane stays compact for items     */
-/* without metadata.                                                  */
-/* ------------------------------------------------------------------ */
-
 .stats {
   display: flex;
   flex-direction: column;
   gap: 10px;
   padding-top: 12px;
   margin-top: 4px;
-  border-top: 1px solid var(--pond-border);
+  border-top: 1px solid var(--ds-gray-a4);
 }
 
-/* Inline meta — relative date · duration · dimensions · language */
-.metaRow {
+.meta-row {
   display: flex;
   flex-wrap: wrap;
   gap: 6px 10px;
   align-items: center;
   font-size: 11px;
-  color: var(--pond-fg-soft);
+  color: var(--ds-gray-11);
 }
 
-.metaItem {
+.meta-item {
   display: inline-flex;
   gap: 4px;
   align-items: center;
   font-variant-numeric: tabular-nums;
-  color: var(--pond-fg-soft);
-}
-
-.metaItem time,
-.metaItem {
+  color: var(--ds-gray-11);
   cursor: default;
 }
 
-.metaBadge {
+.meta-badge {
   display: inline-flex;
   align-items: center;
   padding: 1px 6px;
@@ -52,7 +37,14 @@
   border-radius: 999px;
 }
 
-.liveBadge {
+.live-dot {
+  width: 6px;
+  height: 6px;
+  background: currentColor;
+  border-radius: 50%;
+}
+
+.live-badge {
   display: inline-flex;
   gap: 5px;
   align-items: center;
@@ -62,27 +54,20 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
   border-radius: 999px;
-}
 
-.liveBadge[data-state="live"] {
-  color: light-dark(#b3261e, #ff7b72);
-  background: light-dark(rgba(179, 38, 30, 0.12), rgba(255, 123, 114, 0.16));
-}
+  &[data-state="live"] {
+    color: light-dark(#b3261e, #ff7b72);
+    background: light-dark(rgba(179, 38, 30, 0.12), rgba(255, 123, 114, 0.16));
+  }
 
-.liveBadge[data-state="past"] {
-  color: var(--pond-fg-soft);
-  background: var(--pond-hover);
-}
+  &[data-state="past"] {
+    color: var(--ds-gray-11);
+    background: var(--ds-gray-a3);
+  }
 
-.liveDot {
-  width: 6px;
-  height: 6px;
-  background: currentColor;
-  border-radius: 50%;
-}
-
-.liveBadge[data-state="live"] .liveDot {
-  animation: pondstats-pulse 1.4s ease-in-out infinite;
+  &[data-state="live"] .live-dot {
+    animation: pondstats-pulse 1.4s ease-in-out infinite;
+  }
 }
 
 @keyframes pondstats-pulse {
@@ -99,76 +84,74 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .liveBadge[data-state="live"] .liveDot {
+  .live-badge[data-state="live"] .live-dot {
     opacity: 1;
     animation: none;
   }
 }
 
-/* Metric chips — icon + compact number + label */
 .metrics {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
 }
 
-.metricChip {
+.metric-chip {
   display: inline-flex;
   gap: 5px;
   align-items: center;
   padding: 3px 9px 3px 7px;
   font-size: 11px;
-  color: var(--pond-fg-soft);
+  color: var(--ds-gray-11);
   cursor: default;
-  background: light-dark(rgba(0, 0, 0, 0.04), rgba(255, 255, 255, 0.05));
+  background: var(--ds-gray-a3);
   border-radius: 999px;
   transition:
     background 120ms ease,
     color 120ms ease;
+
+  &:hover {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-a4);
+  }
 }
 
-.metricChip:hover {
-  color: var(--pond-fg);
-  background: light-dark(rgba(0, 0, 0, 0.07), rgba(255, 255, 255, 0.08));
-}
-
-.metricValue {
+.metric-value {
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  color: var(--pond-fg);
+  color: var(--ds-gray-12);
 }
 
-.metricLabel {
+.metric-label {
   font-size: 10px;
-  color: var(--pond-muted);
+  color: var(--ds-gray-11);
   letter-spacing: 0.02em;
 }
 
-/* Uploader / channel row */
-.uploaderRow {
+.uploader-row {
   display: flex;
   align-items: center;
 }
 
-.uploaderLink {
+.uploader-link {
   display: inline-flex;
   gap: 8px;
   align-items: center;
   min-width: 0;
   padding: 4px 6px;
   margin-left: -6px;
-  color: var(--pond-fg);
+  color: var(--ds-gray-12);
   text-decoration: none;
-  border-radius: var(--pond-radius-sm);
+  border-radius: var(--ds-radius-sm);
   transition: background 120ms ease;
 }
 
-a.uploaderLink:hover {
-  background: var(--pond-hover);
+a.uploader-link:hover {
+  background: var(--ds-gray-a3);
 }
 
-.uploaderAvatar,
-.uploaderAvatarFallback {
+.uploader-avatar,
+.uploader-avatar-fallback {
   flex: 0 0 24px;
   width: 24px;
   height: 24px;
@@ -176,31 +159,31 @@ a.uploaderLink:hover {
   border-radius: 50%;
 }
 
-.uploaderAvatarFallback {
+.uploader-avatar-fallback {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-size: 11px;
   font-weight: 600;
-  color: var(--pond-fg-soft);
-  background: light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.08));
+  color: var(--ds-gray-11);
+  background: var(--ds-gray-a3);
 }
 
-.uploaderText {
+.uploader-text {
   display: flex;
   flex-direction: column;
   gap: 1px;
   min-width: 0;
 }
 
-.uploaderKind {
+.uploader-kind {
   font-size: 10px;
-  color: var(--pond-muted);
+  color: var(--ds-gray-11);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
-.uploaderName {
+.uploader-name {
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 12px;
@@ -208,26 +191,25 @@ a.uploaderLink:hover {
   white-space: nowrap;
 }
 
-/* Extra rows — TikTok music, IG location, Pinterest board, … */
-.extraRow {
+.extra-row {
   display: flex;
   gap: 8px;
   align-items: center;
   font-size: 12px;
-  color: var(--pond-fg-soft);
+  color: var(--ds-gray-11);
 }
 
-.extraIcon {
+.extra-icon {
   display: inline-flex;
   flex: 0 0 14px;
   align-items: center;
   justify-content: center;
   width: 14px;
   height: 14px;
-  color: var(--pond-muted);
+  color: var(--ds-gray-11);
 }
 
-.extraText {
+.extra-text {
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
@@ -235,26 +217,26 @@ a.uploaderLink:hover {
   white-space: nowrap;
 }
 
-.extraMuted {
-  color: var(--pond-muted);
+.extra-muted {
+  color: var(--ds-gray-11);
 }
 
-.extraLink {
+.extra-link {
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: var(--pond-fg-soft);
+  color: var(--ds-gray-11);
   white-space: nowrap;
   text-decoration: none;
+
+  &:hover {
+    color: var(--ds-gray-12);
+    text-decoration: underline;
+  }
 }
 
-.extraLink:hover {
-  color: var(--pond-fg);
-  text-decoration: underline;
-}
-
-.extraChips {
+.extra-chips {
   display: flex;
   flex: 1 1 auto;
   flex-wrap: wrap;
@@ -262,22 +244,21 @@ a.uploaderLink:hover {
   min-width: 0;
 }
 
-.extraChip {
+.extra-chip {
   display: inline-flex;
   padding: 1px 8px;
   font-size: 11px;
-  color: var(--pond-fg-soft);
+  color: var(--ds-gray-11);
   text-decoration: none;
-  background: light-dark(rgba(0, 0, 0, 0.04), rgba(255, 255, 255, 0.05));
+  background: var(--ds-gray-a3);
   border-radius: 999px;
 }
 
-a.extraChip:hover {
-  color: var(--pond-fg);
-  background: light-dark(rgba(0, 0, 0, 0.07), rgba(255, 255, 255, 0.08));
+a.extra-chip:hover {
+  color: var(--ds-gray-12);
+  background: var(--ds-gray-a4);
 }
 
-/* Chapters — collapsible, click-to-seek */
 .chapters {
   display: flex;
   flex-direction: column;
@@ -285,7 +266,7 @@ a.extraChip:hover {
   margin-top: 4px;
 }
 
-.chaptersToggle {
+.chapters-toggle {
   display: inline-flex;
   gap: 6px;
   align-items: center;
@@ -294,17 +275,17 @@ a.extraChip:hover {
   font: inherit;
   font-size: 11px;
   font-weight: 600;
-  color: var(--pond-fg-soft);
+  color: var(--ds-gray-11);
   cursor: pointer;
   background: none;
   border: 0;
+
+  &:hover {
+    color: var(--ds-gray-12);
+  }
 }
 
-.chaptersToggle:hover {
-  color: var(--pond-fg);
-}
-
-.chaptersList {
+.chapters-list {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -313,11 +294,11 @@ a.extraChip:hover {
   list-style: none;
 }
 
-.chaptersItem {
+.chapters-item {
   display: flex;
 }
 
-.chaptersBtn {
+.chapters-btn {
   display: grid;
   flex: 1;
   grid-template-columns: 56px 1fr;
@@ -327,34 +308,34 @@ a.extraChip:hover {
   margin-left: -6px;
   font: inherit;
   font-size: 12px;
-  color: var(--pond-fg-soft);
+  color: var(--ds-gray-11);
   text-align: left;
   cursor: pointer;
   background: transparent;
   border: 0;
-  border-radius: var(--pond-radius-sm);
+  border-radius: var(--ds-radius-sm);
   transition:
     background 120ms ease,
     color 120ms ease;
+
+  &:hover:not(:disabled) {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-a3);
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.6;
+  }
 }
 
-.chaptersBtn:hover:not(:disabled) {
-  color: var(--pond-fg);
-  background: var(--pond-hover);
-}
-
-.chaptersBtn:disabled {
-  cursor: default;
-  opacity: 0.6;
-}
-
-.chaptersTime {
+.chapters-time {
   font-weight: 550;
   font-variant-numeric: tabular-nums;
-  color: var(--pond-fg);
+  color: var(--ds-gray-12);
 }
 
-.chaptersTitle {
+.chapters-title {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

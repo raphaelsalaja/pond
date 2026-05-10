@@ -1,21 +1,10 @@
+import { Button, Input, Tooltip, useToast } from "@pond/ui";
 import { useCallback, useState } from "react";
-import { pool } from "../../pool/pool";
-import {
-  selection,
-  useSelectedIds,
-  useSelectionSize,
-} from "../../pool/selection";
-import { Button, Input, Tooltip, useToast } from "../../ui";
+import { pool } from "@/pool/pool";
+import { selection, useSelectedIds, useSelectionSize } from "@/pool/selection";
 import styles from "./styles.module.css";
 
-/**
- * Floating action bar that appears whenever there's a non-empty
- * selection. Performs bulk tag-add, bulk-tag-remove, bulk-delete, and
- * bulk-refresh through batched `Transaction[]` calls so the executor
- * collapses every operation under a single batch id (one undo action
- * per bulk operation, exactly like Linear).
- */
-export function BulkActionBar() {
+function Root() {
   const size = useSelectionSize();
   const ids = useSelectedIds();
   const toast = useToast();
@@ -103,11 +92,11 @@ export function BulkActionBar() {
   if (size === 0) return null;
 
   return (
-    <div className={styles.bar} role="toolbar" aria-label="Bulk actions">
-      <span className={styles.count}>{size} selected</span>
-      <div className={styles.divider} aria-hidden />
-      <Input
-        size="sm"
+    <Bar>
+      <Count>{size} selected</Count>
+      <Divider />
+      <Input.Root
+        data-size="sm"
         placeholder="Add tag…"
         value={tagDraft}
         onChange={(e) => setTagDraft(e.target.value)}
@@ -117,7 +106,7 @@ export function BulkActionBar() {
         disabled={busy}
         style={{ width: 140 }}
       />
-      <Tooltip content="Add this tag to every selected save">
+      <Tooltip.Root content="Add this tag to every selected save">
         <Button
           size="sm"
           onClick={() => void addTag(tagDraft)}
@@ -125,8 +114,8 @@ export function BulkActionBar() {
         >
           Add tag
         </Button>
-      </Tooltip>
-      <Tooltip content="Schedule AI enrichment for every selected save">
+      </Tooltip.Root>
+      <Tooltip.Root content="Schedule AI enrichment for every selected save">
         <Button
           size="sm"
           variant="ghost"
@@ -135,8 +124,8 @@ export function BulkActionBar() {
         >
           Enrich
         </Button>
-      </Tooltip>
-      <Tooltip content="Move every selected save to trash">
+      </Tooltip.Root>
+      <Tooltip.Root content="Move every selected save to trash">
         <Button
           size="sm"
           variant="danger"
@@ -145,13 +134,56 @@ export function BulkActionBar() {
         >
           Trash
         </Button>
-      </Tooltip>
-      <div className={styles.divider} aria-hidden />
-      <Tooltip content="Clear selection (Esc)">
+      </Tooltip.Root>
+      <Divider />
+      <Tooltip.Root content="Clear selection (Esc)">
         <Button size="sm" variant="ghost" onClick={close} disabled={busy}>
           Done
         </Button>
-      </Tooltip>
-    </div>
+      </Tooltip.Root>
+    </Bar>
   );
 }
+
+interface BarProps extends React.ComponentPropsWithoutRef<"div"> {}
+
+function Bar({ className, ...props }: BarProps) {
+  return (
+    <div
+      role="toolbar"
+      aria-label="Bulk actions"
+      className={[styles.bar, className ?? ""].filter(Boolean).join(" ")}
+      {...props}
+    />
+  );
+}
+
+interface CountProps extends React.ComponentPropsWithoutRef<"span"> {}
+
+function Count({ className, ...props }: CountProps) {
+  return (
+    <span
+      className={[styles.count, className ?? ""].filter(Boolean).join(" ")}
+      {...props}
+    />
+  );
+}
+
+interface DividerProps extends React.ComponentPropsWithoutRef<"div"> {}
+
+function Divider({ className, ...props }: DividerProps) {
+  return (
+    <div
+      aria-hidden
+      className={[styles.divider, className ?? ""].filter(Boolean).join(" ")}
+      {...props}
+    />
+  );
+}
+
+export const BulkActionBar = {
+  Root,
+  Bar,
+  Count,
+  Divider,
+};

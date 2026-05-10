@@ -1,0 +1,30 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ds-gray-12);
+  letter-spacing: -0.04px;
+}
+
+.control {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.description {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ds-gray-11);
+}
+
+.error {
+  font-size: 12px;
+  font-weight: 500;
+  color: light-dark(#b3261e, #f2b8b5);
+}

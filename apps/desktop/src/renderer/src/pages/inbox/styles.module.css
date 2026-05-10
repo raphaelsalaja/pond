@@ -15,13 +15,13 @@
   margin: 0 0 4px;
   font-size: 22px;
   font-weight: 600;
-  color: var(--pond-fg);
+  color: var(--ds-gray-12);
 }
 
 .subtitle {
   margin: 0;
   font-size: 12px;
-  color: var(--pond-meta);
+  color: var(--ds-gray-9);
 }
 
 .list {
@@ -38,8 +38,8 @@
   grid-template-columns: 96px 1fr;
   gap: 16px;
   padding: 14px;
-  background: var(--pond-bg);
-  border: 1px solid var(--pond-border);
+  background: var(--ds-gray-1);
+  border: 1px solid var(--ds-gray-a4);
   border-radius: 10px;
 }
 
@@ -66,7 +66,7 @@
   text-overflow: ellipsis;
   font-size: 13px;
   font-weight: 600;
-  color: var(--pond-fg);
+  color: var(--ds-gray-12);
   white-space: nowrap;
   text-decoration: none;
 }
@@ -80,7 +80,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 11px;
-  color: var(--pond-meta);
+  color: var(--ds-gray-9);
   white-space: nowrap;
 }
 
@@ -98,39 +98,39 @@
   align-items: center;
   padding: 8px 10px;
   background: light-dark(rgba(0, 0, 0, 0.025), rgba(255, 255, 255, 0.025));
-  border: 1px solid var(--pond-border);
+  border: 1px solid var(--ds-gray-a4);
   border-radius: 6px;
 }
 
-.suggestionHead {
+.suggestion-head {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-.fieldLabel {
+.field-label {
   font-size: 11px;
   font-weight: 600;
-  color: var(--pond-fg-soft);
+  color: var(--ds-gray-11);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
-.fieldHint {
+.field-hint {
   font-size: 10px;
-  color: var(--pond-meta);
+  color: var(--ds-gray-9);
   text-decoration: underline dotted;
   cursor: help;
 }
 
-.suggestionValue {
+.suggestion-value {
   font-size: 12px;
   line-height: 1.4;
-  color: var(--pond-fg);
+  color: var(--ds-gray-12);
   word-break: break-word;
 }
 
-.suggestionActions {
+.suggestion-actions {
   display: flex;
   gap: 6px;
 }
@@ -147,30 +147,7 @@
   height: 22px;
   padding: 0 8px;
   font-size: 11px;
-  color: var(--pond-fg-soft);
+  color: var(--ds-gray-11);
   background: light-dark(rgba(0, 0, 0, 0.05), rgba(255, 255, 255, 0.05));
   border-radius: 4px;
-}
-
-.empty {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: 12px;
-  align-items: center;
-  justify-content: center;
-  padding: 64px 32px;
-  color: var(--pond-fg-soft);
-  text-align: center;
-}
-
-.backLink {
-  font-size: 12px;
-  color: var(--pond-fg-soft);
-  text-decoration: none;
-}
-
-.backLink:hover {
-  color: var(--pond-fg);
-  text-decoration: underline;
 }

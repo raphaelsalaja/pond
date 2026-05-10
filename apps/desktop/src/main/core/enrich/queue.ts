@@ -172,9 +172,16 @@ export async function enqueueAllMissing(): Promise<{
   const rows = await db.select().from(saves).where(isNull(saves.deletedAt));
   for (const r of rows) {
     const kinds: EnrichJobKind[] = [];
-    if (!r.dominantColors || (r.dominantColors as unknown[]).length === 0) {
-      kinds.push("colors");
-    }
+    const noColors =
+      !r.dominantColors || (r.dominantColors as unknown[]).length === 0;
+    const noBlur =
+      typeof r.blurDataUrl !== "string" || r.blurDataUrl.length === 0;
+    const noDims =
+      typeof r.width !== "number" ||
+      r.width <= 0 ||
+      typeof r.height !== "number" ||
+      r.height <= 0;
+    if (noColors || noBlur || noDims) kinds.push("colors");
     if (!r.aiCaption || !r.classification) kinds.push("vision");
     if (!r.articleHtml && r.source === "article") kinds.push("article");
     if (!r.embeddingUpdatedAt) kinds.push("embed");
