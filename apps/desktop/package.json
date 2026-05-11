@@ -46,7 +46,7 @@
     "@uiw/color-convert": "^2.10.1",
     "@uiw/react-color-hue": "^2.10.1",
     "@uiw/react-color-saturation": "^2.10.1",
-    "archiver": "^7.0.1",
+    "archiver": "^8.0.0",
     "better-sqlite3": "^12.9.0",
     "chrono-node": "^2.9.1",
     "drizzle-orm": "^0.45.2",
