@@ -54,7 +54,6 @@
 }
 
 .list {
-  background-color: var(--ds-gray-2);
   border-radius: 12px;
   box-shadow:
     0 0 0 1px var(--ds-gray-a4),

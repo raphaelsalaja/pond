@@ -1,46 +1,105 @@
 import { Button, Input, Switch } from "@pond/ui";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Settings } from "@/components/settings";
 import { usePrefs } from "@/pool/prefs";
 
 /**
- * Save behavior. The ingest pipeline (`apps/desktop/src/main/core/
- * ingest.ts`) reads `prefs.saveBehavior.dedupeByUrl` to decide
- * whether to also match by URL when `(source, sourceId)` misses,
- * and applies `defaultTags` to every newly-created save before any
- * AI runs.
+ * Capture-time controls in one place. Splits into two sections:
  *
- * `autoTag` is honoured by the enrichment worker — when off it
- * skips the AI tag job for incoming saves but still runs the
- * cheap, always-local jobs (palette extraction).
+ *   - Menu Bar — how Pond is reachable when its window is closed
+ *     (tray icon, login item). Each toggle pings
+ *     `quickCapture.applyPrefs` so main re-binds without a restart.
+ *   - Defaults — what the ingest pipeline does to every newly-created
+ *     save before any AI runs. `autoTag` gates the AI tag job in the
+ *     enrichment worker; `dedupeByUrl` is read by
+ *     `apps/desktop/src/main/core/ingest.ts`; `defaultTags` are
+ *     applied to the save row at create time.
  */
-export function SaveBehaviorSection() {
-  const [prefs, patch] = usePrefs("saveBehavior");
+export function CaptureBehaviorSection() {
+  const [quick, patchQuick] = usePrefs("quickCapture");
+  const [save, patchSave] = usePrefs("saveBehavior");
   const [chip, setChip] = useState("");
+  const [busyApply, setBusyApply] = useState(false);
+
+  const applyQuickPrefs = useCallback(async () => {
+    setBusyApply(true);
+    try {
+      await window.pond.query("quickCapture.applyPrefs", {});
+    } finally {
+      setBusyApply(false);
+    }
+  }, []);
+
+  const onQuickPatch = useCallback(
+    (delta: Partial<typeof quick>) => {
+      patchQuick(delta);
+      // Defer the re-apply so the optimistic prefs cache update lands
+      // first; main reads the freshly-persisted blob.
+      setTimeout(() => void applyQuickPrefs(), 50);
+    },
+    [patchQuick, applyQuickPrefs],
+  );
 
   function addTag() {
     const value = chip.trim();
     if (!value) return;
-    if (prefs.defaultTags.includes(value)) {
+    if (save.defaultTags.includes(value)) {
       setChip("");
       return;
     }
-    patch({ defaultTags: [...prefs.defaultTags, value] });
+    patchSave({ defaultTags: [...save.defaultTags, value] });
     setChip("");
   }
 
   function removeTag(t: string) {
-    patch({ defaultTags: prefs.defaultTags.filter((x) => x !== t) });
+    patchSave({ defaultTags: save.defaultTags.filter((x) => x !== t) });
   }
 
   return (
     <Settings.Page>
       <Settings.Header>
-        <Settings.Title>Save Behavior</Settings.Title>
+        <Settings.Title>Capture Behavior</Settings.Title>
         <Settings.Description>
-          Defaults applied to every new save.
+          How Pond launches and what it does with each new save.
         </Settings.Description>
       </Settings.Header>
+
+      <Settings.Section>
+        <Settings.SectionTitle>Menu Bar</Settings.SectionTitle>
+        <Settings.List>
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>Show Menu-Bar Icon</Settings.ItemTitle>
+              <Settings.ItemDescription>
+                Keep Pond reachable from the system tray with the window hidden.
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <Switch.Root
+                checked={quick.menuBarIcon}
+                onCheckedChange={(v) => onQuickPatch({ menuBarIcon: v })}
+                disabled={busyApply}
+              />
+            </Settings.ItemControl>
+          </Settings.Item>
+
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>Launch at Login</Settings.ItemTitle>
+              <Settings.ItemDescription>
+                Start Pond when you sign in to your computer.
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <Switch.Root
+                checked={quick.launchAtLogin}
+                onCheckedChange={(v) => onQuickPatch({ launchAtLogin: v })}
+                disabled={busyApply}
+              />
+            </Settings.ItemControl>
+          </Settings.Item>
+        </Settings.List>
+      </Settings.Section>
 
       <Settings.Section>
         <Settings.SectionTitle>Defaults</Settings.SectionTitle>
@@ -55,8 +114,8 @@ export function SaveBehaviorSection() {
             </Settings.ItemDetails>
             <Settings.ItemControl>
               <Switch.Root
-                checked={prefs.autoTag}
-                onCheckedChange={(v) => patch({ autoTag: v })}
+                checked={save.autoTag}
+                onCheckedChange={(v) => patchSave({ autoTag: v })}
               />
             </Settings.ItemControl>
           </Settings.Item>
@@ -71,8 +130,8 @@ export function SaveBehaviorSection() {
             </Settings.ItemDetails>
             <Settings.ItemControl>
               <Switch.Root
-                checked={prefs.dedupeByUrl}
-                onCheckedChange={(v) => patch({ dedupeByUrl: v })}
+                checked={save.dedupeByUrl}
+                onCheckedChange={(v) => patchSave({ dedupeByUrl: v })}
               />
             </Settings.ItemControl>
           </Settings.Item>
@@ -87,7 +146,7 @@ export function SaveBehaviorSection() {
             </Settings.ItemDetails>
             <Settings.ItemControl>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                {prefs.defaultTags.map((t) => (
+                {save.defaultTags.map((t) => (
                   <span
                     key={t}
                     style={{

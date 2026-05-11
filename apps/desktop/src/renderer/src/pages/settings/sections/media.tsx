@@ -2,6 +2,8 @@ import { Button, Select, Switch, useToast } from "@pond/ui";
 import { useCallback, useEffect, useState } from "react";
 import { Settings } from "@/components/settings";
 import styles from "@/pages/settings/styles.module.css";
+import { useAiProvider } from "@/pool/ai-provider";
+import { usePrefs } from "@/pool/prefs";
 import {
   DEFAULT_VIDEO_DOWNLOAD,
   type SettingsRow,
@@ -14,17 +16,28 @@ interface VideoToolsStatus {
 }
 
 /**
- * Background video download tuning — toggle + max resolution + max
- * file size. The H.264-only codec policy stays intentionally hidden;
- * letting users opt into AV1 / VP9 here would route them straight
- * into Electron's missing-decoder failure mode.
+ * Per-media-type settings. Sections are content-type peers (Photos /
+ * Videos / GIFs) rather than feature-grouped, so future types (audio,
+ * documents) drop in as new sections without rerouting.
+ *
+ * Photos surfaces existing alt-text + cloud-privacy toggles — both
+ * shared with AI surfaces via `usePrefs("captions")` and
+ * `useAiProvider()`, so flipping here updates AI Enrichment /
+ * Provider live.
+ *
+ * Videos keeps the H.264-only download tuning. The yt-dlp / ffmpeg
+ * tool status lives here too because it's the surface users hit when
+ * a download fails.
  */
-export function VideosSection() {
+export function MediaSection() {
   const toast = useToast();
+  const { provider, patchProvider, ready: providerReady } = useAiProvider();
+  const [captions, patchCaptions] = usePrefs("captions");
   const [settings, setSettings] = useState<SettingsRow | null>(null);
   const [busy, setBusy] = useState(false);
   const [toolsStatus, setToolsStatus] = useState<VideoToolsStatus | null>(null);
   const [reinstalling, setReinstalling] = useState(false);
+  const [regeneratingPosters, setRegeneratingPosters] = useState(false);
 
   useEffect(() => {
     void window.pond.query("settings.get", {}).then((s) => {
@@ -64,6 +77,24 @@ export function VideosSection() {
     }
   }, [refreshTools, toast]);
 
+  const regeneratePosters = useCallback(async () => {
+    setRegeneratingPosters(true);
+    try {
+      const r = await window.pond.videoRegeneratePosters({ force: true });
+      toast.add({
+        title: r.ok ? "Regenerating thumbnails" : "Couldn't queue regeneration",
+        description: r.ok
+          ? r.scheduled > 0
+            ? `${r.scheduled} video${r.scheduled === 1 ? "" : "s"} queued. Thumbnails refresh in the background.`
+            : "No video saves found."
+          : "Try again. If it keeps happening, check Developer › Open Log Directory.",
+        type: r.ok ? "success" : "error",
+      });
+    } finally {
+      setRegeneratingPosters(false);
+    }
+  }, [toast]);
+
   async function patchVideoDownload(patch: Partial<VideoDownloadPrefs>) {
     if (!settings) return;
     const next = { ...settings.videoDownload, ...patch };
@@ -95,31 +126,69 @@ export function VideosSection() {
     return (
       <Settings.Page>
         <Settings.Header>
-          <Settings.Title>Videos</Settings.Title>
+          <Settings.Title>Media</Settings.Title>
         </Settings.Header>
       </Settings.Page>
     );
   }
 
-  const prefs = settings.videoDownload;
+  const videoPrefs = settings.videoDownload;
   const heightValue =
-    prefs.maxHeight === null ? "any" : String(prefs.maxHeight);
+    videoPrefs.maxHeight === null ? "any" : String(videoPrefs.maxHeight);
   const sizeValue =
-    prefs.maxFileSizeMb === null ? "any" : String(prefs.maxFileSizeMb);
+    videoPrefs.maxFileSizeMb === null
+      ? "any"
+      : String(videoPrefs.maxFileSizeMb);
 
   return (
     <Settings.Page>
       <Settings.Header>
-        <Settings.Title>Videos</Settings.Title>
+        <Settings.Title>Media</Settings.Title>
         <Settings.Description>
-          How Pond downloads videos in the background.
+          How Pond handles photos, videos, and GIFs in your library.
         </Settings.Description>
       </Settings.Header>
 
       <Settings.Section>
-        <Settings.SectionTitle>
-          Background Video Downloads
-        </Settings.SectionTitle>
+        <Settings.SectionTitle>Photos</Settings.SectionTitle>
+        <Settings.List>
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>Generate Alt Text</Settings.ItemTitle>
+              <Settings.ItemDescription>
+                Run the vision model on image saves to fill alt text on import.
+                Shared with AI › Enrichment.
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <Switch.Root
+                checked={captions.autoAltText}
+                onCheckedChange={(v) => patchCaptions({ autoAltText: v })}
+              />
+            </Settings.ItemControl>
+          </Settings.Item>
+
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>Send Images to Provider</Settings.ItemTitle>
+              <Settings.ItemDescription>
+                Applies to cloud AI tiers only. Local providers always keep
+                bytes on this machine.
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <Switch.Root
+                checked={provider.sendImages}
+                disabled={!providerReady || provider.kind === "local"}
+                onCheckedChange={(v) => patchProvider({ sendImages: v })}
+              />
+            </Settings.ItemControl>
+          </Settings.Item>
+        </Settings.List>
+      </Settings.Section>
+
+      <Settings.Section>
+        <Settings.SectionTitle>Videos</Settings.SectionTitle>
         <Settings.List>
           <Settings.Item>
             <Settings.ItemDetails>
@@ -131,7 +200,7 @@ export function VideosSection() {
             </Settings.ItemDetails>
             <Settings.ItemControl>
               <Switch.Root
-                checked={prefs.enabled}
+                checked={videoPrefs.enabled}
                 disabled={busy}
                 onCheckedChange={(checked: boolean) =>
                   void patchVideoDownload({ enabled: checked })
@@ -151,7 +220,7 @@ export function VideosSection() {
             <Settings.ItemControl>
               <Select.Root
                 value={heightValue}
-                disabled={busy || !prefs.enabled}
+                disabled={busy || !videoPrefs.enabled}
                 onValueChange={(v) => {
                   if (v === null || v === "any") {
                     void patchVideoDownload({ maxHeight: null });
@@ -187,7 +256,7 @@ export function VideosSection() {
             <Settings.ItemControl>
               <Select.Root
                 value={sizeValue}
-                disabled={busy || !prefs.enabled}
+                disabled={busy || !videoPrefs.enabled}
                 onValueChange={(v) => {
                   if (v === null || v === "any") {
                     void patchVideoDownload({ maxFileSizeMb: null });
@@ -212,6 +281,47 @@ export function VideosSection() {
                   <Select.Item value="any">No Cap</Select.Item>
                 </Select.Content>
               </Select.Root>
+            </Settings.ItemControl>
+          </Settings.Item>
+
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>Transcribe Downloads</Settings.ItemTitle>
+              <Settings.ItemDescription>
+                Run speech-to-text on downloaded videos so they're searchable.
+                Ships when the whisper worker lands. Shared with AI ›
+                Enrichment.
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <Switch.Root
+                checked={captions.videoTranscripts}
+                onCheckedChange={(v) => patchCaptions({ videoTranscripts: v })}
+              />
+            </Settings.ItemControl>
+          </Settings.Item>
+
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>
+                Regenerate Video Thumbnails
+              </Settings.ItemTitle>
+              <Settings.ItemDescription>
+                Re-run the bundled ffmpeg over every video save to pull the
+                actual first frame as the still. Use after restoring a backup,
+                or if a card's thumbnail looks wrong.
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <Button
+                size="sm"
+                disabled={
+                  regeneratingPosters || toolsStatus?.ffmpeg.available !== true
+                }
+                onClick={() => void regeneratePosters()}
+              >
+                {regeneratingPosters ? "Queuing…" : "Regenerate"}
+              </Button>
             </Settings.ItemControl>
           </Settings.Item>
         </Settings.List>
@@ -273,6 +383,14 @@ export function VideosSection() {
             Couldn't read tool status. Restart Pond to retry.
           </Settings.ItemDescription>
         )}
+      </Settings.Section>
+
+      <Settings.Section>
+        <Settings.SectionTitle>GIFs</Settings.SectionTitle>
+        <Settings.ItemDescription>
+          Animated GIFs are currently stored as images. Dedicated handling —
+          treat as video for download, strip animation on import — lands later.
+        </Settings.ItemDescription>
       </Settings.Section>
     </Settings.Page>
   );

@@ -3,6 +3,7 @@ import type { IngestPayload } from "@pond/schema/ingest";
 import { eq } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../db";
+import { extractFirstFrame } from "../lib/ffmpeg-frame";
 import { ingestFromHttp } from "./ingest";
 import { getVideoDownloadPrefs } from "./prefs";
 import { supportsYtDlp } from "./refresh/sources";
@@ -249,6 +250,14 @@ async function processJob(job: AutoVideoJob): Promise<void> {
     return;
   }
 
+  // Extract a real frame-0 still from the freshly-downloaded MP4 so
+  // the renderer's grid card has a poster that actually matches the
+  // video. Best-effort: a `null` here just means we fall back to the
+  // platform-supplied cover (same behaviour as before this feature
+  // shipped). The ≈200–500ms extract runs after the 30–90s yt-dlp
+  // download, so the perceived latency is unchanged.
+  const frame = await extractFirstFrame(dl.path);
+
   try {
     const payload: IngestPayload = {
       source: job.source,
@@ -257,7 +266,18 @@ async function processJob(job: AutoVideoJob): Promise<void> {
       ...(dl.infoJson ? { raw: { [job.source]: { ytdlp: dl.infoJson } } } : {}),
     };
     await ingestFromHttp(payload, {
-      mediaFiles: [{ path: dl.path, mimeType: dl.mimeType }],
+      mediaFiles: [
+        { path: dl.path, mimeType: dl.mimeType },
+        ...(frame
+          ? [
+              {
+                path: frame.path,
+                mimeType: frame.mimeType,
+                kind: "poster" as const,
+              },
+            ]
+          : []),
+      ],
       force: job.force === true,
     });
 
@@ -282,6 +302,7 @@ async function processJob(job: AutoVideoJob): Promise<void> {
     });
   } finally {
     await dl.cleanup();
+    if (frame) await frame.cleanup();
   }
 }
 

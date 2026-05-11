@@ -48,10 +48,6 @@ import { parseRelative } from "./relative-time";
 import { predicateKey, searchEntries } from "./score";
 import styles from "./styles.module.css";
 
-/* ------------------------------------------------------------------ */
-/* Per-field icon registry (renderer-side)                             */
-/* ------------------------------------------------------------------ */
-
 type IconType = ComponentType<{
   width?: string | number;
   height?: string | number;
@@ -73,10 +69,6 @@ export const FIELD_ICONS: Record<FieldId, IconType> = {
   publishedAt: IconCalendarOutline18,
   modifiedAt: IconCalendarOutline18,
 };
-
-/* ------------------------------------------------------------------ */
-/* Field grouping for the "Add filter" menu                            */
-/* ------------------------------------------------------------------ */
 
 /**
  * `display: "submenu"` collapses the group into a single parent
@@ -122,10 +114,6 @@ export function fieldsByGroup(): Record<FieldGroupId, FieldId[]> {
   return out;
 }
 
-/* ------------------------------------------------------------------ */
-/* Comparator labels                                                   */
-/* ------------------------------------------------------------------ */
-
 /** Friendly label for each comparator, sized for the chip's
  * "operator" segment. The chip flips between these depending on
  * the field type's allowed comparators. */
@@ -149,15 +137,7 @@ export const COMPARATOR_LABELS: Record<ComparatorId, string> = {
   exists: "is set",
 };
 
-/* ------------------------------------------------------------------ */
-/* Date presets                                                        */
-/* ------------------------------------------------------------------ */
-
 const DATE_FIELDS: FieldId[] = ["savedAt", "publishedAt", "modifiedAt"];
-
-/* ------------------------------------------------------------------ */
-/* Per-field dropdown lookup                                           */
-/* ------------------------------------------------------------------ */
 
 /**
  * Pick the dropdown component for a given field. We dispatch on the
@@ -188,10 +168,6 @@ export function dropdownFor(field: FieldId): ComponentType<DropdownProps> {
       return StringDropdown;
   }
 }
-
-/* ------------------------------------------------------------------ */
-/* Add-filter submenu                                                  */
-/* ------------------------------------------------------------------ */
 
 interface FilterSubmenuProps {
   field: FieldId;
@@ -287,10 +263,6 @@ export function FilterSubmenu({
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Group submenu (parent menu wrapping FilterSubmenus)                 */
-/* ------------------------------------------------------------------ */
-
 interface GroupSubmenuProps {
   group: FieldGroup;
   fields: readonly FieldId[];
@@ -342,10 +314,6 @@ export function GroupSubmenu({
     </Menu.SubmenuRoot>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/* Search index                                                        */
-/* ------------------------------------------------------------------ */
 
 /**
  * One row in the global Add filter search. Empty-query mode
@@ -620,10 +588,6 @@ function parseHost(url: string | null | undefined): string | null {
   }
 }
 
-/* ------------------------------------------------------------------ */
-/* Match counts                                                        */
-/* ------------------------------------------------------------------ */
-
 /**
  * Compute "how many saves match this predicate" for every visible
  * `value` entry. Memoised by the saves snapshot reference and the
@@ -670,10 +634,6 @@ function useEntryCounts(
     return out;
   }, [saves, entries]);
 }
-
-/* ------------------------------------------------------------------ */
-/* Add filter menu                                                     */
-/* ------------------------------------------------------------------ */
 
 const RESULT_CAP = 50;
 
@@ -905,10 +865,6 @@ function formatCount(n: number): string {
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
   return String(n);
 }
-
-/* ------------------------------------------------------------------ */
-/* F hotkey                                                            */
-/* ------------------------------------------------------------------ */
 
 /**
  * Listens for `F` on the document and calls `onActivate()` when

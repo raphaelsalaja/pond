@@ -80,10 +80,6 @@ export interface RichTweet {
   raw: unknown;
 }
 
-/* ------------------------------------------------------------------ */
-/* Public entry point.                                                 */
-/* ------------------------------------------------------------------ */
-
 /**
  * Parse every captured Bookmarks response, returning a deduplicated
  * map keyed by tweet id. Last-write-wins on duplicates — the most
@@ -125,10 +121,6 @@ export function parseBookmarksResponses(
   }
   return out;
 }
-
-/* ------------------------------------------------------------------ */
-/* Shape walkers.                                                      */
-/* ------------------------------------------------------------------ */
 
 interface InstructionLike {
   type?: string;
@@ -201,10 +193,6 @@ function resolveTweet(result: unknown): RichTweet | null {
   }
   return null;
 }
-
-/* ------------------------------------------------------------------ */
-/* Field extraction.                                                   */
-/* ------------------------------------------------------------------ */
 
 interface TweetLike {
   rest_id?: string;

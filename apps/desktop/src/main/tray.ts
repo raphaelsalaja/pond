@@ -80,7 +80,7 @@ export async function ensureTray(opts: TrayOptions): Promise<TrayHandle> {
     log.error("[pond tray] failed to create tray", err);
     throw err;
   }
-  tray.setToolTip("pond");
+  tray.setToolTip("Pond");
   log.info("[pond tray] created");
 
   const instance: TrayHandle = {
@@ -120,7 +120,7 @@ async function buildTooltip(): Promise<string> {
         ?.replace(/\.library$/, "") ?? "Library";
     return `${libraryName} · ${active?.n ?? 0} saves`;
   } catch {
-    return "pond";
+    return "Pond";
   }
 }
 
@@ -193,7 +193,7 @@ async function buildMenu(opts: TrayOptions): Promise<Menu> {
       },
     },
     { type: "separator" },
-    { label: `pond ${app.getVersion()}`, enabled: false },
+    { label: `Pond ${app.getVersion()}`, enabled: false },
     { label: "Quit", accelerator: "CommandOrControl+Q", role: "quit" },
   ]);
 }

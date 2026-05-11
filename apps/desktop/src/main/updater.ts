@@ -58,8 +58,8 @@ export function registerAutoUpdater() {
       buttons: ["Restart & install", "Later"],
       defaultId: 0,
       cancelId: 1,
-      title: "pond update ready",
-      message: `pond ${info.version} has been downloaded.`,
+      title: "Pond update ready",
+      message: `Pond ${info.version} has been downloaded.`,
       detail: "Restart to apply the update.",
     });
     if (res.response === 0) {

@@ -78,8 +78,9 @@ const ACTION_LABELS: Record<
 /**
  * Library storage. Top sections show how much disk Pond is using and
  * let the user enforce a soft warning / hard cap with a configurable
- * action when crossed. The original action surface — open in Finder,
- * rescan, move, integrity check, exports — is preserved below.
+ * action when crossed. The action surface — open in Finder, rescan,
+ * move, integrity check — sits below. Exports live on Backups &
+ * Export so every "take a copy out of Pond" surface stays together.
  */
 export function StorageSection() {
   const toast = useToast();
@@ -214,52 +215,6 @@ export function StorageSection() {
             ? `${res.totalIndexed}\u00A0items match on disk and in the index.`
             : `${res.orphans.length} on disk only · ${res.missing.length} indexed only.`,
         type: drift === 0 ? "success" : "warning",
-      });
-    });
-  }
-
-  async function exportZip() {
-    await withBusy("export-zip", async () => {
-      const res = (await window.pond.query("library.exportZip", {})) as
-        | { ok: true; path: string }
-        | { ok: false; reason: string };
-      if (!res.ok) {
-        if (res.reason !== "cancelled") {
-          toast.add({
-            title: "Export failed",
-            description: res.reason,
-            type: "error",
-          });
-        }
-        return;
-      }
-      toast.add({
-        title: "Export complete",
-        description: res.path,
-        type: "success",
-      });
-    });
-  }
-
-  async function exportJson() {
-    await withBusy("export-json", async () => {
-      const res = (await window.pond.query("library.exportJson", {})) as
-        | { ok: true; path: string }
-        | { ok: false; reason: string };
-      if (!res.ok) {
-        if (res.reason !== "cancelled") {
-          toast.add({
-            title: "Export failed",
-            description: res.reason,
-            type: "error",
-          });
-        }
-        return;
-      }
-      toast.add({
-        title: "JSON export complete",
-        description: res.path,
-        type: "success",
       });
     });
   }
@@ -666,49 +621,6 @@ export function StorageSection() {
                 onClick={() => void verify()}
               >
                 {busy === "verify" ? "Checking…" : "Run Check"}
-              </Button>
-            </Settings.ItemControl>
-          </Settings.Item>
-        </Settings.List>
-      </Settings.Section>
-
-      <Settings.Section>
-        <Settings.SectionTitle>Export</Settings.SectionTitle>
-        <Settings.List>
-          <Settings.Item>
-            <Settings.ItemDetails>
-              <Settings.ItemTitle>Library Zip</Settings.ItemTitle>
-              <Settings.ItemDescription>
-                One archive containing every <code>items/&lt;id&gt;.info</code>{" "}
-                folder plus the library metadata.
-              </Settings.ItemDescription>
-            </Settings.ItemDetails>
-            <Settings.ItemControl>
-              <Button
-                size="sm"
-                disabled={busy === "export-zip"}
-                onClick={() => void exportZip()}
-              >
-                {busy === "export-zip" ? "Zipping…" : "Export as Zip"}
-              </Button>
-            </Settings.ItemControl>
-          </Settings.Item>
-
-          <Settings.Item>
-            <Settings.ItemDetails>
-              <Settings.ItemTitle>Metadata as JSON</Settings.ItemTitle>
-              <Settings.ItemDescription>
-                One JSON file per save plus a manifest. Easy to migrate to other
-                tools.
-              </Settings.ItemDescription>
-            </Settings.ItemDetails>
-            <Settings.ItemControl>
-              <Button
-                size="sm"
-                disabled={busy === "export-json"}
-                onClick={() => void exportJson()}
-              >
-                {busy === "export-json" ? "Writing…" : "Export as JSON"}
               </Button>
             </Settings.ItemControl>
           </Settings.Item>

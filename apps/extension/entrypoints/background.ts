@@ -33,12 +33,12 @@ export default defineBackground(() => {
     chrome.contextMenus.removeAll(() => {
       chrome.contextMenus.create({
         id: MENU_PAGE,
-        title: "Save this page to pond",
+        title: "Save this page to Pond",
         contexts: ["page", "image", "video"],
       });
       chrome.contextMenus.create({
         id: MENU_LINK,
-        title: "Save this link to pond",
+        title: "Save this link to Pond",
         contexts: ["link"],
       });
     });

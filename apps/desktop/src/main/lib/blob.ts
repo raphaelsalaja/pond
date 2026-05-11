@@ -287,6 +287,55 @@ export async function readLocalToTxFile(
   };
 }
 
+/**
+ * Sibling of `readLocalToTxFile` that always names the produced file
+ * `poster.<ext>` (or `poster-N.<ext>`) so `inferKindFromFilename` tags
+ * it `kind: "poster"`. Used by the ffmpeg first-frame extraction path
+ * — the bytes already live on disk in our tmpdir, we just need to
+ * route them into the executor with the right filename so the
+ * renderer can prefer them over the platform-supplied cover.
+ *
+ * The `mimeType` defaults to `image/jpeg` because the only caller is
+ * the ffmpeg extractor which writes JPEGs; if a future caller produces
+ * PNGs (e.g. transparent first-frame trickery) it should pass an
+ * explicit `mimeType` so the extension naming stays consistent.
+ */
+export async function readLocalPosterToTxFile(
+  path: string,
+  options: { mimeType?: string; index?: number } = {},
+): Promise<TxSaveFile | null> {
+  let buf: Buffer;
+  try {
+    buf = await readFile(path);
+  } catch (err) {
+    log.warn("[pond blob] readLocalPoster failed", path, err);
+    return null;
+  }
+  if (buf.byteLength === 0) {
+    log.warn("[pond blob] readLocalPoster empty file", path);
+    return null;
+  }
+  if (buf.byteLength > MAX_DOWNLOAD_BYTES) {
+    log.warn(
+      "[pond blob] readLocalPoster too big, skipping",
+      buf.byteLength,
+      path,
+    );
+    return null;
+  }
+
+  const ext = extname(path).toLowerCase() || ".jpg";
+  const mime = options.mimeType ?? mimeFromExt(ext);
+  const index = options.index ?? 0;
+  const filename = index === 0 ? `poster${ext}` : `poster-${index}${ext}`;
+
+  return {
+    filename,
+    base64: buf.toString("base64"),
+    mimeType: mime,
+  };
+}
+
 function mimeFromExt(ext: string): string {
   switch (ext) {
     case ".mp4":

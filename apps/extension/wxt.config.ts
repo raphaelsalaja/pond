@@ -1,11 +1,12 @@
 import { defineConfig } from "wxt";
 
 export default defineConfig({
+  modules: ["@wxt-dev/module-react"],
   webExt: {
     disabled: true,
   },
   manifest: {
-    name: "pond",
+    name: "Pond",
     version: "0.1.0",
     description:
       "Capture saves from Twitter/X, Instagram, Pinterest, Are.na, Cosmos, TikTok, YouTube, and web articles into one place.",

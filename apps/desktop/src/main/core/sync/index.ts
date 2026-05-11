@@ -213,10 +213,6 @@ export function isSyncing(source: Source): boolean {
   return inFlight.has(source);
 }
 
-/* ------------------------------------------------------------------ */
-/* Generic list-harvest dispatch (Phase 3).                            */
-/* ------------------------------------------------------------------ */
-
 /** Sources with a Phase-3 list harvester wired up in `scrape-window`. */
 export const LIST_HARVEST_SOURCES = new Set<Source>([
   "youtube",
@@ -530,10 +526,6 @@ async function syncListSource(
     lastError: null,
   });
 }
-
-/* ------------------------------------------------------------------ */
-/* Twitter implementation.                                             */
-/* ------------------------------------------------------------------ */
 
 // Per-run safety cap. Twitter virtualises the bookmarks list so memory
 // stays bounded; the limit is purely so a runaway page can't pin the

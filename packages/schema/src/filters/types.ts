@@ -10,10 +10,6 @@
  * lives in sibling files and re-exports the types defined here.
  */
 
-/* ------------------------------------------------------------------ */
-/* AST                                                                */
-/* ------------------------------------------------------------------ */
-
 /**
  * A predicate is a single "field <comparator> value" clause. The
  * `value` shape depends on the comparator — see `ComparatorValue`
@@ -57,10 +53,6 @@ export function isEmptyQuery(q: Query | null | undefined): boolean {
   return q.kind === "and" && q.clauses.length === 0;
 }
 
-/* ------------------------------------------------------------------ */
-/* Field type registry                                                */
-/* ------------------------------------------------------------------ */
-
 /**
  * Coarse category for a filterable field. Each type defines which
  * comparators are valid (so the chip UI can list "is, is not, is
@@ -80,10 +72,6 @@ export type FieldTypeId =
   | "date"
   | "color"
   | "optional";
-
-/* ------------------------------------------------------------------ */
-/* Comparator registry                                                */
-/* ------------------------------------------------------------------ */
 
 /**
  * Closed set of comparators we support. New comparators must be
@@ -124,10 +112,6 @@ export const COMPARATORS_BY_TYPE: Record<FieldTypeId, readonly ComparatorId[]> =
     color: ["near"],
     optional: ["exists"],
   };
-
-/* ------------------------------------------------------------------ */
-/* Field metadata                                                     */
-/* ------------------------------------------------------------------ */
 
 /**
  * Closed set of filterable field IDs. Centralising the union here

@@ -14,6 +14,7 @@ import {
   SettingsLayout,
   StandaloneLayout,
 } from "./components/shell";
+import { SaveCompleteToast } from "./effects/save-complete-toast";
 import { ActivityPage } from "./pages/activity";
 import { InboxPage } from "./pages/inbox";
 import { ReaderPage } from "./pages/reader";
@@ -87,6 +88,19 @@ declare global {
   }
 }
 
+/**
+ * Backwards-compat redirects from pre-reorg paths. Old tray menu
+ * entries, `pond://` deep links, and in-flight system notifications
+ * may still target the original routes. Map them onto the merged /
+ * renamed pages so nothing 404s into the catch-all silently.
+ */
+const SETTINGS_REDIRECTS: ReadonlyArray<readonly [string, string]> = [
+  ["quick-capture", "capture-behavior"],
+  ["save-behavior", "capture-behavior"],
+  ["videos", "media"],
+  ["ai", "ai/provider"],
+];
+
 const settingsChildren: RouteObject[] = [
   {
     index: true,
@@ -99,16 +113,18 @@ const settingsChildren: RouteObject[] = [
     }),
   ),
   { path: "integrations/:source", element: <SourceSection /> },
+  ...SETTINGS_REDIRECTS.map(
+    ([from, to]): RouteObject => ({
+      path: from,
+      element: <Navigate to={`/settings/${to}`} replace />,
+    }),
+  ),
   {
     path: "*",
     element: <Navigate to={`/settings/${DEFAULT_SECTION.path}`} replace />,
   },
 ];
 
-// Bare path-only child — `<SaveDetail>` is rendered directly inside
-// the parent list views (always-mounted inspector). Keeping the route
-// definition lets `useParams().id` propagate through to the inspector
-// when the URL has a trailing `/save/:id`.
 const saveSplitChild: RouteObject = {
   path: "save/:id",
 };
@@ -189,6 +205,7 @@ export function App() {
     <Tooltip.Provider>
       <Toast.Provider>
         <ToastChime />
+        <SaveCompleteToast />
         <RouterProvider router={router} />
       </Toast.Provider>
     </Tooltip.Provider>

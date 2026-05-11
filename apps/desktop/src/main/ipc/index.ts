@@ -379,6 +379,27 @@ export function registerIpc() {
     }
   });
 
+  // Manual replay of the first-frame poster extraction. The startup
+  // pass schedules every video save lacking a generated poster; this
+  // handler lets the user kick it again from Settings → Media. With
+  // `force: true` the pass re-enqueues saves that already have a
+  // generated poster (e.g. to recover from a botched extraction).
+  safeHandle(
+    IPC.videoRegeneratePosters,
+    async (_event, opts: { force?: boolean } = {}) => {
+      try {
+        const { enqueueAllMissing } = await import("../core/poster-backfill");
+        const { scheduled } = await enqueueAllMissing({
+          force: opts.force === true,
+        });
+        return { ok: true as const, scheduled };
+      } catch (err) {
+        log.warn("[pond ipc] videoRegeneratePosters failed", err);
+        return { ok: false as const, scheduled: 0 };
+      }
+    },
+  );
+
   safeHandle(IPC.saveContextMenu, async (event, id: string) => {
     try {
       const win = BrowserWindow.fromWebContents(event.sender) ?? undefined;

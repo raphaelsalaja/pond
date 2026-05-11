@@ -252,6 +252,21 @@ const api = {
   },
 
   /**
+   * Replay the first-frame-poster extraction over every video save.
+   * `force: true` re-extracts even for saves that already have a
+   * generated poster (useful if a previous pass produced bad frames
+   * the user wants to redo); the default skips them.
+   *
+   * Returns the number of jobs scheduled. The renderer typically just
+   * surfaces this as a toast — the queue drains in the background.
+   */
+  videoRegeneratePosters(
+    opts: { force?: boolean } = {},
+  ): Promise<{ ok: boolean; scheduled: number }> {
+    return ipcRenderer.invoke(IPC.videoRegeneratePosters, opts);
+  },
+
+  /**
    * Renderer-driven auto-heal for unplayable videos. Called from
    * `<video onError>` handlers when Electron's bundled ffmpeg fails
    * to decode a saved file (the canonical case is yt-dlp landing an

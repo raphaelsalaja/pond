@@ -19,10 +19,6 @@ import type { Source } from "./db";
  *    transitively reach Node-only modules).
  */
 
-/* ------------------------------------------------------------------ */
-/* yt-dlp sidecar                                                     */
-/* ------------------------------------------------------------------ */
-
 /**
  * Curated subset of yt-dlp's `--write-info-json` payload, lifted into
  * `raw.<source>.ytdlp` whenever the bundled binary downloads bytes
@@ -116,10 +112,6 @@ export interface RawYtdlp {
   n_entries?: number;
 }
 
-/* ------------------------------------------------------------------ */
-/* Twitter / X                                                        */
-/* ------------------------------------------------------------------ */
-
 /**
  * Per-image / per-video extras the Twitter harvester captures. Keyed by
  * the cover URL stored in `mediaUrls`, so the renderer can join when
@@ -182,10 +174,6 @@ export interface RawTwitter {
   ytdlp?: RawYtdlp;
 }
 
-/* ------------------------------------------------------------------ */
-/* Instagram                                                          */
-/* ------------------------------------------------------------------ */
-
 export interface InstagramMetrics {
   likes?: number;
   comments?: number;
@@ -217,10 +205,6 @@ export interface RawInstagram {
   ytdlp?: RawYtdlp;
 }
 
-/* ------------------------------------------------------------------ */
-/* Pinterest                                                          */
-/* ------------------------------------------------------------------ */
-
 export interface PinterestMetrics {
   repins?: number;
   comments?: number;
@@ -246,10 +230,6 @@ export interface RawPinterest {
   ytdlp?: RawYtdlp;
 }
 
-/* ------------------------------------------------------------------ */
-/* Are.na                                                             */
-/* ------------------------------------------------------------------ */
-
 export interface ArenaChannel {
   id?: string;
   title?: string;
@@ -273,10 +253,6 @@ export interface RawArena {
   ytdlp?: RawYtdlp;
 }
 
-/* ------------------------------------------------------------------ */
-/* Cosmos                                                             */
-/* ------------------------------------------------------------------ */
-
 export interface CosmosCluster {
   id: string;
   title?: string;
@@ -290,10 +266,6 @@ export interface RawCosmos {
   clusters?: CosmosCluster[];
   ytdlp?: RawYtdlp;
 }
-
-/* ------------------------------------------------------------------ */
-/* TikTok                                                             */
-/* ------------------------------------------------------------------ */
 
 export interface TikTokMetrics {
   plays?: number;
@@ -319,10 +291,6 @@ export interface RawTikTok {
   music?: TikTokMusic;
   ytdlp?: RawYtdlp;
 }
-
-/* ------------------------------------------------------------------ */
-/* YouTube                                                            */
-/* ------------------------------------------------------------------ */
 
 export interface YoutubeChapter {
   title: string;
@@ -354,10 +322,6 @@ export interface RawYoutube {
   ytdlp?: RawYtdlp;
 }
 
-/* ------------------------------------------------------------------ */
-/* Reddit (placeholder — no harvester yet, but reserve the slot)      */
-/* ------------------------------------------------------------------ */
-
 export interface RawReddit {
   authorName?: string;
   authorUrl?: string;
@@ -371,10 +335,6 @@ export interface RawReddit {
   ytdlp?: RawYtdlp;
 }
 
-/* ------------------------------------------------------------------ */
-/* Article / generic (`og.ts`)                                        */
-/* ------------------------------------------------------------------ */
-
 export interface RawArticle {
   siteName?: string;
   canonicalUrl?: string;
@@ -384,10 +344,6 @@ export interface RawArticle {
   feedUrl?: string;
   ytdlp?: RawYtdlp;
 }
-
-/* ------------------------------------------------------------------ */
-/* Top-level union                                                    */
-/* ------------------------------------------------------------------ */
 
 /**
  * Shape of the `saves.rawJson` blob. Keys match the `Source` enum so

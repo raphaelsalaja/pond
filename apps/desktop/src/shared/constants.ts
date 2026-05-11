@@ -62,6 +62,11 @@ export const IPC = {
   // tell whether refreshing a video card will produce playable bytes.
   videoToolsStatus: "pond:video-tools-status",
   videoToolsReinstall: "pond:video-tools-reinstall",
+  // Regenerate first-frame still images for every video save (or just
+  // those missing a generated poster). Calls into the same throttled
+  // queue that runs on startup and after each video ingest, so kicking
+  // it manually is safe — duplicate enqueues collapse by saveId.
+  videoRegeneratePosters: "pond:video-regenerate-posters",
   // Renderer → main heal channel. Fired when a `<video>` element errors
   // (typically because a previous yt-dlp run landed an AV1/HEVC stream
   // Electron's bundled ffmpeg can't decode). Main re-runs yt-dlp with

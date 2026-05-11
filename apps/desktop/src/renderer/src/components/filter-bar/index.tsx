@@ -85,10 +85,6 @@ function Bar({ className, ...props }: BarProps) {
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Chip                                                                */
-/* ------------------------------------------------------------------ */
-
 interface ChipProps {
   predicate: Predicate;
   onChange: (next: Predicate | null) => void;
@@ -149,10 +145,6 @@ function Chip({ predicate, onChange }: ChipProps) {
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Comparator segment                                                  */
-/* ------------------------------------------------------------------ */
-
 interface ComparatorSegmentProps {
   cmp: ComparatorId;
   negate: boolean;
@@ -207,10 +199,6 @@ function ComparatorSegment({
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Value segment                                                       */
-/* ------------------------------------------------------------------ */
-
 interface ValueSegmentProps {
   label: string;
   preview: string;
@@ -234,10 +222,6 @@ function ValueSegment({ label, preview, children }: ValueSegmentProps) {
     </Menu.Root>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/* Add filter trigger                                                  */
-/* ------------------------------------------------------------------ */
 
 interface AddTriggerProps extends React.ComponentPropsWithoutRef<"button"> {
   onCommit: (predicate: Predicate) => void;
@@ -277,10 +261,6 @@ function AddTrigger({ onCommit, className, ...props }: AddTriggerProps) {
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Clear all                                                           */
-/* ------------------------------------------------------------------ */
-
 interface ClearAllProps extends React.ComponentPropsWithoutRef<"button"> {}
 
 function ClearAll({ className, type = "button", ...props }: ClearAllProps) {
@@ -312,10 +292,6 @@ export function useActiveFilterCount(): number {
     return topLevelPredicates(query).filter(predicateIsActive).length;
   }, [params]);
 }
-
-/* ------------------------------------------------------------------ */
-/* Predicate preview                                                   */
-/* ------------------------------------------------------------------ */
 
 /**
  * Compact human-readable preview of a predicate's value, used as

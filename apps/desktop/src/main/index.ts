@@ -21,6 +21,8 @@ import {
   replayPendingTransactions,
 } from "./core/executor";
 import { emptyTrashOlderThan } from "./core/library-ops";
+import { startSaveCompleteNotifier } from "./core/notifications";
+import { enqueueAllMissing as enqueueAllMissingPosters } from "./core/poster-backfill";
 import { getPrefs, invalidatePrefs } from "./core/prefs";
 import { isSourceConnected } from "./core/refresh";
 import {
@@ -150,10 +152,14 @@ if (process.defaultApp) {
  * existing `IPC.nav` channel. Each branch maps a documented URL shape
  * to the in-app route the renderer already knows how to render.
  *
+ *   pond://                     → /                 (focus library)
  *   pond://item/<id>            → /save/<id>
  *   pond://search?q=<query>     → /search?q=<query>
  *   pond://capture?url=<url>    → /quick-capture?url=<url>
  *   pond://pair?token=<token>   → /settings/api?token=<token>
+ *   pond://settings/<path>      → /settings/<path>  (browser-extension popup
+ *                                                    footer uses
+ *                                                    pond://settings/extension)
  *
  * Unknown shapes fall through to a no-op so a malformed link from a
  * third-party tool doesn't crash anything. Logged at info so the user
@@ -165,7 +171,11 @@ function handleDeepLink(url: string): void {
     const parsed = new URL(url);
     if (parsed.protocol !== "pond:") return;
     let route: string | null = null;
-    if (parsed.hostname === "item") {
+    if (parsed.hostname === "" || parsed.hostname === "library") {
+      // Bare `pond://` (or `pond://library`) — just focus the app on the
+      // library view. The extension popup's "Open Pond" link arrives here.
+      route = "/";
+    } else if (parsed.hostname === "item") {
       const id = parsed.pathname.replace(/^\//, "");
       if (id) route = `/save/${encodeURIComponent(id)}`;
     } else if (parsed.hostname === "search") {
@@ -177,6 +187,9 @@ function handleDeepLink(url: string): void {
     } else if (parsed.hostname === "pair") {
       const token = parsed.searchParams.get("token") ?? "";
       route = `/settings/api${token ? `?token=${encodeURIComponent(token)}` : ""}`;
+    } else if (parsed.hostname === "settings") {
+      const sub = parsed.pathname.replace(/^\//, "").replace(/\/+$/, "");
+      route = sub ? `/settings/${sub}` : "/settings";
     }
     if (!route) {
       log.info("[pond deep-link] ignored", url);
@@ -408,6 +421,14 @@ app.whenReady().then(async () => {
     void backfillEnrichOnce().catch((err) =>
       log.warn("[pond] enrich backfill failed", err),
     );
+    // Walk every video save and generate a real frame-0 still for any
+    // that doesn't have one yet. Runs on the same throttled in-memory
+    // queue that auto-video uses, so the first-paint isn't delayed by
+    // ffmpeg spawning on every existing video. Idempotent across
+    // launches — saves with a `kind: "poster"` file are skipped.
+    void enqueueAllMissingPosters().catch((err) =>
+      log.warn("[pond] poster backfill failed", err),
+    );
   } catch (err) {
     log.error("[pond] db init failed", err);
   }
@@ -459,6 +480,18 @@ app.whenReady().then(async () => {
     );
   }
   registerSyncActionListener(() => queueTrayRefresh());
+
+  // OS-level "Saved from <source>" notifications for saves that land
+  // while no pond window is focused (the common case for a Twitter
+  // bookmark in the browser). The in-app toast counterpart lives in
+  // `renderer/src/effects/save-complete-toast.tsx` and handles the
+  // window-focused case.
+  startSaveCompleteNotifier({
+    focusMainWindow: async () => {
+      await openLibrary();
+      return mainWindow;
+    },
+  });
 
   // Apply the persisted Quick Capture prefs (tray visibility,
   // launch-at-login, hotkey accelerator). Cheap — just a couple of

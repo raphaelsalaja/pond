@@ -5,32 +5,37 @@ import {
   IconClockRotateClockwiseOutline18,
   IconCloudOutline18,
   IconConnectedDotsOutline18,
-  IconLayersOutline18,
-  IconMediaPlayOutline18,
+  IconImagesOutline18,
+  IconMagnifierSparkleOutline18,
   IconSliderOutline18,
   IconSparkleOutline18,
   IconStackOutline18,
   IconTagOutline18,
+  IconTerminalOutline18,
   IconTrash2ContentOutline18,
+  IconWandSparkleOutline18,
   IconWindowCode2Outline18,
+  IconWorkflowOutline18,
 } from "@pond/icons/outline";
 import type { IconComponent } from "@pond/icons/types";
 import type { ComponentType } from "react";
 import { AboutSection } from "./sections/about";
-import { AiSection } from "./sections/ai";
+import { AiEnrichmentSection } from "./sections/ai-enrichment";
+import { AiProviderSection } from "./sections/ai-provider";
+import { AiSearchSection } from "./sections/ai-search";
+import { AutomationSection } from "./sections/automation";
 import { BackupsSection } from "./sections/backups";
+import { CaptureBehaviorSection } from "./sections/capture-behavior";
 import { DeveloperSection } from "./sections/developer";
 import { ExtensionSection } from "./sections/extension";
 import { IntegrationsSection } from "./sections/integrations";
+import { MediaSection } from "./sections/media";
 import { NotificationsSection } from "./sections/notifications";
 import { PreferencesSection } from "./sections/preferences";
-import { QuickCaptureSection } from "./sections/quick-capture";
-import { SaveBehaviorSection } from "./sections/save-behavior";
 import { StorageSection } from "./sections/storage";
 import { TagsSection } from "./sections/tags";
 import { TrashPrefsSection } from "./sections/trash";
 import { UpdatesSection } from "./sections/updates";
-import { VideosSection } from "./sections/videos";
 
 /**
  * Section registry — single source of truth for the settings sidebar
@@ -41,14 +46,18 @@ import { VideosSection } from "./sections/videos";
  *      the sidebar bucket.
  *
  * Group ordering in the sidebar follows `GROUP_ORDER` further down.
+ *
+ * Content-type-symmetric layout: Media is a peer group so future
+ * types (audio, documents) drop in as sections on the Media page
+ * without rerouting.
  */
 
 export type SectionGroup =
-  | "personal"
   | "library"
+  | "media"
   | "capture"
-  | "features"
-  | "system";
+  | "intelligence"
+  | "app";
 
 export interface SectionDef {
   id: string;
@@ -61,24 +70,6 @@ export interface SectionDef {
 }
 
 export const SECTIONS: SectionDef[] = [
-  /* -------- Personal -------- */
-  {
-    id: "preferences",
-    path: "preferences",
-    label: "Preferences",
-    icon: IconSliderOutline18,
-    group: "personal",
-    component: PreferencesSection,
-  },
-  {
-    id: "notifications",
-    path: "notifications",
-    label: "Notifications",
-    icon: IconBellOutline18,
-    group: "personal",
-    component: NotificationsSection,
-  },
-
   /* -------- Library -------- */
   {
     id: "storage",
@@ -107,13 +98,42 @@ export const SECTIONS: SectionDef[] = [
   {
     id: "backups",
     path: "backups",
-    label: "Backups",
+    label: "Backups & Export",
     icon: IconCloudOutline18,
     group: "library",
     component: BackupsSection,
   },
 
+  /* -------- Media -------- */
+  {
+    id: "media",
+    path: "media",
+    label: "Media",
+    icon: IconImagesOutline18,
+    group: "media",
+    component: MediaSection,
+  },
+
   /* -------- Capture -------- */
+  {
+    id: "sources",
+    // Path stays `integrations` so the `/settings/integrations/:source`
+    // route in App.tsx and the `?connect=<source>` deep link from
+    // refresh-action.tsx keep working without an extra redirect.
+    path: "integrations",
+    label: "Sources",
+    icon: IconConnectedDotsOutline18,
+    group: "capture",
+    component: IntegrationsSection,
+  },
+  {
+    id: "capture-behavior",
+    path: "capture-behavior",
+    label: "Capture Behavior",
+    icon: IconBoltOutline18,
+    group: "capture",
+    component: CaptureBehaviorSection,
+  },
   {
     id: "extension",
     path: "extension",
@@ -122,64 +142,72 @@ export const SECTIONS: SectionDef[] = [
     group: "capture",
     component: ExtensionSection,
   },
-  {
-    id: "quick-capture",
-    path: "quick-capture",
-    label: "Quick Capture",
-    icon: IconBoltOutline18,
-    group: "capture",
-    component: QuickCaptureSection,
-  },
-  {
-    id: "save-behavior",
-    path: "save-behavior",
-    label: "Save Behavior",
-    icon: IconLayersOutline18,
-    group: "capture",
-    component: SaveBehaviorSection,
-  },
-  {
-    id: "integrations",
-    path: "integrations",
-    label: "Integrations",
-    icon: IconConnectedDotsOutline18,
-    group: "capture",
-    component: IntegrationsSection,
-  },
-  {
-    id: "videos",
-    path: "videos",
-    label: "Videos",
-    icon: IconMediaPlayOutline18,
-    group: "capture",
-    component: VideosSection,
-  },
 
-  /* -------- Features -------- */
+  /* -------- Intelligence -------- */
   {
-    id: "ai",
-    path: "ai",
-    label: "AI & Agents",
+    id: "ai-provider",
+    path: "ai/provider",
+    label: "AI Provider",
     icon: IconSparkleOutline18,
-    group: "features",
-    component: AiSection,
+    group: "intelligence",
+    component: AiProviderSection,
+  },
+  {
+    id: "ai-enrichment",
+    path: "ai/enrichment",
+    label: "Enrichment",
+    icon: IconWandSparkleOutline18,
+    group: "intelligence",
+    component: AiEnrichmentSection,
+  },
+  {
+    id: "ai-search",
+    path: "ai/search",
+    label: "Search & Embeddings",
+    icon: IconMagnifierSparkleOutline18,
+    group: "intelligence",
+    component: AiSearchSection,
   },
 
-  /* -------- System -------- */
+  /* -------- App -------- */
+  {
+    id: "preferences",
+    path: "preferences",
+    label: "Preferences",
+    icon: IconSliderOutline18,
+    group: "app",
+    component: PreferencesSection,
+  },
+  {
+    id: "notifications",
+    path: "notifications",
+    label: "Notifications",
+    icon: IconBellOutline18,
+    group: "app",
+    component: NotificationsSection,
+  },
   {
     id: "updates",
     path: "updates",
     label: "Updates",
     icon: IconClockRotateClockwiseOutline18,
-    group: "system",
+    group: "app",
     component: UpdatesSection,
+  },
+  {
+    id: "automation",
+    path: "automation",
+    label: "Automation",
+    icon: IconWorkflowOutline18,
+    group: "app",
+    component: AutomationSection,
   },
   {
     id: "developer",
     path: "developer",
     label: "Developer",
-    icon: IconWindowCode2Outline18,
-    group: "system",
+    icon: IconTerminalOutline18,
+    group: "app",
     component: DeveloperSection,
   },
   {
@@ -187,29 +215,31 @@ export const SECTIONS: SectionDef[] = [
     path: "about",
     label: "About",
     icon: IconCircleInfoOutline18,
-    group: "system",
+    group: "app",
     component: AboutSection,
   },
 ];
 
 export const GROUP_ORDER: readonly SectionGroup[] = [
-  "personal",
   "library",
+  "media",
   "capture",
-  "features",
-  "system",
+  "intelligence",
+  "app",
 ] as const;
 
 /**
- * Display label for each sidebar group. The first group ("personal")
- * intentionally has no label, matching Linear.
+ * Display label for each sidebar group. Every group is labeled in the
+ * new layout — the old "unlabeled top group" pattern (which mirrored
+ * Linear's account section) goes away because no group is uniquely
+ * "yours" the way `personal` was.
  */
 export const GROUP_LABELS: Record<SectionGroup, string | null> = {
-  personal: null,
   library: "Library",
+  media: "Media",
   capture: "Capture",
-  features: "Features",
-  system: "System",
+  intelligence: "Intelligence",
+  app: "App",
 };
 
 export function sectionsByGroup(group: SectionGroup): SectionDef[] {

@@ -79,10 +79,10 @@ function sha256(bytes: Buffer): string {
 }
 
 export function inferKindFromFilename(filename: string): string {
+  if (filename.startsWith("poster")) return "poster";
   if (filename.startsWith("cover")) return "cover";
   if (filename.startsWith("video")) return "video";
   if (filename.startsWith("media-")) return "media";
-  if (filename.startsWith("poster-")) return "poster";
   if (filename.startsWith("avatar")) return "avatar";
   return "other";
 }

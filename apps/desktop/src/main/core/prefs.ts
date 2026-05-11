@@ -172,15 +172,13 @@ export async function setAiProviderConfig(
   return merged;
 }
 
-/* ------------------------------------------------------------------ */
-/* Section-keyed user prefs blob.                                      */
-/*                                                                    */
-/* Stored as one JSON column on the settings singleton, surfaced via   */
-/* `settings.getPrefs` / `settings.setPrefs` IPCs. Renderer wraps the  */
-/* round-trip in a typed `usePrefs(<section>)` hook (see              */
-/* renderer/pool/prefs.ts). Cache mirrors the same stale-after-write   */
-/* contract used by the older callers above.                           */
-/* ------------------------------------------------------------------ */
+// Section-keyed user prefs blob.
+//
+// Stored as one JSON column on the settings singleton, surfaced via
+// `settings.getPrefs` / `settings.setPrefs` IPCs. Renderer wraps the
+// round-trip in a typed `usePrefs(<section>)` hook (see
+// renderer/pool/prefs.ts). Cache mirrors the same stale-after-write
+// contract used by the older callers above.
 
 let cachedPrefs: Prefs | null = null;
 

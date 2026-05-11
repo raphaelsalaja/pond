@@ -68,7 +68,7 @@ export function WelcomePage() {
 
   return (
     <div className={styles.welcome}>
-      <h2>Welcome to pond</h2>
+      <h2>Welcome to Pond</h2>
       <p className={styles.lead}>
         A local archive for the stuff you save. Everything lives on your machine
         — no cloud, no accounts.
@@ -85,7 +85,7 @@ export function WelcomePage() {
 
         <li>
           <h3>Pair it with this app</h3>
-          <p>Click the pond icon in your browser, paste the pairing link:</p>
+          <p>Click the Pond icon in your browser, paste the pairing link:</p>
           <Field.Root>
             <Field.Label className={styles["sr-only"]}>
               Pairing link
@@ -145,7 +145,7 @@ export function WelcomePage() {
         <li>
           <h3>Save something</h3>
           <p>
-            Right-click any page and pick "Save this page to pond" — it'll
+            Right-click any page and pick "Save this page to Pond" — it'll
             appear in your library within a second.
           </p>
         </li>

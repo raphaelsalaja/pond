@@ -20,17 +20,9 @@ import {
 } from "./fields";
 import type { Clause, ComparatorId, FieldId, Predicate, Query } from "./types";
 
-/* ------------------------------------------------------------------ */
-/* Public entry                                                       */
-/* ------------------------------------------------------------------ */
-
 export function buildWhere(query: Query): SQL | undefined {
   return compileClause(query) ?? undefined;
 }
-
-/* ------------------------------------------------------------------ */
-/* Recursive compile                                                  */
-/* ------------------------------------------------------------------ */
 
 function compileClause(c: Clause): SQL | null {
   if (c.kind === "and") {
@@ -58,10 +50,6 @@ function compilePredicate(p: Predicate): SQL | null {
   return p.negate ? sql`not (${sqlExpr})` : sqlExpr;
 }
 
-/* ------------------------------------------------------------------ */
-/* Per-field dispatch                                                 */
-/* ------------------------------------------------------------------ */
-
 function compileForField(
   field: FieldId,
   cmp: ComparatorId,
@@ -75,10 +63,6 @@ function compileForField(
 
   return scalarClause(column, field, cmp, raw);
 }
-
-/* ------------------------------------------------------------------ */
-/* Tags clause                                                        */
-/* ------------------------------------------------------------------ */
 
 function tagsClause(cmp: ComparatorId, raw: unknown): SQL | null {
   if (!Array.isArray(raw) || raw.length === 0) return null;
@@ -103,10 +87,6 @@ function tagsClause(cmp: ComparatorId, raw: unknown): SQL | null {
   }
 }
 
-/* ------------------------------------------------------------------ */
-/* Color clause                                                       */
-/* ------------------------------------------------------------------ */
-
 function colorClause(cmp: ComparatorId, raw: unknown): SQL | null {
   if (cmp !== "near") return null;
   if (!isObject(raw)) return null;
@@ -122,10 +102,6 @@ function colorClause(cmp: ComparatorId, raw: unknown): SQL | null {
       : 96;
   return colorNear(hex, distance);
 }
-
-/* ------------------------------------------------------------------ */
-/* Scalar clause                                                      */
-/* ------------------------------------------------------------------ */
 
 function scalarClause(
   column: SQL,
@@ -209,10 +185,6 @@ function scalarClause(
       return null;
   }
 }
-
-/* ------------------------------------------------------------------ */
-/* Value coercion                                                     */
-/* ------------------------------------------------------------------ */
 
 function scalarValue(field: FieldId, raw: unknown): string | number | null {
   if (raw == null) return null;

@@ -16,10 +16,6 @@ import { type SQL, sql } from "drizzle-orm";
 import { saves } from "../db";
 import type { FieldId } from "./types";
 
-/* ------------------------------------------------------------------ */
-/* Scalar projections                                                 */
-/* ------------------------------------------------------------------ */
-
 /**
  * Scalar SQL expression per field. Used directly by the standard
  * comparators (eq, neq, in, lt, etc.) in `to-sql.ts`. JSON-array
@@ -56,10 +52,6 @@ export const SCALAR_PROJECTIONS: Partial<Record<FieldId, SQL>> = {
   )`,
 };
 
-/* ------------------------------------------------------------------ */
-/* Tags — JSON array projection                                       */
-/* ------------------------------------------------------------------ */
-
 /**
  * `EXISTS (SELECT 1 FROM json_each(tags|ai_tags) WHERE …)` — used
  * by `some`/`none`. The column union covers user + AI tags.
@@ -87,10 +79,6 @@ export function tagsDistinctCount(needle: SQL): SQL {
   )`;
 }
 
-/* ------------------------------------------------------------------ */
-/* Color — JSON array of {hex, weight}                                */
-/* ------------------------------------------------------------------ */
-
 /**
  * `EXISTS (SELECT 1 FROM json_each(dominant_colors) WHERE
  * color_distance(json_extract(value, '$.hex'), ?) <= ?)`. Relies on
@@ -106,10 +94,6 @@ export function colorNear(hex: string, distance: number): SQL {
     ) <= ${distance}
   )`;
 }
-
-/* ------------------------------------------------------------------ */
-/* Duration — 13-arm fallback through raw_json                        */
-/* ------------------------------------------------------------------ */
 
 /**
  * Resolve the clip length (seconds) by walking the source-keyed

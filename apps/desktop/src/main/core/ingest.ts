@@ -11,11 +11,13 @@ import { getDb } from "../db";
 import {
   fetchAvatarToTxFile,
   fetchMediaBatch,
+  readLocalPosterToTxFile,
   readLocalToTxFile,
 } from "../lib/blob";
 import { inferKindFromFilename } from "../lib/library";
 import { itemFile } from "../paths";
 import { executeTransaction } from "./executor";
+import { enqueuePosterBackfill } from "./poster-backfill";
 import { getPrefs } from "./prefs";
 import { recordForUndo } from "./undo";
 
@@ -47,10 +49,16 @@ export interface LocalIngestExtras {
    * media. Each entry is read with `readLocalToTxFile`; the caller
    * is responsible for cleaning up the source paths after ingest
    * (typically by closing yt-dlp's tmpdir).
+   *
+   * `kind: "poster"` reroutes the entry through
+   * `readLocalPosterToTxFile` so the produced TxSaveFile lands with a
+   * `poster.<ext>` filename — used by the ffmpeg first-frame extractor
+   * to inject a generated still alongside the yt-dlp video.
    */
   mediaFiles?: Array<{
     path: string;
     mimeType?: string;
+    kind?: "poster";
   }>;
   /**
    * Override the merge heuristic in `refreshExisting` so the local
@@ -157,6 +165,16 @@ export async function ingestFromHttp(
 
   await executeTransaction(tx);
   recordForUndo(tx);
+
+  // If the brand-new save has a video file but no generated poster
+  // (direct-mp4 path — extension hands us a playable URL straight
+  // away without going through yt-dlp, so the auto-video frame
+  // extraction never ran), queue a background ffmpeg pass so the
+  // grid card eventually shows a real first frame instead of the
+  // platform-supplied cover.
+  if (needsPosterBackfill(saveFiles)) {
+    enqueuePosterBackfill(id);
+  }
 
   return { id, created: true };
 }
@@ -335,7 +353,22 @@ async function refreshExisting(
   await executeTransaction(tx);
   recordForUndo(tx);
 
+  // Same backfill trigger as the create branch — covers the case
+  // where a refresh writes a new video without a paired generated
+  // poster.
+  const postFiles = patch.files ?? current.files ?? [];
+  if (needsPosterBackfill(postFiles)) {
+    enqueuePosterBackfill(current.id);
+  }
+
   return { id: current.id, created: false };
+}
+
+function needsPosterBackfill(files: SaveFile[] | null | undefined): boolean {
+  if (!files || files.length === 0) return false;
+  const hasVideo = files.some((f) => f.kind === "video");
+  if (!hasVideo) return false;
+  return !files.some((f) => f.kind === "poster");
 }
 
 function collectRequestedUrls(payload: IngestPayload): string[] {
@@ -366,10 +399,26 @@ async function readLocalFiles(
   inputs: LocalIngestExtras["mediaFiles"],
 ): Promise<TxSaveFile[]> {
   if (!inputs || inputs.length === 0) return [];
+  // Poster entries are indexed independently of the video/cover slots
+  // so multiple posters in one tx still produce `poster.<ext>` /
+  // `poster-1.<ext>` instead of colliding with the media indices.
+  let posterIndex = 0;
+  let mediaIndex = 0;
   const results = await Promise.all(
-    inputs.map((f, i) =>
-      readLocalToTxFile(f.path, { mimeType: f.mimeType, index: i }),
-    ),
+    inputs.map((f) => {
+      if (f.kind === "poster") {
+        const i = posterIndex++;
+        return readLocalPosterToTxFile(f.path, {
+          ...(f.mimeType !== undefined ? { mimeType: f.mimeType } : {}),
+          index: i,
+        });
+      }
+      const i = mediaIndex++;
+      return readLocalToTxFile(f.path, {
+        ...(f.mimeType !== undefined ? { mimeType: f.mimeType } : {}),
+        index: i,
+      });
+    }),
   );
   return results.filter((r): r is TxSaveFile => r !== null);
 }

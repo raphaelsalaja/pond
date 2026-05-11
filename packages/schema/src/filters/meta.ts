@@ -10,10 +10,6 @@
 
 import type { FieldId, FieldMeta } from "./types";
 
-/* ------------------------------------------------------------------ */
-/* Source presets                                                     */
-/* ------------------------------------------------------------------ */
-
 /**
  * Mirror of the `Source` enum from `@pond/schema/db`. Hard-coded
  * here so this file stays out of Drizzle's import graph; if the
@@ -69,10 +65,6 @@ const DURATION_PRESETS = [
   { id: "long", label: "< 10min", value: 600 },
   { id: "longer", label: "≥ 10min", value: 600 },
 ] as const;
-
-/* ------------------------------------------------------------------ */
-/* Field meta table                                                   */
-/* ------------------------------------------------------------------ */
 
 export const FIELD_META: Readonly<Record<FieldId, FieldMeta>> = Object.freeze({
   tags: {

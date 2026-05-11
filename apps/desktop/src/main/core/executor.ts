@@ -424,7 +424,7 @@ export function registerSyncActionListener(fn: SyncActionListener): () => void {
   return () => syncActionListeners.delete(fn);
 }
 
-function broadcastSyncAction(action: SyncAction): void {
+export function broadcastSyncAction(action: SyncAction): void {
   // Convert Date columns embedded in `data` / `prevData` to ISO strings
   // before crossing the IPC boundary so the renderer pool never sees raw
   // `Date` instances (which break the `savedAt`/`createdAt` string

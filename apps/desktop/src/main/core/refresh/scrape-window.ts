@@ -53,10 +53,6 @@ const HARVEST_TIMEOUT_MS = 20_000;
 
 export const POOL_SIZE = 3;
 
-/* ------------------------------------------------------------------ */
-/* Hidden BrowserWindow pool                                           */
-/* ------------------------------------------------------------------ */
-
 interface PoolSlot {
   win: BrowserWindow;
   busy: boolean;

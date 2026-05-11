@@ -1,5 +1,5 @@
 appId: so.pond.desktop
-productName: pond
+productName: Pond
 copyright: "Copyright © 2026 Raphael Salaja"
 asar: true
 # Native .node binaries (better-sqlite3, @napi-rs/keyring, sqlite-vec)

@@ -438,10 +438,6 @@ async function applyPatch(
   await executeTransaction(tx);
 }
 
-/* -------------------------------------------------------------------- */
-/* Public IPC entry points.                                             */
-/* -------------------------------------------------------------------- */
-
 /** Trigger enrichment for one save, or all unprocessed if id is null. */
 export async function startEnrich(
   saveId: string | null,

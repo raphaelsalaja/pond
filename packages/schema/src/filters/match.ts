@@ -43,17 +43,9 @@ export interface SaveLike {
   publishedAt?: string | Date | number | null;
 }
 
-/* ------------------------------------------------------------------ */
-/* Public entry points                                                */
-/* ------------------------------------------------------------------ */
-
 export function matches(query: Query, save: SaveLike): boolean {
   return evalClause(query, save);
 }
-
-/* ------------------------------------------------------------------ */
-/* Recursive eval                                                     */
-/* ------------------------------------------------------------------ */
 
 function evalClause(c: Clause, s: SaveLike): boolean {
   if (c.kind === "and") {
@@ -72,10 +64,6 @@ function evalPredicate(p: Predicate, s: SaveLike): boolean {
   const projected = project(p.field, s);
   return runComparator(p.cmp, projected, p.value);
 }
-
-/* ------------------------------------------------------------------ */
-/* Field projections                                                  */
-/* ------------------------------------------------------------------ */
 
 function project(field: FieldId, s: SaveLike): unknown {
   switch (field) {
@@ -188,10 +176,6 @@ function toMillis(v: string | Date | number | null | undefined): number | null {
   const t = Date.parse(v);
   return Number.isFinite(t) ? t : null;
 }
-
-/* ------------------------------------------------------------------ */
-/* Comparator runtime (JS only)                                       */
-/* ------------------------------------------------------------------ */
 
 function runComparator(
   cmp: ComparatorId,

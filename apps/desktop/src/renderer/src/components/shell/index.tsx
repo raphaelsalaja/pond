@@ -23,10 +23,6 @@ import {
 } from "@/pages/settings/registry";
 import styles from "./styles.module.css";
 
-/* -------------------------------------------------------------------- */
-/* Shell primitives                                                     */
-/* -------------------------------------------------------------------- */
-
 type Platform = "mac" | "other";
 
 interface RootProps extends React.ComponentPropsWithoutRef<"div"> {
@@ -94,10 +90,6 @@ function Empty({ className, ...props }: EmptyProps) {
 
 export const Shell = { Root, Main, Header, Empty };
 
-/* -------------------------------------------------------------------- */
-/* AppRoot — top-level layout route                                     */
-/* -------------------------------------------------------------------- */
-
 /**
  * Mounts every cross-cutting concern that needs to live above the
  * page tree but inside the data router so it can use react-router
@@ -125,10 +117,6 @@ export function AppRoot() {
     </>
   );
 }
-
-/* -------------------------------------------------------------------- */
-/* LibraryLayout — saves grid / inbox / activity / trash / source       */
-/* -------------------------------------------------------------------- */
 
 /**
  * Persistent sidebar plus an outlet for the active library page.
@@ -160,10 +148,6 @@ export function LibraryChrome() {
     </Shell.Header>
   );
 }
-
-/* -------------------------------------------------------------------- */
-/* SettingsLayout — settings takeover                                   */
-/* -------------------------------------------------------------------- */
 
 /**
  * Owns the entire settings shell — rail, drag strip, and the
@@ -219,10 +203,6 @@ export function SettingsLayout() {
     </Shell.Root>
   );
 }
-
-/* -------------------------------------------------------------------- */
-/* StandaloneLayout — welcome / reader full-takeover                    */
-/* -------------------------------------------------------------------- */
 
 /**
  * Bare layout for full-takeover pages: welcome, reader. No sidebar,

@@ -106,10 +106,6 @@ export interface SaveStats {
   videoSize?: { width: number; height: number; fps?: number };
 }
 
-/* ------------------------------------------------------------------ */
-/* Extraction                                                         */
-/* ------------------------------------------------------------------ */
-
 /**
  * Build a normalised `SaveStats` from a `Save`. Pure — safe to call
  * during render; just a few field reads + array builds.
@@ -171,10 +167,6 @@ export function extractSaveStats(save: Save): SaveStats {
 
   return stats;
 }
-
-/* ------------------------------------------------------------------ */
-/* Per-source mappers                                                 */
-/* ------------------------------------------------------------------ */
 
 function mergeTwitter(stats: SaveStats, raw: RawTwitter | undefined) {
   if (!raw) return;
@@ -344,10 +336,6 @@ function mergeArticle(stats: SaveStats, raw: RawArticle | undefined) {
   stats.language ??= raw.lang;
 }
 
-/* ------------------------------------------------------------------ */
-/* yt-dlp fallback                                                    */
-/* ------------------------------------------------------------------ */
-
 function pickYtdlp(
   raw: RawSaveMetadata | null,
   source: string,
@@ -461,10 +449,6 @@ function mergeYtdlp(stats: SaveStats, ytdlp: RawYtdlp) {
     if (chapters.length) stats.chapters = chapters;
   }
 }
-
-/* ------------------------------------------------------------------ */
-/* Helpers                                                            */
-/* ------------------------------------------------------------------ */
 
 function pushMetric(
   stats: SaveStats,

@@ -11,19 +11,24 @@ interface Snapshot {
 }
 
 /**
- * Local snapshot backups. The cron in
- * `apps/desktop/src/main/core/backups.ts` reads `prefs.backups`
- * once an hour and writes a fresh zip when the schedule says so.
+ * Local snapshot backups + one-off exports.
  *
- * The default is `never` because a weekly zip of a 5GB library
- * fills disk fast — users who want backups have to opt in
- * explicitly.
+ * Snapshots run on a cron in `apps/desktop/src/main/core/backups.ts`
+ * which reads `prefs.backups` once an hour and writes a fresh zip
+ * when the schedule says so. The default is `never` because a weekly
+ * zip of a 5GB library fills disk fast — users who want backups have
+ * to opt in explicitly.
+ *
+ * Exports are interactive `library.exportZip` / `library.exportJson`
+ * runs lifted from the old Storage page. Co-locating them here puts
+ * every "take a copy out of Pond" surface in one spot.
  */
 export function BackupsSection() {
   const toast = useToast();
   const [prefs, patch] = usePrefs("backups");
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [busy, setBusy] = useState(false);
+  const [exportBusy, setExportBusy] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     const r = (await window.pond.query("backups.list", {})) as {
@@ -63,12 +68,64 @@ export function BackupsSection() {
     await refresh();
   }
 
+  async function exportZip() {
+    setExportBusy("zip");
+    try {
+      const res = (await window.pond.query("library.exportZip", {})) as
+        | { ok: true; path: string }
+        | { ok: false; reason: string };
+      if (!res.ok) {
+        if (res.reason !== "cancelled") {
+          toast.add({
+            title: "Export failed",
+            description: res.reason,
+            type: "error",
+          });
+        }
+        return;
+      }
+      toast.add({
+        title: "Export complete",
+        description: res.path,
+        type: "success",
+      });
+    } finally {
+      setExportBusy(null);
+    }
+  }
+
+  async function exportJson() {
+    setExportBusy("json");
+    try {
+      const res = (await window.pond.query("library.exportJson", {})) as
+        | { ok: true; path: string }
+        | { ok: false; reason: string };
+      if (!res.ok) {
+        if (res.reason !== "cancelled") {
+          toast.add({
+            title: "Export failed",
+            description: res.reason,
+            type: "error",
+          });
+        }
+        return;
+      }
+      toast.add({
+        title: "JSON export complete",
+        description: res.path,
+        type: "success",
+      });
+    } finally {
+      setExportBusy(null);
+    }
+  }
+
   return (
     <Settings.Page>
       <Settings.Header>
-        <Settings.Title>Backups</Settings.Title>
+        <Settings.Title>Backups & Export</Settings.Title>
         <Settings.Description>
-          Schedule periodic zips of your library. Off by default.
+          Schedule snapshots, write one-off zips, and export your data.
         </Settings.Description>
       </Settings.Header>
 
@@ -190,6 +247,49 @@ export function BackupsSection() {
               </Settings.Item>
             ))
           )}
+        </Settings.List>
+      </Settings.Section>
+
+      <Settings.Section>
+        <Settings.SectionTitle>Export</Settings.SectionTitle>
+        <Settings.List>
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>Library Zip</Settings.ItemTitle>
+              <Settings.ItemDescription>
+                One archive containing every <code>items/&lt;id&gt;.info</code>{" "}
+                folder plus the library metadata.
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <Button
+                size="sm"
+                disabled={exportBusy === "zip"}
+                onClick={() => void exportZip()}
+              >
+                {exportBusy === "zip" ? "Zipping…" : "Export as Zip"}
+              </Button>
+            </Settings.ItemControl>
+          </Settings.Item>
+
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>Metadata as JSON</Settings.ItemTitle>
+              <Settings.ItemDescription>
+                One JSON file per save plus a manifest. Easy to migrate to other
+                tools.
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <Button
+                size="sm"
+                disabled={exportBusy === "json"}
+                onClick={() => void exportJson()}
+              >
+                {exportBusy === "json" ? "Writing…" : "Export as JSON"}
+              </Button>
+            </Settings.ItemControl>
+          </Settings.Item>
         </Settings.List>
       </Settings.Section>
     </Settings.Page>

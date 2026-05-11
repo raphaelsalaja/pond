@@ -26,11 +26,17 @@
     "zip": "wxt zip"
   },
   "dependencies": {
-    "@pond/schema": "workspace:*"
+    "@pond/schema": "workspace:*",
+    "@pond/ui": "workspace:*",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5"
   },
   "devDependencies": {
     "@types/chrome": "^0.1.40",
     "@types/node": "^25.6.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.0.2",
+    "@wxt-dev/module-react": "^1.1.6",
     "typescript": "^6.0.3",
     "vite": "^8.0.11",
     "wxt": "^0.20.25"

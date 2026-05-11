@@ -3,10 +3,11 @@ import { Settings } from "@/components/settings";
 import { usePrefs } from "@/pool/prefs";
 
 /**
- * Notifications section. Each switch maps to a `category` tag the
- * shared `useToast()` wrapper checks before rendering — see
- * `apps/desktop/src/renderer/src/ui/toast.tsx`. Untagged toasts
- * (system errors, IPC failures) always show.
+ * Notifications section. Each switch flips a flag the producers read
+ * before firing — `saveComplete` gates both the in-app toast in
+ * `effects/save-complete-toast.tsx` and the OS-level notification in
+ * `main/core/notifications.ts`. The other toggles are wired at their
+ * respective producer sites.
  */
 export function NotificationsSection() {
   const [prefs, patch] = usePrefs("notifications");

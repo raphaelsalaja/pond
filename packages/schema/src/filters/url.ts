@@ -28,10 +28,6 @@ import {
 const COMPACT_PREFIX = "f.";
 const FULL_KEY = "q";
 
-/* ------------------------------------------------------------------ */
-/* Encode                                                             */
-/* ------------------------------------------------------------------ */
-
 /**
  * Apply a query to an existing `URLSearchParams`. Keeps any
  * non-filter keys (search query, sort, view) intact and replaces
@@ -71,10 +67,6 @@ export function clearQueryParams(params: URLSearchParams): void {
   for (const key of drop) params.delete(key);
 }
 
-/* ------------------------------------------------------------------ */
-/* Decode                                                             */
-/* ------------------------------------------------------------------ */
-
 /**
  * Read a query out of `URLSearchParams`. Returns the empty query
  * when no filter keys are present.
@@ -101,10 +93,6 @@ export function readQuery(params: URLSearchParams): Query {
 
   return clauses.length ? { kind: "and", clauses } : EMPTY_QUERY;
 }
-
-/* ------------------------------------------------------------------ */
-/* Compact-form predicate codec                                       */
-/* ------------------------------------------------------------------ */
 
 const NEGATE_PREFIX = "!";
 
@@ -146,10 +134,6 @@ function defaultComparator(field: FieldId): ComparatorId {
   const allowed = COMPARATORS_BY_TYPE[FIELD_META[field].type];
   return allowed[0] ?? "eq";
 }
-
-/* ------------------------------------------------------------------ */
-/* Value codec                                                        */
-/* ------------------------------------------------------------------ */
 
 function encodeValue(cmp: ComparatorId, value: unknown): string | null {
   switch (cmp) {
@@ -257,10 +241,6 @@ function decodeScalar(raw: string): string | number | null {
   return decoded;
 }
 
-/* ------------------------------------------------------------------ */
-/* Compact-eligibility check                                          */
-/* ------------------------------------------------------------------ */
-
 /**
  * Compact form is OK when:
  *  - the query is a flat AND
@@ -272,10 +252,6 @@ function canEncodeCompact(query: Query): boolean {
   if (query.kind !== "and") return false;
   return query.clauses.every((c) => c.kind === "p");
 }
-
-/* ------------------------------------------------------------------ */
-/* Base64-JSON form                                                   */
-/* ------------------------------------------------------------------ */
 
 function encodeBase64Json(query: Query): string {
   const json = JSON.stringify(query);
@@ -301,10 +277,6 @@ function decodeBase64Json(value: string): Query | null {
 function urlSafe(b64: string): string {
   return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
-
-/* ------------------------------------------------------------------ */
-/* Saved-view helpers                                                 */
-/* ------------------------------------------------------------------ */
 
 /**
  * List every URL key the filter codec owns — the full base64 form

@@ -1,7 +1,4 @@
-import {
-  IconChevronRightOutline18,
-  IconMagnifierOutline18,
-} from "@pond/icons/outline";
+import { IconChevronRightOutline18 } from "@pond/icons/outline";
 import { Button, useToast } from "@pond/ui";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -21,10 +18,9 @@ import styles from "./integrations.module.css";
 /**
  * Integrations index. Linear-style information architecture:
  *
- *   1. A search input that filters the list as you type.
- *   2. An "Enabled" group that surfaces every auth-walled source the
+ *   1. An "Enabled" group that surfaces every auth-walled source the
  *      user has signed into — quick re-entry to its detail page.
- *   3. An "All integrations" grid showing every supported source, each
+ *   2. An "All integrations" grid showing every supported source, each
  *      a `<Link>` into `/settings/integrations/:source`.
  *
  * Public sources don't have a sign-in toggle, so they're never listed
@@ -72,7 +68,6 @@ const IDLE_REFRESH: RefreshBackfillStatusWire = {
 export function IntegrationsSection() {
   const toast = useToast();
   const [params, setParams] = useSearchParams();
-  const [query, setQuery] = useState("");
   const [connected, setConnected] = useState<Record<AuthWalledSource, boolean>>(
     {
       twitter: false,
@@ -202,21 +197,11 @@ export function IntegrationsSection() {
     await window.pond.refreshBackfillCancel();
   }
 
-  const filter = query.trim().toLowerCase();
-  const filtered = useMemo(() => {
-    if (!filter) return INTEGRATIONS;
-    return INTEGRATIONS.filter((i) => i.label.toLowerCase().includes(filter));
-  }, [filter]);
-
   const enabled = statusReady
     ? INTEGRATIONS.filter(
         (i) => i.authWalled && connected[i.id as AuthWalledSource],
       )
     : [];
-
-  const enabledFiltered = filter
-    ? enabled.filter((i) => i.label.toLowerCase().includes(filter))
-    : enabled;
 
   return (
     <Settings.Page>
@@ -227,26 +212,11 @@ export function IntegrationsSection() {
         </Settings.Description>
       </Settings.Header>
 
-      <Settings.Section>
-        <div className={styles.search}>
-          <span className={styles["search-icon"]} aria-hidden>
-            <IconMagnifierOutline18 width={14} height={14} />
-          </span>
-          <input
-            type="search"
-            className={styles["search-input"]}
-            placeholder="Search integrations…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-        </div>
-      </Settings.Section>
-
-      {enabledFiltered.length > 0 ? (
+      {enabled.length > 0 ? (
         <Settings.Section>
           <Settings.SectionTitle>Enabled</Settings.SectionTitle>
           <Settings.List>
-            {enabledFiltered.map((item) => (
+            {enabled.map((item) => (
               <Settings.Item key={item.id} className={styles["enabled-item"]}>
                 <Link
                   to={`/settings/integrations/${item.id}`}
@@ -269,36 +239,28 @@ export function IntegrationsSection() {
 
       <Settings.Section>
         <Settings.SectionTitle>All Integrations</Settings.SectionTitle>
-        {filtered.length === 0 ? (
-          <p className={styles.empty}>
-            No integrations match &ldquo;{query}&rdquo;.
-          </p>
-        ) : (
-          <div className={styles.grid}>
-            {filtered.map((item) => {
-              const isEnabled =
-                item.authWalled && connected[item.id as AuthWalledSource];
-              return (
-                <Link
-                  key={item.id}
-                  to={`/settings/integrations/${item.id}`}
-                  className={styles.card}
-                >
-                  <div className={styles["card-head"]}>
-                    <SourceBadge.Root source={item.id} data-size="md" />
-                    <span className={styles["card-title"]}>{item.label}</span>
-                    {isEnabled ? (
-                      <span className={styles["enabled-pill"]}>Enabled</span>
-                    ) : null}
-                  </div>
-                  <p className={styles["card-description"]}>
-                    {item.description}
-                  </p>
-                </Link>
-              );
-            })}
-          </div>
-        )}
+        <div className={styles.grid}>
+          {INTEGRATIONS.map((item) => {
+            const isEnabled =
+              item.authWalled && connected[item.id as AuthWalledSource];
+            return (
+              <Link
+                key={item.id}
+                to={`/settings/integrations/${item.id}`}
+                className={styles.card}
+              >
+                <div className={styles["card-head"]}>
+                  <SourceBadge.Root source={item.id} data-size="md" />
+                  <span className={styles["card-title"]}>{item.label}</span>
+                  {isEnabled ? (
+                    <span className={styles["enabled-pill"]}>Enabled</span>
+                  ) : null}
+                </div>
+                <p className={styles["card-description"]}>{item.description}</p>
+              </Link>
+            );
+          })}
+        </div>
       </Settings.Section>
 
       <Settings.Section>
