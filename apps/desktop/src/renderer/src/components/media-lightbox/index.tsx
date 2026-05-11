@@ -2,6 +2,7 @@ import { IconXmarkOutline18 } from "@pond/icons/outline";
 import { Button, Dialog, Tooltip } from "@pond/ui";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { extractYouTubeId } from "@/components/save-preview/helpers";
 import { requestVideoHeal } from "@/pool/heal";
 import { useSave } from "@/pool/hooks";
 import { buildMediaUnits } from "@/pool/media";
@@ -100,7 +101,40 @@ function Body({ save, onClose }: { save: Save; onClose: () => void }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [slides.length]);
 
+  const youtubeId = useMemo(() => extractYouTubeId(save.url), [save.url]);
+
   if (slides.length === 0) {
+    if (youtubeId) {
+      return (
+        <Stage>
+          <Toolbar>
+            <TitleStrip>{save.title ?? save.url}</TitleStrip>
+            <Tooltip.Root content="Close (Esc)">
+              <Button
+                variant="ghost"
+                size="sm"
+                icon
+                onClick={onClose}
+                aria-label="Close preview"
+              >
+                <IconXmarkOutline18 width={14} height={14} />
+              </Button>
+            </Tooltip.Root>
+          </Toolbar>
+          <Canvas>
+            <MediaShell>
+              <iframe
+                src={`https://www.youtube-nocookie.com/embed/${youtubeId}?autoplay=1`}
+                className={styles.embed}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                title={save.title ?? "YouTube video"}
+              />
+            </MediaShell>
+          </Canvas>
+        </Stage>
+      );
+    }
     return (
       <Empty>
         <p>{save.title ?? save.url}</p>
@@ -150,17 +184,14 @@ function Body({ save, onClose }: { save: Save; onClose: () => void }) {
               className={styles.media}
               onError={() => {
                 markBroken(slide.src);
-                requestVideoHeal(save.id);
+                requestVideoHeal(save.id, slide.src);
               }}
               onLoadedMetadata={(e) => {
-                // Codec-unsupported videos surface as a 0×0 metadata
-                // frame instead of an error event. Heal them anyway so
-                // users don't keep re-clicking Refresh on cards from
-                // before the codec fix.
                 const v = e.currentTarget;
+                if (v.readyState < HTMLMediaElement.HAVE_METADATA) return;
                 if (v.videoWidth === 0 && v.videoHeight === 0) {
                   markBroken(slide.src);
-                  requestVideoHeal(save.id);
+                  requestVideoHeal(save.id, slide.src);
                 }
               }}
             >

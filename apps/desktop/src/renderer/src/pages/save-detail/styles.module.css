@@ -62,9 +62,6 @@
   text-align: center;
 }
 
-/* macOS hosts the traffic lights at the top-left of the window. The
- * detail pane lives on the right, so we only need to make the toolbar
- * empty space draggable — no padding reservation needed. */
 :global([data-platform="mac"]) .pane {
   -webkit-app-region: drag;
 }

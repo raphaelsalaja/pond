@@ -1,5 +1,3 @@
-import { IconExpand2Outline18 } from "@pond/icons/outline";
-import { Tooltip } from "@pond/ui";
 import { useCallback, useEffect, useRef } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useTrackVisit } from "@/components/recents";
@@ -12,7 +10,6 @@ import { MediaViewer } from "@/components/save-preview/media-viewer";
 import { ReaderAction } from "@/components/save-preview/reader-action";
 import { RefreshAction } from "@/components/save-preview/refresh-action";
 import { RelatedSaves } from "@/components/save-preview/related-saves";
-import { VideoTimestamps } from "@/components/save-preview/video-timestamps";
 import { SaveStats } from "@/components/save-stats";
 import { Shell } from "@/components/shell";
 import { useSave } from "@/pool/hooks";
@@ -126,17 +123,11 @@ export function SaveDetailPage() {
       <div className={styles.layout}>
         <article className={styles.body}>
           <div className={styles["media-frame"]}>
-            <MediaViewer save={save} videoRef={videoRef} />
-            <Tooltip.Root content="Open full screen" side="left">
-              <button
-                type="button"
-                className={styles["media-expand"]}
-                onClick={openLightbox}
-                aria-label="Open media full screen"
-              >
-                <IconExpand2Outline18 width={14} height={14} />
-              </button>
-            </Tooltip.Root>
+            <MediaViewer
+              save={save}
+              videoRef={videoRef}
+              onExpand={openLightbox}
+            />
           </div>
           <h1
             className={styles.title}
@@ -158,7 +149,6 @@ export function SaveDetailPage() {
           ) : null}
           <SaveStats.Root save={save} videoRef={videoRef} />
           <ReaderAction save={save} />
-          <VideoTimestamps save={save} />
           <DominantColorSwatches save={save} />
           <FileActions save={save} />
           <RefreshAction save={save} />

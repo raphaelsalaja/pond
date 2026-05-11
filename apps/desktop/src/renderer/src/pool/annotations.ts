@@ -1,10 +1,5 @@
 import { pool } from "./pool";
-import type {
-  Save,
-  SaveAnnotations,
-  TextHighlight,
-  VideoTimestamp,
-} from "./types";
+import type { Save, SaveAnnotations, TextHighlight } from "./types";
 
 /**
  * Helpers for mutating `save.annotations`. All writes route through
@@ -13,12 +8,12 @@ import type {
  * the sync actions log and undo stack just like any other field edit.
  *
  * We always pass `before` so undo is symmetrical: re-applying the
- * pre-tx annotations restores the exact set of highlights /
- * timestamps the user had before the latest action.
+ * pre-tx annotations restores the exact set of highlights the user
+ * had before the latest action.
  */
 
 function emptyAnnotations(): SaveAnnotations {
-  return { highlights: [], videoTimestamps: [] };
+  return { highlights: [] };
 }
 
 function mergeAnnotations(
@@ -83,38 +78,6 @@ export async function updateHighlightNote(
   const next = mergeAnnotations(save.annotations, {
     highlights: (save.annotations?.highlights ?? []).map((h) =>
       h.id === id ? { ...h, note } : h,
-    ),
-  });
-  await commitAnnotations(save, next);
-}
-
-export async function addVideoTimestamp(
-  save: Save,
-  at: number,
-  text?: string,
-): Promise<VideoTimestamp> {
-  const created: VideoTimestamp = {
-    at,
-    text,
-    createdAt: new Date().toISOString(),
-  };
-  const next = mergeAnnotations(save.annotations, {
-    videoTimestamps: [
-      ...(save.annotations?.videoTimestamps ?? []),
-      created,
-    ].sort((a, b) => a.at - b.at),
-  });
-  await commitAnnotations(save, next);
-  return created;
-}
-
-export async function removeVideoTimestamp(
-  save: Save,
-  at: number,
-): Promise<void> {
-  const next = mergeAnnotations(save.annotations, {
-    videoTimestamps: (save.annotations?.videoTimestamps ?? []).filter(
-      (t) => Math.abs(t.at - at) > 0.5,
     ),
   });
   await commitAnnotations(save, next);

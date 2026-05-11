@@ -71,6 +71,15 @@ const inFlight = new Set<string>();
 /** True while the worker loop is draining `pending`. */
 let draining = false;
 
+/**
+ * Tracks the sha256 of video files written by previous heal attempts.
+ * When a force job sees the on-disk video already carries the same hash
+ * as the last heal, we skip the download — the existing bytes are the
+ * best yt-dlp can produce and re-downloading would just write the same
+ * file again.
+ */
+const lastHealHash = new Map<string, string>();
+
 /** Snapshot of pending + in-flight save IDs. */
 export interface AutoVideoStatus {
   pending: string[];
@@ -195,9 +204,6 @@ async function drain(): Promise<void> {
 }
 
 async function processJob(job: AutoVideoJob): Promise<void> {
-  // Guard against racing a manual Refresh: if the user clicked Refresh
-  // between enqueue and pickup, the row may already have a video file.
-  // Skip the spawn instead of wastefully re-downloading the same bytes.
   const db = await getDb();
   const rows = await db.select().from(saves).where(eq(saves.id, job.saveId));
   const current = rows[0];
@@ -208,13 +214,27 @@ async function processJob(job: AutoVideoJob): Promise<void> {
     );
     return;
   }
-  const hasVideo = (current.files ?? []).some((f) => f.kind === "video");
-  if (hasVideo && job.force !== true) {
+  const videoFile = (current.files ?? []).find((f) => f.kind === "video");
+  if (videoFile && job.force !== true) {
     log.info(
       "[pond auto-video] save already has a video file, skipping",
       job.saveId,
     );
     return;
+  }
+
+  // For force (heal) jobs, skip the download if the on-disk video's
+  // sha256 matches the last heal attempt — re-downloading would just
+  // produce the same bytes.
+  if (videoFile && job.force === true) {
+    const prev = lastHealHash.get(job.saveId);
+    if (prev && prev === videoFile.sha256) {
+      log.info(
+        "[pond auto-video] video unchanged since last heal, skipping",
+        job.saveId,
+      );
+      return;
+    }
   }
 
   log.info("[pond auto-video] downloading", {
@@ -226,19 +246,10 @@ async function processJob(job: AutoVideoJob): Promise<void> {
 
   const dl = await downloadVideo({ url: job.url, source: job.source });
   if (!dl) {
-    // downloadVideo() already logged the reason; fall through silently
-    // so the user is not spammed with warnings for unsupported pages.
     return;
   }
 
   try {
-    // Merge into the existing save via the standard ingest path. We
-    // re-build the minimum payload from the row so the merge logic in
-    // refreshExisting() doesn't downgrade title/description (it only
-    // overwrites fields when the new value is "richer"). Lift the
-    // `--write-info-json` sidecar's curated subset onto
-    // `raw.<source>.ytdlp` so view/like/duration/chapters surface
-    // without an extra extractor call.
     const payload: IngestPayload = {
       source: job.source,
       sourceId: job.sourceId,
@@ -249,6 +260,21 @@ async function processJob(job: AutoVideoJob): Promise<void> {
       mediaFiles: [{ path: dl.path, mimeType: dl.mimeType }],
       force: job.force === true,
     });
+
+    // Record the hash of the video we just wrote so a subsequent
+    // false-positive heal request for the same save is skipped.
+    if (job.force === true) {
+      const afterRows = await db
+        .select()
+        .from(saves)
+        .where(eq(saves.id, job.saveId));
+      const after = afterRows[0];
+      const newVideoFile = (after?.files ?? []).find((f) => f.kind === "video");
+      if (newVideoFile?.sha256) {
+        lastHealHash.set(job.saveId, newVideoFile.sha256);
+      }
+    }
+
     log.info("[pond auto-video] merged video into save", {
       saveId: job.saveId,
       bytes: dl.size,

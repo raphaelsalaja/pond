@@ -23,17 +23,11 @@
   padding: 12px;
   margin: 8px;
   overflow: auto;
-  background: var(--ds-background-color);
+  background: var(--ds-shell-main);
   border-radius: 12px;
-  box-shadow:
-    0 0 0 1px var(--ds-gray-4),
-    0 2px 4px 0 rgba(0, 0, 0, 0.06);
+  box-shadow: 0 0 0 1px var(--ds-gray-a4);
 }
 
-/* Sticky page chrome inside `Shell.Main`. The negative top inset and
- * horizontal margins extend the background to bleed into Shell.Main's
- * 12px padding, so cards scrolling underneath are fully covered up to
- * the rounded corners — no peek-through. */
 .header {
   position: sticky;
   top: -12px;
@@ -42,7 +36,6 @@
   padding-inline: 12px;
   margin-block-start: -12px;
   margin-inline: -12px;
-  background: var(--ds-background-color);
 }
 
 .empty {
@@ -54,10 +47,6 @@
   text-align: center;
 }
 
-/* `display: contents` keeps the wrapper out of the box tree while
- * still scoping the descendant `code` rule below — so we can style
- * inline code spans across every settings section without leaking the
- * rule into the rest of the app. */
 .body {
   display: contents;
 }

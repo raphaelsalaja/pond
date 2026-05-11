@@ -259,6 +259,7 @@ function configureSessionDefaults(): void {
       "script-src 'self'",
       "connect-src 'self' http://127.0.0.1:* pond: https:",
       "font-src 'self' data:",
+      "frame-src https://www.youtube-nocookie.com",
       "object-src 'none'",
       "frame-ancestors 'none'",
       "base-uri 'self'",
@@ -386,7 +387,7 @@ app.whenReady().then(async () => {
   try {
     await getDb();
     await replayPendingTransactions();
-    // One-shot data migration: rows imported by older twitter-bookmarks
+    // One-shot data migration: rows imported by older twitter
     // sync builds had `raw.twitter` set to the verbatim API tweet, so
     // metric chips never rendered. Cheap idempotent walk; bails after
     // the first run via an in-process flag.

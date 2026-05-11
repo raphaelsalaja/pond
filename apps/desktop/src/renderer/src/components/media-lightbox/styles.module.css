@@ -52,9 +52,6 @@
   background: light-dark(rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.45));
 }
 
-/* Inline-flex so the rounded frame shrinks to the natural size of the
- * inner `<img>` / `<video>` — the corner clip then matches the visible
- * media instead of the wider dim canvas. */
 .media-shell {
   position: relative;
   display: inline-flex;
@@ -70,6 +67,13 @@
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
+}
+
+.embed {
+  width: 80vw;
+  max-width: 1280px;
+  aspect-ratio: 16 / 9;
+  border: 0;
 }
 
 .nav {

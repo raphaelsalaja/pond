@@ -21,6 +21,7 @@ import {
   dialog,
   ipcMain,
   Menu,
+  nativeImage,
   shell,
 } from "electron";
 import log from "electron-log/main.js";
@@ -1549,9 +1550,55 @@ async function runQuery(
       return await applyAiSuggestion(id, field, accept);
     }
     case "ai.gatewayKey": {
-      // Alias for `settings.aiGatewayKey` so the AI page can use
-      // a single namespace.
       return { key: await getAiGatewayKey() };
+    }
+    case "video.copyFrame": {
+      const dataUrl = String(params.dataUrl ?? "");
+      if (!dataUrl.startsWith("data:image/")) return { ok: false };
+      const img = nativeImage.createFromDataURL(dataUrl);
+      clipboard.writeImage(img);
+      return { ok: true };
+    }
+    case "video.saveFrame": {
+      const dataUrl = String(params.dataUrl ?? "");
+      if (!dataUrl.startsWith("data:image/")) return { ok: false };
+      const win = event
+        ? (BrowserWindow.fromWebContents(event.sender) ?? undefined)
+        : undefined;
+      const result = await dialog.showSaveDialog({
+        ...(win ? { browserWindow: win } : {}),
+        defaultPath: `frame-${Date.now()}.png`,
+        filters: [{ name: "Images", extensions: ["png"] }],
+      } as Electron.SaveDialogOptions);
+      if (result.canceled || !result.filePath) return { ok: false };
+      const img = nativeImage.createFromDataURL(dataUrl);
+      const { writeFile } = await import("node:fs/promises");
+      await writeFile(result.filePath, img.toPNG());
+      return { ok: true, path: result.filePath };
+    }
+    case "video.setThumbnail": {
+      const saveId = String(params.saveId ?? "");
+      const dataUrl = String(params.dataUrl ?? "");
+      if (!saveId || !dataUrl.startsWith("data:image/")) return { ok: false };
+      const img = nativeImage.createFromDataURL(dataUrl);
+      const thumbDir = resolvePath(itemDir(saveId));
+      await mkdir(thumbDir, { recursive: true });
+      const thumbPath = resolvePath(thumbDir, "thumb.png");
+      const { writeFile } = await import("node:fs/promises");
+      await writeFile(thumbPath, img.toPNG());
+      return { ok: true };
+    }
+    case "video.copyFilePath": {
+      const saveId = String(params.saveId ?? "");
+      if (!saveId) return { ok: false };
+      const rows = await db.select().from(saves).where(eq(saves.id, saveId));
+      const save = rows[0];
+      if (!save) return { ok: false };
+      const wire = toWireSave(save);
+      const f = wire.files[0];
+      if (!f) return { ok: false };
+      clipboard.writeText(itemFile(saveId, f.path));
+      return { ok: true };
     }
     default:
       throw new Error(`unknown query: ${name}`);

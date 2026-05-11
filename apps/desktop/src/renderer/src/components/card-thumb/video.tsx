@@ -13,9 +13,9 @@ export function Video() {
       src={state.unit.url}
       posterUrl={state.unit.posterUrl}
       label={state.save.title ?? "video"}
-      onBroken={() => {
+      onBroken={(videoSrc?: string) => {
         actions.setBroken(true);
-        actions.healVideo();
+        actions.healVideo(videoSrc);
       }}
     />
   );
@@ -32,7 +32,7 @@ function HoverVideo({
   src: string;
   posterUrl?: string;
   label: string;
-  onBroken: () => void;
+  onBroken: (videoSrc?: string) => void;
 }) {
   const internalRef = useRef<HTMLVideoElement | null>(null);
 
@@ -69,20 +69,19 @@ function HoverVideo({
     }
   }, []);
 
-  // Detect codec-unsupported videos that *don't* fire `onError` —
-  // typical with `preload="metadata"` because the decoder isn't set up
-  // until play is pressed. Chromium still parses the container (so
-  // `loadedmetadata` fires) but `videoWidth` stays at 0 when it can't
-  // initialise the decoder.
   const onLoadedMetadata = useCallback(() => {
     const el = internalRef.current;
     if (!el) return;
+    // Only trust 0×0 as a codec failure when the parser has actually
+    // delivered metadata. Chromium can fire `loadedmetadata` before the
+    // decoder is fully initialised, transiently reporting 0×0.
+    if (el.readyState < HTMLMediaElement.HAVE_METADATA) return;
     if (el.videoWidth === 0 && el.videoHeight === 0) {
-      onBroken();
+      onBroken(src);
       return;
     }
     recordAspect(saveId, el.videoWidth, el.videoHeight);
-  }, [onBroken, saveId]);
+  }, [onBroken, saveId, src]);
 
   return (
     <video
@@ -102,7 +101,7 @@ function HoverVideo({
       onMouseLeave={onLeave}
       onFocus={onEnter}
       onBlur={onLeave}
-      onError={onBroken}
+      onError={() => onBroken(src)}
       onLoadedMetadata={onLoadedMetadata}
     >
       <track kind="captions" />

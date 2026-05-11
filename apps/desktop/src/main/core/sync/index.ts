@@ -7,15 +7,18 @@ import {
 import type { RawTwitter, TwitterMediaItem } from "@pond/schema/raw";
 import { and, eq, inArray } from "drizzle-orm";
 import log from "electron-log/main.js";
+import pLimit from "p-limit";
 import { getDb } from "../../db";
 import { ingestFromHttp } from "../ingest";
 import { getPrefs, setPrefs } from "../prefs";
-import type { BookmarksEntry } from "../refresh/harvest/twitter-bookmarks";
+import type { ListEntry } from "../refresh/harvest/list-types";
+import type { BookmarksEntry } from "../refresh/harvest/twitter";
 import {
   harvestSourceList,
   harvestTwitterBookmarks,
   harvestUrl,
   harvestYoutubeLikedList,
+  POOL_SIZE,
 } from "../refresh/scrape-window";
 import { isSyncBlockedByStorageGuard } from "../storage-watcher";
 
@@ -271,11 +274,14 @@ function handleFromUrl(source: Source, url: string): string | null {
   }
 }
 
-// Per-run safety cap. Sync walks the full list every time, but if a
-// source has thousands of saves we don't want a single run to chew on
-// it forever — bail at 5k entries so the run terminates and the next
-// cron tick (or "Sync Now") picks up whatever's left.
-const LIST_MAX_ITEMS = 5_000;
+// Per-run safety cap so a runaway page can't pin a single sync run
+// forever; the next cron tick picks up whatever's left.
+const LIST_MAX_ITEMS = 5;
+
+// Rich entries skip the BrowserWindow pool — the bottleneck is the
+// HTTP media fetches inside `ingestFromHttp`, not page rendering, so
+// concurrency is bounded by typical broadband + remote CDN tolerance.
+const RICH_INGEST_CONCURRENCY = 6;
 
 async function syncListSource(
   source: Source,
@@ -300,7 +306,6 @@ async function syncListSource(
   if (
     source === "arena" ||
     source === "pinterest" ||
-    source === "instagram" ||
     source === "reddit" ||
     source === "tiktok"
   ) {
@@ -319,11 +324,23 @@ async function syncListSource(
     accountKey = inferred;
   }
 
-  const harvest = await harvestSourceList(source, {
-    knownIds: Array.from(knownIds),
-    maxItems: LIST_MAX_ITEMS,
-    accountKey,
-  });
+  const harvest = await harvestSourceList(
+    source,
+    {
+      knownIds: Array.from(knownIds),
+      maxItems: LIST_MAX_ITEMS,
+      accountKey,
+    },
+    {
+      onProgress: (p) => {
+        emit({
+          source,
+          state: "running",
+          message: `Found ${p.collected} saved items${p.fresh > 0 ? ` (${p.fresh} new)` : ""}…`,
+        });
+      },
+    },
+  );
   if (signal.aborted) return;
 
   if (!harvest.ok) {
@@ -376,7 +393,12 @@ async function syncListSource(
     return;
   }
 
-  log.info(`[pond sync:${source}] importing ${fresh.length} new items`);
+  const richEntries = fresh.filter(entryHasRichData);
+  const stubEntries = fresh.filter((e) => !entryHasRichData(e));
+
+  log.info(
+    `[pond sync:${source}] importing ${fresh.length} new items (${richEntries.length} rich, ${stubEntries.length} need harvest)`,
+  );
   emit({
     source,
     state: "running",
@@ -385,57 +407,117 @@ async function syncListSource(
   });
 
   let processed = 0;
-  for (const entry of fresh) {
-    if (signal.aborted) return;
-    try {
-      const harv = await harvestUrl({
-        url: entry.url,
-        source,
-        sourceId: entry.sourceId,
-      });
-      if (harv.ok && harv.harvest) {
-        const meta = harv.harvest.meta ?? {};
-        if (entry.savedAt) {
-          (meta as Record<string, unknown>).savedAt = entry.savedAt;
-        }
-        await ingestFromHttp({
-          source,
-          sourceId: entry.sourceId,
-          url: entry.url,
-          title: harv.harvest.title,
-          description: harv.harvest.description,
-          author: harv.harvest.author,
-          mediaUrl: harv.harvest.mediaUrl,
-          mediaUrls: harv.harvest.mediaUrls,
-          mediaType: harv.harvest.mediaType,
-          savedAt: entry.savedAt ? new Date(entry.savedAt) : new Date(),
-          raw: {
-            kind: `${source}-sync`,
-            capturedAt: new Date().toISOString(),
-            [source]: meta,
-          },
-        });
-      } else if (harv.reason === "auth_required") {
-        await patchSourceSync(source, { lastError: "auth_required" });
-        emit({
-          source,
-          state: "auth_required",
-          message: `Lost ${source} session — please re-connect.`,
-          lastError: "auth_required",
-        });
-        return;
-      }
-    } catch (err) {
-      log.warn(`[pond sync:${source}] per-item failure`, entry.sourceId, err);
-    }
-    processed += 1;
+
+  const reportProgress = () => {
     emit({
       source,
       state: "running",
       message: `Importing ${processed} of ${fresh.length}…`,
       progress: { current: processed, total: fresh.length },
     });
+  };
+
+  const ingestLimit = pLimit(RICH_INGEST_CONCURRENCY);
+  await Promise.all(
+    richEntries.map((entry) =>
+      ingestLimit(async () => {
+        if (signal.aborted) return;
+        try {
+          await ingestFromHttp({
+            source,
+            sourceId: entry.sourceId,
+            url: entry.url,
+            title: entry.title,
+            description: entry.description,
+            author: entry.author,
+            mediaUrl: entry.mediaUrl,
+            mediaUrls: entry.mediaUrls,
+            mediaType: entry.mediaType,
+            savedAt: entry.savedAt ? new Date(entry.savedAt) : new Date(),
+            raw: {
+              kind: `${source}-sync`,
+              capturedAt: new Date().toISOString(),
+              ...(entry.meta ? { [source]: entry.meta } : {}),
+            },
+          });
+        } catch (err) {
+          log.warn(
+            `[pond sync:${source}] per-item failure`,
+            entry.sourceId,
+            err,
+          );
+        }
+        processed += 1;
+        reportProgress();
+      }),
+    ),
+  );
+  if (signal.aborted) return;
+
+  // Cap at POOL_SIZE so we never queue inside `leaseWindow`. Sliding
+  // window beats fixed batches here — the next item starts as soon as
+  // one finishes instead of waiting for the slowest in its batch.
+  const harvestLimit = pLimit(POOL_SIZE);
+  let sawAuthFailure = false;
+  await Promise.all(
+    stubEntries.map((entry) =>
+      harvestLimit(async () => {
+        if (signal.aborted || sawAuthFailure) return;
+        try {
+          const harv = await harvestUrl({
+            url: entry.url,
+            source,
+            sourceId: entry.sourceId,
+          });
+          if (harv.ok && harv.harvest) {
+            const meta = harv.harvest.meta ?? {};
+            if (entry.savedAt) {
+              (meta as Record<string, unknown>).savedAt = entry.savedAt;
+            }
+            await ingestFromHttp({
+              source,
+              sourceId: entry.sourceId,
+              url: entry.url,
+              title: harv.harvest.title,
+              description: harv.harvest.description,
+              author: harv.harvest.author,
+              mediaUrl: harv.harvest.mediaUrl,
+              mediaUrls: harv.harvest.mediaUrls,
+              mediaType: harv.harvest.mediaType,
+              savedAt: entry.savedAt ? new Date(entry.savedAt) : new Date(),
+              raw: {
+                kind: `${source}-sync`,
+                capturedAt: new Date().toISOString(),
+                [source]: meta,
+              },
+            });
+          } else if (harv.reason === "auth_required") {
+            sawAuthFailure = true;
+          }
+        } catch (err) {
+          log.warn(
+            `[pond sync:${source}] per-item failure`,
+            entry.sourceId,
+            err,
+          );
+        }
+        processed += 1;
+        reportProgress();
+      }),
+    ),
+  );
+
+  if (sawAuthFailure) {
+    await patchSourceSync(source, { lastError: "auth_required" });
+    emit({
+      source,
+      state: "auth_required",
+      message: `Lost ${source} session — please re-connect.`,
+      lastError: "auth_required",
+    });
+    return;
   }
+  if (signal.aborted) return;
 
   const lastSyncedAt = new Date().toISOString();
   await patchSourceSync(source, { lastSyncedAt, lastError: null });
@@ -692,6 +774,15 @@ export async function countSavesForSource(source: Source): Promise<number> {
     .from(saves)
     .where(eq(saves.source, source));
   return rows.length;
+}
+
+/**
+ * A list entry counts as "rich" when the card DOM gave us at least a
+ * title or a media URL — enough to create a useful save row without
+ * burning a per-item hidden-window page load.
+ */
+function entryHasRichData(entry: ListEntry): boolean {
+  return Boolean(entry.title || entry.mediaUrl);
 }
 
 /** Read-only multi-id existence check; used by external callers. */

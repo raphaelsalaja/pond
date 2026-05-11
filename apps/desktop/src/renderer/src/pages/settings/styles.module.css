@@ -1,18 +1,8 @@
-/* ------------------------------------------------------------------ */
-/* Settings — section-local styles.                                    */
-/*                                                                    */
-/* The page chrome (rail + scrolling card + `code` scoping) lives in  */
-/* `<SettingsLayout>` so the takeover lines up with the library view; */
-/* this file only carries layout for individual sections.              */
-/* ------------------------------------------------------------------ */
-
 .inline-row {
   display: flex;
   gap: 8px;
   align-items: center;
 }
-
-/* ---- Per-source page header -------------------------------------- */
 
 .source-header {
   display: flex;
@@ -83,10 +73,6 @@
   align-items: center;
 }
 
-/* ------------------------------------------------------------------ */
-/* Storage — disk usage breakdown + guard status indicators.           */
-/* ------------------------------------------------------------------ */
-
 .usage-headline {
   display: flex;
   flex-wrap: wrap;
@@ -129,8 +115,6 @@
   transition: flex-basis 200ms ease;
 }
 
-/* The Pond slice gets the accent; nested category subdivisions tint
- * with `color-mix` so they stay tonal but readable on hover. */
 .usage-bar-segment-items {
   background: color-mix(in oklch, var(--ds-accent-9) 90%, transparent);
 }
@@ -246,15 +230,6 @@
   background: light-dark(#cf222e, #ff7b72);
 }
 
-/* ------------------------------------------------------------------ */
-/* Tags — Linear "Project labels"-style page.                          */
-/*                                                                    */
-/* Renders in its own wide layout (not the narrow Settings.Page card  */
-/* the rest of the sections share) because a multi-column table reads */
-/* terribly clamped to 640px. Header + toolbar + table all live on    */
-/* the same outer column so the title aligns with the row content.    */
-/* ------------------------------------------------------------------ */
-
 .tags-page {
   display: flex;
   flex-direction: column;
@@ -298,8 +273,6 @@
   align-items: center;
 }
 
-/* Search-prefixed filter input. Mirrors the integrations search but   */
-/* lives inline in the toolbar rather than spanning the full row.      */
 .tags-filter {
   position: relative;
   display: inline-flex;
@@ -462,7 +435,6 @@
   padding-left: 36px;
 }
 
-/* Tree connector: vertical line on the left, horizontal stub before the dot */
 .tags-row-nested::before {
   position: absolute;
   top: 0;
@@ -534,7 +506,6 @@
   color: var(--ds-gray-11);
 }
 
-/* Diamond glyph for group rows */
 .tags-group-glyph {
   display: inline-block;
   width: 10px;

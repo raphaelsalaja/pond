@@ -1,7 +1,3 @@
-/* ------------------------------------------------------------------ */
-/* Bar — filter chip container                                          */
-/* ------------------------------------------------------------------ */
-
 .bar {
   display: flex;
   flex-shrink: 0;
@@ -11,15 +7,6 @@
   padding: 12px 0;
   border-bottom: 1px solid var(--ds-gray-a4);
 }
-
-/* ------------------------------------------------------------------ */
-/* Chip — multi-segment pill                                            */
-/* ------------------------------------------------------------------ */
-/*                                                                      */
-/* Chip is `[label] [operator] [value] [×]`. Each segment is its own    */
-/* clickable button so it can open its own popover; segments share a    */
-/* rounded-rect background with vertical 1px dividers between them      */
-/* (Linear-style).                                                      */
 
 .chip {
   display: inline-flex;
@@ -31,10 +18,6 @@
   border-radius: 6px;
   box-shadow: inset 0 0 0 1px var(--ds-gray-a4);
 
-  /* Belt-and-braces: make sure the chip and everything inside is
-   * clickable even when an ancestor opts the area into a window
-   * drag region. Without this, the macOS drag handler swallows the
-   * click before React sees it. */
   -webkit-app-region: no-drag;
 }
 
@@ -115,7 +98,6 @@
   color: var(--ds-gray-11);
 }
 
-/* Coloured-dot row used by the Color filter's chip value segment. */
 .chip-color-dots {
   display: inline-flex;
   gap: 3px;
@@ -128,10 +110,6 @@
   border-radius: 999px;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
 }
-
-/* ------------------------------------------------------------------ */
-/* Add filter "+" trigger                                               */
-/* ------------------------------------------------------------------ */
 
 .add-filter {
   display: inline-flex;
@@ -174,10 +152,6 @@
   padding: 0;
 }
 
-/* ------------------------------------------------------------------ */
-/* Clear all                                                            */
-/* ------------------------------------------------------------------ */
-
 .clear-all {
   height: 28px;
   padding: 0 8px;
@@ -205,14 +179,6 @@
   }
 }
 
-/* ------------------------------------------------------------------ */
-/* Menu popups (chip value + Add filter submenu + operator)             */
-/* ------------------------------------------------------------------ */
-/*                                                                      */
-/* `.value-popup` is the bare popup shell used by both the chip value   */
-/* pill and the Add filter `Menu.SubmenuRoot`s. Each picker provides    */
-/* its own width + padding, so the popup itself is transparent chrome.  */
-
 .value-popup {
   min-width: auto;
   padding: 0;
@@ -222,9 +188,6 @@
   min-width: 120px;
 }
 
-/* Submenu trigger chevron — appended to the right of the label inside
- * the Add filter menu's `Menu.SubmenuTrigger`. Mirrors Linear's submenu
- * affordance. */
 .submenu-chevron {
   display: inline-flex;
   flex-shrink: 0;
@@ -235,15 +198,6 @@
   margin-left: auto;
   color: var(--ds-gray-10);
 }
-
-/* ------------------------------------------------------------------ */
-/* Add filter — global search                                          */
-/* ------------------------------------------------------------------ */
-/*                                                                      */
-/* The popup grows a search input pinned to the top, a flat ranked     */
-/* list below, and small badges (counts, kbd hint, color swatch dots) */
-/* that need to share styling regardless of which surface mounts the   */
-/* menu (header toolbar vs inline chip-bar AddTrigger).                */
 
 .search-row {
   display: flex;

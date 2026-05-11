@@ -1,7 +1,3 @@
-/* ------------------------------------------------------------------ */
-/* Saved filters trigger button (header toolbar)                        */
-/* ------------------------------------------------------------------ */
-
 .trigger {
   display: inline-flex;
   flex-shrink: 0;
@@ -35,10 +31,6 @@
     background: var(--ds-gray-a4);
   }
 }
-
-/* ------------------------------------------------------------------ */
-/* Menu body                                                            */
-/* ------------------------------------------------------------------ */
 
 .popover {
   width: 280px;
@@ -80,14 +72,6 @@
   color: var(--ds-gray-11);
   text-align: center;
 }
-
-/* ------------------------------------------------------------------ */
-/* Saved-filter row                                                     */
-/* ------------------------------------------------------------------ */
-/*                                                                      */
-/* Two side-by-side buttons inside a flex wrapper: the apply button     */
-/* fills the row, the `…` menu fades in on hover / focus-within.        */
-/* Nesting buttons isn't valid, so the wrapper carries the hover state. */
 
 .row {
   position: relative;
@@ -164,7 +148,6 @@
   color: var(--ds-gray-12);
 }
 
-/* Inline rename — replaces the row main button while editing. */
 .row-input-wrap {
   display: flex;
   flex: 1;
@@ -234,14 +217,6 @@
   opacity: 1;
 }
 
-/* ------------------------------------------------------------------ */
-/* Row context menu                                                     */
-/* ------------------------------------------------------------------ */
-/*                                                                      */
-/* The menu chrome (popup, items, icons) comes from `@pond/ui`'s        */
-/* Menu primitive. Only the local overrides live here: a tighter        */
-/* popup width and the destructive "Delete" colour.                     */
-
 .menu {
   width: 140px;
   padding: 4px;
@@ -254,10 +229,6 @@
     background: rgba(227, 74, 74, 0.12);
   }
 }
-
-/* ------------------------------------------------------------------ */
-/* Footer — Save this filter                                            */
-/* ------------------------------------------------------------------ */
 
 .footer {
   padding: 4px;

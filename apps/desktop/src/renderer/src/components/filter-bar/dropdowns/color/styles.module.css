@@ -1,6 +1,3 @@
-/* Color picker — hex input + swatch grid sourced from the library's
- * dominant-color enrichment. */
-
 .body {
   display: flex;
   flex-direction: column;

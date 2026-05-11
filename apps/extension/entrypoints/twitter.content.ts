@@ -1,7 +1,8 @@
+import { matches } from "@/sources/twitter/matches";
 import { bridge } from "@/utils/bridge";
 
 export default defineContentScript({
-  matches: ["https://x.com/*", "https://twitter.com/*"],
+  matches,
   runAt: "document_start",
   main() {
     bridge("twitter");

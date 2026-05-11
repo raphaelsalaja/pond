@@ -5,6 +5,7 @@
   background: var(--ds-gray-a8);
   backdrop-filter: blur(2px);
   transition: opacity 160ms ease;
+  -webkit-app-region: no-drag;
 
   &[data-starting-style],
   &[data-ending-style] {
@@ -31,6 +32,7 @@
     0 12px 32px -8px rgba(0, 0, 0, 0.25),
     0 4px 10px -2px rgba(0, 0, 0, 0.2);
   transform: translate(-50%, -50%);
+  -webkit-app-region: no-drag;
   transition:
     opacity 160ms ease,
     transform 160ms ease;

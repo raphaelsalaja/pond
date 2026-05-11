@@ -46,6 +46,7 @@
     "@uiw/color-convert": "^2.10.1",
     "@uiw/react-color-hue": "^2.10.1",
     "@uiw/react-color-saturation": "^2.10.1",
+    "@vidstack/react": "^0.6.15",
     "archiver": "^7.0.1",
     "better-sqlite3": "^12.9.0",
     "chrono-node": "^2.9.1",
@@ -55,8 +56,10 @@
     "ffmpeg-static": "^5.2.0",
     "fuse.js": "^7.3.0",
     "hono": "^4.12.18",
+    "p-limit": "^7.3.0",
     "sqlite-vec": "^0.1.7-alpha.2",
-    "ulid": "^3.0.2"
+    "ulid": "^3.0.2",
+    "vidstack": "^0.6.15"
   },
   "devDependencies": {
     "@electron-toolkit/preload": "^3.0.2",
@@ -69,7 +72,7 @@
     "@types/react-dom": "^19.0.2",
     "@vitejs/plugin-react": "^6.0.1",
     "drizzle-kit": "^0.31.10",
-    "electron": "^42.0.1",
+    "electron": "^41.5.0",
     "electron-builder": "^26.8.1",
     "electron-builder-squirrel-windows": "^26.8.1",
     "electron-vite": "^5.0.0",

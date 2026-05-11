@@ -85,6 +85,9 @@
 
 :root {
   --ds-background-color: light-dark(#fff, #000);
+
+  --ds-shell-main: light-dark(#fff, var(--ds-gray-1));
+  --ds-shell-background: var(--ds-background-color);
 }
 
 @supports (color: color(display-p3 1 1 1)) {

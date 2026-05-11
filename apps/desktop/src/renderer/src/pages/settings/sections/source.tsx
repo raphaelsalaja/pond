@@ -1,5 +1,5 @@
 import type { Source, SyncCadence } from "@pond/schema/db";
-import { Button, Select, Switch, useToast } from "@pond/ui";
+import { Button, Select, useToast } from "@pond/ui";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Navigate, useParams } from "react-router-dom";
 import { Settings } from "@/components/settings";
@@ -13,13 +13,6 @@ import { usePrefs } from "@/pool/prefs";
 import type { RefreshBackfillStatusWire } from "../../../../../preload";
 import { ALL_SOURCES, type AnySource, isAuthWalled } from "./_types";
 
-/**
- * Per-source settings page. Reads `:source` from the URL and renders
- * either the auth-walled controls (signin status + connect/disconnect)
- * or the public-source controls (rate-limit hints, refresh cadence).
- *
- * Unknown sources redirect back to the integrations overview.
- */
 export function SourceSection() {
   const { source: raw } = useParams<{ source: string }>();
   const source = (raw ?? "").toLowerCase();
@@ -45,7 +38,7 @@ function SourceDetail({ source }: { source: AnySource }) {
         <Settings.Title>{label}</Settings.Title>
         <Settings.Description>
           {meta
-            ? "Sign-in status, scrape behavior, and refresh cadence."
+            ? "Connection, import schedule, and metadata."
             : "Settings for this source."}
         </Settings.Description>
       </div>
@@ -69,13 +62,12 @@ function SourceDetail({ source }: { source: AnySource }) {
     <Settings.Page>
       {header}
       <Settings.Section>
-        <Settings.SectionTitle>Sign In</Settings.SectionTitle>
+        <Settings.SectionTitle>Connection</Settings.SectionTitle>
         <Settings.List>
           <Settings.Item>
             <Settings.ItemDetails>
               <Settings.ItemDescription>
-                {label} scrapes without sign-in via the public OG and oEmbed
-                reader.
+                {label} works without sign-in. No connection needed.
               </Settings.ItemDescription>
             </Settings.ItemDetails>
           </Settings.Item>
@@ -125,13 +117,12 @@ function AuthWalledControls({ source }: { source: AnySource }) {
       await window.pond.connectSource(source);
       await refresh();
       toast.add({
-        title: `Sign-in window closed for ${source}`,
-        description: "Future refreshes scrape this source after sign-in.",
+        title: `Signed in to ${getSourceLabel(source)}`,
         type: "success",
       });
     } catch {
       toast.add({
-        title: `Couldn't open the ${source} sign-in window`,
+        title: `Couldn't open the sign-in window`,
         type: "error",
       });
     } finally {
@@ -144,7 +135,10 @@ function AuthWalledControls({ source }: { source: AnySource }) {
     try {
       await window.pond.disconnectSource(source);
       await refresh();
-      toast.add({ title: `Disconnected ${source}`, type: "success" });
+      toast.add({
+        title: `Disconnected ${getSourceLabel(source)}`,
+        type: "success",
+      });
     } finally {
       setPending(false);
     }
@@ -152,42 +146,21 @@ function AuthWalledControls({ source }: { source: AnySource }) {
 
   return (
     <Settings.Section>
-      <Settings.SectionTitle>Sign In</Settings.SectionTitle>
+      <Settings.SectionTitle>Connection</Settings.SectionTitle>
       <Settings.List>
         <Settings.Item>
           <Settings.ItemDetails>
-            <Settings.ItemTitle>Status</Settings.ItemTitle>
-            <Settings.ItemDescription>
-              Pond keeps a private browser session for this source. One sign-in
-              keeps refreshes silent in the background.
-            </Settings.ItemDescription>
-          </Settings.ItemDetails>
-          <Settings.ItemControl>
-            <span
-              className={
-                connected
-                  ? styles["status-connected"]
-                  : styles["status-disconnected"]
-              }
-            >
+            <Settings.ItemTitle>
               {connected === null
                 ? "Checking…"
                 : connected
                   ? "Connected"
                   : "Not Connected"}
-            </span>
-          </Settings.ItemControl>
-        </Settings.Item>
-
-        <Settings.Item>
-          <Settings.ItemDetails>
-            <Settings.ItemTitle>
-              {connected ? "Re-Sign In or Disconnect" : "Connect Now"}
             </Settings.ItemTitle>
             <Settings.ItemDescription>
               {connected
-                ? "Re-sign in if Pond stops scraping this source, usually after a logout or password change."
-                : "Open a private browser window to sign in."}
+                ? "Pond has an active session. Re-sign in if imports stop working."
+                : "Sign in so Pond can import in the background."}
             </Settings.ItemDescription>
           </Settings.ItemDetails>
           <Settings.ItemControl>
@@ -207,7 +180,7 @@ function AuthWalledControls({ source }: { source: AnySource }) {
                 disabled={pending}
                 onClick={() => void connect()}
               >
-                {pending ? "Opening…" : connected ? "Re-Sign In" : "Connect"}
+                {pending ? "Opening…" : connected ? "Re-Sign In" : "Sign In"}
               </Button>
             </div>
           </Settings.ItemControl>
@@ -217,13 +190,9 @@ function AuthWalledControls({ source }: { source: AnySource }) {
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Sync card.                                                          */
-/* ------------------------------------------------------------------ */
-
 const CADENCE_OPTIONS: Array<{ value: SyncCadence; label: string }> = [
   { value: "off", label: "Off" },
-  { value: "15min", label: "Every 15\u00A0minutes" },
+  { value: "15min", label: "Every 15\u00A0min" },
   { value: "hourly", label: "Hourly" },
   { value: "6h", label: "Every 6\u00A0hours" },
   { value: "daily", label: "Daily" },
@@ -235,16 +204,6 @@ interface SyncStatusSnapshot {
   progress?: { current: number; total: number };
 }
 
-/**
- * Per-source sync card. Drives `IPC.syncRunNow` /`syncStatus` /
- * `syncCancel` and the `prefs.sync[source]` toggle. Originally written
- * for Twitter (`TwitterSyncCard`), now generalised so every Phase-3
- * list-harvest source ("youtube", "cosmos", "arena", …) can use the
- * exact same UI.
- *
- * Aliased as `TwitterSyncCard` for back-compat with any callers that
- * still reference it by the old name.
- */
 function SourceSyncCard({ source }: { source: Source }) {
   const toast = useToast();
   const [prefs, patchPrefs, ready] = usePrefs("sync");
@@ -269,7 +228,7 @@ function SourceSyncCard({ source }: { source: Source }) {
           lastError: s.lastError ?? null,
           running: s.running,
         });
-        if (s.running) setStatus({ state: "running", message: "Syncing…" });
+        if (s.running) setStatus({ state: "running", message: "Importing…" });
       }
     });
     const off = window.pond.onSyncStatus((upd) => {
@@ -305,8 +264,6 @@ function SourceSyncCard({ source }: { source: Source }) {
     };
   }, [source]);
 
-  // Pref bucket may be undefined on first paint; merge with snapshot
-  // so the controls always have a deterministic value to bind to.
   const cfg = useMemo(() => {
     const fromPrefs = prefs?.[source];
     const fromSnap = snapshot;
@@ -321,7 +278,7 @@ function SourceSyncCard({ source }: { source: Source }) {
     };
   }, [prefs, snapshot, source]);
 
-  function patchSync(next: { enabled?: boolean; cadence?: SyncCadence }) {
+  function setCadence(cadence: SyncCadence) {
     const current = prefs?.[source] ?? {
       enabled: false,
       cadence: "off" as SyncCadence,
@@ -331,26 +288,22 @@ function SourceSyncCard({ source }: { source: Source }) {
     patchPrefs({
       [source]: {
         ...current,
-        ...next,
+        cadence,
+        enabled: cadence !== "off",
       },
     } as Partial<typeof prefs>);
   }
 
-  async function syncNow() {
+  async function importNow() {
     const r = await window.pond.syncRunNow(source);
     if (!r.ok) {
-      if (r.reason === "already_running") {
-        toast.add({
-          title: "Sync already running",
-          description: "Wait for the current run to finish.",
-          type: "info",
-        });
-      } else {
-        toast.add({
-          title: "Couldn't start sync",
-          type: "error",
-        });
-      }
+      toast.add({
+        title:
+          r.reason === "already_running"
+            ? "Import already running"
+            : "Couldn't start import",
+        type: r.reason === "already_running" ? "info" : "error",
+      });
     }
   }
 
@@ -358,66 +311,45 @@ function SourceSyncCard({ source }: { source: Source }) {
     cfg.running ||
     status.state === "running" ||
     status.state === "auth_required";
-  const inlineMessage = (() => {
+
+  const statusLine = (() => {
     if (status.state === "auth_required") {
-      return `Sign in to ${getSourceLabel(source)} to enable background sync.`;
+      return `Sign in to ${getSourceLabel(source)} first.`;
     }
-    if (status.state === "running" && status.message) {
-      return status.message;
-    }
-    if (status.state === "error" && status.message) {
-      return `Last run failed: ${status.message}`;
-    }
-    if (status.state === "done" && status.message) {
-      return status.message;
-    }
-    if (cfg.lastError && cfg.lastError !== "auth_required") {
+    if (status.state === "running" && status.message) return status.message;
+    if (status.state === "error" && status.message)
+      return `Failed: ${status.message}`;
+    if (status.state === "done" && status.message) return status.message;
+    if (cfg.lastError && cfg.lastError !== "auth_required")
       return `Last run failed: ${cfg.lastError}`;
-    }
-    return null;
+    if (cfg.lastSyncedAt)
+      return `Last imported ${formatRelative(cfg.lastSyncedAt)}.`;
+    return "Check for new saves and import them.";
   })();
 
   return (
     <Settings.Section>
-      <Settings.SectionTitle>Sync</Settings.SectionTitle>
+      <Settings.SectionTitle>Import</Settings.SectionTitle>
       <Settings.List>
         <Settings.Item>
           <Settings.ItemDetails>
-            <Settings.ItemTitle>Background Sync</Settings.ItemTitle>
+            <Settings.ItemTitle>Auto-Import</Settings.ItemTitle>
             <Settings.ItemDescription>
-              Open your bookmarks list on a hidden Chromium window using the
-              cookies above and import anything new.
-            </Settings.ItemDescription>
-          </Settings.ItemDetails>
-          <Settings.ItemControl>
-            <Switch.Root
-              disabled={!ready}
-              checked={cfg.enabled}
-              onCheckedChange={(checked) =>
-                patchSync({ enabled: Boolean(checked) })
-              }
-            />
-          </Settings.ItemControl>
-        </Settings.Item>
-
-        <Settings.Item>
-          <Settings.ItemDetails>
-            <Settings.ItemTitle>Cadence</Settings.ItemTitle>
-            <Settings.ItemDescription>
-              How often the scheduler runs an incremental sync.
+              Automatically check for new saves on a schedule.
             </Settings.ItemDescription>
           </Settings.ItemDetails>
           <Settings.ItemControl>
             <Select.Root<SyncCadence>
-              value={cfg.cadence}
-              onValueChange={(v) =>
-                patchSync({ cadence: (v ?? "off") as SyncCadence })
-              }
+              disabled={!ready}
+              value={cfg.enabled ? cfg.cadence : "off"}
+              onValueChange={(v) => setCadence((v ?? "off") as SyncCadence)}
             >
               <Select.Trigger>
                 <Select.Value>
-                  {CADENCE_OPTIONS.find((o) => o.value === cfg.cadence)
-                    ?.label ?? "Off"}
+                  {cfg.enabled
+                    ? (CADENCE_OPTIONS.find((o) => o.value === cfg.cadence)
+                        ?.label ?? "Off")
+                    : "Off"}
                 </Select.Value>
               </Select.Trigger>
               <Select.Content>
@@ -433,33 +365,11 @@ function SourceSyncCard({ source }: { source: Source }) {
 
         <Settings.Item>
           <Settings.ItemDetails>
-            <Settings.ItemTitle>Sync Now</Settings.ItemTitle>
-            <Settings.ItemDescription>
-              {cfg.lastSyncedAt
-                ? `Last synced ${formatRelative(cfg.lastSyncedAt)}.`
-                : "No runs yet."}
-            </Settings.ItemDescription>
+            <Settings.ItemTitle>Import Now</Settings.ItemTitle>
+            <Settings.ItemDescription>{statusLine}</Settings.ItemDescription>
           </Settings.ItemDetails>
           <Settings.ItemControl>
-            <Button
-              size="sm"
-              disabled={isRunning}
-              onClick={() => void syncNow()}
-            >
-              {isRunning ? "Syncing…" : "Sync Now"}
-            </Button>
-          </Settings.ItemControl>
-        </Settings.Item>
-
-        {inlineMessage ? (
-          <Settings.Item>
-            <Settings.ItemDetails>
-              <Settings.ItemTitle>Status</Settings.ItemTitle>
-              <Settings.ItemDescription>
-                {inlineMessage}
-              </Settings.ItemDescription>
-            </Settings.ItemDetails>
-            <Settings.ItemControl>
+            <div className={styles["inline-row"]}>
               {isRunning ? (
                 <Button
                   size="sm"
@@ -468,20 +378,21 @@ function SourceSyncCard({ source }: { source: Source }) {
                 >
                   Cancel
                 </Button>
-              ) : (
-                <span />
-              )}
-            </Settings.ItemControl>
-          </Settings.Item>
-        ) : null}
+              ) : null}
+              <Button
+                size="sm"
+                disabled={isRunning}
+                onClick={() => void importNow()}
+              >
+                {isRunning ? "Importing…" : "Import Now"}
+              </Button>
+            </div>
+          </Settings.ItemControl>
+        </Settings.Item>
       </Settings.List>
     </Settings.Section>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/* Metadata refresh card.                                              */
-/* ------------------------------------------------------------------ */
 
 const IDLE_REFRESH: RefreshBackfillStatusWire = {
   state: "idle",
@@ -495,18 +406,8 @@ const IDLE_REFRESH: RefreshBackfillStatusWire = {
   options: {},
 };
 
-/**
- * Per-source metadata refresh. Re-runs the per-save refresh pipeline
- * (server-side OG → hidden Chromium harvester → yt-dlp) scoped to a
- * single source. Talks to `core/refresh/backfill.ts` over the
- * `pond:refresh-backfill-*` IPC channels with `{ source }` set.
- *
- * The global "refresh every source" affordance lives on the
- * Integrations index page.
- */
 function SourceRefreshCard({ source }: { source: AnySource }) {
   const toast = useToast();
-  const [onlyMissing, setOnlyMissing] = useState(false);
   const [status, setStatus] = useState<RefreshBackfillStatusWire>(IDLE_REFRESH);
 
   useEffect(() => {
@@ -523,27 +424,18 @@ function SourceRefreshCard({ source }: { source: AnySource }) {
     };
   }, []);
 
-  // Only treat the run as ours when the active backfill targets this
-  // very source — a global run streams to every per-source page too.
   const scopedToThisSource =
     status.options?.source === source ||
     (status.state === "running" && status.options?.source === source);
   const isRunning = status.state === "running" && scopedToThisSource;
 
-  const pct = useMemo(() => {
-    if (!isRunning || status.total === 0) return 0;
-    return Math.min(100, Math.round((status.current / status.total) * 100));
-  }, [isRunning, status.total, status.current]);
-
   async function start() {
     const res = await window.pond.refreshBackfillStart({
       source,
-      onlyMissing,
     });
     if (res.ok) {
       toast.add({
         title: `Refreshing ${res.total} save${res.total === 1 ? "" : "s"}`,
-        description: "Progress streams here; leaving the page is fine.",
         type: "success",
       });
       return;
@@ -551,16 +443,13 @@ function SourceRefreshCard({ source }: { source: AnySource }) {
     if (res.reason === "no_saves") {
       toast.add({
         title: "Nothing to refresh",
-        description: onlyMissing
-          ? "No saves for this source are missing metadata."
-          : "No saves for this source.",
+        description: "No saves found for this source.",
         type: "info",
       });
       return;
     }
     toast.add({
       title: "Refresh already running",
-      description: "Wait for the current run to finish or cancel it first.",
       type: "info",
     });
   }
@@ -569,45 +458,26 @@ function SourceRefreshCard({ source }: { source: AnySource }) {
     await window.pond.refreshBackfillCancel();
   }
 
-  const summary = (() => {
-    if (!scopedToThisSource && status.state === "running") {
+  const description = (() => {
+    if (!scopedToThisSource && status.state === "running")
       return "A different refresh is running.";
-    }
-    if (status.state === "running") return status.message ?? "Working…";
+    if (isRunning)
+      return `${status.current}/${status.total} — ${status.succeeded} updated, ${status.failed} failed`;
     if (status.state === "done" && scopedToThisSource)
       return status.message ?? "Done.";
-    if (status.state === "cancelled" && scopedToThisSource)
-      return status.message ?? "Cancelled.";
     if (status.state === "error" && scopedToThisSource)
       return status.message ?? "Error.";
-    return `Re-run the OG, hidden-window, and yt-dlp pipeline for every ${getSourceLabel(source)} save.`;
+    return "Re-fetch missing titles, descriptions, and media.";
   })();
 
   return (
     <Settings.Section>
-      <Settings.SectionTitle>Metadata Refresh</Settings.SectionTitle>
+      <Settings.SectionTitle>Metadata</Settings.SectionTitle>
       <Settings.List>
         <Settings.Item>
           <Settings.ItemDetails>
-            <Settings.ItemTitle>
-              Only Saves with Missing Fields
-            </Settings.ItemTitle>
-            <Settings.ItemDescription>
-              Skip rows that already have title, description, and a media URL.
-            </Settings.ItemDescription>
-          </Settings.ItemDetails>
-          <Settings.ItemControl>
-            <Switch.Root
-              checked={onlyMissing}
-              onCheckedChange={(v) => setOnlyMissing(Boolean(v))}
-            />
-          </Settings.ItemControl>
-        </Settings.Item>
-
-        <Settings.Item>
-          <Settings.ItemDetails>
-            <Settings.ItemTitle>Run Refresh Now</Settings.ItemTitle>
-            <Settings.ItemDescription>{summary}</Settings.ItemDescription>
+            <Settings.ItemTitle>Refresh Metadata</Settings.ItemTitle>
+            <Settings.ItemDescription>{description}</Settings.ItemDescription>
           </Settings.ItemDetails>
           <Settings.ItemControl>
             <div className={styles["inline-row"]}>
@@ -621,32 +491,11 @@ function SourceRefreshCard({ source }: { source: AnySource }) {
                 disabled={status.state === "running"}
                 onClick={() => void start()}
               >
-                {isRunning
-                  ? `${status.current}/${status.total}`
-                  : "Refresh Metadata"}
+                {isRunning ? "Refreshing…" : "Refresh"}
               </Button>
             </div>
           </Settings.ItemControl>
         </Settings.Item>
-
-        {isRunning && status.total > 0 ? (
-          <Settings.Item>
-            <Settings.ItemDetails>
-              <Settings.ItemTitle>Progress</Settings.ItemTitle>
-              <Settings.ItemDescription>
-                {`${status.succeeded} updated · ${status.failed} failed`}
-              </Settings.ItemDescription>
-            </Settings.ItemDetails>
-            <Settings.ItemControl>
-              <span
-                aria-live="polite"
-                style={{ minWidth: 56, textAlign: "right" }}
-              >
-                {pct}%
-              </span>
-            </Settings.ItemControl>
-          </Settings.Item>
-        ) : null}
       </Settings.List>
     </Settings.Section>
   );

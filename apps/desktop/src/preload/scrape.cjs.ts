@@ -1,37 +1,28 @@
 import { webFrame } from "electron";
 
 /**
- * Hidden-window preload. Installs a single XHR-prototype hook in the
- * page main world that captures every Twitter Bookmarks GraphQL
- * response body for later parsing in the main process.
- *
- * The hook is the prinsss-twitter-web-exporter technique adapted for
- * Electron: replace `XMLHttpRequest.prototype.open` with a wrapper
- * that registers a `load` listener for matching URLs, then forwards
- * to the original `open`. By the time `load` fires, `responseText`
- * holds the full GraphQL payload — full text, media, metrics, quote
- * tweets — that the rendered DOM card flattens into snippet form.
+ * Hidden-window preload. Installs source-specific XHR/fetch hooks in
+ * the page main world that capture GraphQL response bodies for later
+ * parsing in the main process.
  *
  * Two Electron-shaped constraints drive the shape of this file:
  *
- *  1. Sandboxed preloads run in an isolated world. Patching
- *     `XMLHttpRequest` in the preload's own world has zero effect on
- *     the page's `XMLHttpRequest`, which is a different object. The
- *     fix is `webFrame.executeJavaScript`, which evaluates a string
- *     in the page main world.
+ *  1. Sandboxed preloads run in an isolated world; patching
+ *     `XMLHttpRequest` here has zero effect on the page's
+ *     `XMLHttpRequest`. The fix is `webFrame.executeJavaScript`,
+ *     which evaluates a string in the page main world.
  *
- *  2. The hook MUST be installed before Twitter's bundle creates its
- *     first XHR. Preloads run before any page script, which is why we
- *     use a preload at all (a post-`loadURL` `executeJavaScript` from
- *     the main process is too late — the bundle has already
- *     initialised).
+ *  2. The hook MUST be installed before the page's bundle creates
+ *     its first request. Preloads run before any page script;
+ *     `executeJavaScript` from the main process after `loadURL` is
+ *     too late.
  *
- * Captures are buffered on `globalThis.__pondBookmarksCaptures`; the
- * harvester drains the buffer between scroll ticks and ships the
- * bodies back to the main process for parsing.
+ * Buffers (one per source) live on `globalThis`:
+ *   - `__pondBookmarksCaptures` (Twitter, XHR only)
+ *   - `__pondCosmosCaptures` (Cosmos, XHR + fetch — Apollo uses both)
  */
 
-const HOOK_SOURCE = `
+const TWITTER_HOOK = `
   (() => {
     if (globalThis.__pondBookmarksHookInstalled) return;
     globalThis.__pondBookmarksHookInstalled = true;
@@ -63,11 +54,79 @@ const HOOK_SOURCE = `
   })();
 `;
 
-// Same preload is loaded into both the hidden scrape window and the
-// sign-in popup. The XHR hook is only useful on x.com / twitter.com
-// (the only place a Bookmarks GraphQL response fires), and skipping
-// it on OAuth handoffs (Google, Apple, hCaptcha) keeps us out of any
-// XHR side-effects those flows might rely on.
+// Both XHR and fetch — Apollo (cosmos.so SPA) defaults to fetch but
+// some adapters use XHR. Bodies are re-read via `clone()` for fetch
+// so the page's own consumer still gets the original.
+const COSMOS_HOOK = `
+  (() => {
+    if (globalThis.__pondCosmosHookInstalled) return;
+    globalThis.__pondCosmosHookInstalled = true;
+    globalThis.__pondCosmosCaptures = [];
+
+    const isCosmosGraphqlUrl = (u) => {
+      try {
+        if (typeof u !== "string") return false;
+        return /(^|\\.)api\\.cosmos\\.so\\/graphql/.test(u);
+      } catch (e) {
+        return false;
+      }
+    };
+
+    const xhrOpen = XMLHttpRequest.prototype.open;
+    XMLHttpRequest.prototype.open = function (method, url) {
+      try {
+        if (isCosmosGraphqlUrl(url)) {
+          this.addEventListener("load", () => {
+            try {
+              globalThis.__pondCosmosCaptures.push({
+                url: url,
+                body: this.responseText,
+                status: this.status,
+              });
+            } catch (e) {
+              /* response body not readable; skip */
+            }
+          });
+        }
+      } catch (e) {
+        /* URL match threw; never block the request */
+      }
+      return xhrOpen.apply(this, arguments);
+    };
+
+    const origFetch = globalThis.fetch;
+    if (typeof origFetch === "function") {
+      globalThis.fetch = function (input, init) {
+        let url = "";
+        try {
+          url = typeof input === "string"
+            ? input
+            : (input && typeof input.url === "string" ? input.url : "");
+        } catch (e) { /* ignore */ }
+        const promise = origFetch.apply(this, arguments);
+        if (isCosmosGraphqlUrl(url)) {
+          promise.then((res) => {
+            try {
+              const clone = res.clone();
+              clone.text().then((body) => {
+                try {
+                  globalThis.__pondCosmosCaptures.push({
+                    url: url,
+                    body: body,
+                    status: res.status,
+                  });
+                } catch (e) { /* ignore */ }
+              }).catch(() => { /* ignore */ });
+            } catch (e) { /* clone failed; skip */ }
+            return res;
+          }).catch(() => { /* don't disturb the caller's error path */ });
+        }
+        return promise;
+      };
+    }
+  })();
+`;
+
 const host =
   typeof location !== "undefined" ? location.hostname.toLowerCase() : "";
 const isTwitter =
@@ -75,10 +134,17 @@ const isTwitter =
   host === "twitter.com" ||
   host.endsWith(".x.com") ||
   host.endsWith(".twitter.com");
+const isCosmos = host === "cosmos.so" || host.endsWith(".cosmos.so");
 
 if (isTwitter) {
-  webFrame.executeJavaScript(HOOK_SOURCE).catch(() => {
+  webFrame.executeJavaScript(TWITTER_HOOK).catch(() => {
     /* hook install failures are non-fatal; the harvester falls back to
        DOM-only walking with no GraphQL enrichment. */
+  });
+}
+
+if (isCosmos) {
+  webFrame.executeJavaScript(COSMOS_HOOK).catch(() => {
+    /* see note above */
   });
 }

@@ -2,12 +2,6 @@ import { ActivityList } from "@/components/activity-list";
 import { LibraryChrome, Shell } from "@/components/shell";
 import styles from "./styles.module.css";
 
-/**
- * Library-wide activity feed. Mirrors the per-item drawer in
- * `<SavePreview>` but unfiltered. Useful as a "what changed while I
- * was away" surface and as a debugging aid when the AI worker mutates
- * a chunk of the library autonomously.
- */
 export function ActivityPage() {
   return (
     <Shell.Main>

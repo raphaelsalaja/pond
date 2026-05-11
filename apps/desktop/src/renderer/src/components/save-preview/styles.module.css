@@ -500,67 +500,6 @@
   color: var(--ds-gray-11);
 }
 
-.timestamps-title {
-  margin: 0;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--ds-gray-11);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.timestamps-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 0;
-  margin: 0;
-  list-style: none;
-}
-
-.timestamps-item {
-  display: grid;
-  grid-template-columns: 56px 1fr 24px;
-  gap: 8px;
-  align-items: center;
-  font-size: 12px;
-}
-
-.timestamp-pos {
-  font-weight: 550;
-  font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-12);
-}
-
-.timestamp-note {
-  color: var(--ds-gray-11);
-}
-
-.timestamp-remove {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  font: inherit;
-  font-size: 14px;
-  color: var(--ds-gray-11);
-  cursor: pointer;
-  background: transparent;
-  border: 0;
-  border-radius: 4px;
-
-  &:hover {
-    color: var(--ds-gray-12);
-    background: var(--ds-gray-a3);
-  }
-}
-
-.timestamp-mark {
-  margin-top: 6px;
-}
-
 .swatches {
   display: flex;
   flex-wrap: wrap;
@@ -688,6 +627,13 @@
 
 .page .media {
   max-height: 70vh;
+}
+
+.embed {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 0;
 }
 
 .nav {

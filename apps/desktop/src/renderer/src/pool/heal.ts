@@ -24,6 +24,14 @@
  *   the same session is silently ignored; the user's manual Refresh
  *   button is the escape hatch.
  *
+ * Retry-before-heal
+ *
+ *   A `pond://` 404 can fire transiently while the executor is
+ *   replacing files on disk (delete old → write new). Before queuing
+ *   yt-dlp we wait 500ms and HEAD the video URL once more; if it
+ *   comes back 200 the `<video>` just hit a write-race and we skip
+ *   the heal entirely.
+ *
  * Failure modes
  *
  *   The main-side helper returns `{ ok: false, reason }` for the cases
@@ -32,17 +40,62 @@
  *   the renderer is already painting is the right end state.
  */
 
-const attempted = new Set<string>();
+const STORAGE_KEY = "pond-heal-attempted";
+const RETRY_DELAY_MS = 500;
 
-export function requestVideoHeal(saveId: string): void {
+function loadAttempted(): Set<string> {
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY);
+    if (raw) return new Set(JSON.parse(raw) as string[]);
+  } catch {
+    /* corrupted entry; start fresh */
+  }
+  return new Set<string>();
+}
+
+function persistAttempted(set: Set<string>): void {
+  try {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify([...set]));
+  } catch {
+    /* storage full or unavailable; non-critical */
+  }
+}
+
+const attempted = loadAttempted();
+
+/**
+ * Schedule a heal for `saveId`. If `videoSrc` is provided the helper
+ * retries the URL once after a short delay before asking main to
+ * redownload — this absorbs the transient 404 that fires while the
+ * executor is replacing files on disk.
+ */
+export function requestVideoHeal(saveId: string, videoSrc?: string): void {
   if (!saveId) return;
   if (attempted.has(saveId)) return;
   attempted.add(saveId);
+  persistAttempted(attempted);
 
-  // Tolerate older preload bundles during dev hot-reload — the IPC
-  // landed in this commit, so a renderer talking to a stale preload
-  // would otherwise throw `is not a function`. Better to silently
-  // skip than crash the card.
+  if (videoSrc) {
+    setTimeout(() => retryThenHeal(saveId, videoSrc), RETRY_DELAY_MS);
+  } else {
+    dispatchHeal(saveId);
+  }
+}
+
+async function retryThenHeal(saveId: string, videoSrc: string): Promise<void> {
+  try {
+    const res = await fetch(videoSrc, { method: "HEAD" });
+    if (res.ok) {
+      console.debug("[pond heal] retry succeeded, skipping heal", saveId);
+      return;
+    }
+  } catch {
+    /* network / protocol error — fall through to heal */
+  }
+  dispatchHeal(saveId);
+}
+
+function dispatchHeal(saveId: string): void {
   const fn = (
     window.pond as unknown as {
       redownloadVideo?: (id: string) => Promise<unknown>;

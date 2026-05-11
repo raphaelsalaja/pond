@@ -50,9 +50,12 @@ function Root({ save, layout, selection, children }: RootProps) {
     [pickedSrc],
   );
 
-  const healVideo = useCallback(() => {
-    requestVideoHeal(save.id);
-  }, [save.id]);
+  const healVideo = useCallback(
+    (videoSrc?: string) => {
+      requestVideoHeal(save.id, videoSrc);
+    },
+    [save.id],
+  );
 
   const value = useMemo<CardContextValue>(
     () => ({

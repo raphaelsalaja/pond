@@ -79,6 +79,27 @@ export function formatHms(s: number): string {
   return `${m}:${String(r).padStart(2, "0")}`;
 }
 
+export function extractYouTubeId(url: string | null): string | null {
+  if (!url) return null;
+  try {
+    const u = new URL(url);
+    const host = u.hostname.replace(/^www\./, "");
+    if (host === "youtube.com" || host === "m.youtube.com") {
+      if (u.pathname === "/watch") return u.searchParams.get("v");
+      const shorts = u.pathname.match(/^\/shorts\/([a-zA-Z0-9_-]{11})/);
+      if (shorts) return shorts[1] ?? null;
+      const embed = u.pathname.match(/^\/embed\/([a-zA-Z0-9_-]{11})/);
+      if (embed) return embed[1] ?? null;
+    }
+    if (host === "youtu.be") {
+      return u.pathname.slice(1).split("/")[0] || null;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
 export function prettifyType(t: string): string {
   const lower = t.toLowerCase();
   if (lower === "video") return "MP4";

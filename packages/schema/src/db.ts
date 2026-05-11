@@ -103,17 +103,8 @@ export interface TextHighlight {
   createdAt: string;
 }
 
-/** Single bookmark on a video timeline. */
-export interface VideoTimestamp {
-  id: string;
-  timeSec: number;
-  note: string;
-  createdAt: string;
-}
-
 export interface SaveAnnotations {
   highlights?: TextHighlight[];
-  timestamps?: VideoTimestamp[];
 }
 
 export const saves = sqliteTable(

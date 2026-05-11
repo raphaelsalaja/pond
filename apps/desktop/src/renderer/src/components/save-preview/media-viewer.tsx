@@ -1,9 +1,11 @@
-import { Button, Tooltip } from "@pond/ui";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { Tooltip } from "@pond/ui";
+import { useCallback, useMemo, useState } from "react";
+import { VideoPlayer } from "@/components/video-player";
 import { useIsVideoDownloading } from "@/pool/downloads";
 import { requestVideoHeal } from "@/pool/heal";
 import { buildMediaUnits } from "@/pool/media";
 import type { Save } from "@/pool/types";
+import { extractYouTubeId } from "./helpers";
 import styles from "./styles.module.css";
 
 interface MediaSlide {
@@ -15,22 +17,13 @@ interface MediaSlide {
 export function MediaViewer({
   save,
   videoRef,
+  onExpand,
 }: {
   save: Save;
   videoRef?: React.MutableRefObject<HTMLVideoElement | null>;
+  onExpand?: () => void;
 }) {
   const isDownloading = useIsVideoDownloading(save.id);
-  const localRef = useRef<HTMLVideoElement | null>(null);
-  const ref = videoRef ?? localRef;
-  const onMarkTimestamp = useCallback(async () => {
-    const v = ref.current;
-    if (!v) return;
-    const at = v.currentTime;
-    if (!Number.isFinite(at) || at <= 0) return;
-    const text = window.prompt("Note for this moment? (optional)") ?? "";
-    const { addVideoTimestamp } = await import("@/pool/annotations");
-    await addVideoTimestamp(save, at, text.trim() || undefined);
-  }, [save, ref]);
 
   const allSlides = useMemo<MediaSlide[]>(() => {
     const units = buildMediaUnits(save);
@@ -65,61 +58,59 @@ export function MediaViewer({
     [allSlides, broken],
   );
 
+  const youtubeId = useMemo(() => extractYouTubeId(save.url), [save.url]);
+
   const [index, setIndex] = useState(0);
-  if (slides.length === 0) return null;
+  if (slides.length === 0) {
+    if (youtubeId) {
+      return (
+        <div className={styles.carousel}>
+          <div className={styles["media-shell"]}>
+            <iframe
+              src={`https://www.youtube-nocookie.com/embed/${youtubeId}`}
+              className={styles.embed}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              title={save.title ?? "YouTube video"}
+            />
+          </div>
+        </div>
+      );
+    }
+    return null;
+  }
   const slide = slides[Math.min(index, slides.length - 1)];
   if (!slide) return null;
   const hasMany = slides.length > 1;
 
   return (
     <div className={styles.carousel}>
-      <div className={styles["media-shell"]}>
-        {isDownloading ? (
-          <span
-            className={styles.downloading}
-            role="status"
-            aria-label="Downloading video"
-            title="Downloading video in the background"
-          >
-            <span className={styles["downloading-dot"]} aria-hidden="true" />
-            Downloading video…
-          </span>
-        ) : null}
-        {slide.isVideo ? (
-          <>
-            <video
-              ref={ref}
-              key={slide.src}
-              src={slide.src}
-              poster={slide.posterUrl}
-              controls
-              className={styles.media}
-              onError={() => {
-                markBroken(slide.src);
-                requestVideoHeal(save.id);
-              }}
-              onLoadedMetadata={(e) => {
-                const v = e.currentTarget;
-                if (v.videoWidth === 0 && v.videoHeight === 0) {
-                  markBroken(slide.src);
-                  requestVideoHeal(save.id);
-                }
-              }}
-            >
-              <track kind="captions" />
-            </video>
-            <Tooltip.Root content="Add a note at the current timestamp">
-              <Button
-                size="sm"
-                variant="ghost"
-                className={styles["timestamp-mark"]}
-                onClick={() => void onMarkTimestamp()}
-              >
-                Mark timestamp
-              </Button>
-            </Tooltip.Root>
-          </>
-        ) : (
+      {isDownloading ? (
+        <span
+          className={styles.downloading}
+          role="status"
+          aria-label="Downloading video"
+          title="Downloading video in the background"
+        >
+          <span className={styles["downloading-dot"]} aria-hidden="true" />
+          Downloading video…
+        </span>
+      ) : null}
+      {slide.isVideo ? (
+        <VideoPlayer
+          key={slide.src}
+          src={slide.src}
+          poster={slide.posterUrl}
+          save={save}
+          videoRef={videoRef}
+          onError={() => {
+            markBroken(slide.src);
+            requestVideoHeal(save.id, slide.src);
+          }}
+          onExpand={onExpand}
+        />
+      ) : (
+        <div className={styles["media-shell"]}>
           <img
             key={slide.src}
             src={slide.src}
@@ -127,8 +118,8 @@ export function MediaViewer({
             className={styles.media}
             onError={() => markBroken(slide.src)}
           />
-        )}
-      </div>
+        </div>
+      )}
       {hasMany ? (
         <>
           <Tooltip.Root content="Previous" side="right">

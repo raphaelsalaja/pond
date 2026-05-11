@@ -1,6 +1,3 @@
-/* Multi-select preset picker. Used by enum-typed fields like
- * source / type / shape. */
-
 .body {
   display: flex;
   flex-direction: column;

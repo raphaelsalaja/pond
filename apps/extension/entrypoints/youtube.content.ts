@@ -1,7 +1,8 @@
+import { matches } from "@/sources/youtube/matches";
 import { bridge } from "@/utils/bridge";
 
 export default defineContentScript({
-  matches: ["https://www.youtube.com/*", "https://m.youtube.com/*"],
+  matches,
   runAt: "document_start",
   main() {
     bridge("youtube");

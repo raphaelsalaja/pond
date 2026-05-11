@@ -42,16 +42,6 @@ export interface AiSuggestionsForSave {
   summary?: AiSuggestion<string>;
 }
 
-/** Free-form note attached to a video timestamp. */
-export interface VideoTimestamp {
-  /** Position in seconds. */
-  at: number;
-  /** Author note (optional). */
-  text?: string;
-  /** ISO timestamp the note was created. */
-  createdAt: string;
-}
-
 /** Highlighted span inside the cached article text. */
 export interface TextHighlight {
   /** Stable id so highlights survive a re-extraction. */
@@ -67,7 +57,6 @@ export interface TextHighlight {
 
 export interface SaveAnnotations {
   highlights?: TextHighlight[];
-  videoTimestamps?: VideoTimestamp[];
 }
 
 export interface Save {

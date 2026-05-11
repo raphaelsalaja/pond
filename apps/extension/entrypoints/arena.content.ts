@@ -1,7 +1,8 @@
+import { matches } from "@/sources/arena/matches";
 import { bridge } from "@/utils/bridge";
 
 export default defineContentScript({
-  matches: ["https://www.are.na/*", "https://are.na/*"],
+  matches,
   runAt: "document_start",
   main() {
     bridge("arena");

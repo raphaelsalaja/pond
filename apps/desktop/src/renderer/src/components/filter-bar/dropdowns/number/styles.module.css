@@ -1,5 +1,3 @@
-/* Number-typed field picker — search + preset list + custom range row. */
-
 .body {
   display: flex;
   flex-direction: column;

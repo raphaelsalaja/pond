@@ -4,6 +4,7 @@ import { and, asc, eq, isNull, or } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../../db";
 import { type RefreshOutcome, refreshSave } from "./index";
+import { POOL_SIZE } from "./scrape-window";
 
 /**
  * Bulk metadata refresh orchestrator.
@@ -198,27 +199,30 @@ async function runWorker(
   const authRequired = new Set<Source>();
   let current = 0;
 
-  for (const id of ids) {
+  for (let i = 0; i < ids.length; i += POOL_SIZE) {
     if (signal.aborted) break;
-    current += 1;
-    let outcome: RefreshOutcome;
-    try {
-      outcome = await refreshSave(id);
-    } catch (err) {
-      log.warn("[pond refresh-backfill] refreshSave threw", id, err);
-      outcome = { ok: false, reason: "internal_error" };
-    }
+    const batch = ids.slice(i, i + POOL_SIZE);
+    const outcomes = await Promise.all(
+      batch.map(async (id): Promise<RefreshOutcome> => {
+        try {
+          return await refreshSave(id);
+        } catch (err) {
+          log.warn("[pond refresh-backfill] refreshSave threw", id, err);
+          return { ok: false, reason: "internal_error" };
+        }
+      }),
+    );
 
-    if (outcome.ok) {
-      succeeded += 1;
-    } else if (outcome.reason === "auth_required" && outcome.source) {
-      authRequired.add(outcome.source);
-      // Treat as a soft failure — the row is still counted in
-      // `failed` so the user understands why the totals don't line up,
-      // but the source-level auth toast tells them the actionable fix.
-      failed += 1;
-    } else {
-      failed += 1;
+    for (const outcome of outcomes) {
+      current += 1;
+      if (outcome.ok) {
+        succeeded += 1;
+      } else if (outcome.reason === "auth_required" && outcome.source) {
+        authRequired.add(outcome.source);
+        failed += 1;
+      } else {
+        failed += 1;
+      }
     }
 
     emit({

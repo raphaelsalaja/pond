@@ -1,24 +1,15 @@
 import type { Source } from "@pond/schema/db";
+import * as arena from "./arena";
+import * as cosmos from "./cosmos";
 import * as generic from "./generic";
 import * as instagram from "./instagram";
+import * as pinterest from "./pinterest";
+import * as reddit from "./reddit";
+import * as tiktok from "./tiktok";
 import * as twitter from "./twitter";
 import type { ScrapedHarvest } from "./types";
+import * as youtube from "./youtube";
 
-/**
- * One harvester per source. Each module owns:
- *   - `buildExpression(sourceId)` -> a self-contained JS expression we
- *     pass to `webContents.executeJavaScript`. The expression resolves
- *     to a JSON-serialisable scrape result (or null on failure).
- *   - `adapt(raw)` -> normalise the in-page result into the canonical
- *     `ScrapedHarvest` shape used by the ingest path.
- *   - `sourceIdFromUrl(url)` -> derive a stable scoping id from the
- *     URL so the merge-on-duplicate code in `ingest.ts` finds the
- *     existing row.
- *
- * Sources without a bespoke harvester fall back to `generic` (OG meta
- * tags read inside the page after JS hydration) — useful for SPAs where
- * the server-side `og.ts` reader sees an empty shell.
- */
 export interface Harvester {
   buildExpression: (sourceId: string) => string;
   adapt: (raw: unknown) => ScrapedHarvest | null;
@@ -35,6 +26,36 @@ const REGISTRY: Partial<Record<Source, Harvester>> = {
     buildExpression: instagram.buildExpression,
     adapt: instagram.adapt,
     sourceIdFromUrl: instagram.sourceIdFromUrl,
+  },
+  youtube: {
+    buildExpression: youtube.buildExpression,
+    adapt: youtube.adapt,
+    sourceIdFromUrl: youtube.sourceIdFromUrl,
+  },
+  pinterest: {
+    buildExpression: pinterest.buildExpression,
+    adapt: pinterest.adapt,
+    sourceIdFromUrl: pinterest.sourceIdFromUrl,
+  },
+  tiktok: {
+    buildExpression: tiktok.buildExpression,
+    adapt: tiktok.adapt,
+    sourceIdFromUrl: tiktok.sourceIdFromUrl,
+  },
+  arena: {
+    buildExpression: arena.buildExpression,
+    adapt: arena.adapt,
+    sourceIdFromUrl: arena.sourceIdFromUrl,
+  },
+  cosmos: {
+    buildExpression: cosmos.buildExpression,
+    adapt: cosmos.adapt,
+    sourceIdFromUrl: cosmos.sourceIdFromUrl,
+  },
+  reddit: {
+    buildExpression: reddit.buildExpression,
+    adapt: reddit.adapt,
+    sourceIdFromUrl: reddit.sourceIdFromUrl,
   },
 };
 

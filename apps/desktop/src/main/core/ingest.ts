@@ -341,7 +341,10 @@ async function refreshExisting(
 function collectRequestedUrls(payload: IngestPayload): string[] {
   const out: string[] = [];
   if (payload.mediaUrls && payload.mediaUrls.length > 0) {
-    for (const m of payload.mediaUrls) out.push(m.url);
+    for (const m of payload.mediaUrls) {
+      out.push(m.url);
+      if (m.poster) out.push(m.poster);
+    }
   } else if (payload.mediaUrl) {
     out.push(payload.mediaUrl);
   }

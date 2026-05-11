@@ -5,16 +5,6 @@
   padding-top: 16px;
 }
 
-/* ------------------------------------------------------------------ */
-/* List view — Eagle-style sortable table.                            */
-/*                                                                    */
-/* A real `<table>` so the browser handles column alignment, semantic */
-/* sorting (aria-sort), and arrow-key navigation between rows for     */
-/* free. Header row stays visible while the body scrolls (sticky      */
-/* top). Selected row picks up an accent-tinted background instead    */
-/* of the global hover wash so it reads at a glance.                  */
-/* ------------------------------------------------------------------ */
-
 .table {
   width: 100%;
   font-size: 12px;
@@ -71,9 +61,6 @@
   background: color-mix(in srgb, var(--ds-accent-9) 14%, transparent);
 }
 
-/* Column-level rules first, then any cascade overrides further down,
- * so source order matches ascending specificity (Biome's
- * `noDescendingSpecificity`). */
 .col-thumb {
   width: 36px;
   padding: 4px 6px 4px 12px;
@@ -131,9 +118,6 @@
   border-radius: 3px;
 }
 
-/* The CardThumb renders an internal wrapper with its own border-radius
- * and shadow; collapse those for the tiny list-mode thumb. `:where()`
- * keeps the selector's specificity at (0,1,0). */
 :where(.list-thumb > *) {
   width: 100%;
   height: 100%;
@@ -183,8 +167,6 @@
   border-radius: 3px;
 }
 
-/* Cascade overrides for selected rows — defined last so source order
- * matches their higher specificity. */
 .table tbody tr[aria-selected="true"] .col-name {
   font-weight: 550;
   color: var(--ds-accent-9);
@@ -196,7 +178,6 @@
   color: var(--ds-gray-11);
 }
 
-/* Timeline + Color views — share the same heading + grouped grid look. */
 .timeline {
   display: flex;
   flex-direction: column;

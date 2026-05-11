@@ -1,40 +1,35 @@
-import type { Source } from "@pond/schema/db";
+import type { MediaType, Source } from "@pond/schema/db";
 
 /**
- * Lowest-common-denominator inputs every list-harvester accepts.
- *
- * Sync has exactly one mode: walk the user's full list and surface
- * every entry not in `knownIds`. `knownIds` lets the harvester keep
- * its dedupe set warm so a virtualised re-render doesn't double-emit
- * the same row. `maxItems` is a per-run safety ceiling so a runaway
- * page can't pin the harvester forever.
- *
- * Mirrors the shape of `BookmarksHarvestArgs` in `twitter-bookmarks.ts`.
- * Phase 4's `harvestProfile<Source>` abstraction will lift this and
- * the result type into a typed interface; for now each per-source
- * harvester re-derives its own.
+ * `knownIds` keeps the harvester's dedupe set warm so a virtualised
+ * re-render doesn't double-emit the same row. `maxItems` is a per-run
+ * safety ceiling.
  */
 export interface ListHarvestArgs {
   knownIds: string[];
   maxItems: number;
 }
 
-/** One row a list harvester produces — fed back through `harvestUrl` to enrich. */
+// Rich fields let the orchestrator skip the per-item `harvestUrl()`
+// page load when the card DOM already carried enough metadata.
 export interface ListEntry {
   sourceId: string;
   url: string;
   /** ISO timestamp the user actually saved this, when the source exposes it. */
   savedAt?: string;
+  title?: string;
+  description?: string;
+  author?: string;
+  mediaUrl?: string;
+  mediaUrls?: Array<{ url: string; type?: MediaType; poster?: string }>;
+  mediaType?: MediaType;
+  meta?: Record<string, unknown>;
 }
 
 export type ListHarvestResult =
   | { ok: true; entries: ListEntry[]; reachedEnd: boolean }
-  | { ok: false; reason: "auth_required" | "no_match" | "timeout" };
+  | { ok: false; reason: "auth_required" | "no_match" | "timeout" | "unknown" };
 
-/**
- * Compile-time guard: every `Source` we wire into the sync orchestrator
- * should eventually implement a list-harvester. Sources that genuinely
- * have no list (e.g. `article`) stay unhandled and the orchestrator's
- * dispatch falls back to "unsupported".
- */
+// Compile-time guard against silently dropping a new `Source` from
+// sync; `article` has no list and stays unhandled by design.
 export type ListSource = Exclude<Source, "article">;

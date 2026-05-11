@@ -1,12 +1,3 @@
-/* ------------------------------------------------------------------ */
-/* Integrations index — Linear-style search + cards grid.              */
-/*                                                                    */
-/* The page mostly composes existing `Settings.*` primitives, but the */
-/* card grid and search input have no equivalent in that toolkit so   */
-/* their styles live here. Tokens stay aligned with the rest of the   */
-/* settings surface (pond-border, pond-bg-subtle, pond-radius-*).     */
-/* ------------------------------------------------------------------ */
-
 .search {
   position: relative;
   display: flex;
@@ -49,8 +40,6 @@
   box-shadow: 0 0 0 3px var(--ds-gray-a3);
 }
 
-/* ---- Enabled rows ------------------------------------------------ */
-
 .enabled-item {
   padding: 0;
 }
@@ -86,8 +75,6 @@
   justify-content: center;
   color: var(--ds-gray-10);
 }
-
-/* ---- Cards grid -------------------------------------------------- */
 
 .grid {
   display: grid;
@@ -164,8 +151,6 @@
   border-radius: 8px;
 }
 
-/* ---- Source detail header --------------------------------------- */
-
 .detail-header {
   display: flex;
   gap: 14px;
@@ -180,8 +165,6 @@
   gap: 2px;
   min-width: 0;
 }
-
-/* ---- Status / inline action row -------------------------------- */
 
 .inline-row {
   display: flex;

@@ -1,45 +1,38 @@
+import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { Source } from "@pond/schema/db";
-import { BrowserWindow, type Cookie, session } from "electron";
+import { app, BrowserWindow, type Cookie, session } from "electron";
 import log from "electron-log/main.js";
 import { harvesterFor } from "./harvest";
-import {
-  arenaProfileUrl,
-  buildArenaListExpression,
-} from "./harvest/arena-list";
+import { arenaProfileUrl, buildArenaListExpression } from "./harvest/arena";
 import {
   buildCosmosListExpression,
   COSMOS_LIST_URL,
-} from "./harvest/cosmos-list";
-import {
-  buildInstagramListExpression,
-  instagramSavedUrl,
-} from "./harvest/instagram-list";
+  cosmosProfileUrl,
+} from "./harvest/cosmos";
+import { buildInstagramListExpression } from "./harvest/instagram";
 import type { ListHarvestArgs, ListHarvestResult } from "./harvest/list-types";
 import {
   buildPinterestListExpression,
   pinterestProfileUrl,
-} from "./harvest/pinterest-list";
-import {
-  buildRedditListExpression,
-  redditSavedUrl,
-} from "./harvest/reddit-list";
+} from "./harvest/pinterest";
+import { buildRedditListExpression, redditSavedUrl } from "./harvest/reddit";
 import {
   buildTiktokListExpression,
   tiktokFavouritesUrl,
-} from "./harvest/tiktok-list";
+} from "./harvest/tiktok";
 import {
   type BookmarksEntry,
   type BookmarksHarvestArgs,
   type BookmarksHarvestResult,
   buildBookmarksExpression,
-} from "./harvest/twitter-bookmarks";
-import { parseBookmarksResponses } from "./harvest/twitter-bookmarks-graphql";
+  parseBookmarksResponses,
+} from "./harvest/twitter";
 import type { ScrapedHarvest } from "./harvest/types";
 import {
   buildYoutubeListExpression,
   YOUTUBE_LIST_URLS,
-} from "./harvest/youtube-list";
+} from "./harvest/youtube";
 import { homeUrlForSource } from "./sources";
 
 /**
@@ -58,21 +51,22 @@ const PARTITION = "persist:pond-scrapers";
 const NAV_TIMEOUT_MS = 25_000;
 const HARVEST_TIMEOUT_MS = 20_000;
 
-let hiddenWindow: BrowserWindow | null = null;
+export const POOL_SIZE = 3;
 
-/**
- * One window, lazy-created, reused across captures. Reusing instead of
- * tearing down per-capture is significantly faster for back-to-back
- * refreshes (no Chromium spin-up cost). We do *not* `nodeIntegration`
- * or expose a preload — the hidden window is treated like a sandboxed
- * web page, so a malicious site can't reach the desktop process.
- */
-function ensureHidden(): BrowserWindow {
-  if (hiddenWindow && !hiddenWindow.isDestroyed()) return hiddenWindow;
+/* ------------------------------------------------------------------ */
+/* Hidden BrowserWindow pool                                           */
+/* ------------------------------------------------------------------ */
+
+interface PoolSlot {
+  win: BrowserWindow;
+  busy: boolean;
+}
+
+const pool: PoolSlot[] = [];
+const waitQueue: Array<(slot: PoolSlot) => void> = [];
+
+function createHiddenWindow(): BrowserWindow {
   const persistent = session.fromPartition(PARTITION);
-  // Spoof a realistic Chrome UA so sites that lock out unknown UAs
-  // (Twitter dropped support for non-Chrome a while back) still serve
-  // the full SPA bundle.
   persistent.setUserAgent(
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 " +
       "(KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
@@ -87,26 +81,70 @@ function ensureHidden(): BrowserWindow {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
-      // The scrape preload installs an XHR-prototype hook in the page
-      // main world via `webFrame.executeJavaScript`. The hook captures
-      // Twitter Bookmarks GraphQL responses for the harvester to drain.
-      // Loaded for every page we navigate to; the hook self-skips if
-      // the URL doesn't match.
       preload: join(__dirname, "../preload/scrape.cjs"),
-      // Block plugins / pop-ups from random sites we navigate to.
       plugins: false,
       webgl: false,
       autoplayPolicy: "document-user-activation-required",
     },
   });
-  // Block new windows entirely — anything that wants to open a popup
-  // can have it suppressed silently.
   win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
   win.on("closed", () => {
-    if (hiddenWindow === win) hiddenWindow = null;
+    const idx = pool.findIndex((s) => s.win === win);
+    if (idx !== -1) pool.splice(idx, 1);
   });
-  hiddenWindow = win;
   return win;
+}
+
+interface Lease {
+  win: BrowserWindow;
+  release: () => void;
+}
+
+async function leaseWindow(): Promise<Lease> {
+  const idle = pool.find((s) => !s.busy && !s.win.isDestroyed());
+  if (idle) {
+    idle.busy = true;
+    return {
+      win: idle.win,
+      release: () => {
+        idle.busy = false;
+        drainQueue();
+      },
+    };
+  }
+  if (pool.length < POOL_SIZE) {
+    const win = createHiddenWindow();
+    const slot: PoolSlot = { win, busy: true };
+    pool.push(slot);
+    return {
+      win,
+      release: () => {
+        slot.busy = false;
+        drainQueue();
+      },
+    };
+  }
+  return new Promise<Lease>((resolve) => {
+    waitQueue.push((slot) => {
+      slot.busy = true;
+      resolve({
+        win: slot.win,
+        release: () => {
+          slot.busy = false;
+          drainQueue();
+        },
+      });
+    });
+  });
+}
+
+function drainQueue() {
+  while (waitQueue.length > 0) {
+    const idle = pool.find((s) => !s.busy && !s.win.isDestroyed());
+    if (!idle) break;
+    const next = waitQueue.shift()!;
+    next(idle);
+  }
 }
 
 export interface HarvestArgs {
@@ -132,28 +170,32 @@ export interface HarvestResult {
  * user to connect that source.
  */
 export async function harvestUrl(args: HarvestArgs): Promise<HarvestResult> {
-  const win = ensureHidden();
+  const lease = await leaseWindow();
   const harv = harvesterFor(args.source);
   const sourceId = args.sourceId ?? harv.sourceIdFromUrl(args.url) ?? "";
 
   try {
-    const navOk = await navigateWithTimeout(win, args.url, NAV_TIMEOUT_MS);
+    const navOk = await navigateWithTimeout(
+      lease.win,
+      args.url,
+      NAV_TIMEOUT_MS,
+    );
     if (!navOk) {
       log.warn("[pond refresh:window] navigate failed", args.url);
       return { ok: false, reason: "navigate_failed", sourceId };
     }
 
-    if (looksLikeAuthWall(win.webContents.getURL())) {
+    if (looksLikeAuthWall(lease.win.webContents.getURL())) {
       log.info(
         "[pond refresh:window] auth wall detected",
-        win.webContents.getURL(),
+        lease.win.webContents.getURL(),
       );
       return { ok: false, reason: "auth_required", sourceId };
     }
 
     const expr = harv.buildExpression(sourceId);
     const raw = await Promise.race([
-      win.webContents.executeJavaScript(expr, true),
+      lease.win.webContents.executeJavaScript(expr, true),
       sleep(HARVEST_TIMEOUT_MS).then(() => "__pond_harvest_timeout__"),
     ]);
     if (raw === "__pond_harvest_timeout__") {
@@ -168,6 +210,8 @@ export async function harvestUrl(args: HarvestArgs): Promise<HarvestResult> {
   } catch (err) {
     log.warn("[pond refresh:window] unexpected error", args.url, err);
     return { ok: false, reason: "harvest_failed", sourceId };
+  } finally {
+    lease.release();
   }
 }
 
@@ -186,42 +230,91 @@ export interface SourceListArgs extends ListHarvestArgs {
   accountKey?: string;
 }
 
+export interface ListHarvestProgress {
+  phase: string;
+  collected: number;
+  fresh: number;
+}
+
 export async function harvestSourceList(
   source: Source,
   args: SourceListArgs,
+  opts: { onProgress?: (p: ListHarvestProgress) => void } = {},
 ): Promise<ListHarvestResult> {
-  const win = ensureHidden();
   const target = listUrlForSource(source, args.accountKey);
   if (!target) {
     return { ok: false, reason: "no_match" };
   }
+  const lease = await leaseWindow();
   try {
-    const navOk = await navigateWithTimeout(win, target, NAV_TIMEOUT_MS);
+    const navOk = await navigateWithTimeout(lease.win, target, NAV_TIMEOUT_MS);
     if (!navOk) {
       return { ok: false, reason: "timeout" };
     }
-    if (looksLikeAuthWall(win.webContents.getURL())) {
+    if (looksLikeAuthWall(lease.win.webContents.getURL())) {
       return { ok: false, reason: "auth_required" };
     }
     const expr = buildListExpressionFor(source, args);
     if (!expr) {
       return { ok: false, reason: "no_match" };
     }
+
+    let stopPolling = false;
+    let pollInterval: ReturnType<typeof setInterval> | null = null;
+    if (opts.onProgress) {
+      let lastCollected = -1;
+      pollInterval = setInterval(() => {
+        if (stopPolling) return;
+        void lease.win.webContents
+          .executeJavaScript(
+            "JSON.stringify(globalThis.__pondHarvestStats ?? null)",
+            true,
+          )
+          .then((raw: unknown) => {
+            if (typeof raw !== "string" || raw === "null") return;
+            try {
+              const stats = JSON.parse(raw) as ListHarvestProgress;
+              if (stats.collected !== lastCollected) {
+                lastCollected = stats.collected;
+                opts.onProgress?.(stats);
+              }
+            } catch {
+              /* ignore */
+            }
+          })
+          .catch(() => {});
+      }, 1500);
+    }
+
+    const timeoutMs = source === "instagram" ? 300_000 : 90_000;
     const raw = await Promise.race([
-      win.webContents.executeJavaScript(expr, true),
-      sleep(90_000).then(() => "__pond_list_timeout__"),
-    ]);
+      lease.win.webContents.executeJavaScript(expr, true),
+      sleep(timeoutMs).then(() => "__pond_list_timeout__"),
+    ]).finally(() => {
+      stopPolling = true;
+      if (pollInterval) clearInterval(pollInterval);
+    });
+
     if (raw === "__pond_list_timeout__") {
       log.warn("[pond list]", source, "harvest timed out");
       return { ok: false, reason: "timeout" };
     }
+
+    if (source === "cosmos" && process.env.POND_DUMP_COSMOS_CAPTURES) {
+      await dumpCosmosCaptures(lease.win).catch((err) =>
+        log.warn("[pond list:cosmos] capture dump failed", err),
+      );
+    }
+
     if (!raw || typeof raw !== "object") {
       return { ok: false, reason: "no_match" };
     }
     return raw as ListHarvestResult;
   } catch (err) {
     log.warn("[pond list]", source, "unexpected error", err);
-    return { ok: false, reason: "timeout" };
+    return { ok: false, reason: "unknown" };
+  } finally {
+    lease.release();
   }
 }
 
@@ -233,13 +326,13 @@ function listUrlForSource(
     case "youtube":
       return YOUTUBE_LIST_URLS[0];
     case "cosmos":
-      return COSMOS_LIST_URL;
+      return accountKey ? cosmosProfileUrl(accountKey) : COSMOS_LIST_URL;
     case "arena":
       return accountKey ? arenaProfileUrl(accountKey) : null;
     case "pinterest":
       return accountKey ? pinterestProfileUrl(accountKey) : null;
     case "instagram":
-      return accountKey ? instagramSavedUrl(accountKey) : null;
+      return "https://www.instagram.com/";
     case "reddit":
       return accountKey ? redditSavedUrl(accountKey) : null;
     case "tiktok":
@@ -283,20 +376,20 @@ function buildListExpressionFor(
 export async function harvestYoutubeLikedList(
   args: ListHarvestArgs,
 ): Promise<ListHarvestResult> {
-  const win = ensureHidden();
+  const lease = await leaseWindow();
   try {
     const navOk = await navigateWithTimeout(
-      win,
+      lease.win,
       YOUTUBE_LIST_URLS[1],
       NAV_TIMEOUT_MS,
     );
     if (!navOk) return { ok: false, reason: "timeout" };
-    if (looksLikeAuthWall(win.webContents.getURL())) {
+    if (looksLikeAuthWall(lease.win.webContents.getURL())) {
       return { ok: false, reason: "auth_required" };
     }
     const expr = buildYoutubeListExpression(args);
     const raw = await Promise.race([
-      win.webContents.executeJavaScript(expr, true),
+      lease.win.webContents.executeJavaScript(expr, true),
       sleep(90_000).then(() => "__pond_yt_ll_timeout__"),
     ]);
     if (raw === "__pond_yt_ll_timeout__") {
@@ -309,6 +402,8 @@ export async function harvestYoutubeLikedList(
   } catch (err) {
     log.warn("[pond list] youtube LL unexpected error", err);
     return { ok: false, reason: "timeout" };
+  } finally {
+    lease.release();
   }
 }
 
@@ -348,35 +443,25 @@ export async function harvestTwitterBookmarks(
   args: BookmarksHarvestArgs,
   opts: { onProgress?: (p: BookmarksHarvestProgress) => void } = {},
 ): Promise<BookmarksHarvestResult> {
-  const win = ensureHidden();
+  const lease = await leaseWindow();
   try {
     const navOk = await navigateWithTimeout(
-      win,
+      lease.win,
       "https://x.com/i/bookmarks",
       NAV_TIMEOUT_MS,
     );
     if (!navOk) return { ok: false, reason: "timeout" };
-    if (looksLikeAuthWall(win.webContents.getURL())) {
+    if (looksLikeAuthWall(lease.win.webContents.getURL())) {
       return { ok: false, reason: "auth_required" };
     }
     const expr = buildBookmarksExpression(args);
 
-    // Live progress poller. The in-page walker writes its current
-    // state into `globalThis.__pondHarvestStats` on every hydrate
-    // tick / scroll iteration. We `executeJavaScript` a tiny read
-    // every 1.5s alongside the heavy harvest call — Chromium happily
-    // interleaves these on the same webContents because the harvest
-    // is `await`ing setTimeout between scrolls. Each poll that shows
-    // movement gets forwarded to `onProgress` so the orchestrator
-    // can update the toast in real time. Without this the user sees
-    // "Looking at your Twitter bookmarks…" frozen for the entire
-    // run; large libraries can take minutes.
     let lastSeen = -1;
     let lastPhase: BookmarksHarvestProgress["phase"] | null = null;
     let stopPolling = false;
     const pollInterval = setInterval(() => {
       if (stopPolling) return;
-      void win.webContents
+      void lease.win.webContents
         .executeJavaScript(
           "JSON.stringify(globalThis.__pondHarvestStats ?? null)",
           true,
@@ -408,11 +493,8 @@ export async function harvestTwitterBookmarks(
         .catch(() => {});
     }, 1500);
 
-    // The in-page scroll loop runs for up to ~5 minutes
-    // (`SCROLL_DEADLINE_MS` in `twitter-bookmarks.ts`), so the outer
-    // timeout is sized to comfortably cover that plus hydration slack.
     const raw = await Promise.race([
-      win.webContents.executeJavaScript(expr, true),
+      lease.win.webContents.executeJavaScript(expr, true),
       sleep(6 * 60_000).then(() => "__pond_bookmarks_timeout__"),
     ]).finally(() => {
       stopPolling = true;
@@ -428,14 +510,6 @@ export async function harvestTwitterBookmarks(
     const result = raw as BookmarksHarvestResult;
     if (!result.ok) return result;
 
-    // Parse every Bookmarks GraphQL response the preload's XHR hook
-    // captured during the scroll, then merge the rich payload into
-    // the DOM-discovered entries. The DOM walker is the discovery
-    // floor — every visible card has an entry — and the GraphQL data
-    // is enrichment laid on top. If the hook captured nothing (CSP
-    // edge case, hook installed too late on the very first request,
-    // Twitter changed shape) we still ingest every visible bookmark
-    // with slim card data.
     const rich = parseBookmarksResponses(result.captures);
     const merged: BookmarksEntry[] = result.entries.map((entry) => {
       const r = rich.get(entry.tweetId);
@@ -469,6 +543,8 @@ export async function harvestTwitterBookmarks(
   } catch (err) {
     log.warn("[pond bookmarks] unexpected error", err);
     return { ok: false, reason: "timeout" };
+  } finally {
+    lease.release();
   }
 }
 
@@ -610,6 +686,31 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
+ * Dev-only: write the verbatim GraphQL bodies archived by the Cosmos
+ * harvester to `<userData>/cosmos-captures/<timestamp>.json`. Set
+ * `POND_DUMP_COSMOS_CAPTURES=1` to enable. The Cosmos parser is
+ * shape-blind ([harvest/cosmos/graphql.ts](apps/desktop/src/main/core/refresh/harvest/cosmos/graphql.ts));
+ * one real dump is enough to collapse it into a typed parser like
+ * [twitter/graphql.ts](apps/desktop/src/main/core/refresh/harvest/twitter/graphql.ts).
+ */
+async function dumpCosmosCaptures(win: BrowserWindow): Promise<void> {
+  const raw = await win.webContents.executeJavaScript(
+    "JSON.stringify(globalThis.__pondCosmosCapturesArchive ?? [])",
+    true,
+  );
+  if (typeof raw !== "string" || raw === "[]") {
+    log.info("[pond list:cosmos] no captures to dump");
+    return;
+  }
+  const dir = join(app.getPath("userData"), "cosmos-captures");
+  await mkdir(dir, { recursive: true });
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const path = join(dir, `${stamp}.json`);
+  await writeFile(path, raw, "utf-8");
+  log.info("[pond list:cosmos] dumped captures to", path);
+}
+
+/**
  * Lightweight introspection: do we already have cookies for this
  * source? Lets the renderer paint a "Connected ✓" badge per source on
  * the settings page without needing the user to ever see a window.
@@ -690,12 +791,13 @@ export async function disconnectSource(
 }
 
 /**
- * Dispose the hidden window. Called on app quit so we don't leak the
- * Chromium child process; safe to call from anywhere.
+ * Dispose all pooled hidden windows. Called on app quit so we don't
+ * leak Chromium child processes; safe to call from anywhere.
  */
 export function disposeHiddenWindow(): void {
-  if (hiddenWindow && !hiddenWindow.isDestroyed()) {
-    hiddenWindow.destroy();
+  for (const slot of pool) {
+    if (!slot.win.isDestroyed()) slot.win.destroy();
   }
-  hiddenWindow = null;
+  pool.length = 0;
+  waitQueue.length = 0;
 }

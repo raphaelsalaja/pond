@@ -1,5 +1,3 @@
-/* Tag picker — search + checkbox rows scoped to tags actually in use. */
-
 .body {
   display: flex;
   flex-direction: column;

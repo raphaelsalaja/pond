@@ -85,86 +85,10 @@ function Root() {
         </Sidebar.Toolbar>
 
         <Sidebar.Header>
-          <Menu.Root>
-            <Menu.Trigger
-              render={
-                <button
-                  type="button"
-                  aria-label={`${username} — account menu`}
-                  className={styles["account-trigger"]}
-                >
-                  <span aria-hidden className={styles["account-avatar"]} />
-                  <span className={styles["account-name"]}>{username}</span>
-                  <ChevronDown
-                    className={styles["account-caret"]}
-                    aria-hidden
-                  />
-                </button>
-              }
-            />
-            <Menu.Portal>
-              <Menu.Positioner side="bottom" align="start" sideOffset={6}>
-                <Menu.Popup className={styles["account-menu"]}>
-                  <Menu.Item>
-                    <Menu.ItemIcon>
-                      <KeyboardIcon />
-                    </Menu.ItemIcon>
-                    <Menu.ItemLabel>Keyboard Shortcuts</Menu.ItemLabel>
-                    <Menu.ItemKbd>⌘ /</Menu.ItemKbd>
-                  </Menu.Item>
-
-                  <Menu.Item
-                    onClick={() =>
-                      navigate("/settings", { viewTransition: true })
-                    }
-                  >
-                    <Menu.ItemIcon>
-                      <IconSliderFillDuo18 />
-                    </Menu.ItemIcon>
-                    <Menu.ItemLabel>Settings</Menu.ItemLabel>
-                    <Menu.ItemKbd>G then S</Menu.ItemKbd>
-                  </Menu.Item>
-
-                  <Menu.Separator />
-
-                  <Menu.Item onClick={() => openUrl(DISCUSSIONS_URL)}>
-                    <Menu.ItemIcon>
-                      <IconConnectedDotsFillDuo18 />
-                    </Menu.ItemIcon>
-                    <Menu.ItemLabel>Community</Menu.ItemLabel>
-                    <Menu.ItemKbd>
-                      <IconArrowUpRightOutline18 width={12} height={12} />
-                    </Menu.ItemKbd>
-                  </Menu.Item>
-
-                  <Menu.Item
-                    onClick={() => openUrl("https://x.com/raphaelsalaja")}
-                  >
-                    <Menu.ItemIcon>
-                      <IconXTwitter />
-                    </Menu.ItemIcon>
-                    <Menu.ItemLabel>Twitter</Menu.ItemLabel>
-                    <Menu.ItemKbd>
-                      <IconArrowUpRightOutline18 width={12} height={12} />
-                    </Menu.ItemKbd>
-                  </Menu.Item>
-                  <Menu.Item
-                    onClick={() =>
-                      openUrl("https://github.com/raphaelsalaja/pond")
-                    }
-                  >
-                    <Menu.ItemIcon>
-                      <IconGithub />
-                    </Menu.ItemIcon>
-                    <Menu.ItemLabel>GitHub</Menu.ItemLabel>
-                    <Menu.ItemKbd>
-                      <IconArrowUpRightOutline18 width={12} height={12} />
-                    </Menu.ItemKbd>
-                  </Menu.Item>
-                </Menu.Popup>
-              </Menu.Positioner>
-            </Menu.Portal>
-          </Menu.Root>
+          <div className={styles["account-trigger"]}>
+            <span aria-hidden className={styles["account-avatar"]} />
+            <span className={styles["account-name"]}>{username}</span>
+          </div>
         </Sidebar.Header>
 
         <Sidebar.Group>
@@ -183,6 +107,7 @@ function Root() {
           })}
         </Sidebar.Group>
       </Sidebar.Scroll>
+      <HelpButton openUrl={openUrl} navigate={navigate} />
     </Sidebar.Root>
   );
 }
@@ -316,24 +241,108 @@ export const LibrarySidebar = {
   Root,
 };
 
-function ChevronDown(props: SVGProps<SVGSVGElement>) {
+interface HelpButtonProps {
+  openUrl: (url: string) => void;
+  navigate: ReturnType<typeof useNavigate>;
+}
+
+function HelpButton({ openUrl, navigate }: HelpButtonProps) {
+  return (
+    <div className={styles["help-footer"]}>
+      <Menu.Root>
+        <Menu.Trigger
+          render={
+            <button
+              type="button"
+              aria-label="Help and resources"
+              className={styles["help-trigger"]}
+            >
+              <QuestionMarkIcon />
+            </button>
+          }
+        />
+        <Menu.Portal>
+          <Menu.Positioner side="top" align="start" sideOffset={6}>
+            <Menu.Popup>
+              <Menu.Item>
+                <Menu.ItemIcon>
+                  <KeyboardIcon />
+                </Menu.ItemIcon>
+                <Menu.ItemLabel>Keyboard Shortcuts</Menu.ItemLabel>
+                <Menu.ItemKbd>⌘ /</Menu.ItemKbd>
+              </Menu.Item>
+
+              <Menu.Item
+                onClick={() => navigate("/settings", { viewTransition: true })}
+              >
+                <Menu.ItemIcon>
+                  <IconSliderFillDuo18 />
+                </Menu.ItemIcon>
+                <Menu.ItemLabel>Settings</Menu.ItemLabel>
+                <Menu.ItemKbd>G then S</Menu.ItemKbd>
+              </Menu.Item>
+
+              <Menu.Separator />
+
+              <Menu.Item onClick={() => openUrl(DISCUSSIONS_URL)}>
+                <Menu.ItemIcon>
+                  <IconConnectedDotsFillDuo18 />
+                </Menu.ItemIcon>
+                <Menu.ItemLabel>Community</Menu.ItemLabel>
+                <Menu.ItemKbd>
+                  <IconArrowUpRightOutline18 width={12} height={12} />
+                </Menu.ItemKbd>
+              </Menu.Item>
+
+              <Menu.Item onClick={() => openUrl("https://x.com/raphaelsalaja")}>
+                <Menu.ItemIcon>
+                  <IconXTwitter />
+                </Menu.ItemIcon>
+                <Menu.ItemLabel>Twitter</Menu.ItemLabel>
+                <Menu.ItemKbd>
+                  <IconArrowUpRightOutline18 width={12} height={12} />
+                </Menu.ItemKbd>
+              </Menu.Item>
+
+              <Menu.Item
+                onClick={() => openUrl("https://github.com/raphaelsalaja/pond")}
+              >
+                <Menu.ItemIcon>
+                  <IconGithub />
+                </Menu.ItemIcon>
+                <Menu.ItemLabel>GitHub</Menu.ItemLabel>
+                <Menu.ItemKbd>
+                  <IconArrowUpRightOutline18 width={12} height={12} />
+                </Menu.ItemKbd>
+              </Menu.Item>
+            </Menu.Popup>
+          </Menu.Positioner>
+        </Menu.Portal>
+      </Menu.Root>
+    </div>
+  );
+}
+
+function QuestionMarkIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg
-      viewBox="0 0 12 12"
+      viewBox="0 0 16 16"
       xmlns="http://www.w3.org/2000/svg"
-      width={10}
-      height={10}
+      width="1em"
+      height="1em"
+      fill="none"
       {...props}
     >
-      <title>Open account menu</title>
+      <title>Help</title>
+      <circle cx="8" cy="8" r="6.25" stroke="currentColor" strokeWidth={1.3} />
       <path
-        fill="none"
+        d="M6.25 6.5a1.75 1.75 0 1 1 2.37 1.64c-.39.15-.62.52-.62.93V9.5"
         stroke="currentColor"
+        strokeWidth={1.3}
         strokeLinecap="round"
         strokeLinejoin="round"
-        strokeWidth={1.6}
-        d="M3 4.75 6 7.75 9 4.75"
       />
+      <circle cx="8" cy="11.25" r="0.75" fill="currentColor" />
     </svg>
   );
 }

@@ -154,9 +154,6 @@
   line-height: 1.5;
 }
 
-/* Article body — forgiving typography that adapts to whichever font
- * stack the user picked in the toolbar. We deliberately keep these
- * selectors loose so weird CMS markup still falls under our rules. */
 .body :global(p) {
   margin: 0 0 1.1em;
 }

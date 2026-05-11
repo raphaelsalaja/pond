@@ -1,7 +1,8 @@
+import { matches } from "@/sources/tiktok/matches";
 import { bridge } from "@/utils/bridge";
 
 export default defineContentScript({
-  matches: ["https://www.tiktok.com/*"],
+  matches,
   runAt: "document_start",
   main() {
     bridge("tiktok");

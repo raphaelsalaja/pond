@@ -19,6 +19,7 @@
   transition:
     opacity 120ms ease,
     transform 120ms ease;
+  -webkit-app-region: no-drag;
 
   &[data-starting-style],
   &[data-ending-style] {

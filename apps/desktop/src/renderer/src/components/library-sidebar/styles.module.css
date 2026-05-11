@@ -13,22 +13,6 @@
   background: transparent;
   border: 0;
   border-radius: var(--sidebar-row-radius, 6px);
-  transition:
-    background 80ms ease,
-    color 80ms ease;
-
-  &:hover {
-    background: var(--ds-gray-a2);
-  }
-
-  &:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 2px var(--ds-gray-a3);
-  }
-
-  &[data-popup-open] {
-    background: var(--ds-gray-a2);
-  }
 }
 
 .account-avatar {
@@ -46,7 +30,6 @@
   font-size: 14px;
   font-weight: 550;
   color: var(--ds-gray-12);
-  letter-spacing: -0.09px;
   white-space: nowrap;
 }
 
@@ -70,6 +53,51 @@
 
 .account-menu {
   min-width: 280px;
+}
+
+.help-footer {
+  flex-shrink: 0;
+  padding: 12px;
+}
+
+:global([data-platform="mac"]) .help-footer {
+  -webkit-app-region: no-drag;
+}
+
+.help-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  font-size: 16px;
+  color: var(--ds-gray-10);
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid var(--ds-gray-5);
+  border-radius: 999px;
+  transition:
+    color 80ms ease,
+    border-color 80ms ease,
+    background 80ms ease;
+
+  &:hover {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-a2);
+    border-color: var(--ds-gray-7);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--ds-gray-a3);
+  }
+
+  &[data-popup-open] {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-a2);
+    border-color: var(--ds-gray-7);
+  }
 }
 
 .whats-new-row {

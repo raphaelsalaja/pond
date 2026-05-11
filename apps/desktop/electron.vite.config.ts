@@ -1,10 +1,39 @@
 import { resolve } from "node:path";
 import react from "@vitejs/plugin-react";
-import { defineConfig, externalizeDepsPlugin } from "electron-vite";
+import { defineConfig } from "electron-vite";
+import type { Plugin } from "vite";
+
+const CJS_SHIM = [
+  'import __cjs_mod__ from "node:module";',
+  "const __filename = import.meta.filename;",
+  "const __dirname = import.meta.dirname;",
+  "const require = __cjs_mod__.createRequire(import.meta.url);",
+].join("\n");
+
+const CJS_SHIM_RE =
+  /\/\/ -- CommonJS Shims --\nimport __cjs_mod__.*\nconst __filename.*\nconst __dirname.*\nconst require.*\n/g;
+
+function cjsShimPlugin(): Plugin {
+  return {
+    name: "pond:cjs-shim",
+    apply: "build",
+    enforce: "post",
+    renderChunk(code: string, _chunk: unknown, options: { format: string }) {
+      if (options.format !== "es") return null;
+      const stripped = code.replace(CJS_SHIM_RE, "");
+      if (!/(__filename|__dirname|require\()/.test(stripped)) return null;
+      const lastImport = [...stripped.matchAll(/^import\s.+$/gm)].pop();
+      const idx = lastImport
+        ? (lastImport.index ?? 0) + lastImport[0].length
+        : 0;
+      return `${stripped.slice(0, idx)}\n${CJS_SHIM}\n${stripped.slice(idx)}`;
+    },
+  };
+}
 
 export default defineConfig({
   main: {
-    plugins: [externalizeDepsPlugin({ exclude: ["@pond/schema"] })],
+    plugins: [cjsShimPlugin()],
     resolve: {
       alias: {
         "@main": resolve(__dirname, "src/main"),
@@ -12,14 +41,16 @@ export default defineConfig({
       },
     },
     build: {
+      externalizeDeps: { exclude: ["@pond/schema"] },
       rollupOptions: {
         input: resolve(__dirname, "src/main/index.ts"),
+        external: ["electron", "better-sqlite3"],
       },
     },
   },
   preload: {
-    plugins: [externalizeDepsPlugin({ exclude: ["@pond/schema"] })],
     build: {
+      externalizeDeps: { exclude: ["@pond/schema"] },
       // The renderer's `webPreferences.sandbox` is true. Sandboxed
       // preload scripts must be CommonJS — Chromium's renderer sandbox
       // does not support ESM `import` at preload load time. Emit a
@@ -30,6 +61,7 @@ export default defineConfig({
           index: resolve(__dirname, "src/preload/index.ts"),
           scrape: resolve(__dirname, "src/preload/scrape.cjs.ts"),
         },
+        external: ["electron"],
         output: {
           format: "cjs",
           entryFileNames: "[name].cjs",
