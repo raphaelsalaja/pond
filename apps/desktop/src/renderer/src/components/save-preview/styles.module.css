@@ -70,6 +70,26 @@
   color: var(--ds-gray-12);
   letter-spacing: -0.04px;
   white-space: nowrap;
+  outline: none;
+
+  &[contenteditable="true"] {
+    overflow: visible;
+    white-space: normal;
+    word-break: break-word;
+    cursor: text;
+  }
+
+  &[contenteditable="true"]:empty::before {
+    color: var(--ds-gray-9);
+    content: "Untitled";
+  }
+
+  &[contenteditable="true"]:focus-visible {
+    border-radius: var(--ds-radius-sm);
+    box-shadow:
+      0 0 0 2px var(--ds-gray-1),
+      0 0 0 4px var(--ds-gray-a8);
+  }
 }
 
 .pane-author {

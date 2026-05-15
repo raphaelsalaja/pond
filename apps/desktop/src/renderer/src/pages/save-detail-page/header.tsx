@@ -46,9 +46,6 @@ export function DetailHeader({ save, list }: HeaderProps) {
         </span>
         <span className={styles["header-crumb-current"]}>
           <SourceBadge.Root source={save.source} data-size="sm" />
-          <span className={styles["header-crumb-title"]}>
-            {save.title ?? save.url ?? "Untitled"}
-          </span>
         </span>
       </div>
 

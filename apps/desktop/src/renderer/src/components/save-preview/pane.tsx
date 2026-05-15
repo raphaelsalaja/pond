@@ -81,9 +81,31 @@ export function Pane({ save, className, ...props }: PaneProps) {
         </div>
       ) : null}
 
-      {save.title ? (
-        <h2 className={styles["pane-title"]}>{save.title}</h2>
-      ) : null}
+      <h2
+        className={styles["pane-title"]}
+        contentEditable
+        suppressContentEditableWarning
+        spellCheck={false}
+        onBlur={async (e) => {
+          const next = e.currentTarget.textContent?.trim() ?? "";
+          if (next === (save.title ?? "")) return;
+          await window.pond.tx({
+            kind: "update",
+            model: "save",
+            id: save.id,
+            patch: { title: next || null },
+            before: { title: save.title },
+          });
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            (e.currentTarget as HTMLElement).blur();
+          }
+        }}
+      >
+        {save.title ?? ""}
+      </h2>
 
       {save.author ? (
         <div className={styles["pane-author"]}>
@@ -108,12 +130,6 @@ export function Pane({ save, className, ...props }: PaneProps) {
         </div>
       ) : null}
 
-      <PaneButton
-        icon={<IconGlobe2Outline18 width={12} height={12} />}
-        label="Open Original"
-        onClick={openOriginal}
-        disabled={!save.url}
-      />
 
       {showDescription ? (
         <PaneSection label="Description">
@@ -157,12 +173,6 @@ export function Pane({ save, className, ...props }: PaneProps) {
       {props2.length > 0 ? (
         <PaneSection label="Properties">
           <PaneRowList rows={props2} />
-          <PaneButton
-            icon={<IconFolder5Outline18 width={12} height={12} />}
-            label="View Local Save"
-            onClick={revealLocal}
-            disabled={!hasLocalFile}
-          />
         </PaneSection>
       ) : null}
     </article>

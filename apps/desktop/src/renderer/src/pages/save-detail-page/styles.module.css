@@ -127,6 +127,40 @@
   }
 }
 
+.inspector-restore {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: var(--ds-gray-11);
+  cursor: pointer;
+  background: var(--ds-background-primary);
+  border: 0;
+  border-radius: var(--ds-radius-md);
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 8%),
+    0 2px 4px 0 rgb(0 0 0 / 6%);
+  transition:
+    color 80ms ease,
+    background 80ms ease;
+
+  &:hover {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-2);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ds-accent-8);
+    outline-offset: 1px;
+  }
+}
+
 .layout {
   display: flex;
   flex: 1;

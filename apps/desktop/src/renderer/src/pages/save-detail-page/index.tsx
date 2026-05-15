@@ -1,3 +1,5 @@
+import { IconSidebarLeft2ShowOutline18 } from "@pond/icons/outline/18";
+import { Tooltip } from "@pond/ui";
 import { useCallback, useEffect, useRef } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useTrackVisit } from "@/components/recents";
@@ -12,12 +14,14 @@ import { RefreshAction } from "@/components/save-preview/refresh-action";
 import { RelatedSaves } from "@/components/save-preview/related-saves";
 import { SaveStats } from "@/components/save-stats";
 import { Shell } from "@/components/shell";
+import { useInspector } from "@/lib/use-inspector";
 import { useSave } from "@/pool/hooks";
+import { SaveDetail } from "@/pages/save-detail";
+import { DetailContent } from "./content";
 import { DetailHeader } from "./header";
 import { PropertiesRail } from "./properties-rail";
 import styles from "./styles.module.css";
 import { useListContext } from "./use-list-context";
-import { YoutubeDetail } from "./youtube";
 
 export function SaveDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -29,8 +33,7 @@ export function SaveDetailPage() {
   useTrackVisit(id);
 
   const list = useListContext({ activeId: id ?? null });
-
-  const isYoutube = save?.source === "youtube";
+  const { open: inspectorOpen, toggle: toggleInspector } = useInspector();
 
   const goPrev = useCallback(() => {
     if (!list.prevId) return;
@@ -43,7 +46,6 @@ export function SaveDetailPage() {
   }, [list, navigate]);
 
   useEffect(() => {
-    if (isYoutube) return;
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
       const tag = target?.tagName;
@@ -67,15 +69,7 @@ export function SaveDetailPage() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [
-    isYoutube,
-    goNext,
-    goPrev,
-    list.nextId,
-    list.prevId,
-    list.parentTo,
-    navigate,
-  ]);
+  }, [goNext, goPrev, list.nextId, list.prevId, list.parentTo, navigate]);
 
   const openLightbox = useCallback(() => {
     if (!save) return;
@@ -94,10 +88,55 @@ export function SaveDetailPage() {
     );
   }
 
-  if (isYoutube) {
-    return <YoutubeDetail save={save} list={list} />;
+  if (save.source === "article") {
+    return (
+      <ArticleDetailLayout
+        save={save}
+        list={list}
+        videoRef={videoRef}
+        openLightbox={openLightbox}
+      />
+    );
   }
 
+  return (
+    <>
+      <Shell.Main>
+        <DetailHeader save={save} list={list} />
+        <DetailContent
+          save={save}
+          videoRef={videoRef}
+          onExpand={openLightbox}
+        />
+        {!inspectorOpen ? (
+          <Tooltip.Root content="Show inspector">
+            <button
+              type="button"
+              className={styles["inspector-restore"]}
+              onClick={toggleInspector}
+              aria-label="Show inspector"
+            >
+              <IconSidebarLeft2ShowOutline18 width={16} height={16} />
+            </button>
+          </Tooltip.Root>
+        ) : null}
+      </Shell.Main>
+      <SaveDetail />
+    </>
+  );
+}
+
+function ArticleDetailLayout({
+  save,
+  list,
+  videoRef,
+  openLightbox,
+}: {
+  save: NonNullable<ReturnType<typeof useSave>>;
+  list: ReturnType<typeof useListContext>;
+  videoRef: React.MutableRefObject<HTMLVideoElement | null>;
+  openLightbox: () => void;
+}) {
   const onTitleBlur = async (e: React.FocusEvent<HTMLHeadingElement>) => {
     const next = e.currentTarget.textContent?.trim() ?? "";
     if (next === (save.title ?? "")) return;

@@ -2,7 +2,6 @@ import { type ReactNode, useCallback, useMemo, useState } from "react";
 import { NsfwOverlay } from "@/components/nsfw-overlay";
 import { useNsfwGuard } from "@/lib/use-nsfw-guard";
 import { useIsVideoDownloading } from "@/pool/downloads";
-import { requestVideoHeal } from "@/pool/heal";
 import { pickPrimaryUnit } from "@/pool/media";
 import type { Save } from "@/pool/types";
 import {
@@ -41,21 +40,14 @@ function Root({ save, layout, selection, children }: RootProps) {
     [pickedSrc],
   );
 
-  const healVideo = useCallback(
-    (videoSrc?: string) => {
-      requestVideoHeal(save.id, videoSrc);
-    },
-    [save.id],
-  );
-
   const nsfw = useNsfwGuard(save);
 
   const value = useMemo<CardContextValue>(
     () => ({
       state: { save, unit, isBroken: broken, isDownloading },
-      actions: { setBroken, healVideo },
+      actions: { setBroken },
     }),
-    [save, unit, broken, isDownloading, setBroken, healVideo],
+    [save, unit, broken, isDownloading, setBroken],
   );
 
   return (

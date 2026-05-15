@@ -13,10 +13,7 @@ export function Video() {
       src={state.unit.url}
       posterUrl={state.unit.posterUrl}
       label={state.save.title ?? "video"}
-      onBroken={(videoSrc?: string) => {
-        actions.setBroken(true);
-        actions.healVideo(videoSrc);
-      }}
+      onBroken={() => actions.setBroken(true)}
     />
   );
 }

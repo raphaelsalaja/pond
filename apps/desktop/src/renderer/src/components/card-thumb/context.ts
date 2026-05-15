@@ -15,7 +15,6 @@ export interface CardState {
 
 export interface CardActions {
   setBroken: (broken: boolean) => void;
-  healVideo: (videoSrc?: string) => void;
 }
 
 export interface CardContextValue {

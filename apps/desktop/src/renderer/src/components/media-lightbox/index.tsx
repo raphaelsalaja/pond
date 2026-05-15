@@ -5,7 +5,6 @@ import { useSearchParams } from "react-router-dom";
 import { NsfwOverlay } from "@/components/nsfw-overlay";
 import { extractYouTubeId } from "@/components/save-preview/helpers";
 import { useNsfwGuard } from "@/lib/use-nsfw-guard";
-import { requestVideoHeal } from "@/pool/heal";
 import { useSave } from "@/pool/hooks";
 import { buildMediaUnits } from "@/pool/media";
 import type { Save } from "@/pool/types";
@@ -174,16 +173,12 @@ function Body({ save, onClose }: { save: Save; onClose: () => void }) {
               controls
               autoPlay
               className={styles.media}
-              onError={() => {
-                markBroken(slide.src);
-                requestVideoHeal(save.id, slide.src);
-              }}
+              onError={() => markBroken(slide.src)}
               onLoadedMetadata={(e) => {
                 const v = e.currentTarget;
                 if (v.readyState < HTMLMediaElement.HAVE_METADATA) return;
                 if (v.videoWidth === 0 && v.videoHeight === 0) {
                   markBroken(slide.src);
-                  requestVideoHeal(save.id, slide.src);
                 }
               }}
             >

@@ -1,13 +1,11 @@
 import { Button, Tooltip, useToast } from "@pond/ui";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { NsfwOverlay } from "@/components/nsfw-overlay";
 import { VideoPlayer } from "@/components/video-player";
 import { useNsfwGuard } from "@/lib/use-nsfw-guard";
 import { useIsVideoDownloading } from "@/pool/downloads";
-import { requestVideoHeal } from "@/pool/heal";
 import { buildMediaUnits } from "@/pool/media";
 import type { Save } from "@/pool/types";
-import { extractYouTubeId } from "./helpers";
 import styles from "./styles.module.css";
 
 interface MediaSlide {
@@ -57,64 +55,7 @@ export function MediaViewer({
     [allSlides, broken],
   );
 
-  const youtubeId = useMemo(() => extractYouTubeId(save.url), [save.url]);
   const nsfw = useNsfwGuard(save);
-
-  const hasNoMedia = slides.length === 0;
-
-  // One-shot heal when we land on a save whose media all errored or never
-  // downloaded. `requestVideoHeal` dedupes per session; the manual
-  // "Download video" button below bypasses that for explicit retries.
-  useEffect(() => {
-    // #region agent log
-    fetch("http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Debug-Session-Id": "7b119d",
-      },
-      body: JSON.stringify({
-        sessionId: "7b119d",
-        hypothesisId: "H6",
-        location: "media-viewer.tsx:autoHealEffect",
-        message: "MediaViewer mount snapshot",
-        data: {
-          saveId: save.id,
-          url: save.url,
-          mediaUrl: save.mediaUrl,
-          mediaType: save.mediaType,
-          filesCount: (save.files ?? []).length,
-          filesSummary: (save.files ?? []).map((f) => ({
-            kind: f.kind,
-            path: f.path,
-            size: f.size,
-          })),
-          allSlidesLen: allSlides.length,
-          slidesLen: slides.length,
-          brokenSize: broken.size,
-          brokenList: [...broken],
-          hasNoMedia,
-          youtubeId,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
-    if (!hasNoMedia) return;
-    if (!save.url) return;
-    requestVideoHeal(save.id);
-  }, [
-    hasNoMedia,
-    save.id,
-    save.url,
-    save.files,
-    save.mediaUrl,
-    save.mediaType,
-    allSlides,
-    slides,
-    broken,
-    youtubeId,
-  ]);
 
   const [index, setIndex] = useState(0);
   if (slides.length === 0) {
@@ -147,10 +88,7 @@ export function MediaViewer({
           poster={slide.posterUrl}
           save={save}
           videoRef={videoRef}
-          onError={() => {
-            markBroken(slide.src);
-            requestVideoHeal(save.id, slide.src);
-          }}
+          onError={() => markBroken(slide.src)}
           onExpand={onExpand}
         />
       ) : (
@@ -160,12 +98,7 @@ export function MediaViewer({
             src={slide.src}
             alt={save.title ?? ""}
             className={styles.media}
-            onError={() => {
-              markBroken(slide.src);
-              if (slide.src === save.mediaUrl) {
-                requestVideoHeal(save.id);
-              }
-            }}
+            onError={() => markBroken(slide.src)}
           />
         </div>
       )}
