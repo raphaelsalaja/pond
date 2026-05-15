@@ -1,8 +1,3 @@
-/**
- * Parse `pond://pair?port=<port>&token=<token>` strings copied from the
- * Pond desktop tray. Kept lenient to survive mobile-keyboard quirks
- * (extra whitespace, accidental angle brackets from Mail.app).
- */
 export function parsePairingLink(
   raw: string,
 ): { endpoint: string; token: string; port: number } | null {

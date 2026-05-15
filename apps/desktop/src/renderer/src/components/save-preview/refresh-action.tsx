@@ -25,21 +25,24 @@ export function RefreshAction({ save }: { save: Save }) {
       const res = await window.pond.connectSource(auth.source);
       if (res.ok) {
         toast.add({
-          title: `Connected to ${auth.label}`,
-          description: "Background refresh is now enabled for this source.",
-          type: "success",
+          title: `Sign in to ${auth.label} in your browser`,
+          description:
+            "After signing in, open the Pond extension popup and push the " +
+            "session — the row here will flip to Connected automatically.",
+          type: "info",
         });
       } else {
         toast.add({
-          title: `Couldn't connect ${auth.label}`,
-          description: "Try again or open settings to retry the sign-in.",
+          title: `Couldn't open ${auth.label}`,
+          description:
+            "Open it manually and push the session via the extension.",
           type: "error",
         });
       }
     } catch (err) {
       console.error("[pond] connectSource threw", err);
       toast.add({
-        title: `Couldn't connect ${auth.label}`,
+        title: `Couldn't open ${auth.label}`,
         description: err instanceof Error ? err.message : String(err),
         type: "error",
       });
@@ -149,18 +152,19 @@ export function RefreshAction({ save }: { save: Save }) {
         <div className={styles["auth-row"]}>
           <span className={styles["auth-status"]} data-state="disconnected">
             <span className={styles["auth-dot"]} aria-hidden="true" />
-            Sign in to {auth.label} to enable background refresh
+            Sign in to {auth.label} in your browser, then push from the Pond
+            extension
           </span>
           <Button size="sm" onClick={connect} disabled={connecting}>
-            {connecting ? "Opening…" : `Sign in to ${auth.label}`}
+            {connecting ? "Opening…" : `Open ${auth.label}`}
           </Button>
-          <Tooltip.Root content="Manage all connected sources from the settings page.">
+          <Tooltip.Root content="Manage all connected apps from the settings page.">
             <span>
               <Button
                 size="sm"
                 variant="ghost"
                 onClick={() =>
-                  navigate(`/settings/integrations/${auth.source}`)
+                  navigate(`/settings/integrations?connect=${auth.source}`)
                 }
               >
                 Settings
@@ -178,11 +182,6 @@ export function RefreshAction({ save }: { save: Save }) {
           </span>
         </div>
       ) : null}
-
-      <p className={styles.hint}>
-        Pond reads OpenGraph tags directly for public URLs. For X, Instagram,
-        Cosmos and TikTok it scrapes via your signed-in session.
-      </p>
     </div>
   );
 }

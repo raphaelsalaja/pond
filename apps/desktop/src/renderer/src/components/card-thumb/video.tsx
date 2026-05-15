@@ -36,10 +36,6 @@ function HoverVideo({
 }) {
   const internalRef = useRef<HTMLVideoElement | null>(null);
 
-  // Don't kick off metadata fetches for cards that aren't (close to)
-  // on screen. A 200-card library typically has 10–30 cards visible
-  // at once; without this the browser sets up demuxers for every
-  // video card on first paint.
   const inView = useInView(internalRef);
   const [primed, setPrimed] = useState(false);
   useEffect(() => {
@@ -51,10 +47,7 @@ function HoverVideo({
     if (!el) return;
     const promise = el.play();
     if (promise && typeof promise.catch === "function") {
-      promise.catch(() => {
-        // Autoplay was blocked (rare with `muted`), or the element
-        // unmounted mid-load.
-      });
+      promise.catch(() => {});
     }
   }, []);
 
@@ -72,9 +65,6 @@ function HoverVideo({
   const onLoadedMetadata = useCallback(() => {
     const el = internalRef.current;
     if (!el) return;
-    // Only trust 0×0 as a codec failure when the parser has actually
-    // delivered metadata. Chromium can fire `loadedmetadata` before the
-    // decoder is fully initialised, transiently reporting 0×0.
     if (el.readyState < HTMLMediaElement.HAVE_METADATA) return;
     if (el.videoWidth === 0 && el.videoHeight === 0) {
       onBroken(src);
@@ -86,9 +76,6 @@ function HoverVideo({
   return (
     <video
       ref={internalRef}
-      // `src` is omitted until the card has been near the viewport at
-      // least once; the poster paints in the meantime. Once primed we
-      // keep `src` set so re-entering the viewport doesn't re-fetch.
       {...(primed ? { src } : {})}
       poster={posterUrl}
       muted

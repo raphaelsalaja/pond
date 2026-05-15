@@ -1,17 +1,7 @@
 /// <reference lib="dom" />
+
 import type { ScrapedHarvest } from "./types";
 
-/**
- * In-page harvester that just reads `<meta property="og:*">` and the
- * document title. Useful for sources where:
- *   1. We *do* have a dedicated source classification (e.g. Pinterest,
- *      Cosmos, Are.na) but no purpose-built harvester yet, AND
- *   2. The page needs JS to populate its OG tags (which the server-side
- *      `og.ts` reader can't see).
- *
- * Falls back to `extension/popup`-style behaviour: just give us
- * whatever rich-link metadata the page wants to advertise.
- */
 export function buildExpression(): string {
   function inPage(): unknown {
     function metaContent(...keys: string[]): string | undefined {
@@ -55,10 +45,6 @@ export function buildExpression(): string {
     } else {
       out.mediaType = "link";
     }
-    // Page-wide hints worth keeping for the renderer / search index.
-    // None of these are universal enough yet to deserve a top-level
-    // column; bundle them under `meta` so they ride into `raw.<source>`
-    // via the existing merge.
     const lang = document.documentElement.lang?.trim();
     if (lang) {
       out.lang = lang;
@@ -84,7 +70,6 @@ export function buildExpression(): string {
   const fnSrc = inPage.toString();
   return `(async () => {
     const fn = ${fnSrc};
-    // Wait for og:image to materialise — many SPAs inject it after first paint.
     const deadline = Date.now() + 8_000;
     while (Date.now() < deadline) {
       if (document.querySelector('meta[property="og:image"], meta[property="og:title"]')) break;
@@ -119,11 +104,6 @@ export function adapt(raw: unknown): ScrapedHarvest | null {
   };
 }
 
-/**
- * Fall back to the URL itself for `sourceId` when the host has no
- * structured permalink. Yields something stable per page so re-runs
- * still merge into the same row.
- */
 export function sourceIdFromUrl(rawUrl: string): string {
   try {
     const u = new URL(rawUrl);

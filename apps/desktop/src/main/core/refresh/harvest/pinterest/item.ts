@@ -1,10 +1,5 @@
 /// <reference lib="dom" />
 
-/**
- * Pinterest single-pin collector. Scrapes the `/pin/<id>/` page for
- * rich metadata: full description, pinner info, board name, full-res image.
- */
-
 import type { ScrapedHarvest } from "../types";
 import { inPagePinterestNormalize } from "./normalize";
 

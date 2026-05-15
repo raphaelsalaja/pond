@@ -1,28 +1,35 @@
-/**
- * Shared types lifted from the original monolithic settings page.
- * Kept in their own module so the registry + multiple section files
- * can import them without pulling each other in transitively.
- */
-
 export const AUTH_WALLED_SOURCES = [
-  { id: "twitter", label: "X / Twitter" },
+  { id: "twitter", label: "X (Twitter)" },
   { id: "instagram", label: "Instagram" },
-  { id: "cosmos", label: "Cosmos" },
   { id: "tiktok", label: "TikTok" },
-  { id: "reddit", label: "Reddit" },
+  { id: "pinterest", label: "Pinterest" },
+  { id: "youtube", label: "YouTube" },
 ] as const;
 export type AuthWalledSource = (typeof AUTH_WALLED_SOURCES)[number]["id"];
 
-export const PUBLIC_SOURCES = [
-  { id: "pinterest", label: "Pinterest" },
+export const PUBLIC_PROFILE_SOURCES = [
+  { id: "cosmos", label: "Cosmos" },
   { id: "arena", label: "Are.na" },
-  { id: "youtube", label: "YouTube" },
 ] as const;
-export type PublicSource = (typeof PUBLIC_SOURCES)[number]["id"];
+export type PublicProfileSource = (typeof PUBLIC_PROFILE_SOURCES)[number]["id"];
 
-/** Every source with a settings page (auth-walled + public). */
-export const ALL_SOURCES = [...AUTH_WALLED_SOURCES, ...PUBLIC_SOURCES] as const;
+export const ALL_SOURCES = [
+  ...AUTH_WALLED_SOURCES.map((s) => ({ ...s, kind: "auth-walled" }) as const),
+  ...PUBLIC_PROFILE_SOURCES.map(
+    (s) => ({ ...s, kind: "public-profile" }) as const,
+  ),
+] as const;
 export type AnySource = (typeof ALL_SOURCES)[number]["id"];
+
+export const SOURCE_DESCRIPTIONS: Record<AnySource, string> = {
+  twitter: "Your trusted digital town square.",
+  instagram: "Capture and share the world's moments.",
+  cosmos: "Curate clusters and visual references.",
+  tiktok: "Short videos worth coming back to.",
+  pinterest: "Pin ideas worth keeping.",
+  arena: "Connect blocks across channels.",
+  youtube: "Videos, playlists, and watch-later.",
+};
 
 export type AiAutonomy = "off" | "suggest" | "auto-apply";
 
@@ -56,8 +63,4 @@ export interface SettingsRow {
   aiProvider?: AiProviderConfig;
   videoDownload: VideoDownloadPrefs;
   libraryRoot: string | null;
-}
-
-export function isAuthWalled(source: string): source is AuthWalledSource {
-  return AUTH_WALLED_SOURCES.some((s) => s.id === source);
 }

@@ -1,0 +1,436 @@
+import type { IngestPayload } from "@pond/schema/ingest";
+import log from "electron-log/main.js";
+
+const USER_AGENT =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/605.1.15 " +
+  "(KHTML, like Gecko) Version/17.0 Safari/605.1.15 PondBot/0.1";
+const FETCH_TIMEOUT_MS = 15_000;
+
+// Pinterest server-renders the full pin payload as a Relay response:
+//   <script>window.__PWS_RELAY_REGISTER_COMPLETED_REQUEST__(
+//     "<url-encoded descriptor>",
+//     {"data":{"v3GetPinQueryv2":{"data": <pin>}}}
+//   )</script>
+// We grab that JSON directly — it has the clean title, creator name, full
+// resolution image URL, dominant color, etc. — none of which OG meta exposes.
+
+interface RelayUser {
+  fullName?: string;
+  firstName?: string;
+  username?: string;
+  websiteUrl?: string;
+  profileUrl?: string;
+  imageLargeUrl?: string;
+  imageMediumUrl?: string;
+  imageSmallUrl?: string;
+  id?: string;
+  entityId?: string;
+}
+
+interface RelayImage {
+  url?: string;
+  width?: number;
+  height?: number;
+}
+
+interface RelayPin {
+  title?: string;
+  closeupUnifiedTitle?: string;
+  description?: string;
+  closeupUnifiedDescription?: string;
+  seoTitle?: string;
+  seoDescription?: string;
+  seoAltText?: string;
+  dominantColor?: string;
+  imageLargeUrl?: string;
+  imageSignature?: string;
+  createdAt?: string;
+  repinCount?: number;
+  favoriteUserCount?: number;
+  totalReactionCount?: number;
+  shareCount?: number;
+  isVideo?: boolean;
+  domain?: string;
+  link?: string;
+  mobileLink?: string;
+  priceCurrency?: string;
+  closeupAttribution?: RelayUser;
+  closeupUnifiedAttribution?: RelayUser;
+  nativeCreator?: RelayUser;
+  originPinner?: RelayUser;
+  pinner?: RelayUser & { domainUrl?: string };
+  board?: { url?: string };
+  images_orig?: RelayImage;
+  images_736x?: RelayImage;
+  images_564x?: RelayImage;
+  images_474x?: RelayImage;
+  images_236x?: RelayImage;
+  aggregatedPinData?: {
+    aggregatedStats?: { saves?: number };
+    commentCount?: number;
+  };
+  pinJoin?: {
+    visualAnnotation?: string[];
+    seoBreadcrumbs?: Array<{ name?: string; url?: string }>;
+    seoCanonicalUrl?: string;
+    seoCanonicalDomain?: string;
+    canonicalPin?: { entityId?: string; id?: string };
+  };
+  storyPinData?: {
+    totalVideoDuration?: number;
+    metadata?: { pinTitle?: string };
+    pages?: Array<unknown>;
+  };
+}
+
+export interface PinterestApiResult {
+  ok: boolean;
+  payload?: IngestPayload;
+  reason?: "fetch_failed" | "blocked" | "no_pin";
+  status?: number;
+}
+
+export async function refreshFromPinterestRelay({
+  sourceId,
+}: {
+  sourceId: string;
+}): Promise<PinterestApiResult> {
+  const url = `https://www.pinterest.com/pin/${sourceId}/`;
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      redirect: "follow",
+      headers: {
+        "user-agent": USER_AGENT,
+        accept:
+          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "accept-language": "en-US,en;q=0.9",
+      },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+  } catch (err) {
+    log.warn("[pond refresh:pinterest-api] fetch failed", url, err);
+    return { ok: false, reason: "fetch_failed" };
+  }
+  if (!res.ok) {
+    return {
+      ok: false,
+      reason:
+        res.status === 401 || res.status === 403 ? "blocked" : "fetch_failed",
+      status: res.status,
+    };
+  }
+  const html = await res.text();
+  const pin = extractPin(html);
+  if (!pin) return { ok: false, reason: "no_pin" };
+  return { ok: true, payload: buildPayload(sourceId, url, pin) };
+}
+
+function extractPin(html: string): RelayPin | null {
+  // Pinterest emits several Relay calls per page. The first usually has the
+  // pin's content fields (title, image, attribution stub) but a stripped
+  // creator object; later calls return the full creator with avatar URLs.
+  // We collect every payload and merge — for each key, prefer the richest
+  // value (most keys for nested objects, first non-empty for scalars).
+  const candidates: RelayPin[] = [];
+  const callOpen = "__PWS_RELAY_REGISTER_COMPLETED_REQUEST__(";
+  let cursor = 0;
+  while (true) {
+    const idx = html.indexOf(callOpen, cursor);
+    if (idx < 0) break;
+    const argStart = idx + callOpen.length;
+    const callEnd = findCallEnd(html, argStart);
+    if (callEnd < 0) break;
+    const inner = html.slice(argStart, callEnd);
+    const secondArgOffset = findSecondArgStart(inner);
+    if (secondArgOffset >= 0) {
+      const jsonStr = inner.slice(secondArgOffset).replace(/[\s,]+$/, "");
+      try {
+        const parsed = JSON.parse(jsonStr) as {
+          data?: { v3GetPinQueryv2?: { data?: RelayPin } };
+        };
+        const candidate = parsed?.data?.v3GetPinQueryv2?.data;
+        if (candidate && typeof candidate === "object") {
+          candidates.push(candidate);
+        }
+      } catch {
+        // try next call
+      }
+    }
+    cursor = callEnd + 1;
+  }
+  if (candidates.length === 0) return null;
+  return mergePins(candidates);
+}
+
+function mergePins(pins: RelayPin[]): RelayPin {
+  const out: Record<string, unknown> = {};
+  const keys = new Set<string>();
+  for (const p of pins) {
+    for (const k of Object.keys(p)) keys.add(k);
+  }
+  for (const key of keys) {
+    let best: unknown;
+    let bestScore = -1;
+    for (const p of pins) {
+      const v = (p as Record<string, unknown>)[key];
+      if (v == null) continue;
+      const score =
+        typeof v === "object" && !Array.isArray(v)
+          ? Object.keys(v as Record<string, unknown>).length
+          : 1;
+      if (score > bestScore) {
+        best = v;
+        bestScore = score;
+      }
+    }
+    if (best !== undefined) out[key] = best;
+  }
+  return out as RelayPin;
+}
+
+function findCallEnd(s: string, start: number): number {
+  let depthParen = 1;
+  let _depthBrace = 0;
+  let inStr = false;
+  for (let i = start; i < s.length; i++) {
+    const c = s[i];
+    if (inStr) {
+      if (c === "\\") {
+        i += 1;
+        continue;
+      }
+      if (c === '"') inStr = false;
+      continue;
+    }
+    if (c === '"') inStr = true;
+    else if (c === "{") _depthBrace += 1;
+    else if (c === "}") _depthBrace -= 1;
+    else if (c === "(") depthParen += 1;
+    else if (c === ")") {
+      depthParen -= 1;
+      if (depthParen === 0) return i;
+    }
+  }
+  return -1;
+}
+
+function findSecondArgStart(inner: string): number {
+  let depthParen = 0;
+  let depthBrace = 0;
+  let inStr = false;
+  for (let i = 0; i < inner.length; i++) {
+    const c = inner[i];
+    if (inStr) {
+      if (c === "\\") {
+        i += 1;
+        continue;
+      }
+      if (c === '"') inStr = false;
+      continue;
+    }
+    if (c === '"') inStr = true;
+    else if (c === "(") depthParen += 1;
+    else if (c === ")") depthParen -= 1;
+    else if (c === "{") {
+      if (depthParen === 0 && depthBrace === 0) return i;
+      depthBrace += 1;
+    } else if (c === "}") depthBrace -= 1;
+  }
+  return -1;
+}
+
+function buildPayload(
+  sourceId: string,
+  url: string,
+  pin: RelayPin,
+): IngestPayload {
+  const title = pickStr([
+    pin.title,
+    pin.closeupUnifiedTitle,
+    cleanSeoTitle(pin.seoTitle),
+  ]);
+  const description = pickDescription(pin);
+  // Prefer richer creator objects first; merged result usually puts the full
+  // user in nativeCreator / closeupUnifiedAttribution / originPinner.
+  const creator = pickCreator(pin);
+  const author = creator?.fullName ?? null;
+  const avatar = pickStr([
+    creator?.imageLargeUrl,
+    creator?.imageMediumUrl,
+    creator?.imageSmallUrl,
+  ]);
+  const profileUrl = creator?.profileUrl
+    ? creator.profileUrl
+    : creator?.username
+      ? `https://www.pinterest.com/${creator.username}/`
+      : null;
+  const mediaUrl = pickStr([pin.images_orig?.url, pin.imageLargeUrl]);
+  const mediaType: "image" | "video" = pin.isVideo ? "video" : "image";
+  const mediaUrls = buildMediaUrls(pin, mediaUrl, mediaType);
+  const publishedAt = parsePinterestDate(pin.createdAt);
+
+  const meta: Record<string, unknown> = {};
+  if (author) meta.authorName = author;
+  if (avatar) meta.authorAvatar = avatar;
+  if (profileUrl) meta.authorUrl = profileUrl;
+  if (creator?.username) meta.creatorUsername = creator.username;
+  if (creator?.websiteUrl) meta.creatorWebsite = creator.websiteUrl;
+  if (pin.pinner?.username) meta.pinnerUsername = pin.pinner.username;
+  if (pin.board?.url) {
+    const boardUrl = pin.board.url.startsWith("http")
+      ? pin.board.url
+      : `https://www.pinterest.com${pin.board.url}`;
+    const slug = pin.board.url.replace(/\/+$/, "").split("/").pop();
+    const boardName = slug
+      ? decodeURIComponent(slug).replace(/-/g, " ")
+      : undefined;
+    meta.board = { name: boardName, url: boardUrl };
+  }
+  if (pin.dominantColor) meta.dominantColor = pin.dominantColor;
+  if (pin.imageSignature) meta.imageSignature = pin.imageSignature;
+  if (publishedAt) meta.publishedAt = publishedAt;
+  if (pin.seoAltText && !description) meta.altText = pin.seoAltText;
+  if (typeof pin.isVideo === "boolean") meta.isVideo = pin.isVideo;
+  if (pin.domain) meta.domain = pin.domain;
+  const externalLink = pickStr([pin.link, pin.mobileLink]);
+  if (externalLink) meta.externalLink = externalLink;
+  if (pin.priceCurrency) meta.priceCurrency = pin.priceCurrency;
+  if (
+    pin.pinJoin?.visualAnnotation &&
+    pin.pinJoin.visualAnnotation.length > 0
+  ) {
+    meta.visualAnnotation = pin.pinJoin.visualAnnotation.slice(0, 32);
+  }
+  if (pin.pinJoin?.seoBreadcrumbs && pin.pinJoin.seoBreadcrumbs.length > 0) {
+    const cats = pin.pinJoin.seoBreadcrumbs
+      .map((b) => b.name?.trim())
+      .filter((s): s is string => Boolean(s && s.length > 0));
+    if (cats.length > 0) meta.categories = cats;
+  }
+  if (pin.pinJoin?.seoCanonicalUrl) {
+    meta.canonicalUrl = pin.pinJoin.seoCanonicalUrl.startsWith("http")
+      ? pin.pinJoin.seoCanonicalUrl
+      : `https://www.pinterest.com${pin.pinJoin.seoCanonicalUrl}`;
+  }
+  if (pin.pinJoin?.canonicalPin?.entityId) {
+    meta.canonicalPinId = pin.pinJoin.canonicalPin.entityId;
+  }
+  if (pin.storyPinData?.totalVideoDuration) {
+    meta.videoDurationSec = pin.storyPinData.totalVideoDuration;
+  }
+
+  const metrics: Record<string, number> = {};
+  if (typeof pin.totalReactionCount === "number") {
+    metrics.reactions = pin.totalReactionCount;
+  }
+  if (typeof pin.aggregatedPinData?.commentCount === "number") {
+    metrics.comments = pin.aggregatedPinData.commentCount;
+  }
+  if (typeof pin.aggregatedPinData?.aggregatedStats?.saves === "number") {
+    metrics.saves = pin.aggregatedPinData.aggregatedStats.saves;
+  }
+  if (typeof pin.repinCount === "number") {
+    metrics.repins = pin.repinCount;
+  }
+  if (typeof pin.shareCount === "number") metrics.shares = pin.shareCount;
+  if (Object.keys(metrics).length > 0) meta.metrics = metrics;
+
+  return {
+    source: "pinterest",
+    sourceId,
+    url,
+    title: title ?? undefined,
+    description: description ?? undefined,
+    author: author ?? undefined,
+    siteName: "Pinterest",
+    publishedAt: publishedAt ? new Date(publishedAt) : undefined,
+    mediaUrl: mediaUrl ?? undefined,
+    mediaUrls,
+    mediaType,
+    raw: {
+      kind: "pinterest-relay",
+      capturedAt: new Date().toISOString(),
+      pinterest: meta,
+    },
+  };
+}
+
+function buildMediaUrls(
+  pin: RelayPin,
+  primary: string | null,
+  mediaType: "image" | "video",
+):
+  | Array<{
+      url: string;
+      type?: "image" | "video";
+      width?: number;
+      height?: number;
+    }>
+  | undefined {
+  if (!primary) return undefined;
+  // The 736x variant carries width/height; the originals URL doesn't expose
+  // dimensions in the GraphQL response but shares the same aspect ratio, so
+  // we re-use those dims as a hint for the cover.
+  const dims = pin.images_736x ?? pin.images_564x ?? pin.images_474x;
+  return [
+    {
+      url: primary,
+      type: mediaType,
+      ...(typeof dims?.width === "number" && typeof dims?.height === "number"
+        ? { width: dims.width, height: dims.height }
+        : {}),
+    },
+  ];
+}
+
+function parsePinterestDate(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return undefined;
+  return d.toISOString();
+}
+
+function pickCreator(pin: RelayPin): RelayUser | null {
+  const candidates: Array<RelayUser | undefined> = [
+    pin.nativeCreator,
+    pin.closeupUnifiedAttribution,
+    pin.originPinner,
+    pin.closeupAttribution,
+  ];
+  let best: RelayUser | null = null;
+  let bestScore = -1;
+  for (const c of candidates) {
+    if (!c) continue;
+    const score =
+      (c.fullName ? 2 : 0) +
+      (c.imageLargeUrl ? 3 : c.imageMediumUrl ? 2 : c.imageSmallUrl ? 1 : 0) +
+      (c.username ? 1 : 0);
+    if (score > bestScore) {
+      best = c;
+      bestScore = score;
+    }
+  }
+  return best;
+}
+
+function cleanSeoTitle(seoTitle: string | undefined): string | null {
+  if (!seoTitle) return null;
+  const head = seoTitle.split(/\s+\|\s+/)[0]?.trim();
+  return head && head.length >= 3 ? head : seoTitle;
+}
+
+function pickDescription(pin: RelayPin): string | null {
+  for (const c of [pin.description, pin.closeupUnifiedDescription]) {
+    const t = (c ?? "").trim();
+    if (t.length >= 3) return t;
+  }
+  return null;
+}
+
+function pickStr(values: Array<string | undefined | null>): string | null {
+  for (const v of values) {
+    if (typeof v === "string" && v.trim()) return v.trim();
+  }
+  return null;
+}

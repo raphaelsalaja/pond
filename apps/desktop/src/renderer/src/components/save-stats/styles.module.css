@@ -34,14 +34,14 @@
   color: light-dark(#9a6700, #d4a72c);
   letter-spacing: 0.02em;
   background: light-dark(rgba(212, 167, 44, 0.12), rgba(212, 167, 44, 0.18));
-  border-radius: 999px;
+  border-radius: var(--ds-radius-full);
 }
 
 .live-dot {
   width: 6px;
   height: 6px;
   background: currentColor;
-  border-radius: 50%;
+  border-radius: var(--ds-radius-full);
 }
 
 .live-badge {
@@ -53,7 +53,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  border-radius: 999px;
+  border-radius: var(--ds-radius-full);
 
   &[data-state="live"] {
     color: light-dark(#b3261e, #ff7b72);
@@ -105,7 +105,7 @@
   color: var(--ds-gray-11);
   cursor: default;
   background: var(--ds-gray-a3);
-  border-radius: 999px;
+  border-radius: var(--ds-radius-full);
   transition:
     background 120ms ease,
     color 120ms ease;
@@ -156,7 +156,7 @@ a.uploader-link:hover {
   width: 24px;
   height: 24px;
   object-fit: cover;
-  border-radius: 50%;
+  border-radius: var(--ds-radius-full);
 }
 
 .uploader-avatar-fallback {
@@ -251,7 +251,7 @@ a.uploader-link:hover {
   color: var(--ds-gray-11);
   text-decoration: none;
   background: var(--ds-gray-a3);
-  border-radius: 999px;
+  border-radius: var(--ds-radius-full);
 }
 
 a.extra-chip:hover {

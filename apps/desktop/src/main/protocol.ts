@@ -1,16 +1,12 @@
-import { readFile } from "node:fs/promises";
-import { extname, normalize, resolve } from "node:path";
+import { open, stat } from "node:fs/promises";
+import { extname, join, normalize, resolve } from "node:path";
 import { net, protocol } from "electron";
 import log from "electron-log/main.js";
 import { POND_PROTOCOL } from "../shared/constants";
-import { itemFile, resolvePaths } from "./paths";
+import { itemFile, libraryRoot, resolvePaths } from "./paths";
 
-/**
- * Custom protocol handler for `pond://<itemId>/<file>`. Renderer uses these
- * URIs in `<img src>` / `<video src>`, which means if the library ever
- * moves on disk, nothing rendered needs rewriting -- only `resolvePaths`
- * changes. Has to be registered before the `app.ready` event.
- */
+const META_HOST = "_meta";
+const META_DIR = "_meta";
 
 const MIME: Record<string, string> = {
   ".jpg": "image/jpeg",
@@ -44,31 +40,158 @@ export function registerScheme() {
 
 export function registerProtocol() {
   protocol.handle(POND_PROTOCOL, async (request) => {
+    // #region agent log
+    fetch("http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Debug-Session-Id": "7b119d",
+      },
+      body: JSON.stringify({
+        sessionId: "7b119d",
+        hypothesisId: "H_AB",
+        location: "protocol.ts:pondHandle",
+        message: "pond:// request",
+        data: {
+          url: request.url,
+          method: request.method,
+          range: request.headers.get("range"),
+          origin: request.headers.get("origin"),
+          referer: request.headers.get("referer"),
+          destination: (request as unknown as { destination?: string })
+            .destination,
+          mode: (request as unknown as { mode?: string }).mode,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
     try {
       const url = new URL(request.url);
-      const itemId = url.hostname;
+      const host = url.hostname;
       const file = decodeURIComponent(url.pathname.replace(/^\//, ""));
-      if (!itemId || !file) {
+      if (!host || !file) {
         return new Response("bad request", { status: 400 });
       }
 
-      const resolved = resolve(itemFile(itemId, file));
-      const prefix = normalize(resolvePaths().itemsDir);
+      const { resolved, prefix } = resolveTarget(host, file);
       if (!resolved.startsWith(prefix)) {
         return new Response("forbidden", { status: 403 });
       }
 
-      const buf = await readFile(resolved);
-      const headers = new Headers();
+      const info = await stat(resolved);
+      if (!info.isFile()) {
+        return new Response("not found", { status: 404 });
+      }
+
+      const total = info.size;
       const ext = extname(resolved).toLowerCase();
-      headers.set("content-type", MIME[ext] ?? "application/octet-stream");
-      return new Response(buf, { status: 200, headers });
+      const contentType = MIME[ext] ?? "application/octet-stream";
+
+      const headers = new Headers();
+      headers.set("content-type", contentType);
+      headers.set("accept-ranges", "bytes");
+
+      const rangeHeader = request.headers.get("range");
+      if (rangeHeader) {
+        const m = /^bytes=(\d+)-(\d*)$/i.exec(rangeHeader.trim());
+        if (!m) {
+          headers.set("content-range", `bytes */${total}`);
+          return new Response("invalid range", { status: 416, headers });
+        }
+        const start = Number(m[1]);
+        const end =
+          m[2] && m[2].length > 0
+            ? Math.min(Number(m[2]), total - 1)
+            : total - 1;
+        if (
+          !Number.isFinite(start) ||
+          !Number.isFinite(end) ||
+          start > end ||
+          start < 0 ||
+          start >= total
+        ) {
+          headers.set("content-range", `bytes */${total}`);
+          return new Response("range not satisfiable", {
+            status: 416,
+            headers,
+          });
+        }
+        const length = end - start + 1;
+        const buf = Buffer.alloc(length);
+        const fh = await open(resolved, "r");
+        try {
+          await fh.read(buf, 0, length, start);
+        } finally {
+          await fh.close();
+        }
+        headers.set("content-range", `bytes ${start}-${end}/${total}`);
+        headers.set("content-length", String(length));
+        // #region agent log
+        fetch(
+          "http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Debug-Session-Id": "7b119d",
+            },
+            body: JSON.stringify({
+              sessionId: "7b119d",
+              hypothesisId: "H_E",
+              location: "protocol.ts:pondHandle",
+              message: "pond:// response 206 (buffer)",
+              data: {
+                url: request.url,
+                ext,
+                start,
+                end,
+                length,
+                total,
+              },
+              timestamp: Date.now(),
+            }),
+          },
+        ).catch(() => {});
+        // #endregion
+        return new Response(buf, { status: 206, headers });
+      }
+
+      const fullBuf = Buffer.alloc(total);
+      const fh = await open(resolved, "r");
+      try {
+        await fh.read(fullBuf, 0, total, 0);
+      } finally {
+        await fh.close();
+      }
+      headers.set("content-length", String(total));
+      // #region agent log
+      fetch(
+        "http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Debug-Session-Id": "7b119d",
+          },
+          body: JSON.stringify({
+            sessionId: "7b119d",
+            hypothesisId: "H_E",
+            location: "protocol.ts:pondHandle",
+            message: "pond:// response 200 (buffer)",
+            data: {
+              url: request.url,
+              ext,
+              size: total,
+              contentType,
+            },
+            timestamp: Date.now(),
+          }),
+        },
+      ).catch(() => {});
+      // #endregion
+      return new Response(fullBuf, { status: 200, headers });
     } catch (err) {
-      // Logged at `debug` rather than `warn` — the renderer now handles
-      // 404s gracefully (cards swap to placeholder, carousel skips broken
-      // slides) and a noisy main-process log was making real warnings
-      // hard to spot. The DevTools network panel still surfaces 404s if
-      // you need to debug a specific path.
       const isMissing =
         err instanceof Error && /ENOENT/.test(err.message ?? "");
       if (isMissing) {
@@ -76,10 +199,46 @@ export function registerProtocol() {
       } else {
         log.warn("[pond://] resolve failed", request.url, err);
       }
+      // #region agent log
+      fetch(
+        "http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Debug-Session-Id": "7b119d",
+          },
+          body: JSON.stringify({
+            sessionId: "7b119d",
+            hypothesisId: "H_AB",
+            location: "protocol.ts:pondHandle",
+            message: "pond:// error",
+            data: {
+              url: request.url,
+              isMissing,
+              err: String(err),
+            },
+            timestamp: Date.now(),
+          }),
+        },
+      ).catch(() => {});
+      // #endregion
       return new Response("not found", { status: 404 });
     }
   });
-  // `net` is imported only so Electron's ESM typings stay happy when the
-  // module is bundled; `protocol.handle` already handles streaming.
   void net;
+}
+
+function resolveTarget(
+  host: string,
+  file: string,
+): { resolved: string; prefix: string } {
+  if (host === META_HOST) {
+    const base = join(libraryRoot(), META_DIR);
+    return { resolved: resolve(join(base, file)), prefix: normalize(base) };
+  }
+  return {
+    resolved: resolve(itemFile(host, file)),
+    prefix: normalize(resolvePaths().itemsDir),
+  };
 }

@@ -3,16 +3,6 @@ import { pool } from "./pool";
 import { normalise } from "./reconcile";
 import type { Save } from "./types";
 
-/**
- * Hook that turns a free-text query into a `Save[]` slice. Calls the
- * main-process FTS5 search (`saves.search`) with a 200ms debounce so we
- * don't hammer the executor on every keystroke. Empty query short-
- * circuits to `null` so the saves-view falls back to the pool snapshot.
- *
- * Hits the executor in the background and merges every returned row
- * back into the pool so click-through detail views stay subscribed to
- * the same `Save` instance the grid is rendering.
- */
 export function useSearchResults(query: string): {
   results: Save[] | null;
   searching: boolean;
@@ -58,10 +48,6 @@ export function useSearchResults(query: string): {
   return { results, searching };
 }
 
-/**
- * Vector k-NN around a single save. Used by the item-detail "related"
- * surface. Returns `null` while loading so callers can show a skeleton.
- */
 export function useSimilarSaves(id: string | null | undefined): Save[] | null {
   const [results, setResults] = useState<Save[] | null>(null);
 

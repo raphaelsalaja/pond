@@ -1,8 +1,5 @@
 /// <reference lib="dom" />
 
-/**
- * Shared TikTok extraction helpers. Serializable via `.toString()`.
- */
 export function inPageTiktokNormalize() {
   function extractVideoId(href: string): string | null {
     try {

@@ -2,33 +2,6 @@ import { useSyncExternalStore } from "react";
 import { isTextOnlyTweet } from "@/components/card-thumb/tweet";
 import type { Save } from "@/pool/types";
 
-/**
- * Aspect-ratio resolution for save covers.
- *
- * Most rows in the pool reach the renderer without `width`/`height`
- * populated — the harvesters store the cover bytes but skip extracting
- * intrinsic dimensions, and the older twitter rows often have an empty
- * `files[]` altogether. Without dims the packer can't size cards, so
- * the masonry collapses to a uniform grid.
- *
- * To recover dims without a data-layer backfill, the card thumbnails
- * report each image's `naturalWidth/Height` (and each video's
- * `videoWidth/Height`) as they load. Reports are funneled through
- * `recordAspect()` here, which:
- *
- *   1. Stores the clamped ratio in a module-level Map keyed by save id
- *      (Map, not WeakMap — save references churn when the pool emits
- *      patches, so we want the measurement to outlive a single ref).
- *   2. Bumps a version counter on the next animation frame, batching
- *      a burst of image loads into a single re-pack.
- *
- * The waterfall packer hooks the version via `useAspectVersion()` and
- * re-runs `aspectFor()` for every save on each pack pass. Already-
- * measured cards return the same ratio, so positions for those rows
- * stay stable — only freshly-measured cards (and the cards below them
- * in the same column) shift.
- */
-
 const MIN_RATIO = 0.4;
 const MAX_RATIO = 2.5;
 
@@ -95,9 +68,6 @@ export function aspectFor(save: Save): number {
   const cover = save.files[save.coverIndex ?? 0];
   const w = cover?.width ?? save.width ?? null;
   const h = cover?.height ?? save.height ?? null;
-  // Text-only tweets have no measurable cover. <Card.Tweet> renders a
-  // landscape text card, so report 4/3 here so the waterfall/justified
-  // packers reserve a matching slot.
   const ratio = w && h ? clampRatio(w, h) : isTextOnlyTweet(save) ? 4 / 3 : 1;
   fallbackCache.set(save, ratio);
   return ratio;

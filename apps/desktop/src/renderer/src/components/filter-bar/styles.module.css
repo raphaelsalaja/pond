@@ -107,7 +107,7 @@
 .chip-color-dot {
   width: 10px;
   height: 10px;
-  border-radius: 999px;
+  border-radius: var(--ds-radius-full);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
 }
 
@@ -221,8 +221,7 @@
   min-width: 18px;
   height: 18px;
   padding: 0 5px;
-  font-family:
-    "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-family: var(--ds-font-mono);
   font-size: 11px;
   font-weight: 500;
   color: var(--ds-gray-11);
@@ -251,7 +250,7 @@
   width: 14px;
   height: 14px;
   border: 1px solid var(--ds-gray-a4);
-  border-radius: 999px;
+  border-radius: var(--ds-radius-full);
 }
 
 .empty {

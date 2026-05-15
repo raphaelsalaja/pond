@@ -1,8 +1,5 @@
 /// <reference lib="dom" />
 
-/**
- * Shared Cosmos extraction helpers. Serializable via `.toString()`.
- */
 export function inPageCosmosNormalize() {
   function extractElementId(href: string): string | null {
     try {

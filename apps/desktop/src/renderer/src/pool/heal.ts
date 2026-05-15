@@ -1,45 +1,3 @@
-/**
- * Renderer-side auto-heal for unplayable videos.
- *
- * Triggered from every place we render a `<video>` element: the grid
- * thumb (`HoverVideo`), the right-rail preview carousel, and the
- * fullscreen lightbox. When the element fires `onError` — almost always
- * because Electron's bundled ffmpeg can't decode a previously-downloaded
- * AV1/HEVC stream — we ask main to re-run yt-dlp with the new
- * H.264-only selector and overwrite the bad bytes.
- *
- * Per-session dedup
- *
- *   The same broken save can mount multiple `<video>` elements
- *   simultaneously (grid card + preview pane + lightbox). All three
- *   error in the same paint frame; without dedup we'd queue three
- *   redundant downloads. The `attempted` set caps it at one heal per
- *   save per renderer session.
- *
- *   We also cap to one heal per save per *lifetime of the broken bytes*
- *   on disk — if the heal lands a video that's *also* unplayable
- *   (extremely unlikely after the avc1 constraint, but possible if
- *   yt-dlp's fallbacks pick something exotic), we don't want an
- *   infinite redownload loop. A second `onError` on the same id within
- *   the same session is silently ignored; the user's manual Refresh
- *   button is the escape hatch.
- *
- * Retry-before-heal
- *
- *   A `pond://` 404 can fire transiently while the executor is
- *   replacing files on disk (delete old → write new). Before queuing
- *   yt-dlp we wait 500ms and HEAD the video URL once more; if it
- *   comes back 200 the `<video>` just hit a write-race and we skip
- *   the heal entirely.
- *
- * Failure modes
- *
- *   The main-side helper returns `{ ok: false, reason }` for the cases
- *   where there's nothing yt-dlp can do (image-only sources, deleted
- *   saves, missing URL). We log those at debug level — the placeholder
- *   the renderer is already painting is the right end state.
- */
-
 const STORAGE_KEY = "pond-heal-attempted";
 const RETRY_DELAY_MS = 500;
 
@@ -63,13 +21,29 @@ function persistAttempted(set: Set<string>): void {
 
 const attempted = loadAttempted();
 
-/**
- * Schedule a heal for `saveId`. If `videoSrc` is provided the helper
- * retries the URL once after a short delay before asking main to
- * redownload — this absorbs the transient 404 that fires while the
- * executor is replacing files on disk.
- */
 export function requestVideoHeal(saveId: string, videoSrc?: string): void {
+  // #region agent log
+  fetch("http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Debug-Session-Id": "7b119d",
+    },
+    body: JSON.stringify({
+      sessionId: "7b119d",
+      hypothesisId: "H2",
+      location: "heal.ts:requestVideoHeal",
+      message: "requestVideoHeal called",
+      data: {
+        saveId,
+        alreadyAttempted: attempted.has(saveId),
+        attemptedSize: attempted.size,
+        hasVideoSrc: !!videoSrc,
+      },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
   if (!saveId) return;
   if (attempted.has(saveId)) return;
   attempted.add(saveId);
@@ -108,6 +82,26 @@ function dispatchHeal(saveId: string): void {
 
   fn(saveId)
     .then((res) => {
+      // #region agent log
+      fetch(
+        "http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Debug-Session-Id": "7b119d",
+          },
+          body: JSON.stringify({
+            sessionId: "7b119d",
+            hypothesisId: "H1",
+            location: "heal.ts:dispatchHeal",
+            message: "redownloadVideo IPC resolved",
+            data: { saveId, res },
+            timestamp: Date.now(),
+          }),
+        },
+      ).catch(() => {});
+      // #endregion
       console.debug("[pond heal] redownload response", saveId, res);
     })
     .catch((err: unknown) => {

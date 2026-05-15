@@ -90,16 +90,6 @@ function Empty({ className, ...props }: EmptyProps) {
 
 export const Shell = { Root, Main, Header, Empty };
 
-/**
- * Mounts every cross-cutting concern that needs to live above the
- * page tree but inside the data router so it can use react-router
- * hooks: effect bridges, global overlay portals, theme.
- *
- * Pool hydration is kicked off in `main.tsx` via `bootPool()` so the
- * IndexedDB read is in flight before React mounts — by the time this
- * component runs, the pool is usually already populated from the
- * local cache and the library paints on frame 1.
- */
 export function AppRoot() {
   return (
     <>
@@ -118,12 +108,6 @@ export function AppRoot() {
   );
 }
 
-/**
- * Persistent sidebar plus an outlet for the active library page.
- * Pages render their own `<Shell.Main>` plus the optional
- * `<LibraryChrome>` and right-hand `<Outlet />` sibling for split
- * detail views.
- */
 export function LibraryLayout() {
   const platform = usePlatform();
 
@@ -135,11 +119,6 @@ export function LibraryLayout() {
   );
 }
 
-/**
- * Sticky header (`HeaderToolbar` + `FilterBar`) shared by every
- * library list page. Pulled out into a helper so adding a new section
- * doesn't have to re-derive the chrome.
- */
 export function LibraryChrome() {
   return (
     <Shell.Header>
@@ -149,11 +128,6 @@ export function LibraryChrome() {
   );
 }
 
-/**
- * Owns the entire settings shell — rail, drag strip, and the
- * `Shell.Main` body wrapper that scopes `code` styling for every
- * section. Sections render directly into the `<Outlet />`.
- */
 export function SettingsLayout() {
   const platform = usePlatform();
   const navigate = useNavigate();
@@ -204,11 +178,6 @@ export function SettingsLayout() {
   );
 }
 
-/**
- * Bare layout for full-takeover pages: welcome, reader. No sidebar,
- * no chrome — just the platform drag strip and a `Shell.Main` that
- * the page fills end-to-end.
- */
 export function StandaloneLayout() {
   const platform = usePlatform();
 

@@ -12,7 +12,7 @@ import {
   IconTagOutline18,
   IconUploadOutline18,
   IconUserOutline18,
-} from "@pond/icons/outline";
+} from "@pond/icons/outline/18";
 import type { SaveLike } from "@pond/schema/filters/match";
 import { matches } from "@pond/schema/filters/match";
 import { FIELD_IDS, FIELD_META } from "@pond/schema/filters/meta";
@@ -42,7 +42,11 @@ import { OptionalDropdown } from "./dropdowns/optional";
 import { StringDropdown } from "./dropdowns/string";
 import { TagsDropdown } from "./dropdowns/tags";
 import type { DropdownProps } from "./dropdowns/types";
-import { defaultPredicateFor, predicateIsActive } from "./helpers";
+import {
+  type AddCommitApi,
+  defaultPredicateFor,
+  predicateIsActive,
+} from "./helpers";
 import { pushRecent, useRecents } from "./recents";
 import { parseRelative } from "./relative-time";
 import { predicateKey, searchEntries } from "./score";
@@ -70,14 +74,6 @@ export const FIELD_ICONS: Record<FieldId, IconType> = {
   modifiedAt: IconCalendarOutline18,
 };
 
-/**
- * `display: "submenu"` collapses the group into a single parent
- * row that opens its fields as a nested submenu (Linear-style —
- * see the "Dates" entry in their issue filter menu). Without it,
- * the group's fields render flat in the top-level popup with a
- * separator above. Pond uses the submenu form for date fields
- * because they share a UI shape and benefit from being bundled.
- */
 interface FieldGroup {
   id: FieldGroupId;
   label: string;
@@ -99,8 +95,6 @@ export const FIELD_GROUPS: readonly FieldGroup[] = [
   },
 ];
 
-/** Group field ids by their `FieldMeta.group`. Mirrors the legacy
- * `filtersByGroup()` shape so `<FilterSubmenu>` can stay simple. */
 export function fieldsByGroup(): Record<FieldGroupId, FieldId[]> {
   const out: Record<FieldGroupId, FieldId[]> = {
     content: [],
@@ -114,9 +108,6 @@ export function fieldsByGroup(): Record<FieldGroupId, FieldId[]> {
   return out;
 }
 
-/** Friendly label for each comparator, sized for the chip's
- * "operator" segment. The chip flips between these depending on
- * the field type's allowed comparators. */
 export const COMPARATOR_LABELS: Record<ComparatorId, string> = {
   eq: "is",
   neq: "is not",
@@ -139,16 +130,6 @@ export const COMPARATOR_LABELS: Record<ComparatorId, string> = {
 
 const DATE_FIELDS: FieldId[] = ["savedAt", "publishedAt", "modifiedAt"];
 
-/**
- * Pick the dropdown component for a given field. We dispatch on the
- * field's *type* rather than its id so adding a new field that's
- * already covered by an existing type (string, number, enum, …)
- * doesn't require a new component.
- *
- * The note field is the only `optional` for now and gets its own
- * dropdown so the toggle reads as "with note / without note"
- * instead of the generic "is set" copy.
- */
 export function dropdownFor(field: FieldId): ComponentType<DropdownProps> {
   const meta = FIELD_META[field];
   switch (meta.type) {
@@ -171,43 +152,15 @@ export function dropdownFor(field: FieldId): ComponentType<DropdownProps> {
 
 interface FilterSubmenuProps {
   field: FieldId;
-  onCommit: (predicate: Predicate) => void;
-  /** Optional muted prefix rendered before the field label.
-   * Used by flat search results so a "Saved" submenu reads as
-   * "Dates › Saved" without lying about the parent menu. */
+  api: AddCommitApi;
+  onValueCommit?: (predicate: Predicate) => void;
   breadcrumb?: string;
 }
 
-/**
- * One row in the "Add filter" menu. Hovering / clicking opens a
- * nested submenu hosting the field's value picker — Linear-style:
- * the user picks a value once, the predicate commits, and the
- * whole menu chain closes.
- *
- * We hold a local `draft` predicate while the submenu is open so
- * the picker has somewhere to write before the user has finished.
- * Two flush points:
- *
- *   1. Single-click presets (`Menu.Item` with default
- *      `closeOnClick`) close the chain → `onOpenChange(false)`
- *      fires → we commit the latest draft.
- *   2. Multi-select pickers (Tags, Enum) keep the submenu open
- *      while the user toggles. They commit on close-by-outside /
- *      Escape via the same path.
- *
- * The draft is read through a ref inside the close handler so
- * setState batching from a preset click can't lose its update.
- *
- * `dirtyRef` tracks whether the user actually touched the picker
- * during this open. Without it, fields whose default predicate is
- * already "active" — `note` defaults to `{cmp:"exists", value:true}`,
- * which `predicateIsActive` reports as active — would auto-commit
- * on a mere hover-leave, dropping a chip the user never asked for.
- * Reset on every open so each visit starts clean.
- */
 export function FilterSubmenu({
   field,
-  onCommit,
+  api,
+  onValueCommit,
   breadcrumb,
 }: FilterSubmenuProps) {
   const meta = FIELD_META[field];
@@ -216,26 +169,37 @@ export function FilterSubmenu({
   const [draft, setDraft] = useState<Predicate>(() =>
     defaultPredicateFor(field),
   );
-  const draftRef = useRef(draft);
-  draftRef.current = draft;
-  const dirtyRef = useRef(false);
+  // Index of the predicate we appended to the URL the first time this
+  // submenu produced an active value. Subsequent picks update this slot
+  // in-place so multi-pick (tags, enums) keeps editing a single chip.
+  const liveIndexRef = useRef<number | null>(null);
 
   function handleChange(next: Predicate) {
-    dirtyRef.current = true;
     setDraft(next);
+    const active = predicateIsActive(next);
+    const idx = liveIndexRef.current;
+    if (idx == null) {
+      if (active) {
+        liveIndexRef.current = api.liveAdd(next);
+        onValueCommit?.(next);
+      }
+      return;
+    }
+    if (active) {
+      api.liveUpdate(idx, next);
+      onValueCommit?.(next);
+    } else {
+      api.liveUpdate(idx, null);
+      liveIndexRef.current = null;
+    }
   }
 
   return (
     <Menu.SubmenuRoot
       onOpenChange={(open) => {
-        if (open) {
-          dirtyRef.current = false;
-          return;
-        }
-        const d = draftRef.current;
-        if (dirtyRef.current && predicateIsActive(d)) onCommit(d);
+        if (open) return;
         setDraft(defaultPredicateFor(field));
-        dirtyRef.current = false;
+        liveIndexRef.current = null;
       }}
     >
       <Menu.SubmenuTrigger>
@@ -266,21 +230,16 @@ export function FilterSubmenu({
 interface GroupSubmenuProps {
   group: FieldGroup;
   fields: readonly FieldId[];
-  onCommit: (predicate: Predicate) => void;
+  api: AddCommitApi;
+  onValueCommit?: (predicate: Predicate) => void;
   breadcrumb?: string;
 }
 
-/**
- * Renders a `FieldGroup` (with `display: "submenu"`) as a single
- * row in the parent menu that, on hover, opens its child fields
- * in a nested popup. Stacks on top of `FilterSubmenu` so the
- * date field rows still get their own value-picker submenus —
- * three levels deep total: Add filter → Dates → Saved → picker.
- */
 export function GroupSubmenu({
   group,
   fields,
-  onCommit,
+  api,
+  onValueCommit,
   breadcrumb,
 }: GroupSubmenuProps) {
   const Icon = group.icon;
@@ -306,7 +265,12 @@ export function GroupSubmenu({
         <Menu.Positioner align="start" side="left" sideOffset={6}>
           <Menu.Popup>
             {fields.map((field) => (
-              <FilterSubmenu key={field} field={field} onCommit={onCommit} />
+              <FilterSubmenu
+                key={field}
+                field={field}
+                api={api}
+                onValueCommit={onValueCommit}
+              />
             ))}
           </Menu.Popup>
         </Menu.Positioner>
@@ -315,15 +279,6 @@ export function GroupSubmenu({
   );
 }
 
-/**
- * One row in the global Add filter search. Empty-query mode
- * renders the existing tree directly; non-empty mode flattens
- * the index into a ranked, fuzzy-matched list.
- *
- * `value` rows commit a fully-formed predicate on click. The
- * other three kinds open a submenu via `FilterSubmenu` /
- * `GroupSubmenu` so the user can keep drilling.
- */
 export type SearchEntry =
   | {
       kind: "field";
@@ -357,25 +312,12 @@ const CREATOR_CAP = 50;
 const HOST_CAP = 50;
 const COLOR_CAP = 36;
 
-/**
- * Build the full searchable index. Static entries (fields,
- * groups, presets) are constant; user-derived sets (tags,
- * creators, URL hostnames, dominant colors) are ranked by
- * frequency and capped so a noisy library can't blow up the
- * index.
- *
- * Each `value` entry's predicate matches exactly what the
- * corresponding dropdown writes when the user picks that value
- * by hand — single source of truth.
- */
 export function buildSearchIndex(saves: readonly SaveLike[]): SearchEntry[] {
   const groups = fieldsByGroup();
   const submenuGroupIds = new Set(
     FIELD_GROUPS.filter((g) => g.display === "submenu").map((g) => g.id),
   );
   const out: SearchEntry[] = [];
-
-  /* groups + fields */
   for (const group of FIELD_GROUPS) {
     if (group.display === "submenu") {
       out.push({
@@ -404,8 +346,6 @@ export function buildSearchIndex(saves: readonly SaveLike[]): SearchEntry[] {
       }
     }
   }
-
-  /* preset value entries */
   for (const id of FIELD_IDS) {
     const meta = FIELD_META[id];
     if (!meta.presets) continue;
@@ -435,8 +375,6 @@ export function buildSearchIndex(saves: readonly SaveLike[]): SearchEntry[] {
       }
     }
   }
-
-  /* date presets × date fields */
   for (const field of DATE_FIELDS) {
     const meta = FIELD_META[field];
     const breadcrumb = submenuGroupIds.has(meta.group)
@@ -465,8 +403,6 @@ export function buildSearchIndex(saves: readonly SaveLike[]): SearchEntry[] {
     label: "Without note",
     breadcrumb: FIELD_META.note.label,
   });
-
-  /* user-derived sets */
   appendTagEntries(out, saves);
   appendCreatorEntries(out, saves);
   appendHostEntries(out, saves);
@@ -588,17 +524,6 @@ function parseHost(url: string | null | undefined): string | null {
   }
 }
 
-/**
- * Compute "how many saves match this predicate" for every visible
- * `value` entry. Memoised by the saves snapshot reference and the
- * canonical predicate key, so re-typing a query that surfaces the
- * same predicates skips the per-save walk entirely.
- *
- * Counts are skipped for `field` / `group` / `field-in-group`
- * entries — the row opens a picker and the count would be the
- * total number of saves where the field is set, which isn't a
- * useful preview to dangle on hover.
- */
 function useEntryCounts(
   saves: readonly SaveLike[],
   entries: SearchEntry[] | null,
@@ -638,26 +563,11 @@ function useEntryCounts(
 const RESULT_CAP = 50;
 
 interface AddFilterMenuProps {
-  /** Called when the user picks a filter value. The caller
-   * appends it to the current `Query`. */
-  onCommit: (predicate: Predicate) => void;
-  /** Forwarded to the search input so the F hotkey can grab focus
-   * after the menu opens. The header toolbar passes this; the
-   * inline chip-bar AddTrigger doesn't bother. */
+  api: AddCommitApi;
   inputRef?: React.Ref<HTMLInputElement>;
 }
 
-/**
- * The popup contents shared by every "Add filter" surface. Owns
- * the search input, the index, the scoring/dedup pipeline, the
- * count cache, and the recents bridge.
- *
- * Render switch:
- *   - empty query → grouped tree (FIELD_GROUPS / FilterSubmenu /
- *     GroupSubmenu unchanged)
- *   - non-empty query → flat ranked list of `SearchEntry` rows
- */
-export function AddFilterMenu({ onCommit, inputRef }: AddFilterMenuProps) {
+export function AddFilterMenu({ api, inputRef }: AddFilterMenuProps) {
   const saves = useSaves();
   const [q, setQ] = useState("");
   const recentList = useRecents();
@@ -706,28 +616,34 @@ export function AddFilterMenu({ onCommit, inputRef }: AddFilterMenuProps) {
 
   const counts = useEntryCounts(saves, results);
 
-  const commit = useCallback(
+  // One-shot append, used by fully-formed value rows in the search list.
+  const commitOne = useCallback(
     (predicate: Predicate) => {
-      onCommit(predicate);
+      api.commitOne(predicate);
       pushRecent(predicateKey(predicate));
     },
-    [onCommit],
+    [api],
   );
+
+  // Recents bookkeeping for live submenu commits — we only want to push
+  // the first activation, not every keystroke / pick along the way.
+  const pushedOnceRef = useRef(false);
+  const onLiveValueCommit = useCallback((predicate: Predicate) => {
+    if (pushedOnceRef.current) return;
+    pushedOnceRef.current = true;
+    pushRecent(predicateKey(predicate));
+  }, []);
 
   return (
     <>
       <div className={styles["search-row"]}>
-        <Input.Root
+        <Input
           ref={inputRef}
           type="search"
           value={q}
           placeholder="Add filter…"
           onChange={(e) => setQ(e.target.value)}
           onKeyDown={(e) => {
-            // Base UI Menu has popup-level typeahead that pulls focus
-            // onto the item matching the typed letter. Shield text
-            // keys so the search input owns them; leave Escape/Tab/
-            // arrows/Enter to bubble for menu nav + dismissal.
             const k = e.key;
             if (k.length === 1 || k === "Backspace" || k === "Delete") {
               e.stopPropagation();
@@ -749,11 +665,17 @@ export function AddFilterMenu({ onCommit, inputRef }: AddFilterMenuProps) {
               <GroupSubmenu
                 group={group}
                 fields={groups[group.id]}
-                onCommit={commit}
+                api={api}
+                onValueCommit={onLiveValueCommit}
               />
             ) : (
               groups[group.id].map((field) => (
-                <FilterSubmenu key={field} field={field} onCommit={commit} />
+                <FilterSubmenu
+                  key={field}
+                  field={field}
+                  api={api}
+                  onValueCommit={onLiveValueCommit}
+                />
               ))
             )}
           </Fragment>
@@ -773,7 +695,9 @@ export function AddFilterMenu({ onCommit, inputRef }: AddFilterMenuProps) {
             groupFields={
               entry.kind === "group" ? groups[entry.group.id] : undefined
             }
-            onCommit={commit}
+            api={api}
+            onCommitOne={commitOne}
+            onValueCommit={onLiveValueCommit}
           />
         ))
       )}
@@ -785,17 +709,27 @@ interface ResultRowProps {
   entry: SearchEntry;
   count: number | undefined;
   groupFields: FieldId[] | undefined;
-  onCommit: (predicate: Predicate) => void;
+  api: AddCommitApi;
+  onCommitOne: (predicate: Predicate) => void;
+  onValueCommit?: (predicate: Predicate) => void;
 }
 
-function ResultRow({ entry, count, groupFields, onCommit }: ResultRowProps) {
+function ResultRow({
+  entry,
+  count,
+  groupFields,
+  api,
+  onCommitOne,
+  onValueCommit,
+}: ResultRowProps) {
   switch (entry.kind) {
     case "group":
       return (
         <GroupSubmenu
           group={entry.group}
           fields={groupFields ?? []}
-          onCommit={onCommit}
+          api={api}
+          onValueCommit={onValueCommit}
           breadcrumb={entry.breadcrumb || undefined}
         />
       );
@@ -803,7 +737,8 @@ function ResultRow({ entry, count, groupFields, onCommit }: ResultRowProps) {
       return (
         <FilterSubmenu
           field={entry.field}
-          onCommit={onCommit}
+          api={api}
+          onValueCommit={onValueCommit}
           breadcrumb={entry.breadcrumb || undefined}
         />
       );
@@ -811,14 +746,15 @@ function ResultRow({ entry, count, groupFields, onCommit }: ResultRowProps) {
       return (
         <FilterSubmenu
           field={entry.field}
-          onCommit={onCommit}
+          api={api}
+          onValueCommit={onValueCommit}
           breadcrumb={entry.breadcrumb || undefined}
         />
       );
     case "value": {
       const Icon = FIELD_ICONS[entry.predicate.field];
       return (
-        <Menu.Item onClick={() => onCommit(entry.predicate)}>
+        <Menu.Item onClick={() => onCommitOne(entry.predicate)}>
           {entry.swatchHex ? (
             <span
               className={styles["swatch-dot"]}
@@ -866,13 +802,6 @@ function formatCount(n: number): string {
   return String(n);
 }
 
-/**
- * Listens for `F` on the document and calls `onActivate()` when
- * the user isn't typing into another input. Mirrors Linear's
- * `F` shortcut for opening the filter menu. The cb is read
- * through a ref so the listener doesn't churn when callers pass
- * a fresh closure each render.
- */
 export function useFilterHotkey(onActivate: () => void): void {
   const cb = useRef(onActivate);
   cb.current = onActivate;

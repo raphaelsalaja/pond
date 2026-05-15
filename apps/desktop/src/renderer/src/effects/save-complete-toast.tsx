@@ -5,15 +5,6 @@ import { getPrefsSnapshot } from "@/pool/prefs";
 import type { SyncActionEvent } from "@/pool/reconcile";
 import type { Save } from "@/pool/types";
 
-/**
- * In-app "Saved from <source>" toast. The OS notification counterpart
- * lives in `apps/desktop/src/main/core/notifications.ts`. They split on
- * focus: this side only fires when a pond window is focused; the OS
- * notification covers the case where the user is over in their browser
- * clicking bookmark on a tweet.
- *
- * Both sides gate on `prefs.notifications.saveComplete`.
- */
 export function SaveCompleteToast() {
   const toast = useToast();
 
@@ -24,8 +15,6 @@ export function SaveCompleteToast() {
 
       if (getPrefsSnapshot()?.notifications?.saveComplete === false) return;
 
-      // OS notification handles unfocused windows; skip here so the
-      // user doesn't get hit with both at once.
       if (typeof document !== "undefined" && !document.hasFocus()) return;
 
       const save = event.data as Partial<Save> | null;

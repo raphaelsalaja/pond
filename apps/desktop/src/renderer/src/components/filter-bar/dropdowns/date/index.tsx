@@ -4,22 +4,6 @@ import { DATE_PRESETS } from "@/components/filter-bar/date-presets";
 import type { DropdownProps } from "@/components/filter-bar/dropdowns/types";
 import styles from "./styles.module.css";
 
-/**
- * Date-typed field dropdown. Mirrors Linear's "Due date" picker:
- * a filterable list of relative-time presets, with a "Custom date
- * or timeframe…" row that expands to absolute from/to inputs.
- *
- * Pond's date fields all describe past events (a save was imported,
- * a page was published, a row was last touched), so the presets
- * read as "Past X" rather than "X from now". The values encode as
- * ISO 8601 durations with a leading minus sign (`-P1W`, `-P3M`)
- * which the SQL builder + JS evaluator both resolve against
- * `Date.now()`.
- *
- * Presets are kept in `../../date-presets.ts` so the global Add
- * filter search index can flatten them into ranked rows without
- * dragging this whole picker into its import graph.
- */
 export function DateDropdown({ predicate, onChange }: DropdownProps) {
   const [q, setQ] = useState("");
   const [showCustom, setShowCustom] = useState(false);
@@ -75,7 +59,7 @@ export function DateDropdown({ predicate, onChange }: DropdownProps) {
   return (
     <div className={styles.body}>
       <div className={styles.search}>
-        <Input.Root
+        <Input
           type="search"
           value={q}
           placeholder="Filter…"
@@ -102,7 +86,7 @@ export function DateDropdown({ predicate, onChange }: DropdownProps) {
       </Menu.Item>
       {showCustom ? (
         <div className={styles.range}>
-          <Input.Root
+          <Input
             type="date"
             value={isoToYmd(from)}
             onChange={(e) => setRange(e.target.value, isoToYmd(to))}
@@ -110,7 +94,7 @@ export function DateDropdown({ predicate, onChange }: DropdownProps) {
           <span className={styles.dash} aria-hidden>
             –
           </span>
-          <Input.Root
+          <Input
             type="date"
             value={isoToYmd(to)}
             onChange={(e) => setRange(isoToYmd(from), e.target.value)}

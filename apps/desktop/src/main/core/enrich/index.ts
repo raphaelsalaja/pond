@@ -8,10 +8,11 @@ import {
 } from "@pond/schema/db";
 import type { Transaction } from "@pond/schema/tx";
 import { eq } from "drizzle-orm";
-import log from "electron-log/main.js";
 import { getDb } from "../../db";
 import { executeTransaction, registerSyncActionListener } from "../executor";
-import { getAiProviderConfig } from "../prefs";
+import { createPollingLoop } from "../jobs/runner";
+import { getAiProviderConfig, getPrefs } from "../prefs";
+import { classifySave } from "../safety/nsfw";
 import { extractArticle, summariseArticle } from "./jobs/article";
 import { analyseCover } from "./jobs/colors";
 import { enrichEmbedding } from "./jobs/embed";
@@ -27,38 +28,22 @@ import {
   status,
 } from "./queue";
 
-/**
- * Enrichment orchestrator. Runs as a single background tick that pulls
- * one job at a time off the persistent queue, executes it, and writes
- * the result through the same `Transaction` executor user edits use.
- *
- * Concurrency is intentionally one-at-a-time for v1 — Local LLMs
- * saturate easily and the queue-aware UI in settings makes the
- * sequential progress feel honest. Bumping to N>1 is a one-line change.
- */
-
 const TICK_MS = 1000;
-let tickHandle: NodeJS.Timeout | null = null;
-let working = false;
 let listenerAttached = false;
 
-/**
- * Start the worker. Idempotent — calling it twice is a no-op. Also
- * subscribes to `sync-action` so newly-created saves auto-enroll.
- */
+const loop = createPollingLoop({
+  name: "enrich",
+  tickMs: TICK_MS,
+  tick,
+});
+
 export function startEnrichWorker(): void {
   attachSyncListener();
-  if (tickHandle) return;
-  tickHandle = setInterval(() => {
-    void tick().catch((err) => log.warn("[pond enrich] tick error", err));
-  }, TICK_MS);
+  loop.start();
 }
 
 export function stopEnrichWorker(): void {
-  if (tickHandle) {
-    clearInterval(tickHandle);
-    tickHandle = null;
-  }
+  loop.stop();
 }
 
 function attachSyncListener(): void {
@@ -75,34 +60,20 @@ function attachSyncListener(): void {
 }
 
 async function tick(): Promise<void> {
-  if (working) return;
   const provider = await getAiProviderConfig();
   if (provider.kind === "off") {
-    // Even with AI off, we still want to compute dominant colours
-    // (always-local, no provider needed). Pull the next colours job
-    // only and skip any others.
     const job = await claimNext();
     if (!job) return;
     if (job.kind !== "colors") {
       await markSkipped(job.id, "ai_off");
       return;
     }
-    working = true;
-    try {
-      await runColors(job.id, job.saveId, job.attempts);
-    } finally {
-      working = false;
-    }
+    await runColors(job.id, job.saveId, job.attempts);
     return;
   }
   const job = await claimNext();
   if (!job) return;
-  working = true;
-  try {
-    await runJob(job);
-  } finally {
-    working = false;
-  }
+  await runJob(job);
 }
 
 async function runJob(job: {
@@ -155,7 +126,9 @@ async function runColors(
     save.width > 0 &&
     typeof save.height === "number" &&
     save.height > 0;
-  if (hasColors && hasBlur && hasDims) {
+  const safetyEnabled = (await getPrefs()).safety.blur === "on";
+  const hasNsfw = !safetyEnabled || typeof save.nsfwScore === "number";
+  if (hasColors && hasBlur && hasDims && hasNsfw) {
     await markDone(jobId);
     return;
   }
@@ -176,6 +149,13 @@ async function runColors(
       patch.width = result.width;
       patch.height = result.height;
     }
+    if (!hasNsfw) {
+      const nsfw = await classifySave({ id: save.id, files: save.files });
+      if (nsfw) {
+        patch.nsfwScore = nsfw.score;
+        patch.nsfwLabel = nsfw.label;
+      }
+    }
     if (Object.keys(patch).length === 0) {
       await markSkipped(jobId, "no_change");
       return;
@@ -192,7 +172,6 @@ async function runArticle(
   job: { id: string; saveId: string; attempts: number },
   save: Save,
 ): Promise<void> {
-  // Article extraction is local. If we already have HTML cached, skip.
   if (save.articleHtml && save.articleText) {
     await markDone(job.id);
     return;
@@ -268,7 +247,6 @@ async function runEmbed(
   job: { id: string; saveId: string; attempts: number },
   save: Save,
 ): Promise<void> {
-  // Skip if the embedding is fresh relative to the latest content edit.
   if (
     save.embeddingUpdatedAt &&
     save.embeddingUpdatedAt.getTime() > save.createdAt.getTime() - 1
@@ -301,12 +279,6 @@ async function loadSave(id: string): Promise<Save | null> {
   return rows[0] ?? null;
 }
 
-/**
- * Compose the AI vision result into a save patch. Honours autonomy:
- *   - `auto` / `auto-apply` → write straight into aiCaption / aiTags / etc.
- *   - `suggest` → write into `aiSuggestions` for inbox review.
- *   - `off` → unreachable; tier-off jobs get skipped before this fn.
- */
 async function mapVisionToPatch(
   save: Save,
   vision: import("./jobs/vision").VisionResult,
@@ -438,7 +410,6 @@ async function applyPatch(
   await executeTransaction(tx);
 }
 
-/** Trigger enrichment for one save, or all unprocessed if id is null. */
 export async function startEnrich(
   saveId: string | null,
 ): Promise<{ ok: true }> {
@@ -465,11 +436,6 @@ export async function enrichStatus(): Promise<{
   return await status();
 }
 
-/**
- * User decision in the inbox: accept or reject one suggestion field. On
- * accept we move the value into the corresponding canonical column;
- * either way we mark `appliedAt` so the inbox can hide the row.
- */
 export async function applyAiSuggestion(
   saveId: string,
   field: "tags" | "caption" | "ocr" | "classification" | "summary",

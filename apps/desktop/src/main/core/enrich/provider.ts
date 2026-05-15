@@ -3,17 +3,6 @@ import log from "electron-log/main.js";
 import { getAiGatewayKey } from "../../keychain";
 import { getAiProviderConfig } from "../prefs";
 
-/**
- * Provider abstraction for the enrichment worker. All four tiers
- * (Local Ollama / AI Gateway / Direct provider key / Off) speak the
- * OpenAI Chat Completions + Embeddings shape, so a single thin client
- * is enough — we don't pull in `@ai-sdk/*` to keep the desktop bundle
- * small.
- *
- * The job code calls `chatVision`, `chatText`, or `embed`; this module
- * resolves the active provider config and dispatches.
- */
-
 export interface ProviderClient {
   kind: AiProviderConfig["kind"];
   baseUrl: string;
@@ -24,14 +13,8 @@ export interface ProviderClient {
 }
 
 const GATEWAY_BASE_URL = "https://gateway.ai.cloudflare.com";
-// Vercel AI Gateway speaks OpenAI-compatible v1 endpoints under this prefix.
 const VERCEL_GATEWAY_BASE_URL = "https://gateway.ai.vercel.app/v1";
 
-/**
- * Resolve the active provider client. Returns `null` if AI is `off` or
- * if the necessary credential is missing (e.g. Gateway tier with no
- * key in the keychain).
- */
 export async function getProviderClient(): Promise<ProviderClient | null> {
   const config = await getAiProviderConfig();
   if (config.kind === "off") return null;
@@ -110,11 +93,6 @@ export async function chat(
   return json.choices?.[0]?.message?.content ?? "";
 }
 
-/**
- * Convenience wrapper: send an image to the vision model and parse a
- * structured JSON response. Strips any leading code fences the model
- * sometimes adds around JSON output.
- */
 export async function visionExtract(
   client: ProviderClient,
   imageBase64: string,
@@ -179,12 +157,6 @@ export async function embed(
   return vec;
 }
 
-/**
- * Probe the configured Local endpoint to see if Ollama (or another
- * OpenAI-compatible server) is reachable. Used by the AI settings page
- * to flip the "Local detected" badge without making the user hit Save
- * first.
- */
 export async function detectOllama(
   baseUrl: string,
 ): Promise<{ ok: boolean; modelCount?: number }> {
@@ -207,10 +179,6 @@ export async function detectOllama(
   }
 }
 
-/**
- * LLMs occasionally wrap JSON responses in markdown fences. Strip them
- * before parsing so the worker tolerates `auto-apply` mode silently.
- */
 function parseJsonLoose(raw: string): unknown {
   if (!raw) return null;
   let cleaned = raw.trim();
@@ -220,7 +188,6 @@ function parseJsonLoose(raw: string): unknown {
   try {
     return JSON.parse(cleaned);
   } catch {
-    // Last-ditch: try to find the first `{...}` block.
     const first = cleaned.indexOf("{");
     const last = cleaned.lastIndexOf("}");
     if (first >= 0 && last > first) {

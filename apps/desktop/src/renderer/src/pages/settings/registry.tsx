@@ -7,6 +7,8 @@ import {
   IconConnectedDotsOutline18,
   IconImagesOutline18,
   IconMagnifierSparkleOutline18,
+  IconShapesOutline18,
+  IconShieldOutline18,
   IconSliderOutline18,
   IconSparkleOutline18,
   IconStackOutline18,
@@ -16,7 +18,7 @@ import {
   IconWandSparkleOutline18,
   IconWindowCode2Outline18,
   IconWorkflowOutline18,
-} from "@pond/icons/outline";
+} from "@pond/icons/outline/18";
 import type { IconComponent } from "@pond/icons/types";
 import type { ComponentType } from "react";
 import { AboutSection } from "./sections/about";
@@ -26,31 +28,18 @@ import { AiSearchSection } from "./sections/ai-search";
 import { AutomationSection } from "./sections/automation";
 import { BackupsSection } from "./sections/backups";
 import { CaptureBehaviorSection } from "./sections/capture-behavior";
+import { ComponentsSection } from "./sections/components";
 import { DeveloperSection } from "./sections/developer";
 import { ExtensionSection } from "./sections/extension";
 import { IntegrationsSection } from "./sections/integrations";
 import { MediaSection } from "./sections/media";
 import { NotificationsSection } from "./sections/notifications";
 import { PreferencesSection } from "./sections/preferences";
+import { SafetySection } from "./sections/safety";
 import { StorageSection } from "./sections/storage";
 import { TagsSection } from "./sections/tags";
 import { TrashPrefsSection } from "./sections/trash";
 import { UpdatesSection } from "./sections/updates";
-
-/**
- * Section registry — single source of truth for the settings sidebar
- * AND the route definitions. Adding a section is a one-line edit:
- *
- *   1. Build the component in `sections/<name>.tsx`.
- *   2. Add an entry below — `path` becomes the URL, `group` controls
- *      the sidebar bucket.
- *
- * Group ordering in the sidebar follows `GROUP_ORDER` further down.
- *
- * Content-type-symmetric layout: Media is a peer group so future
- * types (audio, documents) drop in as sections on the Media page
- * without rerouting.
- */
 
 export type SectionGroup =
   | "library"
@@ -61,7 +50,6 @@ export type SectionGroup =
 
 export interface SectionDef {
   id: string;
-  /** Path segment after `/settings/` (no leading slash). */
   path: string;
   label: string;
   icon: IconComponent;
@@ -70,7 +58,6 @@ export interface SectionDef {
 }
 
 export const SECTIONS: SectionDef[] = [
-  /* -------- Library -------- */
   {
     id: "storage",
     path: "storage",
@@ -96,6 +83,14 @@ export const SECTIONS: SectionDef[] = [
     component: TrashPrefsSection,
   },
   {
+    id: "safety",
+    path: "safety",
+    label: "Safety",
+    icon: IconShieldOutline18,
+    group: "library",
+    component: SafetySection,
+  },
+  {
     id: "backups",
     path: "backups",
     label: "Backups & Export",
@@ -104,7 +99,6 @@ export const SECTIONS: SectionDef[] = [
     component: BackupsSection,
   },
 
-  /* -------- Media -------- */
   {
     id: "media",
     path: "media",
@@ -114,14 +108,10 @@ export const SECTIONS: SectionDef[] = [
     component: MediaSection,
   },
 
-  /* -------- Capture -------- */
   {
     id: "sources",
-    // Path stays `integrations` so the `/settings/integrations/:source`
-    // route in App.tsx and the `?connect=<source>` deep link from
-    // refresh-action.tsx keep working without an extra redirect.
     path: "integrations",
-    label: "Sources",
+    label: "Connected Apps",
     icon: IconConnectedDotsOutline18,
     group: "capture",
     component: IntegrationsSection,
@@ -143,7 +133,6 @@ export const SECTIONS: SectionDef[] = [
     component: ExtensionSection,
   },
 
-  /* -------- Intelligence -------- */
   {
     id: "ai-provider",
     path: "ai/provider",
@@ -169,7 +158,6 @@ export const SECTIONS: SectionDef[] = [
     component: AiSearchSection,
   },
 
-  /* -------- App -------- */
   {
     id: "preferences",
     path: "preferences",
@@ -211,6 +199,14 @@ export const SECTIONS: SectionDef[] = [
     component: DeveloperSection,
   },
   {
+    id: "components",
+    path: "components",
+    label: "Components",
+    icon: IconShapesOutline18,
+    group: "app",
+    component: ComponentsSection,
+  },
+  {
     id: "about",
     path: "about",
     label: "About",
@@ -221,39 +217,25 @@ export const SECTIONS: SectionDef[] = [
 ];
 
 export const GROUP_ORDER: readonly SectionGroup[] = [
+  "app",
   "library",
   "media",
   "capture",
   "intelligence",
-  "app",
 ] as const;
 
-/**
- * Display label for each sidebar group. Every group is labeled in the
- * new layout — the old "unlabeled top group" pattern (which mirrored
- * Linear's account section) goes away because no group is uniquely
- * "yours" the way `personal` was.
- */
 export const GROUP_LABELS: Record<SectionGroup, string | null> = {
+  app: null,
   library: "Library",
   media: "Media",
   capture: "Capture",
   intelligence: "Intelligence",
-  app: "App",
 };
 
 export function sectionsByGroup(group: SectionGroup): SectionDef[] {
   return SECTIONS.filter((s) => s.group === group);
 }
 
-/**
- * Default landing route when the user navigates to `/settings`.
- *
- * Computed eagerly so consumers don't have to handle `undefined` —
- * if the registry is ever emptied this will throw at module load,
- * which is the right failure mode (the settings rail is meaningless
- * with zero sections).
- */
 function pickDefault(): SectionDef {
   const first = SECTIONS[0];
   if (!first) throw new Error("settings registry is empty");

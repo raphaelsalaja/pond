@@ -13,10 +13,10 @@
   outline: none;
   background: var(--ds-gray-12);
   border-radius: var(--ds-radius-md);
-  box-shadow: 0 4px 16px -4px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--ds-shadow-tooltip);
   transition:
-    opacity 120ms ease,
-    transform 120ms ease;
+    opacity var(--ds-duration-snap) var(--ds-easing-standard),
+    transform var(--ds-duration-snap) var(--ds-easing-standard);
   -webkit-app-region: no-drag;
 
   &[data-starting-style],

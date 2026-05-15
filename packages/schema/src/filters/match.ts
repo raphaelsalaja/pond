@@ -1,25 +1,5 @@
-/**
- * Pure-JS query evaluator. Used as a fallback for filters that fall
- * out of `to-sql`'s coverage and as the source of truth for tests.
- *
- * Renderer-safe: no Drizzle, no Node. The projection layer is
- * structural — we accept any object that has the union of the
- * fields the AST can reference. Both the renderer's `Save` (ISO
- * strings) and the main process's `Save` (Date objects) match.
- *
- * Field projections live here in compact form so the evaluator
- * stays a single import. SQL projections live in `./fields.ts`
- * (main-only).
- */
-
 import type { Clause, ComparatorId, FieldId, Predicate, Query } from "./types";
 
-/**
- * Structural shape of a save row, covering every field the AST can
- * project. Kept loose on purpose so we accept both the renderer
- * (ISO strings, plain JSON) and main (Drizzle row with Date) shapes
- * without an adapter step.
- */
 export interface SaveLike {
   id: string;
   source: string | null;
@@ -117,10 +97,6 @@ function stripHash(hex: string): string {
 }
 
 function durationSeconds(s: SaveLike): number | null {
-  // We mirror the SQL projection in `fields.ts` exactly so JS and
-  // SQL agree on whether a duration filter matches. The walk is
-  // ordered the same way: source-specific scalars first, then
-  // ytdlp sidecar, then per-source media arrays.
   const raw = s.rawJson;
   if (!raw) return null;
 
@@ -136,7 +112,6 @@ function durationSeconds(s: SaveLike): number | null {
     pick(raw, ["pinterest", "ytdlp", "duration"]),
     pick(raw, ["arena", "ytdlp", "duration"]),
     pick(raw, ["cosmos", "ytdlp", "duration"]),
-    pick(raw, ["reddit", "ytdlp", "duration"]),
     pick(raw, ["article", "ytdlp", "duration"]),
   ];
   for (const c of candidates) {
@@ -290,12 +265,6 @@ function resolveNumeric(v: unknown): number {
   return Number.NaN;
 }
 
-/**
- * Minimal ISO 8601 duration parser. Supports the subset Linear's
- * filter UI exposes: `P<n>Y`, `P<n>M`, `P<n>W`, `P<n>D`, with a
- * leading sign meaning "ago" (`-`) or "from now" (`+`). Returns
- * milliseconds.
- */
 function isoDurationToMillis(input: string): number | null {
   const m = input.match(
     /^([+-]?)P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)W)?(?:(\d+)D)?$/,

@@ -40,6 +40,37 @@ a smaller function, or a different shape. Reach for those first.
 - Don't write JSDoc on presentational primitives (`Settings.Item`,
   `Card.Root`). The component name and the props interface say it all.
 
+- Don't write essay-length comments. Two lines that name the problem
+  and the lever almost always beat a fourteen-line history lesson. If
+  the explanation truly needs paragraphs, write an ADR, a commit
+  message, or a short file-top prose block — not a wall wedged
+  between two lines of config.
+
+  Bad:
+
+  ```ts
+  // `@pond/ui` is workspace-resolved, which means Vite's dep
+  // optimizer pre-bundles it once at boot from
+  // `node_modules/@pond/ui/src/index.ts` and serves the bundle
+  // from `.vite/deps/`. Source edits inside `packages/ui/` then
+  // sit outside the live module graph — HMR has nothing to
+  // invalidate and you have to restart the dev server to see
+  // changes. Aliasing the bare specifier to the source folder
+  // pulls the package back into the graph so Fast Refresh and
+  // CSS-modules HMR both work as if the code were app-local.
+  // (… five more lines …)
+  "@pond/ui": resolve(__dirname, "../../packages/ui/src"),
+  ```
+
+  Good:
+
+  ```ts
+  // Pull into the live module graph so HMR works on workspace
+  // edits — Vite's dep optimizer otherwise freezes the package
+  // at dev-server boot.
+  "@pond/ui": resolve(__dirname, "../../packages/ui/src"),
+  ```
+
 ### Do
 
 - Do explain **why** when the why is non-obvious: a workaround for an

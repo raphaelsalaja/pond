@@ -3,21 +3,6 @@ import { join, sep } from "node:path";
 import log from "electron-log/main.js";
 import { itemsRoot, libraryRoot, resolvePaths } from "../paths";
 
-/**
- * Disk-usage accounting for the on-disk library.
- *
- * Every renderer surface that wants to show "Pond is using X GB" funnels
- * through `getStorageSnapshot()`; the watcher in `storage-watcher.ts`
- * reuses the same path so a single TTL cache shields the disk from a
- * burst of reads (settings page first paint + watcher tick + the next
- * watcher tick all collapse to one walk).
- *
- * Walks are recursive but skip symlinks and swallow per-file errors so
- * one unreadable entry can't fail the whole pass. The result is
- * intentionally a flat byte count per category — finer-grained
- * subtotals would need to live in the renderer if we ever want them.
- */
-
 export interface LibraryBreakdown {
   items: number;
   videoCache: number;
@@ -44,11 +29,6 @@ export interface StorageSnapshot {
   computedAt: string;
 }
 
-/**
- * Subdirectory names we recognise inside `libraryRoot`. Anything else
- * is bucketed as `other`. The DB lives outside the library root (in
- * `appData/index.db`) so we account for it separately.
- */
 const KNOWN_BUCKETS: ReadonlyArray<{
   dir: string;
   bucket: keyof Omit<LibraryBreakdown, "total">;
@@ -108,12 +88,6 @@ export async function getStorageSnapshot(): Promise<StorageSnapshot> {
   }
 }
 
-/**
- * Walk the library root and bucket every file's size into one of the
- * recognised categories. The SQLite db lives outside the library
- * (under `appData/`), so we resolve and stat it separately and roll
- * its bytes into the `db` bucket.
- */
 export async function computeLibraryBreakdown(): Promise<LibraryBreakdown> {
   const root = libraryRoot();
   const itemsAbs = itemsRoot();
@@ -149,9 +123,6 @@ export async function computeLibraryBreakdown(): Promise<LibraryBreakdown> {
     }
   }
 
-  // Items can also live nested under `items/<id>.info/` — already
-  // covered by the recursive walk above. The branch is purely defensive
-  // for edge cases where the items dir is symlinked outside `root`.
   if (!entries.some((e) => e.abs === itemsAbs) && itemsAbs.startsWith(root)) {
     buckets.items += await sumDirSizes(itemsAbs);
   }
@@ -159,9 +130,6 @@ export async function computeLibraryBreakdown(): Promise<LibraryBreakdown> {
   try {
     const dbPath = (await import("../paths")).resolvePaths().indexDb;
     buckets.db += await safeFileSize(dbPath);
-    // Also account for SQLite's wal/shm sidecars when they exist —
-    // they can balloon between checkpoints and the user has every
-    // right to see their footprint.
     buckets.db += await safeFileSize(`${dbPath}-wal`);
     buckets.db += await safeFileSize(`${dbPath}-shm`);
   } catch (err) {
@@ -178,18 +146,10 @@ export async function computeLibraryBreakdown(): Promise<LibraryBreakdown> {
   return { ...buckets, total };
 }
 
-/**
- * Volume-level free / total bytes, plus a "used by other apps"
- * derivation (`total - free - libraryTotal`). `statfs` lands on
- * Node 18+, available in Electron's bundled Node since 22.
- */
 export async function getDeviceDiskInfo(path: string): Promise<DeviceDiskInfo> {
   try {
     const stats = await statfs(path);
     const totalBytes = Number(stats.blocks) * Number(stats.bsize);
-    // `bavail` is "blocks available to non-superuser" which is what
-    // Finder shows; `bfree` would include reserved blocks the kernel
-    // reserves for root.
     const freeBytes = Number(stats.bavail) * Number(stats.bsize);
     return {
       totalBytes: Number.isFinite(totalBytes) ? totalBytes : 0,
@@ -216,9 +176,6 @@ async function sumDirSizes(dir: string): Promise<number> {
     const abs = join(dir, entry.name);
     if (entry.isDirectory()) {
       total += await sumDirSizes(abs);
-      // Yield to the event loop every once in a while so a huge
-      // library can't starve the main process. The breakdown is run
-      // off a TTL cache so the user-visible cost of yielding is nil.
       if (abs.split(sep).length % 4 === 0) {
         await Promise.resolve();
       }
@@ -238,9 +195,4 @@ async function safeFileSize(path: string): Promise<number> {
   }
 }
 
-/**
- * Compatibility re-export so callers that already imported
- * `resolvePaths` from `paths.ts` keep working when this file is
- * stubbed out in unit tests.
- */
 export { resolvePaths };

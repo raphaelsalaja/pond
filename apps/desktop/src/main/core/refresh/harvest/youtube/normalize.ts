@@ -1,9 +1,5 @@
 /// <reference lib="dom" />
 
-/**
- * Shared YouTube extraction helpers. Serializable via `.toString()`
- * for injection into both list and item collectors.
- */
 export function inPageYoutubeNormalize() {
   function extractVideoId(href: string): string | null {
     try {

@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  min-width: 280px;
+  min-width: 240px;
   padding: 8px;
 }
 
@@ -39,7 +39,7 @@
   margin: 0;
   overflow: hidden;
   border: 1px solid var(--ds-gray-a4);
-  border-radius: var(--ds-radius-sm, 6px);
+  border-radius: var(--ds-radius-sm);
 }
 
 .sr-only {
@@ -78,6 +78,6 @@
 }
 
 .dir-btn[aria-pressed="true"] {
-  color: light-dark(#fff, #141414);
-  background: light-dark(#141414, #f5f5f5);
+  color: var(--ds-gray-1);
+  background: var(--ds-gray-12);
 }

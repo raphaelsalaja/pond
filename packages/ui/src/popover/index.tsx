@@ -1,32 +1,26 @@
 import { Popover as Base } from "@base-ui/react/popover";
 import type { ReactNode } from "react";
+import { renderFrozenPopup } from "../freeze/popup";
+import { cn } from "../lib/cn";
+import popupStyles from "../lib/popup.module.css";
 import styles from "./styles.module.css";
 
-interface RootProps extends React.ComponentProps<typeof Base.Root> {}
+interface ContentProps
+  extends Omit<Base.Positioner.Props, "className" | "children"> {
+  children?: ReactNode;
+  className?: string;
+}
 
-function Root({ ...props }: RootProps) {
+function Root(props: Base.Root.Props) {
   return <Base.Root {...props} />;
 }
 
-interface TriggerProps extends React.ComponentProps<typeof Base.Trigger> {}
-
-function Trigger({ ...props }: TriggerProps) {
+function Trigger(props: Base.Trigger.Props) {
   return <Base.Trigger {...props} />;
 }
 
-interface CloseProps extends React.ComponentProps<typeof Base.Close> {}
-
-function Close({ ...props }: CloseProps) {
+function Close(props: Base.Close.Props) {
   return <Base.Close {...props} />;
-}
-
-interface ContentProps
-  extends Omit<
-    React.ComponentProps<typeof Base.Positioner>,
-    "className" | "children"
-  > {
-  children?: ReactNode;
-  className?: string;
 }
 
 function Content({
@@ -47,7 +41,8 @@ function Content({
         {...rest}
       >
         <Base.Popup
-          className={[styles.popup, className ?? ""].filter(Boolean).join(" ")}
+          className={cn(popupStyles.popup, className)}
+          render={renderFrozenPopup}
         >
           {children}
         </Base.Popup>
@@ -56,81 +51,49 @@ function Content({
   );
 }
 
-interface ItemProps extends React.ComponentPropsWithoutRef<"button"> {}
-
-function Item({ className, type = "button", ...props }: ItemProps) {
+function Item({
+  className,
+  type = "button",
+  ...props
+}: React.ComponentProps<"button">) {
   return (
     <button
       type={type}
       role="menuitem"
-      className={[styles.item, className ?? ""].filter(Boolean).join(" ")}
+      className={cn(popupStyles.item, className)}
       {...props}
     />
   );
 }
 
-interface ItemIconProps extends React.ComponentPropsWithoutRef<"span"> {}
-
-function ItemIcon({ className, ...props }: ItemIconProps) {
+function ItemIcon({ className, ...props }: React.ComponentProps<"span">) {
   return (
     <span
       aria-hidden
-      className={[styles["item-icon"], className ?? ""]
-        .filter(Boolean)
-        .join(" ")}
+      className={cn(popupStyles["item-icon"], className)}
       {...props}
     />
   );
 }
 
-interface ItemLabelProps extends React.ComponentPropsWithoutRef<"span"> {}
-
-function ItemLabel({ className, ...props }: ItemLabelProps) {
+function ItemLabel({ className, ...props }: React.ComponentProps<"span">) {
   return (
-    <span
-      className={[styles["item-label"], className ?? ""]
-        .filter(Boolean)
-        .join(" ")}
-      {...props}
-    />
+    <span className={cn(popupStyles["item-label"], className)} {...props} />
   );
 }
 
-interface ItemKbdProps extends React.ComponentPropsWithoutRef<"span"> {}
+function ItemKbd({ className, ...props }: React.ComponentProps<"span">) {
+  return <span className={cn(popupStyles["item-kbd"], className)} {...props} />;
+}
 
-function ItemKbd({ className, ...props }: ItemKbdProps) {
+function GroupLabel({ className, ...props }: React.ComponentProps<"div">) {
   return (
-    <span
-      className={[styles["item-kbd"], className ?? ""]
-        .filter(Boolean)
-        .join(" ")}
-      {...props}
-    />
+    <div className={cn(popupStyles["group-label"], className)} {...props} />
   );
 }
 
-interface GroupLabelProps extends React.ComponentPropsWithoutRef<"div"> {}
-
-function GroupLabel({ className, ...props }: GroupLabelProps) {
-  return (
-    <div
-      className={[styles["group-label"], className ?? ""]
-        .filter(Boolean)
-        .join(" ")}
-      {...props}
-    />
-  );
-}
-
-interface SeparatorProps extends React.ComponentPropsWithoutRef<"hr"> {}
-
-function Separator({ className, ...props }: SeparatorProps) {
-  return (
-    <hr
-      className={[styles.separator, className ?? ""].filter(Boolean).join(" ")}
-      {...props}
-    />
-  );
+function Separator({ className, ...props }: React.ComponentProps<"hr">) {
+  return <hr className={cn(popupStyles.separator, className)} {...props} />;
 }
 
 export const Popover = {

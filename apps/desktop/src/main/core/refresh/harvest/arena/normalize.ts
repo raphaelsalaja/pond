@@ -1,8 +1,5 @@
 /// <reference lib="dom" />
 
-/**
- * Shared Are.na extraction helpers. Serializable via `.toString()`.
- */
 export function inPageArenaNormalize() {
   function extractBlockId(href: string): string | null {
     try {

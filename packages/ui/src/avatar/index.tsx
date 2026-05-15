@@ -1,37 +1,20 @@
 import { Avatar as Base } from "@base-ui/react/avatar";
+import { cn } from "../lib/cn";
 import styles from "./styles.module.css";
 
-interface RootProps extends React.ComponentPropsWithoutRef<"span"> {}
+function Root({ className, ...props }: Base.Root.Props) {
+  return <Base.Root className={cn(styles.root, className)} {...props} />;
+}
 
-function Root({ className, ...props }: RootProps) {
+function Image({ className, alt = "", ...props }: Base.Image.Props) {
   return (
-    <Base.Root
-      className={[styles.root, className ?? ""].filter(Boolean).join(" ")}
-      {...props}
-    />
+    <Base.Image alt={alt} className={cn(styles.image, className)} {...props} />
   );
 }
 
-interface ImageProps extends React.ComponentPropsWithoutRef<"img"> {}
-
-function Image({ className, alt = "", ...props }: ImageProps) {
+function Fallback({ className, ...props }: Base.Fallback.Props) {
   return (
-    <Base.Image
-      alt={alt}
-      className={[styles.image, className ?? ""].filter(Boolean).join(" ")}
-      {...props}
-    />
-  );
-}
-
-interface FallbackProps extends React.ComponentPropsWithoutRef<"span"> {}
-
-function Fallback({ className, ...props }: FallbackProps) {
-  return (
-    <Base.Fallback
-      className={[styles.fallback, className ?? ""].filter(Boolean).join(" ")}
-      {...props}
-    />
+    <Base.Fallback className={cn(styles.fallback, className)} {...props} />
   );
 }
 

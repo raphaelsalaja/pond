@@ -1,10 +1,5 @@
 /// <reference lib="dom" />
 
-/**
- * Are.na single-block collector. Scrapes the `/block/<id>` page for
- * rich metadata: full content, connected channels, source attribution.
- */
-
 import type { ScrapedHarvest } from "../types";
 import { inPageArenaNormalize } from "./normalize";
 

@@ -51,11 +51,6 @@ export default defineConfig({
   preload: {
     build: {
       externalizeDeps: { exclude: ["@pond/schema"] },
-      // The renderer's `webPreferences.sandbox` is true. Sandboxed
-      // preload scripts must be CommonJS — Chromium's renderer sandbox
-      // does not support ESM `import` at preload load time. Emit a
-      // single `.cjs` bundle (the package's `type: "module"` would
-      // otherwise force `.js` to be ESM).
       rollupOptions: {
         input: {
           index: resolve(__dirname, "src/preload/index.ts"),
@@ -77,18 +72,16 @@ export default defineConfig({
       alias: {
         "@": resolve(__dirname, "src/renderer/src"),
         "@shared": resolve(__dirname, "src/shared"),
-        // `@pond/icons` ships .ts barrel files (`fill/index.ts`,
-        // `fill-duo/index.ts`, `outline/index.ts`, `social-media/index.ts`)
-        // that re-export from the Nucleo packages. Aliasing the package
-        // specifier to the source folder lets Vite's default extension
-        // resolution pick up the barrels via subpath imports like
-        // `@pond/icons/fill-duo` and `@pond/icons/types`.
         "@pond/icons": resolve(__dirname, "../../icons"),
+        "@pond/ui": resolve(__dirname, "../../packages/ui/src"),
       },
     },
     build: {
       rollupOptions: {
-        input: resolve(__dirname, "src/renderer/index.html"),
+        input: {
+          index: resolve(__dirname, "src/renderer/index.html"),
+          suggestion: resolve(__dirname, "src/renderer/suggestion.html"),
+        },
       },
     },
   },

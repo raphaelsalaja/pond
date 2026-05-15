@@ -1,41 +1,23 @@
 import type { Source } from "@pond/schema/db";
 import { saves } from "@pond/schema/db";
 import type { IngestPayload } from "@pond/schema/ingest";
+import type { Transaction } from "@pond/schema/tx";
 import { eq } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../../db";
+import { executeTransaction } from "../executor";
 import { ingestFromHttp, type LocalIngestExtras } from "../ingest";
+import { refreshFromArenaApi } from "./harvest/arena/api";
+import { refreshFromPinterestRelay } from "./harvest/pinterest/api";
 import { refreshFromOgTags } from "./og";
 import { harvestUrl, isSourceConnected } from "./scrape-window";
 import { classifyUrl, supportsYtDlp } from "./sources";
 import { downloadVideo } from "./yt-dlp";
 
-/**
- * In-app refresh path for a single saved item. Replaces the old
- * "open-in-browser → re-bookmark" flow for everything we can scrape
- * without bouncing the user out.
- *
- * Strategy, per save:
- *   1. If the URL is non-auth-walled, try the cheap server-side OG
- *      reader first. Fast (single fetch), no Chromium spin-up, works
- *      for any blog / news / GitHub / YouTube watch page.
- *   2. If that fails or the URL *is* auth-walled, hand off to the
- *      hidden BrowserWindow so the source-specific harvester can scrape
- *      the rendered DOM with the user's logged-in cookies.
- *   3. If the hidden window comes back with `auth_required`, surface
- *      that so the renderer can prompt the user to "Connect <source>"
- *      from settings.
- *
- * In every success branch we route the result through `ingestFromHttp`,
- * which already does the merge-on-duplicate dance — user edits, notes,
- * and tags are preserved while richer scraped fields land in null/blank
- * columns.
- */
-
 export type RefreshOutcome =
   | {
       ok: true;
-      method: "og" | "hidden-window";
+      method: "og" | "hidden-window" | "arena-api";
       created: boolean;
     }
   | {
@@ -47,7 +29,6 @@ export type RefreshOutcome =
         | "auth_required"
         | "blocked"
         | "internal_error";
-      /** When `auth_required`, the source the user should connect to. */
       source?: Source;
     };
 
@@ -58,14 +39,73 @@ export async function refreshSave(saveId: string): Promise<RefreshOutcome> {
   if (!current) return { ok: false, reason: "not_found" };
   if (!current.url) return { ok: false, reason: "no_url" };
 
+  if (typeof current.nsfwScore === "number") {
+    const clearTx: Transaction = {
+      kind: "update",
+      model: "save",
+      id: current.id,
+      patch: { nsfwScore: null, nsfwLabel: null },
+      before: {
+        nsfwScore: current.nsfwScore,
+        nsfwLabel: current.nsfwLabel,
+      },
+      meta: { actor: "user", actorReason: "refresh-rescan" },
+    };
+    try {
+      await executeTransaction(clearTx);
+    } catch (err) {
+      log.warn("[pond refresh] failed to clear nsfwScore", saveId, err);
+    }
+  }
+
   const { source: classified, authWalled } = classifyUrl(current.url);
-  // Trust the existing row's source over the URL classifier — the
-  // user might have edited the URL and we still want to merge into the
-  // same record. Same for sourceId.
   const source: Source = current.source;
   const sourceId = current.sourceId;
 
-  // -- Stage 1: server-side OG fetch (skip for known auth-walled hosts) --
+  if (source === "arena" && sourceId) {
+    const arenaResult = await refreshFromArenaApi({ sourceId });
+    if (arenaResult.ok) {
+      try {
+        const result = await ingestFromHttp(arenaResult.payload, {
+          trustAuthoritative: true,
+          coverDims:
+            arenaResult.width != null && arenaResult.height != null
+              ? { width: arenaResult.width, height: arenaResult.height }
+              : undefined,
+        });
+        return { ok: true, method: "arena-api", created: result.created };
+      } catch (err) {
+        log.warn("[pond refresh] arena-api ingest threw", err);
+      }
+    } else {
+      log.info(
+        "[pond refresh] arena-api fallback to legacy",
+        sourceId,
+        arenaResult.reason,
+      );
+    }
+  }
+
+  if (source === "pinterest" && sourceId) {
+    const pinResult = await refreshFromPinterestRelay({ sourceId });
+    if (pinResult.ok && pinResult.payload) {
+      try {
+        const result = await ingestFromHttp(pinResult.payload, {
+          trustAuthoritative: true,
+        });
+        return { ok: true, method: "og", created: result.created };
+      } catch (err) {
+        log.warn("[pond refresh] pinterest-relay ingest threw", err);
+      }
+    } else {
+      log.info(
+        "[pond refresh] pinterest-relay fallback to og",
+        sourceId,
+        pinResult.reason,
+      );
+    }
+  }
+
   if (!authWalled) {
     const og = await refreshFromOgTags({
       url: current.url,
@@ -73,10 +113,6 @@ export async function refreshSave(saveId: string): Promise<RefreshOutcome> {
       sourceId,
     });
     if (og.ok && og.payload) {
-      // OG path doesn't tell us much about the page's video; we still
-      // attempt yt-dlp when the source allow-lists it because the
-      // metadata reader gave us no media at all OR a `video` mediaType
-      // (most public YouTube watch pages, public Twitter video links).
       const ytdlpExtras = await maybeDownloadVideo({
         url: current.url,
         classified,
@@ -86,18 +122,11 @@ export async function refreshSave(saveId: string): Promise<RefreshOutcome> {
           Boolean(og.payload.mediaUrl),
       });
       try {
-        // Lift the `--write-info-json` sidecar onto `raw.<source>.ytdlp`
-        // so view/like/duration/chapters land on the existing row.
         const ogPayload = ytdlpExtras?.infoJson
           ? mergeInfoJsonIntoPayload(og.payload, source, ytdlpExtras.infoJson)
           : og.payload;
         const result = await ingestFromHttp(ogPayload, {
           mediaFiles: ytdlpExtras?.mediaFiles,
-          // User-initiated refresh: when yt-dlp produced new bytes,
-          // always overwrite. Without `force: true` the merge in
-          // `refreshExisting` short-circuits whenever the row already
-          // has a (broken) video file on disk — see the codec-heal
-          // path comments on LocalIngestExtras.
           force: ytdlpExtras !== null,
         });
         await ytdlpExtras?.cleanup();
@@ -109,7 +138,6 @@ export async function refreshSave(saveId: string): Promise<RefreshOutcome> {
     }
   }
 
-  // -- Stage 2: hidden BrowserWindow harvester ---------------------------
   const harvest = await harvestUrl({
     url: current.url,
     source: classified,
@@ -119,9 +147,6 @@ export async function refreshSave(saveId: string): Promise<RefreshOutcome> {
   if (!harvest.ok) {
     if (harvest.reason === "auth_required" && classified) {
       const connected = await isSourceConnected(classified).catch(() => false);
-      // Even if we *think* we're connected, we still got bounced — the
-      // session expired. Surface as auth_required so the user can
-      // re-connect.
       log.info(
         "[pond refresh] hidden window auth_required",
         current.url,
@@ -152,12 +177,6 @@ export async function refreshSave(saveId: string): Promise<RefreshOutcome> {
     },
   };
 
-  // Stage 2.5 — hand the page to yt-dlp when the source supports it.
-  // Runs in parallel with no harm if the page turns out to have no
-  // video; yt-dlp returns null and we fall through to the existing
-  // poster-only ingest. We pass the harvested mediaType so the helper
-  // can short-circuit for tweets/posts/elements that the harvester
-  // already classified as a still image.
   const ytdlpExtras = await maybeDownloadVideo({
     url: current.url,
     classified,
@@ -171,10 +190,6 @@ export async function refreshSave(saveId: string): Promise<RefreshOutcome> {
       : payload;
     const result = await ingestFromHttp(finalPayload, {
       mediaFiles: ytdlpExtras?.mediaFiles,
-      // Same reasoning as the OG branch above: when yt-dlp landed
-      // fresh bytes for an explicit user refresh, always replace the
-      // current on-disk video — the user's intent is "give me what's
-      // there now", which overrides the merge heuristic.
       force: ytdlpExtras !== null,
     });
     await ytdlpExtras?.cleanup();
@@ -208,25 +223,6 @@ function mergeInfoJsonIntoPayload(
   };
 }
 
-/**
- * Decide whether to invoke yt-dlp for this URL, and if so, do it.
- *
- * Heuristic:
- *  - Source must be in the per-source `supportsYtDlp` allowlist.
- *  - We attempt yt-dlp when the harvest reported a video mediaType,
- *    OR when there's no media at all (some public YT / Twitter URLs
- *    refresh through the OG path before we ever see a `mediaType`).
- *    For pages that the harvester already proved are photos (e.g.
- *    `mediaType === "image"` with non-empty mediaUrls) we skip yt-dlp
- *    entirely so we don't spend 5-10s spinning up the binary on every
- *    photo refresh.
- *  - yt-dlp exit-non-zero / timeout / file-too-big returns `null` from
- *    `downloadVideo`, which we surface as "no extras" — never a failure.
- *
- * Returns a `LocalIngestExtras` plus a `cleanup` callback the caller
- * MUST invoke after `ingestFromHttp` resolves so we don't leak the
- * tmpdir.
- */
 async function maybeDownloadVideo(args: {
   url: string;
   classified: Source | null;
@@ -240,9 +236,6 @@ async function maybeDownloadVideo(args: {
   | null
 > {
   if (!supportsYtDlp(args.classified)) return null;
-  // Skip when the harvester already proved this is a photo / album.
-  // For unknown / no-media pages we still try because the harvester
-  // sometimes whiffs on video-only tweets that load late.
   if (
     args.mediaType &&
     args.mediaType !== "video" &&

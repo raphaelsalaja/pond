@@ -1,32 +1,7 @@
-/**
- * Relative-time parser, backed by `chrono-node`. Used by the
- * global Add filter search to surface date filters from inputs
- * like `7 days`, `3d`, `past 2 weeks`, `last month`, `yesterday`,
- * `two days ago`, `tuesday`, `5/15/2026`, that no static preset
- * label happens to match literally.
- *
- * Output is an ISO-8601 duration with a leading minus sign so it
- * round-trips through `@pond/schema/filters/match`'s
- * `resolveNumeric` (which expects "ago" durations like `-P7D`).
- *
- * Date fields are compared with `gte`, so the synthesised
- * predicate reads as "saved within the last N units" — same shape
- * the date dropdown writes for its preset rows.
- *
- * chrono returns absolute `Date`s; we always project back onto a
- * relative `-PnD/-PnW/-PnM/-PnY` because the filter value space is
- * relative. The unit (day vs week vs month vs year) is picked
- * from the user's wording — "2 weeks ago" stays as `-P2W`, "30
- * days ago" stays as `-P30D`. When the input gives no unit hint
- * (e.g. `5/15/2026`), we fall back to days.
- */
-
 import * as chrono from "chrono-node";
 
 export interface RelativeMatch {
-  /** ISO-8601 duration with leading minus sign, e.g. `-P7D`. */
   isoDuration: string;
-  /** Human-readable label for the result row, e.g. `Past 7 days`. */
   label: string;
 }
 
@@ -58,12 +33,6 @@ export function parseRelative(query: string): RelativeMatch | null {
   return pickUnit(r.text.toLowerCase(), days);
 }
 
-/**
- * Pick the natural display unit from the user's wording. We
- * prefer the unit they typed ("month" → -PnM, "week" → -PnW)
- * over a strict day-count, so the label reads as the user
- * thinks about it.
- */
 function pickUnit(text: string, daysAgo: number): RelativeMatch {
   if (/today|\bnow\b/.test(text)) {
     return { isoDuration: "-P1D", label: "Today" };

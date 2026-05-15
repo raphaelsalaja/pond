@@ -10,7 +10,31 @@ export default defineConfig({
     version: "0.1.0",
     description:
       "Capture saves from Twitter/X, Instagram, Pinterest, Are.na, Cosmos, TikTok, YouTube, and web articles into one place.",
-    permissions: ["storage", "scripting", "contextMenus", "activeTab", "tabs"],
+    icons: {
+      16: "icons/16.png",
+      32: "icons/32.png",
+      48: "icons/48.png",
+      128: "icons/128.png",
+    },
+    action: {
+      default_title: "Pond",
+      default_popup: "popup.html",
+      default_icon: {
+        16: "icons/16.png",
+        32: "icons/32.png",
+        48: "icons/48.png",
+        128: "icons/128.png",
+      },
+    },
+    permissions: [
+      "storage",
+      "scripting",
+      "contextMenus",
+      "activeTab",
+      "tabs",
+      // Required by the "Push session to Pond" flow — reads httpOnly cookies the renderer can't see.
+      "cookies",
+    ],
     host_permissions: [
       "https://x.com/*",
       "https://twitter.com/*",

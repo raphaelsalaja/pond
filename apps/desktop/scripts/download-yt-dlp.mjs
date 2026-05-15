@@ -1,24 +1,5 @@
 #!/usr/bin/env node
 
-/**
- * Postinstall: pull a pinned yt-dlp standalone binary into
- * `apps/desktop/resources/bin/`.
- *
- * Why bundled-and-pinned rather than `which yt-dlp`:
- *  - Pond's "Refresh metadata" needs predictable behaviour on every
- *    machine. A user-installed yt-dlp could be a wildly different
- *    vintage, miss extractors we rely on, or be missing on first run.
- *  - The standalone binary embeds Python, so we don't need to ship a
- *    runtime alongside it.
- *  - We pin the version + verify a known sha256 so the install is
- *    reproducible and we don't get a different binary every time CI
- *    runs.
- *
- * Lives next to `rebuild-native.mjs` and runs from the same package
- * `postinstall` chain. Keep it dependency-free (only Node stdlib) so
- * it can run before anything else is built.
- */
-
 import { createHash } from "node:crypto";
 import {
   chmod,
@@ -36,13 +17,6 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const appRoot = resolve(__dirname, "..");
 const binDir = resolve(appRoot, "resources/bin");
 
-/**
- * Pinned release. Bump both `tag` and the platform-specific `sha256`
- * in lockstep — get fresh values from
- *   https://github.com/yt-dlp/yt-dlp/releases/download/<tag>/SHA2-256SUMS
- * Pinning prevents a silent yt-dlp upgrade from breaking extractors
- * we exercise in production.
- */
 const RELEASE = {
   tag: "2026.03.17",
   assets: {
@@ -152,8 +126,6 @@ async function main() {
     return;
   }
 
-  // Write to a sibling temp path then rename so a half-written file
-  // never gets executed if this process is killed mid-write.
   const tmp = `${target}.tmp`;
   await writeFile(tmp, buf);
   if (process.platform !== "win32") await chmod(tmp, 0o755);

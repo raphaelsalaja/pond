@@ -6,19 +6,6 @@ import {
   KEYCHAIN_SERVICE,
 } from "../shared/constants";
 
-/**
- * Lazy `@napi-rs/keyring` loader. The module is NAPI/prebuilt — there's
- * nothing to rebuild against the current Electron ABI — but it is still
- * native code, so we wrap the import in `try`/`catch` and fall back to
- * an in-memory store if it fails to load (sandbox blocking it on CI,
- * unsupported platform, etc.). Tokens won't survive a restart in that
- * mode, but dev + CI stay green.
- *
- * `@napi-rs/keyring` exposes a synchronous `Entry` API. We wrap each
- * call in `Promise.resolve(...)` to keep the existing async `KeyStore`
- * interface that the rest of the app already speaks.
- */
-
 interface KeyStore {
   getPassword(service: string, account: string): Promise<string | null>;
   setPassword(
@@ -53,13 +40,8 @@ async function store(): Promise<KeyStore> {
       getPassword(service, account) {
         try {
           const entry = new Entry(service, account);
-          // Returns `string | null` synchronously; we normalise an
-          // accidental `undefined` (older platforms) to `null`.
           return Promise.resolve(entry.getPassword() ?? null);
         } catch (err) {
-          // OS-level `entry not found` errors raise on some platforms
-          // instead of returning null; treat all read failures as
-          // "no token stored".
           log.warn(
             "[pond] keyring getPassword failed, treating as missing",
             err,
@@ -92,11 +74,6 @@ async function store(): Promise<KeyStore> {
   return cached;
 }
 
-/**
- * Read the bearer token used by the browser extension on `/api/v2/item/add`.
- * Generated on first launch via `ensureIngestToken()` and surfaced in the
- * onboarding UI so the user can paste it into the extension popup.
- */
 export async function getIngestToken(): Promise<string | null> {
   const s = await store();
   return s.getPassword(KEYCHAIN_SERVICE, KEYCHAIN_INGEST_TOKEN);
@@ -121,7 +98,6 @@ export async function rotateIngestToken(): Promise<string> {
   return token;
 }
 
-/** AI Gateway key. `null` = AI enrichment disabled, app still works. */
 export async function getAiGatewayKey(): Promise<string | null> {
   const s = await store();
   return s.getPassword(KEYCHAIN_SERVICE, KEYCHAIN_AI_GATEWAY_KEY);

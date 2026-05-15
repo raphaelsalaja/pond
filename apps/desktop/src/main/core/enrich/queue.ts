@@ -4,12 +4,6 @@ import log from "electron-log/main.js";
 import { ulid } from "ulid";
 import { getDb } from "../../db";
 
-/**
- * Tiny persistent queue for the enrichment worker. Each (saveId, kind)
- * pair is unique and idempotent — calling `enqueue` twice for the same
- * pair just resets the attempt clock.
- */
-
 const ALL_KINDS: EnrichJobKind[] = ["colors", "article", "vision", "embed"];
 
 export async function enqueue(
@@ -47,7 +41,6 @@ export async function enqueue(
   }
 }
 
-/** Mark the queue item as `running` so concurrent workers don't pick it up. */
 export async function claimNext(): Promise<{
   id: string;
   saveId: string;
@@ -57,9 +50,6 @@ export async function claimNext(): Promise<{
   const db = await getDb();
   const raw = db.$raw;
   const now = Date.now();
-  // Atomic claim using an UPDATE...RETURNING. better-sqlite3 supports
-  // it as long as we run the prepare + bind inline. Skip rows that
-  // another worker is already running.
   const row = raw
     .prepare(
       `UPDATE enrich_jobs
@@ -111,7 +101,6 @@ export async function markError(
   err: string,
 ): Promise<void> {
   const db = await getDb();
-  // Backoff: 30s, 5m, 30m, then give up.
   const backoffs = [30_000, 5 * 60_000, 30 * 60_000];
   const next = attempts < backoffs.length ? (backoffs[attempts] ?? null) : null;
   if (next === null) {
@@ -160,10 +149,6 @@ export async function status(): Promise<{
   };
 }
 
-/**
- * Enqueue any active save that's missing one of the per-kind sentinel
- * columns. Used by the "Backfill" button in settings.
- */
 export async function enqueueAllMissing(): Promise<{
   scheduled: number;
 }> {

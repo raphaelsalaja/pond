@@ -4,7 +4,7 @@
   z-index: 1000;
   background: var(--ds-gray-a8);
   backdrop-filter: blur(2px);
-  transition: opacity 160ms ease;
+  transition: opacity var(--ds-duration-medium) var(--ds-easing-standard);
   -webkit-app-region: no-drag;
 
   &[data-starting-style],
@@ -27,15 +27,12 @@
   outline: none;
   background: var(--ds-gray-2);
   border-radius: var(--ds-radius-xl);
-  box-shadow:
-    0 0 0 1px var(--ds-gray-a4),
-    0 12px 32px -8px rgba(0, 0, 0, 0.25),
-    0 4px 10px -2px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--ds-shadow-dialog);
   transform: translate(-50%, -50%);
   -webkit-app-region: no-drag;
   transition:
-    opacity 160ms ease,
-    transform 160ms ease;
+    opacity var(--ds-duration-medium) var(--ds-easing-standard),
+    transform var(--ds-duration-medium) var(--ds-easing-standard);
 
   &[data-starting-style],
   &[data-ending-style] {

@@ -8,80 +8,21 @@ import { getVideoDownloadPrefs } from "../prefs";
 import { binariesAvailable } from "./binaries";
 import { writeNetscapeCookies } from "./cookies";
 
-/**
- * Wraps the bundled yt-dlp CLI for the in-app refresh path. Given a
- * page URL (Twitter status, IG reel, Cosmos element, TikTok post,
- * YouTube watch, etc.) and a source the caller has classified, runs
- *
- *   yt-dlp -f "<format>" --cookies <jar> --no-playlist
- *          --max-filesize 200M -o "<tmpdir>/%(id)s.%(ext)s"
- *          --ffmpeg-location <ffmpeg> <url>
- *
- * and returns the resulting file path on success, `null` on any
- * failure (binary missing, network blip, extractor error, oversize,
- * timeout, etc.). The caller is expected to treat `null` as
- * "fall back to the poster-only path" — never as a hard error.
- *
- * Lifecycle responsibilities:
- *  - Caller provides nothing; we manage cookies jar + tmpdir + cleanup.
- *  - On success the returned `path` lives inside our tmpdir; the
- *    caller is responsible for moving / copying the file before
- *    `cleanup()` is invoked. Most callers will hand the path straight
- *    to `readLocalToTxFile` (in `lib/blob.ts`) which slurps the bytes
- *    into memory, so cleanup is safe immediately after.
- *
- * Concurrency: each call spins its own tmpdir, so multiple refreshes
- * can run in parallel without trampling each other.
- */
-
 export interface DownloadVideoArgs {
-  /** Page URL — same string passed to the harvester. */
   url: string;
-  /** Source classification, used to pick a per-site format selector. */
   source: Source | null;
 }
 
 export interface DownloadedVideo {
-  /** Absolute path to the on-disk file. Lives inside our tmpdir. */
   path: string;
-  /** Best-effort MIME type, derived from the file extension. */
   mimeType: string;
-  /** File size in bytes. */
   size: number;
-  /**
-   * yt-dlp `--write-info-json` sidecar, lifted from disk before
-   * `cleanup()` runs. Caller can merge interesting fields into
-   * `raw.<source>` (view_count / like_count / duration / chapters).
-   * `null` when the sidecar was missing or unreadable.
-   */
   infoJson: Record<string, unknown> | null;
-  /** Caller MUST invoke this in a finally{} to remove the tmpdir. */
   cleanup: () => Promise<void>;
 }
 
 const HARD_TIMEOUT_MS = 90_000;
 
-/**
- * Per-source format selector. yt-dlp's selector syntax is documented at
- * https://github.com/yt-dlp/yt-dlp#format-selection.
- *
- * Codec policy (the part that actually matters for playability):
- *   We constrain to H.264 video (`vcodec^=avc1`) + AAC audio
- *   (`acodec^=mp4a`) wherever possible. Electron's bundled Chromium
- *   ffmpeg plays H.264/AAC reliably across all renderer process tabs,
- *   but barfs with `ffmpeg_common.cc Unsupported pixel format: -1` on
- *   AV1, HEVC/H.265, and 10-bit VP9. Without these constraints yt-dlp
- *   happily picks AV1 / HEVC when YouTube and TikTok offer them, and
- *   the saved card silently fails to render. The chained fallbacks
- *   keep us alive when a site has no avc1 stream at all (rare on
- *   modern YouTube; occasionally on niche sources).
- *
- * Resolution cap is configurable via Settings → Video downloads. We
- * apply it inline to every selector branch (yt-dlp evaluates the cap
- * per-format, not as a post-filter). A `null` cap means "no limit"
- * and drops the `[height<=N]` predicate — useful for users who want
- * the original 4K source even though it'll burn disk.
- */
 function formatSelector(
   source: Source | null,
   maxHeight: number | null,
@@ -89,9 +30,6 @@ function formatSelector(
   const h = maxHeight ? `[height<=${maxHeight}]` : "";
   switch (source) {
     case "tiktok":
-      // TikTok: prefer the no-watermark in-feed stream (`format_note`
-      // contains "play") over the watermarked download endpoint, then
-      // fall through to any avc1 stream, then anything that fits.
       return [
         `bv*[ext=mp4][vcodec^=avc1][format_note*=play]${h}+ba[acodec^=mp4a]`,
         `bv*[ext=mp4][vcodec^=avc1]${h}+ba[acodec^=mp4a]`,
@@ -118,17 +56,12 @@ function formatSelector(
   }
 }
 
-/** Format `--max-filesize` argument, or `null` if no cap is configured. */
 function maxFilesizeArg(prefs: VideoDownloadSettings): string | null {
   const mb = prefs.maxFileSizeMb;
   if (mb === null || mb === undefined || mb <= 0) return null;
   return `${mb}M`;
 }
 
-/**
- * Download the video for `url` to a temp path. Returns `null` and
- * logs (at most) a warning on any failure — never throws.
- */
 export async function downloadVideo(
   args: DownloadVideoArgs,
 ): Promise<DownloadedVideo | null> {
@@ -165,10 +98,6 @@ export async function downloadVideo(
       "--no-progress",
       "--no-part",
       "--restrict-filenames",
-      // Persist the per-video metadata sidecar so the post-download
-      // merge can lift `view_count`, `like_count`, `duration`,
-      // `chapters`, `uploader_id` etc. into `raw.<source>` without a
-      // second extractor run.
       "--write-info-json",
       "--socket-timeout",
       "30",
@@ -186,9 +115,6 @@ export async function downloadVideo(
     if (ffmpeg) {
       argv.push("--ffmpeg-location", ffmpeg);
     } else {
-      // Without ffmpeg we can't mux adaptive streams. Force yt-dlp to
-      // pick a format that's single-stream so it doesn't fail at the
-      // post-processing stage.
       argv.push("-f", "b[ext=mp4]/b");
     }
     argv.push(args.url);
@@ -233,20 +159,6 @@ export async function downloadVideo(
   }
 }
 
-/**
- * Read the `--write-info-json` sidecar, then lift the curated subset of
- * fields downstream callers actually need. yt-dlp dumps a *huge*
- * payload (per-format ladders, raw extractor blob, …); we only return
- * the curated dict so the rest can be GC'd before the cleanup step.
- *
- * The keep-list mirrors `RawYtdlp` in `packages/schema/src/raw.ts` —
- * keep them aligned. New fields are additive: an extractor that
- * doesn't expose `repost_count` simply omits the key, and downstream
- * consumers feature-detect.
- *
- * Returns `null` when the sidecar is missing or unparseable — callers
- * already treat the value as best-effort.
- */
 async function readInfoJson(
   dir: string,
   videoPath: string,
@@ -267,12 +179,6 @@ async function readInfoJson(
   }
 }
 
-/**
- * Fields lifted from the `--write-info-json` sidecar onto
- * `raw.<source>.ytdlp`. Mirrors `RawYtdlp` — when adding a key here,
- * add it to the typed shape too. Order kept loosely grouped (identity
- * → metrics → time → format → music → playlist) for diff readability.
- */
 const YTDLP_KEEP_KEYS = [
   "id",
   "title",
@@ -308,7 +214,6 @@ const YTDLP_KEEP_KEYS = [
   "availability",
   "age_limit",
 
-  // format hints (helps diagnose codec / pixel-format playback bugs)
   "width",
   "height",
   "fps",
@@ -319,7 +224,6 @@ const YTDLP_KEEP_KEYS = [
   "filesize_approx",
   "tbr",
 
-  // music videos (auto-populated by YouTube extractor on VEVO etc.)
   "track",
   "artist",
   "album",
@@ -331,7 +235,6 @@ const YTDLP_KEEP_KEYS = [
   "categories",
   "chapters",
 
-  // playlist context (when yt-dlp was given a playlist URL)
   "playlist",
   "playlist_id",
   "playlist_title",
@@ -368,8 +271,6 @@ function runWithTimeout(
 
     child.stdout?.on("data", (chunk: Buffer) => {
       stdout += chunk.toString("utf8");
-      // yt-dlp can be chatty; cap our buffered tail so a misbehaving
-      // extractor doesn't OOM us with multi-MB stdout.
       if (stdout.length > 64_000) stdout = stdout.slice(-64_000);
     });
     child.stderr?.on("data", (chunk: Buffer) => {
@@ -391,12 +292,6 @@ function runWithTimeout(
   });
 }
 
-/**
- * yt-dlp's `-o "%(id)s.%(ext)s"` writes one file per video. After a
- * successful run we expect exactly one entry in the output dir; pick
- * the largest if there's somehow more (postprocessor leftovers should
- * have been cleaned up by `--no-part`, but be defensive).
- */
 async function pickProducedFile(
   dir: string,
 ): Promise<{ path: string; size: number; mimeType: string } | null> {
@@ -405,9 +300,6 @@ async function pickProducedFile(
 
   const sized = await Promise.all(
     entries
-      // Skip the info-json sidecar so it can never accidentally be
-      // chosen as the produced file (largest-by-bytes is paranoid
-      // enough to handle this regardless, but be explicit).
       .filter((name) => !/\.info\.json$/i.test(name))
       .map(async (name) => {
         const full = join(dir, name);

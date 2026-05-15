@@ -1,4 +1,48 @@
+import type { ChapterCue } from "@/components/video-player/chapters-vtt";
 import type { Save } from "@/pool/types";
+
+export interface YouTubeAuthor {
+  name: string | null;
+  avatarUrl: string | null;
+  channelUrl: string | null;
+}
+
+export function getYouTubeChapters(save: Save): ChapterCue[] | undefined {
+  const yt = save.rawJson?.youtube;
+  if (!yt) return undefined;
+  const typed = yt.chapters;
+  if (typed && typed.length > 0) {
+    return typed.map((c) => ({ title: c.title, startSec: c.startSec }));
+  }
+  const ytdlp = yt.ytdlp?.chapters;
+  if (ytdlp && ytdlp.length > 0) {
+    const out: ChapterCue[] = [];
+    for (const c of ytdlp) {
+      const title = (c.title ?? "").trim();
+      if (!title) continue;
+      if (typeof c.start_time !== "number") continue;
+      out.push({
+        title,
+        startSec: c.start_time,
+        endSec: typeof c.end_time === "number" ? c.end_time : undefined,
+      });
+    }
+    return out.length > 0 ? out : undefined;
+  }
+  return undefined;
+}
+
+export function getYouTubeAuthor(save: Save): YouTubeAuthor {
+  const yt = save.rawJson?.youtube;
+  const ytdlp = yt?.ytdlp;
+  const rawAvatar = (yt as { authorAvatar?: string } | undefined)?.authorAvatar;
+  return {
+    name: yt?.channelName ?? ytdlp?.channel ?? ytdlp?.uploader ?? save.author,
+    avatarUrl: rawAvatar ?? null,
+    channelUrl:
+      yt?.channelUrl ?? ytdlp?.channel_url ?? ytdlp?.uploader_url ?? null,
+  };
+}
 
 export const REVEAL_LABEL: string = (() => {
   if (typeof navigator === "undefined") return "Reveal in Finder";
@@ -8,11 +52,6 @@ export const REVEAL_LABEL: string = (() => {
   return "Reveal in Finder";
 })();
 
-/**
- * Older saves (and some scrapers) duplicate the body into the title
- * field. When that happens the description below the headline just
- * repeats what's already on screen.
- */
 export function descriptionMatchesTitle(save: Save): boolean {
   if (!save.title || !save.description) return false;
   const norm = (s: string) =>
@@ -50,9 +89,9 @@ export function formatDuration(sec: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-export function formatShortDate(iso: string): string {
-  const d = new Date(iso);
-  if (!Number.isFinite(d.getTime())) return iso;
+export function formatShortDate(value: string | number): string {
+  const d = new Date(value);
+  if (!Number.isFinite(d.getTime())) return String(value);
   const dd = String(d.getDate()).padStart(2, "0");
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const yyyy = d.getFullYear();
@@ -160,18 +199,15 @@ export const AUTH_WALLED: Record<
   "twitter.com": { source: "twitter", label: "X" },
   "instagram.com": { source: "instagram", label: "Instagram" },
   "www.instagram.com": { source: "instagram", label: "Instagram" },
-  "cosmos.so": { source: "cosmos", label: "Cosmos" },
-  "www.cosmos.so": { source: "cosmos", label: "Cosmos" },
   "tiktok.com": { source: "tiktok", label: "TikTok" },
   "www.tiktok.com": { source: "tiktok", label: "TikTok" },
 };
 
-export type AuthWalledSource = "twitter" | "instagram" | "cosmos" | "tiktok";
+export type AuthWalledSource = "twitter" | "instagram" | "tiktok";
 
 export const SOURCE_LABEL: Record<AuthWalledSource, string> = {
   twitter: "X",
   instagram: "Instagram",
-  cosmos: "Cosmos",
   tiktok: "TikTok",
 };
 
@@ -181,7 +217,6 @@ export function classifyAuthWalled(
   if (
     save.source === "twitter" ||
     save.source === "instagram" ||
-    save.source === "cosmos" ||
     save.source === "tiktok"
   ) {
     return { source: save.source, label: SOURCE_LABEL[save.source] };

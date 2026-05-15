@@ -22,19 +22,6 @@ export type Db = BetterSQLite3Database<typeof schema> & {
 
 let cached: Db | null = null;
 
-/**
- * Open-or-create the SQLite index at `~/Library/Application Support/pond/
- * index.db`. Runs:
- *
- *   1. PRAGMA journal_mode=WAL for concurrent reads during writes
- *   2. Loads sqlite-vec so vec0 virtual tables are usable
- *   3. Creates tables if missing (inline CREATE TABLE IF NOT EXISTS — we
- *      don't ship drizzle-kit migrations in the packaged app, we own the
- *      schema at runtime because the DB is a rebuildable cache, not a
- *      source of truth)
- *   4. Creates the FTS5 table + triggers
- *   5. Writes the library `metadata.json` if absent
- */
 export async function getDb(): Promise<Db> {
   if (cached) return cached;
 
@@ -59,9 +46,6 @@ export async function getDb(): Promise<Db> {
     );
   }
 
-  // Register custom SQL scalars (e.g. `color_distance`) used by the
-  // declarative filter pipeline. Must run before the first query that
-  // touches them — i.e. before any `saves.find` IPC call lands.
   registerSqliteFunctions(sqlite);
 
   migrate(sqlite);
@@ -75,10 +59,6 @@ export async function getDb(): Promise<Db> {
   return db;
 }
 
-/**
- * Schema install. We keep everything in one place so `index.db` can be
- * deleted and regenerated from the library without user intervention.
- */
 function migrate(sqlite: Database.Database): void {
   sqlite.exec(`
 		CREATE TABLE IF NOT EXISTS saves (
@@ -94,7 +74,6 @@ function migrate(sqlite: Database.Database): void {
 			published_at INTEGER,
 			notes TEXT,
 			media_url TEXT,
-			blob_url TEXT,
 			media_type TEXT,
 			raw_json TEXT,
 			tags TEXT NOT NULL DEFAULT '[]',
@@ -110,6 +89,8 @@ function migrate(sqlite: Database.Database): void {
 			ocr_text TEXT,
 			dominant_colors TEXT,
 			blur_data_url TEXT,
+			nsfw_score REAL,
+			nsfw_label TEXT,
 			files TEXT NOT NULL DEFAULT '[]',
 			cover_index INTEGER NOT NULL DEFAULT 0,
 			width INTEGER,
@@ -156,15 +137,6 @@ function migrate(sqlite: Database.Database): void {
 		CREATE INDEX IF NOT EXISTS sync_actions_actor_idx ON sync_actions(actor, id);
 		CREATE INDEX IF NOT EXISTS sync_actions_batch_idx ON sync_actions(batch_id);
 
-		CREATE TABLE IF NOT EXISTS __transactions (
-			id TEXT PRIMARY KEY,
-			batch_id TEXT,
-			tx TEXT NOT NULL,
-			created_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
-			committed_at INTEGER
-		);
-		CREATE INDEX IF NOT EXISTS transactions_batch_idx ON __transactions(batch_id);
-
 		CREATE TABLE IF NOT EXISTS library_scan (
 			item_id TEXT PRIMARY KEY,
 			mtime_ms INTEGER NOT NULL,
@@ -198,105 +170,6 @@ function migrate(sqlite: Database.Database): void {
 		CREATE INDEX IF NOT EXISTS enrich_jobs_next_idx ON enrich_jobs(next_attempt_at);
 	`);
 
-  // Back-fill for databases created before we added new columns. We could
-  // switch to `PRAGMA user_version` once we have enough of these to warrant
-  // a versioned migration table.
-  try {
-    const settingsCols = sqlite
-      .prepare(`PRAGMA table_info(settings)`)
-      .all() as Array<{ name: string }>;
-    if (!settingsCols.some((c) => c.name === "onboarded")) {
-      sqlite.exec(
-        `ALTER TABLE settings ADD COLUMN onboarded INTEGER NOT NULL DEFAULT 0`,
-      );
-    }
-    if (!settingsCols.some((c) => c.name === "video_download")) {
-      sqlite.exec(
-        `ALTER TABLE settings ADD COLUMN video_download TEXT NOT NULL DEFAULT '{"enabled":true,"maxHeight":1080,"maxFileSizeMb":500}'`,
-      );
-    }
-    if (!settingsCols.some((c) => c.name === "ai_provider")) {
-      sqlite.exec(`ALTER TABLE settings ADD COLUMN ai_provider TEXT`);
-    }
-    if (!settingsCols.some((c) => c.name === "prefs")) {
-      sqlite.exec(`ALTER TABLE settings ADD COLUMN prefs TEXT`);
-    }
-
-    const savesCols = sqlite
-      .prepare(`PRAGMA table_info(saves)`)
-      .all() as Array<{
-      name: string;
-    }>;
-    if (!savesCols.some((c) => c.name === "files")) {
-      sqlite.exec(
-        `ALTER TABLE saves ADD COLUMN files TEXT NOT NULL DEFAULT '[]'`,
-      );
-    }
-    // Each new column added below is conditional so re-runs don't
-    // explode on databases that already saw it.
-    for (const [col, sqlStmt] of [
-      ["classification", "ALTER TABLE saves ADD COLUMN classification TEXT"],
-      ["ai_summary", "ALTER TABLE saves ADD COLUMN ai_summary TEXT"],
-      ["article_html", "ALTER TABLE saves ADD COLUMN article_html TEXT"],
-      ["article_text", "ALTER TABLE saves ADD COLUMN article_text TEXT"],
-      [
-        "article_reading_minutes",
-        "ALTER TABLE saves ADD COLUMN article_reading_minutes INTEGER",
-      ],
-      ["annotations", "ALTER TABLE saves ADD COLUMN annotations TEXT"],
-      // Phase 4: universal fields promoted from `raw.<source>`. All
-      // optional / NULL-able so legacy rows survive without back-fill.
-      ["lang", "ALTER TABLE saves ADD COLUMN lang TEXT"],
-      ["site_name", "ALTER TABLE saves ADD COLUMN site_name TEXT"],
-      ["published_at", "ALTER TABLE saves ADD COLUMN published_at INTEGER"],
-      ["blur_data_url", "ALTER TABLE saves ADD COLUMN blur_data_url TEXT"],
-    ] as const) {
-      if (!savesCols.some((c) => c.name === col)) {
-        sqlite.exec(sqlStmt);
-      }
-    }
-  } catch (err) {
-    log.warn("[pond db] column back-fill failed", err);
-  }
-
-  // FTS5 virtual table mirrors searchable fields. Populated via triggers so
-  // the index stays in sync with `saves` without executor-level plumbing.
-  // We rebuild the table + triggers if any of the indexed columns drift
-  // (e.g. after we added article_text). Cheap because FTS5 contentless
-  // indices regenerate from the trigger inserts.
-  const ftsCols = (() => {
-    try {
-      return sqlite.prepare(`PRAGMA table_info(saves_fts)`).all() as Array<{
-        name: string;
-      }>;
-    } catch {
-      return [] as Array<{ name: string }>;
-    }
-  })();
-  const expectedFtsCols = [
-    "id",
-    "title",
-    "description",
-    "author",
-    "ocr_text",
-    "ai_caption",
-    "ai_summary",
-    "article_text",
-    "tag_names",
-  ];
-  const ftsMissing = expectedFtsCols.some(
-    (c) => !ftsCols.some((existing) => existing.name === c),
-  );
-  if (ftsMissing && ftsCols.length > 0) {
-    try {
-      sqlite.exec(`DROP TABLE IF EXISTS saves_fts`);
-      sqlite.exec(`DROP TRIGGER IF EXISTS saves_ai`);
-      sqlite.exec(`DROP TRIGGER IF EXISTS saves_ad`);
-      sqlite.exec(`DROP TRIGGER IF EXISTS saves_au`);
-    } catch (err) {
-      log.warn("[pond db] fts drop failed", err);
-    }
-  }
   sqlite.exec(`
 		CREATE VIRTUAL TABLE IF NOT EXISTS saves_fts USING fts5(
 			id UNINDEXED,
@@ -340,31 +213,7 @@ function migrate(sqlite: Database.Database): void {
 			);
 		END;
 	`);
-  // If the FTS table was dropped, repopulate it from the live saves rows
-  // so search keeps working before any new edit fires the triggers.
-  if (ftsMissing && ftsCols.length > 0) {
-    try {
-      sqlite.exec(`
-				INSERT INTO saves_fts(
-					id, title, description, author, ocr_text, ai_caption,
-					ai_summary, article_text, tag_names
-				)
-				SELECT
-					id, title, description, author, ocr_text, ai_caption,
-					ai_summary, article_text,
-					COALESCE(replace(replace(replace(tags, '[', ''), ']', ''), '"', ''), '')
-				FROM saves
-			`);
-    } catch (err) {
-      log.warn("[pond db] fts rebuild failed", err);
-    }
-  }
 
-  // Vector index. The dim depends on the configured embedding model,
-  // so we read it from settings. Default 768 covers the local
-  // `nomic-embed-text` story; OpenAI users get 1536 once they pick
-  // `text-embedding-3-small` in the AI settings page (which triggers
-  // a re-embed via `recreateVecTable`).
   try {
     ensureVecTable(sqlite);
   } catch (err) {
@@ -372,11 +221,6 @@ function migrate(sqlite: Database.Database): void {
   }
 }
 
-/**
- * Read the embedding dim from `settings.ai_provider` and create
- * `saves_vec` with the right `FLOAT[<dim>]` shape. Only runs at startup
- * — schema changes mid-session go through `recreateVecTable` instead.
- */
 function ensureVecTable(sqlite: Database.Database): void {
   const dim = readEmbeddingDim(sqlite);
   const existing = sqlite
@@ -393,9 +237,6 @@ function ensureVecTable(sqlite: Database.Database): void {
     );
     return;
   }
-  // Drop + recreate when the configured dim disagrees with what we
-  // stored in the meta cache. This wipes the embeddings; the worker
-  // re-runs `embed` jobs on next sweep.
   const storedDim = readMetaDim(sqlite);
   if (storedDim !== null && storedDim !== dim) {
     log.warn(
@@ -417,11 +258,6 @@ function ensureVecTable(sqlite: Database.Database): void {
   writeMetaDim(sqlite, dim);
 }
 
-/**
- * Drop and recreate `saves_vec` with a new dimension. Called from the
- * AI settings page when the user switches embedding model. Wipes
- * embeddings — the worker re-runs `embed` jobs across the library.
- */
 export async function recreateVecTable(): Promise<void> {
   const db = await getDb();
   const raw = db.$raw;
@@ -442,7 +278,6 @@ export async function recreateVecTable(): Promise<void> {
   log.info(`[pond db] recreated vec0 at dim=${dim}`);
 }
 
-/** Tiny `pond_meta(key,value)` helper used to remember the live vec dim. */
 function readMetaDim(sqlite: Database.Database): number | null {
   try {
     sqlite.exec(
@@ -503,14 +338,10 @@ async function ensureLibraryMetadata(): Promise<void> {
 }
 
 function cryptoRandomId(): string {
-  // Only used once for the library identifier. Keep the dependency surface
-  // tiny by avoiding `ulid` here (main hasn't imported it yet at boot).
   const bytes = crypto.getRandomValues(new Uint8Array(16));
   return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-// Keep `join` referenced so tsc doesn't trim the import when the module is
-// bundled via externalizeDepsPlugin.
 void join;
 
 export { sql };

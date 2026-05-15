@@ -1,15 +1,5 @@
 import { useSyncExternalStore } from "react";
 
-/**
- * Multi-select state for the saves grid. Lives outside the URL because
- * the selection set can grow large (Cmd+A across 5k items) and stuffing
- * thousands of ids into the search params would defeat history. Lives
- * outside the Object Pool because the pool tracks data, not UI state.
- *
- * Anchor index is recorded so Shift-click can extend a contiguous range
- * the way Finder / Eagle do.
- */
-
 class SelectionStore {
   private ids = new Set<string>();
   private anchor: string | null = null;
@@ -65,7 +55,6 @@ class SelectionStore {
     return this.anchor;
   }
 
-  /** Replace the selection with a contiguous range from `from..to` (inclusive). */
   setRange(allIds: string[], from: string, to: string): void {
     const fromIdx = allIds.indexOf(from);
     const toIdx = allIds.indexOf(to);

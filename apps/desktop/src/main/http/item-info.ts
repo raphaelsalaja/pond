@@ -3,9 +3,6 @@ import { eq } from "drizzle-orm";
 import type { Context } from "hono";
 import { getDb } from "../db";
 
-/**
- * `GET /api/v2/item/info?id=<id>`  -- hydrate one item. Eagle-shaped.
- */
 export async function itemInfoHandler(c: Context) {
   const id = c.req.query("id");
   if (!id) return c.json({ status: "error", error: "Missing id" }, 400);

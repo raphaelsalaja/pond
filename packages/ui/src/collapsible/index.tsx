@@ -1,32 +1,17 @@
 import { Collapsible as Base } from "@base-ui/react/collapsible";
+import { cn } from "../lib/cn";
 import styles from "./styles.module.css";
 
-interface RootProps extends React.ComponentProps<typeof Base.Root> {}
-
-function Root({ ...props }: RootProps) {
+function Root(props: Base.Root.Props) {
   return <Base.Root {...props} />;
 }
 
-interface TriggerProps extends React.ComponentProps<typeof Base.Trigger> {}
-
-function Trigger({ className, ...props }: TriggerProps) {
-  return (
-    <Base.Trigger
-      className={[styles.trigger, className ?? ""].filter(Boolean).join(" ")}
-      {...props}
-    />
-  );
+function Trigger({ className, ...props }: Base.Trigger.Props) {
+  return <Base.Trigger className={cn(styles.trigger, className)} {...props} />;
 }
 
-interface PanelProps extends React.ComponentProps<typeof Base.Panel> {}
-
-function Panel({ className, ...props }: PanelProps) {
-  return (
-    <Base.Panel
-      className={[styles.panel, className ?? ""].filter(Boolean).join(" ")}
-      {...props}
-    />
-  );
+function Panel({ className, ...props }: Base.Panel.Props) {
+  return <Base.Panel className={cn(styles.panel, className)} {...props} />;
 }
 
 export const Collapsible = {

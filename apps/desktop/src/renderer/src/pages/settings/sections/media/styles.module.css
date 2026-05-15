@@ -1,0 +1,47 @@
+.source-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0;
+  margin: 12px 0 0;
+  list-style: none;
+}
+
+.source-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: var(--ds-gray-1);
+  border: 1px solid var(--ds-gray-a4);
+  border-radius: 8px;
+}
+
+.source-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.source-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ds-gray-12);
+}
+
+.source-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.status-connected {
+  font-size: 11px;
+  color: light-dark(#1a7f37, #4ac26b);
+}
+
+.status-disconnected {
+  font-size: 11px;
+  color: var(--ds-gray-11);
+}

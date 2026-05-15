@@ -1,9 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-/**
- * `Cmd/Ctrl+,` → Settings — the macOS-standard "Preferences…" hotkey.
- */
 export function PreferencesHotkey() {
   const navigate = useNavigate();
 

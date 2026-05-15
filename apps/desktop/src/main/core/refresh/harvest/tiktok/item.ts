@@ -1,11 +1,5 @@
 /// <reference lib="dom" />
 
-/**
- * TikTok single-video collector. Extracts metadata from
- * `SIGI_STATE` / `__UNIVERSAL_DATA_FOR_REHYDRATION__` JSON embedded
- * in the page, falling back to DOM scraping.
- */
-
 import type { ScrapedHarvest } from "../types";
 import { inPageTiktokNormalize } from "./normalize";
 

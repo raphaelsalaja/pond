@@ -5,17 +5,6 @@ import {
   type SettingsRow,
 } from "@/pages/settings/sections/_types";
 
-/**
- * Shared cache + subscriber set for the `settings.aiProvider` column.
- *
- * Mirrors the `usePrefs` pattern in `./prefs.ts` — every page that calls
- * `useAiProvider()` shares one in-memory copy so flipping the provider
- * tier on the AI Provider page is visible on Enrichment / Search &
- * Embeddings before the IPC handler returns. The API key sits next to
- * the provider config because cloud tiers can't function without it
- * and surfacing them on the same page is the only place they're used.
- */
-
 interface AiProviderState {
   provider: AiProviderConfig;
   apiKey: string;
@@ -54,9 +43,6 @@ async function load(): Promise<AiProviderState> {
       provider: s.aiProvider ?? DEFAULT_PROVIDER,
       apiKey: k.key ?? "",
     };
-    // Pre-fill the videoDownload default on the row so other call
-    // sites that happen to read SettingsRow during the same tick
-    // don't trip over an undefined.
     void (s.videoDownload ?? DEFAULT_VIDEO_DOWNLOAD);
     cache = next;
     inflight = null;
@@ -79,11 +65,6 @@ export interface UseAiProvider {
   saveApiKey: () => Promise<void>;
 }
 
-/**
- * Read + patch the AI provider config and gateway key. The patch fn
- * persists to main; `setApiKey` is local-only (so the user can type
- * before committing) and `saveApiKey` writes through.
- */
 export function useAiProvider(): UseAiProvider {
   const [state, setState] = useState<AiProviderState | null>(cache);
 

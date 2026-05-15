@@ -5,7 +5,6 @@ import {
   Navigate,
   type RouteObject,
   RouterProvider,
-  useParams,
 } from "react-router-dom";
 import type { PondApi } from "../../preload";
 import {
@@ -21,16 +20,10 @@ import { ReaderPage } from "./pages/reader";
 import { SaveDetailPage } from "./pages/save-detail-page";
 import { SavesView } from "./pages/saves-view";
 import { DEFAULT_SECTION, SECTIONS } from "./pages/settings/registry";
-import { SourceSection } from "./pages/settings/sections/source";
 import { TrashView } from "./pages/trash-view";
 import { WelcomePage } from "./pages/welcome";
 import { getPrefsSnapshot } from "./pool/prefs";
 
-/**
- * Chimes once per new toast when `prefs.notifications.sound` is on.
- * Watches the toast manager's queue length rather than wrapping
- * `add()` so `@pond/ui` stays a pass-through over Base's manager.
- */
 function ToastChime() {
   const { toasts } = useToast();
   const last = useRef(toasts.length);
@@ -71,35 +64,11 @@ function playChime(): void {
   }
 }
 
-/**
- * Backwards-compatibility redirect for `/item/:id`. Old tray menu
- * entries, `pond://` deep links, and any in-flight system
- * notifications still target the legacy URL — translate them to the
- * new unified `/save/:id` surface.
- */
-function ItemRedirect() {
-  const { id } = useParams<{ id: string }>();
-  return <Navigate to={id ? `/save/${id}` : "/"} replace />;
-}
-
 declare global {
   interface Window {
     pond: PondApi;
   }
 }
-
-/**
- * Backwards-compat redirects from pre-reorg paths. Old tray menu
- * entries, `pond://` deep links, and in-flight system notifications
- * may still target the original routes. Map them onto the merged /
- * renamed pages so nothing 404s into the catch-all silently.
- */
-const SETTINGS_REDIRECTS: ReadonlyArray<readonly [string, string]> = [
-  ["quick-capture", "capture-behavior"],
-  ["save-behavior", "capture-behavior"],
-  ["videos", "media"],
-  ["ai", "ai/provider"],
-];
 
 const settingsChildren: RouteObject[] = [
   {
@@ -110,13 +79,6 @@ const settingsChildren: RouteObject[] = [
     (section): RouteObject => ({
       path: section.path,
       element: <section.component />,
-    }),
-  ),
-  { path: "integrations/:source", element: <SourceSection /> },
-  ...SETTINGS_REDIRECTS.map(
-    ([from, to]): RouteObject => ({
-      path: from,
-      element: <Navigate to={`/settings/${to}`} replace />,
     }),
   ),
   {
@@ -166,10 +128,6 @@ const router = createHashRouter([
             element: <TrashView />,
             children: [saveSplitChild],
           },
-          // Linear-style detail page. One route per list mode so the
-          // breadcrumb (`<DetailHeader>`) can derive the parent context
-          // from the URL prefix and `useListContext()` can rebuild the
-          // same filtered list the grid was showing.
           { path: "detail/:id", element: <SaveDetailPage /> },
           {
             path: "source/:source/detail/:id",
@@ -181,7 +139,6 @@ const router = createHashRouter([
           { path: "trash/detail/:id", element: <SaveDetailPage /> },
           { path: "inbox", element: <InboxPage /> },
           { path: "activity", element: <ActivityPage /> },
-          { path: "item/:id", element: <ItemRedirect /> },
         ],
       },
       {

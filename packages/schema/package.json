@@ -26,11 +26,11 @@
     "./tx": "./src/tx.ts",
     "./ingest": "./src/ingest.ts",
     "./raw": "./src/raw.ts",
+    "./session": "./src/session.ts",
     "./filters": "./src/filters/index.ts",
     "./filters/types": "./src/filters/types.ts",
     "./filters/meta": "./src/filters/meta.ts",
     "./filters/url": "./src/filters/url.ts",
-    "./filters/migrate": "./src/filters/migrate.ts",
     "./filters/match": "./src/filters/match.ts"
   },
   "scripts": {

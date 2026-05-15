@@ -1,18 +1,10 @@
-import { IconCheckOutline18 } from "@pond/icons/outline";
+import { IconCheckOutline18 } from "@pond/icons/outline/18";
 import { Input, Menu } from "@pond/ui";
 import { useMemo, useState } from "react";
 import type { DropdownProps } from "@/components/filter-bar/dropdowns/types";
 import { useSaves } from "@/pool/hooks";
 import styles from "./styles.module.css";
 
-/**
- * Tag picker. Multi-select against the union of every save's
- * `tags` + `aiTags` so suggestions are scoped to what the user has
- * actually applied (or the AI has suggested) — no global tag
- * registry yet. Picking multiple tags promotes the comparator to
- * `every` (default tag-AND); the chip's comparator picker can flip
- * to `some` / `none` if a different semantics is wanted.
- */
 export function TagsDropdown({ predicate, onChange }: DropdownProps) {
   const [q, setQ] = useState("");
   const saves = useSaves();
@@ -61,7 +53,7 @@ export function TagsDropdown({ predicate, onChange }: DropdownProps) {
   return (
     <div className={styles.body}>
       <div className={styles.search}>
-        <Input.Root
+        <Input
           type="search"
           value={q}
           placeholder="Filter tags…"

@@ -7,29 +7,6 @@ import { getPrefs } from "./prefs";
 import { getStorageSnapshot } from "./storage-stats";
 import { cancelSync } from "./sync";
 
-/**
- * Background watcher that enforces the user's storage caps.
- *
- * The contract here is intentionally tiny. A single `setInterval`
- * periodically reads the latest prefs, asks `storage-stats` for a
- * snapshot, and decides one of three states:
- *
- *   - `ok`        — usage below the warn threshold, runtime flags clear
- *   - `warn`      — between warn and cap, action *not* applied yet
- *   - `exceeded`  — at/above the cap, configured action enforced
- *
- * The watcher does NOT touch user data. When the configured action is
- * `pauseSync` we cancel running syncs and flip a runtime flag the
- * orchestrator checks before scheduling new ones; when `pauseVideo`
- * we flip a parallel flag the auto-video queue honours; when `warn`
- * the watcher just emits the broadcast and lets the renderer surface
- * the state.
- *
- * The watcher cooperates with the in-memory snapshot cache in
- * `storage-stats.ts`, so a tick that lands within 30s of the previous
- * one re-uses the cached walk rather than thrashing the disk.
- */
-
 export type StorageGuardAction = "warn" | "pauseSync" | "pauseVideo";
 export type StorageGuardState = "ok" | "warn" | "exceeded";
 
@@ -58,11 +35,6 @@ let videoBlocked = false;
 
 const GIB_BYTES = 1024 * 1024 * 1024;
 
-/**
- * Module-level read of the runtime sync block. Exported so
- * `core/sync` can short-circuit before scheduling a new run without
- * having to subscribe to status events.
- */
 export function isSyncBlockedByStorageGuard(): boolean {
   return syncBlocked;
 }
@@ -90,11 +62,6 @@ export function stopStorageWatcher(): void {
   videoBlocked = false;
 }
 
-/**
- * Reads the latest persisted prefs and re-arms the timer. Called at
- * startup and after the renderer patches `prefs.storage` so the new
- * cadence / cap takes effect without a relaunch.
- */
 export async function applyStorageWatcherPrefs(): Promise<void> {
   let prefs: Prefs;
   try {
@@ -155,9 +122,6 @@ async function runTick(): Promise<void> {
   const cfg = prefs.storage;
   if (!cfg.guardsEnabled) return;
 
-  // Skip the walk when no window is visible — the renderer can't
-  // observe the broadcast anyway, and the watcher's own state machine
-  // catches up the next time the user opens the window.
   const someWindowVisible = BrowserWindow.getAllWindows().some(
     (w) => !w.isDestroyed() && w.isVisible(),
   );

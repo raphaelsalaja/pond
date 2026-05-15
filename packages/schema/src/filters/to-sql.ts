@@ -1,16 +1,3 @@
-/**
- * AST → Drizzle WHERE builder. Main-only.
- *
- * Each predicate is compiled against the matching field's SQL
- * projection. Bespoke fields (`tags`, `color`) route through
- * dedicated helpers in `./fields.ts`; everything else uses the
- * scalar projection map.
- *
- * The resulting `SQL` is passed straight to `db.where(...)` in the
- * `saves.find` IPC handler. Empty queries return `undefined` so the
- * caller can skip the WHERE clause entirely.
- */
-
 import { and as drizzleAnd, or as drizzleOr, type SQL, sql } from "drizzle-orm";
 import {
   colorNear,

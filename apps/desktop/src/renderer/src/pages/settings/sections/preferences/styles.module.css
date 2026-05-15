@@ -1,0 +1,44 @@
+.image-picker {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  overflow: hidden;
+  color: var(--ds-gray-11);
+  cursor: pointer;
+  background: var(--ds-accent-3);
+  border: 0;
+  border-radius: var(--ds-radius-md);
+  transition:
+    transform var(--ds-duration-medium) var(--ds-easing-standard),
+    box-shadow var(--ds-duration-medium) var(--ds-easing-standard);
+
+  &::before {
+    position: absolute;
+    inset: -4px;
+    pointer-events: none;
+    content: "";
+    border-radius: calc(var(--ds-radius-md) + 4px);
+    box-shadow: var(--ds-shadow-focus-halo);
+    opacity: 0;
+    transition: opacity var(--ds-duration-medium) var(--ds-easing-standard);
+  }
+
+  &:focus-visible::before {
+    opacity: 1;
+  }
+
+  &:active {
+    transform: scale(0.96);
+  }
+}
+
+.image-picker img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}

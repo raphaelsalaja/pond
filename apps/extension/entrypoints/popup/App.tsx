@@ -7,8 +7,15 @@ import {
   LIBRARY_INFO_URL,
   type PondMessage,
   type PondSettings,
+  type PushSessionResult,
 } from "@/utils/types";
-import { urlToSource } from "@/utils/url";
+import {
+  cookieDomainForSource,
+  hostToSource,
+  PUBLIC_PROFILE_SOURCES,
+  sourceLabel,
+  urlToSource,
+} from "@/utils/url";
 import styles from "./popup.module.css";
 
 interface LibraryInfo {
@@ -26,7 +33,12 @@ type CaptureResult =
   | { tone: "error"; label: string }
   | null;
 
-const SAVE_LABELS: Record<Source, string> = {
+type PushResult =
+  | { tone: "ok"; label: string }
+  | { tone: "error"; label: string }
+  | null;
+
+const _SAVE_LABELS: Record<Source, string> = {
   twitter: "Save tweet",
   instagram: "Save post",
   pinterest: "Save pin",
@@ -34,7 +46,6 @@ const SAVE_LABELS: Record<Source, string> = {
   cosmos: "Save cluster",
   tiktok: "Save TikTok",
   youtube: "Save video",
-  reddit: "Save post",
   article: "Save article",
 };
 
@@ -80,6 +91,8 @@ export function App() {
   const [pairingBusy, setPairingBusy] = useState(false);
   const [captureBusy, setCaptureBusy] = useState(false);
   const [captureResult, setCaptureResult] = useState<CaptureResult>(null);
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushResult, setPushResult] = useState<PushResult>(null);
 
   const refresh = useCallback(async () => {
     const [settings, url] = await Promise.all([
@@ -95,6 +108,9 @@ export function App() {
   }, [refresh]);
 
   const resolved = tabUrl ? urlToSource(tabUrl) : null;
+  const tabSource: Source | null = tabUrl ? hostToSource(tabUrl) : null;
+  const pushable: Source | null =
+    tabSource && cookieDomainForSource(tabSource) ? tabSource : null;
 
   async function applyPairing(): Promise<void> {
     setPairingError(null);
@@ -127,6 +143,72 @@ export function App() {
     }
   }
 
+  async function pushSessionForTab(): Promise<void> {
+    if (!pushable || pushBusy) return;
+    setPushBusy(true);
+    setPushResult(null);
+    try {
+      const message: PondMessage = { kind: "pushSession", source: pushable };
+      const res = (await chrome.runtime.sendMessage(message)) as
+        | PushSessionResult
+        | undefined;
+
+      if (!res) {
+        setPushResult({ tone: "error", label: "No response from extension" });
+        return;
+      }
+      if (res.ok) {
+        const isPublicProfile = PUBLIC_PROFILE_SOURCES.has(pushable);
+        if (res.data.connected) {
+          setPushResult({
+            tone: "ok",
+            label: `Sent — Pond is connected to ${sourceLabel(pushable)}`,
+          });
+        } else if (isPublicProfile && res.data.imported > 0) {
+          setPushResult({
+            tone: "ok",
+            label: `Sent ${res.data.imported} cookies — also set your ${sourceLabel(pushable)} handle in Pond Settings to enable scraping`,
+          });
+        } else if (res.data.imported > 0) {
+          setPushResult({
+            tone: "error",
+            label: `Sent ${res.data.imported} cookies but no auth session detected. Sign in first?`,
+          });
+        } else {
+          setPushResult({
+            tone: "error",
+            label: "No matching cookies on this domain",
+          });
+        }
+        return;
+      }
+      if (res.reason === "unpaired") {
+        setPushResult({
+          tone: "error",
+          label: "Pair the extension with Pond first",
+        });
+        void refresh();
+      } else if (res.reason === "no_cookies") {
+        setPushResult({
+          tone: "error",
+          label: `No cookies for ${sourceLabel(pushable)} — sign in first`,
+        });
+      } else {
+        setPushResult({
+          tone: "error",
+          label: res.detail || "Couldn't reach Pond",
+        });
+      }
+    } catch (err) {
+      setPushResult({
+        tone: "error",
+        label: err instanceof Error ? err.message : "Push failed",
+      });
+    } finally {
+      setPushBusy(false);
+    }
+  }
+
   async function saveCurrent(): Promise<void> {
     if (!tabUrl || !resolved || captureBusy) return;
     setCaptureBusy(true);
@@ -141,8 +223,6 @@ export function App() {
         return;
       }
       setCaptureResult({ tone: "error", label: "Save failed — check Pond" });
-      // A failed save often means the token rotated under us; re-probe so
-      // the UI flips to `unpaired` if that's what happened.
       void refresh();
     } catch {
       setCaptureResult({ tone: "error", label: "Save failed — check Pond" });
@@ -152,9 +232,6 @@ export function App() {
   }
 
   function openDeepLink(href: string): void {
-    // `chrome.tabs.create` lets the OS protocol handler claim `pond://`
-    // links. `window.open` from a popup gets sandboxed and silently no-ops
-    // on custom schemes.
     void chrome.tabs.create({ url: href, active: true });
     window.close();
   }
@@ -215,6 +292,15 @@ export function App() {
           busy={captureBusy}
           result={captureResult}
           onSave={saveCurrent}
+        />
+      ) : null}
+
+      {probeResult.state === "connected" && pushable ? (
+        <PushSessionCard
+          source={pushable}
+          busy={pushBusy}
+          result={pushResult}
+          onPush={pushSessionForTab}
         />
       ) : null}
 
@@ -282,7 +368,7 @@ function UnpairedCard({
       </p>
       <Field.Root>
         <Field.Label htmlFor="pairing">Pairing link</Field.Label>
-        <Input.Root
+        <Input
           id="pairing"
           data-variant="code"
           type="text"
@@ -349,29 +435,51 @@ function ConnectedCard({
   result,
   onSave,
 }: ConnectedCardProps) {
-  const canSave = !!resolved && !busy;
-  const label = busy
-    ? "Saving…"
-    : resolved
-      ? SAVE_LABELS[resolved.source]
-      : tabUrl
-        ? "Page not supported"
-        : "No active tab";
   return (
     <section className={styles.card}>
-      <Button
-        variant="primary"
-        className={styles["primary-button"]}
-        disabled={!canSave}
-        onClick={() => void onSave()}
-      >
-        {label}
-      </Button>
       {resolved ? (
         <p className={styles["capture-meta"]}>
           {resolved.source} · {resolved.sourceId}
         </p>
       ) : null}
+      {result ? (
+        <p className={styles["capture-result"]} data-tone={result.tone}>
+          {result.label}
+        </p>
+      ) : null}
+    </section>
+  );
+}
+
+interface PushSessionCardProps {
+  source: Source;
+  busy: boolean;
+  result: PushResult;
+  onPush: () => void | Promise<void>;
+}
+
+function PushSessionCard({
+  source,
+  busy,
+  result,
+  onPush,
+}: PushSessionCardProps) {
+  const label = sourceLabel(source);
+  return (
+    <section className={styles.card}>
+      <h2 className={styles["card-title"]}>Push {label} session to Pond</h2>
+      <p className={styles["card-description"]}>
+        Once you're signed in to {label} here, send the session over so Pond can
+        scrape on your behalf — no embedded sign-in window needed.
+      </p>
+      <Button
+        variant="primary"
+        className={styles["primary-button"]}
+        disabled={busy}
+        onClick={() => void onPush()}
+      >
+        {busy ? "Sending…" : `Push ${label} session`}
+      </Button>
       {result ? (
         <p className={styles["capture-result"]} data-tone={result.tone}>
           {result.label}

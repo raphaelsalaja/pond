@@ -43,20 +43,20 @@
 .section {
   display: flex;
   flex-direction: column;
-  border-radius: 12px;
+  border-radius: 16px;
 }
 
 .section-title {
   padding: var(--settings-padding-inline-inset);
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 550;
   color: var(--ds-gray-12);
 }
 
 .list {
   border-radius: 12px;
   box-shadow:
-    0 0 0 1px var(--ds-gray-a4),
+    0 0 0 1px var(--ds-gray-a3),
     0 2px 4px 0px rgba(0, 0, 0, 0.06);
 }
 
@@ -68,7 +68,7 @@
   padding: 16px;
 
   &:not(:last-child) {
-    border-bottom: 1px solid var(--ds-gray-4);
+    border-bottom: 1px solid var(--ds-gray-3);
   }
 }
 

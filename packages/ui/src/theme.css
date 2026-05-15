@@ -81,45 +81,94 @@
   --ds-accent-a10: var(--sky-a10);
   --ds-accent-a11: var(--sky-a11);
   --ds-accent-a12: var(--sky-a12);
+
+  --ds-tomato-1: var(--tomato-1);
+  --ds-tomato-2: var(--tomato-2);
+  --ds-tomato-3: var(--tomato-3);
+  --ds-tomato-4: var(--tomato-4);
+  --ds-tomato-5: var(--tomato-5);
+  --ds-tomato-6: var(--tomato-6);
+  --ds-tomato-7: var(--tomato-7);
+  --ds-tomato-8: var(--tomato-8);
+  --ds-tomato-9: var(--tomato-9);
+  --ds-tomato-10: var(--tomato-10);
+  --ds-tomato-11: var(--tomato-11);
+  --ds-tomato-12: var(--tomato-12);
+  --ds-tomato-a3: var(--tomato-a3);
+  --ds-tomato-a6: var(--tomato-a6);
+
+  --ds-grass-3: var(--grass-3);
+  --ds-grass-6: var(--grass-6);
+  --ds-grass-9: var(--grass-9);
+  --ds-grass-11: var(--grass-11);
+  --ds-grass-a6: var(--grass-a6);
 }
 
 :root {
-  --ds-background-color: light-dark(#fff, #000);
+  --ds-background-primary: light-dark(var(--white-a12), var(--black-a12));
+  --ds-background-secondary: var(--ds-gray-1);
+  --ds-background-tertiary: var(--ds-gray-2);
 
-  --ds-shell-main: light-dark(#fff, var(--ds-gray-1));
-  --ds-shell-background: var(--ds-background-color);
-}
+  --ds-radius-xs: 8px;
+  --ds-radius-sm: 10px;
+  --ds-radius-md: 12px;
+  --ds-radius-lg: 14px;
+  --ds-radius-xl: 16px;
+  --ds-radius-full: 9999px;
 
-@supports (color: color(display-p3 1 1 1)) {
-  @media (color-gamut: p3) {
-    :root {
-      --ds-background-color: light-dark(
-        color(display-p3 1 1 1),
-        color(display-p3 0 0 0)
-      );
-    }
-  }
-}
+  --ds-shadow-1:
+    0 0 0 1px light-dark(var(--gray-a3), var(--gray-a4)),
+    0 1px 2px 0 light-dark(var(--gray-a4), var(--black-a4));
 
-:root {
-  --ds-radius-sm: 4px;
-  --ds-radius-md: 6px;
-  --ds-radius-lg: 8px;
-  --ds-radius-xl: 12px;
+  --ds-shadow-2:
+    0 0 0 1px light-dark(var(--gray-a3), var(--gray-a4)),
+    0 2px 4px 0 light-dark(var(--gray-a4), var(--black-a4));
 
-  --ds-shadow-card:
-    0 0 0 1px rgba(0, 0, 0, 0.08), 0 2px 2px -1px rgba(0, 0, 0, 0.06);
-  --ds-shadow-search:
-    0 0 0 1px rgba(0, 0, 0, 0.05), 0 1px 1px -0.5px rgba(0, 0, 0, 0.05),
-    0 3px 3px -1.5px rgba(0, 0, 0, 0.05);
-  --ds-shadow-badge:
-    inset 0 0 0 0.5px rgba(0, 0, 0, 0.1), inset 0 -1px 1px 0 rgba(0, 0, 0, 0.25);
+  --ds-shadow-2-focused:
+    0 0 0 1px var(--ds-accent-9),
+    0 2px 4px 0 light-dark(var(--gray-a3), var(--black-a4)),
+    0 0 0 3px color-mix(in srgb, var(--ds-accent-9) 20%, transparent);
 
-  --ds-brand-twitter: #000000;
-  --ds-brand-cosmos: #fcfbfa;
-  --ds-brand-reddit: #ff4500;
-  --ds-brand-arena: #ffffff;
-  --ds-brand-facebook: #0165e0;
-  --ds-brand-pinterest: #e60024;
+  --ds-shadow-3:
+    0 0 0 1px light-dark(var(--gray-a3), var(--gray-a4)),
+    0 4px 8px 0 light-dark(var(--gray-a3), var(--black-a4));
+
+  --ds-shadow-popover:
+    0 0 0 1px var(--ds-gray-a4), 0 12px 12px -6px var(--ds-gray-a8);
+
+  --ds-shadow-dialog:
+    0 0 0 1px var(--ds-gray-a4), 0 12px 32px -8px var(--ds-gray-a8),
+    0 4px 10px -2px var(--ds-gray-a6);
+
+  --ds-shadow-toast:
+    0 0 0 1px var(--ds-gray-a4), 0 8px 24px -6px var(--ds-gray-a7);
+
+  --ds-shadow-tooltip: 0 4px 16px -4px var(--ds-gray-a8);
+
+  --ds-shadow-thumb: 0 1px 2px var(--ds-gray-a5);
+
+  --ds-shadow-badge: 0 0 0 1px var(--ds-gray-a4), 0 1px 2px var(--ds-gray-a4);
+
+  --ds-shadow-focus-halo:
+    0 0 0 1px var(--ds-accent-9),
+    0 0 0 3px color-mix(in srgb, var(--ds-accent-9) 20%, transparent);
+
+  --ds-brand-twitter: light-dark(#0f0f0f, #f5f5f5);
+  --ds-brand-cosmos: #ebebeb;
+  --ds-brand-arena: #171717;
+  --ds-brand-facebook: #0866ff;
+  --ds-brand-pinterest: #e60023;
   --ds-brand-dribbble: #ea4c89;
+
+  --ds-font-mono:
+    "IBM Plex Mono", ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas,
+    monospace;
+
+  --ds-duration-fast: 80ms;
+  --ds-duration-snap: 120ms;
+  --ds-duration-medium: 180ms;
+  --ds-duration-emphasized: 250ms;
+
+  --ds-easing-standard: ease;
+  --ds-easing-snap: cubic-bezier(0.22, 1, 0.36, 1);
 }

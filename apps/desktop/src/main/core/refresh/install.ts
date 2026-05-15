@@ -4,23 +4,8 @@ import { resolve } from "node:path";
 import { app } from "electron";
 import log from "electron-log/main.js";
 
-/**
- * Re-runs the same postinstall script that ships yt-dlp into
- * `apps/desktop/resources/bin/`. Triggered from the settings page
- * "Reinstall yt-dlp" button so the user can recover from a network
- * blip during the first `pnpm install`, or pull a fresh build after
- * we bump the pinned version.
- *
- * Implementation:
- *  - Dev: shells out to `node apps/desktop/scripts/download-yt-dlp.mjs`.
- *  - Packaged: the same script ships under `process.resourcesPath/scripts`.
- * Either way we capture stdout/stderr so the UI can surface a one-line
- * outcome message instead of a generic "ok" / "error".
- */
-
 export interface ReinstallResult {
   ok: boolean;
-  /** Short user-facing summary. Includes stderr tail on failure. */
   message: string;
 }
 
@@ -42,17 +27,9 @@ export async function reinstallYtDlp(): Promise<ReinstallResult> {
     process.execPath,
     [scriptPath],
     HARD_TIMEOUT_MS,
-    // Electron processes need this env to be node-compatible when we
-    // shell out to a .mjs script. ELECTRON_RUN_AS_NODE makes
-    // `process.execPath` behave like a vanilla node binary.
     { env: { ...process.env, ELECTRON_RUN_AS_NODE: "1" } },
   );
 
-  // The script intentionally never exits non-zero — yt-dlp is a soft
-  // dep — so we sniff its log output to distinguish "installed" from
-  // "couldn't reach github / sha mismatch / etc.". The script always
-  // logs `[pond yt-dlp] installed` on a successful write or
-  // `[pond yt-dlp] already installed` on a no-op.
   const tail = `${stdout}\n${stderr}`;
   if (
     tail.includes("[pond yt-dlp] installed") ||
@@ -90,10 +67,6 @@ export async function reinstallYtDlp(): Promise<ReinstallResult> {
 function locateScript(): string | null {
   const candidates: string[] = [];
   if (app.isPackaged) {
-    // Packaged builds: copy the script into Resources/scripts via
-    // electron-builder's `extraResources`. We don't currently ship
-    // it; this path will be empty for packaged builds until we wire
-    // it up. The reinstall button is most useful in dev anyway.
     candidates.push(
       resolve(process.resourcesPath, "scripts/download-yt-dlp.mjs"),
     );

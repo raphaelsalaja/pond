@@ -1,11 +1,5 @@
 /// <reference lib="dom" />
 
-/**
- * Shared Instagram API node normalizer. Designed for `.toString()`
- * serialization — both the list collector and item collector inject
- * this via `(${inPageInstagramNormalize.toString()})()` so there is
- * exactly one copy of every helper at runtime.
- */
 export function inPageInstagramNormalize() {
   const ALPHABET =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";

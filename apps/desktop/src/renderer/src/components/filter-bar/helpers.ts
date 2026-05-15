@@ -1,14 +1,3 @@
-/**
- * AST manipulation helpers for the chip bar.
- *
- * The URL codec round-trips a `Query` (always a top-level `And` of
- * `Predicate`s in v1 — OR groups land via `?q=<base64>` and read
- * back the same way). The chip bar treats top-level predicates as
- * its primary unit of edit; this file packages the common
- * "add/remove/replace one predicate" flows so the React components
- * stay declarative.
- */
-
 import { FIELD_META } from "@pond/schema/filters/meta";
 import {
   COMPARATORS_BY_TYPE,
@@ -18,12 +7,21 @@ import {
   type Query,
 } from "@pond/schema/filters/types";
 
-/** Top-level predicates only — nested AND/OR are skipped. */
+export interface AddCommitApi {
+  // Append a fully-formed predicate (used by search-result rows and recents).
+  commitOne: (predicate: Predicate) => void;
+  // First live commit from a builder submenu; returns the new predicate's
+  // index so subsequent picks can update the same chip in place.
+  liveAdd: (predicate: Predicate) => number;
+  // Update (or remove, when `predicate` is null) a live-committed predicate
+  // at its tracked index.
+  liveUpdate: (index: number, predicate: Predicate | null) => void;
+}
+
 export function topLevelPredicates(query: Query): Predicate[] {
   return query.clauses.filter((c): c is Predicate => c.kind === "p");
 }
 
-/** Replace the predicate at `index`. `null` removes it. */
 export function replacePredicate(
   query: Query,
   index: number,
@@ -40,8 +38,6 @@ export function appendPredicate(query: Query, predicate: Predicate): Query {
   return { kind: "and", clauses: [...query.clauses, predicate] };
 }
 
-/** First default predicate for a field — picks the first allowed
- * comparator and a sensible empty value. */
 export function defaultPredicateFor(field: FieldId): Predicate {
   const meta = FIELD_META[field];
   const cmp = (COMPARATORS_BY_TYPE[meta.type][0] ?? "eq") as ComparatorId;
@@ -72,15 +68,12 @@ export function emptyValueFor(cmp: ComparatorId): unknown {
   }
 }
 
-/** Are two predicates structurally equivalent? Used to skip URL
- * writes when nothing changed. */
 export function predicatesEqual(a: Predicate, b: Predicate): boolean {
   if (a.field !== b.field || a.cmp !== b.cmp) return false;
   if (Boolean(a.negate) !== Boolean(b.negate)) return false;
   return JSON.stringify(a.value) === JSON.stringify(b.value);
 }
 
-/** Has the user actually typed/selected a value worth filtering on? */
 export function predicateIsActive(p: Predicate): boolean {
   if (p.cmp === "exists") return true;
   const v = p.value;

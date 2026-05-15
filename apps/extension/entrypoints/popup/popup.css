@@ -29,7 +29,7 @@ body {
   width: 320px;
   padding: 16px;
   color: var(--ds-gray-12);
-  background: var(--ds-shell-background);
+  background: var(--ds-background-primary);
 }
 
 a {

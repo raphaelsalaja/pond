@@ -4,12 +4,6 @@ import log from "electron-log/main.js";
 import { itemFile } from "../../../paths";
 import { type ProviderClient, visionExtract } from "../provider";
 
-/**
- * Vision-based enrichment. One round-trip extracts caption, alt-text,
- * tags, classification and OCR'd text — costs ~one image-conditioned
- * call per save. Local LLaVA / Llama 3.2 Vision do all five together
- * comfortably; cloud vision models likewise.
- */
 export interface VisionResult {
   caption: string | null;
   altText: string | null;

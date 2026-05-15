@@ -1,5 +1,7 @@
 import {
+  DEFAULT_GLOBAL_SYNC_PREFS,
   DEFAULT_SOURCE_SYNC_PREFS,
+  type GlobalSyncPrefs,
   type Source,
   type SourceSyncPrefs,
   saves,
@@ -18,51 +20,21 @@ import {
   harvestTwitterBookmarks,
   harvestUrl,
   harvestYoutubeLikedList,
+  isSourceConnected,
   POOL_SIZE,
 } from "../refresh/scrape-window";
 import { isSyncBlockedByStorageGuard } from "../storage-watcher";
 
-/**
- * Background-sync orchestrator.
- *
- * The contract here is intentionally tiny: each source gets a single
- * `syncSource(<source>, opts)` entry point that runs to completion (or
- * a soft error) and yields progress events via the registered status
- * subscriber. The cron scheduler in `main/index.ts` calls
- * `syncAllSources` periodically; the renderer's "Sync now" button
- * calls `syncSource`. Everything funnels through the same code path
- * so a manual trigger and a cron tick produce identical state
- * transitions.
- *
- * For this slice we ship Twitter only. The orchestrator is shaped to
- * accept other sources by extending the `dispatch` switch — but we
- * deliberately avoid premature `harvestProfile<Source>` abstractions
- * until a second source actually plugs in. The comments in
- * `harvest/CAPTURE-STANDARD.md` describe the contract a future
- * source-bookmarks harvester needs to satisfy.
- */
-
 export interface SyncOptions {
-  /**
-   * Surface a manual run vs. a scheduled run in logs / status events.
-   * The orchestrator doesn't behave differently between the two, but
-   * the renderer's status banner reads "Syncing…" for either, while
-   * the developer log line distinguishes cron from button.
-   */
   trigger?: "manual" | "cron";
 }
 
 export interface SyncStatusUpdate {
   source: Source;
-  /** `idle` is what we send before the run starts and after it ends. */
   state: "idle" | "running" | "done" | "error" | "auth_required";
-  /** Human-readable status message, shown verbatim under the source page. */
   message?: string;
-  /** When known, the progress through the bookmarks queue. */
   progress?: { current: number; total: number };
-  /** ISO timestamp of the last successful run, surfaced in the UI. */
   lastSyncedAt?: string | null;
-  /** Set when the run hit a soft failure (auth wall, navigation error). */
   lastError?: string | null;
 }
 
@@ -88,21 +60,11 @@ function emit(update: SyncStatusUpdate): void {
   }
 }
 
-/**
- * Read the persisted sync prefs for a source, materialising defaults
- * for sources that haven't been touched yet. Saves callers from having
- * to handle the `undefined` shape every time.
- */
 export async function getSourceSync(source: Source): Promise<SourceSyncPrefs> {
   const prefs = await getPrefs();
-  return { ...DEFAULT_SOURCE_SYNC_PREFS, ...prefs.sync[source] };
+  return { ...DEFAULT_SOURCE_SYNC_PREFS, ...prefs.sync.sources[source] };
 }
 
-/**
- * Persist a partial patch onto `prefs.sync[source]`. Wrapped here so
- * callers don't have to know the round-trip nesting; `setPrefs`
- * shallow-merges sections, so we precompute the merged section.
- */
 export async function patchSourceSync(
   source: Source,
   patch: Partial<SourceSyncPrefs>,
@@ -110,23 +72,37 @@ export async function patchSourceSync(
   const prefs = await getPrefs();
   const next: SourceSyncPrefs = {
     ...DEFAULT_SOURCE_SYNC_PREFS,
-    ...prefs.sync[source],
+    ...prefs.sync.sources[source],
     ...patch,
   };
-  await setPrefs({ sync: { ...prefs.sync, [source]: next } });
+  await setPrefs({
+    sync: { sources: { ...prefs.sync.sources, [source]: next } },
+  });
   return next;
 }
 
-/**
- * Sync every source whose pref bucket has `enabled: true` AND a
- * non-`off` cadence. Used by the cron registered in `main/index.ts`.
- */
-export async function syncAllSources(opts: SyncOptions = {}): Promise<void> {
+export async function getGlobalSync(): Promise<GlobalSyncPrefs> {
   const prefs = await getPrefs();
-  for (const source of Object.keys(prefs.sync) as Source[]) {
-    const cfg = prefs.sync[source];
-    if (!cfg) continue;
-    if (!cfg.enabled || cfg.cadence === "off") continue;
+  return { ...DEFAULT_GLOBAL_SYNC_PREFS, ...prefs.sync.global };
+}
+
+export async function patchGlobalSync(
+  patch: Partial<GlobalSyncPrefs>,
+): Promise<GlobalSyncPrefs> {
+  const prefs = await getPrefs();
+  const next: GlobalSyncPrefs = {
+    ...DEFAULT_GLOBAL_SYNC_PREFS,
+    ...prefs.sync.global,
+    ...patch,
+  };
+  await setPrefs({ sync: { global: next } });
+  return next;
+}
+
+export async function syncAllSources(opts: SyncOptions = {}): Promise<void> {
+  for (const source of SYNCABLE_SOURCES) {
+    const connected = await isSourceConnected(source).catch(() => false);
+    if (!connected) continue;
     try {
       await syncSource(source, opts);
     } catch (err) {
@@ -135,14 +111,16 @@ export async function syncAllSources(opts: SyncOptions = {}): Promise<void> {
   }
 }
 
-/**
- * Run the per-source sync pipeline. Sync's contract is "ensure every
- * item on the source's list is in the local library" — there is no
- * incremental-vs-backfill mode. Cron ticks and the "Sync Now" button
- * fan into the same operation. Currently `twitter` and the seven
- * list-harvest sources are wired up; anything else records
- * `lastError = "unsupported"`.
- */
+const SYNCABLE_SOURCES: readonly Source[] = [
+  "twitter",
+  "youtube",
+  "cosmos",
+  "arena",
+  "pinterest",
+  "instagram",
+  "tiktok",
+];
+
 export async function syncSource(
   source: Source,
   opts: SyncOptions = {},
@@ -199,11 +177,6 @@ export async function syncSource(
   }
 }
 
-/**
- * Cancel an in-flight sync. The orchestrator just flips the abort
- * signal; the harvester loops check it between batches and bail out
- * cleanly. Safe to call when nothing is running (no-op).
- */
 export function cancelSync(source: Source): void {
   const c = inFlight.get(source);
   if (c) c.abort();
@@ -213,25 +186,15 @@ export function isSyncing(source: Source): boolean {
   return inFlight.has(source);
 }
 
-/** Sources with a Phase-3 list harvester wired up in `scrape-window`. */
 export const LIST_HARVEST_SOURCES = new Set<Source>([
   "youtube",
   "cosmos",
   "arena",
   "pinterest",
   "instagram",
-  "reddit",
   "tiktok",
 ]);
 
-/**
- * Optional per-source profile slug. Saved under
- * `prefs.sync[<source>].lastError` is the wrong place — for Phase 3
- * we read `accountKey` lazily from the existing saves table (the
- * first sourceUrl we have for the source surfaces the handle/slug).
- * If we can't infer it, the run is short-circuited as
- * `auth_required` so the user can connect first.
- */
 async function inferAccountKey(source: Source): Promise<string | null> {
   const db = await getDb();
   const rows = await db
@@ -258,8 +221,6 @@ function handleFromUrl(source: Source, url: string): string | null {
       case "instagram":
       case "pinterest":
         return segs[0] ?? null;
-      case "reddit":
-        return segs[0] === "user" || segs[0] === "u" ? (segs[1] ?? null) : null;
       case "arena":
         return segs[0] ?? null;
       default:
@@ -270,13 +231,6 @@ function handleFromUrl(source: Source, url: string): string | null {
   }
 }
 
-// Per-run safety cap so a runaway page can't pin a single sync run
-// forever; the next cron tick picks up whatever's left.
-const LIST_MAX_ITEMS = 5;
-
-// Rich entries skip the BrowserWindow pool — the bottleneck is the
-// HTTP media fetches inside `ingestFromHttp`, not page rendering, so
-// concurrency is bounded by typical broadband + remote CDN tolerance.
 const RICH_INGEST_CONCURRENCY = 6;
 
 async function syncListSource(
@@ -299,12 +253,22 @@ async function syncListSource(
   });
 
   let accountKey: string | undefined;
-  if (
-    source === "arena" ||
-    source === "pinterest" ||
-    source === "reddit" ||
-    source === "tiktok"
-  ) {
+  if (source === "cosmos" || source === "arena") {
+    const prefs = await getPrefs();
+    const stored = prefs.sync.handles?.[source]?.trim().replace(/^@/, "");
+    accountKey = stored || (await inferAccountKey(source)) || undefined;
+    if (!accountKey) {
+      log.info(`[pond sync:${source}] no handle configured`);
+      await patchSourceSync(source, { lastError: "auth_required" });
+      emit({
+        source,
+        state: "auth_required",
+        message: `Add your ${source} handle in Connected Apps to enable sync.`,
+        lastError: "auth_required",
+      });
+      return;
+    }
+  } else if (source === "tiktok") {
     const inferred = await inferAccountKey(source);
     if (!inferred) {
       log.info(`[pond sync:${source}] no account key inferred`);
@@ -318,13 +282,16 @@ async function syncListSource(
       return;
     }
     accountKey = inferred;
+  } else if (source === "pinterest") {
+    // Pinterest reads the logged-in user's pins from /me/pins/, so the URL is
+    // independent of any handle. Pass a sentinel so listUrlForSource resolves.
+    accountKey = (await inferAccountKey(source)) || "me";
   }
 
   const harvest = await harvestSourceList(
     source,
     {
       knownIds: Array.from(knownIds),
-      maxItems: LIST_MAX_ITEMS,
       accountKey,
     },
     {
@@ -341,6 +308,7 @@ async function syncListSource(
 
   if (!harvest.ok) {
     if (harvest.reason === "auth_required") {
+      log.info(`[pond sync:${source}] auth wall`);
       await patchSourceSync(source, { lastError: "auth_required" });
       emit({
         source,
@@ -350,6 +318,7 @@ async function syncListSource(
       });
       return;
     }
+    log.warn(`[pond sync:${source}] harvest failed`, harvest.reason);
     await patchSourceSync(source, { lastError: harvest.reason });
     emit({
       source,
@@ -360,12 +329,10 @@ async function syncListSource(
     return;
   }
 
-  // YouTube: also walk Liked Videos so the sync covers both lists.
   const combined = harvest.entries;
   if (source === "youtube") {
     const liked = await harvestYoutubeLikedList({
       knownIds: Array.from(knownIds),
-      maxItems: LIST_MAX_ITEMS,
     });
     if (liked.ok) {
       const seen = new Set(combined.map((e) => e.sourceId));
@@ -377,6 +344,9 @@ async function syncListSource(
 
   const fresh = combined.filter((e) => !knownIds.has(e.sourceId));
   if (fresh.length === 0) {
+    log.info(
+      `[pond sync:${source}] nothing new (scanned ${combined.length} items)`,
+    );
     const lastSyncedAt = new Date().toISOString();
     await patchSourceSync(source, { lastSyncedAt, lastError: null });
     emit({
@@ -450,9 +420,6 @@ async function syncListSource(
   );
   if (signal.aborted) return;
 
-  // Cap at POOL_SIZE so we never queue inside `leaseWindow`. Sliding
-  // window beats fixed batches here — the next item starts as soon as
-  // one finishes instead of waiting for the slowest in its batch.
   const harvestLimit = pLimit(POOL_SIZE);
   let sawAuthFailure = false;
   await Promise.all(
@@ -504,6 +471,7 @@ async function syncListSource(
   );
 
   if (sawAuthFailure) {
+    log.info(`[pond sync:${source}] auth wall mid-run`);
     await patchSourceSync(source, { lastError: "auth_required" });
     emit({
       source,
@@ -515,6 +483,7 @@ async function syncListSource(
   }
   if (signal.aborted) return;
 
+  log.info(`[pond sync:${source}] done; imported ${processed}`);
   const lastSyncedAt = new Date().toISOString();
   await patchSourceSync(source, { lastSyncedAt, lastError: null });
   emit({
@@ -527,22 +496,6 @@ async function syncListSource(
   });
 }
 
-// Per-run safety cap. Twitter virtualises the bookmarks list so memory
-// stays bounded; the limit is purely so a runaway page can't pin the
-// scroll forever. 5k comfortably covers any user we've seen.
-const TWITTER_MAX_ITEMS = 5_000;
-
-/**
- * Map a `BookmarksEntry` (rich GraphQL data + DOM fallback) into the
- * exact `RawTwitter` shape the renderer's `mergeTwitter` expects, so
- * the metric chips (likes / reposts / replies / bookmarks / views)
- * actually render. Without this re-shape the renderer reads
- * `raw.twitter.metrics.likes` from a verbatim API blob whose likes
- * live at `legacy.favorite_count`, and every chip silently disappears.
- *
- * The verbatim API tweet is preserved on `__verbatim` (open extension
- * point on `RawSaveMetadata`) for future code that wants the raw bag.
- */
 function buildRawForBookmark(entry: BookmarksEntry): {
   capturedAt: string;
   twitter: RawTwitter;
@@ -594,9 +547,6 @@ function buildRawForBookmark(entry: BookmarksEntry): {
 async function syncTwitter(signal: AbortSignal): Promise<void> {
   const source: Source = "twitter";
 
-  // Read every existing twitter sourceId so the harvester can keep its
-  // dedupe set warm against virtualised re-renders, and so we can
-  // filter known ids out before ingesting.
   const db = await getDb();
   const knownRows = await db
     .select({ sourceId: saves.sourceId })
@@ -612,18 +562,9 @@ async function syncTwitter(signal: AbortSignal): Promise<void> {
     message: `Looking at your Twitter bookmarks…`,
   });
 
-  // Scroll the bookmarks list. Entries are read directly from the
-  // rendered DOM cards — id, url, author, snippet text, cover image —
-  // no per-tweet network fetches, no rate-limit surface.
-  //
-  // The harvester polls its in-page state and reports back via
-  // `onProgress` so the toast can move from "Looking at your Twitter
-  // bookmarks…" → "Found 23 bookmarks…" as the scroll loop walks the
-  // virtualised list. A big library otherwise sits silent for minutes.
   const harvest = await harvestTwitterBookmarks(
     {
       knownIds: Array.from(knownIds),
-      maxItems: TWITTER_MAX_ITEMS,
     },
     {
       onProgress: (p) => {
@@ -652,8 +593,6 @@ async function syncTwitter(signal: AbortSignal): Promise<void> {
       });
       return;
     }
-    // `no_match` and `timeout` are soft failures — leave `lastSyncedAt`
-    // untouched so the next cron tick retries from a clean slate.
     log.warn("[pond sync:twitter] harvest failed", harvest.reason);
     await patchSourceSync(source, { lastError: harvest.reason });
     emit({
@@ -689,9 +628,6 @@ async function syncTwitter(signal: AbortSignal): Promise<void> {
     progress: { current: 0, total: fresh.length },
   });
 
-  // Each entry already carries everything `ingestFromHttp` needs from
-  // the rendered card. No network here, so the loop is fast. Per-entry
-  // failures are swallowed; a single bad row shouldn't fail the run.
   let processed = 0;
   let imported = 0;
   for (const entry of fresh) {
@@ -709,18 +645,7 @@ async function syncTwitter(signal: AbortSignal): Promise<void> {
         author: entry.author,
         mediaUrl: entry.mediaUrl,
         mediaUrls: entry.mediaUrls,
-        // `savedAt` is the user-interaction timestamp. The card's
-        // `<time datetime>` is the original tweet time, not the
-        // bookmark time — Twitter doesn't expose the latter in the
-        // rendered DOM. Use it when present; fall back to ingest time.
         savedAt: entry.bookmarkedAt ? new Date(entry.bookmarkedAt) : new Date(),
-        // `raw.twitter` MUST be a `RawTwitter` blob (the renderer's
-        // `mergeTwitter` reads `raw.twitter.metrics.likes` etc.). The
-        // verbatim API tweet would shape-mismatch and silently strip
-        // every metric chip from the UI, so build a typed
-        // `RawTwitter` here from the parsed `RichTweet`. The verbatim
-        // API tweet still gets stashed under `__verbatim` for future
-        // code that wants the unfiltered payload.
         raw: { kind: "twitter-sync", ...buildRawForBookmark(entry) },
       });
       imported += 1;
@@ -753,12 +678,6 @@ async function syncTwitter(signal: AbortSignal): Promise<void> {
   });
 }
 
-/**
- * Read-only count of a source's saves. The orchestrator doesn't use
- * this directly today but it's useful for the renderer ("12 of 47") so
- * we expose it through the same module the rest of the sync code
- * lives in.
- */
 export async function countSavesForSource(source: Source): Promise<number> {
   const db = await getDb();
   const rows = await db
@@ -768,16 +687,10 @@ export async function countSavesForSource(source: Source): Promise<number> {
   return rows.length;
 }
 
-/**
- * A list entry counts as "rich" when the card DOM gave us at least a
- * title or a media URL — enough to create a useful save row without
- * burning a per-item hidden-window page load.
- */
 function entryHasRichData(entry: ListEntry): boolean {
   return Boolean(entry.title || entry.mediaUrl);
 }
 
-/** Read-only multi-id existence check; used by external callers. */
 export async function existingSourceIds(
   source: Source,
   ids: string[],

@@ -1,19 +1,3 @@
-/**
- * URL codec for filter queries.
- *
- * Two encodings, picked automatically:
- *
- *   1. **Compact** — for the common case of a flat `AND` of
- *      predicates. Each predicate becomes one `f.<field>=<cmp>:<v>`
- *      pair so users can read and tweak URLs by hand.
- *   2. **Base64 JSON** — for OR groups or anything else the compact
- *      form can't round-trip. The whole AST is JSON-stringified and
- *      url-safe base64'd into `?q=<…>`.
- *
- * Both forms decode through the same entry point, so callers can
- * switch any time without writing a manual migration.
- */
-
 import { FIELD_META } from "./meta";
 import {
   COMPARATORS_BY_TYPE,
@@ -28,11 +12,6 @@ import {
 const COMPACT_PREFIX = "f.";
 const FULL_KEY = "q";
 
-/**
- * Apply a query to an existing `URLSearchParams`. Keeps any
- * non-filter keys (search query, sort, view) intact and replaces
- * every filter key wholesale.
- */
 export function writeQuery(
   base: URLSearchParams,
   query: Query | null | undefined,
@@ -53,11 +32,6 @@ export function writeQuery(
   return next;
 }
 
-/**
- * Drop every filter-owned key from `params`. Useful when applying a
- * saved view: we wipe the current query then write the saved one
- * back over top.
- */
 export function clearQueryParams(params: URLSearchParams): void {
   const drop: string[] = [];
   for (const key of params.keys()) {
@@ -67,14 +41,6 @@ export function clearQueryParams(params: URLSearchParams): void {
   for (const key of drop) params.delete(key);
 }
 
-/**
- * Read a query out of `URLSearchParams`. Returns the empty query
- * when no filter keys are present.
- *
- * The full base64 form wins when both are present — that's how the
- * UI promotes a compact query to a full one (it writes the full
- * key, leaves the compact ones; next read prefers full).
- */
 export function readQuery(params: URLSearchParams): Query {
   const full = params.get(FULL_KEY);
   if (full) {
@@ -241,13 +207,6 @@ function decodeScalar(raw: string): string | number | null {
   return decoded;
 }
 
-/**
- * Compact form is OK when:
- *  - the query is a flat AND
- *  - every clause is a predicate (no nested AND/OR)
- *  - every value can encode to a string (we let `encodePredicate`
- *    reject it later if not, but the structural check is cheap)
- */
 function canEncodeCompact(query: Query): boolean {
   if (query.kind !== "and") return false;
   return query.clauses.every((c) => c.kind === "p");
@@ -255,9 +214,6 @@ function canEncodeCompact(query: Query): boolean {
 
 function encodeBase64Json(query: Query): string {
   const json = JSON.stringify(query);
-  // `btoa` is available on every modern runtime we ship to (Electron
-  // renderer, main process, browser extension). Stick to web APIs so
-  // this file can stay free of `@types/node`.
   return urlSafe(btoa(unescape(encodeURIComponent(json))));
 }
 
@@ -278,12 +234,6 @@ function urlSafe(b64: string): string {
   return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-/**
- * List every URL key the filter codec owns — the full base64 form
- * plus one `f.<field>` per declared field. Saved views use this to
- * snapshot / restore exactly the filter slice of `URLSearchParams`
- * without touching `q` (search), `sort`, `view`, or the open save id.
- */
 export function extractFilterKeys(): readonly string[] {
   return [
     FULL_KEY,

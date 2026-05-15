@@ -10,9 +10,11 @@ function Provider({ children }: ProviderProps) {
   return (
     <Base.Provider>
       {children}
-      <Base.Viewport className={styles.viewport}>
-        <ToastList />
-      </Base.Viewport>
+      <Base.Portal>
+        <Base.Viewport className={styles.viewport}>
+          <ToastList />
+        </Base.Viewport>
+      </Base.Portal>
     </Base.Provider>
   );
 }
@@ -26,17 +28,39 @@ function ToastList() {
       className={styles.popup}
       data-type={toast.type ?? "info"}
     >
-      <div className={styles.body}>
-        {toast.title ? <Base.Title className={styles.title} /> : null}
-        {toast.description ? (
-          <Base.Description className={styles.description} />
-        ) : null}
-      </div>
-      <Base.Close className={styles.close} aria-label="Close">
-        ×
-      </Base.Close>
+      <Base.Content className={styles.content}>
+        <div className={styles.body}>
+          {toast.title ? <Base.Title className={styles.title} /> : null}
+          {toast.description ? (
+            <Base.Description className={styles.description} />
+          ) : null}
+        </div>
+        <Base.Close className={styles.close} aria-label="Close">
+          <XIcon />
+        </Base.Close>
+      </Base.Content>
     </Base.Root>
   ));
+}
+
+function XIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="12"
+      height="12"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M18 6 6 18" />
+      <path d="m6 6 12 12" />
+    </svg>
+  );
 }
 
 export const useToast = Base.useToastManager;
@@ -47,5 +71,7 @@ export const Toast = {
   Title: Base.Title,
   Description: Base.Description,
   Action: Base.Action,
+  Close: Base.Close,
+  Content: Base.Content,
   useToast,
 };

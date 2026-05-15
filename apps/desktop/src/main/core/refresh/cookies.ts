@@ -4,33 +4,8 @@ import { join } from "node:path";
 import { type Cookie, session } from "electron";
 import log from "electron-log/main.js";
 
-/**
- * Serialise the cookies from `session.fromPartition('persist:pond-scrapers')`
- * into a Netscape-format `cookies.txt` so we can hand it to yt-dlp via
- * `--cookies`. yt-dlp uses these to authenticate to login-walled
- * sites (Twitter, Instagram, Cosmos, TikTok, YouTube) without us
- * having to know each site's auth shape.
- *
- * Why a file (vs `--cookies-from-browser`):
- *  - `--cookies-from-browser` reads from the user's *system* browser,
- *    which we can't drive from Electron.
- *  - Pond already keeps its own persistent partition for the hidden
- *    refresh window (see `scrape-window.ts`); reusing that jar means
- *    yt-dlp inherits the same logged-in identity the in-app harvest
- *    uses, so videos behind a follow-only / private account work
- *    iff the harvest itself works.
- *
- * The Netscape format spec (used by curl, wget, yt-dlp et al):
- *   <domain>\t<flag>\t<path>\t<secure>\t<expiration>\t<name>\t<value>
- * with the magic `# Netscape HTTP Cookie File` header. Booleans are
- * the literal strings `TRUE` / `FALSE`. Domains beginning with `.`
- * mean "match this domain and subdomains" — Electron's `Cookie.domain`
- * already preserves the leading dot when present.
- */
-
 const PARTITION = "persist:pond-scrapers";
 
-/** Hosts we ever try to fetch authenticated cookies for. */
 const COOKIE_HOSTS = [
   "https://x.com/",
   "https://twitter.com/",
@@ -46,26 +21,11 @@ const COOKIE_HOSTS = [
 ] as const;
 
 export interface CookieJar {
-  /** Absolute path to the on-disk cookies.txt. */
   path: string;
-  /** Caller MUST invoke this in a finally{} so the temp dir is removed. */
   cleanup: () => Promise<void>;
-  /** Number of cookies that ended up in the file. 0 means we wrote a stub. */
   count: number;
 }
 
-/**
- * Build a cookies.txt for yt-dlp to consume, containing every cookie
- * from the persistent partition that matches one of `COOKIE_HOSTS`.
- *
- * Always returns a `CookieJar` (never throws): even when the user has
- * no cookies for any host, we still write an empty Netscape file so
- * yt-dlp's `--cookies` flag has a valid target. This lets us pass
- * the same flag unconditionally and keeps logic in `yt-dlp.ts` simple.
- *
- * The temp directory is created with a unique random suffix per call
- * so concurrent refreshes don't clobber each other's jar.
- */
 export async function writeNetscapeCookies(): Promise<CookieJar> {
   const dir = await mkdtemp(join(tmpdir(), "pond-ytdlp-"));
   const filePath = join(dir, "cookies.txt");
@@ -85,10 +45,6 @@ export async function writeNetscapeCookies(): Promise<CookieJar> {
         persistent.cookies.get({ url }).catch(() => [] as Cookie[]),
       ),
     );
-    // Dedupe by (domain, name, path) — the same cookie shows up under
-    // multiple host URLs (e.g. `auth_token` on x.com is also on
-    // twitter.com), and yt-dlp tolerates duplicates but they make the
-    // file noisier.
     const seen = new Set<string>();
     for (const bucket of buckets) {
       for (const c of bucket) {
@@ -124,16 +80,11 @@ function formatNetscapeLine(c: Cookie): string | null {
   const includeSubdomains = domain.startsWith(".") ? "TRUE" : "FALSE";
   const path = c.path ?? "/";
   const secure = c.secure ? "TRUE" : "FALSE";
-  // Electron exposes `expirationDate` as a Unix epoch in seconds; if
-  // a session cookie omits it we use 0, which yt-dlp interprets as
-  // "session" (will still be sent for the duration of the run).
   const expires = c.expirationDate
     ? Math.floor(c.expirationDate)
     : c.session
       ? 0
       : Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30;
-  // Tab-separated. Values must not contain newlines or tabs; sanitise
-  // defensively. Cookies that fail the sanitiser are dropped silently.
   const safeName = sanitise(c.name);
   const safeValue = sanitise(c.value);
   if (!safeName || safeValue === null) return null;

@@ -1,16 +1,3 @@
-/**
- * MRU list of recently-picked filters, persisted to localStorage.
- *
- * Drives the small "+0..20" recency boost in the search scorer so
- * yesterday's picks bubble up when a user types an ambiguous
- * prefix. Stored as an ordered array of canonical predicate keys
- * (see `predicateKey`); MRU first, capped at `CAP`.
- *
- * Exposed as a tiny pub/sub via `useRecents` / `pushRecent` so
- * the multiple Add filter menus (header toolbar + chip bar) stay
- * in sync without prop-drilling.
- */
-
 import { useSyncExternalStore } from "react";
 
 const KEY = "pond.filterRecents";

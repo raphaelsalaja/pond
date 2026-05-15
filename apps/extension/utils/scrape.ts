@@ -12,19 +12,12 @@ export interface ScrapedSave {
   title?: string;
   description?: string;
   author?: string;
-  /** Legacy single cover URL. Kept for back-compat / simple consumers. */
   mediaUrl?: string;
   mediaType?: "image" | "video" | "link";
-  /** Full ordered list -- first entry becomes the cover on the server. */
   mediaUrls?: ScrapedMedia[];
   videoUrl?: string;
 }
 
-/**
- * Returns a self-contained function suitable for chrome.scripting.executeScript
- * that scrapes post metadata out of the live page DOM. Executed in the page's
- * isolated world: NO imports, NO outer-scope captures.
- */
 export function scrapeFnFor(source: Source): (() => ScrapedSave) | null {
   switch (source) {
     case "instagram":
@@ -89,9 +82,6 @@ function scrapeInstagram(): ScrapedSave {
     if (handle) out.author = `@${handle}`;
   }
 
-  // Carousels: IG renders all slides as <li> inside <ul> with lazy-loaded
-  // images, or all at once for short carousels. Collect every <video> and
-  // CDN-backed <img> we can see.
   const videos = Array.from(
     article.querySelectorAll<HTMLVideoElement>("video"),
   );
@@ -158,8 +148,6 @@ function scrapeCosmos(): ScrapedSave {
   const author = meta("article:author") ?? meta("twitter:creator");
   if (author) out.author = author;
 
-  // Cosmos element pages embed media in <main>: look at every image/video and
-  // their og:image/og:video fallbacks.
   const root = document.querySelector("main") ?? document.body;
   const videos = Array.from(root.querySelectorAll<HTMLVideoElement>("video"));
   for (const video of videos) {
@@ -169,7 +157,6 @@ function scrapeCosmos(): ScrapedSave {
     else if (video.poster) pushMedia({ url: video.poster, type: "image" });
   }
 
-  // Cosmos serves originals from `*.cosmos.so` or `*.imgix.net`; include both.
   const imgs = Array.from(
     root.querySelectorAll<HTMLImageElement>(
       'img[srcset], img[src*="cosmos.so"], img[src*="imgix.net"]',

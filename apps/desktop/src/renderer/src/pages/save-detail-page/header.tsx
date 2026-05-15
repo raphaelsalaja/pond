@@ -4,7 +4,7 @@ import {
   IconChevronUpOutline18,
   IconDotsOutline18,
   IconStar2Outline18,
-} from "@pond/icons/outline";
+} from "@pond/icons/outline/18";
 import { Tooltip } from "@pond/ui";
 import { useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";

@@ -3,19 +3,9 @@ import { mkdir, readdir, rm, stat } from "node:fs/promises";
 import { basename, join } from "node:path";
 import archiver from "archiver";
 import log from "electron-log/main.js";
+import { schedule } from "../lib/scheduler";
 import { libraryRoot } from "../paths";
 import { getPrefs } from "./prefs";
-
-/**
- * Local snapshot backups. Writes a versioned zip of the library
- * directory into `<library>/_snapshots/` on a schedule chosen by
- * the user. We keep the latest `retainCount` files and prune the
- * rest to stop disk usage from runaway-growing.
- *
- * On purpose: snapshots stay inside the library folder so when the
- * user backs up their `~/Pond/My Pond.library` to Time Machine /
- * iCloud / Backblaze the snapshots ride along automatically.
- */
 
 export interface BackupSnapshot {
   path: string;
@@ -69,10 +59,6 @@ export async function snapshotNow(): Promise<BackupSnapshot> {
     archive.on("warning", (err) => log.warn("[pond backup] archiver", err));
     archive.on("error", reject);
     archive.pipe(out);
-    // Skip our own snapshots dir so we don't recursively zip yesterday's
-    // archive into today's. archiver doesn't expose a native exclude
-    // helper, so we walk the top-level entries and add each one
-    // selectively.
     void (async () => {
       const top = await readdir(root);
       for (const name of top) {
@@ -120,15 +106,12 @@ async function pruneOldSnapshots(): Promise<number> {
   return removed;
 }
 
-/**
- * Hourly tick that decides whether the schedule says it's time for
- * a fresh snapshot. The check is cheap (read mtime of the latest
- * zip + a comparison) so running once an hour is fine even for
- * `monthly` schedules.
- */
 export function startBackupCron(): void {
-  const tick = async () => {
-    try {
+  schedule({
+    name: "backup",
+    every: 60 * 60 * 1000,
+    initialDelay: 60_000,
+    fn: async () => {
       const prefs = await getPrefs();
       const cadence = prefs.backups.schedule;
       if (cadence === "never") return;
@@ -138,12 +121,8 @@ export function startBackupCron(): void {
       if (elapsed < required) return;
       log.info(`[pond backup-cron] firing ${cadence} snapshot`);
       await snapshotNow();
-    } catch (err) {
-      log.warn("[pond backup-cron] tick failed", err);
-    }
-  };
-  setTimeout(() => void tick(), 60_000);
-  setInterval(() => void tick(), 60 * 60 * 1000);
+    },
+  });
 }
 
 function scheduleToMs(s: "daily" | "weekly" | "monthly"): number {

@@ -1,10 +1,5 @@
 /// <reference lib="dom" />
 
-/**
- * Are.na list collector. Scrolls the user's channels index and
- * collects block IDs using the shared scroll scaffold.
- */
-
 import type { MediaType } from "@pond/schema/db";
 import { inPageScrollCollect } from "../lib/scroll";
 import type { ListHarvestArgs, ListHarvestResult } from "../list-types";
@@ -85,11 +80,6 @@ async function inPageArenaList(
     return out;
   }
 
-  // Are.na's blocks index paginates via a "Load more" button rather
-  // than infinite scroll. CSS has no `:has-text()` selector, so we
-  // hand the scaffold a `nextFinder` callback that matches by visible
-  // text instead of a static class — Are.na churns class hashes
-  // between releases, so text is the most stable anchor we have.
   const findLoadMore = (): HTMLElement | null => {
     const candidates = Array.from(
       document.querySelectorAll<HTMLElement>("button, a[role='button'], a"),
@@ -105,7 +95,6 @@ async function inPageArenaList(
   return scroll({
     collectFn,
     knownIds: args.knownIds,
-    maxItems: args.maxItems,
     hydrateSelector: 'a[href*="/block/"]',
     scrollBehavior: "click-next",
     nextFinder: findLoadMore,

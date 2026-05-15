@@ -6,73 +6,21 @@ import { getDb } from "../../db";
 import { type RefreshOutcome, refreshSave } from "./index";
 import { POOL_SIZE } from "./scrape-window";
 
-/**
- * Bulk metadata refresh orchestrator.
- *
- * Walks the existing saves table and re-runs `refreshSave(id)` on every
- * row that matches the supplied filter. Mirrors the per-source sync
- * orchestrator in `core/sync` shape-wise: a single in-flight controller,
- * a status push channel, and an abort signal the worker checks between
- * iterations.
- *
- * Why this is its own module rather than a one-liner over
- * `db.select(...).map(refreshSave)`:
- *
- *   - The hidden Chromium window inside `refreshSave` is a singleton,
- *     so we have to run sequentially anyway. A naive `Promise.all` would
- *     just queue inside the hidden window and lose all visibility.
- *   - The renderer wants live progress (current/total + per-source
- *     auth-required hints) so the UI can show a progress bar and a
- *     "Sign in to <source>" callout without waiting for the run to
- *     finish.
- *   - Cancellation has to be cooperative — abort the loop, never the
- *     in-flight `refreshSave` call. The user clicking "Cancel" stops
- *     enqueuing more, but lets the current row finish so we don't
- *     leave the hidden window in a half-navigated state.
- */
-
 export interface RefreshBackfillOptions {
-  /**
-   * Restrict the run to a single source. `null`/`undefined` means
-   * "every source". The renderer's source picker hands either a
-   * concrete source or `null` for the "All sources" option.
-   */
   source?: Source | null;
-  /**
-   * When true, only consider rows that look incomplete:
-   *   - missing `mediaUrl`, OR
-   *   - missing `title`, OR
-   *   - missing `description`.
-   *
-   * Useful right after upgrading a harvester or the OG reader — you
-   * only want to retry the rows that previously came back empty,
-   * without paying the cost of re-running over rows we already have
-   * full metadata for.
-   */
   onlyMissing?: boolean;
 }
 
 export interface RefreshBackfillStatus {
   state: "idle" | "running" | "done" | "error" | "cancelled";
-  /** Total rows the run plans to visit (frozen at run start). */
   total: number;
-  /** Rows visited so far, success or failure. */
   current: number;
-  /** Rows where refreshSave returned `ok: true`. */
   succeeded: number;
-  /** Rows where refreshSave returned `ok: false` for any reason except auth. */
   failed: number;
-  /**
-   * Sources that bounced us with `auth_required` at least once during
-   * the run. Surfaced in the UI so the user can click "Sign in to
-   * <source>" without scrolling through the activity log.
-   */
   authRequired: Source[];
   startedAt: string | null;
   finishedAt: string | null;
-  /** Filter the active/last run was launched with. */
   options: RefreshBackfillOptions;
-  /** Free-form line for the renderer's status banner. */
   message?: string;
 }
 
@@ -126,14 +74,6 @@ export type RefreshBackfillStartResult =
   | { ok: true; total: number }
   | { ok: false; reason: "already_running" | "no_saves" };
 
-/**
- * Kick off a backfill run. Idempotent — concurrent calls return
- * `already_running` instead of stacking.
- *
- * Returns synchronously after the worker is enqueued; progress is
- * surfaced via `subscribeRefreshBackfillStatus`. The renderer should
- * subscribe BEFORE calling start so the very first event isn't lost.
- */
 export async function startRefreshBackfill(
   opts: RefreshBackfillOptions = {},
 ): Promise<RefreshBackfillStartResult> {
@@ -169,9 +109,6 @@ export async function startRefreshBackfill(
   };
   emit(start);
 
-  // Fire-and-forget: the renderer doesn't await this. Any uncaught
-  // throw from the worker is captured and surfaced via the status
-  // channel so the UI never silently stalls.
   void runWorker(ids, controller.signal, opts).finally(() => {
     inFlight = null;
   });
@@ -179,11 +116,6 @@ export async function startRefreshBackfill(
   return { ok: true as const, total: ids.length };
 }
 
-/**
- * Cooperative cancel. Flips the abort signal; the worker stops
- * enqueuing new rows but lets the in-flight `refreshSave` finish so
- * we never leave the hidden window mid-navigation.
- */
 export function cancelRefreshBackfill(): void {
   if (!inFlight) return;
   inFlight.abort();
@@ -299,17 +231,6 @@ function messageForFinish(
   return tail.length > 0 ? `${head} ${tail.join(" · ")}` : head;
 }
 
-/**
- * Resolve the filter to a concrete, ordered list of save ids. We hand
- * back the ids only — `refreshSave` re-reads each row inside its own
- * transaction, so by the time the worker gets to row N anything the
- * user did to it in the meantime (edits, trash, re-tag) is honoured.
- *
- * Ordering is `savedAt ASC` so older saves get refreshed first. Rationale:
- *   - they're the rows most likely to have stale metadata,
- *   - the renderer's grid sorts newest-first so the freshly refreshed
- *     bytes don't yank the user's viewport around.
- */
 async function pickIdsForBackfill(
   opts: RefreshBackfillOptions,
 ): Promise<string[]> {

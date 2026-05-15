@@ -1,10 +1,12 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { Source } from "@pond/schema/db";
-import { app, BrowserWindow, type Cookie, session } from "electron";
+import { app, BrowserWindow, type Cookie, session, shell } from "electron";
 import log from "electron-log/main.js";
+import { getPrefs, setPrefs } from "../prefs";
 import { harvesterFor } from "./harvest";
 import { arenaProfileUrl, buildArenaListExpression } from "./harvest/arena";
+import { harvestArenaListViaApi } from "./harvest/arena/api";
 import {
   buildCosmosListExpression,
   COSMOS_LIST_URL,
@@ -16,7 +18,6 @@ import {
   buildPinterestListExpression,
   pinterestProfileUrl,
 } from "./harvest/pinterest";
-import { buildRedditListExpression, redditSavedUrl } from "./harvest/reddit";
 import {
   buildTiktokListExpression,
   tiktokFavouritesUrl,
@@ -34,18 +35,6 @@ import {
   YOUTUBE_LIST_URLS,
 } from "./harvest/youtube";
 import { homeUrlForSource } from "./sources";
-
-/**
- * Hidden Electron `BrowserWindow` driven entirely from main. Replays
- * what the browser extension would do when the user lands on a save's
- * page: navigate, wait for hydration, run the in-page harvester,
- * collect the result.
- *
- * Cookies persist across runs via the `persist:pond-scrapers` partition,
- * so once the user signs into a source via `signInToSource()` we can
- * scrape pages on that domain forever without bouncing them through
- * their default browser again.
- */
 
 const PARTITION = "persist:pond-scrapers";
 const NAV_TIMEOUT_MS = 25_000;
@@ -84,6 +73,7 @@ function createHiddenWindow(): BrowserWindow {
     },
   });
   win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+  win.webContents.setAudioMuted(true);
   win.on("closed", () => {
     const idx = pool.findIndex((s) => s.win === win);
     if (idx !== -1) pool.splice(idx, 1);
@@ -138,7 +128,8 @@ function drainQueue() {
   while (waitQueue.length > 0) {
     const idle = pool.find((s) => !s.busy && !s.win.isDestroyed());
     if (!idle) break;
-    const next = waitQueue.shift()!;
+    const next = waitQueue.shift();
+    if (!next) break;
     next(idle);
   }
 }
@@ -146,25 +137,16 @@ function drainQueue() {
 export interface HarvestArgs {
   url: string;
   source: Source | null;
-  /** When the dispatcher already has a sourceId (from the existing save row), reuse it. */
   sourceId?: string;
 }
 
 export interface HarvestResult {
   ok: boolean;
   harvest?: ScrapedHarvest;
-  /** Resolved sourceId — falls back to whatever the harvester derives from the URL. */
   sourceId?: string;
   reason?: "navigate_failed" | "harvest_failed" | "auth_required" | "timeout";
 }
 
-/**
- * Drive the hidden window to a URL and run the source-appropriate
- * harvester. Detects "you got redirected to a login wall" by comparing
- * the final URL's path against an obvious sign-in slug list — if it
- * matches we tell the caller `auth_required` so it can prompt the
- * user to connect that source.
- */
 export async function harvestUrl(args: HarvestArgs): Promise<HarvestResult> {
   const lease = await leaseWindow();
   const harv = harvesterFor(args.source);
@@ -211,18 +193,7 @@ export async function harvestUrl(args: HarvestArgs): Promise<HarvestResult> {
   }
 }
 
-/**
- * Generic per-source list harvester. Each Phase-3 source ships its own
- * `harvest/<source>-list.ts` with a `build<Source>ListExpression(args)`
- * builder; we navigate the hidden window to a source-specific list URL,
- * eval the expression, and return the typed `ListHarvestResult`.
- *
- * Sources that need account-specific URLs (Are.na/Pinterest/Instagram/
- * Reddit/TikTok all key off the user's handle/slug) accept an
- * `accountKey` argument the orchestrator resolves before calling.
- */
 export interface SourceListArgs extends ListHarvestArgs {
-  /** Per-source profile slug. Required for sources whose list URL needs it. */
   accountKey?: string;
 }
 
@@ -237,6 +208,19 @@ export async function harvestSourceList(
   args: SourceListArgs,
   opts: { onProgress?: (p: ListHarvestProgress) => void } = {},
 ): Promise<ListHarvestResult> {
+  if (source === "arena") {
+    if (!args.accountKey) {
+      return { ok: false, reason: "auth_required" };
+    }
+    return harvestArenaListViaApi(args.accountKey, {
+      knownIds: new Set(args.knownIds),
+      onProgress: opts.onProgress
+        ? (collected, fresh) =>
+            opts.onProgress?.({ phase: "scroll", collected, fresh })
+        : undefined,
+    });
+  }
+
   const target = listUrlForSource(source, args.accountKey);
   if (!target) {
     return { ok: false, reason: "no_match" };
@@ -329,8 +313,6 @@ function listUrlForSource(
       return accountKey ? pinterestProfileUrl(accountKey) : null;
     case "instagram":
       return "https://www.instagram.com/";
-    case "reddit":
-      return accountKey ? redditSavedUrl(accountKey) : null;
     case "tiktok":
       return accountKey ? tiktokFavouritesUrl(accountKey) : null;
     case "twitter":
@@ -354,8 +336,6 @@ function buildListExpressionFor(
       return buildPinterestListExpression(args);
     case "instagram":
       return buildInstagramListExpression(args);
-    case "reddit":
-      return buildRedditListExpression(args);
     case "tiktok":
       return buildTiktokListExpression(args);
     case "twitter":
@@ -364,11 +344,6 @@ function buildListExpressionFor(
   }
 }
 
-/**
- * YouTube exposes Watch Later (`WL`) and Liked (`LL`) on separate
- * URLs. This helper lets the orchestrator opt into a follow-up pass
- * once the first list returns.
- */
 export async function harvestYoutubeLikedList(
   args: ListHarvestArgs,
 ): Promise<ListHarvestResult> {
@@ -403,35 +378,12 @@ export async function harvestYoutubeLikedList(
   }
 }
 
-/**
- * Drive the hidden window to the user's Twitter bookmarks list and run
- * the bookmarks harvester. Reuses the same persistent partition as
- * `harvestUrl` so it picks up the user's cookies; `BookmarksHarvestArgs`
- * controls dedup + cap behaviour. Detects auth wall the same way
- * (Twitter redirects to `/i/flow/login`).
- *
- * Twitter keeps a bespoke entry point because it predates the generic
- * `harvestSourceList()` driver and produces a `BookmarksHarvestResult`
- * shape with `tweetId` rather than `sourceId`. The orchestrator
- * funnels both through the same dedupe + per-item enrichment loop.
- */
-/**
- * Live progress emitted from the in-page walker. The main-process
- * poller polls `globalThis.__pondHarvestStats` at ~1.5s cadence and
- * forwards each tick to the orchestrator via `onProgress`.
- */
 export interface BookmarksHarvestProgress {
-  /** "hydrate" while waiting for the bookmarks list to paint, "scroll" once it's walking. */
   phase: "hydrate" | "scroll";
-  /** Distinct tweet ids walked so far. */
   seen: number;
-  /** Subset of `seen` that isn't already in the local DB. */
   fresh: number;
-  /** Articles currently in the DOM (virtualised so this drifts). */
   articles: number;
-  /** GraphQL Bookmarks responses captured so far. */
   captures: number;
-  /** Scroll iterations executed by the in-page loop. */
   scrolls: number;
 }
 
@@ -507,9 +459,16 @@ export async function harvestTwitterBookmarks(
     if (!result.ok) return result;
 
     const rich = parseBookmarksResponses(result.captures);
-    const merged: BookmarksEntry[] = result.entries.map((entry) => {
+    const seenTweetIds = new Set<string>();
+    const merged: BookmarksEntry[] = [];
+    for (const entry of result.entries) {
+      if (seenTweetIds.has(entry.tweetId)) continue;
+      seenTweetIds.add(entry.tweetId);
       const r = rich.get(entry.tweetId);
-      if (!r) return entry;
+      if (!r) {
+        merged.push(entry);
+        continue;
+      }
       const firstLine = r.fullText.split(/\n+/)[0]?.trim() ?? "";
       const richTitle =
         firstLine.length === 0
@@ -517,7 +476,7 @@ export async function harvestTwitterBookmarks(
           : firstLine.length <= 90
             ? firstLine
             : `${firstLine.slice(0, 89).trimEnd()}…`;
-      return {
+      merged.push({
         ...entry,
         title: richTitle ?? entry.title,
         description: r.fullText || entry.description,
@@ -525,8 +484,32 @@ export async function harvestTwitterBookmarks(
         mediaUrls: r.media.length > 0 ? r.media : entry.mediaUrls,
         mediaUrl: r.media[0]?.url ?? entry.mediaUrl,
         rich: r,
+      });
+    }
+    for (const [tweetId, r] of rich) {
+      if (seenTweetIds.has(tweetId)) continue;
+      seenTweetIds.add(tweetId);
+      const firstLine = r.fullText.split(/\n+/)[0]?.trim() ?? "";
+      const richTitle =
+        firstLine.length === 0
+          ? undefined
+          : firstLine.length <= 90
+            ? firstLine
+            : `${firstLine.slice(0, 89).trimEnd()}…`;
+      const richMediaUrls = r.media.length > 0 ? r.media : undefined;
+      const entry: BookmarksEntry = {
+        tweetId,
+        url: r.url,
+        ...(r.bookmarkedAt ? { bookmarkedAt: r.bookmarkedAt } : {}),
+        ...(richTitle ? { title: richTitle } : {}),
+        ...(r.fullText ? { description: r.fullText } : {}),
+        ...(r.author.handle ? { author: `@${r.author.handle}` } : {}),
+        ...(richMediaUrls ? { mediaUrls: richMediaUrls } : {}),
+        ...(r.media[0]?.url ? { mediaUrl: r.media[0].url } : {}),
+        rich: r,
       };
-    });
+      merged.push(entry);
+    }
     log.info(
       `[pond bookmarks] DOM=${result.entries.length} rich=${rich.size} merged=${merged.length} captures=${result.captures.length}`,
     );
@@ -544,78 +527,37 @@ export async function harvestTwitterBookmarks(
   }
 }
 
-/**
- * Pop a *visible* window pointed at the source's login URL. The user
- * signs in there; cookies land in the same `persist:pond-scrapers`
- * partition the hidden window uses, so subsequent refreshes are
- * authenticated.
- *
- * We hand the user a regular Chromium window (no chrome of our own) so
- * Sign-in-with-Google, hCaptcha, etc. all just work. Returns when the
- * user closes the window.
- */
-export async function signInToSource(source: Source): Promise<{ ok: boolean }> {
-  const persistent = session.fromPartition(PARTITION);
-  persistent.setUserAgent(
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 " +
-      "(KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
-  );
+const PUBLIC_PROFILE_SOURCES = new Set<Source>(["cosmos", "arena"]);
 
-  const win = new BrowserWindow({
-    width: 480,
-    height: 720,
-    title: `Sign in to ${source}`,
-    autoHideMenuBar: true,
-    webPreferences: {
-      session: persistent,
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: true,
-      // Same preload as the hidden scrape window — the user might
-      // scroll their bookmarks list inside the sign-in popup before
-      // closing it, in which case we'll happily capture whatever
-      // GraphQL fires.
-      preload: join(__dirname, "../preload/scrape.cjs"),
-    },
-  });
-  // Keep popups inside this same window — don't spawn new top-level
-  // windows for OAuth handoffs.
-  win.webContents.setWindowOpenHandler(({ url }) => {
-    void win.loadURL(url);
-    return { action: "deny" };
-  });
-  try {
-    await win.loadURL(homeUrlForSource(source));
-  } catch (err) {
-    log.warn("[pond refresh:signin] initial load failed", source, err);
-  }
-
-  await new Promise<void>((resolve) => {
-    win.once("closed", () => resolve());
-  });
-
-  // Kick an immediate sync the moment the user finishes sign-in.
-  // Without this the cron picks them up within ~60s anyway, but the
-  // perceived latency on a fresh connect (esp. Twitter) is jarring.
-  // Lazy-imported to avoid the `sync` ↔ `scrape-window` module cycle;
-  // fire-and-forget so the connect IPC isn't blocked.
-  if (await isSourceConnected(source)) {
-    void import("../sync")
-      .then(({ syncSource }) => syncSource(source, { trigger: "manual" }))
-      .catch((err) =>
-        log.warn("[pond refresh:signin] post-signin sync threw", err),
-      );
-  }
-
-  return { ok: true };
+export function isPublicProfileSource(source: Source): boolean {
+  return PUBLIC_PROFILE_SOURCES.has(source);
 }
 
-/**
- * Heuristic check: are we currently being held at a login screen?
- * Reasonable across the auth-walled sites we care about. Used both as
- * an early-exit when the hidden window gets redirected to login, and
- * as a way to tell the caller "ask the user to connect this source".
- */
+export type SignInMode = "external" | "skipped";
+
+export async function signInToSource(
+  source: Source,
+): Promise<{ ok: boolean; mode: SignInMode }> {
+  if (PUBLIC_PROFILE_SOURCES.has(source)) {
+    log.info(
+      "[pond refresh:signin] public-profile source ignored",
+      source,
+      "(set the handle via prefs.sync.handles instead)",
+    );
+    return { ok: false, mode: "skipped" };
+  }
+
+  const url = homeUrlForSource(source);
+  try {
+    await shell.openExternal(url);
+    log.info("[pond refresh:signin] opened external browser for", source, url);
+    return { ok: true, mode: "external" };
+  } catch (err) {
+    log.warn("[pond refresh:signin] openExternal failed", source, err);
+    return { ok: false, mode: "external" };
+  }
+}
+
 function looksLikeAuthWall(currentUrl: string): boolean {
   try {
     const u = new URL(currentUrl);
@@ -638,11 +580,6 @@ function looksLikeAuthWall(currentUrl: string): boolean {
   }
 }
 
-/**
- * `loadURL` resolves on `did-finish-load`, but Twitter's SPA can throw
- * an in-flight error before then if the URL is malformed. Wrap with our
- * own timeout so a hung page doesn't pin the harvester forever.
- */
 async function navigateWithTimeout(
   win: BrowserWindow,
   url: string,
@@ -681,14 +618,6 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/**
- * Dev-only: write the verbatim GraphQL bodies archived by the Cosmos
- * harvester to `<userData>/cosmos-captures/<timestamp>.json`. Set
- * `POND_DUMP_COSMOS_CAPTURES=1` to enable. The Cosmos parser is
- * shape-blind ([harvest/cosmos/graphql.ts](apps/desktop/src/main/core/refresh/harvest/cosmos/graphql.ts));
- * one real dump is enough to collapse it into a typed parser like
- * [twitter/graphql.ts](apps/desktop/src/main/core/refresh/harvest/twitter/graphql.ts).
- */
 async function dumpCosmosCaptures(win: BrowserWindow): Promise<void> {
   const raw = await win.webContents.executeJavaScript(
     "JSON.stringify(globalThis.__pondCosmosCapturesArchive ?? [])",
@@ -706,14 +635,97 @@ async function dumpCosmosCaptures(win: BrowserWindow): Promise<void> {
   log.info("[pond list:cosmos] dumped captures to", path);
 }
 
-/**
- * Lightweight introspection: do we already have cookies for this
- * source? Lets the renderer paint a "Connected ✓" badge per source on
- * the settings page without needing the user to ever see a window.
- */
 export async function isSourceConnected(source: Source): Promise<boolean> {
+  if (PUBLIC_PROFILE_SOURCES.has(source)) {
+    const handle = await readStoredHandle(source);
+    return handle !== null;
+  }
   const cookies = await listCookiesForSource(source);
-  return cookies.length > 0;
+  return cookies.some((c) => isAuthCookie(source, c));
+}
+
+export async function writePartitionCookies(args: {
+  cookies: Array<{
+    name: string;
+    value: string;
+    domain: string;
+    path?: string;
+    secure?: boolean;
+    httpOnly?: boolean;
+    sameSite?: "unspecified" | "no_restriction" | "lax" | "strict";
+    expirationDate?: number | null;
+    hostOnly?: boolean;
+  }>;
+}): Promise<{ written: number; skipped: number }> {
+  const persistent = session.fromPartition(PARTITION);
+  let written = 0;
+  let skipped = 0;
+  for (const c of args.cookies) {
+    const hostForUrl = c.domain.replace(/^\./, "");
+    const url = `${c.secure === false ? "http" : "https"}://${hostForUrl}${c.path ?? "/"}`;
+    try {
+      await persistent.cookies.set({
+        url,
+        name: c.name,
+        value: c.value,
+        domain: c.domain,
+        path: c.path ?? "/",
+        secure: c.secure,
+        httpOnly: c.httpOnly,
+        sameSite: c.sameSite ?? "unspecified",
+        expirationDate: c.expirationDate ?? undefined,
+      });
+      written += 1;
+    } catch (err) {
+      skipped += 1;
+      log.warn(
+        "[pond refresh:cookies] set failed",
+        c.name,
+        c.domain,
+        err instanceof Error ? err.message : err,
+      );
+    }
+  }
+  return { written, skipped };
+}
+
+export async function readStoredHandle(source: Source): Promise<string | null> {
+  try {
+    const prefs = await getPrefs();
+    const raw = prefs.sync.handles?.[source];
+    if (typeof raw !== "string") return null;
+    const trimmed = raw.trim().replace(/^@/, "");
+    return trimmed.length > 0 ? trimmed : null;
+  } catch (err) {
+    log.warn("[pond refresh:signin] readStoredHandle failed", source, err);
+    return null;
+  }
+}
+
+function isAuthCookie(source: Source, cookie: Cookie): boolean {
+  const name = cookie.name;
+  switch (source) {
+    case "twitter":
+      return name === "auth_token";
+    case "instagram":
+      return name === "sessionid";
+    case "tiktok":
+      return name === "sessionid" || name === "sid_tt";
+    case "pinterest":
+      return name === "_pinterest_sess" || name === "_auth";
+    case "youtube":
+      return (
+        name === "LOGIN_INFO" ||
+        name === "SID" ||
+        name === "__Secure-1PSID" ||
+        name === "__Secure-3PSID"
+      );
+    case "cosmos":
+    case "arena":
+      return false;
+    case "article":
+      return false;
+  }
 }
 
 async function listCookiesForSource(source: Source): Promise<Cookie[]> {
@@ -728,7 +740,7 @@ async function listCookiesForSource(source: Source): Promise<Cookie[]> {
   }
 }
 
-function primaryDomainForSource(source: Source): string | null {
+export function primaryDomainForSource(source: Source): string | null {
   switch (source) {
     case "twitter":
       return ".x.com";
@@ -744,20 +756,27 @@ function primaryDomainForSource(source: Source): string | null {
       return ".are.na";
     case "youtube":
       return ".youtube.com";
-    case "reddit":
-      return ".reddit.com";
     case "article":
       return null;
   }
 }
 
-/**
- * Wipe all cookies / storage for a given source. Used by the "Disconnect"
- * button on settings.
- */
 export async function disconnectSource(
   source: Source,
 ): Promise<{ ok: boolean }> {
+  if (PUBLIC_PROFILE_SOURCES.has(source)) {
+    try {
+      const prefs = await getPrefs();
+      const nextHandles = { ...prefs.sync.handles };
+      delete nextHandles[source];
+      await setPrefs({ sync: { handles: nextHandles } });
+      return { ok: true };
+    } catch (err) {
+      log.warn("[pond refresh:disconnect] handle clear failed", source, err);
+      return { ok: false };
+    }
+  }
+
   const persistent = session.fromPartition(PARTITION);
   const domain = primaryDomainForSource(source);
   if (!domain) return { ok: true };
@@ -786,10 +805,6 @@ export async function disconnectSource(
   }
 }
 
-/**
- * Dispose all pooled hidden windows. Called on app quit so we don't
- * leak Chromium child processes; safe to call from anywhere.
- */
 export function disposeHiddenWindow(): void {
   for (const slot of pool) {
     if (!slot.win.isDestroyed()) slot.win.destroy();

@@ -3,14 +3,6 @@ import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 import type { Context } from "hono";
 import { getDb } from "../db";
 
-/**
- * `POST /api/v2/item/get`  -- filter a list of items.
- * `GET  /api/v2/item/get?ids=…&limit=…` also works (Eagle compatibility).
- *
- * Match Eagle's envelope: `{ status, data: [...] }`. Pagination is
- * `limit` (default 200, max 1000) + `offset` because opaque cursors
- * don't play nicely with filter changes.
- */
 export async function itemGetHandler(c: Context) {
   const method = c.req.method;
   let params: Record<string, unknown> = {};

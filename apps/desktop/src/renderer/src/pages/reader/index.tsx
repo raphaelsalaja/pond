@@ -47,15 +47,6 @@ function clamp(n: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, n));
 }
 
-/**
- * Reader-mode route. Surfaces the cached `articleHtml` produced by the
- * enrichment worker with typography controls (font stack, size, width,
- * theme). Falls back to a "Run extraction" CTA when no extraction has
- * happened yet — clicking it queues an `enrich.start` for this save.
- *
- * Prefs persist in localStorage, scoped to a single key so adjusting on
- * one article carries across the whole library.
- */
 export function ReaderPage() {
   const { id } = useParams<{ id: string }>();
   const save = useSave(id);
@@ -81,8 +72,6 @@ export function ReaderPage() {
     });
   }, []);
 
-  // Pool drops `articleHtml` for size reasons; we re-fetch the full row
-  // here so the body is available when the user lands on `/read/:id`.
   useEffect(() => {
     if (!id) return;
     let cancelled = false;
@@ -333,18 +322,6 @@ interface ReaderBodyProps {
   html: string;
 }
 
-/**
- * Article body that supports text-selection highlights. When the user
- * releases the mouse over a non-empty selection, we float a chip near
- * the cursor offering "Highlight" — clicking it persists the selection
- * as a `TextHighlight`. Existing highlights paint as soft yellow spans.
- *
- * We avoid wrapping the dangerous HTML in a Range walker (DOM positions
- * are unstable across renders) and instead match by quote string. That
- * mirrors how Instapaper / Reader View work — a re-extraction with
- * minor markup drift won't lose the highlight as long as the literal
- * quote still appears in the body.
- */
 function ReaderBody({ save, html }: ReaderBodyProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [chip, setChip] = useState<{
@@ -358,9 +335,6 @@ function ReaderBody({ save, html }: ReaderBodyProps) {
     [save.annotations?.highlights],
   );
 
-  // Apply existing highlights by wrapping each quote in <mark>. We
-  // sort by length (longest first) so substring overlaps don't double-
-  // wrap ("data" inside "data structures").
   const decorated = useMemo(() => {
     if (highlights.length === 0) return html;
     const sorted = [...highlights].sort(

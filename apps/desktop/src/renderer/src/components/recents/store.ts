@@ -1,15 +1,5 @@
 import { useSyncExternalStore } from "react";
 
-/**
- * Linear-style recents — keyed by save id, not URL. A save you've
- * opened recently belongs in this list whether you got there from the
- * grid, command palette, deep link, or inbox; the source URL doesn't
- * matter, only the entity does.
- *
- * Persisted to localStorage so it survives restarts. Capped to 20 to
- * stay scannable.
- */
-
 const STORAGE_KEY = "pond.recents.saves";
 const RECENTS_CAP = 20;
 
@@ -62,11 +52,6 @@ function emit(): void {
   for (const cb of listeners) cb();
 }
 
-/**
- * Push a save to the front of the recents list. If the save is
- * already there, it bubbles up; otherwise it joins the head and the
- * tail entry past `RECENTS_CAP` falls off.
- */
 export function recordVisit(saveId: string): void {
   const top = state[0];
   if (top?.saveId === saveId) {

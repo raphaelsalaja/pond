@@ -1,25 +1,4 @@
 #!/usr/bin/env node
-/**
- * Generate the macOS menu-bar template icons for Pond.
- *
- * We ship two PNGs into `apps/desktop/resources`:
- *
- *   - `trayTemplate.png`     (22×22)
- *   - `trayTemplate@2x.png`  (44×44)
- *
- * macOS interprets any image suffixed with `Template` as a template image,
- * rendering it with the menu-bar foreground colour and ignoring RGB; only
- * the alpha channel matters. We therefore draw a solid black shape (alpha
- * = 255 for ink, 0 for background) and let Electron / AppKit do the rest.
- *
- * The mark is deliberately simple: a filled rounded square that reads well
- * at 22px and stays recognisable against both light and dark menu bars.
- * We generate it procedurally instead of committing a rasterised asset so
- * the source tree stays text-only and future redesigns are a single file
- * diff.
- *
- * Usage: `node scripts/generate-tray-icon.mjs`
- */
 
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -30,23 +9,13 @@ const here = dirname(fileURLToPath(import.meta.url));
 const outDir = join(here, "..", "resources");
 mkdirSync(outDir, { recursive: true });
 
-/**
- * Build an RGBA buffer (width*height*4 bytes) containing a rounded-square
- * "pond" glyph at the requested size. Alpha is the only channel that
- * matters because we emit template images, but we write opaque black on
- * the ink pixels to keep things obvious in image viewers too.
- */
 function drawGlyph(size) {
   const buf = Buffer.alloc(size * size * 4);
 
-  // 2px breathing room at 22px, scaled proportionally.
   const padding = Math.round(size * (2 / 22));
   const inner = size - padding * 2;
-  const radius = Math.round(inner * 0.32); // ~32% corner radius
+  const radius = Math.round(inner * 0.32);
 
-  // Secondary mark: a small bite / pond ripple in the centre so it reads
-  // as "pond" and not "generic app". At 22px this is a single cut-out
-  // pixel cluster; at 44px it gets the extra detail.
   const rippleR = Math.round(inner * 0.18);
   const cx = padding + inner / 2;
   const cy = padding + inner / 2;
@@ -55,12 +24,10 @@ function drawGlyph(size) {
     for (let x = 0; x < size; x++) {
       const i = (y * size + x) * 4;
 
-      // Rounded square mask.
       const localX = x - padding;
       const localY = y - padding;
       let inside = false;
       if (localX >= 0 && localY >= 0 && localX < inner && localY < inner) {
-        // Which corner are we in?
         const ix =
           localX < radius
             ? radius - localX
@@ -76,8 +43,6 @@ function drawGlyph(size) {
         }
       }
 
-      // Carve out a ripple (small disc) in the middle so the icon has a
-      // distinctive silhouette instead of a featureless square.
       if (inside) {
         const dx = x - cx + 0.5;
         const dy = y - cy + 0.5;
@@ -103,24 +68,18 @@ function drawGlyph(size) {
   return buf;
 }
 
-/**
- * Minimal PNG encoder. Writes a valid single-IDAT RGBA PNG with filter
- * type 0 (None) on every row. Good enough for <100px tray icons; not a
- * general-purpose encoder.
- */
 function encodePng(width, height, rgba) {
   const signature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
 
   const ihdr = Buffer.alloc(13);
   ihdr.writeUInt32BE(width, 0);
   ihdr.writeUInt32BE(height, 4);
-  ihdr[8] = 8; // bit depth
-  ihdr[9] = 6; // colour type RGBA
-  ihdr[10] = 0; // compression
-  ihdr[11] = 0; // filter
-  ihdr[12] = 0; // interlace
+  ihdr[8] = 8;
+  ihdr[9] = 6;
+  ihdr[10] = 0;
+  ihdr[11] = 0;
+  ihdr[12] = 0;
 
-  // Filtered scanlines: filter byte 0 followed by RGBA row.
   const stride = width * 4;
   const raw = Buffer.alloc(height * (stride + 1));
   for (let y = 0; y < height; y++) {

@@ -4,16 +4,6 @@ import type { DropdownProps } from "@/components/filter-bar/dropdowns/types";
 import { useSaves } from "@/pool/hooks";
 import styles from "./styles.module.css";
 
-/**
- * Color picker. Surfaces a swatch grid of the most common
- * dominant colors in the library (the ones the enrichment worker
- * has actually seen) plus a hex input that doubles as a search
- * box: typing a hex prefix filters the swatch grid down to
- * matches and at the same time writes the predicate's `near`
- * target. The chip's `near` predicate carries `{ hex, distance }`
- * — distance defaults to 96 (a comfortable Manhattan radius) and
- * stays implicit unless the user types one.
- */
 export function ColorDropdown({ predicate, onChange }: DropdownProps) {
   const saves = useSaves();
   const swatches = useMemo(() => {
@@ -53,7 +43,7 @@ export function ColorDropdown({ predicate, onChange }: DropdownProps) {
   return (
     <div className={styles.body}>
       <div className={styles.search}>
-        <Input.Root
+        <Input
           type="search"
           value={currentHex}
           autoFocus

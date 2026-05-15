@@ -1,72 +1,127 @@
 import { Select as Base } from "@base-ui/react/select";
-import type { ReactNode } from "react";
-import { Button } from "../button";
+import { renderFrozenPopup } from "../freeze/popup";
+import { cn } from "../lib/cn";
+import popupStyles from "../lib/popup.module.css";
 import styles from "./styles.module.css";
 
-function Root<T extends string | number | null>(
-  props: React.ComponentProps<typeof Base.Root<T>>,
-) {
+function Root<Value>(props: Base.Root.Props<Value>) {
   return <Base.Root {...props} />;
 }
 
-interface TriggerProps extends React.ComponentProps<typeof Base.Trigger> {}
+function Label({ className, ...props }: Base.Label.Props) {
+  return <Base.Label className={cn(styles.label, className)} {...props} />;
+}
 
-function Trigger({ children, className, ...props }: TriggerProps) {
+function Trigger({ className, ...props }: Base.Trigger.Props) {
+  return <Base.Trigger className={cn(styles.trigger, className)} {...props} />;
+}
+
+function Value({ className, ...props }: Base.Value.Props) {
+  return <Base.Value className={cn(styles.value, className)} {...props} />;
+}
+
+function Icon({ className, ...props }: Base.Icon.Props) {
+  return <Base.Icon className={cn(styles.icon, className)} {...props} />;
+}
+
+function Backdrop({ className, ...props }: Base.Backdrop.Props) {
   return (
-    <Base.Trigger
-      render={
-        <Button
-          className={[styles.trigger, className ?? ""]
-            .filter(Boolean)
-            .join(" ")}
-        />
-      }
-      {...props}
-    >
-      {children}
-      <Base.Icon className={styles.icon}>▾</Base.Icon>
-    </Base.Trigger>
+    <Base.Backdrop className={cn(styles.backdrop, className)} {...props} />
   );
 }
 
-interface ValueProps extends React.ComponentProps<typeof Base.Value> {}
-
-function Value({ ...props }: ValueProps) {
-  return <Base.Value {...props} />;
+function Portal(props: Base.Portal.Props) {
+  return <Base.Portal {...props} />;
 }
 
-interface ContentProps {
-  children: ReactNode;
-}
-
-function Content({ children }: ContentProps) {
+function Positioner({ className, ...props }: Base.Positioner.Props) {
   return (
-    <Base.Portal>
-      <Base.Positioner sideOffset={6} className={styles.positioner}>
-        <Base.Popup className={styles.popup}>{children}</Base.Popup>
-      </Base.Positioner>
-    </Base.Portal>
+    <Base.Positioner className={cn(styles.positioner, className)} {...props} />
   );
 }
 
-interface ItemProps extends React.ComponentProps<typeof Base.Item> {}
-
-function Item({ children, className, ...props }: ItemProps) {
+function Popup({ className, render, ...props }: Base.Popup.Props) {
   return (
-    <Base.Item
-      className={[styles.item, className ?? ""].filter(Boolean).join(" ")}
+    <Base.Popup
       {...props}
-    >
-      <Base.ItemIndicator className={styles.indicator}>✓</Base.ItemIndicator>
-      <Base.ItemText className={styles["item-text"]}>{children}</Base.ItemText>
-    </Base.Item>
+      className={cn(popupStyles.popup, styles.popup, className)}
+      render={render ?? renderFrozenPopup}
+    />
+  );
+}
+
+function List({ className, ...props }: Base.List.Props) {
+  return <Base.List className={cn(styles.list, className)} {...props} />;
+}
+
+function Arrow({ className, ...props }: Base.Arrow.Props) {
+  return <Base.Arrow className={cn(popupStyles.arrow, className)} {...props} />;
+}
+
+function Item({ className, ...props }: Base.Item.Props) {
+  return <Base.Item className={cn(popupStyles.item, className)} {...props} />;
+}
+
+function ItemText({ className, ...props }: Base.ItemText.Props) {
+  return (
+    <Base.ItemText
+      className={cn(popupStyles["item-label"], className)}
+      {...props}
+    />
+  );
+}
+
+function ItemIndicator({ className, ...props }: Base.ItemIndicator.Props) {
+  return (
+    <Base.ItemIndicator
+      className={cn(popupStyles.indicator, className)}
+      {...props}
+    />
+  );
+}
+
+function Group(props: Base.Group.Props) {
+  return <Base.Group {...props} />;
+}
+
+function GroupLabel({ className, ...props }: Base.GroupLabel.Props) {
+  return (
+    <Base.GroupLabel
+      className={cn(
+        popupStyles["group-label"],
+        popupStyles["group-label-sticky"],
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
+function Separator({ className, ...props }: Base.Separator.Props) {
+  return (
+    <Base.Separator
+      className={cn(popupStyles.separator, className)}
+      {...props}
+    />
   );
 }
 
 export const Select = {
   Root,
+  Label,
   Trigger,
   Value,
-  Content,
+  Icon,
+  Backdrop,
+  Portal,
+  Positioner,
+  Popup,
+  List,
+  Arrow,
   Item,
+  ItemText,
+  ItemIndicator,
+  Group,
+  GroupLabel,
+  Separator,
 };

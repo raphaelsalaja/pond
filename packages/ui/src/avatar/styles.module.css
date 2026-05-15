@@ -12,7 +12,7 @@
   color: var(--ds-gray-1);
   user-select: none;
   background: var(--ds-gray-4);
-  border-radius: 999px;
+  border-radius: var(--ds-radius-full);
 
   &[data-size="sm"] {
     --avatar-size: 24px;

@@ -1,14 +1,5 @@
 /// <reference lib="dom" />
 
-/**
- * Instagram saved-collection list collector. Primary path hits the
- * private REST API (`/api/v1/feed/saved/posts/`) with cursor-based
- * pagination. Falls back to DOM scrolling when the API is unavailable.
- *
- * Normalization is delegated to the shared `inPageInstagramNormalize`
- * injected at expression-build time.
- */
-
 import type { MediaType } from "@pond/schema/db";
 import type { ListHarvestArgs, ListHarvestResult } from "../list-types";
 import { inPageInstagramNormalize } from "./normalize";
@@ -108,10 +99,6 @@ async function inPageInstagramList(
         });
         if (!raw) continue;
         entries.push(raw as Entry);
-        if (entries.length >= args.maxItems) {
-          reportProgress("done");
-          return { ok: true, entries, reachedEnd: false };
-        }
       }
 
       reportProgress("fetching");
@@ -179,22 +166,13 @@ async function inPageInstagramList(
     }
 
     const collected = new Map<string, StubEntry>();
-    function ingestRows(rows: StubEntry[]) {
+    function ingestRows(rows: StubEntry[]): void {
       for (const r of rows) {
         if (!collected.has(r.sourceId)) collected.set(r.sourceId, r);
-        if (collected.size >= args.maxItems) return { full: true };
       }
-      return { full: false };
     }
 
     ingestRows(collect());
-    if (collected.size >= args.maxItems) {
-      return {
-        ok: true,
-        entries: Array.from(collected.values()),
-        reachedEnd: false,
-      };
-    }
 
     const scrollDeadline = Date.now() + 60_000;
     let lastHeight = document.documentElement.scrollHeight;
@@ -205,14 +183,7 @@ async function inPageInstagramList(
         behavior: "instant" as ScrollBehavior,
       });
       await new Promise((r) => setTimeout(r, 700));
-      const { full } = ingestRows(collect());
-      if (full) {
-        return {
-          ok: true,
-          entries: Array.from(collected.values()),
-          reachedEnd: false,
-        };
-      }
+      ingestRows(collect());
       const sh = document.documentElement.scrollHeight;
       if (sh === lastHeight) {
         stable += 1;

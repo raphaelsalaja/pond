@@ -3,26 +3,9 @@ import type { DominantColor, Save } from "@pond/schema/db";
 import log from "electron-log/main.js";
 import { itemFile } from "../../../paths";
 
-/**
- * Always-local cover analysis. Decodes the cover image with Electron's
- * `nativeImage` (no extra native deps required) and uses the same
- * decoded buffer to produce two outputs:
- *
- *   - `dominantColors`  — top hues by weight, used by Color view
- *     bucketing and the placeholder tint fallback.
- *   - `blurDataUrl`     — `data:image/jpeg` of a 16-px JPEG, painted
- *     behind the lazy-loaded `<img>` so the card slot already shows a
- *     blurred snapshot of its own content (Next.js `placeholder="blur"`
- *     / Eagle behaviour). ~600 bytes per save; ~6MB for a 10k library.
- *
- * Cheap (~30ms per cover on M-series) and never touches the network.
- */
 export interface CoverAnalysis {
   dominantColors: DominantColor[];
   blurDataUrl: string | null;
-  /** Decoded cover pixel dimensions. Persisted into `save.width` /
-   * `save.height` so renderer packers don't need to wait on the
-   * `<img>` to load before reserving the right slot height. */
   width: number;
   height: number;
 }
@@ -56,11 +39,6 @@ export async function analyseCover(save: Save): Promise<CoverAnalysis | null> {
   };
 }
 
-/**
- * Back-compat wrapper. Older call sites still ask for "just the
- * colors"; everything new should call `analyseCover` so we don't
- * decode the same cover twice.
- */
 export async function extractDominantColors(
   save: Save,
 ): Promise<DominantColor[] | null> {
@@ -120,14 +98,6 @@ function extractDominantColorsFromBitmap(
   }));
 }
 
-/**
- * Tiny blurred preview as a `data:image/jpeg;base64,...` URL, sized so
- * the renderer can paint it as a 100% width / height backdrop with
- * `filter: blur(...)` and have it look like a snapshot of the actual
- * cover. We hold the long edge at 16px so the file lands around
- * 400-700 bytes after JPEG quality 35 — small enough to ship inline
- * with the row and load synchronously.
- */
 function makeBlurDataUrl(
   source: Electron.NativeImage,
   size: { width: number; height: number },
@@ -157,8 +127,6 @@ function rgbToHex(r: number, g: number, b: number): string {
 function pickCoverFile(save: Save): string | null {
   const files = save.files ?? [];
   if (files.length === 0) return null;
-  // Prefer cover/poster/image files; skip plain `.mp4` because nativeImage
-  // can't decode video.
   const visual = files.find((f) => {
     if (typeof f.path !== "string") return false;
     const lower = f.path.toLowerCase();

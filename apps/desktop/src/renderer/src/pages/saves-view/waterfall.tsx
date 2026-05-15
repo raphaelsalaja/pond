@@ -4,29 +4,6 @@ import { type DisplayPrefs, useDisplayPrefs } from "@/lib/display-prefs";
 import type { Save } from "@/pool/types";
 import { aspectFor, useAspectVersion } from "./aspect";
 
-/**
- * Waterfall (Pinterest-style masonry) gallery — equal column widths,
- * variable card heights, every card placed in source order into
- * whichever column is shortest at the moment.
- *
- * The previous implementation used CSS multi-column (`columns: …`),
- * which flows items column-major (fill column 1 top-to-bottom, then
- * column 2). That makes the visual position of every card change on
- * window resize because the browser re-bins items into a different
- * number of columns from scratch. There's no CSS knob that makes
- * multi-column row-major.
- *
- * We pack in JS instead: a greedy "shortest column" placement keeps
- * card 1 in the top-left, card 2 immediately to its right (or below
- * card 1 if column 1 was the shortest after placing card 1), etc.
- * Resizing only changes column count and column width — the relative
- * source order stays put.
- *
- * Cost mirrors `JustifiedView`: O(n × cols) per layout pass, run on
- * mount, on container resize, on the saves array changing, and when
- * `--grid-min` (the zoom slider) changes.
- */
-
 const ITEM_GAP = 12;
 const DEFAULT_COL_MIN = 130;
 
@@ -126,9 +103,6 @@ function useGridMin(): number {
 
 export interface WaterfallViewProps {
   saves: Save[];
-  /** Render each save into a card. Receives the packed position +
-   * size; the card publishes them through inline `<li>` styles so the
-   * absolutely-positioned grid can lay everything out. */
   renderCard: (save: Save, packed: PackedPosition) => React.ReactNode;
   multiSelectActive: boolean;
 }
@@ -176,10 +150,6 @@ export function WaterfallView({
   }, []);
 
   const { items, totalHeight } = useMemo(() => {
-    // `aspectVersion` is a re-pack signal: when card thumbs report
-    // newly-measured natural dims via `recordAspect`, the version
-    // bumps so the packer re-runs and `aspectFor()` returns the
-    // freshly-measured ratios.
     void aspectVersion;
     return packMasonry(saves, width, colMin, ITEM_GAP, chromeHeight);
   }, [saves, width, colMin, chromeHeight, aspectVersion]);

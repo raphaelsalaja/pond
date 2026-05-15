@@ -23,7 +23,10 @@
   padding: 12px;
   margin: 8px;
   overflow: auto;
-  background: var(--ds-shell-main);
+  background: light-dark(
+    var(--ds-background-primary),
+    var(--ds-background-secondary)
+  );
   border-radius: 12px;
   box-shadow: 0 0 0 1px var(--ds-gray-a4);
 }

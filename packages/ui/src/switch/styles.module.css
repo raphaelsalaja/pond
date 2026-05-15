@@ -10,19 +10,28 @@
   outline: none;
   background: var(--ds-gray-a6);
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--ds-radius-full);
   transition:
-    background 120ms ease,
-    box-shadow 120ms ease;
+    background var(--ds-duration-snap) var(--ds-easing-standard),
+    box-shadow var(--ds-duration-snap) var(--ds-easing-standard);
 
   &[data-checked] {
     background: var(--ds-gray-12);
   }
 
-  &:focus-visible {
-    box-shadow:
-      0 0 0 2px var(--ds-gray-1),
-      0 0 0 4px var(--ds-gray-a8);
+  &::before {
+    position: absolute;
+    inset: -4px;
+    pointer-events: none;
+    content: "";
+    border-radius: calc(var(--ds-radius-full) + 4px);
+    box-shadow: var(--ds-shadow-focus-halo);
+    opacity: 0;
+    transition: opacity var(--ds-duration-medium) var(--ds-easing-standard);
+  }
+
+  &:focus-visible::before {
+    opacity: 1;
   }
 
   &:disabled {
@@ -35,15 +44,15 @@
   width: 14px;
   height: 14px;
   margin-left: 2px;
-  background: light-dark(#ffffff, #ffffff);
-  border-radius: 50%;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  background: var(--ds-gray-1);
+  border-radius: var(--ds-radius-full);
+  box-shadow: var(--ds-shadow-thumb);
   transition:
-    transform 140ms ease,
-    background 120ms ease;
+    transform var(--ds-duration-snap) var(--ds-easing-standard),
+    background var(--ds-duration-snap) var(--ds-easing-standard);
 }
 
 .root[data-checked] .thumb {
-  background: light-dark(#ffffff, #141414);
+  background: light-dark(var(--ds-gray-1), var(--ds-gray-12));
   transform: translateX(12px);
 }

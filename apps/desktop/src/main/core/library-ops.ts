@@ -21,18 +21,9 @@ import { libraryRoot, resolvePaths, trashRoot } from "../paths";
 import { executeBatch } from "./executor";
 import { recordForUndo } from "./undo";
 
-/**
- * Library-level operations driven from the Storage / Library settings
- * pages. Kept in their own module so the IPC layer stays thin and
- * each helper stays unit-testable in isolation.
- */
-
 export interface IntegrityReport {
-  /** Items present on disk but missing from the saves index. */
   orphans: string[];
-  /** Saves indexed in SQLite but with no matching items/<id>.info dir. */
   missing: string[];
-  /** Save id -> reason. Anything we couldn't otherwise classify. */
   errors: Record<string, string>;
   totalIndexed: number;
   totalOnDisk: number;
@@ -61,9 +52,6 @@ export async function verifyLibraryIntegrity(): Promise<IntegrityReport> {
   const errors: Record<string, string> = {};
   for (const id of onDiskIds) {
     if (!indexedSet.has(id)) {
-      // Quick sanity-check: do we have a usable metadata.json? If
-      // not, surface as an error instead of just an orphan so the
-      // user can tell the difference.
       const meta = await readItemMetadata(id);
       if (!meta) {
         errors[id] = "metadata.json missing or unreadable";
@@ -84,16 +72,6 @@ export async function verifyLibraryIntegrity(): Promise<IntegrityReport> {
   };
 }
 
-/**
- * Persist a new library root in settings. We don't physically move
- * the on-disk library here — that would require holding the SQLite
- * file open through a rename + reopen dance that's brittle in
- * Electron. Instead we copy `<old>/items` + metadata into the new
- * location, leave the old folder behind, and ask the user to relaunch.
- *
- * On relaunch, `paths.ts` reads `settings.library_root` and the rest
- * of main wires up against the new location.
- */
 export async function moveLibrary(dest: string): Promise<string> {
   const src = libraryRoot();
   if (!existsSync(dest)) await mkdir(dest, { recursive: true });
@@ -102,9 +80,6 @@ export async function moveLibrary(dest: string): Promise<string> {
   const destResolved = dest.replace(/\/$/, "");
   if (srcResolved === destResolved) return src;
 
-  // We treat the destination as the *new* `<library>.library` root.
-  // Copy `items/`, `trash/`, `metadata.json`, `_meta/`, `_thumbs/`
-  // (whichever exist) into it.
   for (const entry of await readdir(src)) {
     const from = join(src, entry);
     const to = join(dest, entry);
@@ -126,11 +101,6 @@ export async function moveLibrary(dest: string): Promise<string> {
   return dest;
 }
 
-/**
- * Stream the entire library directory into a zip at `outPath`. Uses
- * `archiver` because it's the only zip lib in the ecosystem that
- * handles multi-GB libraries without buffering everything in RAM.
- */
 export async function exportLibraryZip(outPath: string): Promise<string> {
   const root = libraryRoot();
   await mkdir(dirname(outPath), { recursive: true });
@@ -151,13 +121,6 @@ export async function exportLibraryZip(outPath: string): Promise<string> {
   return outPath;
 }
 
-/**
- * Drop one JSON file per save into `<dest>/items/<id>.json` plus a
- * top-level `manifest.json` listing every entry. Mirrors the on-disk
- * `metadata.json` shape but augments it with the SQLite-derived
- * fields the file format doesn't carry (AI suggestions, classification,
- * embedding state, etc).
- */
 export async function exportLibraryJson(destDir: string): Promise<string> {
   const root = join(
     destDir,
@@ -190,13 +153,6 @@ export async function exportLibraryJson(destDir: string): Promise<string> {
   return root;
 }
 
-/**
- * Cron-friendly trash purge. Walks every soft-deleted save and hard-
- * deletes the ones whose `deletedAt` is older than `days` ago.
- *
- * Returns the number of saves purged. Pass `0` (or any non-positive
- * value) to purge everything currently in the trash.
- */
 export async function emptyTrashOlderThan(days: number): Promise<number> {
   const db = await getDb();
   const cutoff = days > 0 ? Date.now() - days * 86_400_000 : null;
@@ -217,11 +173,6 @@ export async function emptyTrashOlderThan(days: number): Promise<number> {
   return txs.length;
 }
 
-/**
- * Purge files inside a sub-folder of the library that match a
- * predicate. Used by the Reset section to wipe just the video cache
- * or just the thumbnails without nuking the save folders.
- */
 export async function purgeLibrarySubdir(
   subdir: string,
   predicate?: (filename: string) => boolean,
@@ -237,8 +188,6 @@ export async function purgeLibrarySubdir(
   return removed;
 }
 
-// Keep referenced helpers reachable for tsc when archiver / zip are
-// dynamically imported in some build modes.
 void readFile;
 void rename;
 void stat;

@@ -1,6 +1,6 @@
 .dialog {
-  width: 560px;
-  max-width: 90vw;
+  width: 640px;
+  max-width: 92vw;
   padding: 0;
   overflow: hidden;
 }
@@ -8,52 +8,147 @@
 .shell {
   display: flex;
   flex-direction: column;
-  max-height: 70vh;
+  max-height: min(560px, 78vh);
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px 10px 0;
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--ds-gray-11);
+  cursor: default;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--ds-radius-full);
+
+  &:hover {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-a3);
+  }
+
+  &[data-active="true"] {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-a4);
+    border-color: var(--ds-gray-a5);
+  }
 }
 
 .search-row {
-  padding: 12px;
+  position: relative;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 12px;
   border-bottom: 1px solid var(--ds-gray-a4);
+}
+
+.search-input {
+  flex: 1;
+  height: 28px;
+  padding: 0 4px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--ds-gray-12);
+  outline: none;
+  background: transparent;
+  border: 0;
+
+  &::placeholder {
+    color: var(--ds-gray-10);
+  }
 }
 
 .list {
   display: flex;
   flex-direction: column;
-  gap: 2px;
   min-height: 0;
   padding: 6px;
   margin: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  list-style: none;
-  scroll-padding-block: 0.5rem;
+
+  & [cmdk-list-sizer=""] {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  & [cmdk-group=""] {
+    display: flex;
+    flex-direction: column;
+  }
+
+  & [cmdk-group-heading=""] {
+    padding: 8px 8px 4px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--ds-gray-10);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    user-select: none;
+  }
+
+  & [cmdk-group-items=""] {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  & [cmdk-item=""] {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    font-size: 13px;
+    color: var(--ds-gray-12);
+    cursor: default;
+    border-radius: 6px;
+
+    &[data-selected="true"] {
+      background: var(--ds-gray-a3);
+    }
+
+    &[data-disabled="true"] {
+      color: var(--ds-gray-9);
+      cursor: not-allowed;
+    }
+  }
+
+  & [cmdk-empty=""] {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 16px;
+    font-size: 13px;
+    color: var(--ds-gray-11);
+  }
+
+  & [cmdk-separator=""] {
+    height: 1px;
+    margin: 4px 0;
+    background: var(--ds-gray-a4);
+  }
 }
 
-.item-btn {
+.item-main {
   display: flex;
   flex: 1;
-  gap: 12px;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 10px;
-  font: inherit;
-  font-size: 13px;
-  color: var(--ds-gray-12);
-  text-align: left;
-  touch-action: manipulation;
-  cursor: default;
-  background: transparent;
-  border: 0;
-  border-radius: 6px;
-}
-
-.item {
-  display: flex;
-  user-select: none;
-
-  &[data-active="true"] .item-btn {
-    background: var(--ds-gray-a3);
-  }
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
 .item-label {
@@ -62,16 +157,43 @@
   white-space: nowrap;
 }
 
-.item-hint {
+.item-description {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11px;
+  color: var(--ds-gray-10);
+  white-space: nowrap;
+}
+
+.item-aside {
   flex-shrink: 0;
   font-size: 11px;
-  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-10);
+}
+
+.empty-headline {
+  font-size: 13px;
   color: var(--ds-gray-11);
 }
 
-.empty {
-  padding: 16px;
-  font-size: 12px;
-  color: var(--ds-gray-11);
-  text-align: center;
+.empty-hint {
+  font-size: 11px;
+  color: var(--ds-gray-10);
+}
+
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+  padding: 8px 12px;
+  font-size: 11px;
+  color: var(--ds-gray-10);
+  border-top: 1px solid var(--ds-gray-a4);
+}
+
+.footer-hint {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
 }

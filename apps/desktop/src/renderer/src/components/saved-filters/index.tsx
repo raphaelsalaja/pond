@@ -5,7 +5,7 @@ import {
   IconPenOutline18,
   IconPlusOutline18,
   IconTrashXmarkOutline18,
-} from "@pond/icons/outline";
+} from "@pond/icons/outline/18";
 import type { SavedFilterView } from "@pond/schema/db";
 import { Input, Menu, Tooltip } from "@pond/ui";
 import { type KeyboardEvent, useMemo, useRef, useState } from "react";
@@ -18,15 +18,6 @@ import {
 } from "./helpers";
 import styles from "./styles.module.css";
 
-/**
- * Saved-filters popover. Mirrors Linear's pattern: the trigger is a
- * single icon button, the popover holds a search field, the saved
- * list, and a "Save this filter" footer that captures the active
- * chip-bar params under a friendly name.
- *
- * Storage lives in the section-keyed `prefs.views` blob (SQLite
- * settings table, round-tripped through `usePrefs("views")`).
- */
 function Root() {
   const [open, setOpen] = useState(false);
   const [params] = useSearchParams();
@@ -152,7 +143,7 @@ function SavedList({
   return (
     <div className={styles.body}>
       <div className={styles["search-wrap"]}>
-        <Input.Root
+        <Input
           type="search"
           placeholder="Search…"
           value={query}
@@ -196,7 +187,7 @@ function SavedList({
               Save this filter
             </button>
           ) : (
-            <Input.Root
+            <Input
               autoFocus
               type="text"
               placeholder="Filter name"

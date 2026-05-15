@@ -2,20 +2,11 @@ import { sql } from "drizzle-orm";
 import {
   index,
   integer,
+  real,
   sqliteTable,
   text,
   unique,
 } from "drizzle-orm/sqlite-core";
-
-/**
- * Pond uses SQLite as a **rebuildable index** over a filesystem-backed
- * library (see plan § "Where stuff is saved on disk"). The per-item
- * `metadata.json` on disk is the source of truth; rows in `saves` can be
- * rebuilt by walking the `items/` tree. Nothing in this file is
- * authoritative on its own.
- *
- * Pond is a single-user local app — no workspace/user scoping here, ever.
- */
 
 export const SOURCES = [
   "twitter",
@@ -25,7 +16,6 @@ export const SOURCES = [
   "cosmos",
   "tiktok",
   "youtube",
-  "reddit",
   "article",
 ] as const;
 export type Source = (typeof SOURCES)[number];
@@ -33,21 +23,13 @@ export type Source = (typeof SOURCES)[number];
 export const MEDIA_TYPES = ["image", "video", "link", "article"] as const;
 export type MediaType = (typeof MEDIA_TYPES)[number];
 
-/** AI-extracted dominant colour from the cover image. */
 export interface DominantColor {
   hex: string;
   weight: number;
 }
 
-/**
- * One media file associated with a save. The first entry (index 0) is the
- * visible cover; subsequent entries are carousel/video-track siblings.
- * Mirrors the on-disk `metadata.json files[]` array 1:1.
- */
 export interface SaveFile {
-  /** `cover` | `media` | `video` | `other` */
   kind: string;
-  /** Filename inside `items/<id>.info/` (e.g. `cover.jpg`, `media-1.jpg`). */
   path: string;
   sha256: string;
   size: number;
@@ -56,10 +38,6 @@ export interface SaveFile {
   height?: number | null;
 }
 
-/**
- * Per-field AI provenance, separate from the user-applied real columns.
- * See `apps/desktop/src/main/core/executor.ts` for the write path.
- */
 export interface AiSuggestion<T> {
   value: T;
   appliedAt: string | null;
@@ -75,11 +53,6 @@ export interface AiSuggestionsForSave {
   summary?: AiSuggestion<string>;
 }
 
-/**
- * Mymind-style classification of what the save *is*. Drives reader mode,
- * card chrome, and filter chips. Free-form `other` covers anything the
- * classifier isn't sure about.
- */
 export const SAVE_CLASSIFICATIONS = [
   "article",
   "product",
@@ -92,7 +65,15 @@ export const SAVE_CLASSIFICATIONS = [
 ] as const;
 export type SaveClassification = (typeof SAVE_CLASSIFICATIONS)[number];
 
-/** Where a highlight starts/ends in the cleaned article text. */
+export const NSFW_LABELS = [
+  "drawing",
+  "hentai",
+  "neutral",
+  "porn",
+  "sexy",
+] as const;
+export type NsfwLabel = (typeof NSFW_LABELS)[number];
+
 export interface TextHighlight {
   id: string;
   start: number;
@@ -117,26 +98,11 @@ export const saves = sqliteTable(
     title: text("title"),
     description: text("description"),
     author: text("author"),
-    /**
-     * Page language (BCP-47), promoted from `raw.<source>.lang` /
-     * `<html lang>` / OG. Phase-4 universal field. Optional; older
-     * rows pre-migration carry `null`.
-     */
     lang: text("lang"),
-    /**
-     * Human display name of the source site (`og:site_name` on
-     * articles, `"Twitter / X"` on tweets, etc.). Promoted from
-     * `raw.<source>.siteName`. Phase-4 universal field.
-     */
     siteName: text("site_name"),
-    /** Author-side post timestamp (ISO-8601 string in metadata.json,
-     * Date here). Distinct from `savedAt` (user save time) and
-     * `createdAt` (row insert time). */
     publishedAt: integer("published_at", { mode: "timestamp_ms" }),
     notes: text("notes"),
     mediaUrl: text("media_url"),
-    /** `pond://<id>/<file>` URI resolving to the local copy in the library. */
-    blobUrl: text("blob_url"),
     mediaType: text("media_type").$type<MediaType>(),
     rawJson: text("raw_json", { mode: "json" }),
     tags: text("tags", { mode: "json" })
@@ -151,28 +117,11 @@ export const saves = sqliteTable(
     aiSuggestions: text("ai_suggestions", { mode: "json" })
       .$type<AiSuggestionsForSave | null>()
       .default(null),
-    /**
-     * AI-assigned content type — drives reader mode and card chrome.
-     * `null` until the classifier has run for this save.
-     */
     classification: text("classification").$type<SaveClassification | null>(),
-    /** Short AI-generated summary used in cards and the inbox preview. */
     aiSummary: text("ai_summary"),
-    /**
-     * Cleaned article HTML extracted at ingest time via Readability.
-     * Stored alongside the index so reader mode works offline forever.
-     * `null` for non-article saves.
-     */
     articleHtml: text("article_html"),
-    /** Plain-text version of the article body, for FTS + AI summarisation. */
     articleText: text("article_text"),
-    /** Article reading-time estimate in minutes. */
     articleReadingMinutes: integer("article_reading_minutes"),
-    /**
-     * User annotations: text highlights, video timestamps. Stored as
-     * a single JSON blob so the on-disk `metadata.json` stays
-     * self-contained. See `SaveAnnotations`.
-     */
     annotations: text("annotations", { mode: "json" })
       .$type<SaveAnnotations | null>()
       .default(null),
@@ -180,20 +129,9 @@ export const saves = sqliteTable(
     dominantColors: text("dominant_colors", { mode: "json" })
       .$type<DominantColor[] | null>()
       .default(null),
-    /**
-     * Base64-encoded `data:image/jpeg;...` of a tiny (16-px) blurred
-     * preview of the cover. Painted as the placeholder in card thumbs
-     * so a still-loading image already shows a blurred snapshot of its
-     * own content (Next.js `placeholder="blur"` / Eagle behaviour).
-     * Generated by the always-local colors enrichment job.
-     */
     blurDataUrl: text("blur_data_url"),
-    /**
-     * Ordered list of media files associated with this save. Entry 0 is the
-     * cover. Rebuilt from each item's `metadata.json files[]` during scan.
-     * Empty for pre-multi-media rows -- renderers should fall back to
-     * `blobUrl` / `mediaUrl` in that case.
-     */
+    nsfwScore: real("nsfw_score"),
+    nsfwLabel: text("nsfw_label").$type<NsfwLabel | null>(),
     files: text("files", { mode: "json" })
       .$type<SaveFile[]>()
       .notNull()
@@ -228,11 +166,6 @@ export const saves = sqliteTable(
   }),
 );
 
-/**
- * Tags as a first-class entity. The `saves.tags` JSON array is the
- * authoritative list for a single save; this table keeps a de-duplicated
- * set with colour / group metadata (Eagle-style).
- */
 export const tags = sqliteTable(
   "tags",
   {
@@ -250,10 +183,6 @@ export const tags = sqliteTable(
   }),
 );
 
-/**
- * Append-only mutation log. Linear's `SyncAction`. The autoincrement id
- * doubles as `lastSyncId` — monotonic per pond install.
- */
 export const SYNC_ACTIONS = ["I", "U", "D", "A"] as const;
 export type SyncActionKind = (typeof SYNC_ACTIONS)[number];
 
@@ -286,14 +215,6 @@ export const syncActions = sqliteTable(
   }),
 );
 
-/**
- * Cache-before-commit table: every `Transaction` is written here BEFORE
- * disk/index writes run, then deleted on success. On startup, anything
- * left here is replayed — gives us crash-safety without journaling disk
- * writes separately.
- *
- * Adapted from Linear's client-side transaction queue.
- */
 export const transactionsLog = sqliteTable(
   "__transactions",
   {
@@ -310,11 +231,6 @@ export const transactionsLog = sqliteTable(
   }),
 );
 
-/**
- * Index-vs-disk reconciliation. On startup we walk `items/*.info/
- * metadata.json` and re-index anything whose mtime is newer than the row
- * here. Lets `scanLibrary()` be O(changed files) instead of O(all files).
- */
 export const libraryScan = sqliteTable("library_scan", {
   itemId: text("item_id").primaryKey(),
   mtimeMs: integer("mtime_ms").notNull(),
@@ -336,50 +252,27 @@ export interface AiAutonomy {
   additionalGuidance: string;
 }
 
-/**
- * `suggest` is the README-philosophy default — every AI write lands in
- * `aiSuggestions` first and the user accepts it from the inbox. Users
- * can flip to `auto` for silent enrichment after they trust the model.
- */
 export const DEFAULT_AI_AUTONOMY: AiAutonomy = {
   tagging: "suggest",
   additionalGuidance: "",
 };
 
-/**
- * Provider tier for the enrichment worker. The job code never touches
- * this directly — it goes through `enrich/provider.ts` which returns
- * an OpenAI-compatible HTTP client based on this config.
- */
 export const AI_PROVIDER_KINDS = ["off", "local", "gateway", "direct"] as const;
 export type AiProviderKind = (typeof AI_PROVIDER_KINDS)[number];
 
 export interface AiProviderConfig {
   kind: AiProviderKind;
-  /** Default `http://127.0.0.1:11434/v1` for Ollama / LM Studio. */
   baseUrl: string;
-  /**
-   * Model identifiers per task. Lets the user pick a smaller text-only
-   * model for summary while keeping a vision model for caption + OCR.
-   */
   models: {
     vision: string;
     summary: string;
     embedding: string;
   };
-  /**
-   * Embedding output dimension. Has to match the model — local
-   * `nomic-embed-text` is 768, OpenAI `text-embedding-3-small` is 1536.
-   * Switching dims triggers a re-embed flow that recreates `saves_vec`.
-   */
   embeddingDim: number;
-  /** USD per day budget cap; cloud tiers only. `null` = unlimited. */
   dailyBudgetUsd: number | null;
-  /** When false, never send images to a cloud provider. Local always sends. */
   sendImages: boolean;
 }
 
-/** Sensible default — Local Ollama with the most common small models. */
 export const DEFAULT_AI_PROVIDER: AiProviderConfig = {
   kind: "off",
   baseUrl: "http://127.0.0.1:11434/v1",
@@ -393,10 +286,6 @@ export const DEFAULT_AI_PROVIDER: AiProviderConfig = {
   sendImages: true,
 };
 
-/**
- * Background enrichment queue. One row per pending / failed job. Each
- * job is keyed by `(saveId, kind)` so retries idempotently overwrite.
- */
 export const ENRICH_JOB_KINDS = [
   "colors",
   "article",
@@ -443,22 +332,6 @@ export const enrichJobs = sqliteTable(
 export type EnrichJob = typeof enrichJobs.$inferSelect;
 export type NewEnrichJob = typeof enrichJobs.$inferInsert;
 
-/**
- * User-tunable knobs for the bundled yt-dlp pipeline.
- *
- * - `enabled` toggles the background auto-download queue. Off = the
- *   extension's poster JPG is the only media that ever lands on disk
- *   (drastically reduces bandwidth + disk usage). The user can still
- *   force a single-card download via the Refresh button — that path
- *   bypasses this flag because it's an explicit user action.
- * - `maxHeight` caps the resolution we ask yt-dlp to fetch. `null`
- *   means "no cap"; otherwise we use the standard YouTube ladder
- *   (480 / 720 / 1080 / 1440 / 2160). Lower = smaller files, faster
- *   downloads, less GPU on playback.
- * - `maxFileSizeMb` is yt-dlp's `--max-filesize` guardrail. Prevents
- *   a runaway 4-hour 1080p stream from filling the disk before we
- *   notice. `null` removes the cap.
- */
 export interface VideoDownloadSettings {
   enabled: boolean;
   maxHeight: number | null;
@@ -471,60 +344,46 @@ export const DEFAULT_VIDEO_DOWNLOAD: VideoDownloadSettings = {
   maxFileSizeMb: 500,
 };
 
-/**
- * Cadence options for the per-source background sync. Floor is
- * 15 minutes — anything tighter risks rate-limiting / soft-bans on
- * the upstream sources, and provides no real value for a personal
- * archive.
- */
-export const SYNC_CADENCES = ["off", "15min", "hourly", "6h", "daily"] as const;
-export type SyncCadence = (typeof SYNC_CADENCES)[number];
+export const SYNC_FREQUENCIES = [
+  "hourly",
+  "every6h",
+  "daily",
+  "weekly",
+] as const;
+export type SyncFrequency = (typeof SYNC_FREQUENCIES)[number];
 
-/**
- * Per-source sync settings. Initially populated for Twitter only; other
- * sources stay at `cadence: "off"` until their bookmarks/saves
- * harvesters land. Persisted under `prefs.sync[<source>]`.
- *
- * - `enabled` is the master switch for the source. Defaults to `false`
- *   so adding sync to the codebase doesn't immediately start hitting
- *   live sites for users who never opt in.
- * - `cadence` is the cron schedule. The cron itself is registered in
- *   `main/index.ts → registerSyncCron` and only fires when both
- *   `enabled === true` and `cadence !== "off"`.
- * - `lastSyncedAt` is the ISO-string tail of the last successful run.
- *   The orchestrator updates it after each successful pass.
- * - `lastError` is set when the most recent run hit a known terminal
- *   condition (auth wall, fatal navigation error). Cleared on next
- *   success.
- *
- * Sync has exactly one mode: walk the source's full list and import
- * anything not already in the library. There is no "incremental vs
- * backfill" — every cron tick is the same operation, capped only by
- * a per-run safety ceiling so a single pass can't sit there forever.
- */
-export interface SourceSyncPrefs {
+export interface GlobalSyncPrefs {
   enabled: boolean;
-  cadence: SyncCadence;
+  frequency: SyncFrequency;
+  anchorTime: string;
+  weekdays: number[];
+  quietHours: { start: string; end: string } | null;
+  onlyOnAcPower: boolean;
+  onlyOnWifi: boolean;
+  lastFireAt: string | null;
+}
+
+export const DEFAULT_GLOBAL_SYNC_PREFS: GlobalSyncPrefs = {
+  enabled: false,
+  frequency: "daily",
+  anchorTime: "09:00",
+  weekdays: [0, 1, 2, 3, 4, 5, 6],
+  quietHours: null,
+  onlyOnAcPower: false,
+  onlyOnWifi: false,
+  lastFireAt: null,
+};
+
+export interface SourceSyncPrefs {
   lastSyncedAt: string | null;
   lastError: string | null;
 }
 
 export const DEFAULT_SOURCE_SYNC_PREFS: SourceSyncPrefs = {
-  enabled: false,
-  cadence: "off",
   lastSyncedAt: null,
   lastError: null,
 };
 
-/**
- * Section-keyed user preferences blob. Stored as one JSON column on the
- * `settings` singleton. We intentionally keep this separate from the
- * already-typed columns above (`aiAutonomy`, `aiProvider`, `videoDownload`)
- * so adding a new pref bucket never costs a migration.
- *
- * See [the settings overhaul plan](settings-page-overhaul) for which
- * page each sub-key powers.
- */
 export interface Prefs {
   preferences: {
     theme: "system" | "light" | "dark";
@@ -543,12 +402,10 @@ export interface Prefs {
     sound: boolean;
   };
   trash: {
-    /** `null` = never auto-empty. */
     autoEmptyDays: number | null;
     confirmBeforeEmpty: boolean;
   };
   library: {
-    /** Friendly display name shown in the title bar / exports. */
     displayName: string;
   };
   quickCapture: {
@@ -558,7 +415,6 @@ export interface Prefs {
   saveBehavior: {
     autoTag: boolean;
     dedupeByUrl: boolean;
-    /** Tags applied to every new save before any AI runs. */
     defaultTags: string[];
   };
   search: {
@@ -569,12 +425,10 @@ export interface Prefs {
   captions: {
     autoAltText: boolean;
     videoTranscripts: boolean;
-    /** BCP-47 hint passed to vision/transcription jobs. */
     language: string;
   };
   backups: {
     schedule: "never" | "daily" | "weekly" | "monthly";
-    /** How many snapshot zips to keep before pruning the oldest. */
     retainCount: number;
   };
   api: {
@@ -589,43 +443,16 @@ export interface Prefs {
   developer: {
     verboseLogging: boolean;
   };
-  /**
-   * AI personality knobs — folded into the AI page rather than being a
-   * sibling settings bucket so all model behaviour lives together.
-   */
   aiPersonality: {
     tone: "neutral" | "playful" | "terse" | "academic";
     tagStyle: "kebab" | "snake" | "natural";
     systemPrompt: string;
   };
-  /**
-   * Per-source background sync settings. Each entry is a `SourceSyncPrefs`
-   * record; absent entries default to off. The runtime checks
-   * `prefs.sync[source]?.enabled === true` before scheduling anything,
-   * so sources we haven't built harvesters for stay dormant by default.
-   */
-  sync: Partial<Record<Source, SourceSyncPrefs>>;
-  /**
-   * Storage limit watcher. The main-process watcher periodically
-   * reads on-disk library size against `maxLibraryGb` and the
-   * `warnAtPercent` threshold; when crossed, the configured `action`
-   * fires (warn-only, pause source syncs, or pause auto video
-   * downloads). Disabled by default — guards only kick in when the
-   * user opts in from Settings → Storage.
-   *
-   * - `guardsEnabled` is the master switch. When false the watcher
-   *   skips its work entirely.
-   * - `maxLibraryGb` is the hard cap in gibibytes. `null` means "no
-   *   cap"; the warn threshold then fires off the configured percentage
-   *   of the current library size which is meaningless, so the renderer
-   *   should hide the warn slider when the cap is null.
-   * - `warnAtPercent` is the warn threshold (50–100). Crossing it but
-   *   staying under the cap surfaces a warning state without applying
-   *   the action.
-   * - `action` is the runtime response when the cap is crossed.
-   * - `watchIntervalMinutes` controls the polling cadence
-   *   (clamped 1..60).
-   */
+  sync: {
+    global: GlobalSyncPrefs;
+    sources: Partial<Record<Source, SourceSyncPrefs>>;
+    handles: Partial<Record<Source, string>>;
+  };
   storage: {
     guardsEnabled: boolean;
     maxLibraryGb: number | null;
@@ -633,13 +460,15 @@ export interface Prefs {
     action: "warn" | "pauseSync" | "pauseVideo";
     watchIntervalMinutes: number;
   };
-  /**
-   * User-saved filter combinations. Each entry captures a snapshot of
-   * the filter / operator URL params under a friendly name. Picking
-   * one from the saved-filters popover replaces the active chip bar
-   * on the current saves view; non-filter URL keys (search query,
-   * sort, layout) are preserved.
-   */
+  safety: {
+    blur: "on" | "off";
+    threshold: number;
+    categories: {
+      porn: boolean;
+      hentai: boolean;
+      sexy: boolean;
+    };
+  };
   views: {
     saved: SavedFilterView[];
   };
@@ -648,9 +477,7 @@ export interface Prefs {
 export interface SavedFilterView {
   id: string;
   name: string;
-  /** Filter & operator URL params only — see `extractFilterParams`. */
   params: Record<string, string>;
-  /** Epoch milliseconds. */
   createdAt: number;
   updatedAt: number;
 }
@@ -680,10 +507,6 @@ export const DEFAULT_PREFS: Prefs = {
     displayName: "My Pond",
   },
   quickCapture: {
-    // Pond is a menu-bar app first -- the tray is the primary surface,
-    // so default it on. Users who explicitly hide it via Settings → Quick
-    // capture keep that override because the persisted prefs blob wins
-    // over DEFAULT_PREFS in mergePrefs().
     menuBarIcon: true,
     launchAtLogin: false,
   },
@@ -723,13 +546,26 @@ export const DEFAULT_PREFS: Prefs = {
     tagStyle: "kebab",
     systemPrompt: "",
   },
-  sync: {},
+  sync: {
+    global: DEFAULT_GLOBAL_SYNC_PREFS,
+    sources: {},
+    handles: {},
+  },
   storage: {
     guardsEnabled: false,
     maxLibraryGb: 50,
     warnAtPercent: 80,
     action: "warn",
     watchIntervalMinutes: 5,
+  },
+  safety: {
+    blur: "on",
+    threshold: 0.6,
+    categories: {
+      porn: true,
+      hentai: true,
+      sexy: false,
+    },
   },
   views: {
     saved: [],
@@ -741,10 +577,6 @@ export const settings = sqliteTable("settings", {
   aiAutonomy: text("ai_autonomy", { mode: "json" })
     .$type<AiAutonomy>()
     .notNull(),
-  /**
-   * Provider tier + model picks + budget knobs. Single source of truth
-   * for the enrichment worker. See `AiProviderConfig`.
-   */
   aiProvider: text("ai_provider", { mode: "json" })
     .$type<AiProviderConfig>()
     .notNull()
@@ -753,9 +585,6 @@ export const settings = sqliteTable("settings", {
     .$type<VideoDownloadSettings>()
     .notNull()
     .default(sql`'${sql.raw(JSON.stringify(DEFAULT_VIDEO_DOWNLOAD))}'`),
-  /**
-   * Section-keyed user preferences. See `Prefs` interface.
-   */
   prefs: text("prefs", { mode: "json" })
     .$type<Prefs>()
     .notNull()

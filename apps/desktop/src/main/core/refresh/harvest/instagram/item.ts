@@ -1,11 +1,5 @@
 /// <reference lib="dom" />
 
-/**
- * Instagram single-post collector. API-first: fetches
- * `/api/v1/media/{pk}/info/` and normalizes via the shared normalizer.
- * Falls back to DOM scraping when the API is unavailable.
- */
-
 import type { ScrapedHarvest } from "../types";
 import { inPageInstagramNormalize } from "./normalize";
 

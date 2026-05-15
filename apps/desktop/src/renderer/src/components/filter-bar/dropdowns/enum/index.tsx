@@ -1,19 +1,10 @@
-import { IconCheckOutline18 } from "@pond/icons/outline";
+import { IconCheckOutline18 } from "@pond/icons/outline/18";
 import { FIELD_META } from "@pond/schema/filters/meta";
 import { Input, Menu } from "@pond/ui";
 import { useMemo, useState } from "react";
 import type { DropdownProps } from "@/components/filter-bar/dropdowns/types";
 import styles from "./styles.module.css";
 
-/**
- * Generic preset-list multi-select. Used for any field whose
- * `FieldMeta.type === "enum"` (`source`, `type`, `shape`).
- *
- * The picked values land on the predicate as a string array; we
- * promote the comparator to `in` (or `nin` if it was already a
- * not-shaped one) when the user picks multiple, and back to `eq`
- * when they pick a single. Keeps the URL form readable.
- */
 export function EnumDropdown({ predicate, onChange }: DropdownProps) {
   const [q, setQ] = useState("");
   const meta = FIELD_META[predicate.field];
@@ -62,7 +53,7 @@ export function EnumDropdown({ predicate, onChange }: DropdownProps) {
   return (
     <div className={styles.body}>
       <div className={styles.search}>
-        <Input.Root
+        <Input
           type="search"
           value={q}
           placeholder={`Filter ${meta.label.toLowerCase()}…`}

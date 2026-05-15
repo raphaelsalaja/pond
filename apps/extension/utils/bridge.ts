@@ -6,10 +6,6 @@ import {
   type PondSettings,
 } from "./types";
 
-/**
- * Bridges window.postMessage events from MAIN-world inject scripts into
- * the extension messaging system. Called by each ISOLATED-world content script.
- */
 export function bridge(source: Source) {
   chrome.storage.local.get("settings").then((stored) => {
     const settings: PondSettings = {

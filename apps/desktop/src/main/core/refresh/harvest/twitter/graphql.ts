@@ -1,38 +1,6 @@
-/**
- * Pure parser for Twitter Bookmarks GraphQL responses captured by the
- * preload XHR hook ([`apps/desktop/src/preload/scrape.cjs.ts`](apps/desktop/src/preload/scrape.cjs.ts)).
- *
- * The wire shape mirrors what Twitter ships from
- * `/i/api/graphql/<queryId>/Bookmarks`:
- *
- * ```
- * data
- *  └─ bookmark_timeline_v2
- *      └─ timeline
- *          └─ instructions[]              ← we want the TimelineAddEntries one
- *              └─ entries[]               ← each is either a tweet or a cursor
- *                  └─ content
- *                      ├─ entryType       ← we want "TimelineTimelineItem"
- *                      └─ itemContent
- *                          └─ tweet_results
- *                              └─ result  ← Tweet | TweetWithVisibilityResults | Tombstone
- * ```
- *
- * We follow the exact same path the prinsss exporter walks; see
- * [`twitter-web-exporter/src/utils/api.ts`](https://github.com/prinsss/twitter-web-exporter/blob/main/src/utils/api.ts)
- * `extractDataFromResponse` and `extractTweetUnion` for the canonical
- * implementation. This file is a slimmer port that only emits the
- * fields the harvester needs, plus the verbatim `Tweet` blob for
- * future-proofing (it goes into `saves.raw.twitter`).
- */
-
 import log from "electron-log/main.js";
 import { z } from "zod";
 
-// Validates the path down to `instructions[]` only — entry shapes
-// below that are union-typed and handled by the walker. Surfaces a
-// structured error the first time Twitter ships a breaking shape
-// change instead of silently returning 0 tweets.
 const bookmarksEnvelope = z.object({
   data: z.object({
     bookmark_timeline_v2: z.object({
@@ -74,18 +42,10 @@ export interface RichTweet {
   author: { handle: string; name: string };
   media: RichTweetMedia[];
   metrics: RichTweetMetrics;
-  /** Quote-tweet payload, when the bookmark quotes another tweet. */
   quoted?: RichTweet;
-  /** Verbatim Tweet object — stored on `saves.raw.twitter` for later. */
   raw: unknown;
 }
 
-/**
- * Parse every captured Bookmarks response, returning a deduplicated
- * map keyed by tweet id. Last-write-wins on duplicates — the most
- * recent capture wins, which matters when Twitter ships engagement
- * counter updates as the page sits open.
- */
 export function parseBookmarksResponses(
   captures: BookmarksCapture[],
 ): Map<string, RichTweet> {
@@ -98,10 +58,6 @@ export function parseBookmarksResponses(
       log.warn("[pond bookmarks] capture body not JSON", cap.url, err);
       continue;
     }
-    // Guardrail: log once per process when the envelope drifts, then
-    // fall through to the manual walker so we still get whatever
-    // tweets do match. Twitter ships small schema tweaks fairly often
-    // and we'd rather degrade than fail outright.
     const env = bookmarksEnvelope.safeParse(json);
     if (!env.success && !envelopeFailureLogged) {
       envelopeFailureLogged = true;
@@ -168,11 +124,6 @@ function extractEntryTweet(entry: EntryLike): RichTweet | null {
   return resolveTweet(result);
 }
 
-/**
- * Unwrap the `tweet_results.result` union. Tweets with visibility
- * limitations are wrapped in a `TweetWithVisibilityResults` object;
- * tombstones / unavailable tweets are silently skipped.
- */
 function resolveTweet(result: unknown): RichTweet | null {
   const node = result as
     | { __typename?: string; tweet?: unknown; legacy?: unknown }
@@ -257,11 +208,6 @@ function shapeRichTweet(raw: unknown): RichTweet | null {
   };
 }
 
-/**
- * Twitter ships truncated text in `legacy.full_text` and the full
- * untruncated body in `note_tweet.note_tweet_results.result.text`
- * for long-form tweets. Prefer the latter when present.
- */
 function pickFullText(tweet: TweetLike): string {
   const note = tweet.note_tweet?.note_tweet_results?.result?.text;
   if (note && note.trim().length > 0) return note;
@@ -283,9 +229,6 @@ function pickAuthorName(tweet: TweetLike): string | null {
 }
 
 function pickMedia(tweet: TweetLike): RichTweetMedia[] {
-  // `extended_entities` is the canonical media list; `entities` is a
-  // legacy fallback Twitter sometimes ships when the tweet has only
-  // one media item.
   const list =
     tweet.legacy?.extended_entities?.media ??
     tweet.legacy?.entities?.media ??
@@ -331,11 +274,6 @@ function pickBestVariant(
   return best?.url ?? null;
 }
 
-/**
- * Upgrade `pbs.twimg.com` URLs to original quality. Mirrors the
- * `?name=orig` trick the DOM walker in `twitter/list.ts` uses for
- * its cover images.
- */
 function upgradeTwimg(url: string): string {
   try {
     const u = new URL(url);

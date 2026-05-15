@@ -1,9 +1,5 @@
 /// <reference lib="dom" />
 
-/**
- * Shared Twitter/X DOM helpers. Serializable via `.toString()` for
- * injection into both the list collector and item collector.
- */
 export function inPageTwitterNormalize() {
   function pickLargestSrcset(srcset: string): string | undefined {
     const parts = srcset

@@ -4,11 +4,6 @@ import type { Context } from "hono";
 import { getDb } from "../db";
 import { libraryRoot } from "../paths";
 
-/**
- * `GET /api/v2/library/info`  -- describe the active library. Used by
- * the extension popup (the "connected to Library X with 743 saves"
- * indicator) and by the built-in preferences window.
- */
 export async function libraryInfoHandler(c: Context) {
   const db = await getDb();
   const [total] = await db

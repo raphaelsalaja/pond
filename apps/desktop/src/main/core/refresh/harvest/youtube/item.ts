@@ -1,11 +1,5 @@
 /// <reference lib="dom" />
 
-/**
- * YouTube single-video collector. Scrapes the `/watch?v=` page for
- * rich metadata that the generic OG-tag harvester misses: channel
- * info, view/like counts, description, duration, avatar.
- */
-
 import type { ScrapedHarvest } from "../types";
 import { inPageYoutubeNormalize } from "./normalize";
 

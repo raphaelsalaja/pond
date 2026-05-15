@@ -1,10 +1,5 @@
 /// <reference lib="dom" />
 
-/**
- * YouTube list collector. Scrolls Watch Later / Liked Videos playlists
- * and collects video IDs using the shared scroll scaffold.
- */
-
 import type { MediaType } from "@pond/schema/db";
 import { inPageScrollCollect } from "../lib/scroll";
 import type { ListHarvestArgs, ListHarvestResult } from "../list-types";
@@ -92,7 +87,6 @@ async function inPageYoutubeList(
   return scroll({
     collectFn,
     knownIds: args.knownIds,
-    maxItems: args.maxItems,
     hydrateSelector: 'a[href*="/watch?v="]',
   });
 }

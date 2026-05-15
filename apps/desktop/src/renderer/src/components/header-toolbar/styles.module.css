@@ -96,13 +96,13 @@
   &::-webkit-slider-runnable-track {
     height: 3px;
     background: var(--ds-gray-a4);
-    border-radius: 999px;
+    border-radius: var(--ds-radius-full);
   }
 
   &::-moz-range-track {
     height: 3px;
     background: var(--ds-gray-a4);
-    border-radius: 999px;
+    border-radius: var(--ds-radius-full);
   }
 
   &::-webkit-slider-thumb {
@@ -112,7 +112,7 @@
     appearance: none;
     background: var(--ds-gray-12);
     border: 0;
-    border-radius: 50%;
+    border-radius: var(--ds-radius-full);
     transition: transform 80ms ease;
   }
 
@@ -121,7 +121,7 @@
     height: 12px;
     background: var(--ds-gray-12);
     border: 0;
-    border-radius: 50%;
+    border-radius: var(--ds-radius-full);
     transition: transform 80ms ease;
   }
 

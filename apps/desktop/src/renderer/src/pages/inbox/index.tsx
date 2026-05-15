@@ -26,29 +26,13 @@ const FIELD_LABEL: Record<Field, string> = {
   ocr: "OCR text",
 };
 
-/**
- * Inbox view. Lists every save with at least one un-applied AI
- * suggestion and lets the user accept or reject each suggestion in
- * place. Backed by the `saves.inbox` IPC for the initial roster and
- * the renderer-side pool for live updates as suggestions land.
- *
- * Acceptance routes through `enrich.applySuggestion` (writes the field
- * + flips `appliedAt`); rejection routes through a generic update
- * transaction that clears the suggestion entry — both paths leave a
- * sync action behind for the activity timeline.
- */
 export function InboxPage() {
   const allSaves = useSaves();
   const toast = useToast();
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  // The pool is the source of truth — `saves.inbox` is just the seed
-  // for first paint. We reactively re-derive the list from the in-memory
-  // pool so the inbox shrinks the moment a suggestion is applied.
   const inbox = allSaves.filter(hasPendingSuggestions);
 
-  // Cold-start hint: kick the IPC once on mount so the worker fills the
-  // pool with anything we haven't reconciled yet.
   useEffect(() => {
     void window.pond.query("saves.inbox", { limit: 500 });
   }, []);

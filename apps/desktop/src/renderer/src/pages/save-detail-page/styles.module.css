@@ -12,7 +12,7 @@
   padding-inline: 12px;
   margin-block-start: -12px;
   margin-inline: -12px;
-  background: var(--ds-background-color);
+  background: var(--ds-background-primary);
   border-bottom: 1px solid var(--ds-gray-a4);
   -webkit-app-region: drag;
 }

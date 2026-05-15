@@ -1,10 +1,5 @@
 /// <reference lib="dom" />
 
-/**
- * Cosmos single-element collector. Scrapes the `/e/<id>` page for
- * rich metadata: full content, author info, media.
- */
-
 import type { ScrapedHarvest } from "../types";
 import { inPageCosmosNormalize } from "./normalize";
 

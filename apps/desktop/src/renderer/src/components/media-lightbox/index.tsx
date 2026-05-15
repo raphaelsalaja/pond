@@ -1,8 +1,10 @@
-import { IconXmarkOutline18 } from "@pond/icons/outline";
+import { IconXmarkOutline18 } from "@pond/icons/outline/18";
 import { Button, Dialog, Tooltip } from "@pond/ui";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { NsfwOverlay } from "@/components/nsfw-overlay";
 import { extractYouTubeId } from "@/components/save-preview/helpers";
+import { useNsfwGuard } from "@/lib/use-nsfw-guard";
 import { requestVideoHeal } from "@/pool/heal";
 import { useSave } from "@/pool/hooks";
 import { buildMediaUnits } from "@/pool/media";
@@ -44,8 +46,6 @@ function Root() {
 }
 
 function Body({ save, onClose }: { save: Save; onClose: () => void }) {
-  // `buildMediaUnits` already pairs videos with their poster JPGs and
-  // dedupes — see `pool/media.ts`.
   const allSlides = useMemo<MediaSlide[]>(() => {
     const units = buildMediaUnits(save);
     const out: MediaSlide[] = units.map((u) => ({
@@ -53,18 +53,12 @@ function Body({ save, onClose }: { save: Save; onClose: () => void }) {
       isVideo: u.isVideo,
       posterUrl: u.posterUrl,
     }));
-    if (out.length === 0 && save.blobUrl) {
-      out.push({ src: save.blobUrl, isVideo: save.mediaType === "video" });
-    }
     if (out.length === 0 && save.mediaUrl) {
       out.push({ src: save.mediaUrl, isVideo: save.mediaType === "video" });
     }
     return out;
   }, [save]);
 
-  // Drop slides whose `pond://` URL 404s in this session so users
-  // never see the giant "broken image" icon over the dim canvas. The
-  // grid thumbs do the same trick — see `card-thumb/index.tsx`.
   const [broken, setBroken] = useState<ReadonlySet<string>>(
     () => new Set<string>(),
   );
@@ -83,9 +77,6 @@ function Body({ save, onClose }: { save: Save; onClose: () => void }) {
 
   const [index, setIndex] = useState(0);
 
-  // Arrow-key carousel nav while the lightbox is mounted. ESC is owned
-  // by Base UI's Dialog (which calls our `onOpenChange(false)` →
-  // `close()`), so don't handle it here.
   useEffect(() => {
     if (slides.length < 2) return;
     const onKey = (e: KeyboardEvent) => {
@@ -102,6 +93,7 @@ function Body({ save, onClose }: { save: Save; onClose: () => void }) {
   }, [slides.length]);
 
   const youtubeId = useMemo(() => extractYouTubeId(save.url), [save.url]);
+  const nsfw = useNsfwGuard(save);
 
   if (slides.length === 0) {
     if (youtubeId) {
@@ -145,8 +137,8 @@ function Body({ save, onClose }: { save: Save; onClose: () => void }) {
   }
 
   const slide = slides[Math.min(index, slides.length - 1)];
-  if (!slide) return null;
   const hasMany = slides.length > 1;
+  if (!slide) return null;
 
   return (
     <Stage>
@@ -173,7 +165,7 @@ function Body({ save, onClose }: { save: Save; onClose: () => void }) {
       </Toolbar>
 
       <Canvas>
-        <MediaShell>
+        <MediaShell data-nsfw-blur={nsfw.shouldBlur ? "true" : undefined}>
           {slide.isVideo ? (
             <video
               key={slide.src}
@@ -206,6 +198,7 @@ function Body({ save, onClose }: { save: Save; onClose: () => void }) {
               onError={() => markBroken(slide.src)}
             />
           )}
+          {nsfw.shouldBlur ? <NsfwOverlay onReveal={nsfw.reveal} /> : null}
         </MediaShell>
 
         {hasMany ? (

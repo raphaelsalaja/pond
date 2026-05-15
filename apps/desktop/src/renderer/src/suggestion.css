@@ -1,0 +1,43 @@
+@import "@pond/ui/reset.css";
+@import "@pond/ui/theme.css";
+
+@font-face {
+  font-family: inter-variable;
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("./assets/fonts/inter/variable.woff2") format("woff2");
+}
+
+:root {
+  font-family:
+    inter-variable, ui-sans-serif, system-ui, -apple-system, "SF Pro Text",
+    "Segoe UI", sans-serif;
+  font-feature-settings:
+    "liga" 1,
+    "calt" 1,
+    "cv11" 1,
+    "ss01" 1;
+  color-scheme: dark;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  overflow: hidden;
+  -webkit-app-region: no-drag;
+}
+
+#suggestion-root {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  width: 100%;
+  height: 100%;
+  padding: 16px;
+  pointer-events: none;
+}

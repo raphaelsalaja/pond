@@ -1,22 +1,11 @@
 /// <reference lib="dom" />
 
-/**
- * Reusable scroll scaffold for DOM-based list collectors. Serializable
- * via `.toString()` — each list collector injects it and provides only
- * the source-specific `collectFn` and configuration.
- *
- * Supports two pagination strategies:
- *   - `"scroll"` (default) — scrolls the document and watches for
- *     `scrollHeight` stabilization
- *   - `"click-next"` — clicks a "next" link (e.g. old.reddit pagination)
- */
 export function inPageScrollCollect() {
   return async function scrollCollect<
     T extends { sourceId: string; url: string },
   >(opts: {
     collectFn: () => T[];
     knownIds: string[];
-    maxItems: number;
     hydrateSelector: string;
     hydrateTimeoutMs?: number;
     scrollTimeoutMs?: number;
@@ -24,19 +13,12 @@ export function inPageScrollCollect() {
     scrollDelayMs?: number;
     scrollBehavior?: "scroll" | "click-next";
     nextSelector?: string;
-    /**
-     * Custom locator for the "next page" element when no plain CSS
-     * selector can identify it (e.g. Are.na's "Load more" button —
-     * matched by text, not class). Wins over `nextSelector` when
-     * both are present. Called once per click-next iteration.
-     */
     nextFinder?: () => HTMLElement | null;
     nextDelayMs?: number;
   }) {
     const {
       collectFn,
       knownIds,
-      maxItems,
       hydrateSelector,
       hydrateTimeoutMs = 12_000,
       scrollTimeoutMs = 60_000,
@@ -51,12 +33,10 @@ export function inPageScrollCollect() {
     const _known = new Set(knownIds.map(String));
     const collected = new Map<string, T>();
 
-    function ingest(rows: T[]): { full: boolean } {
+    function ingest(rows: T[]): void {
       for (const r of rows) {
         if (!collected.has(r.sourceId)) collected.set(r.sourceId, r);
-        if (collected.size >= maxItems) return { full: true };
       }
-      return { full: false };
     }
 
     function result(reachedEnd: boolean) {
@@ -74,7 +54,6 @@ export function inPageScrollCollect() {
     }
 
     ingest(collectFn());
-    if (collected.size >= maxItems) return result(false);
 
     if (scrollBehavior === "click-next") {
       const navDeadline = Date.now() + scrollTimeoutMs;
@@ -89,8 +68,7 @@ export function inPageScrollCollect() {
         if (!next) break;
         next.click();
         await new Promise((r) => setTimeout(r, nextDelayMs));
-        const { full } = ingest(collectFn());
-        if (full) return result(false);
+        ingest(collectFn());
       }
       return result(true);
     }
@@ -104,8 +82,7 @@ export function inPageScrollCollect() {
         behavior: "instant" as ScrollBehavior,
       });
       await new Promise((r) => setTimeout(r, scrollDelayMs));
-      const { full } = ingest(collectFn());
-      if (full) return result(false);
+      ingest(collectFn());
       const sh = document.documentElement.scrollHeight;
       if (sh === lastHeight) {
         stable += 1;

@@ -1,4 +1,6 @@
-import { createServer, type Server } from "node:http";
+import type { Server } from "node:http";
+import { serve } from "@hono/node-server";
+import { getConnInfo } from "@hono/node-server/conninfo";
 import { app as electronApp } from "electron";
 import log from "electron-log/main.js";
 import { Hono } from "hono";
@@ -10,33 +12,8 @@ import { itemGetHandler } from "./item-get";
 import { itemInfoHandler } from "./item-info";
 import { libraryInfoHandler } from "./library-info";
 import { pairingHandler } from "./pairing";
+import { sessionImportHandler } from "./session-import";
 
-/**
- * Local HTTP server on `127.0.0.1:41610`. The Hono app is the single place
- * that translates browser-extension requests into `Transaction`s.
- *
- * Auth model:
- *  - `GET /api/v2/app/info`  public (used by the extension to probe).
- *  - everything else         requires `Authorization: Bearer <ingest-token>`.
- *
- * CORS: extension-friendly -- we echo the request origin back if it's
- * either `chrome-extension://*` or `http://localhost:*`. Eagle's API is
- * fully open on localhost; we're slightly stricter because extensions
- * plus third-party web pages on localhost are a real exposure vector.
- */
-
-/**
- * Decide whether to echo `Access-Control-Allow-*` for the given
- * Origin. We deliberately do NOT echo for missing/`null` origins
- * (curl, non-browser clients) — those still get served, but without
- * CORS headers, which means a browser making a cross-site request
- * with `omit` credentials still can't read the body.
- *
- * Loopback origins (localhost / 127.0.0.1) are always trusted.
- * Browser-extension origins are trusted (the pond extension lives
- * there). Everything else has to be on the user-configured
- * `prefs.api.allowedOrigins` allowlist.
- */
 function isAllowedOrigin(
   origin: string | undefined,
   extraAllowed: readonly string[],
@@ -60,14 +37,6 @@ function isAllowedOrigin(
   return false;
 }
 
-/**
- * In-memory per-IP auth-failure tracker. We reset the counter on a
- * successful auth, so a legitimate client that mistypes once isn't
- * locked out. After `MAX_FAILURES` failures inside `WINDOW_MS`, the
- * IP is rejected outright for the remainder of the window. Cheap
- * defense against a slow brute-force on the bearer token if it ever
- * leaks; defense-in-depth, since the token itself is 192 bits.
- */
 const AUTH_FAILURES = new Map<string, { count: number; resetAt: number }>();
 const AUTH_WINDOW_MS = 5 * 60_000;
 const AUTH_MAX_FAILURES = 10;
@@ -126,10 +95,7 @@ function buildApp(): Hono {
   ) => {
     const ip =
       c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ||
-      // Hono's `c.req.raw` is a `Request`, but the underlying Node
-      // socket address lives on the Node request we wrap below; we
-      // pass it through via a custom header.
-      c.req.header("x-pond-remote") ||
+      getConnInfo(c).remote.address ||
       "unknown";
     const blocked = AUTH_FAILURES.get(ip);
     if (
@@ -155,6 +121,7 @@ function buildApp(): Hono {
 
   api.use("/api/v2/item/*", requireAuth);
   api.use("/api/v2/library/*", requireAuth);
+  api.use("/api/v2/session/*", requireAuth);
   api.use("/api/v2/pair", requireAuth);
 
   api.post("/api/v2/item/add", itemAddHandler);
@@ -162,6 +129,7 @@ function buildApp(): Hono {
   api.get("/api/v2/item/get", itemGetHandler);
   api.get("/api/v2/item/info", itemInfoHandler);
   api.get("/api/v2/library/info", libraryInfoHandler);
+  api.post("/api/v2/session/import", sessionImportHandler);
   api.get("/api/v2/pair", pairingHandler);
 
   api.notFound((c) => c.json({ status: "error", error: "not found" }, 404));
@@ -187,60 +155,12 @@ export async function startHttpServer(
   const hono = buildApp();
   const host = bind === "lan" ? "0.0.0.0" : "127.0.0.1";
 
-  const nodeServer = createServer(async (req, res) => {
-    const url = `http://${host}:${preferredPort}${req.url ?? "/"}`;
-    const headers = new Headers();
-    for (const [k, v] of Object.entries(req.headers)) {
-      if (Array.isArray(v)) {
-        for (const entry of v) headers.append(k, entry);
-      } else if (typeof v === "string") {
-        headers.set(k, v);
-      }
-    }
-    // Surface the Node socket's remote address as a header so the
-    // Hono handlers can rate-limit per IP. Stripped from any value
-    // the client may have set so callers can't forge it.
-    headers.delete("x-pond-remote");
-    const remote = req.socket?.remoteAddress;
-    if (remote) headers.set("x-pond-remote", remote);
-    const init: RequestInit & { duplex?: "half" } = {
-      method: req.method ?? "GET",
-      headers,
-    };
-    if (req.method && !["GET", "HEAD"].includes(req.method)) {
-      init.body = req as unknown as ReadableStream<Uint8Array>;
-      init.duplex = "half";
-    }
-    try {
-      const request = new Request(url, init);
-      const response = await hono.fetch(request);
-      res.statusCode = response.status;
-      response.headers.forEach((value, key) => {
-        res.setHeader(key, value);
-      });
-      if (response.body) {
-        const reader = response.body.getReader();
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          res.write(value);
-        }
-      }
-      res.end();
-    } catch (err) {
-      log.error("[pond http] bridge error", err);
-      res.statusCode = 500;
-      res.setHeader("content-type", "application/json");
-      res.end(JSON.stringify({ status: "error", error: String(err) }));
-    }
-  });
-
-  await new Promise<void>((resolve, reject) => {
-    nodeServer.once("error", reject);
-    nodeServer.listen(preferredPort, host, () => {
-      nodeServer.off("error", reject);
-      resolve();
-    });
+  const nodeServer = await new Promise<Server>((resolve, reject) => {
+    const server = serve(
+      { fetch: hono.fetch, hostname: host, port: preferredPort },
+      () => resolve(server as unknown as Server),
+    );
+    server.once("error", reject);
   });
 
   log.info(`[pond http] listening on http://${host}:${preferredPort}/api/v2/`);

@@ -6,24 +6,43 @@ import { registerSyncActionListener } from "./executor";
 import { getPrefs } from "./prefs";
 import { sourceLabel } from "./refresh/sources";
 
-/**
- * Native OS notification side of the "Save Completed" feature. The
- * in-app toast counterpart lives in
- * `renderer/src/effects/save-complete-toast.tsx`. They split on focus:
- * if any pond window is focused at the moment the save lands, we let
- * the renderer paint a toast; if not (the common case for a Twitter
- * bookmark in the browser), we fire a system notification so the user
- * knows the save actually made it through.
- *
- * Both sides gate on the same `prefs.notifications.saveComplete`
- * toggle exposed by Settings → Notifications.
- */
+export interface ShowNotificationOptions {
+  title: string;
+  body?: string;
+  silent?: boolean;
+  /** Optional renderer route to open when the user clicks the notification. */
+  onClickRoute?: string;
+  /** Provide a focus callback to honor `onClickRoute`. */
+  focusMainWindow?: () => Promise<BrowserWindow | null> | BrowserWindow | null;
+}
+
+export function showNotification(opts: ShowNotificationOptions): boolean {
+  if (!Notification.isSupported()) return false;
+  const notification = new Notification({
+    title: opts.title,
+    body: opts.body ?? "",
+    silent: opts.silent ?? false,
+  });
+  if (opts.onClickRoute && opts.focusMainWindow) {
+    const route = opts.onClickRoute;
+    const focus = opts.focusMainWindow;
+    notification.on("click", () => {
+      void (async () => {
+        try {
+          const win = await focus();
+          if (!win || win.isDestroyed()) return;
+          win.webContents.send(IPC.nav, route);
+        } catch (err) {
+          log.warn("[pond notifications] click handler failed", err);
+        }
+      })();
+    });
+  }
+  notification.show();
+  return true;
+}
+
 export interface SaveCompleteNotifierOptions {
-  /**
-   * Focus + raise the main pond window so the click handler can route
-   * the user to the freshly-saved item. Mirrors the tray menu's
-   * `openLibrary` behaviour — see `apps/desktop/src/main/index.ts`.
-   */
   focusMainWindow: () => Promise<BrowserWindow | null> | BrowserWindow | null;
 }
 
@@ -55,7 +74,6 @@ async function handleAction(
 
   const focused = BrowserWindow.getFocusedWindow();
   if (focused && !focused.isDestroyed() && focused.isVisible()) {
-    // Renderer's toast handles this case.
     return;
   }
 

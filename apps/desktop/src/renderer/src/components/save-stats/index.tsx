@@ -48,7 +48,6 @@ function Root({ save, videoRef }: RootProps) {
     Boolean(stats.music?.title || stats.music?.author) ||
     Boolean(stats.location) ||
     Boolean(stats.board?.name || stats.board?.url) ||
-    Boolean(stats.subreddit) ||
     (stats.arenaChannels?.length ?? 0) > 0 ||
     (stats.cosmosClusters?.length ?? 0) > 0 ||
     Boolean(stats.musicVideo?.track || stats.musicVideo?.artist) ||
@@ -150,12 +149,6 @@ function Root({ save, videoRef }: RootProps) {
       {stats.location ? (
         <ExtraRow icon={<MetricIcon name="location" />}>
           <span className={styles["extra-text"]}>{stats.location}</span>
-        </ExtraRow>
-      ) : null}
-
-      {stats.subreddit ? (
-        <ExtraRow icon={<MetricIcon name="hash" />}>
-          <span className={styles["extra-text"]}>r/{stats.subreddit}</span>
         </ExtraRow>
       ) : null}
 
@@ -397,8 +390,7 @@ const ICON_TITLES: Record<IconName, string> = {
   downloads: "Downloads",
   connections: "Connections",
   repins: "Repins",
-  upvotes: "Upvotes",
-  awards: "Awards",
+  saves: "Saves",
   dislikes: "Dislikes",
   duration: "Duration",
   music: "Music",
@@ -470,15 +462,8 @@ function iconPaths(name: IconName): React.ReactNode {
           <path d="M8 9.5V14" />
         </>
       );
-    case "upvotes":
-      return <path d="M8 3l5 5h-3v5h-4V8H3l5-5z" />;
-    case "awards":
-      return (
-        <>
-          <circle cx="8" cy="6" r="3.5" />
-          <path d="M5.5 9l-1 4.5L8 12l3.5 1.5L10.5 9" />
-        </>
-      );
+    case "saves":
+      return <path d="M4 2.5h8V14l-4-2.5L4 14V2.5z" />;
     case "dislikes":
       return (
         <path d="M8 2.5s5 3.2 5 7a3 3 0 0 1-5 2.2A3 3 0 0 1 3 9.5c0-3.8 5-7 5-7z" />

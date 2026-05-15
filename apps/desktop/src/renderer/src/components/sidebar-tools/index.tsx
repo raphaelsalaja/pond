@@ -2,7 +2,7 @@ import {
   IconChevronLeftOutline18,
   IconChevronRightOutline18,
   IconClockRotateAnticlockwiseOutline18,
-} from "@pond/icons/outline";
+} from "@pond/icons/outline/18";
 import { Menu, Tooltip } from "@pond/ui";
 import { useNavigate } from "react-router-dom";
 import { useRecents } from "@/components/recents";
@@ -10,16 +10,6 @@ import { Sidebar } from "@/components/sidebar";
 import { pool } from "@/pool/pool";
 import styles from "./styles.module.css";
 
-/**
- * Single-component toolbar that owns every navigation control we
- * surface in the sidebar header: browser back / forward, plus the
- * Linear-style recents popover. Mounted inside `<Sidebar.Toolbar>` —
- * one import per consumer (library sidebar, settings rail).
- *
- * Back / forward share their target with `effects/history-hotkey.tsx`
- * (`Cmd+[` / `Cmd+]`); both call into the same `navigate(±1)` so the
- * keyboard and click paths can't diverge.
- */
 export function SidebarTools() {
   const navigate = useNavigate();
   const recents = useRecents();

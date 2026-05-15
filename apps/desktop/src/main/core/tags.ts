@@ -10,18 +10,6 @@ import { ulid } from "ulid";
 import { getDb } from "../db";
 import { executeBatch, executeTransaction } from "./executor";
 
-/**
- * Tag CRUD operations. Every public function emits one or more
- * `Transaction`s through the executor so:
- *   - the on-disk `metadata.json` for every affected save updates,
- *   - the FTS index regenerates the `tag_names` column,
- *   - undo/redo work,
- *   - sync_actions log every change with `actor: "user"`.
- *
- * Tag names are stored case-sensitive but compared case-insensitively
- * to dedupe.
- */
-
 export interface CreateTagInput {
   name: string;
   color?: string | null;
@@ -72,11 +60,6 @@ export async function updateTag(
   return { ok: true };
 }
 
-/**
- * Rename a tag everywhere it appears. Walks `saves.tags`, updates each
- * row in batch, and renames the `tags` table entry. Idempotent — calling
- * with the same `from`/`to` after the first run is a no-op.
- */
 export async function renameTag(
   from: string,
   to: string,
@@ -97,7 +80,6 @@ export async function renameTag(
     );
     if (idx === -1) continue;
     if (current.some((t) => t.toLowerCase() === toName.toLowerCase())) {
-      // Tag with the new name already present; just drop the old one.
       current.splice(idx, 1);
     } else {
       current[idx] = toName;
@@ -112,7 +94,6 @@ export async function renameTag(
     });
   }
 
-  // Move the canonical `tags` row.
   const tagRows = await db
     .select()
     .from(tagsTable)
@@ -134,14 +115,12 @@ export async function renameTag(
   return { ok: true, affected: txs.length };
 }
 
-/** Merge two tags: every save with `from` gets `to` instead. */
 export async function mergeTags(
   from: string,
   to: string,
 ): Promise<{ ok: boolean; affected: number }> {
   const result = await renameTag(from, to);
   if (!result.ok) return result;
-  // After rename, the old tag row may still be lingering. Hard delete.
   const db = await getDb();
   const rows = await db
     .select()
@@ -163,7 +142,6 @@ export async function mergeTags(
   return result;
 }
 
-/** Delete a tag from every save and drop the canonical row. */
 export async function deleteTag(name: string): Promise<{
   ok: boolean;
   affected: number;
@@ -203,7 +181,6 @@ export async function deleteTag(name: string): Promise<{
   return { ok: true, affected: txs.length };
 }
 
-/** Set tags on a save (replace). */
 export async function setSaveTags(
   saveId: string,
   next: string[],
@@ -223,8 +200,6 @@ export async function setSaveTags(
     before: { tags: row.tags },
     meta: { actor: "user", actorReason: "save-tags-set" },
   });
-  // Best-effort: ensure each new tag has a canonical row so the manager
-  // page can pick it up.
   for (const name of next) {
     const existing = await db
       .select()

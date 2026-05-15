@@ -215,10 +215,15 @@ Locals live at the top of the root class, in declaration order. Token reads (`va
 All theme tokens live in `packages/ui/src/theme.css` (re-exported as `@pond/ui/theme.css`). There is one system: `--ds-*`. Don't reach for ad-hoc colours, hex literals, or page-local hand-rolled scales.
 
 - **Color scales.** Backed by Radix Themes — `--ds-gray-1`…`--ds-gray-12` plus alpha (`--ds-gray-a1`…`--ds-gray-a12`), and `--ds-accent-1`…`--ds-accent-12` (sky-based) plus alpha. Same scale, same semantics in light and dark.
-- **Surface.** `--ds-background-color` for the app body. Use `--ds-gray-1` for default surface, `--ds-gray-2` for subtle panels.
-- **Radius.** `--ds-radius-sm` (4px), `--ds-radius-md` (6px), `--ds-radius-lg` (8px), `--ds-radius-xl` (12px).
-- **Shadows.** `--ds-shadow-card`, `--ds-shadow-search`, `--ds-shadow-badge`.
-- **Brand.** `--ds-brand-twitter`, `--ds-brand-cosmos`, `--ds-brand-reddit`, `--ds-brand-arena`, `--ds-brand-facebook`, `--ds-brand-pinterest`, `--ds-brand-dribbble` for source-badge surfaces.
+- **Semantic.** `--ds-tomato-{1..12,a3,a6}` for danger / required / error. `--ds-grass-{3,6,9,11,a6}` for success.
+- **Surface.** `--ds-background-primary` for the app body. Use `--ds-gray-1` for default surface, `--ds-gray-2` for subtle panels.
+- **Radius.** `--ds-radius-xs` (8px), `--ds-radius-sm` (10px), `--ds-radius-md` (12px), `--ds-radius-lg` (14px), `--ds-radius-xl` (16px), `--ds-radius-full` (9999px).
+- **Shadows (structural ring).** `--ds-shadow-1`, `--ds-shadow-2`, `--ds-shadow-2-focused`, `--ds-shadow-3`. Resting elements.
+- **Shadows (floating popup).** `--ds-shadow-popover`, `--ds-shadow-dialog`, `--ds-shadow-toast`, `--ds-shadow-tooltip`.
+- **Shadows (atomic).** `--ds-shadow-thumb`, `--ds-shadow-badge`, `--ds-shadow-focus-halo`.
+- **Motion.** `--ds-duration-{fast 80, snap 120, medium 180, emphasized 250}`, `--ds-easing-{standard ease, snap cubic-bezier(0.22, 1, 0.36, 1)}`. Press feedback is `transform: scale(0.98)` everywhere.
+- **Mono font.** `var(--ds-font-mono)` for `<code>`, `<kbd>`, and any identifier-leaning string.
+- **Brand.** `--ds-brand-{twitter, cosmos, arena, facebook, pinterest, dribbble}` for source-badge backgrounds. Stay inside the badge; never escape into surrounding chrome.
 
 Radix scale cheat-sheet for picking the right step:
 
@@ -323,11 +328,9 @@ export const Card = {
 
   display: flex;
   flex-direction: column;
-  border-radius: 12px;
+  border-radius: var(--ds-radius-md);
   background-color: var(--ds-gray-2);
-  box-shadow:
-    0 0 0 1px var(--ds-gray-a4),
-    0 2px 4px 0 rgba(0, 0, 0, 0.06);
+  box-shadow: var(--ds-shadow-2);
 
   &[data-variant="muted"] {
     background-color: transparent;

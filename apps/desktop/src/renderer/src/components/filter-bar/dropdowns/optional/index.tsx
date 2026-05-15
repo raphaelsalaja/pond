@@ -14,15 +14,6 @@ const CHOICES: readonly OptionalChoice[] = [
   { id: "without", label: "Without note", value: false },
 ];
 
-/**
- * Boolean toggle for `optional` fields (currently just `note`).
- * The picked value flips the `exists` comparator's argument: true
- * → "is set", false → "is not set".
- *
- * Includes a filter input for parity with the other dropdowns —
- * silly with two options today, but keeps the affordance
- * consistent so later optional fields don't feel oddly bare.
- */
 export function OptionalDropdown({ predicate, onChange }: DropdownProps) {
   const [q, setQ] = useState("");
   const value = predicate.value !== false;
@@ -36,7 +27,7 @@ export function OptionalDropdown({ predicate, onChange }: DropdownProps) {
   return (
     <div className={styles.body}>
       <div className={styles.search}>
-        <Input.Root
+        <Input
           type="search"
           value={q}
           placeholder="Filter…"

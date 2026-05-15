@@ -1,7 +1,8 @@
+import { IconChevronExpandYOutline12 } from "@pond/icons/outline/12";
 import {
   IconArrowDownOutline18,
   IconArrowUpOutline18,
-} from "@pond/icons/outline";
+} from "@pond/icons/outline/18";
 import { Popover, Select, Switch, Tooltip } from "@pond/ui";
 import { useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -12,17 +13,6 @@ import {
 } from "@/lib/display-prefs";
 import { readViewPref, writeViewPref } from "@/lib/view-prefs";
 import styles from "./styles.module.css";
-
-/**
- * Library view options popover. The single source of truth for which
- * layout, sort key, and display chrome the saves grid is showing.
- *
- * Layout / Sort write to URL search params (`?view`, `?sort`, `?dir`)
- * so a deep link to /source/twitter?view=grid&sort=title still
- * preserves the user's pick. Display switches write to localStorage
- * via `useDisplayPrefs()` because they're per-machine ergonomic
- * choices, not part of a shareable URL.
- */
 
 type LayoutValue = "waterfall" | "grid" | "justified" | "list";
 type SortKey = "savedAt" | "title" | "fileSize";
@@ -57,28 +47,18 @@ const LAYOUT_VALUES = new Set<LayoutValue>([
 
 const SORT_VALUES = new Set<SortKey>(["savedAt", "title", "fileSize"]);
 
-interface RootProps {
+interface PickerProps {
   trigger: React.ReactElement;
 }
 
-function Root({ trigger }: RootProps) {
+function useLayoutValue(): [LayoutValue, (next: LayoutValue) => void] {
   const [params, setParams] = useSearchParams();
-
-  const rawView = params.get("view") ?? readViewPref("view") ?? "waterfall";
-  const layout: LayoutValue = LAYOUT_VALUES.has(rawView as LayoutValue)
-    ? (rawView as LayoutValue)
+  const raw = params.get("view") ?? readViewPref("view") ?? "waterfall";
+  const value: LayoutValue = LAYOUT_VALUES.has(raw as LayoutValue)
+    ? (raw as LayoutValue)
     : "waterfall";
 
-  const rawSort = params.get("sort") ?? readViewPref("sort") ?? "savedAt";
-  const sortKey: SortKey = SORT_VALUES.has(rawSort as SortKey)
-    ? (rawSort as SortKey)
-    : "savedAt";
-  const rawDir = params.get("dir") ?? readViewPref("dir");
-  const sortDir: SortDir = rawDir === "asc" ? "asc" : "desc";
-
-  const prefs = useDisplayPrefs();
-
-  const setLayout = useCallback(
+  const set = useCallback(
     (next: LayoutValue) => {
       const p = new URLSearchParams(params);
       if (next === "waterfall") p.delete("view");
@@ -88,6 +68,25 @@ function Root({ trigger }: RootProps) {
     },
     [params, setParams],
   );
+
+  return [value, set];
+}
+
+function useSortState(): {
+  sortKey: SortKey;
+  sortDir: SortDir;
+  setSortKey: (next: SortKey) => void;
+  setSortDir: (next: SortDir) => void;
+} {
+  const [params, setParams] = useSearchParams();
+
+  const rawKey = params.get("sort") ?? readViewPref("sort") ?? "savedAt";
+  const sortKey: SortKey = SORT_VALUES.has(rawKey as SortKey)
+    ? (rawKey as SortKey)
+    : "savedAt";
+
+  const rawDir = params.get("dir") ?? readViewPref("dir");
+  const sortDir: SortDir = rawDir === "asc" ? "asc" : "desc";
 
   const setSortKey = useCallback(
     (next: SortKey) => {
@@ -111,6 +110,11 @@ function Root({ trigger }: RootProps) {
     [params, setParams],
   );
 
+  return { sortKey, sortDir, setSortKey, setSortDir };
+}
+
+function LayoutPickerRoot({ trigger }: PickerProps) {
+  const [layout, setLayout] = useLayoutValue();
   return (
     <Popover.Root>
       <Popover.Trigger render={trigger} />
@@ -134,19 +138,39 @@ function Root({ trigger }: RootProps) {
           >
             <Select.Trigger>
               <Select.Value />
+              <Select.Icon>
+                <IconChevronExpandYOutline12 />
+              </Select.Icon>
             </Select.Trigger>
-            <Select.Content>
-              {LAYOUT_OPTIONS.map((opt) => (
-                <Select.Item key={opt.value} value={opt.value}>
-                  {opt.label}
-                </Select.Item>
-              ))}
-            </Select.Content>
+            <Select.Portal>
+              <Select.Positioner sideOffset={6}>
+                <Select.Popup>
+                  {LAYOUT_OPTIONS.map((opt) => (
+                    <Select.Item key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </Select.Item>
+                  ))}
+                </Select.Popup>
+              </Select.Positioner>
+            </Select.Portal>
           </Select.Root>
         </Row>
+      </Popover.Content>
+    </Popover.Root>
+  );
+}
 
-        <Popover.Separator />
-
+function SortPickerRoot({ trigger }: PickerProps) {
+  const { sortKey, sortDir, setSortKey, setSortDir } = useSortState();
+  return (
+    <Popover.Root>
+      <Popover.Trigger render={trigger} />
+      <Popover.Content
+        side="bottom"
+        align="end"
+        sideOffset={6}
+        className={styles.popup}
+      >
         <Row label="Sort by">
           <span className={styles["sort-controls"]}>
             <Select.Root
@@ -159,14 +183,21 @@ function Root({ trigger }: RootProps) {
             >
               <Select.Trigger>
                 <Select.Value />
+                <Select.Icon>
+                  <IconChevronExpandYOutline12 />
+                </Select.Icon>
               </Select.Trigger>
-              <Select.Content>
-                {SORT_OPTIONS.map((opt) => (
-                  <Select.Item key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </Select.Item>
-                ))}
-              </Select.Content>
+              <Select.Portal>
+                <Select.Positioner sideOffset={6}>
+                  <Select.Popup>
+                    {SORT_OPTIONS.map((opt) => (
+                      <Select.Item key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </Select.Item>
+                    ))}
+                  </Select.Popup>
+                </Select.Positioner>
+              </Select.Portal>
             </Select.Root>
             <fieldset className={styles["dir-group"]}>
               <legend className={styles["sr-only"]}>Sort direction</legend>
@@ -195,9 +226,22 @@ function Root({ trigger }: RootProps) {
             </fieldset>
           </span>
         </Row>
+      </Popover.Content>
+    </Popover.Root>
+  );
+}
 
-        <Popover.Separator />
-
+function DisplayPickerRoot({ trigger }: PickerProps) {
+  const prefs = useDisplayPrefs();
+  return (
+    <Popover.Root>
+      <Popover.Trigger render={trigger} />
+      <Popover.Content
+        side="bottom"
+        align="end"
+        sideOffset={6}
+        className={styles.popup}
+      >
         {DISPLAY_TOGGLES.map(({ key, label }) => (
           <Row key={key} label={label}>
             <Switch.Root
@@ -225,6 +269,6 @@ function Row({ label, children }: RowProps) {
   );
 }
 
-export const LayoutPopover = {
-  Root,
-};
+export const LayoutPicker = { Root: LayoutPickerRoot };
+export const SortPicker = { Root: SortPickerRoot };
+export const DisplayPicker = { Root: DisplayPickerRoot };

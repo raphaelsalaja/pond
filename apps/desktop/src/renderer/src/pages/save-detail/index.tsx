@@ -1,4 +1,4 @@
-import { IconDotsOutline18 } from "@pond/icons/outline";
+import { IconDotsOutline18 } from "@pond/icons/outline/18";
 import { Tooltip } from "@pond/ui";
 import { useParams } from "react-router-dom";
 import { useTrackVisit } from "@/components/recents";
@@ -6,19 +6,6 @@ import { SavePreview } from "@/components/save-preview";
 import { useSave } from "@/pool/hooks";
 import styles from "./styles.module.css";
 
-/**
- * Persistent right-hand inspector. Always mounted alongside the
- * library list views — when no save is currently selected (the URL
- * has no trailing `/save/:id` segment) it shows an empty placeholder
- * instead of unmounting, so the pane width never collapses out from
- * under the user.
- *
- * Reachable URL surfaces:
- *
- *   - `/save/:id` (deep link, command palette, inbox)
- *   - `/source/:source/save/:id` (split view from a source filter)
- *   - `/trash/save/:id` (split view inside Trash)
- */
 export function SaveDetail() {
   const { id } = useParams<{ id: string }>();
   const save = useSave(id);

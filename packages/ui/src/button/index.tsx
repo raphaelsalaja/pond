@@ -1,25 +1,32 @@
 import { Button as Base } from "@base-ui/react/button";
+import { cn } from "../lib/cn";
 import styles from "./styles.module.css";
 
-interface RootProps extends React.ComponentProps<typeof Base> {
-  variant?: "primary" | "secondary" | "tertiary" | "ghost" | "danger";
-  size?: "sm" | "md" | "lg";
+interface ButtonProps extends Base.Props {
+  variant?:
+    | "primary"
+    | "secondary"
+    | "tertiary"
+    | "ghost"
+    | "danger"
+    | "accent";
+  size?: "xs" | "sm" | "md" | "lg";
   icon?: boolean;
 }
 
 export function Button({
   className,
-  variant,
-  size,
+  variant = "primary",
+  size = "md",
   icon,
   ...props
-}: RootProps) {
+}: ButtonProps) {
   return (
     <Base
       data-variant={variant}
       data-size={size}
       data-icon={icon ? "" : undefined}
-      className={[styles.root, className ?? ""].filter(Boolean).join(" ")}
+      className={cn(styles.root, className)}
       {...props}
     />
   );

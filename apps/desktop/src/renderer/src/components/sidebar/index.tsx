@@ -1,4 +1,4 @@
-import { IconChevronLeftFill18 } from "@pond/icons/fill";
+import { IconChevronLeftFill18 } from "@pond/icons/fill/18";
 import { NavLink, type NavLinkProps } from "react-router-dom";
 import styles from "./styles.module.css";
 

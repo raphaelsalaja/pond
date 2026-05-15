@@ -10,22 +10,6 @@ import { getDb } from "./db";
 import { getIngestToken, rotateIngestToken } from "./keychain";
 import { appDataRoot, libraryRoot } from "./paths";
 
-/**
- * Tray module. Pond is a menu-bar app first -- the tray is the primary
- * surface. Clicking the icon pops a menu with:
- *
- *   - Library name + counts ("My Pond · 432 saves")
- *   - Open library window
- *   - Copy pairing token (one-click setup for the extension)
- *   - Launch at Login toggle
- *   - Quit
- *
- * Call `ensureTray({ onOpenLibrary })` from `app.whenReady()`. The
- * returned handle lets `index.ts` call `refresh()` when saves count
- * changes (on every sync action). We keep refresh cheap -- a count(*)
- * against a small SQLite DB is instant.
- */
-
 export interface TrayHandle {
   tray: Tray;
   refresh: () => Promise<void>;
@@ -45,13 +29,6 @@ export function currentTray(): TrayHandle | null {
 
 let lastOpts: TrayOptions | null = null;
 
-/**
- * Toggle the tray icon. Settings → Quick capture flips the
- * `prefs.quickCapture.menuBarIcon` switch which routes here. We
- * destroy the existing icon when hidden so it disappears from the
- * menu bar instantly, and recreate from cached options on
- * re-enable.
- */
 export async function setTrayVisible(visible: boolean): Promise<void> {
   if (visible) {
     if (handle) return;
@@ -198,12 +175,6 @@ async function buildMenu(opts: TrayOptions): Promise<Menu> {
   ]);
 }
 
-/**
- * Pairing string is `pond://pair?port=<port>&token=<token>`. The extension
- * popup already offers a "paste pairing link" button on empty state, so
- * the whole first-run flow is: install extension → install app → click
- * tray → "Copy Pairing Token" → paste into popup.
- */
 function pairingString(token: string): string {
   const url = new URL("pond://pair");
   url.searchParams.set("port", String(DEFAULT_INGEST_PORT));
@@ -212,12 +183,6 @@ function pairingString(token: string): string {
 }
 
 function loadTrayIcon(): NativeImage {
-  // Production builds ship the PNGs under `process.resourcesPath` via
-  // electron-builder's `extraResources`. Dev builds read directly from
-  // the source tree (`apps/desktop/resources/`). We look for the macOS
-  // template naming first -- `trayTemplate.png` is conventionally
-  // rendered by AppKit as monochrome against the menu bar, which is
-  // what we want.
   const names = ["trayTemplate.png", "tray.png"];
   const roots = [
     process.resourcesPath ?? "",
@@ -232,8 +197,6 @@ function loadTrayIcon(): NativeImage {
         if (!existsSync(p)) continue;
         const img = nativeImage.createFromPath(p);
         if (img.isEmpty()) continue;
-        // Electron honours a sibling `@2x` file automatically when the
-        // image is loaded via a path containing the base name.
         log.info("[pond tray] loaded icon", { path: p });
         return img;
       } catch {
@@ -245,13 +208,6 @@ function loadTrayIcon(): NativeImage {
   return makePlaceholderIcon();
 }
 
-/**
- * Runtime fallback for when no bundled asset is available. Draws a
- * 22×22 rounded-square "pond" mark with a central cut-out ripple, the
- * same glyph that `scripts/generate-tray-icon.mjs` produces at build
- * time. We prefer the on-disk asset for startup speed, but this keeps
- * us from shipping an invisible tray if the file is missing.
- */
 function makePlaceholderIcon(): NativeImage {
   try {
     const buf = drawGlyphPng(22);
@@ -260,9 +216,6 @@ function makePlaceholderIcon(): NativeImage {
   } catch (err) {
     log.warn("[pond tray] placeholder draw failed", err);
   }
-  // Absolute last resort: write the PNG into userData and try once more
-  // via createFromPath. An empty NativeImage renders as nothing on
-  // macOS, which is exactly the "no menu-bar icon" symptom users hit.
   try {
     const fallback = join(appDataRoot(), "tray.png");
     mkdirSync(appDataRoot(), { recursive: true });

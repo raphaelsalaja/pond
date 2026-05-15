@@ -1,39 +1,29 @@
 import { AlertDialog as Base } from "@base-ui/react/alert-dialog";
-import type { ReactNode } from "react";
 import dialogStyles from "../dialog/styles.module.css";
+import { renderFrozenPopup } from "../freeze/popup";
+import { cn } from "../lib/cn";
 import styles from "./styles.module.css";
 
-interface RootProps extends React.ComponentProps<typeof Base.Root> {}
-
-function Root({ ...props }: RootProps) {
+function Root(props: Base.Root.Props) {
   return <Base.Root {...props} />;
 }
 
-interface TriggerProps extends React.ComponentProps<typeof Base.Trigger> {}
-
-function Trigger({ ...props }: TriggerProps) {
+function Trigger(props: Base.Trigger.Props) {
   return <Base.Trigger {...props} />;
 }
 
-interface CloseProps extends React.ComponentProps<typeof Base.Close> {}
-
-function Close({ ...props }: CloseProps) {
+function Close(props: Base.Close.Props) {
   return <Base.Close {...props} />;
 }
 
-interface ContentProps extends React.ComponentProps<typeof Base.Popup> {
-  children?: ReactNode;
-}
-
-function Content({ className, children, ...rest }: ContentProps) {
+function Content({ className, children, render, ...rest }: Base.Popup.Props) {
   return (
     <Base.Portal>
       <Base.Backdrop className={dialogStyles.backdrop} />
       <Base.Popup
-        className={[dialogStyles.popup, className ?? ""]
-          .filter(Boolean)
-          .join(" ")}
         {...rest}
+        className={cn(dialogStyles.popup, className)}
+        render={render ?? renderFrozenPopup}
       >
         {children}
       </Base.Popup>
@@ -41,42 +31,23 @@ function Content({ className, children, ...rest }: ContentProps) {
   );
 }
 
-interface TitleProps extends React.ComponentProps<typeof Base.Title> {}
-
-function Title({ className, ...props }: TitleProps) {
+function Title({ className, ...props }: Base.Title.Props) {
   return (
-    <Base.Title
-      className={[dialogStyles.title, className ?? ""]
-        .filter(Boolean)
-        .join(" ")}
-      {...props}
-    />
+    <Base.Title className={cn(dialogStyles.title, className)} {...props} />
   );
 }
 
-interface DescriptionProps
-  extends React.ComponentProps<typeof Base.Description> {}
-
-function Description({ className, ...props }: DescriptionProps) {
+function Description({ className, ...props }: Base.Description.Props) {
   return (
     <Base.Description
-      className={[dialogStyles.description, className ?? ""]
-        .filter(Boolean)
-        .join(" ")}
+      className={cn(dialogStyles.description, className)}
       {...props}
     />
   );
 }
 
-interface ActionsProps extends React.ComponentPropsWithoutRef<"div"> {}
-
-function Actions({ className, ...props }: ActionsProps) {
-  return (
-    <div
-      className={[styles.actions, className ?? ""].filter(Boolean).join(" ")}
-      {...props}
-    />
-  );
+function Actions({ className, ...props }: React.ComponentProps<"div">) {
+  return <div className={cn(styles.actions, className)} {...props} />;
 }
 
 export const AlertDialog = {

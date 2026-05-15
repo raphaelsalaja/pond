@@ -5,42 +5,12 @@ import { join } from "node:path";
 import log from "electron-log/main.js";
 import { binariesAvailable } from "../core/refresh/binaries";
 
-/**
- * Extract the first frame of a video file as a JPEG, using the bundled
- * ffmpeg. The output lives in a fresh tmpdir; the caller MUST invoke
- * `cleanup()` (typically in a `finally{}`) to remove it.
- *
- * Why frame 0 (not the platform-supplied cover): the grid card binds
- * `<video poster={…}>` to a sibling image. Without this, the poster is
- * whatever still the harvester captured (YouTube `maxresdefault.jpg`,
- * Twitter's chosen thumbnail, …) — which almost never matches the
- * actual first frame of the saved MP4. Hovering kicks `play()`, the
- * decoder paints frame 0, and the still appears to "swap." Extracting
- * a real frame-0 JPEG and using it as the poster makes the pre-hover
- * state truthful.
- *
- * Returns `null` (and never throws) on:
- *  - ffmpeg binary missing (e.g. corrupted resources, dev without
- *    `ffmpeg-static` installed) — same fall-through the yt-dlp wrapper
- *    uses, so the save lands with `cover` only and no regression.
- *  - Hard timeout (10s) — first-frame extracts on real files are
- *    sub-second, so this only fires when ffmpeg is stuck on a corrupt
- *    container.
- *  - Non-zero exit (unsupported codec the bundled ffmpeg can't demux,
- *    truncated bytes, …). We log at warn so it surfaces in Developer
- *    › Open Log Directory without spamming.
- */
-
 const HARD_TIMEOUT_MS = 10_000;
 
 export interface ExtractedFrame {
-  /** Absolute path to the JPEG. Lives inside our tmpdir. */
   path: string;
-  /** Always `image/jpeg`. */
   mimeType: string;
-  /** File size in bytes. */
   size: number;
-  /** Caller MUST invoke this in a `finally{}` to remove the tmpdir. */
   cleanup: () => Promise<void>;
 }
 
@@ -71,12 +41,6 @@ export async function extractFirstFrame(
     outputDir = await mkdtemp(join(tmpdir(), "pond-frame-"));
     const outPath = join(outputDir, "frame.jpg");
 
-    // -ss 0 before -i is a "fast seek" to the keyframe at/before t=0,
-    // which for almost every container is the actual first frame.
-    // -frames:v 1 stops after one decoded video frame so we don't
-    // waste cycles. -q:v 3 lands around 80% JPEG quality (1=best,
-    // 31=worst); good enough for a 300px-wide card thumb and keeps
-    // the file at ~10–40 KB.
     const argv = [
       "-hide_banner",
       "-loglevel",

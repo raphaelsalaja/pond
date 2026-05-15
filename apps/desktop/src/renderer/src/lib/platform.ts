@@ -1,13 +1,5 @@
 import { useSyncExternalStore } from "react";
 
-/**
- * Cached platform identity, fetched once per session via
- * `window.pond.appInfo()`. Stable for the lifetime of the renderer
- * process — the OS doesn't change between the time the window opens
- * and the time it closes — so we resolve eagerly on first read and
- * never fetch again.
- */
-
 type Platform = "mac" | "other";
 
 let platform: Platform | null = null;

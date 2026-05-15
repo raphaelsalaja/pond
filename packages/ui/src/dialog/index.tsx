@@ -1,39 +1,34 @@
 import { Dialog as Base } from "@base-ui/react/dialog";
-import type { ReactNode } from "react";
+import { renderFrozenPopup } from "../freeze/popup";
+import { cn } from "../lib/cn";
 import styles from "./styles.module.css";
-
-interface RootProps extends React.ComponentProps<typeof Base.Root> {}
-
-function Root({ ...props }: RootProps) {
-  return <Base.Root {...props} />;
-}
-
-interface TriggerProps extends React.ComponentProps<typeof Base.Trigger> {}
-
-function Trigger({ ...props }: TriggerProps) {
-  return <Base.Trigger {...props} />;
-}
-
-interface CloseProps extends React.ComponentProps<typeof Base.Close> {}
-
-function Close({ ...props }: CloseProps) {
-  return <Base.Close {...props} />;
-}
 
 type DialogSize = "default" | "fullscreen";
 
-interface ContentProps extends React.ComponentProps<typeof Base.Popup> {
-  children?: ReactNode;
+interface ContentProps extends Base.Popup.Props {
   "data-size"?: DialogSize;
 }
 
-function Content({ className, children, ...rest }: ContentProps) {
+function Root(props: Base.Root.Props) {
+  return <Base.Root {...props} />;
+}
+
+function Trigger(props: Base.Trigger.Props) {
+  return <Base.Trigger {...props} />;
+}
+
+function Close(props: Base.Close.Props) {
+  return <Base.Close {...props} />;
+}
+
+function Content({ className, children, render, ...rest }: ContentProps) {
   return (
     <Base.Portal>
       <Base.Backdrop className={styles.backdrop} />
       <Base.Popup
-        className={[styles.popup, className ?? ""].filter(Boolean).join(" ")}
         {...rest}
+        className={cn(styles.popup, className)}
+        render={render ?? renderFrozenPopup}
       >
         {children}
       </Base.Popup>
@@ -41,26 +36,14 @@ function Content({ className, children, ...rest }: ContentProps) {
   );
 }
 
-interface TitleProps extends React.ComponentProps<typeof Base.Title> {}
-
-function Title({ className, ...props }: TitleProps) {
-  return (
-    <Base.Title
-      className={[styles.title, className ?? ""].filter(Boolean).join(" ")}
-      {...props}
-    />
-  );
+function Title({ className, ...props }: Base.Title.Props) {
+  return <Base.Title className={cn(styles.title, className)} {...props} />;
 }
 
-interface DescriptionProps
-  extends React.ComponentProps<typeof Base.Description> {}
-
-function Description({ className, ...props }: DescriptionProps) {
+function Description({ className, ...props }: Base.Description.Props) {
   return (
     <Base.Description
-      className={[styles.description, className ?? ""]
-        .filter(Boolean)
-        .join(" ")}
+      className={cn(styles.description, className)}
       {...props}
     />
   );

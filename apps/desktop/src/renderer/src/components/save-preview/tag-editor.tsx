@@ -112,7 +112,7 @@ export function TagEditor({ save }: { save: Save }) {
             #{tag}
           </button>
         ))}
-      <Input.Root
+      <Input
         ref={inputRef}
         data-size="sm"
         placeholder="Add tag…"

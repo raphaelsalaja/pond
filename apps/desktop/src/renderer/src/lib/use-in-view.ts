@@ -1,20 +1,5 @@
 import { type RefObject, useEffect, useState } from "react";
 
-/**
- * Reports whether `ref.current` is in (or near) the viewport, gated by
- * a single shared `IntersectionObserver` so a 1k-card grid is one
- * observer + N entries, not N observers.
- *
- * `rootMargin: "200px"` primes media just before the card scrolls into
- * view so there's no visible "pop in" lag — this is the same heuristic
- * the browser uses for native `loading="lazy"`.
- *
- * Used by `<video>` thumbnails to delay `preload="metadata"` until the
- * card is actually about to be seen, so a library with dozens of video
- * saves doesn't kick off dozens of concurrent demuxer setups on first
- * paint.
- */
-
 const targets = new WeakMap<Element, Set<(visible: boolean) => void>>();
 let sharedObserver: IntersectionObserver | null = null;
 

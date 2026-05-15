@@ -1,37 +1,50 @@
 import { NumberField as Base } from "@base-ui/react/number-field";
+import { IconMinusOutline12, IconPlusOutline12 } from "@pond/icons/outline/12";
+import { Calligraph } from "calligraph";
+import { cn } from "../lib/cn";
 import styles from "./styles.module.css";
 
-interface RootProps extends React.ComponentProps<typeof Base.Root> {}
-
-function Root({ className, children, ...props }: RootProps) {
+function Root({ className, children, ...props }: Base.Root.Props) {
   return (
-    <Base.Root
-      className={[styles.root, className ?? ""].filter(Boolean).join(" ")}
-      {...props}
-    >
+    <Base.Root className={cn(styles.root, className)} {...props}>
       <Base.Group className={styles.group}>{children}</Base.Group>
     </Base.Root>
   );
 }
 
-interface InputProps extends React.ComponentProps<typeof Base.Input> {}
-
-function Input({ className, ...props }: InputProps) {
+function Input({ className, ...props }: Base.Input.Props) {
   return (
     <Base.Input
-      className={[styles.input, className ?? ""].filter(Boolean).join(" ")}
+      className={cn(styles.input, className)}
       {...props}
+      render={(inputProps, state) => (
+        <span
+          className={styles["input-wrap"]}
+          data-focused={state.focused ? "" : undefined}
+        >
+          <input {...inputProps} />
+          <Calligraph
+            variant="number"
+            aria-hidden
+            className={styles["input-display"]}
+          >
+            {state.inputValue}
+          </Calligraph>
+        </span>
+      )}
     />
   );
 }
 
-interface IncrementProps extends React.ComponentProps<typeof Base.Increment> {}
-
-function Increment({ className, children = "+", ...props }: IncrementProps) {
+function Increment({
+  className,
+  children = <IconPlusOutline12 />,
+  ...props
+}: Base.Increment.Props) {
   return (
     <Base.Increment
       aria-label="Increment"
-      className={[styles.button, className ?? ""].filter(Boolean).join(" ")}
+      className={cn(styles.button, className)}
       {...props}
     >
       {children}
@@ -39,13 +52,15 @@ function Increment({ className, children = "+", ...props }: IncrementProps) {
   );
 }
 
-interface DecrementProps extends React.ComponentProps<typeof Base.Decrement> {}
-
-function Decrement({ className, children = "−", ...props }: DecrementProps) {
+function Decrement({
+  className,
+  children = <IconMinusOutline12 />,
+  ...props
+}: Base.Decrement.Props) {
   return (
     <Base.Decrement
       aria-label="Decrement"
-      className={[styles.button, className ?? ""].filter(Boolean).join(" ")}
+      className={cn(styles.button, className)}
       {...props}
     >
       {children}

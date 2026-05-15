@@ -11,7 +11,7 @@ import {
   IconTagSlashOutline18,
   IconTrash2ContentOutline18,
   IconTrash2Outline18,
-} from "@pond/icons/outline";
+} from "@pond/icons/outline/18";
 import { IconGithub, IconXTwitter } from "@pond/icons/social-media";
 import { AlertDialog, Button, ContextMenu, Menu, useToast } from "@pond/ui";
 import type { SVGProps } from "react";
@@ -20,6 +20,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Sidebar } from "@/components/sidebar";
 import { SidebarTools } from "@/components/sidebar-tools";
 import { usePrefs } from "@/pool/prefs";
+import { buildAvatarUrl } from "@/pool/url";
 import styles from "./styles.module.css";
 
 const REPO_URL = "https://github.com/raphaelsalaja/pond";
@@ -58,6 +59,7 @@ const routes = [
 
 function Root() {
   const username = useDisplayName();
+  const [profile] = usePrefs("profile");
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -86,7 +88,11 @@ function Root() {
 
         <Sidebar.Header>
           <div className={styles["account-trigger"]}>
-            <span aria-hidden className={styles["account-avatar"]} />
+            <span aria-hidden className={styles["account-avatar"]}>
+              {profile.avatarPath ? (
+                <img src={buildAvatarUrl(profile.avatarPath)} alt="" />
+              ) : null}
+            </span>
             <span className={styles["account-name"]}>{username}</span>
           </div>
         </Sidebar.Header>

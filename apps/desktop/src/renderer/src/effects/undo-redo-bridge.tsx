@@ -1,12 +1,5 @@
 import { useEffect } from "react";
 
-/**
- * Edit menu Undo / Redo bridge. Main already fired the native text
- * undo via `webContents.undo()` before sending us the IPC event; we
- * only run pond's transactional undo when focus is *outside* an
- * editable element, so typing into inputs still uses the browser's
- * per-field undo stack.
- */
 export function UndoRedoBridge() {
   useEffect(() => {
     const offUndo = window.pond.onEditUndoRequested(() => {

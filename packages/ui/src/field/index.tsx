@@ -1,67 +1,33 @@
 import { Field as Base } from "@base-ui/react/field";
-import { forwardRef } from "react";
+import { cn } from "../lib/cn";
+import controlStyles from "../lib/control.module.css";
 import styles from "./styles.module.css";
 
-interface RootProps extends React.ComponentProps<typeof Base.Root> {}
+function Root({ className, ...props }: Base.Root.Props) {
+  return <Base.Root className={cn(styles.root, className)} {...props} />;
+}
 
-function Root({ className, ...props }: RootProps) {
+function Label({ className, ...props }: Base.Label.Props) {
+  return <Base.Label className={cn(styles.label, className)} {...props} />;
+}
+
+function Control({ className, ...props }: Base.Control.Props) {
   return (
-    <Base.Root
-      className={[styles.root, className ?? ""].filter(Boolean).join(" ")}
-      {...props}
-    />
+    <Base.Control className={cn(controlStyles.control, className)} {...props} />
   );
 }
 
-interface LabelProps extends React.ComponentProps<typeof Base.Label> {}
-
-const Label = forwardRef<HTMLLabelElement, LabelProps>(function FieldLabel(
-  { className, ...props },
-  ref,
-) {
-  return (
-    <Base.Label
-      ref={ref}
-      className={[styles.label, className ?? ""].filter(Boolean).join(" ")}
-      {...props}
-    />
-  );
-});
-
-interface ControlProps extends React.ComponentProps<typeof Base.Control> {}
-
-function Control({ className, ...props }: ControlProps) {
-  return (
-    <Base.Control
-      className={[styles.control, className ?? ""].filter(Boolean).join(" ")}
-      {...props}
-    />
-  );
-}
-
-interface DescriptionProps
-  extends React.ComponentProps<typeof Base.Description> {}
-
-function Description({ className, ...props }: DescriptionProps) {
+function Description({ className, ...props }: Base.Description.Props) {
   return (
     <Base.Description
-      className={[styles.description, className ?? ""]
-        .filter(Boolean)
-        .join(" ")}
+      className={cn(styles.description, className)}
       {...props}
     />
   );
 }
 
-interface ErrorProps extends React.ComponentProps<typeof Base.Error> {}
-
-function Error_({ className, ...props }: ErrorProps) {
-  return (
-    <Base.Error
-      className={[styles.error, className ?? ""].filter(Boolean).join(" ")}
-      {...props}
-    />
-  );
+function Error_({ className, ...props }: Base.Error.Props) {
+  return <Base.Error className={cn(styles.error, className)} {...props} />;
 }
 
 export const Field = {

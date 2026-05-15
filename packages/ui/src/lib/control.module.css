@@ -1,0 +1,26 @@
+.control {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 32px;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ds-gray-12);
+  outline: none;
+  border-radius: var(--ds-radius-sm);
+  box-shadow: var(--ds-shadow-2);
+  transition: box-shadow var(--ds-duration-medium) var(--ds-easing-standard);
+
+  &::placeholder {
+    color: var(--ds-gray-8);
+  }
+
+  &:focus-visible {
+    box-shadow: var(--ds-shadow-2-focused);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}

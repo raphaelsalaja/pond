@@ -9,7 +9,7 @@ import {
   IconThumbsUpOutline18,
   IconUserOutline18,
   IconCalendarOutline18 as RowsCalendarIcon,
-} from "@pond/icons/outline";
+} from "@pond/icons/outline/18";
 import type { ReactNode } from "react";
 import type { Save } from "@/pool/types";
 import {
@@ -38,7 +38,6 @@ export function collectMetadataRows(save: Save): PaneRow[] {
   const tt = raw?.tiktok;
   const ig = raw?.instagram;
   const ar = raw?.arena;
-  const rd = raw?.reddit;
 
   const durationSec =
     yt?.durationSec ??
@@ -90,7 +89,6 @@ export function collectMetadataRows(save: Save): PaneRow[] {
     tt?.metrics?.comments ??
     ig?.metrics?.comments ??
     ar?.metrics?.comments ??
-    rd?.metrics?.comments ??
     null;
   if (comments !== null && comments !== undefined) {
     out.push({
@@ -107,7 +105,6 @@ export function collectMetadataRows(save: Save): PaneRow[] {
     tt?.publishedAt ??
     ig?.publishedAt ??
     ar?.publishedAt ??
-    rd?.publishedAt ??
     null;
   if (publishedAt) {
     out.push({

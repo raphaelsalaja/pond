@@ -1,56 +1,95 @@
-import { Dialog, Input } from "@pond/ui";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useSaves } from "@/pool/hooks";
-import { useSearchResults } from "@/pool/search";
+import { Dialog, Kbd, useToast } from "@pond/ui";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { matchPath, useLocation, useNavigate } from "react-router-dom";
+import { useSave } from "@/pool/hooks";
+import { usePrefs } from "@/pool/prefs";
+import { useSelectedIds } from "@/pool/selection";
 import type { Save } from "@/pool/types";
+import { Command as Cmd } from "./cmdk";
+import { ACTION_COMMANDS } from "./registry/actions";
+import { useSaveCommands, useTagCommands } from "./registry/dynamic";
+import { NAVIGATION_COMMANDS } from "./registry/navigation";
+import { SAVE_CONTEXT_COMMANDS } from "./registry/save-context";
+import { SETTINGS_COMMANDS } from "./registry/settings";
+import { SOURCE_COMMANDS } from "./registry/sources";
+import {
+  type Command,
+  type CommandScope,
+  GROUP_ORDER,
+  type PaletteCtx,
+  SCOPE_LABEL,
+  SCOPE_ORDER,
+} from "./registry/types";
 import styles from "./styles.module.css";
+import { useChords } from "./use-chords";
 
-interface ActionItem {
-  kind: "action";
-  id: string;
-  label: string;
-  hint?: string;
-  run: () => void;
+const DETAIL_PATTERNS: readonly string[] = [
+  "/detail/:id",
+  "/source/:source/detail/:id",
+  "/untagged/detail/:id",
+  "/recents/detail/:id",
+  "/random/detail/:id",
+  "/trash/detail/:id",
+  "/save/:id",
+  "/source/:source/save/:id",
+  "/untagged/save/:id",
+  "/recents/save/:id",
+  "/random/save/:id",
+  "/trash/save/:id",
+  "/read/:id",
+  "/item/:id",
+];
+
+function useFocusedSaveId(): string | null {
+  const location = useLocation();
+  for (const pattern of DETAIL_PATTERNS) {
+    const match = matchPath({ path: pattern, end: true }, location.pathname);
+    if (match?.params?.id) return match.params.id;
+  }
+  return null;
 }
-
-interface NavItem {
-  kind: "nav";
-  id: string;
-  label: string;
-  hint?: string;
-  to: string;
-}
-
-interface SaveItem {
-  kind: "save";
-  id: string;
-  label: string;
-  hint?: string;
-  to: string;
-}
-
-interface TagItem {
-  kind: "tag";
-  id: string;
-  label: string;
-  hint?: string;
-  to: string;
-}
-
-type Item = ActionItem | NavItem | SaveItem | TagItem;
 
 function Root() {
   const [open, setOpen] = useState(false);
-  const [q, setQ] = useState("");
-  const [active, setActive] = useState(0);
+  const [search, setSearch] = useState("");
+  const [scope, setScope] = useState<CommandScope>("all");
   const navigate = useNavigate();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const saves = useSaves();
-  const search = useSearchResults(q);
+  const location = useLocation();
+  const selectedIds = useSelectedIds();
+  const focusedFromUrl = useFocusedSaveId();
+  const focusedSaveId: string | null =
+    selectedIds.length === 1 ? (selectedIds[0] ?? null) : focusedFromUrl;
+  const focusedSave = useSave(focusedSaveId) ?? null;
+  const [, patchPreferences] = usePrefs("preferences");
+  const toastManager = useToast();
 
-  // Hotkey listener fires even while inputs elsewhere have focus —
-  // Cmd+K is universally "open the palette", don't bail on input target.
+  const close = useCallback(() => setOpen(false), []);
+
+  const ctx = useMemo<PaletteCtx>(
+    () => ({
+      navigate,
+      close,
+      pond: window.pond,
+      selectedIds,
+      focusedSaveId,
+      focusedSave: (focusedSave as Save | null) ?? null,
+      setTheme: (theme) => patchPreferences({ theme }),
+      toast: {
+        success: (msg) => toastManager.add({ title: msg, type: "success" }),
+        warn: (msg) => toastManager.add({ title: msg, type: "error" }),
+      },
+    }),
+    [
+      navigate,
+      close,
+      selectedIds,
+      focusedSaveId,
+      focusedSave,
+      patchPreferences,
+      toastManager,
+    ],
+  );
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const meta = e.metaKey || e.ctrlKey;
@@ -64,323 +103,192 @@ function Root() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  // Reset query on close so re-opening starts fresh.
   useEffect(() => {
     if (open) {
-      setQ("");
-      setActive(0);
-      setTimeout(() => inputRef.current?.focus(), 30);
+      setSearch("");
+      setScope("all");
     }
   }, [open]);
 
-  const close = useCallback(() => setOpen(false), []);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: pathname is the trigger, not a read.
+  useEffect(() => {
+    setOpen(false);
+  }, [location.pathname]);
 
-  const navTo = useCallback(
-    (path: string) => {
-      navigate(path);
-      close();
-    },
-    [navigate, close],
-  );
+  const tagCommands = useTagCommands(open);
+  const saveCommands = useSaveCommands(search);
 
-  const builtInNav: NavItem[] = useMemo(
+  const staticCommands = useMemo<Command[]>(
     () => [
-      { kind: "nav", id: "n-library", label: "Library", to: "/", hint: "Go" },
-      { kind: "nav", id: "n-inbox", label: "Inbox", to: "/inbox", hint: "Go" },
-      {
-        kind: "nav",
-        id: "n-activity",
-        label: "Activity",
-        to: "/activity",
-        hint: "Go",
-      },
-      { kind: "nav", id: "n-trash", label: "Trash", to: "/trash", hint: "Go" },
-      {
-        kind: "nav",
-        id: "n-settings",
-        label: "Settings",
-        to: "/settings",
-        hint: "Go",
-      },
+      ...NAVIGATION_COMMANDS,
+      ...SAVE_CONTEXT_COMMANDS,
+      ...ACTION_COMMANDS,
+      ...SETTINGS_COMMANDS,
+      ...SOURCE_COMMANDS,
     ],
     [],
   );
 
-  const builtInActions: ActionItem[] = useMemo(
-    () => [
-      {
-        kind: "action",
-        id: "a-backfill",
-        label: "Run AI backfill",
-        hint: "Action",
-        run: () => {
-          close();
-          void window.pond.query("enrich.backfill", {});
-        },
-      },
-      {
-        kind: "action",
-        id: "a-refresh-metadata",
-        label: "Refresh metadata for all saves",
-        hint: "Action",
-        run: () => {
-          close();
-          void window.pond.refreshBackfillStart({});
-        },
-      },
-      {
-        kind: "action",
-        id: "a-undo",
-        label: "Undo last action",
-        hint: "Cmd+Z",
-        run: () => {
-          close();
-          void window.pond.undo();
-        },
-      },
-      {
-        kind: "action",
-        id: "a-sync-twitter",
-        label: "Sync Twitter bookmarks",
-        hint: "Action",
-        run: () => {
-          close();
-          void window.pond.syncRunNow("twitter");
-        },
-      },
-    ],
-    [close],
+  const allCommands = useMemo<Command[]>(
+    () => [...staticCommands, ...tagCommands, ...saveCommands],
+    [staticCommands, tagCommands, saveCommands],
   );
 
-  const items = useMemo<Item[]>(() => {
-    const needle = q.trim().toLowerCase();
-    const matchesQuery = (label: string) =>
-      !needle || label.toLowerCase().includes(needle);
+  useChords(staticCommands, () => ctx);
 
-    const navMatches = builtInNav.filter((i) => matchesQuery(i.label));
-    const actionMatches = builtInActions.filter((i) => matchesQuery(i.label));
+  const visibleCommands = useMemo(() => {
+    return allCommands.filter((c) => {
+      if (c.when && !c.when(ctx)) return false;
+      if (scope === "all") return true;
+      return c.scope === scope || c.scope === "all";
+    });
+  }, [allCommands, scope, ctx]);
 
-    const saveMatches: SaveItem[] = (search.results ?? saves)
-      .filter((r) => !r.deletedAt)
-      .slice(0, 8)
-      .map((s: Save) => ({
-        kind: "save",
-        id: `s-${s.id}`,
-        label: s.title ?? s.url,
-        hint: hostname(s.url),
-        to: `/save/${s.id}`,
-      }));
-
-    const tagSet = new Set<string>();
-    for (const s of saves) {
-      for (const t of s.tags) {
-        if (matchesQuery(t)) tagSet.add(t.toLowerCase());
-      }
+  const grouped = useMemo(() => {
+    const map = new Map<Command["group"], Command[]>();
+    for (const c of visibleCommands) {
+      const list = map.get(c.group) ?? [];
+      list.push(c);
+      map.set(c.group, list);
     }
-    const tagMatches: TagItem[] = Array.from(tagSet)
-      .slice(0, 8)
-      .map((t) => ({
-        kind: "tag",
-        id: `t-${t}`,
-        label: `#${t}`,
-        hint: "Tag",
-        to: `/?tag=${encodeURIComponent(t)}`,
-      }));
+    return GROUP_ORDER.flatMap((group) => {
+      const list = map.get(group);
+      if (!list || list.length === 0) return [];
+      return [{ group, items: list }];
+    });
+  }, [visibleCommands]);
 
-    return [...actionMatches, ...navMatches, ...tagMatches, ...saveMatches];
-  }, [builtInNav, builtInActions, q, saves, search.results]);
-
-  // Keep `active` in bounds when items shrink.
-  useEffect(() => {
-    setActive((i) => Math.min(i, Math.max(0, items.length - 1)));
-  }, [items.length]);
-
-  const run = useCallback(
-    (item: Item) => {
-      if (item.kind === "action") {
-        item.run();
-        return;
-      }
-      navTo(item.to);
-    },
-    [navTo],
-  );
-
-  const onKeyDown = useCallback(
+  const onScopeKey = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key === "ArrowDown") {
+      if (e.key === "Tab") {
         e.preventDefault();
-        setActive((i) => Math.min(items.length - 1, i + 1));
-      } else if (e.key === "ArrowUp") {
+        const dir = e.shiftKey ? -1 : 1;
+        const i = SCOPE_ORDER.indexOf(scope);
+        const len = SCOPE_ORDER.length;
+        const next = SCOPE_ORDER[(i + dir + len) % len] ?? "all";
+        setScope(next);
+      } else if (e.key === "Escape" && scope !== "all") {
         e.preventDefault();
-        setActive((i) => Math.max(0, i - 1));
-      } else if (e.key === "Enter") {
-        e.preventDefault();
-        const item = items[active];
-        if (item) run(item);
-      } else if (e.key === "Escape") {
-        close();
+        setScope("all");
       }
     },
-    [items, active, run, close],
+    [scope],
   );
 
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Content className={styles.dialog}>
-        <Shell>
-          <SearchRow>
-            <Input.Root
-              ref={inputRef}
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              onKeyDown={onKeyDown}
-              placeholder="Search saves, tags, actions…"
-              autoComplete="off"
-              spellCheck={false}
-            />
-          </SearchRow>
-          <List>
-            {items.length === 0 ? (
-              <Empty>No matches</Empty>
-            ) : (
-              items.map((item, i) => (
-                <ListItem
-                  key={item.id}
-                  data-active={i === active ? "true" : undefined}
-                >
-                  <ItemButton
-                    onMouseEnter={() => setActive(i)}
-                    onClick={() => run(item)}
-                  >
-                    <ItemLabel>{item.label}</ItemLabel>
-                    {item.hint ? <ItemHint>{item.hint}</ItemHint> : null}
-                  </ItemButton>
-                </ListItem>
-              ))
-            )}
-          </List>
-        </Shell>
+        <div className={styles.shell}>
+          <ScopeTabs scope={scope} onScopeChange={setScope} />
+          <Cmd
+            label="Pond command palette"
+            shouldFilter
+            loop
+            onKeyDown={onScopeKey}
+          >
+            <div className={styles["search-row"]}>
+              <Cmd.Input
+                value={search}
+                onValueChange={setSearch}
+                placeholder="Type a command or search…"
+                className={styles["search-input"]}
+                autoFocus
+              />
+            </div>
+            <Cmd.List className={styles.list}>
+              <Cmd.Empty>
+                <span className={styles["empty-headline"]}>
+                  No commands match
+                </span>
+                <span className={styles["empty-hint"]}>
+                  Try a different scope or search term
+                </span>
+              </Cmd.Empty>
+              {grouped.map(({ group, items }) => (
+                <Cmd.Group key={group} heading={group}>
+                  {items.map((c) => (
+                    <Cmd.Item
+                      key={c.id}
+                      value={c.id}
+                      keywords={[c.label, ...(c.keywords ?? [])]}
+                      onSelect={() => void c.perform(ctx)}
+                    >
+                      <span className={styles["item-main"]}>
+                        <span className={styles["item-label"]}>{c.label}</span>
+                        {c.description ? (
+                          <span className={styles["item-description"]}>
+                            {c.description}
+                          </span>
+                        ) : null}
+                      </span>
+                      {c.shortcut ? (
+                        <Kbd.Cluster keys={c.shortcut} />
+                      ) : c.chord ? (
+                        <Kbd.Cluster
+                          keys={c.chord.map((k) => k.toUpperCase())}
+                          separator="then"
+                        />
+                      ) : null}
+                    </Cmd.Item>
+                  ))}
+                </Cmd.Group>
+              ))}
+            </Cmd.List>
+          </Cmd>
+          <Footer />
+        </div>
       </Dialog.Content>
     </Dialog.Root>
   );
 }
 
-interface ShellProps extends React.ComponentPropsWithoutRef<"div"> {}
-
-function Shell({ className, ...props }: ShellProps) {
+function ScopeTabs({
+  scope,
+  onScopeChange,
+}: {
+  scope: CommandScope;
+  onScopeChange: (s: CommandScope) => void;
+}) {
   return (
-    <div
-      className={[styles.shell, className ?? ""].filter(Boolean).join(" ")}
-      {...props}
-    />
+    <div className={styles.tabs} role="tablist" aria-label="Command scopes">
+      {SCOPE_ORDER.map((s) => (
+        <button
+          key={s}
+          type="button"
+          role="tab"
+          aria-selected={s === scope}
+          data-active={s === scope ? "true" : undefined}
+          className={styles.tab}
+          onClick={() => onScopeChange(s)}
+        >
+          {SCOPE_LABEL[s]}
+        </button>
+      ))}
+    </div>
   );
 }
 
-interface SearchRowProps extends React.ComponentPropsWithoutRef<"div"> {}
-
-function SearchRow({ className, ...props }: SearchRowProps) {
+function Footer() {
   return (
-    <div
-      className={[styles["search-row"], className ?? ""]
-        .filter(Boolean)
-        .join(" ")}
-      {...props}
-    />
+    <div className={styles.footer}>
+      <span className={styles["footer-hint"]}>
+        <Kbd.Cluster keys={["↑", "↓"]} />
+        Navigate
+      </span>
+      <span className={styles["footer-hint"]}>
+        <Kbd.Cluster keys={["↵"]} />
+        Run
+      </span>
+      <span className={styles["footer-hint"]}>
+        <Kbd.Cluster keys={["⇥"]} />
+        Switch tab
+      </span>
+      <span className={styles["footer-hint"]}>
+        <Kbd.Cluster keys={["⎋"]} />
+        Close
+      </span>
+    </div>
   );
 }
 
-interface ListProps extends React.ComponentPropsWithoutRef<"ul"> {}
-
-function List({ className, ...props }: ListProps) {
-  return (
-    <ul
-      className={[styles.list, className ?? ""].filter(Boolean).join(" ")}
-      {...props}
-    />
-  );
-}
-
-interface ListItemProps extends React.ComponentPropsWithoutRef<"li"> {
-  "data-active"?: "true" | undefined;
-}
-
-function ListItem({ className, ...props }: ListItemProps) {
-  return (
-    <li
-      className={[styles.item, className ?? ""].filter(Boolean).join(" ")}
-      {...props}
-    />
-  );
-}
-
-interface ItemButtonProps extends React.ComponentPropsWithoutRef<"button"> {}
-
-function ItemButton({ className, type = "button", ...props }: ItemButtonProps) {
-  return (
-    <button
-      type={type}
-      className={[styles["item-btn"], className ?? ""]
-        .filter(Boolean)
-        .join(" ")}
-      {...props}
-    />
-  );
-}
-
-interface ItemLabelProps extends React.ComponentPropsWithoutRef<"span"> {}
-
-function ItemLabel({ className, ...props }: ItemLabelProps) {
-  return (
-    <span
-      className={[styles["item-label"], className ?? ""]
-        .filter(Boolean)
-        .join(" ")}
-      {...props}
-    />
-  );
-}
-
-interface ItemHintProps extends React.ComponentPropsWithoutRef<"span"> {}
-
-function ItemHint({ className, ...props }: ItemHintProps) {
-  return (
-    <span
-      className={[styles["item-hint"], className ?? ""]
-        .filter(Boolean)
-        .join(" ")}
-      {...props}
-    />
-  );
-}
-
-interface EmptyProps extends React.ComponentPropsWithoutRef<"li"> {}
-
-function Empty({ className, ...props }: EmptyProps) {
-  return (
-    <li
-      className={[styles.empty, className ?? ""].filter(Boolean).join(" ")}
-      {...props}
-    />
-  );
-}
-
-export const CommandPalette = {
-  Root,
-  Shell,
-  SearchRow,
-  List,
-  Item: ListItem,
-  ItemButton,
-  ItemLabel,
-  ItemHint,
-  Empty,
-};
-
-function hostname(url: string): string {
-  try {
-    return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return "";
-  }
-}
+export const CommandPalette = { Root };

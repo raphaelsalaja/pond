@@ -1,10 +1,5 @@
 /// <reference lib="dom" />
 
-/**
- * TikTok favourites list collector. Scrolls the user's profile page
- * and collects video IDs using the shared scroll scaffold.
- */
-
 import type { MediaType } from "@pond/schema/db";
 import { inPageScrollCollect } from "../lib/scroll";
 import type { ListHarvestArgs, ListHarvestResult } from "../list-types";
@@ -39,11 +34,6 @@ async function inPageTiktokList(
     return { ok: false, reason: "auth_required" };
   }
 
-  // The profile route (`/@<handle>`) lands on the "Videos" tab,
-  // which for most users is empty — Favorites is a sibling tab on
-  // the same page, backed by `/api/user/collect/item_list/`. We
-  // click it before handing off to the shared scroll scaffold so the
-  // `a[href*="/video/"]` hydrate selector actually matches.
   const findFavoritesTab = (): HTMLElement | null => {
     const direct = document.querySelector<HTMLElement>(
       '[data-e2e="favorites-tab"], [data-e2e="favorite-tab"]',
@@ -71,9 +61,6 @@ async function inPageTiktokList(
   }
   if (favTab) {
     favTab.click();
-    // Give TikTok a beat to swap tab contents before the shared
-    // scroll scaffold starts polling `hydrateSelector`. Without
-    // this the first scroll fires against the Videos grid.
     await new Promise((r) => setTimeout(r, 1_500));
   }
 
@@ -131,7 +118,6 @@ async function inPageTiktokList(
   return scroll({
     collectFn,
     knownIds: args.knownIds,
-    maxItems: args.maxItems,
     hydrateSelector: 'a[href*="/video/"]',
   });
 }

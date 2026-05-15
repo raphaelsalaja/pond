@@ -1,26 +1,6 @@
-import { webFrame } from "electron";
+/// <reference lib="dom" />
 
-/**
- * Hidden-window preload. Installs source-specific XHR/fetch hooks in
- * the page main world that capture GraphQL response bodies for later
- * parsing in the main process.
- *
- * Two Electron-shaped constraints drive the shape of this file:
- *
- *  1. Sandboxed preloads run in an isolated world; patching
- *     `XMLHttpRequest` here has zero effect on the page's
- *     `XMLHttpRequest`. The fix is `webFrame.executeJavaScript`,
- *     which evaluates a string in the page main world.
- *
- *  2. The hook MUST be installed before the page's bundle creates
- *     its first request. Preloads run before any page script;
- *     `executeJavaScript` from the main process after `loadURL` is
- *     too late.
- *
- * Buffers (one per source) live on `globalThis`:
- *   - `__pondBookmarksCaptures` (Twitter, XHR only)
- *   - `__pondCosmosCaptures` (Cosmos, XHR + fetch — Apollo uses both)
- */
+import { webFrame } from "electron";
 
 const TWITTER_HOOK = `
   (() => {
@@ -54,9 +34,6 @@ const TWITTER_HOOK = `
   })();
 `;
 
-// Both XHR and fetch — Apollo (cosmos.so SPA) defaults to fetch but
-// some adapters use XHR. Bodies are re-read via `clone()` for fetch
-// so the page's own consumer still gets the original.
 const COSMOS_HOOK = `
   (() => {
     if (globalThis.__pondCosmosHookInstalled) return;

@@ -1,17 +1,6 @@
 import { pool } from "./pool";
 import type { Save, SaveAnnotations, TextHighlight } from "./types";
 
-/**
- * Helpers for mutating `save.annotations`. All writes route through
- * `window.pond.tx` with the shape the executor already understands —
- * `update / save / { patch: { annotations } }` — so they show up in
- * the sync actions log and undo stack just like any other field edit.
- *
- * We always pass `before` so undo is symmetrical: re-applying the
- * pre-tx annotations restores the exact set of highlights the user
- * had before the latest action.
- */
-
 function emptyAnnotations(): SaveAnnotations {
   return { highlights: [] };
 }
@@ -41,9 +30,6 @@ async function commitAnnotations(
     before: { annotations: before },
     meta: { actor: "user", actorReason: "annotation" },
   });
-  // Optimistic local update so the UI doesn't flash; the sync action
-  // round-trip will arrive immediately after and idempotently overwrite
-  // with the same values.
   pool.upsert({ ...save, annotations: next });
 }
 

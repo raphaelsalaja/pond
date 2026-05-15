@@ -2,16 +2,6 @@ import { existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { app } from "electron";
 
-/**
- * All filesystem paths the main process uses. Centralised so every module
- * agrees on "where does the SQLite index live" and Phase 3's "Switch
- * library" can flip the `libraryRoot` once, not in 20 places.
- *
- * Two-location split (see plan § "Where stuff is saved on disk"):
- *
- *  - `appData` / `cache` / `logs`      -> rebuildable, invisible in Finder
- *  - `libraryRoot`                     -> source of truth, Finder-browsable
- */
 export interface PondPaths {
   appData: string;
   cache: string;
@@ -31,10 +21,6 @@ function ensureDir(p: string): string {
   return p;
 }
 
-/**
- * Resolve paths lazily so unit tests can call this before `app.setName()`
- * without Electron being fully initialised.
- */
 export function resolvePaths(libraryRootOverride?: string): PondPaths {
   if (cached && !libraryRootOverride) return cached;
 
@@ -72,7 +58,6 @@ export function itemFile(id: string, file: string): string {
   return join(itemDir(id), file);
 }
 
-/** Convenience accessors so callers don't need to destructure `resolvePaths()`. */
 export function appDataRoot(): string {
   return resolvePaths().appData;
 }

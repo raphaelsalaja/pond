@@ -3,11 +3,6 @@ import { isBootReady, subscribeBootReady } from "./bootstrap";
 import { pool, subscribeToAll, subscribeToId } from "./pool";
 import type { Save } from "./types";
 
-/**
- * Subscribe to a single `Save` by id. Returns the same object reference
- * across all views that call `useSave(id)`, so editing the tag list in one
- * place re-renders every list and detail view simultaneously.
- */
 export function useSave(id: string | null | undefined): Save | undefined {
   return useSyncExternalStore(
     (cb) => (id ? subscribeToId(id, cb) : () => {}),
@@ -16,7 +11,6 @@ export function useSave(id: string | null | undefined): Save | undefined {
   );
 }
 
-/** Subscribe to the whole saves list. */
 export function useSaves(): Save[] {
   const snapshot = useSyncExternalStore(
     subscribeToAll,
@@ -26,12 +20,6 @@ export function useSaves(): Save[] {
   return snapshot;
 }
 
-/**
- * `true` once the pool has finished its first cache load + reconcile
- * pass against main. Use this to gate empty-state copy: an empty pool
- * during boot is *unknown* (cache might be cold), while an empty pool
- * after boot is genuinely empty.
- */
 export function useBootReady(): boolean {
   return useSyncExternalStore(subscribeBootReady, isBootReady, isBootReady);
 }

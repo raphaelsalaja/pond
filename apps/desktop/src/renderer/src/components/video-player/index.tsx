@@ -7,7 +7,7 @@ import {
   IconVolumeOffOutline18,
   IconVolumeOutline18,
   IconWindowBottomRightOutline18,
-} from "@pond/icons/outline";
+} from "@pond/icons/outline/18";
 import {
   MediaMuteButton,
   MediaOutlet,
@@ -20,8 +20,9 @@ import {
   useMediaRemote,
   useMediaStore,
 } from "@vidstack/react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Save } from "@/pool/types";
+import { type ChapterCue, chaptersToVttUrl } from "./chapters-vtt";
 import { VideoContextMenu } from "./context-menu";
 import styles from "./styles.module.css";
 
@@ -32,6 +33,7 @@ interface VideoPlayerProps {
   poster?: string;
   save: Save;
   videoRef?: React.MutableRefObject<HTMLVideoElement | null>;
+  chapters?: readonly ChapterCue[];
   onError?: () => void;
   onExpand?: () => void;
 }
@@ -41,6 +43,7 @@ export function VideoPlayer({
   poster,
   save,
   videoRef,
+  chapters,
   onError,
   onExpand,
 }: VideoPlayerProps) {
@@ -55,14 +58,71 @@ export function VideoPlayer({
     };
   });
 
+  const chaptersVttUrl = useMemo(
+    () => (chapters && chapters.length > 0 ? chaptersToVttUrl(chapters) : null),
+    [chapters],
+  );
+
+  useEffect(() => {
+    if (!chaptersVttUrl) return;
+    return () => URL.revokeObjectURL(chaptersVttUrl);
+  }, [chaptersVttUrl]);
+
+  const textTracks = useMemo(() => {
+    if (!chaptersVttUrl) return undefined;
+    return [
+      {
+        src: chaptersVttUrl,
+        kind: "chapters" as const,
+        default: true,
+        language: "en",
+        label: "Chapters",
+      },
+    ];
+  }, [chaptersVttUrl]);
+
   return (
     <div className={styles.root} ref={containerRef}>
       <MediaPlayer
         src={src}
         poster={poster}
-        crossorigin=""
+        textTracks={textTracks}
         playsinline
-        onError={onError}
+        onError={(event: unknown) => {
+          // #region agent log
+          const detail = (event as { detail?: Record<string, unknown> })
+            ?.detail;
+          const mediaError = detail?.mediaError as
+            | { code?: number; message?: string }
+            | undefined;
+          fetch(
+            "http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-Debug-Session-Id": "7b119d",
+              },
+              body: JSON.stringify({
+                sessionId: "7b119d",
+                hypothesisId: "H_E_F",
+                location: "video-player/index.tsx:MediaPlayer.onError",
+                message: "vidstack onError fired",
+                data: {
+                  src,
+                  hasPoster: !!poster,
+                  detailMessage: detail?.message,
+                  detailCode: detail?.code,
+                  mediaErrorCode: mediaError?.code,
+                  mediaErrorMessage: mediaError?.message,
+                },
+                timestamp: Date.now(),
+              }),
+            },
+          ).catch(() => {});
+          // #endregion
+          onError?.();
+        }}
       >
         <PlayerInternals
           save={save}

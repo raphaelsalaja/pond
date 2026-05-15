@@ -1,28 +1,7 @@
-/**
- * SQL projections for every filterable field.
- *
- * Main-only — imports Drizzle's `sql` template and the `saves` table
- * directly. The renderer doesn't need this; chip UI gets its
- * metadata from `./meta.ts` and ships ASTs to main over IPC.
- *
- * Each entry maps a `FieldId` to a SQL expression that returns the
- * projected scalar (or NULL if the projection isn't available).
- * Bespoke fields with JSON-array projections (`tags`, `color`)
- * carry a `custom` flag — `to-sql.ts` routes them to per-field
- * builders instead of treating them as scalar columns.
- */
-
 import { type SQL, sql } from "drizzle-orm";
 import { saves } from "../db";
 import type { FieldId } from "./types";
 
-/**
- * Scalar SQL expression per field. Used directly by the standard
- * comparators (eq, neq, in, lt, etc.) in `to-sql.ts`. JSON-array
- * fields are excluded from this map and routed through bespoke
- * handlers; trying to fold them into a scalar would hide the array
- * semantics behind ambiguous matches.
- */
 export const SCALAR_PROJECTIONS: Partial<Record<FieldId, SQL>> = {
   source: sql`lower(${saves.source})`,
   type: sql`lower(coalesce(${saves.mediaType}, ${saves.source}))`,
@@ -52,10 +31,6 @@ export const SCALAR_PROJECTIONS: Partial<Record<FieldId, SQL>> = {
   )`,
 };
 
-/**
- * `EXISTS (SELECT 1 FROM json_each(tags|ai_tags) WHERE …)` — used
- * by `some`/`none`. The column union covers user + AI tags.
- */
 export function tagsExists(needle: SQL): SQL {
   return sql`exists (
     select 1 from json_each(${saves.tags}) where ${needle}
@@ -64,11 +39,6 @@ export function tagsExists(needle: SQL): SQL {
   )`;
 }
 
-/**
- * `(SELECT COUNT(DISTINCT lower(value)) FROM tagsUnion WHERE
- * lower(value) IN (…)) = N` — used by `every` to check that every
- * needle is present in the merged tag set.
- */
 export function tagsDistinctCount(needle: SQL): SQL {
   return sql`(
     select count(distinct lower(value)) from (
@@ -79,12 +49,6 @@ export function tagsDistinctCount(needle: SQL): SQL {
   )`;
 }
 
-/**
- * `EXISTS (SELECT 1 FROM json_each(dominant_colors) WHERE
- * color_distance(json_extract(value, '$.hex'), ?) <= ?)`. Relies on
- * the `color_distance` SQLite scalar registered by
- * `./sqlite-fns.ts`.
- */
 export function colorNear(hex: string, distance: number): SQL {
   return sql`exists (
     select 1 from json_each(${saves.dominantColors})
@@ -95,15 +59,6 @@ export function colorNear(hex: string, distance: number): SQL {
   )`;
 }
 
-/**
- * Resolve the clip length (seconds) by walking the source-keyed
- * `rawJson` blobs. Mirrors `match.ts` `durationSeconds()` so JS
- * and SQL agree.
- *
- * Long term we should land a `saves.duration_sec` column populated
- * by the auto-video pipeline, drop this projection, and key the
- * `duration` filter off the column instead.
- */
 function durationProjection(): SQL {
   return sql`coalesce(
     cast(json_extract(${saves.rawJson}, '$.youtube.durationSec') as real),
@@ -117,7 +72,6 @@ function durationProjection(): SQL {
     cast(json_extract(${saves.rawJson}, '$.pinterest.ytdlp.duration') as real),
     cast(json_extract(${saves.rawJson}, '$.arena.ytdlp.duration') as real),
     cast(json_extract(${saves.rawJson}, '$.cosmos.ytdlp.duration') as real),
-    cast(json_extract(${saves.rawJson}, '$.reddit.ytdlp.duration') as real),
     cast(json_extract(${saves.rawJson}, '$.article.ytdlp.duration') as real)
   )`;
 }

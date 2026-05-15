@@ -2,21 +2,11 @@ import { inverse, type Transaction } from "@pond/schema/tx";
 import log from "electron-log/main.js";
 import { executeTransaction } from "./executor";
 
-/**
- * Undo / redo stack for the TransactionExecutor. Lives in main so every
- * window shares the same history (closing and reopening the window does
- * NOT clear undo state). Global-scope Cmd-Z / Cmd-Shift-Z hotkeys
- * dispatch through here.
- *
- * Capacity is bounded so memory doesn't grow unbounded on heavy days.
- */
-
 const MAX_HISTORY = 200;
 
 const undoStack: Transaction[] = [];
 const redoStack: Transaction[] = [];
 
-/** Push a transaction after the executor reports success. */
 export function recordForUndo(tx: Transaction): void {
   undoStack.push(tx);
   if (undoStack.length > MAX_HISTORY) undoStack.shift();

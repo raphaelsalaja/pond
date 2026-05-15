@@ -1,34 +1,16 @@
 import type { IngestPayload } from "@pond/schema/ingest";
 import log from "electron-log/main.js";
 
-/**
- * Server-side metadata refresh for non-auth-walled URLs. Fetches the
- * page from the main process, parses Open Graph / Twitter Card / oEmbed
- * / JSON-LD / standard `<meta>` tags, and returns an `IngestPayload`
- * shaped exactly like what the browser-extension scrapers emit.
- *
- * The result gets fed to `ingestFromHttp`, which already does the
- * "merge richer values, never clobber user edits" dance — so a
- * server-side refresh and a re-bookmark behave identically downstream.
- */
-
 const FETCH_TIMEOUT_MS = 15_000;
 const MAX_HTML_BYTES = 4 * 1024 * 1024; // 4 MiB; OG headers live in <head>
 
-/**
- * Pretend to be a sane desktop browser. Some sites (notably Reddit,
- * Substack, Medium) gate the OG tags behind a not-empty UA. None of this
- * needs auth — we're after public OG metadata.
- */
 const USER_AGENT =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/605.1.15 " +
   "(KHTML, like Gecko) Version/17.0 Safari/605.1.15 PondBot/0.1";
 
 export interface OgRefreshResult {
   ok: boolean;
-  /** What we'll feed to `ingestFromHttp`; null when the page yielded nothing useful. */
   payload: IngestPayload | null;
-  /** Reason we gave up — surfaced to the renderer for user-visible toasts. */
   reason?: "fetch_failed" | "non_html" | "empty" | "blocked";
   status?: number;
 }
@@ -74,11 +56,15 @@ export async function refreshFromOgTags(args: {
   const html = await readBoundedText(res, MAX_HTML_BYTES);
   if (!html) return { ok: false, payload: null, reason: "empty" };
 
+  // Some sites (e.g. Pinterest) inject their og:* meta tags into the body
+  // after </head> via client-side rendering. Scan the whole document for
+  // meta tags; restrict to the head only for <link rel="canonical"> /
+  // <html lang>/<title> lookups where head is the right scope.
   const head = sliceHead(html);
-  const meta = parseMeta(head);
+  const meta = parseMeta(html);
   const jsonLd = parseJsonLd(head);
 
-  const title =
+  const rawTitle =
     pickStr([
       meta["og:title"],
       meta["twitter:title"],
@@ -87,14 +73,18 @@ export async function refreshFromOgTags(args: {
       meta.title,
       extractTagText(head, "title"),
     ]) ?? null;
+  const title = rawTitle ? cleanTitle(args.source, rawTitle) : null;
 
-  const description =
+  const rawDescription =
     pickStr([
       meta["og:description"],
       meta["twitter:description"],
       jsonLd.description,
       meta.description,
     ]) ?? null;
+  const description = rawDescription
+    ? cleanDescription(args.source, rawDescription)
+    : null;
 
   const jsonLdAuthor =
     typeof jsonLd.author === "string"
@@ -109,6 +99,9 @@ export async function refreshFromOgTags(args: {
         ? jsonLd.image.url
         : undefined;
 
+  // Pinterest's `pinterestapp:pinner` is the SAVER's profile URL, not a
+  // display name — we'd be writing trash to `author`. The original creator's
+  // name is not exposed in OG meta; only the hidden-window DOM scrape has it.
   const author =
     pickStr([
       meta["og:author"],
@@ -133,17 +126,13 @@ export async function refreshFromOgTags(args: {
 
   const isVideo = Boolean(ogVideo) || meta["og:type"] === "video.other";
 
-  const mediaUrl = ogVideo ?? ogImage ?? null;
+  const mediaUrl = upgradeMediaUrl(args.source, ogVideo ?? ogImage ?? null);
 
   if (!title && !description && !mediaUrl) {
     log.info("[pond refresh:og] no useful metadata", args.url);
     return { ok: false, payload: null, reason: "empty" };
   }
 
-  // Forward-compatible pass-through fields. None of these need a
-  // top-level column today, but they're trivially available in the
-  // already-parsed meta map and useful for the renderer / search
-  // index. Lands under `raw.og.<key>` so adding more is additive.
   const lang =
     pickStr([
       meta["og:locale"],
@@ -161,6 +150,8 @@ export async function refreshFromOgTags(args: {
     meta["og:url"],
   ]);
   const keywords = pickStr([meta.keywords, meta.news_keywords]);
+
+  const sourceMeta = buildSourceMeta(args.source, meta, author);
 
   const payload: IngestPayload = {
     source: args.source,
@@ -184,13 +175,74 @@ export async function refreshFromOgTags(args: {
       ...(canonicalUrl ? { canonical: canonicalUrl } : {}),
       ...(keywords ? { keywords } : {}),
       ...(Object.keys(jsonLd).length > 0 ? { jsonLd } : {}),
+      ...(sourceMeta ? { [args.source]: sourceMeta } : {}),
     },
   };
 
   return { ok: true, payload };
 }
 
-/** Lift a single attribute off a tag (e.g. `<html lang="...">`). */
+function cleanTitle(source: IngestPayload["source"], title: string): string {
+  if (source === "pinterest") {
+    // Pinterest's og:title is "{title} | {board}, {tag}, {tag}". Strip the
+    // SEO suffix by taking everything before the first " | ".
+    const head = title.split(/\s+\|\s+/)[0]?.trim();
+    if (head && head.length >= 3) return head;
+    return title.replace(/\s+\|\s+Pinterest\s*$/i, "").trim() || title;
+  }
+  return title;
+}
+
+const PINTEREST_BOILERPLATE_DESCRIPTION =
+  /^This Pin was discovered by .+?\. Discover \(and save!\) your own Pins on Pinterest\.?$/i;
+
+function cleanDescription(
+  source: IngestPayload["source"],
+  description: string,
+): string | null {
+  if (
+    source === "pinterest" &&
+    PINTEREST_BOILERPLATE_DESCRIPTION.test(description.trim())
+  ) {
+    return null;
+  }
+  return description;
+}
+
+function upgradeMediaUrl(
+  source: IngestPayload["source"],
+  url: string | null,
+): string | null {
+  if (!url) return url;
+  if (source === "pinterest" && /(^|\/\/)i\.pinimg\.com\//.test(url)) {
+    return url.replace(/\/\d+x(?:\d+)?\//, "/originals/");
+  }
+  return url;
+}
+
+function buildSourceMeta(
+  source: IngestPayload["source"],
+  meta: Record<string, string>,
+  author: string | null,
+): Record<string, unknown> | null {
+  if (source !== "pinterest") return null;
+  const out: Record<string, unknown> = {};
+  // `pinterestapp:pinner` is the saver's profile URL; capture it as a URL,
+  // do NOT use it as a display name.
+  const pinnerUrl = meta["pinterestapp:pinner"];
+  const boardUrl = meta["pinterestapp:pinboard"];
+  const sourceUrl = meta["pinterestapp:source"];
+  if (pinnerUrl) out.authorUrl = pinnerUrl;
+  if (author) out.authorName = author;
+  if (boardUrl) {
+    out.boardUrl = boardUrl;
+    const m = boardUrl.match(/\/[^/]+\/([^/]+)\/?$/);
+    if (m?.[1]) out.boardName = decodeURIComponent(m[1]).replace(/-/g, " ");
+  }
+  if (sourceUrl) out.sourceUrl = sourceUrl;
+  return Object.keys(out).length > 0 ? out : null;
+}
+
 function extractTagAttr(
   html: string,
   tag: string,
@@ -205,7 +257,6 @@ function extractTagAttr(
   return decodeEntities(m[1]).trim();
 }
 
-/** Find `<link rel="<rel>" href="...">` and return the href. */
 function extractLinkHref(html: string, rel: string): string | undefined {
   const re = new RegExp(
     `<link\\b[^>]*\\brel\\s*=\\s*["']${rel}["'][^>]*\\bhref\\s*=\\s*["']([^"']+)["']`,
@@ -251,12 +302,6 @@ async function readBoundedText(
   return buf.toString("utf8");
 }
 
-/**
- * Slice the document down to `<head>...</head>` so the meta-tag regex
- * doesn't have to chew through megabytes of body markup. If the close
- * tag is missing we cap at 256 KB which is more than every real-world
- * head we've seen.
- */
 function sliceHead(html: string): string {
   const start = html.search(/<head[\s>]/i);
   if (start < 0) return html.slice(0, 262_144);
@@ -270,11 +315,6 @@ const META_RE =
 const META_RE_REVERSE =
   /<meta\b[^>]*content\s*=\s*["']([^"']*)["'][^>]*(?:property|name|itemprop)\s*=\s*["']([^"']+)["'][^>]*>/gi;
 
-/**
- * Pull every `<meta property|name|itemprop="…" content="…">` pair into
- * a flat record. The two regexes cover both attribute orderings — some
- * sites consistently put `content` before `property`.
- */
 function parseMeta(head: string): Record<string, string> {
   const out: Record<string, string> = {};
   for (const re of [META_RE, META_RE_REVERSE]) {
@@ -301,12 +341,6 @@ interface JsonLdShape {
   image?: string | { url?: string };
 }
 
-/**
- * Find the first JSON-LD `<script type="application/ld+json">` block
- * with usable fields. Strict article schemas are rare; many pages embed
- * multiple disjoint blocks (BreadcrumbList, Organization, …) so we walk
- * them all and keep the first one that has at least a name or headline.
- */
 function parseJsonLd(head: string): JsonLdShape {
   const re =
     /<script[^>]*type\s*=\s*["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;

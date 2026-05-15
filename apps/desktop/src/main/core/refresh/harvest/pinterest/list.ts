@@ -1,11 +1,5 @@
 /// <reference lib="dom" />
 
-/**
- * Pinterest list collector. Scrolls the user's saved pins view and
- * collects pin IDs using the shared scroll scaffold.
- */
-
-import type { MediaType } from "@pond/schema/db";
 import { inPageScrollCollect } from "../lib/scroll";
 import type { ListHarvestArgs, ListHarvestResult } from "../list-types";
 import { inPagePinterestNormalize } from "./normalize";
@@ -39,14 +33,12 @@ async function inPagePinterestList(
     return { ok: false, reason: "auth_required" };
   }
 
+  // The Pinterest grid only exposes a tiny thumbnail and (often empty) alt
+  // text per card. We emit bare stub entries so every pin goes through the
+  // per-pin harvester in `inPagePinterestHarvest`, which can read the real
+  // title/description/author/board and full-resolution image.
   function collectFn() {
-    const out: Array<{
-      sourceId: string;
-      url: string;
-      title?: string;
-      mediaUrl?: string;
-      mediaType?: MediaType;
-    }> = [];
+    const out: Array<{ sourceId: string; url: string }> = [];
     const seen = new Set<string>();
     const links = Array.from(
       document.querySelectorAll<HTMLAnchorElement>('a[href*="/pin/"]'),
@@ -61,19 +53,9 @@ async function inPagePinterestList(
       }
       if (!id || seen.has(id)) continue;
       seen.add(id);
-
-      const img = a.querySelector<HTMLImageElement>("img");
-      const src = img?.src ?? img?.currentSrc ?? undefined;
-      const mediaUrl = src && !src.startsWith("data:") ? src : undefined;
-      const title = img?.alt?.trim() || undefined;
-      const hasVideo = !!a.querySelector("video, [data-test-id*='video']");
-
       out.push({
         sourceId: id,
         url: `https://www.pinterest.com/pin/${id}/`,
-        title,
-        mediaUrl,
-        mediaType: hasVideo ? "video" : mediaUrl ? "image" : undefined,
       });
     }
     return out;
@@ -82,7 +64,6 @@ async function inPagePinterestList(
   return scroll({
     collectFn,
     knownIds: args.knownIds,
-    maxItems: args.maxItems,
     hydrateSelector: 'a[href*="/pin/"]',
   });
 }

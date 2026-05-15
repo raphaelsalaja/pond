@@ -4,14 +4,6 @@ import log from "electron-log/main.js";
 import { getDb } from "../db";
 import { scanLibrary } from "../lib/library";
 
-/**
- * Reconcile the SQLite index against the on-disk library. Cheap and
- * idempotent — only rows whose `metadata.json` mtime has changed since
- * we last saw them get rehydrated. Runs once on startup and is safe to
- * trigger from the renderer via an IPC call.
- *
- * Never writes to disk; it's read-only against the library.
- */
 export async function reconcileLibrary(): Promise<{
   updated: number;
   total: number;
@@ -37,8 +29,6 @@ export async function reconcileLibrary(): Promise<{
       size: f.size,
     }));
 
-    // Reconstruct a saves row from metadata. The mapping mirrors
-    // `buildItemMetadata` in `lib/library.ts` — keep the two in sync.
     await db
       .insert(saves)
       .values({
@@ -52,9 +42,6 @@ export async function reconcileLibrary(): Promise<{
         author: metadata.pond.author ?? null,
         notes: metadata.annotation || null,
         mediaUrl: null,
-        blobUrl: metadata.files[0]
-          ? `pond://${id}/${metadata.files[0].path}`
-          : null,
         mediaType:
           (metadata.pond.mediaType as
             | (typeof saves.$inferInsert)["mediaType"]

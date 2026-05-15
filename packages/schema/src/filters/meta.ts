@@ -1,20 +1,5 @@
-/**
- * Field metadata table. The single source of truth for which
- * fields the user can filter on, what their UI label is, and what
- * presets the dropdowns offer.
- *
- * Kept in a renderer-safe file (no Drizzle / no icons) so the chip
- * UI and URL codec can read it without pulling the SQL world. The
- * matching projections + columns live in `./fields.ts` (main-only).
- */
-
 import type { FieldId, FieldMeta } from "./types";
 
-/**
- * Mirror of the `Source` enum from `@pond/schema/db`. Hard-coded
- * here so this file stays out of Drizzle's import graph; if the
- * enum grows we sync by hand.
- */
 const SOURCE_PRESETS = [
   { id: "twitter", label: "Twitter / X", value: "twitter" },
   { id: "instagram", label: "Instagram", value: "instagram" },
@@ -39,9 +24,6 @@ const SHAPE_PRESETS = [
   { id: "square", label: "Square", value: "square" },
 ] as const;
 
-/** Bytes thresholds — long-side / file size buckets used by the
- * size dropdown. The value is in bytes; the SQL column projects
- * `file_size` directly. */
 const SIZE_PRESETS = [
   { id: "tiny", label: "< 1 MB", value: 1_000_000 },
   { id: "small", label: "< 5 MB", value: 5_000_000 },
@@ -49,8 +31,6 @@ const SIZE_PRESETS = [
   { id: "large", label: "≥ 25 MB", value: 25_000_000 },
 ] as const;
 
-/** Pixels — long-side bucket. The SQL column projects
- * `max(width, height)`. */
 const DIMENSIONS_PRESETS = [
   { id: "small", label: "< 720 px", value: 720 },
   { id: "medium", label: "< 1080 px", value: 1080 },
@@ -58,7 +38,6 @@ const DIMENSIONS_PRESETS = [
   { id: "huge", label: "≥ 4000 px", value: 4000 },
 ] as const;
 
-/** Seconds — duration bucket for video. */
 const DURATION_PRESETS = [
   { id: "short", label: "< 30s", value: 30 },
   { id: "medium", label: "< 3min", value: 180 },

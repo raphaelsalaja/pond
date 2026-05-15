@@ -1,224 +1,145 @@
 import { ContextMenu as Base } from "@base-ui/react/context-menu";
-import menuStyles from "../menu/styles.module.css";
+import { renderFrozenPopup } from "../freeze/popup";
+import { cn } from "../lib/cn";
+import popupStyles from "../lib/popup.module.css";
 import styles from "./styles.module.css";
 
-interface RootProps extends React.ComponentProps<typeof Base.Root> {}
-
-function Root({ ...props }: RootProps) {
+function Root(props: Base.Root.Props) {
   return <Base.Root {...props} />;
 }
 
-interface TriggerProps extends React.ComponentProps<typeof Base.Trigger> {}
-
-function Trigger({ ...props }: TriggerProps) {
+function Trigger(props: Base.Trigger.Props) {
   return <Base.Trigger {...props} />;
 }
 
-interface PortalProps extends React.ComponentProps<typeof Base.Portal> {}
-
-function Portal({ ...props }: PortalProps) {
+function Portal(props: Base.Portal.Props) {
   return <Base.Portal {...props} />;
 }
 
-interface BackdropProps extends React.ComponentProps<typeof Base.Backdrop> {}
-
-function Backdrop({ className, ...props }: BackdropProps) {
+function Backdrop({ className, ...props }: Base.Backdrop.Props) {
   return (
-    <Base.Backdrop
-      className={[styles.backdrop, className ?? ""].filter(Boolean).join(" ")}
-      {...props}
-    />
+    <Base.Backdrop className={cn(styles.backdrop, className)} {...props} />
   );
 }
 
-interface PositionerProps
-  extends React.ComponentProps<typeof Base.Positioner> {}
-
-function Positioner({ ...props }: PositionerProps) {
+function Positioner(props: Base.Positioner.Props) {
   return <Base.Positioner {...props} />;
 }
 
-interface PopupProps extends React.ComponentProps<typeof Base.Popup> {}
-
-function Popup({ className, ...props }: PopupProps) {
+function Popup({ className, render, ...props }: Base.Popup.Props) {
   return (
     <Base.Popup
-      className={[menuStyles.popup, className ?? ""].filter(Boolean).join(" ")}
       {...props}
+      className={cn(popupStyles.popup, popupStyles["popup-compact"], className)}
+      render={render ?? renderFrozenPopup}
     />
   );
 }
 
-interface ArrowProps extends React.ComponentProps<typeof Base.Arrow> {}
-
-function Arrow({ className, ...props }: ArrowProps) {
-  return (
-    <Base.Arrow
-      className={[menuStyles.arrow, className ?? ""].filter(Boolean).join(" ")}
-      {...props}
-    />
-  );
+function Arrow({ className, ...props }: Base.Arrow.Props) {
+  return <Base.Arrow className={cn(popupStyles.arrow, className)} {...props} />;
 }
 
-interface ItemProps extends React.ComponentProps<typeof Base.Item> {}
-
-function Item({ className, ...props }: ItemProps) {
+function Item({ className, ...props }: Base.Item.Props) {
   return (
     <Base.Item
-      className={[menuStyles.item, className ?? ""].filter(Boolean).join(" ")}
+      className={cn(popupStyles.item, popupStyles["item-compact"], className)}
       {...props}
     />
   );
 }
 
-interface ItemIconProps extends React.ComponentPropsWithoutRef<"span"> {}
-
-function ItemIcon({ className, ...props }: ItemIconProps) {
+function ItemIcon({ className, ...props }: React.ComponentProps<"span">) {
   return (
     <span
       aria-hidden
-      className={[menuStyles["item-icon"], className ?? ""]
-        .filter(Boolean)
-        .join(" ")}
+      className={cn(popupStyles["item-icon"], className)}
       {...props}
     />
   );
 }
 
-interface ItemLabelProps extends React.ComponentPropsWithoutRef<"span"> {}
-
-function ItemLabel({ className, ...props }: ItemLabelProps) {
+function ItemLabel({ className, ...props }: React.ComponentProps<"span">) {
   return (
-    <span
-      className={[menuStyles["item-label"], className ?? ""]
-        .filter(Boolean)
-        .join(" ")}
-      {...props}
-    />
+    <span className={cn(popupStyles["item-label"], className)} {...props} />
   );
 }
 
-interface ItemKbdProps extends React.ComponentPropsWithoutRef<"span"> {}
-
-function ItemKbd({ className, ...props }: ItemKbdProps) {
-  return (
-    <span
-      className={[menuStyles["item-kbd"], className ?? ""]
-        .filter(Boolean)
-        .join(" ")}
-      {...props}
-    />
-  );
+function ItemKbd({ className, ...props }: React.ComponentProps<"span">) {
+  return <span className={cn(popupStyles["item-kbd"], className)} {...props} />;
 }
 
-interface GroupProps extends React.ComponentProps<typeof Base.Group> {}
-
-function Group({ ...props }: GroupProps) {
+function Group(props: Base.Group.Props) {
   return <Base.Group {...props} />;
 }
 
-interface GroupLabelProps
-  extends React.ComponentProps<typeof Base.GroupLabel> {}
-
-function GroupLabel({ className, ...props }: GroupLabelProps) {
+function GroupLabel({ className, ...props }: Base.GroupLabel.Props) {
   return (
     <Base.GroupLabel
-      className={[menuStyles["group-label"], className ?? ""]
-        .filter(Boolean)
-        .join(" ")}
+      className={cn(popupStyles["group-label"], className)}
       {...props}
     />
   );
 }
 
-interface SeparatorProps extends React.ComponentPropsWithoutRef<"hr"> {}
-
-function Separator({ className, ...props }: SeparatorProps) {
-  return (
-    <hr
-      className={[menuStyles.separator, className ?? ""]
-        .filter(Boolean)
-        .join(" ")}
-      {...props}
-    />
-  );
+function Separator({ className, ...props }: React.ComponentProps<"hr">) {
+  return <hr className={cn(popupStyles.separator, className)} {...props} />;
 }
 
-interface RadioGroupProps
-  extends React.ComponentProps<typeof Base.RadioGroup> {}
-
-function RadioGroup({ ...props }: RadioGroupProps) {
+function RadioGroup(props: Base.RadioGroup.Props) {
   return <Base.RadioGroup {...props} />;
 }
 
-interface RadioItemProps extends React.ComponentProps<typeof Base.RadioItem> {}
-
-function RadioItem({ className, ...props }: RadioItemProps) {
+function RadioItem({ className, ...props }: Base.RadioItem.Props) {
   return (
     <Base.RadioItem
-      className={[menuStyles.item, className ?? ""].filter(Boolean).join(" ")}
+      className={cn(popupStyles.item, popupStyles["item-compact"], className)}
       {...props}
     />
   );
 }
 
-interface RadioItemIndicatorProps
-  extends React.ComponentProps<typeof Base.RadioItemIndicator> {}
-
-function RadioItemIndicator({ className, ...props }: RadioItemIndicatorProps) {
+function RadioItemIndicator({
+  className,
+  ...props
+}: Base.RadioItemIndicator.Props) {
   return (
     <Base.RadioItemIndicator
-      className={[menuStyles.indicator, className ?? ""]
-        .filter(Boolean)
-        .join(" ")}
+      className={cn(popupStyles.indicator, className)}
       {...props}
     />
   );
 }
 
-interface CheckboxItemProps
-  extends React.ComponentProps<typeof Base.CheckboxItem> {}
-
-function CheckboxItem({ className, ...props }: CheckboxItemProps) {
+function CheckboxItem({ className, ...props }: Base.CheckboxItem.Props) {
   return (
     <Base.CheckboxItem
-      className={[menuStyles.item, className ?? ""].filter(Boolean).join(" ")}
+      className={cn(popupStyles.item, popupStyles["item-compact"], className)}
       {...props}
     />
   );
 }
-
-interface CheckboxItemIndicatorProps
-  extends React.ComponentProps<typeof Base.CheckboxItemIndicator> {}
 
 function CheckboxItemIndicator({
   className,
   ...props
-}: CheckboxItemIndicatorProps) {
+}: Base.CheckboxItemIndicator.Props) {
   return (
     <Base.CheckboxItemIndicator
-      className={[menuStyles.indicator, className ?? ""]
-        .filter(Boolean)
-        .join(" ")}
+      className={cn(popupStyles.indicator, className)}
       {...props}
     />
   );
 }
 
-interface SubmenuRootProps
-  extends React.ComponentProps<typeof Base.SubmenuRoot> {}
-
-function SubmenuRoot({ ...props }: SubmenuRootProps) {
+function SubmenuRoot(props: Base.SubmenuRoot.Props) {
   return <Base.SubmenuRoot {...props} />;
 }
 
-interface SubmenuTriggerProps
-  extends React.ComponentProps<typeof Base.SubmenuTrigger> {}
-
-function SubmenuTrigger({ className, ...props }: SubmenuTriggerProps) {
+function SubmenuTrigger({ className, ...props }: Base.SubmenuTrigger.Props) {
   return (
     <Base.SubmenuTrigger
-      className={[menuStyles.item, className ?? ""].filter(Boolean).join(" ")}
+      className={cn(popupStyles.item, popupStyles["item-compact"], className)}
       {...props}
     />
   );

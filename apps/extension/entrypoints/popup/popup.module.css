@@ -24,7 +24,7 @@
   width: 8px;
   height: 8px;
   background: var(--ds-gray-a6);
-  border-radius: 999px;
+  border-radius: var(--ds-radius-full);
 }
 
 .status-dot[data-tone="ok"] {

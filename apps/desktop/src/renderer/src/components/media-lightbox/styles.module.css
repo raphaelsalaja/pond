@@ -69,6 +69,11 @@
   object-fit: contain;
 }
 
+.media-shell[data-nsfw-blur="true"] .media {
+  filter: blur(36px) saturate(0.85);
+  transform: scale(1.04);
+}
+
 .embed {
   width: 80vw;
   max-width: 1280px;
@@ -91,7 +96,7 @@
   cursor: pointer;
   background: rgba(0, 0, 0, 0.55);
   border: 0;
-  border-radius: 50%;
+  border-radius: var(--ds-radius-full);
   transform: translateY(-50%);
   transition: background 120ms ease;
 

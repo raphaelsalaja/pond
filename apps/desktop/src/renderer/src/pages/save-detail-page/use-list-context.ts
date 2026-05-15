@@ -8,11 +8,6 @@ import { useSearchResults } from "@/pool/search";
 import type { Save } from "@/pool/types";
 import { useFilteredSaves } from "@/pool/use-filtered-saves";
 
-/**
- * Mode encoded in the URL prefix that hosts the `/detail/:id` segment.
- * Mirrors `<SavesView>` / `<TrashView>` so the detail page can re-derive
- * the same filtered list and walk it with the up/down arrows.
- */
 export type ListMode =
   | "library"
   | "source"
@@ -23,20 +18,11 @@ export type ListMode =
 
 export interface ListContext {
   mode: ListMode;
-  /** Display label for the breadcrumb's parent crumb. */
   parentLabel: string;
-  /** URL of the parent list (without the trailing `/detail/:id`). Search
-   *  params are preserved so filters / search survive the round trip. */
   parentTo: string;
-  /** Helper that maps a save id to its `…/detail/:id` URL inside this
-   *  list mode. Used by the up/down pagination and double-click. */
   buildDetailPath: (id: string) => string;
-  /** The filtered, sorted list the grid is currently showing. */
   ids: string[];
   total: number;
-  /** Index of the active id in `ids`, or -1 when the active save is
-   *  outside the current filter (e.g. user changed the filter mid-flight
-   *  and the detail URL still points to a no-longer-matching save). */
   index: number;
   prevId: string | null;
   nextId: string | null;
@@ -46,12 +32,6 @@ interface ListContextOptions {
   activeId: string | null;
 }
 
-/**
- * Re-derives the same filter pipeline `<SavesView>` runs but for a
- * detail-page route. The route paths use `…/detail/:id` instead of
- * `…/save/:id`; the prefix segment (everything before `/detail/`) drives
- * the mode, parent label and back-target.
- */
 export function useListContext({ activeId }: ListContextOptions): ListContext {
   const saves = useSaves();
   const recents = useRecents();
@@ -79,8 +59,6 @@ export function useListContext({ activeId }: ListContextOptions): ListContext {
     return map;
   }, [mode, recents]);
 
-  // Stable per-mount seed so `random` keeps a consistent order while
-  // the user is paging through the detail view.
   const randomSeed = useMemo(() => Math.random().toString(36).slice(2), []);
 
   const narrowed = useMemo(() => {

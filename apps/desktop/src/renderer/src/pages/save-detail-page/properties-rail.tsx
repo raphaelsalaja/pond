@@ -1,4 +1,7 @@
-import { IconFolder5Outline18, IconGlobe2Outline18 } from "@pond/icons/outline";
+import {
+  IconFolder5Outline18,
+  IconGlobe2Outline18,
+} from "@pond/icons/outline/18";
 import { type ReactNode, useCallback, useMemo } from "react";
 import {
   collectMetadataRows,

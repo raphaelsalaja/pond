@@ -2,7 +2,7 @@ import {
   IconCheckOutline18,
   IconPlusOutline18,
   IconXmarkOutline18,
-} from "@pond/icons/outline";
+} from "@pond/icons/outline/18";
 import { FIELD_META } from "@pond/schema/filters/meta";
 import {
   COMPARATORS_BY_TYPE,
@@ -16,6 +16,7 @@ import { Menu } from "@pond/ui";
 import { useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
+  type AddCommitApi,
   appendPredicate,
   predicateIsActive,
   replacePredicate,
@@ -29,17 +30,6 @@ import {
 } from "./registry";
 import styles from "./styles.module.css";
 
-/**
- * Filter bar — renders one chip per top-level predicate in the
- * URL-encoded `Query`, plus an "Add filter" menu and a "Clear"
- * button.
- *
- * The whole component is a thin lens over the URL: every edit goes
- * through `setSearchParams(writeQuery(prev, nextAst))` so deep
- * links carry the active filter exactly. Saved-filter views write
- * the same params shape so a one-click apply from the popover
- * mirrors what the chip bar would have produced.
- */
 function Root({ className, ...props }: React.ComponentPropsWithoutRef<"div">) {
   const [params, setParams] = useSearchParams();
   const query = useMemo(() => readQuery(params), [params]);
@@ -55,6 +45,17 @@ function Root({ className, ...props }: React.ComponentPropsWithoutRef<"div">) {
     commit(EMPTY_QUERY);
   }
 
+  const addApi: AddCommitApi = {
+    commitOne: (predicate) => commit(appendPredicate(query, predicate)),
+    liveAdd: (predicate) => {
+      commit(appendPredicate(query, predicate));
+      return query.clauses.length;
+    },
+    liveUpdate: (idx, predicate) => {
+      commit(replacePredicate(query, idx, predicate));
+    },
+  };
+
   return (
     <Bar className={className} {...props}>
       {active.map(({ p, idx }) => (
@@ -64,9 +65,7 @@ function Root({ className, ...props }: React.ComponentPropsWithoutRef<"div">) {
           onChange={(next) => commit(replacePredicate(query, idx, next))}
         />
       ))}
-      <AddTrigger
-        onCommit={(predicate) => commit(appendPredicate(query, predicate))}
-      />
+      <AddTrigger api={addApi} />
       <ClearAll onClick={clearAll} />
     </Bar>
   );
@@ -90,11 +89,6 @@ interface ChipProps {
   onChange: (next: Predicate | null) => void;
 }
 
-/**
- * Multi-segment chip — `[label] [comparator] [value] [×]`. Each
- * segment owns its own popover so the user can swap one piece
- * without touching the others.
- */
 function Chip({ predicate, onChange }: ChipProps) {
   const meta = FIELD_META[predicate.field];
   const Icon = FIELD_ICONS[predicate.field];
@@ -224,10 +218,10 @@ function ValueSegment({ label, preview, children }: ValueSegmentProps) {
 }
 
 interface AddTriggerProps extends React.ComponentPropsWithoutRef<"button"> {
-  onCommit: (predicate: Predicate) => void;
+  api: AddCommitApi;
 }
 
-function AddTrigger({ onCommit, className, ...props }: AddTriggerProps) {
+function AddTrigger({ api, className, ...props }: AddTriggerProps) {
   return (
     <Menu.Root>
       <Menu.Trigger
@@ -253,7 +247,7 @@ function AddTrigger({ onCommit, className, ...props }: AddTriggerProps) {
       <Menu.Portal>
         <Menu.Positioner side="bottom" align="end" sideOffset={6}>
           <Menu.Popup>
-            <AddFilterMenu onCommit={onCommit} />
+            <AddFilterMenu api={api} />
           </Menu.Popup>
         </Menu.Positioner>
       </Menu.Portal>
@@ -293,12 +287,6 @@ export function useActiveFilterCount(): number {
   }, [params]);
 }
 
-/**
- * Compact human-readable preview of a predicate's value, used as
- * the chip's value-segment label. Mirrors what the legacy filter
- * bar's `previewValue` returned per filter, but driven off the AST
- * so we don't need a per-field switch.
- */
 function describePredicate(p: Predicate): string {
   const v = p.value;
   if (p.cmp === "exists") return v === false ? "not set" : "set";

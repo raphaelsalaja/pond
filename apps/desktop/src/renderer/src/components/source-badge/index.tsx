@@ -38,12 +38,6 @@ export const SOURCE_REGISTRY: Record<string, SourceMeta> = {
     Icon: IconCosmos,
     ring: true,
   },
-  reddit: {
-    label: "Reddit",
-    background: "var(--ds-brand-reddit)",
-    foreground: "#ffffff",
-    Icon: RedditMark,
-  },
   arena: {
     label: "Are.na",
     background: "var(--ds-brand-arena)",
@@ -146,18 +140,6 @@ function Root({ source, style, title, ...props }: RootProps) {
 export const SourceBadge = {
   Root,
 };
-
-function RedditMark(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" {...props}>
-      <title>Reddit</title>
-      <path
-        fill="currentColor"
-        d="M28 16.06a3.36 3.36 0 0 0-5.7-2.42 16.5 16.5 0 0 0-9-2.85l1.53-7.2 5 1.06a2.4 2.4 0 1 0 .25-1.46l-5.6-1.18a.74.74 0 0 0-.88.57l-1.7 8a16.46 16.46 0 0 0-9.13 2.86 3.37 3.37 0 1 0-3.7 5.5 6.61 6.61 0 0 0-.07 1.05c0 5.34 6.21 9.66 13.87 9.66S26.74 25.55 26.74 20.21a6.6 6.6 0 0 0-.07-1.04 3.36 3.36 0 0 0 1.33-3.11ZM10.66 18.4a2.4 2.4 0 1 1 2.4 2.4 2.4 2.4 0 0 1-2.4-2.4Zm13.5 6.34A8.18 8.18 0 0 1 18.4 27a8.18 8.18 0 0 1-5.76-2.27.55.55 0 1 1 .77-.77A7.06 7.06 0 0 0 18.4 26a7.06 7.06 0 0 0 5-1.99.55.55 0 0 1 .77.77ZM21.07 20.8a2.4 2.4 0 1 1 2.4-2.4 2.4 2.4 0 0 1-2.4 2.4Z"
-      />
-    </svg>
-  );
-}
 
 function FacebookMark(props: SVGProps<SVGSVGElement>) {
   return (

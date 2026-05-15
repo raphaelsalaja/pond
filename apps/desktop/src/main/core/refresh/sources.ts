@@ -1,17 +1,7 @@
 import type { Source } from "@pond/schema/db";
 
-/**
- * URL → known scraper source. Keep this in lock-step with the per-host
- * matchers in `apps/extension/entrypoints/*-inject.content.ts` so the
- * desktop refresh path picks the same scraper the browser extension
- * would have run.
- *
- * Returns `null` for URLs we don't have a dedicated scraper for — those
- * fall through to the generic `og:`/oEmbed reader in `og.ts`.
- */
 export function classifyUrl(rawUrl: string): {
   source: Source | null;
-  /** Loginful sites where a plain server-side fetch will fail. */
   authWalled: boolean;
 } {
   let u: URL;
@@ -56,23 +46,9 @@ export function classifyUrl(rawUrl: string): {
   ) {
     return { source: "youtube", authWalled: false };
   }
-  if (
-    host === "reddit.com" ||
-    host === "www.reddit.com" ||
-    host === "old.reddit.com" ||
-    host === "new.reddit.com" ||
-    host.endsWith(".reddit.com")
-  ) {
-    return { source: "reddit", authWalled: true };
-  }
   return { source: null, authWalled: false };
 }
 
-/**
- * Home URL we land the user on when they click "Connect <source>" so the
- * persistent partition picks up their auth cookies. Picked to surface a
- * login prompt without dumping them on a noisy feed.
- */
 export function homeUrlForSource(source: Source): string {
   switch (source) {
     case "twitter":
@@ -80,7 +56,7 @@ export function homeUrlForSource(source: Source): string {
     case "instagram":
       return "https://www.instagram.com/accounts/login/";
     case "cosmos":
-      return "https://www.cosmos.so/auth";
+      return "https://www.cosmos.so/login";
     case "tiktok":
       return "https://www.tiktok.com/login";
     case "pinterest":
@@ -89,25 +65,11 @@ export function homeUrlForSource(source: Source): string {
       return "https://www.are.na/log-in";
     case "youtube":
       return "https://accounts.google.com/ServiceLogin?service=youtube";
-    case "reddit":
-      return "https://www.reddit.com/login";
     case "article":
       return "about:blank";
   }
 }
 
-/**
- * Whether the per-source allowlist marks this site as something
- * yt-dlp can plausibly extract video from. Pinterest video pins and
- * Are.na video blocks are technically supported by yt-dlp upstream
- * but are off here until we've validated them; flip to `true` to
- * opt them in.
- *
- * Used by `refresh/index.ts` after the harvester returns: we only
- * spawn yt-dlp when the source supports it AND the harvest reported
- * a video. Cuts the spawn budget for the common photo-tweet case to
- * zero.
- */
 export function supportsYtDlp(source: Source | null): boolean {
   if (!source) return false;
   switch (source) {
@@ -119,16 +81,11 @@ export function supportsYtDlp(source: Source | null): boolean {
       return true;
     case "pinterest":
     case "arena":
-    case "reddit":
     case "article":
       return false;
   }
 }
 
-/**
- * Human-friendly source label. Mirrors the badge text in the renderer's
- * sidebar so settings + per-card chrome match.
- */
 export function sourceLabel(source: Source): string {
   switch (source) {
     case "twitter":
@@ -145,8 +102,6 @@ export function sourceLabel(source: Source): string {
       return "TikTok";
     case "youtube":
       return "YouTube";
-    case "reddit":
-      return "Reddit";
     case "article":
       return "Article";
   }

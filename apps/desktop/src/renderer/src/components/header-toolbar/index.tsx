@@ -1,21 +1,31 @@
 import {
+  IconAscendingSortingOutline18,
   IconBarsFilterOutline18,
+  IconEyeOutline18,
   IconGridOutline18,
   IconMagnifierOutline18,
   IconMinusOutline18,
   IconPlusOutline18,
-} from "@pond/icons/outline";
-import { EMPTY_QUERY, type Predicate } from "@pond/schema/filters/types";
+} from "@pond/icons/outline/18";
+import { EMPTY_QUERY } from "@pond/schema/filters/types";
 import { readQuery, writeQuery } from "@pond/schema/filters/url";
 import { Menu, Tooltip } from "@pond/ui";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { appendPredicate } from "@/components/filter-bar/helpers";
+import {
+  type AddCommitApi,
+  appendPredicate,
+  replacePredicate,
+} from "@/components/filter-bar/helpers";
 import {
   AddFilterMenu,
   useFilterHotkey,
 } from "@/components/filter-bar/registry";
-import { LayoutPopover } from "@/components/layout-popover";
+import {
+  DisplayPicker,
+  LayoutPicker,
+  SortPicker,
+} from "@/components/layout-popover";
 import { SavedFilters } from "@/components/saved-filters";
 import styles from "./styles.module.css";
 
@@ -25,13 +35,6 @@ function Root() {
   const [params, setParams] = useSearchParams();
   const [zoom, setZoom] = useZoom();
 
-  // Local state for the search input — the URL is the source of truth
-  // for the *committed* query, but we keep keystrokes local and only
-  // write to `useSearchParams` after the user stops typing. Writing
-  // every keystroke to the URL re-runs every consumer of
-  // `useSearchParams` (this toolbar, FilterBar, SavesView, …) on each
-  // character, which is the noisiest source of chrome re-renders
-  // while the library is live.
   const urlSearch = params.get("q") ?? "";
   const [search, setSearchLocal] = useState(urlSearch);
   useEffect(() => {
@@ -52,9 +55,6 @@ function Root() {
       setSearchLocal(next);
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => {
-        // Function form so we read the freshest params at write time —
-        // avoids clobbering filter chips the user might have toggled
-        // mid-typing.
         setParams(
           (prev) => {
             const p = new URLSearchParams(prev);
@@ -72,17 +72,33 @@ function Root() {
   const [filterOpen, setFilterOpen] = useState(false);
   const filterInputRef = useRef<HTMLInputElement>(null);
 
-  const addFilter = useCallback(
-    (predicate: Predicate) => {
+  const addApi = useMemo<AddCommitApi>(() => {
+    const baseFromCurrent = () => {
       const current = readQuery(params);
-      const next = appendPredicate(
-        current.kind === "and" ? current : EMPTY_QUERY,
-        predicate,
-      );
-      setParams(writeQuery(params, next), { replace: true });
-    },
-    [params, setParams],
-  );
+      return current.kind === "and" ? current : EMPTY_QUERY;
+    };
+    return {
+      commitOne: (predicate) => {
+        const base = baseFromCurrent();
+        setParams(writeQuery(params, appendPredicate(base, predicate)), {
+          replace: true,
+        });
+      },
+      liveAdd: (predicate) => {
+        const base = baseFromCurrent();
+        setParams(writeQuery(params, appendPredicate(base, predicate)), {
+          replace: true,
+        });
+        return base.clauses.length;
+      },
+      liveUpdate: (idx, predicate) => {
+        const base = baseFromCurrent();
+        setParams(writeQuery(params, replacePredicate(base, idx, predicate)), {
+          replace: true,
+        });
+      },
+    };
+  }, [params, setParams]);
 
   useFilterHotkey(() => {
     setFilterOpen(true);
@@ -107,11 +123,29 @@ function Root() {
       <Right>
         <ZoomControls value={zoom} onChange={setZoom} />
         <SavedFilters.Root />
-        <Tooltip.Root content="View options" side="bottom">
-          <LayoutPopover.Root
+        <Tooltip.Root content="Layout" side="bottom">
+          <LayoutPicker.Root
             trigger={
-              <IconButton aria-label="View options">
+              <IconButton aria-label="Layout">
                 <IconGridOutline18 width="0.95em" height="0.95em" />
+              </IconButton>
+            }
+          />
+        </Tooltip.Root>
+        <Tooltip.Root content="Sort" side="bottom">
+          <SortPicker.Root
+            trigger={
+              <IconButton aria-label="Sort">
+                <IconAscendingSortingOutline18 width="0.95em" height="0.95em" />
+              </IconButton>
+            }
+          />
+        </Tooltip.Root>
+        <Tooltip.Root content="Display" side="bottom">
+          <DisplayPicker.Root
+            trigger={
+              <IconButton aria-label="Display">
+                <IconEyeOutline18 width="0.95em" height="0.95em" />
               </IconButton>
             }
           />
@@ -128,10 +162,7 @@ function Root() {
             <Menu.Portal>
               <Menu.Positioner side="bottom" align="end" sideOffset={6}>
                 <Menu.Popup>
-                  <AddFilterMenu
-                    onCommit={addFilter}
-                    inputRef={filterInputRef}
-                  />
+                  <AddFilterMenu api={addApi} inputRef={filterInputRef} />
                 </Menu.Popup>
               </Menu.Positioner>
             </Menu.Portal>
@@ -240,13 +271,6 @@ interface ZoomControlsProps {
   onChange: (next: number) => void;
 }
 
-/**
- * Eagle-style zoom slider for the grid. Drives `--grid-min`, which the
- * masonry packer and CSS layouts already react to. Higher value = wider
- * minimum column = fewer columns + bigger cards (the column count steps
- * down at thresholds the same way `repeat(auto-fit, minmax(N, 1fr))`
- * does).
- */
 function ZoomControls({ value, onChange }: ZoomControlsProps) {
   const clamp = useCallback(
     (n: number) => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, n)),
@@ -291,11 +315,6 @@ function ZoomControls({ value, onChange }: ZoomControlsProps) {
   );
 }
 
-/**
- * Hook that keeps the grid tile size pref in sync with localStorage and
- * the `--grid-min` CSS variable. Consumed by the zoom slider above and
- * any future keyboard / command-palette shortcuts.
- */
 function useZoom(): [number, (next: number) => void] {
   const [zoom, setZoomState] = useState<number>(() => {
     if (typeof window === "undefined") return ZOOM_DEFAULT;

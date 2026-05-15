@@ -3,13 +3,6 @@ import log from "electron-log/main.js";
 import { getDb } from "../../../db";
 import { embed, type ProviderClient } from "../provider";
 
-/**
- * Embedding job. Concatenates the searchable text fields, hits the
- * configured embedding endpoint, and writes the vector into
- * `saves_vec`. The dim must match the table — when the user changes
- * embedding model, the AI settings page calls `recreateVecTable` to
- * realign before this job re-runs.
- */
 export async function enrichEmbedding(
   client: ProviderClient,
   save: Save,
@@ -31,9 +24,6 @@ export async function enrichEmbedding(
   }
   const db = await getDb();
   const raw = db.$raw;
-  // sqlite-vec accepts JSON array text or a Float32Array binary blob.
-  // JSON keeps the path simple at <2k floats, which is well under what
-  // we ever send.
   const json = JSON.stringify(vector);
   try {
     raw

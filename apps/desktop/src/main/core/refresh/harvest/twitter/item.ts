@@ -1,11 +1,5 @@
 /// <reference lib="dom" />
 
-/**
- * Twitter/X single-tweet collector. Runs inside the hidden
- * BrowserWindow via `executeJavaScript`. Injects the shared
- * normalizer for `upgradeTwimgUrl`, `parseMetric`, etc.
- */
-
 import type { ScrapedHarvest } from "../types";
 import { inPageTwitterNormalize } from "./normalize";
 

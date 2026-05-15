@@ -1,83 +1,28 @@
 /// <reference lib="dom" />
 
-/**
- * Twitter bookmarks harvester. Drives the hidden scrape window to
- * `https://x.com/i/bookmarks` and walks the rendered list via DOM
- * scraping, returning every bookmark we see that isn't already in
- * the local library.
- *
- * Single-mode contract: sync's only job is "ensure every bookmark on
- * Twitter is in the library". There is no "incremental vs backfill" —
- * every run walks the full list (capped only by `maxItems` and the
- * scroll deadline). `knownIds` keeps the dedupe set warm so a
- * virtualised re-render doesn't double-emit, but seeing a known id
- * does NOT short-circuit the loop.
- *
- * Defensive returns:
- *   - Auth wall (`/i/flow/login` etc.) → `auth_required`. Caller
- *     marks the source as needing reconnect.
- *   - Hydrate timed out without ever seeing an article → `no_match`.
- *     Almost always means the page never rendered (Twitter served
- *     the "Something went wrong" interstitial we sometimes hit) —
- *     we surface it as a soft retry rather than misreading silence
- *     as "your bookmarks are empty".
- *   - "Try again" interstitial visible → `no_match`, same reasoning.
- *
- * The `inPageBookmarks` body is stringified via `Function.toString()`
- * and `executeJavaScript`'d into the BrowserWindow's main world. Keep
- * it self-contained: no imports, no closure references, no TypeScript
- * features that don't survive `toString()`.
- */
-
 import type { MediaType } from "@pond/schema/db";
 import type { BookmarksCapture, RichTweet } from "./graphql";
 
 export interface BookmarksHarvestArgs {
-  /** Bookmark ids already in the local DB; harvester dedupes against these. */
   knownIds: string[];
-  /** Hard ceiling on entries returned per run. */
-  maxItems: number;
 }
 
-/**
- * One scraped bookmark card. Read straight from the rendered DOM by
- * the in-page walker. The harvester in
- * [`scrape-window.ts`](apps/desktop/src/main/core/refresh/scrape-window.ts)
- * may attach `rich` after parsing the captured GraphQL responses; the
- * DOM walker itself never sets it.
- */
 export interface BookmarksEntry {
   tweetId: string;
   url: string;
-  /** ISO timestamp on the bookmark card (`<time datetime>`), when present. */
   bookmarkedAt?: string;
-  /** First line of the tweet text, capped — used as the save title. */
   title?: string;
-  /** Full tweet text snippet from the rendered card. */
   description?: string;
-  /** Author handle in `@name` form. */
   author?: string;
-  /** First media cover URL, when the card has any media. */
   mediaUrl?: string;
-  /** Every media item rendered on the card. First entry is the cover. */
   mediaUrls?: Array<{
     url: string;
     type?: MediaType;
     poster?: string;
   }>;
-  /**
-   * Rich GraphQL payload, attached post-merge in scrape-window when
-   * the preload's XHR hook captured this tweet's `Bookmarks` response.
-   * Carries full text, full-quality media, engagement metrics, and
-   * any quoted tweet. Never set by the in-page DOM walker.
-   */
   rich?: RichTweet;
 }
 
-/**
- * Debug telemetry emitted by the in-page walker for runtime diagnosis.
- * Written from the page world; logged from the main process.
- */
 export interface BookmarksHarvestDebug {
   hydrateSawArticle: boolean;
   hydrateMs: number;
@@ -91,24 +36,16 @@ export interface BookmarksHarvestDebug {
     | "auth_required"
     | "no_match"
     | "empty_state"
-    | "max_items"
     | "stable"
     | "deadline";
-  /** Snapshot taken when we hit the empty-state / no-match branch. */
   pageSnapshot?: {
     href: string;
     pathname: string;
-    /** First 200 chars of textContent of the `[data-testid="emptyState"]` we matched. */
     emptyStateText: string | null;
-    /** Where in the DOM tree the matched element lives (testid path). */
     emptyStateAncestry: string | null;
-    /** Did the page have a primary column at all? */
     hasPrimaryColumn: boolean;
-    /** Visible "Sign in" / "Log in" button — strong logged-out signal. */
     hasLoginAffordance: boolean;
-    /** Article count after we decided to bail. */
     articleCountAfterBail: number;
-    /** All `data-testid` values on the page that contain "empty" (case-insensitive). */
     emptyTestIds: string[];
   };
 }
@@ -117,7 +54,6 @@ export type BookmarksHarvestResult =
   | {
       ok: true;
       entries: BookmarksEntry[];
-      /** Raw GraphQL response bodies captured by the preload XHR hook. */
       captures: BookmarksCapture[];
       reachedEnd: boolean;
       debug?: BookmarksHarvestDebug;
@@ -128,15 +64,8 @@ export type BookmarksHarvestResult =
       debug?: BookmarksHarvestDebug;
     };
 
-// 5-minute hard ceiling on a single run. Twitter virtualises the
-// bookmarks list, so memory stays bounded; the cap is a safety belt
-// against a hung page pinning the harvester forever.
 const SCROLL_DEADLINE_MS = 5 * 60_000;
 
-/**
- * Build a self-contained JS expression for `executeJavaScript`.
- * Returns a `BookmarksHarvestResult` (JSON-serialisable).
- */
 export function buildBookmarksExpression(args: BookmarksHarvestArgs): string {
   const fnSrc = `(${inPageBookmarks.toString()})`;
   const enriched = { ...args, scrollDeadlineMs: SCROLL_DEADLINE_MS };
@@ -147,13 +76,6 @@ export function buildBookmarksExpression(args: BookmarksHarvestArgs): string {
   })()`;
 }
 
-/**
- * Inlined into the page via `executeJavaScript`. Walks every
- * `article[data-testid="tweet"]` rendered on `/i/bookmarks` as we
- * scroll, extracts the tweet payload directly from the card markup,
- * and returns when the DOM stops growing OR we hit `maxItems` OR the
- * scroll deadline expires.
- */
 async function inPageBookmarks(
   args: BookmarksHarvestArgs & { scrollDeadlineMs: number },
 ): Promise<BookmarksHarvestResult> {
@@ -199,10 +121,6 @@ async function inPageBookmarks(
     exitReason: "deadline",
   };
 
-  // Pull anything the preload's XHR hook has buffered since the last
-  // tick. The preload writes to `globalThis.__pondBookmarksCaptures`;
-  // we splice it down to zero each time so memory doesn't grow with
-  // run length on big libraries.
   const drainCaptures = (): void => {
     const buf = (
       globalThis as unknown as {
@@ -213,11 +131,6 @@ async function inPageBookmarks(
     for (const item of buf.splice(0)) captures.push(item);
   };
 
-  // Live progress sink. The main process polls
-  // `globalThis.__pondHarvestStats` from a separate executeJavaScript
-  // call to drive the toast and confirm the in-page loop is still
-  // making forward progress. Mutating the same object in-place keeps
-  // GC quiet across thousands of iterations on a big library.
   const stats: {
     seen: number;
     fresh: number;
@@ -281,9 +194,6 @@ async function inPageBookmarks(
     const time = article.querySelector<HTMLTimeElement>("time[datetime]");
     const bookmarkedAt = time?.getAttribute("datetime") ?? undefined;
 
-    // The author block lives at `[data-testid="User-Name"]`. The
-    // handle is usually the second link inside it (`@name`); the
-    // first is the display-name link.
     const handleLink = Array.from(
       article.querySelectorAll<HTMLAnchorElement>(
         '[data-testid="User-Name"] a[href^="/"]',
@@ -294,9 +204,6 @@ async function inPageBookmarks(
     });
     const author = handleLink?.textContent?.trim() ?? undefined;
 
-    // Tweet body. Twitter sometimes splits the text across multiple
-    // `[data-testid="tweetText"]` blocks (e.g. when there's an
-    // attached card link); join them.
     const textBlocks = Array.from(
       article.querySelectorAll<HTMLElement>('[data-testid="tweetText"]'),
     );
@@ -316,8 +223,6 @@ async function inPageBookmarks(
           ? firstLine
           : `${firstLine.slice(0, TITLE_CAP - 1).trimEnd()}…`;
 
-    // Media: photos live under `[data-testid="tweetPhoto"]`; videos
-    // expose a `<video>` whose `poster` is the cover image.
     const mediaUrls: NonNullable<BookmarksEntry["mediaUrls"]> = [];
     const photoNodes = Array.from(
       article.querySelectorAll<HTMLElement>('[data-testid="tweetPhoto"]'),
@@ -384,14 +289,6 @@ async function inPageBookmarks(
     return added;
   };
 
-  const newCount = (): number => {
-    let n = 0;
-    for (const id of seen.keys()) {
-      if (!known.has(id)) n += 1;
-    }
-    return n;
-  };
-
   const freshEntries = (): BookmarksEntry[] => {
     const out: BookmarksEntry[] = [];
     for (const [id, entry] of seen) {
@@ -401,17 +298,6 @@ async function inPageBookmarks(
     return out;
   };
 
-  // Twitter renders `<div data-testid="emptyState">Bookmark posts to
-  // save them for later…</div>` as a *transient placeholder* while
-  // the `Bookmarks` GraphQL query is in flight (typically 1.5–3s).
-  // If we exit the hydrate loop the moment we see `emptyState`, we
-  // race the network and bail before a single article paints — which
-  // is exactly what the runtime logs showed. So the loop only exits
-  // early on a real `article`. An `emptyState` is only ground truth
-  // once we ALSO have a captured Bookmarks response (which the XHR
-  // hook in the preload buffers on `__pondBookmarksCaptures`); that
-  // means Twitter's GraphQL has actually returned and the user
-  // genuinely has zero bookmarks.
   let sawArticle = false;
   const hydrateStart = Date.now();
   const hydrateDeadline = hydrateStart + 20_000;
@@ -440,11 +326,6 @@ async function inPageBookmarks(
   debug.hydrateSawArticle = sawArticle;
   debug.hydrateMs = Date.now() - hydrateStart;
 
-  // No articles AND no empty-state element after 12s → page never
-  // rendered. Most likely Twitter served the "Something went wrong"
-  // interstitial. Don't claim "reached end of empty list" — surface
-  // as a soft no-match so the orchestrator retries on the next tick
-  // without touching `lastSyncedAt`.
   if (!sawArticle) {
     const empty = document.querySelector('[data-testid="emptyState"]');
     const buildAncestry = (el: Element | null): string => {
@@ -508,8 +389,6 @@ async function inPageBookmarks(
     return { ok: false, reason: "no_match", debug };
   }
 
-  // Twitter's "Try again" interstitial when the SPA chokes on a
-  // request. Same treatment as the no-render case above.
   const looksLikeRetryWall = (): boolean => {
     if (document.querySelector('[data-testid="error-detail"]')) return true;
     const buttons = Array.from(document.querySelectorAll("button, a"));
@@ -526,24 +405,7 @@ async function inPageBookmarks(
   collect();
   drainCaptures();
   publishStats("scroll");
-  if (newCount() >= args.maxItems) {
-    debug.exitReason = "max_items";
-    finalize();
-    return {
-      ok: true,
-      entries: freshEntries(),
-      captures,
-      reachedEnd: false,
-      debug,
-    };
-  }
 
-  // Detect which element is actually the scroll container. If we end
-  // up here scrolling the document body, but Twitter has a virtualised
-  // inner container, `window.scrollBy` is a no-op and the page never
-  // paginates past the initial viewport. Pick the largest scrollable
-  // descendant of <main> that has overflow-y auto/scroll AND a
-  // scrollHeight > clientHeight.
   const findScroller = (): {
     el: HTMLElement | null;
     kind: BookmarksHarvestDebug["scrollerKind"];
@@ -584,8 +446,6 @@ async function inPageBookmarks(
         behavior: "instant" as ScrollBehavior,
       });
     }
-    // 700ms ± 300 — jittered so the scroll cadence doesn't look
-    // like a bot pinning Twitter's pagination endpoint.
     await new Promise((r) => setTimeout(r, 700 + Math.random() * 300));
     debug.scrollIterations += 1;
     stats.scrolls += 1;
@@ -593,24 +453,10 @@ async function inPageBookmarks(
     collect();
     drainCaptures();
     publishStats("scroll");
-    if (newCount() >= args.maxItems) {
-      debug.exitReason = "max_items";
-      finalize();
-      return {
-        ok: true,
-        entries: freshEntries(),
-        captures,
-        reachedEnd: false,
-        debug,
-      };
-    }
 
     if (seen.size === lastSize) {
       stableTicks += 1;
-      // ~3.5s of no DOM growth means Twitter has nothing more to load.
       if (stableTicks >= 5) {
-        // One last drain in case the final scroll provoked a request
-        // whose `load` event fired between our last drain and now.
         drainCaptures();
         debug.exitReason = "stable";
         finalize();

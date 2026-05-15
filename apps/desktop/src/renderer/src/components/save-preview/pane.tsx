@@ -3,10 +3,12 @@ import {
   IconFolder5Outline18,
   IconGlobe2Outline18,
   IconLabelOutline18,
-} from "@pond/icons/outline";
+} from "@pond/icons/outline/18";
 import { type ReactNode, useCallback, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Card, isTextOnlyTweet } from "@/components/card-thumb";
+import { NsfwOverlay } from "@/components/nsfw-overlay";
+import { useNsfwGuard } from "@/lib/use-nsfw-guard";
 import { buildMediaUnits } from "@/pool/media";
 import type { Save } from "@/pool/types";
 import { pickAuthorAvatarUrl } from "@/pool/url";
@@ -23,6 +25,7 @@ export function Pane({ save, className, ...props }: PaneProps) {
   const [avatarBroken, setAvatarBroken] = useState(false);
   const cover = useMemo(() => buildMediaUnits(save)[0] ?? null, [save]);
   const textTweet = isTextOnlyTweet(save);
+  const nsfw = useNsfwGuard(save);
   const stats = useMemo(() => collectMetadataRows(save), [save]);
   const props2 = useMemo(() => collectPropertyRows(save), [save]);
   const avatarUrl = useMemo(() => pickAuthorAvatarUrl(save), [save]);
@@ -61,12 +64,14 @@ export function Pane({ save, className, ...props }: PaneProps) {
           className={styles["pane-cover"]}
           onClick={openLightbox}
           aria-label="Open media full screen"
+          data-nsfw-blur={nsfw.shouldBlur ? "true" : undefined}
         >
           <img
             src={cover.isVideo ? (cover.posterUrl ?? cover.url) : cover.url}
             alt=""
             className={styles["pane-cover-img"]}
           />
+          {nsfw.shouldBlur ? <NsfwOverlay onReveal={nsfw.reveal} /> : null}
         </button>
       ) : textTweet ? (
         <div className={styles["pane-cover"]} data-text-tweet="true">

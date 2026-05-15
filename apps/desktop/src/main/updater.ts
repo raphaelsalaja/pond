@@ -5,20 +5,6 @@ import { getPrefs } from "./core/prefs";
 
 const { autoUpdater } = electronUpdaterPkg;
 
-/**
- * Auto-updater. Follows electron-updater's GitHub releases provider —
- * `electron-builder.yml` already has `publish: github`. We:
- *
- *  - Check on startup (2 seconds after ready to avoid fighting the first
- *    frame render).
- *  - Re-check every 6 hours when idle.
- *  - Prompt the user with a native dialog before installing.
- *
- * Development builds short-circuit via `app.isPackaged`. The updater is
- * tolerant of network failures; a offline laptop just never sees
- * upgrades.
- */
-
 const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
 let wired = false;
 
@@ -33,8 +19,6 @@ export function registerAutoUpdater() {
   autoUpdater.logger = log;
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
-  // Honour the persisted prefs at boot. Subsequent flips from the
-  // settings page route through `applyUpdaterPrefs` below.
   void applyUpdaterPrefs().catch((err) =>
     log.warn("[pond updater] prefs apply failed", err),
   );
@@ -80,13 +64,6 @@ export function registerAutoUpdater() {
   }, SIX_HOURS_MS);
 }
 
-/**
- * Apply the persisted updater prefs to the live `autoUpdater`
- * instance. Channel = "stable" | "beta" routes the user to the
- * matching electron-updater channel; auto-install toggles
- * `autoDownload`. Safe to call from non-packaged builds — early
- * returns when the updater isn't wired.
- */
 export async function applyUpdaterPrefs(): Promise<void> {
   if (!app.isPackaged) return;
   const prefs = await getPrefs();
@@ -95,7 +72,6 @@ export async function applyUpdaterPrefs(): Promise<void> {
   autoUpdater.autoDownload = prefs.updates.autoInstall;
 }
 
-/** Manual "Check for updates" button. */
 export async function checkForUpdatesNow(): Promise<{
   ok: boolean;
   version?: string;

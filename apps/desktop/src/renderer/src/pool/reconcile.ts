@@ -1,11 +1,6 @@
 import { notifyAll, notifyId, pool } from "./pool";
 import type { Save } from "./types";
 
-/**
- * Sync action emitted by main. Shape mirrors `SyncAction` in
- * `@pond/schema/db`. Kept as a narrow local type so the renderer doesn't
- * import any Node-adjacent modules.
- */
 export interface SyncActionEvent {
   id: number;
   batchId: string | null;
@@ -19,11 +14,6 @@ export interface SyncActionEvent {
   createdAt: string;
 }
 
-/**
- * Apply a sync-action from main to the local Object Pool and notify all
- * subscribers. Called from the preload bridge on every `sync-action`
- * event.
- */
 export function applyAction(event: SyncActionEvent): void {
   if (event.modelName !== "save") return;
 
@@ -64,8 +54,6 @@ export function applyAction(event: SyncActionEvent): void {
   }
 
   if (event.action === "A") {
-    // Archive/unarchive just toggles `archivedAt`; the executor passes
-    // the patched row through `data`.
     const existing = pool.get(event.modelId);
     if (!existing) return;
     const patched = event.data as Partial<Save>;
@@ -88,7 +76,6 @@ export function normalise(raw: Partial<Save> | null | undefined): Save | null {
     author: raw.author ?? null,
     notes: raw.notes ?? null,
     mediaUrl: raw.mediaUrl ?? null,
-    blobUrl: raw.blobUrl ?? null,
     mediaType: raw.mediaType ?? null,
     files: raw.files ?? [],
     coverIndex: raw.coverIndex,
@@ -97,6 +84,8 @@ export function normalise(raw: Partial<Save> | null | undefined): Save | null {
     fileSize: raw.fileSize ?? null,
     dominantColors: raw.dominantColors ?? null,
     blurDataUrl: raw.blurDataUrl ?? null,
+    nsfwScore: raw.nsfwScore ?? null,
+    nsfwLabel: raw.nsfwLabel ?? null,
     tags: raw.tags ?? [],
     aiTags: raw.aiTags ?? [],
     aiCaption: raw.aiCaption ?? null,
@@ -109,30 +98,28 @@ export function normalise(raw: Partial<Save> | null | undefined): Save | null {
     ocrText: raw.ocrText ?? null,
     annotations: raw.annotations ?? null,
     rawJson: raw.rawJson ?? undefined,
-    savedAt: toIso(raw.savedAt) ?? new Date().toISOString(),
-    createdAt: toIso(raw.createdAt) ?? new Date().toISOString(),
-    embeddingUpdatedAt: toIso(raw.embeddingUpdatedAt),
-    archivedAt: toIso(raw.archivedAt),
-    deletedAt: toIso(raw.deletedAt),
+    savedAt: toMs(raw.savedAt) ?? Date.now(),
+    createdAt: toMs(raw.createdAt) ?? Date.now(),
+    embeddingUpdatedAt: toMs(raw.embeddingUpdatedAt),
+    archivedAt: toMs(raw.archivedAt),
+    deletedAt: toMs(raw.deletedAt),
   };
 }
 
-/**
- * Renderer-side defensive converter. The wire layer in main already
- * converts Date columns to ISO strings, but we accept Date / number /
- * string here too so the pool survives schema drift or a main build
- * that hasn't been restarted.
- */
-function toIso(v: unknown): string | null {
+function toMs(v: unknown): number | null {
   if (v == null) return null;
+  if (typeof v === "number") return Number.isFinite(v) ? v : null;
   if (v instanceof Date) {
     const t = v.getTime();
-    return Number.isFinite(t) ? v.toISOString() : null;
+    return Number.isFinite(t) ? t : null;
   }
-  if (typeof v === "number") {
-    const d = new Date(v);
-    return Number.isFinite(d.getTime()) ? d.toISOString() : null;
+  if (typeof v === "string") {
+    const asNum = Number(v);
+    if (!Number.isNaN(asNum) && v.trim() !== "" && Number.isFinite(asNum)) {
+      return asNum;
+    }
+    const parsed = Date.parse(v);
+    return Number.isFinite(parsed) ? parsed : null;
   }
-  if (typeof v === "string") return v;
   return null;
 }

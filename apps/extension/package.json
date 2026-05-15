@@ -21,6 +21,7 @@
   "scripts": {
     "build": "wxt build",
     "dev": "wxt",
+    "icons": "node scripts/generate-icons.mjs",
     "postinstall": "wxt prepare",
     "typecheck": "wxt prepare && tsc --noEmit",
     "zip": "wxt zip"

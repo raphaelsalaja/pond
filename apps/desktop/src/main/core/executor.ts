@@ -21,42 +21,13 @@ import {
   writeItemFiles,
 } from "../lib/library";
 
-/**
- * TransactionExecutor — the SINGLE write path for pond.
- *
- * Invariants:
- *  - The renderer + HTTP handlers never mutate `saves` / `tags` / disk
- *    directly. They call `executeTransaction(tx)` and read from the
- *    Object Pool (renderer) / index (main).
- *  - Every transaction's DB side runs inside `db.transaction((t) => ...)`
- *    so index + sync_action row commit or roll back together.
- *  - On success we broadcast `sync-action` to every renderer window. The
- *    pool reconciles and re-renders.
- *  - Failure modes: if `applyToDisk` throws we roll the DB back by
- *    re-throwing inside the callback; the renderer's optimistic update
- *    is reverted via the error path.
- *
- * See plan § "Transactions, Object Pool & sync actions".
- */
-
 export interface ExecuteOptions {
-  /** Skip broadcasting — used by startup crash-replay. */
   silent?: boolean;
 }
 
 type SaveRow = Save;
 type TagRow = Tag;
 
-/**
- * Compute the `data` payload that ships with a sync-action.
- *
- * For `create` we store the inserted row, for `update` we store the
- * patch — both are already on the tx. For state-only transitions
- * (`trash`/`untrash`, deprecated `archive`/`unarchive`) the tx itself
- * carries no payload, so we synthesise the patch here. Without this the
- * renderer's `applyAction` "A" branch would receive `null` and skip the
- * pool merge, leaving the UI stale until next hydration.
- */
 function dataForSyncAction(tx: Transaction): unknown {
   if ("data" in tx) return tx.data as unknown;
   if ("patch" in tx) return tx.patch as unknown;
@@ -99,70 +70,54 @@ function resolveActor(meta: TxMeta | undefined): {
   };
 }
 
-/**
- * Dispatch a single transaction through the full pipeline:
- *   1. stash in __transactions (crash-safety)
- *   2. apply to disk (file-first)
- *   3. apply to index (drizzle)
- *   4. record sync_actions row
- *   5. remove __transactions row
- *   6. broadcast sync-action to renderers
- *
- * Step 2-5 run inside a SINGLE `better-sqlite3` transaction so either all
- * four succeed or none do.
- */
+const SYNC_ACTIONS_RING = 5000;
+let writesSinceTrim = 0;
+
 export async function executeTransaction(
   tx: Transaction,
   opts: ExecuteOptions = {},
 ): Promise<SyncAction> {
   const db = await getDb();
   const raw = db.$raw;
-  const txRowId = ulid();
   const batchId = tx.meta?.batchId ?? null;
 
-  raw
-    .prepare(`INSERT INTO __transactions (id, batch_id, tx) VALUES (?, ?, ?)`)
-    .run(txRowId, batchId, JSON.stringify(tx));
+  await applyToDisk(tx);
 
-  let action: SyncAction;
-  try {
-    // Step 2: disk writes before DB transaction — disk ops are async, but
-    // better-sqlite3 is sync; rather than fight the ABI, we do disk first,
-    // DB second. If disk succeeded and DB fails we'll surface a loud error
-    // and the scan-library pass will re-sync the row on next startup.
-    await applyToDisk(tx);
+  const action = raw.transaction(() => {
+    applyToIndex(db, tx);
+    const inserted = db
+      .insert(syncActionsTable)
+      .values({
+        batchId,
+        modelName: tx.model,
+        modelId: tx.id,
+        action: toActionKind(tx),
+        data: dataForSyncAction(tx),
+        prevData: "before" in tx ? (tx.before as unknown) : null,
+        actor: resolveActor(tx.meta).actor,
+        actorReason: resolveActor(tx.meta).reason,
+      })
+      .returning()
+      .all()[0];
+    if (!inserted) throw new Error("sync_actions insert returned no row");
+    return inserted as SyncAction;
+  })();
 
-    // Step 3+4+5: drizzle transaction wraps the index write AND the
-    // sync_actions insert so the monotonic id stays consistent.
-    action = raw.transaction(() => {
-      applyToIndex(db, tx);
-      const inserted = db
-        .insert(syncActionsTable)
-        .values({
-          batchId,
-          modelName: tx.model,
-          modelId: tx.id,
-          action: toActionKind(tx),
-          data: dataForSyncAction(tx),
-          prevData: "before" in tx ? (tx.before as unknown) : null,
-          actor: resolveActor(tx.meta).actor,
-          actorReason: resolveActor(tx.meta).reason,
-        })
-        .returning()
-        .all()[0];
-      if (!inserted) throw new Error("sync_actions insert returned no row");
+  writesSinceTrim += 1;
+  if (writesSinceTrim >= 500) {
+    writesSinceTrim = 0;
+    try {
       raw
-        .prepare(`UPDATE __transactions SET committed_at = ? WHERE id = ?`)
-        .run(Date.now(), txRowId);
-      return inserted as SyncAction;
-    })();
-  } catch (err) {
-    raw.prepare(`DELETE FROM __transactions WHERE id = ?`).run(txRowId);
-    log.error("[pond executor] rollback", { tx, err });
-    throw err;
+        .prepare(
+          `DELETE FROM sync_actions WHERE id <= (
+             SELECT id FROM sync_actions ORDER BY id DESC LIMIT 1 OFFSET ?
+           )`,
+        )
+        .run(SYNC_ACTIONS_RING);
+    } catch (err) {
+      log.warn("[pond executor] sync_actions trim failed", err);
+    }
   }
-
-  raw.prepare(`DELETE FROM __transactions WHERE id = ?`).run(txRowId);
 
   if (!opts.silent && !tx.meta?.silent) {
     broadcastSyncAction(action);
@@ -170,7 +125,6 @@ export async function executeTransaction(
   return action;
 }
 
-/** Coalesce N writes into one DB transaction. Used for bulk ingest. */
 export async function executeBatch(
   txs: Transaction[],
   opts: ExecuteOptions = {},
@@ -195,24 +149,8 @@ async function applyToDisk(tx: Transaction): Promise<void> {
       return;
     }
     case "update": {
-      // Rewrite metadata.json as the merged post-patch shape and, if the
-      // tx carried new media files, stream those to disk too. We read
-      // the current metadata, shallow-merge the patch (mapped to the
-      // metadata shape), and then overlay anything that belongs in the
-      // nested `pond` block.
       const existing = await readItemMetadata(tx.id);
       if (!existing) {
-        // The on-disk directory is gone but the DB still has a row —
-        // happens when a previous write committed the index but never
-        // landed the bytes (interrupted refresh, hand-deleted library
-        // dir, restored backup with a stale items dir, etc.). If this
-        // tx carries fresh files (the heal path in `ingest.ts ->
-        // refreshExisting -> anyFileMissing` produces exactly this
-        // shape), we can rebuild the directory from scratch by
-        // synthesising the post-patch save and handing it to
-        // `writeItemFiles` — same call the create-branch above uses.
-        // Without this, the heal logic silently no-ops and the broken
-        // 404s persist forever despite the toast saying "Refreshed".
         if (tx.files && tx.files.length > 0) {
           const db = await getDb();
           const rows = await db
@@ -227,11 +165,6 @@ async function applyToDisk(tx: Transaction): Promise<void> {
             );
             return;
           }
-          // Shallow-merge: the patch is `Partial<NewSave>` keyed by the
-          // same column names, so spreading it over `current` produces a
-          // valid post-patch `Save`. `writeItemFiles` mkdirs recursively
-          // and rewrites metadata.json from this object so the file-side
-          // and index-side states converge again.
           const merged = { ...current, ...(tx.patch ?? {}) } as Save;
           log.info(
             "[pond executor] healing orphan: rebuilding items dir",
@@ -241,10 +174,6 @@ async function applyToDisk(tx: Transaction): Promise<void> {
           await writeItemFiles(tx.id, merged, tx.files);
           return;
         }
-        // Text-only patch with no bytes can't reconstruct a directory in
-        // a useful way — better to surface the warning so we notice
-        // these orphans on the next Refresh that actually downloads
-        // something.
         log.warn("[pond executor] update for unknown item", tx.id);
         return;
       }
@@ -253,13 +182,12 @@ async function applyToDisk(tx: Transaction): Promise<void> {
       const { join } = await import("node:path");
       const { itemDir } = await import("../paths");
 
-      // Persist new media BEFORE rewriting metadata so a reader never
-      // observes a files[] entry pointing at a byte-stream that hasn't
-      // landed yet.
       const writtenFiles: Array<{ filename: string; buf: Buffer }> = [];
       if (tx.files && tx.files.length > 0) {
         for (const file of tx.files) {
-          const buf = Buffer.from(file.base64, "base64");
+          const buf = Buffer.isBuffer(file.bytes)
+            ? file.bytes
+            : Buffer.from(file.bytes);
           await writeFile(join(itemDir(tx.id), file.filename), buf);
           writtenFiles.push({ filename: file.filename, buf });
         }
@@ -291,14 +219,9 @@ async function applyToDisk(tx: Transaction): Promise<void> {
     }
     case "delete":
     case "purge":
-      // `delete` is a hard delete from the active library; `purge` is a
-      // hard delete from trash. `removeItem` covers both since it rm -rf's
-      // both possible locations (`items/<id>.info` and `trash/<id>.info`).
       await removeItem(tx.id);
       return;
     case "trash":
-    // Deprecated `archive` shares disk semantics with `trash`. Keep the
-    // case folded together so an in-flight undo entry still replays.
     case "archive":
       await moveToTrash(tx.id);
       return;
@@ -309,14 +232,6 @@ async function applyToDisk(tx: Transaction): Promise<void> {
   }
 }
 
-/**
- * Split a Save patch into the two halves of the metadata.json shape:
- *   - `top` fields sit at the root (name, annotation, tags, url, …)
- *   - `pond` fields live inside the nested pond namespace
- *     (description, author, mediaType, rawSource, …)
- *
- * Any key the on-disk schema doesn't model is silently ignored.
- */
 function mapPatchToMetadata(patch: Partial<SaveRow>): {
   top: Record<string, unknown>;
   pond: Record<string, unknown>;
@@ -380,7 +295,6 @@ function applyToIndex(
         db.delete(savesTable).where(eq(savesTable.id, tx.id)).run();
         return;
       case "trash":
-      // Deprecated alias of `trash`. New writers should emit `trash`.
       case "archive":
         db.update(savesTable)
           .set({ deletedAt: new Date() })
@@ -414,21 +328,12 @@ function applyToIndex(
 type SyncActionListener = (action: SyncAction) => void;
 const syncActionListeners = new Set<SyncActionListener>();
 
-/**
- * Register a main-process listener for sync actions. Useful for the
- * tray / badge / Spotlight index which want to react without going
- * through IPC.
- */
 export function registerSyncActionListener(fn: SyncActionListener): () => void {
   syncActionListeners.add(fn);
   return () => syncActionListeners.delete(fn);
 }
 
 export function broadcastSyncAction(action: SyncAction): void {
-  // Convert Date columns embedded in `data` / `prevData` to ISO strings
-  // before crossing the IPC boundary so the renderer pool never sees raw
-  // `Date` instances (which break the `savedAt`/`createdAt` string
-  // contract in `renderer/src/pool/types.ts`).
   const wire = toWireSyncAction(action);
   for (const win of BrowserWindow.getAllWindows()) {
     if (!win.isDestroyed()) {
@@ -444,41 +349,4 @@ export function broadcastSyncAction(action: SyncAction): void {
   }
 }
 
-/**
- * Startup crash-replay. Read every row from `__transactions` whose
- * `committed_at IS NULL` and re-run it. If the original write made it
- * to disk but not to the index we'll catch it; if it didn't, we retry
- * from scratch. Either way the DB ends up consistent with disk.
- */
-export async function replayPendingTransactions(): Promise<void> {
-  const db = await getDb();
-  const raw = db.$raw;
-  const rows = raw
-    .prepare(`SELECT id, tx FROM __transactions WHERE committed_at IS NULL`)
-    .all() as Array<{ id: string; tx: string }>;
-  if (rows.length === 0) return;
-  log.warn(`[pond executor] replaying ${rows.length} pending transactions`);
-  for (const row of rows) {
-    try {
-      const tx = JSON.parse(row.tx) as Transaction;
-      // Re-run with the original batchId preserved.
-      await executeTransaction(
-        {
-          ...tx,
-          meta: {
-            ...(tx.meta ?? {}),
-            silent: true,
-            actorReason: "crash-replay",
-          },
-        },
-        { silent: true },
-      );
-    } catch (err) {
-      log.error("[pond executor] replay failed", row.id, err);
-      // Leave the row alone so the user / next startup can investigate.
-    }
-  }
-}
-
-// Keep `SaveRow` / `TagRow` used so tsc doesn't warn when Phase 3 adds more.
 void ((): TagRow[] => []);

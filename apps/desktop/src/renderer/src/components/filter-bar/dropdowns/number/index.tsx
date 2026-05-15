@@ -4,18 +4,6 @@ import { useMemo, useState } from "react";
 import type { DropdownProps } from "@/components/filter-bar/dropdowns/types";
 import styles from "./styles.module.css";
 
-/**
- * Number-typed field dropdown. Renders a filterable list of the
- * field's `presets` plus a custom min/max range input. Picking a
- * preset writes a single-bound predicate (`gte` / `lte`) when the
- * preset has one bound, or `between` when it has both. The custom
- * row always writes `between`.
- *
- * Used by `size`, `dimensions`, `duration`. The semantics of the
- * raw number depend on the field — bytes for size, pixels for
- * dimensions, seconds for duration — but the input shape is the
- * same.
- */
 export function NumberDropdown({ predicate, onChange }: DropdownProps) {
   const [q, setQ] = useState("");
   const meta = FIELD_META[predicate.field];
@@ -58,7 +46,7 @@ export function NumberDropdown({ predicate, onChange }: DropdownProps) {
   return (
     <div className={styles.body}>
       <div className={styles.search}>
-        <Input.Root
+        <Input
           type="search"
           value={q}
           placeholder="Filter…"
@@ -77,7 +65,7 @@ export function NumberDropdown({ predicate, onChange }: DropdownProps) {
       ) : null}
       <Menu.Separator />
       <div className={styles.range}>
-        <Input.Root
+        <Input
           type="number"
           inputMode="numeric"
           placeholder="min"
@@ -89,7 +77,7 @@ export function NumberDropdown({ predicate, onChange }: DropdownProps) {
         <span className={styles.dash} aria-hidden>
           –
         </span>
-        <Input.Root
+        <Input
           type="number"
           inputMode="numeric"
           placeholder="max"

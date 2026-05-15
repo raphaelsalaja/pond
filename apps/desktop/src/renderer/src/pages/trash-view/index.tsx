@@ -11,14 +11,6 @@ import { useSaves } from "@/pool/hooks";
 import { pool } from "@/pool/pool";
 import type { Save } from "@/pool/types";
 
-/**
- * Trash view. Shows every row whose `deletedAt` is set, sorted most-
- * recently-trashed first. Per-card hover affordances cover the per-row
- * Restore / Delete Forever flow; bulk Empty Trash / Restore All are not
- * surfaced here — retention is handled by Settings → Trash.
- *
- * All trash mutations route through `window.pond.tx`.
- */
 export function TrashView() {
   const saves = useSaves();
   const toast = useToast();
@@ -46,8 +38,6 @@ export function TrashView() {
     },
     [buildSavePath, navigate],
   );
-  // Double-click → Linear-style detail page. The lightbox now lives
-  // behind the cover image (and the inspector thumb), not double-click.
   const focus = useCallback(
     (id: string) => {
       navigate(buildDetailPath(id));

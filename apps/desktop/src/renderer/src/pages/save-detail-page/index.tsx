@@ -17,25 +17,8 @@ import { DetailHeader } from "./header";
 import { PropertiesRail } from "./properties-rail";
 import styles from "./styles.module.css";
 import { useListContext } from "./use-list-context";
+import { YoutubeDetail } from "./youtube";
 
-/**
- * Linear-style detail surface — keeps the LibrarySidebar mounted and
- * replaces the grid with a wide centred body plus a ~220px right
- * properties rail.
- *
- * Reachable URLs (one per list mode the grid serves):
- *
- *   /detail/:id                 (default library)
- *   /source/:source/detail/:id  (source filter view)
- *   /untagged/detail/:id
- *   /recents/detail/:id
- *   /random/detail/:id
- *   /trash/detail/:id
- *
- * The active save is read from `useParams().id`. Pagination, breadcrumb
- * and back-link target are derived from the URL prefix via
- * `useListContext()`.
- */
 export function SaveDetailPage() {
   const { id } = useParams<{ id: string }>();
   const save = useSave(id);
@@ -47,6 +30,8 @@ export function SaveDetailPage() {
 
   const list = useListContext({ activeId: id ?? null });
 
+  const isYoutube = save?.source === "youtube";
+
   const goPrev = useCallback(() => {
     if (!list.prevId) return;
     navigate(list.buildDetailPath(list.prevId));
@@ -57,10 +42,8 @@ export function SaveDetailPage() {
     navigate(list.buildDetailPath(list.nextId));
   }, [list, navigate]);
 
-  // Keyboard shortcuts: J / K and ArrowUp / ArrowDown move between
-  // saves in the current filtered list. Skip when the user is typing
-  // into an input (TagEditor lives inside this page).
   useEffect(() => {
+    if (isYoutube) return;
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
       const tag = target?.tagName;
@@ -84,10 +67,16 @@ export function SaveDetailPage() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [goNext, goPrev, list.nextId, list.prevId, list.parentTo, navigate]);
+  }, [
+    isYoutube,
+    goNext,
+    goPrev,
+    list.nextId,
+    list.prevId,
+    list.parentTo,
+    navigate,
+  ]);
 
-  // Cover click → media lightbox. The lightbox is keyed on `?focus=`,
-  // so we just toggle that param. Closing the lightbox returns here.
   const openLightbox = useCallback(() => {
     if (!save) return;
     const next = new URLSearchParams(searchParams);
@@ -103,6 +92,10 @@ export function SaveDetailPage() {
         </Shell.Empty>
       </Shell.Main>
     );
+  }
+
+  if (isYoutube) {
+    return <YoutubeDetail save={save} list={list} />;
   }
 
   const onTitleBlur = async (e: React.FocusEvent<HTMLHeadingElement>) => {

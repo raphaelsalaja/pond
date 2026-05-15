@@ -1,77 +1,80 @@
+import { cn } from "@/lib/cn";
 import styles from "./styles.module.css";
 
 interface PageProps extends React.ComponentPropsWithoutRef<"div"> {
   width?: "narrow" | "medium" | "wide";
 }
 
-function Page({ width = "medium", ...props }: PageProps) {
-  return <div data-width={width} className={styles.page} {...props} />;
+function Page({ width = "medium", className, ...props }: PageProps) {
+  return (
+    <div data-width={width} className={cn(styles.page, className)} {...props} />
+  );
 }
 
 interface HeaderProps extends React.ComponentPropsWithoutRef<"header"> {}
 
-function Header({ ...props }: HeaderProps) {
-  return <header className={styles.header} {...props} />;
+function Header({ className, ...props }: HeaderProps) {
+  return <header className={cn(styles.header, className)} {...props} />;
 }
 
 interface TitleProps extends React.ComponentPropsWithoutRef<"h1"> {}
 
-function Title({ ...props }: TitleProps) {
-  return <h1 className={styles.title} {...props} />;
+function Title({ className, ...props }: TitleProps) {
+  return <h1 className={cn(styles.title, className)} {...props} />;
 }
 
 interface DescriptionProps extends React.ComponentPropsWithoutRef<"p"> {}
 
-function Description({ ...props }: DescriptionProps) {
-  return <p className={styles.description} {...props} />;
+function Description({ className, ...props }: DescriptionProps) {
+  return <p className={cn(styles.description, className)} {...props} />;
 }
 
 interface SectionProps extends React.ComponentPropsWithoutRef<"div"> {}
 
-function Section({ ...props }: SectionProps) {
-  return <div className={styles.section} {...props} />;
+function Section({ className, ...props }: SectionProps) {
+  return <div className={cn(styles.section, className)} {...props} />;
 }
 
 interface SectionTitleProps extends React.ComponentPropsWithoutRef<"h2"> {}
 
-function SectionTitle({ ...props }: SectionTitleProps) {
-  return <h2 className={styles["section-title"]} {...props} />;
+function SectionTitle({ className, ...props }: SectionTitleProps) {
+  return <h2 className={cn(styles["section-title"], className)} {...props} />;
 }
 
 interface ListProps extends React.ComponentPropsWithoutRef<"div"> {}
 
-function List({ ...props }: ListProps) {
-  return <div className={styles.list} {...props} />;
+function List({ className, ...props }: ListProps) {
+  return <div className={cn(styles.list, className)} {...props} />;
 }
 
 interface ItemProps extends React.ComponentPropsWithoutRef<"div"> {}
 
-function Item({ ...props }: ItemProps) {
-  return <div className={styles.item} {...props} />;
+function Item({ className, ...props }: ItemProps) {
+  return <div className={cn(styles.item, className)} {...props} />;
 }
 
 interface ItemDetailsProps extends React.ComponentPropsWithoutRef<"div"> {}
 
-function ItemDetails({ ...props }: ItemDetailsProps) {
-  return <div className={styles.details} {...props} />;
+function ItemDetails({ className, ...props }: ItemDetailsProps) {
+  return <div className={cn(styles.details, className)} {...props} />;
 }
 
 interface ItemTitleProps extends React.ComponentPropsWithoutRef<"h3"> {}
 
-function ItemTitle({ ...props }: ItemTitleProps) {
-  return <h3 className={styles["item-title"]} {...props} />;
+function ItemTitle({ className, ...props }: ItemTitleProps) {
+  return <h3 className={cn(styles["item-title"], className)} {...props} />;
 }
 
 interface ItemDescriptionProps extends React.ComponentPropsWithoutRef<"p"> {}
 
-function ItemDescription({ ...props }: ItemDescriptionProps) {
-  return <p className={styles["item-description"]} {...props} />;
+function ItemDescription({ className, ...props }: ItemDescriptionProps) {
+  return <p className={cn(styles["item-description"], className)} {...props} />;
 }
 
 interface ItemControlProps extends React.ComponentPropsWithoutRef<"div"> {}
 
-function ItemControl({ ...props }: ItemControlProps) {
-  return <div className={styles.control} {...props} />;
+function ItemControl({ className, ...props }: ItemControlProps) {
+  return <div className={cn(styles.control, className)} {...props} />;
 }
 
 export const Settings = {

@@ -4,7 +4,6 @@ import type {
   RawCosmos,
   RawInstagram,
   RawPinterest,
-  RawReddit,
   RawSaveMetadata,
   RawTikTok,
   RawTwitter,
@@ -14,19 +13,6 @@ import type {
 import { unixSecondsToIso, ytdlpDateToIso } from "@/lib/format";
 import type { Save } from "./types";
 import { pickAuthorAvatarUrl } from "./url";
-
-/**
- * Source-agnostic, display-ready snapshot of every metric / metadata
- * scrap we know about a single save. Built by `extractSaveStats(save)`
- * from the typed `raw.<source>` blob plus the yt-dlp sidecar.
- *
- * The `<SaveStats>` component renders this without any further
- * branching on `save.source` — the per-source mapping happens here so
- * that the JSX stays declarative.
- *
- * Every field is optional; the component hides any chip / row whose
- * value is missing.
- */
 
 export type SaveMetricKey =
   | "views"
@@ -39,9 +25,8 @@ export type SaveMetricKey =
   | "downloads"
   | "connections"
   | "repins"
+  | "saves"
   | "replies"
-  | "upvotes"
-  | "awards"
   | "dislikes";
 
 export interface SaveMetric {
@@ -50,66 +35,32 @@ export interface SaveMetric {
   value: number;
 }
 
-/** One YouTube chapter or yt-dlp `chapters[]` entry. */
 export interface SaveChapter {
   title: string;
   startSec: number;
 }
 
 export interface SaveStats {
-  /** ISO timestamp the post / video was authored. */
   publishedAt?: string;
-  /** Video duration in seconds, when known. */
   durationSec?: number;
-  /** BCP-47 language tag for the post body, when known. */
   language?: string;
-
-  /** Author / uploader (used as the canonical attribution). */
   uploader?: { name?: string; url?: string; avatar?: string };
-  /** YouTube-specific channel info — falls back to `uploader` on other sources. */
   channel?: { name?: string; url?: string };
-
-  /** Stable-ordered metric chips. Ordering is canonical per source. */
   metrics: SaveMetric[];
-
-  /** YouTube + yt-dlp chapters, normalised to `{ title, startSec }`. */
   chapters?: SaveChapter[];
-
-  /** TikTok music attribution. */
   music?: { title?: string; author?: string };
-
-  /** Instagram location tag. */
   location?: string;
-  /** Instagram paid-partnership badge. */
   isPaidPartnership?: boolean;
-
-  /** Pinterest board the pin lives on. */
   board?: { name?: string; url?: string };
-  /** Are.na channels the block sits in. */
   arenaChannels?: Array<{ title?: string; href?: string }>;
-  /** Cosmos clusters the element belongs to. */
   cosmosClusters?: Array<{ id: string; title?: string }>;
-
-  /** Reddit subreddit. */
-  subreddit?: string;
-
-  /** yt-dlp live state (`is_live`, `was_live`, `post_live`). */
   liveStatus?: string;
-  /** yt-dlp track/artist/album for music videos. */
   musicVideo?: { track?: string; artist?: string; album?: string };
-  /** Pretty extractor name for diagnostic UIs. */
   extractor?: string;
-
-  /** Total upload size in bytes (when yt-dlp reports it). */
   filesize?: number;
-  /** Display dimensions reported by yt-dlp. */
   videoSize?: { width: number; height: number; fps?: number };
 }
 
-/**
- * Build a normalised `SaveStats` from a `Save`. Pure — safe to call
- * during render; just a few field reads + array builds.
- */
 export function extractSaveStats(save: Save): SaveStats {
   const raw = (save.rawJson ?? null) as RawSaveMetadata | null;
   const stats: SaveStats = { metrics: [] };
@@ -136,18 +87,11 @@ export function extractSaveStats(save: Save): SaveStats {
     case "youtube":
       mergeYoutube(stats, raw?.youtube);
       break;
-    case "reddit":
-      mergeReddit(stats, raw?.reddit);
-      break;
     case "article":
       mergeArticle(stats, raw?.article);
       break;
   }
 
-  // yt-dlp lives under `raw.<source>.ytdlp` regardless of source — pull
-  // it from whichever bag is populated and fold its scalars into the
-  // accumulator. For sources we never get yt-dlp on (Pinterest, Are.na
-  // most pins) the lookup just returns undefined and nothing changes.
   const ytdlp = pickYtdlp(raw, save.source);
   if (ytdlp) mergeYtdlp(stats, ytdlp);
 
@@ -155,11 +99,6 @@ export function extractSaveStats(save: Save): SaveStats {
     stats.uploader = { ...stats.uploader, name: save.author };
   }
 
-  // Local-first avatar override. The per-source mergers above always
-  // assign the remote `raw.<source>.authorAvatar` URL, but we'd rather
-  // serve the cached `pond://<id>/avatar.<ext>` whenever the ingest
-  // pipeline managed to pull the bytes onto disk — see `pickAuthorAvatarUrl`
-  // for the rationale.
   const localAvatar = pickAuthorAvatarUrl(save);
   if (localAvatar) {
     stats.uploader = { ...stats.uploader, avatar: localAvatar };
@@ -185,8 +124,6 @@ function mergeTwitter(stats: SaveStats, raw: RawTwitter | undefined) {
     pushMetric(stats, "replies", "Replies", raw.metrics.replies);
     pushMetric(stats, "bookmarks", "Bookmarks", raw.metrics.bookmarks);
   }
-  // First media item carries video duration on tweets that contain a
-  // single clip; ignore the per-item array beyond that for now.
   const firstVideo = raw.media?.find((m) => m.type === "video");
   if (firstVideo?.durationSec) stats.durationSec ??= firstVideo.durationSec;
 }
@@ -222,8 +159,12 @@ function mergePinterest(stats: SaveStats, raw: RawPinterest | undefined) {
     avatar: raw.authorAvatar ?? stats.uploader?.avatar,
   };
   if (raw.metrics) {
-    pushMetric(stats, "repins", "Repins", raw.metrics.repins);
+    // Pinterest's heart-icon count is `totalReactionCount`, surfaced here as
+    // `reactions`; render it as "Likes" since that's what the UI shows.
+    pushMetric(stats, "likes", "Likes", raw.metrics.reactions);
+    pushMetric(stats, "saves", "Saves", raw.metrics.saves);
     pushMetric(stats, "comments", "Comments", raw.metrics.comments);
+    pushMetric(stats, "repins", "Repins", raw.metrics.repins);
   }
   if (raw.board?.name || raw.board?.url) {
     stats.board = { name: raw.board.name, url: raw.board.url };
@@ -314,22 +255,6 @@ function mergeYoutube(stats: SaveStats, raw: RawYoutube | undefined) {
   }
 }
 
-function mergeReddit(stats: SaveStats, raw: RawReddit | undefined) {
-  if (!raw) return;
-  stats.publishedAt ??= raw.publishedAt;
-  stats.subreddit ??= raw.subreddit;
-  stats.uploader = {
-    ...stats.uploader,
-    name: raw.authorName ?? stats.uploader?.name,
-    url: raw.authorUrl ?? stats.uploader?.url,
-  };
-  if (raw.metrics) {
-    pushMetric(stats, "upvotes", "Upvotes", raw.metrics.upvotes);
-    pushMetric(stats, "comments", "Comments", raw.metrics.comments);
-    pushMetric(stats, "awards", "Awards", raw.metrics.awards);
-  }
-}
-
 function mergeArticle(stats: SaveStats, raw: RawArticle | undefined) {
   if (!raw) return;
   stats.publishedAt ??= raw.publishedAt;
@@ -341,7 +266,6 @@ function pickYtdlp(
   source: string,
 ): RawYtdlp | undefined {
   if (!raw) return undefined;
-  // Direct lookup first — covers every source we ship.
   const direct = (raw as Record<string, unknown>)[source];
   if (
     direct &&
@@ -352,9 +276,6 @@ function pickYtdlp(
   ) {
     return direct.ytdlp as RawYtdlp;
   }
-  // Fallback: walk every per-source bag in case the source enum drifted
-  // away from the raw key (e.g. legacy saves where the value was
-  // written under a different key during a migration).
   for (const value of Object.values(raw)) {
     if (
       value &&
@@ -373,7 +294,6 @@ function mergeYtdlp(stats: SaveStats, ytdlp: RawYtdlp) {
     stats.durationSec ??= ytdlp.duration;
   }
 
-  // Date — try the most precise source first, then the calendar date.
   if (!stats.publishedAt) {
     const fromTimestamp =
       unixSecondsToIso(ytdlp.release_timestamp) ??
@@ -431,9 +351,6 @@ function mergeYtdlp(stats: SaveStats, ytdlp: RawYtdlp) {
     stats.filesize = ytdlp.filesize_approx;
   }
 
-  // Metric fallbacks — only fire when the per-source mapper didn't
-  // already record one. We don't double-count: a Twitter view count
-  // already on `stats.metrics` skips the yt-dlp `view_count`.
   pushMetricIfMissing(stats, "views", "Views", ytdlp.view_count);
   pushMetricIfMissing(stats, "likes", "Likes", ytdlp.like_count);
   pushMetricIfMissing(stats, "comments", "Comments", ytdlp.comment_count);

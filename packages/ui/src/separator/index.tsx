@@ -1,15 +1,9 @@
 import { Separator as Base } from "@base-ui/react/separator";
+import { cn } from "../lib/cn";
 import styles from "./styles.module.css";
 
-interface RootProps extends React.ComponentProps<typeof Base> {}
-
-function Root({ className, ...props }: RootProps) {
-  return (
-    <Base
-      className={[styles.root, className ?? ""].filter(Boolean).join(" ")}
-      {...props}
-    />
-  );
+function Root({ className, ...props }: Base.Props) {
+  return <Base className={cn(styles.root, className)} {...props} />;
 }
 
 export const Separator = {

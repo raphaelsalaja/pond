@@ -1,17 +1,5 @@
 import { useSyncExternalStore } from "react";
 
-/**
- * Display preferences for the saves grid — which bits of card chrome
- * each tile shows. Persisted to localStorage and exposed via a tiny
- * pub/sub so the layout popover can flip a switch and every visible
- * card re-renders in the same frame, without an extra context provider
- * or prop drilling.
- *
- * Defaults match what cards rendered before this hook landed, except
- * `sourceBadge` (off by default — it's a new affordance and most
- * users don't need a per-card source chip cluttering the chrome).
- */
-
 export type DisplayPrefKey = "name" | "date" | "fileCount" | "sourceBadge";
 
 export interface DisplayPrefs {

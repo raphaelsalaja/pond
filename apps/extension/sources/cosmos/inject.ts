@@ -40,11 +40,6 @@ export function inject() {
     }
   }
 
-  /**
-   * Walk a JSON tree and collect any node that looks like an Element. Cosmos
-   * returns Apollo-style objects with `__typename` set, so we can match
-   * cheaply. Also harvests clusters (boards) for `raw.cosmos.clusters`.
-   */
   function harvestElements(node: any, out: Map<string, any>) {
     if (!node || typeof node !== "object") return;
     if (Array.isArray(node)) {
@@ -60,8 +55,6 @@ export function inject() {
     ) {
       out.set(String(id), node);
     }
-    // Cluster nodes show up as `__typename: "Cluster"` (or similar).
-    // Cache id -> title so save mutations can join titles by id.
     if (
       typeof t === "string" &&
       /cluster/i.test(t) &&

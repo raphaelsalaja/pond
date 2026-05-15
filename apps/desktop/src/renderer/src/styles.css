@@ -64,7 +64,7 @@ body,
 #root {
   height: 100%;
   color: var(--ds-gray-12);
-  background: var(--ds-shell-background);
+  background: var(--ds-background-primary);
 }
 
 @keyframes app-sidebar-slide-in {

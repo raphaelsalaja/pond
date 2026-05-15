@@ -1,0 +1,52 @@
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  background: rgba(0, 0, 0, 0.18);
+  border: 0;
+  border-radius: inherit;
+  -webkit-backdrop-filter: saturate(0.85);
+  backdrop-filter: saturate(0.85);
+  transition: background-color 160ms ease;
+}
+
+.overlay:hover {
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.overlay:focus-visible {
+  outline: 2px solid var(--ds-accent-9);
+  outline-offset: -2px;
+}
+
+.pill {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  padding: 6px 12px 6px 11px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: 0.01em;
+  background: rgba(0, 0, 0, 0.72);
+  border-radius: var(--ds-radius-full);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.24);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background: #f59e0b;
+  border-radius: var(--ds-radius-full);
+}
+
+.overlay[data-size="sm"] .pill {
+  padding: 4px 10px 4px 9px;
+  font-size: 10px;
+}

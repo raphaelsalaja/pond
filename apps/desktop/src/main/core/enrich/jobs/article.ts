@@ -8,17 +8,6 @@ export interface ArticleExtraction {
   readingMinutes: number;
 }
 
-/**
- * Article extraction. We open a hidden BrowserWindow already in the
- * codebase via `core/refresh/scrape-window`, pull the page HTML, and
- * run a small Readability-style cleanup pass to strip nav/footer/ads
- * and pick the densest content block.
- *
- * No `@mozilla/readability` dependency — the heuristic below covers the
- * common case (semantic `<article>` / `<main>` containers + paragraph
- * density scoring) without pulling jsdom. Pages that need full
- * Readability can be re-enriched once we land that opt-in dep.
- */
 export async function extractArticle(
   save: Save,
 ): Promise<ArticleExtraction | null> {
@@ -38,11 +27,6 @@ export async function extractArticle(
   };
 }
 
-/**
- * Optional follow-up: ask the configured LLM to summarise the cleaned
- * article text. Cheap, ~150 tokens out, falls back gracefully when the
- * provider is offline.
- */
 export async function summariseArticle(
   client: ProviderClient,
   text: string,
@@ -70,13 +54,6 @@ export async function summariseArticle(
   }
 }
 
-/**
- * Plain fetch path. Hostile sites that require a signed-in session
- * still reach the existing scrape-window infrastructure via the user's
- * Refresh button — we explicitly don't reuse that here so the
- * background enricher can't inadvertently log into / be redirected by
- * an authenticated source.
- */
 async function fetchPageHtml(url: string): Promise<string | null> {
   try {
     const res = await fetch(url, {
@@ -116,14 +93,7 @@ const NOISE_TAGS = new Set([
 const NOISE_CLASSES =
   /\b(?:nav|footer|sidebar|advert|sponsored|cookie|comments?|share|related|newsletter|subscribe|menu|breadcrumb|paywall|pop[ -]?up)\b/i;
 
-/**
- * Tiny Readability-flavoured extractor. Picks the highest-density block
- * of text inside common content containers and emits its HTML + plain
- * text. Good enough for the majority of articles; failures fall back
- * to the lower-quality `<title>` + meta description path on the card.
- */
 function readability(html: string): ReadResult | null {
-  // Strip noise tags wholesale first.
   let cleaned = html;
   for (const tag of NOISE_TAGS) {
     const re = new RegExp(`<${tag}\\b[^>]*>[\\s\\S]*?</${tag}>`, "gi");
@@ -131,7 +101,6 @@ function readability(html: string): ReadResult | null {
   }
   cleaned = cleaned.replace(/<!--[\s\S]*?-->/g, "");
 
-  // Look for explicit article containers.
   const containerMatches = [
     /<article\b[^>]*>([\s\S]*?)<\/article>/i,
     /<main\b[^>]*>([\s\S]*?)<\/main>/i,
@@ -151,7 +120,6 @@ function readability(html: string): ReadResult | null {
   }
 
   if (!bestHtml) {
-    // Whole-document fallback: pick the highest-density paragraph cluster.
     bestHtml = stripNoiseClasses(cleaned);
   }
 
@@ -161,7 +129,6 @@ function readability(html: string): ReadResult | null {
 }
 
 function stripNoiseClasses(html: string): string {
-  // Remove obvious noise wrappers by class name.
   return html.replace(
     /<(div|section|aside|footer|header|nav)\b[^>]*\b(?:class|id)="([^"]*)"[^>]*>[\s\S]*?<\/\1>/gi,
     (full, _tag, klass) => (NOISE_CLASSES.test(String(klass)) ? "" : full),

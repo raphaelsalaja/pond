@@ -35,7 +35,6 @@ function Root({ view, className, children, ...props }: RootProps) {
 }
 
 interface GridProps extends React.ComponentPropsWithRef<"ul"> {
-  /** Layout mode. Defaults to `"grid"` (uniform square tiles). */
   layout?: GridLayout;
   multiSelect?: boolean;
 }
