@@ -4,7 +4,7 @@ import { and, asc, eq, isNull, or } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../../db";
 import { type RefreshOutcome, refreshSave } from "./index";
-import { POOL_SIZE } from "./scrape-window";
+import { GLOBAL_POOL_CAP } from "./scrape-window";
 
 export interface RefreshBackfillOptions {
   source?: Source | null;
@@ -131,9 +131,9 @@ async function runWorker(
   const authRequired = new Set<Source>();
   let current = 0;
 
-  for (let i = 0; i < ids.length; i += POOL_SIZE) {
+  for (let i = 0; i < ids.length; i += GLOBAL_POOL_CAP) {
     if (signal.aborted) break;
-    const batch = ids.slice(i, i + POOL_SIZE);
+    const batch = ids.slice(i, i + GLOBAL_POOL_CAP);
     const outcomes = await Promise.all(
       batch.map(async (id): Promise<RefreshOutcome> => {
         try {

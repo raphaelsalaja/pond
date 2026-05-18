@@ -6,10 +6,12 @@ import {
   type SourceSyncPrefs,
   saves,
 } from "@pond/schema/db";
+import type { SyncRunEvent } from "@pond/schema/events";
 import { and, eq, inArray } from "drizzle-orm";
 import log from "electron-log/main.js";
 import pLimit from "p-limit";
 import { getDb } from "../../db";
+import { commitEvent, startSyncEvent, toErrorInfo } from "../../lib/wide-event";
 import { enqueueSaveByUrl } from "../pipeline/enqueue";
 import { getPrefs, setPrefs } from "../prefs";
 import {
@@ -43,7 +45,29 @@ export interface SyncStatusUpdate {
 type StatusListener = (update: SyncStatusUpdate) => void;
 const listeners = new Set<StatusListener>();
 
-const inFlight = new Map<Source, AbortController>();
+interface InFlight {
+  controller: AbortController;
+  startedAt: number;
+  watchdog: ReturnType<typeof setTimeout>;
+}
+
+const inFlight = new Map<Source, InFlight>();
+
+/* If a sync hasn't resolved within this window it's almost certainly
+ * stuck — usually `harvestTwitterBookmarks` waiting on a hidden window
+ * navigation that never finishes. Abort via the controller so the
+ * `finally` clears the slot and the next cron tick can try again
+ * instead of being permanently shadowed by a ghost. Twitter has to
+ * harvest+enqueue hundreds of bookmarks so it gets the loosest cap. */
+const SYNC_WATCHDOG_MS: Record<Source, number> = {
+  twitter: 30 * 60_000,
+  youtube: 20 * 60_000,
+  cosmos: 20 * 60_000,
+  arena: 20 * 60_000,
+  pinterest: 20 * 60_000,
+  instagram: 20 * 60_000,
+  tiktok: 20 * 60_000,
+};
 
 export function subscribeToSyncStatus(cb: StatusListener): () => void {
   listeners.add(cb);
@@ -127,8 +151,12 @@ export async function syncSource(
   source: Source,
   opts: SyncOptions = {},
 ): Promise<void> {
-  if (inFlight.has(source)) {
-    log.info("[pond sync] already running, ignoring", source);
+  const existing = inFlight.get(source);
+  if (existing) {
+    const ageSec = Math.round((Date.now() - existing.startedAt) / 1000);
+    log.info(
+      `[pond sync] already running (${ageSec}s), ignoring ${source} (${opts.trigger ?? "manual"})`,
+    );
     return;
   }
   if (isSyncBlockedByStorageGuard()) {
@@ -147,13 +175,36 @@ export async function syncSource(
     return;
   }
   const controller = new AbortController();
-  inFlight.set(source, controller);
+  let watchdogTripped = false;
+  const watchdog = setTimeout(() => {
+    watchdogTripped = true;
+    log.warn(
+      `[pond sync] watchdog tripped for ${source} after ${Math.round(SYNC_WATCHDOG_MS[source] / 60_000)}m; aborting`,
+    );
+    controller.abort();
+  }, SYNC_WATCHDOG_MS[source]);
+  const startedAt = Date.now();
+  inFlight.set(source, {
+    controller,
+    startedAt,
+    watchdog,
+  });
+  /* One wide event per sync run — mutated as the run proceeds and
+   * committed unconditionally in the finally. Replaces the trio of
+   * "[pond sync:<source>] starting / enqueueing / done" lines that
+   * used to drift apart and force you to grep two timestamps to know
+   * how long anything took. */
+  const ev: SyncRunEvent = startSyncEvent({
+    source,
+    trigger: opts.trigger ?? "manual",
+    outcome: "ok",
+  });
   emit({ source, state: "running", message: "Starting…" });
   try {
     if (source === "twitter") {
-      await syncTwitter(controller.signal, opts.maxItems);
+      await syncTwitter(controller.signal, ev, opts.maxItems);
     } else if (LIST_HARVEST_SOURCES.has(source)) {
-      await syncListSource(source, controller.signal, opts.maxItems);
+      await syncListSource(source, controller.signal, ev, opts.maxItems);
     } else {
       await patchSourceSync(source, { lastError: "unsupported" });
       emit({
@@ -162,8 +213,11 @@ export async function syncSource(
         message: "This source doesn't support background sync yet.",
         lastError: "unsupported",
       });
+      ev.outcome = "error";
+      ev.error = { name: "Unsupported", message: "source has no sync runner" };
       return;
     }
+    if (controller.signal.aborted) ev.outcome = "aborted";
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     log.error("[pond sync] fatal error", source, err);
@@ -174,14 +228,23 @@ export async function syncSource(
       message: msg,
       lastError: msg,
     });
+    ev.outcome = "error";
+    ev.error = toErrorInfo(err);
   } finally {
+    const entry = inFlight.get(source);
+    if (entry) clearTimeout(entry.watchdog);
     inFlight.delete(source);
+    ev.durationMs = Date.now() - startedAt;
+    ev.lockHeldMs = ev.durationMs;
+    ev.watchdogTripped = watchdogTripped;
+    if (watchdogTripped) ev.outcome = "aborted";
+    void commitEvent(ev);
   }
 }
 
 export function cancelSync(source: Source): void {
-  const c = inFlight.get(source);
-  if (c) c.abort();
+  const entry = inFlight.get(source);
+  if (entry) entry.controller.abort();
 }
 
 export function isSyncing(source: Source): boolean {
@@ -275,6 +338,7 @@ const ENQUEUE_CONCURRENCY = 8;
 async function syncListSource(
   source: Source,
   signal: AbortSignal,
+  ev: SyncRunEvent,
   maxItems?: number,
 ): Promise<void> {
   const db = await getDb();
@@ -340,7 +404,10 @@ async function syncListSource(
       },
     },
   );
-  if (signal.aborted) return;
+  if (signal.aborted) {
+    ev.outcome = "aborted";
+    return;
+  }
 
   if (!harvest.ok) {
     if (harvest.reason === "auth_required") {
@@ -351,6 +418,7 @@ async function syncListSource(
         message: `Sign in to ${source} to enable background sync.`,
         lastError: "auth_required",
       });
+      ev.outcome = "auth_required";
       return;
     }
     await patchSourceSync(source, { lastError: harvest.reason });
@@ -360,6 +428,8 @@ async function syncListSource(
       message: `Couldn't read list: ${harvest.reason}.`,
       lastError: harvest.reason,
     });
+    ev.outcome = "error";
+    ev.error = { name: "HarvestError", message: harvest.reason };
     return;
   }
 
@@ -384,6 +454,11 @@ async function syncListSource(
       `[pond sync:${source}] test cap active — enqueueing ${fresh.length} of ${allFresh.length} fresh items`,
     );
   }
+  ev.harvest = {
+    seen: combined.length,
+    fresh: fresh.length,
+    recovery: 0,
+  };
   if (fresh.length === 0) {
     const lastSyncedAt = new Date().toISOString();
     await patchSourceSync(source, { lastSyncedAt, lastError: null });
@@ -394,6 +469,8 @@ async function syncListSource(
       lastSyncedAt,
       lastError: null,
     });
+    ev.outcome = "noop";
+    ev.enqueue = { succeeded: 0, failed: 0 };
     return;
   }
 
@@ -408,6 +485,7 @@ async function syncListSource(
   });
 
   let processed = 0;
+  let enqueueFailed = 0;
   const limit = pLimit(ENQUEUE_CONCURRENCY);
   await Promise.all(
     fresh.map((entry) =>
@@ -421,6 +499,7 @@ async function syncListSource(
             entry.sourceId,
             err,
           );
+          enqueueFailed += 1;
         }
         processed += 1;
         emit({
@@ -432,7 +511,14 @@ async function syncListSource(
       }),
     ),
   );
-  if (signal.aborted) return;
+  ev.enqueue = {
+    succeeded: Math.max(0, processed - enqueueFailed),
+    failed: enqueueFailed,
+  };
+  if (signal.aborted) {
+    ev.outcome = "aborted";
+    return;
+  }
 
   const lastSyncedAt = new Date().toISOString();
   await patchSourceSync(source, { lastSyncedAt, lastError: null });
@@ -448,6 +534,7 @@ async function syncListSource(
 
 async function syncTwitter(
   signal: AbortSignal,
+  ev: SyncRunEvent,
   maxItems?: number,
 ): Promise<void> {
   const source: Source = "twitter";
@@ -492,7 +579,10 @@ async function syncTwitter(
       },
     },
   );
-  if (signal.aborted) return;
+  if (signal.aborted) {
+    ev.outcome = "aborted";
+    return;
+  }
 
   if (!harvest.ok) {
     if (harvest.reason === "auth_required") {
@@ -503,6 +593,7 @@ async function syncTwitter(
         message: "Sign in to Twitter to enable background sync.",
         lastError: "auth_required",
       });
+      ev.outcome = "auth_required";
       return;
     }
     await patchSourceSync(source, { lastError: harvest.reason });
@@ -512,6 +603,8 @@ async function syncTwitter(
       message: `Couldn't read bookmarks: ${harvest.reason}.`,
       lastError: harvest.reason,
     });
+    ev.outcome = "error";
+    ev.error = { name: "HarvestError", message: harvest.reason };
     return;
   }
 
@@ -531,6 +624,11 @@ async function syncTwitter(
     );
   }
   const total = fresh.length + recovery.length;
+  ev.harvest = {
+    seen: harvest.entries.length,
+    fresh: fresh.length,
+    recovery: recovery.length,
+  };
   if (total === 0) {
     const lastSyncedAt = new Date().toISOString();
     await patchSourceSync(source, { lastSyncedAt, lastError: null });
@@ -541,6 +639,8 @@ async function syncTwitter(
       lastSyncedAt,
       lastError: null,
     });
+    ev.outcome = "noop";
+    ev.enqueue = { succeeded: 0, failed: 0 };
     return;
   }
 
@@ -558,6 +658,7 @@ async function syncTwitter(
   });
 
   let processed = 0;
+  let enqueueFailed = 0;
   const limit = pLimit(ENQUEUE_CONCURRENCY);
   const queue = [...fresh, ...recovery];
   await Promise.all(
@@ -572,6 +673,7 @@ async function syncTwitter(
           });
         } catch (err) {
           log.warn("[pond sync:twitter] enqueue failure", entry.tweetId, err);
+          enqueueFailed += 1;
         }
         processed += 1;
         emit({
@@ -583,7 +685,14 @@ async function syncTwitter(
       }),
     ),
   );
-  if (signal.aborted) return;
+  ev.enqueue = {
+    succeeded: Math.max(0, processed - enqueueFailed),
+    failed: enqueueFailed,
+  };
+  if (signal.aborted) {
+    ev.outcome = "aborted";
+    return;
+  }
 
   const lastSyncedAt = new Date().toISOString();
   await patchSourceSync(source, { lastSyncedAt, lastError: null });

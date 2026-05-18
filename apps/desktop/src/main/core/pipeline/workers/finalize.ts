@@ -5,6 +5,7 @@ import { type Op, type Save, type Task, tasks } from "@pond/schema/db";
 import { and, eq } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../../../db";
+import { commitSaveIngestEvent } from "../../../lib/wide-event";
 import { itemDir } from "../../../paths";
 import { CAPTURE_EXPECTATIONS } from "../specs";
 import { applySavePatch, readSave } from "./apply";
@@ -86,10 +87,7 @@ export async function runFinalize(saveId: string): Promise<void> {
       actorReason: "pipeline:finalize",
     },
   );
-  log.info("[pond pipeline:finalize] complete", {
-    saveId,
-    source: save.source,
-  });
+  void commitSaveIngestEvent(saveId, { outcome: "complete" });
 }
 
 async function fetchTaskRows(saveId: string): Promise<Task[]> {

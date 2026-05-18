@@ -4,6 +4,28 @@ export type { Op };
 
 export const UNIVERSAL_SPEC: readonly Op[] = OPS;
 
+// Per-op attempt budget. Tuned against each worker's wall-clock cost
+// and recoverability. yt-dlp downloads are the most expensive (10-min
+// watchdog) and the least likely to recover on retry — videos that
+// errored once usually error every time. Avatar fetches are cheap but
+// likely to be served from a CDN that's either available or it isn't.
+// Anything pool-bound (harvest, capture, finalize) keeps the historical
+// 5-attempt budget because flaky scrapes do often clear on the next
+// run.
+const MAX_ATTEMPTS: Record<Op, number> = {
+  harvest_metadata: 5,
+  capture_tweet: 4,
+  fetch_blobs: 5,
+  fetch_video_ytdlp: 3,
+  ensure_poster: 4,
+  fetch_avatar: 3,
+  finalize: 5,
+};
+
+export function maxAttemptsFor(op: Op): number {
+  return MAX_ATTEMPTS[op];
+}
+
 export function planOps(source: Source): readonly Op[] {
   // capture_tweet only runs for text-only X posts — for every other source
   // it would lease a hidden window, navigate to a non-tweet URL, and

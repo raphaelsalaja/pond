@@ -17,7 +17,7 @@ import { broadcastSyncAction } from "../executor";
 import { classifyUrlToSource } from "./extractors";
 import { UnsupportedError } from "./extractors/errors";
 import { kickReconciler } from "./reconciler";
-import { planOps } from "./specs";
+import { maxAttemptsFor, planOps } from "./specs";
 import { sourceIdFromUrl } from "./url";
 import {
   TWEET_SCREENSHOT_DARK_KIND,
@@ -157,7 +157,7 @@ export async function enqueueSaveByUrl(
     op,
     status: "pending",
     attempts: 0,
-    maxAttempts: 5,
+    maxAttempts: maxAttemptsFor(op),
     nextRunAt: now,
     createdAt: now,
     updatedAt: now,
@@ -235,7 +235,7 @@ export async function enqueueCaptureTweetForExisting(): Promise<{
       op: "capture_tweet",
       status: "pending",
       attempts: 0,
-      maxAttempts: 3,
+      maxAttempts: maxAttemptsFor("capture_tweet"),
       nextRunAt: now,
       createdAt: now,
       updatedAt: now,

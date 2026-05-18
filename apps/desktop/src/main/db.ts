@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
 import * as schema from "@pond/schema/db";
+import * as eventsSchema from "@pond/schema/events";
 import Database from "better-sqlite3";
 import { sql } from "drizzle-orm";
 import {
@@ -14,7 +15,9 @@ import {
 } from "../shared/constants";
 import { resolvePaths } from "./paths";
 
-export type Db = BetterSQLite3Database<typeof schema> & {
+const combinedSchema = { ...schema, ...eventsSchema };
+
+export type Db = BetterSQLite3Database<typeof combinedSchema> & {
   $raw: Database.Database;
 };
 
@@ -35,7 +38,7 @@ export async function getDb(): Promise<Db> {
 
   migrate(sqlite);
 
-  const drizzled = drizzle(sqlite, { schema });
+  const drizzled = drizzle(sqlite, { schema: combinedSchema });
   const db = Object.assign(drizzled, { $raw: sqlite }) as Db;
   cached = db;
 
@@ -127,6 +130,26 @@ function migrate(sqlite: Database.Database): void {
 					mtime_ms INTEGER NOT NULL,
 					scanned_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
 				);
+
+				CREATE TABLE IF NOT EXISTS pipeline_events (
+					id INTEGER PRIMARY KEY AUTOINCREMENT,
+					ts INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+					kind TEXT NOT NULL,
+					save_id TEXT,
+					source TEXT,
+					op TEXT,
+					outcome TEXT NOT NULL,
+					duration_ms INTEGER,
+					attempts INTEGER,
+					error_name TEXT,
+					error_message TEXT,
+					trigger TEXT,
+					payload TEXT NOT NULL
+				);
+				CREATE INDEX IF NOT EXISTS pipeline_events_ts_idx ON pipeline_events(ts);
+				CREATE INDEX IF NOT EXISTS pipeline_events_save_idx ON pipeline_events(save_id, ts);
+				CREATE INDEX IF NOT EXISTS pipeline_events_kind_outcome_idx ON pipeline_events(kind, outcome, ts);
+				CREATE INDEX IF NOT EXISTS pipeline_events_source_op_idx ON pipeline_events(source, op);
 
 				CREATE TABLE IF NOT EXISTS settings (
 					id TEXT PRIMARY KEY DEFAULT 'singleton',

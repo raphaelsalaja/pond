@@ -36,6 +36,36 @@ export interface ProcessingProgressWire {
   message?: string;
 }
 
+export type OpWire =
+  | "harvest_metadata"
+  | "capture_tweet"
+  | "fetch_blobs"
+  | "fetch_video_ytdlp"
+  | "ensure_poster"
+  | "fetch_avatar"
+  | "finalize";
+
+export interface PipelineMetricsWire {
+  started: boolean;
+  paused: boolean;
+  inflightGlobal: number;
+  inflightByOp: Record<OpWire, number>;
+  runningTaskIds: string[];
+  pausedSources: Array<{
+    source: string;
+    until: number;
+    reason: "cooldown" | "breaker";
+  }>;
+  counters: {
+    tasksDispatched: number;
+    tasksCompleted: number;
+    tasksFailed: number;
+    tasksBlocked: number;
+    watchdogTrips: number;
+    cascadeEvents: number;
+  };
+}
+
 const api = {
   tx(tx: unknown): Promise<unknown> {
     return ipcRenderer.invoke(IPC.tx, tx);

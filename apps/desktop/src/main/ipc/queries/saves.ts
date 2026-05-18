@@ -1,4 +1,4 @@
-import { saves, type Task, tasks } from "@pond/schema/db";
+import { SOURCES, type Source, saves, type Task, tasks } from "@pond/schema/db";
 import { buildWhere, type Query } from "@pond/schema/filters";
 import type { Transaction } from "@pond/schema/tx";
 import {
@@ -14,6 +14,8 @@ import {
 import log from "electron-log/main.js";
 import { executeBatch } from "../../core/executor";
 import {
+  cancelProcessingBackfill,
+  isProcessingBackfilling,
   retryFailedSave,
   startProcessingBackfill,
 } from "../../core/pipeline/backfill-failed";
@@ -45,8 +47,46 @@ export interface ProcessingDetailWire {
     | "fetch_avatar"
     | "finalize"
     | null;
+  // Task id of the row that `stageOp` refers to, when one exists.
+  // Lets the renderer call `tasks.skip` without a second lookup.
+  stageTaskId: string | null;
+  stageStatus: "pending" | "running" | "done" | "failed" | "blocked" | null;
+  // Raw `${name}: ${message}` blob written by the retry classifier.
+  // Kept for power users / bug reports.
   lastError: string | null;
+  // Extracted so the renderer can humanise without fragile parsing.
+  lastErrorName: string | null;
+  // When the failing task last changed status — drives "Failed 2m ago".
+  lastErrorAt: string | null;
+  // When the current/next attempt will fire, if any. Drives the
+  // "Retries in 30s" / "Waiting for rate limit" copy on pending rows.
+  nextRunAt: string | null;
+  attempts: number;
+  maxAttempts: number;
   ingestStartedAt: string | null;
+}
+
+export interface ProcessingDetailsResultWire {
+  rows: ProcessingDetailWire[];
+  truncated: number;
+}
+
+// Cap on rows returned for the dialog. Dialogs become unusable past a
+// few hundred rows; surfacing a count of the overflow lets the UI
+// nudge the user toward "retry all" or "empty trash" instead.
+const PROCESSING_DETAILS_LIMIT = 500;
+
+/* `classifyError` writes `${err.name}: ${err.message}` into
+ * `tasks.lastError`. Pulling the name back out gives the renderer a
+ * stable discriminator (`TerminalError`, `RateLimitedError`, …) to map
+ * onto human copy without fragile substring matches on the message. */
+function extractErrorName(blob: string | null): string | null {
+  if (!blob) return null;
+  const idx = blob.indexOf(":");
+  if (idx <= 0) return null;
+  const candidate = blob.slice(0, idx).trim();
+  if (!/^[A-Za-z_][\w]*$/.test(candidate)) return null;
+  return candidate;
 }
 
 async function loadTasksFor(
@@ -268,11 +308,66 @@ export const savesQueries: QueryHandlerMap = {
     return result;
   },
 
+  async "saves.cancelRetryAllFailed"() {
+    if (!isProcessingBackfilling()) {
+      return { ok: false as const, reason: "not_running" as const };
+    }
+    cancelProcessingBackfill();
+    return { ok: true as const };
+  },
+
+  async "saves.clearQueue"(params) {
+    /* Hard-delete every queue entry that matches the filter — failed
+     * scrapes and in-flight noise the user never accepted as a save.
+     * Trashing would just move the clutter from the queue view to the
+     * trash view and force a second "empty trash" step. Default scope
+     * is failed-only so a no-arg call can't take out in-flight work
+     * by accident. Each row's snapshot is captured so undo can
+     * re-create the row from `before` (files are gone, but for
+     * queue entries that's the point). */
+    const db = await getDb();
+    const rawSource = params.source ? String(params.source) : null;
+    const source: Source | null =
+      rawSource && (SOURCES as readonly string[]).includes(rawSource)
+        ? (rawSource as Source)
+        : null;
+    const rawStatuses = Array.isArray(params.statuses)
+      ? params.statuses
+      : ["failed"];
+    const statuses = rawStatuses
+      .map((s) => String(s))
+      .filter(
+        (s): s is "ingesting" | "failed" => s === "ingesting" || s === "failed",
+      );
+    if (statuses.length === 0) {
+      return { ok: true as const, count: 0 };
+    }
+
+    const conds = [isNull(saves.deletedAt), inArray(saves.status, statuses)];
+    if (source) conds.push(eq(saves.source, source));
+    const rows = await db
+      .select()
+      .from(saves)
+      .where(and(...conds));
+    if (rows.length === 0) return { ok: true as const, count: 0 };
+
+    const txs: Transaction[] = rows.map((r) => ({
+      kind: "purge",
+      model: "save",
+      id: r.id,
+      before: r,
+      meta: { actor: "user", actorReason: "queue:clear" },
+    }));
+    await executeBatch(txs);
+    for (const tx of txs) recordForUndo(tx);
+    return { ok: true as const, count: txs.length };
+  },
+
   async "saves.processingDetails"() {
     const db = await getDb();
     /* Pull both ingesting + failed in one shot — the dialog renders the
      * two as separate sections but the live count is one number. */
-    const rows = await db
+    const allRows = await db
       .select()
       .from(saves)
       .where(
@@ -282,7 +377,14 @@ export const savesQueries: QueryHandlerMap = {
         ),
       )
       .orderBy(asc(saves.savedAt));
-    if (rows.length === 0) return [] satisfies ProcessingDetailWire[];
+    if (allRows.length === 0) {
+      return {
+        rows: [] satisfies ProcessingDetailWire[],
+        truncated: 0,
+      } satisfies ProcessingDetailsResultWire;
+    }
+    const truncated = Math.max(0, allRows.length - PROCESSING_DETAILS_LIMIT);
+    const rows = allRows.slice(0, PROCESSING_DETAILS_LIMIT);
     const taskRows = await db
       .select()
       .from(tasks)
@@ -305,7 +407,19 @@ export const savesQueries: QueryHandlerMap = {
       const failed = peers.find((t) => t.status === "failed");
       const running = peers.find((t) => t.status === "running");
       const blocked = peers.find((t) => t.status === "blocked");
-      const stageOp = running?.op ?? blocked?.op ?? failed?.op ?? null;
+      /* Stage priority is running > blocked > failed > earliest-pending.
+       * Pending wins over null so a row waiting for its first attempt
+       * can still surface "Retries in 30s" instead of looking idle. */
+      const pending = peers
+        .filter((t) => t.status === "pending")
+        .sort((a, b) => {
+          const at = a.nextRunAt ? a.nextRunAt.getTime() : 0;
+          const bt = b.nextRunAt ? b.nextRunAt.getTime() : 0;
+          return at - bt;
+        })[0];
+      const stage = running ?? blocked ?? failed ?? pending ?? null;
+      const errorSource = failed ?? blocked ?? null;
+      const lastError = errorSource?.lastError ?? null;
       return {
         id: row.id,
         url: row.url,
@@ -313,14 +427,23 @@ export const savesQueries: QueryHandlerMap = {
         source: row.source,
         status: row.status as "ingesting" | "failed",
         progress: { done, total },
-        stageOp,
-        lastError: failed?.lastError ?? null,
+        stageOp: stage?.op ?? null,
+        stageTaskId: stage?.id ?? null,
+        stageStatus: stage?.status ?? null,
+        lastError,
+        lastErrorName: extractErrorName(lastError),
+        lastErrorAt: errorSource?.updatedAt
+          ? errorSource.updatedAt.toISOString()
+          : null,
+        nextRunAt: stage?.nextRunAt ? stage.nextRunAt.toISOString() : null,
+        attempts: stage?.attempts ?? 0,
+        maxAttempts: stage?.maxAttempts ?? 0,
         ingestStartedAt: row.ingestStartedAt
           ? row.ingestStartedAt.toISOString()
           : null,
       };
     });
-    return out;
+    return { rows: out, truncated } satisfies ProcessingDetailsResultWire;
   },
 
   async "saves.activity"(params) {

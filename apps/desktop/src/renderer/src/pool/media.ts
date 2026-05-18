@@ -102,13 +102,21 @@ export function buildMediaUnits(
 }
 
 // pickPrimaryUnit — returns the unit that should drive thumbnails and
-// pane covers. Real extracted media wins for every source; the tweet
-// screenshot is only used when there is no real media (text-only
-// tweet, or before fetch_blobs has produced anything).
+// pane covers. Twitter saves prefer the theme-matched tweet screenshot
+// (see `capture-tweet.ts`); every other source uses extracted media.
 export function pickPrimaryUnit(
   save: Save,
   opts: MediaPickOptions = {},
 ): MediaUnit | null {
+  const screenshot = pickTweetScreenshot(save, opts.theme);
+  if (screenshot) {
+    return {
+      key: screenshot.path,
+      url: buildPondUrl(save.id, screenshot),
+      isVideo: false,
+    };
+  }
+
   const units = buildMediaUnits(save, opts);
   const video = units.find((u) => u.isVideo);
   if (video) return video;

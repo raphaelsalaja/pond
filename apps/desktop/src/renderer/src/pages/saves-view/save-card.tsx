@@ -10,6 +10,7 @@ import { SourceBadge } from "@/components/source-badge";
 import { useDisplayPrefs } from "@/lib/display-prefs";
 import { buildMediaUnits, pickPrimaryFile } from "@/pool/media";
 import { selection, useIsSelected } from "@/pool/selection";
+import { useResolvedTheme } from "@/pool/theme";
 import type { Save } from "@/pool/types";
 
 interface SaveCardProps {
@@ -107,7 +108,8 @@ const SaveCardBody = memo(function SaveCardBody({
   layout?: CardLayout;
   selection?: CardSelection;
 }) {
-  const primary = pickPrimaryFile(save);
+  const theme = useResolvedTheme();
+  const primary = pickPrimaryFile(save, { theme });
   const w = primary?.width ?? save.width ?? null;
   const h = primary?.height ?? save.height ?? null;
   // Clamp to a sane range so panoramas / extreme portraits don't stretch

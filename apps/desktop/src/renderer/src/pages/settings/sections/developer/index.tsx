@@ -1,5 +1,6 @@
-import { AlertDialog, Button, Switch, useToast } from "@pond/ui";
+import { AlertDialog, Button, Dialog, Switch, useToast } from "@pond/ui";
 import { useCallback, useState } from "react";
+import { ActivityDialog } from "@/components/activity-dialog";
 import { Settings } from "@/components/settings";
 import { reloadPrefs, usePrefs } from "@/pool/prefs";
 
@@ -8,6 +9,7 @@ export function DeveloperSection() {
   const [prefs, patch] = usePrefs("developer");
   const [resetBusy, setResetBusy] = useState<string | null>(null);
   const [confirmFactory, setConfirmFactory] = useState(false);
+  const [activityOpen, setActivityOpen] = useState(false);
 
   const apply = useCallback(
     async (next: boolean) => {
@@ -150,6 +152,24 @@ export function DeveloperSection() {
               <Button size="sm" onClick={() => void openInspector()}>
                 Open Inspector
               </Button>
+            </Settings.ItemControl>
+          </Settings.Item>
+
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>Activity</Settings.ItemTitle>
+              <Settings.ItemDescription>
+                Query the pipeline event stream — one row per task, sync, and
+                save lifecycle. Filter by source, outcome, or error.
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <Dialog.Root open={activityOpen} onOpenChange={setActivityOpen}>
+                <Dialog.Trigger
+                  render={<Button size="sm">Open Activity</Button>}
+                />
+                <ActivityDialog.Content open={activityOpen} />
+              </Dialog.Root>
             </Settings.ItemControl>
           </Settings.Item>
         </Settings.List>

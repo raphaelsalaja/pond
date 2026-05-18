@@ -143,11 +143,103 @@ export async function readItemMetadata(
   if (!existsSync(file)) return null;
   try {
     const text = await readFile(file, "utf8");
-    return JSON.parse(text) as ItemMetadata;
+    const raw = JSON.parse(text) as unknown;
+    return normalizeItemMetadata(id, raw);
   } catch (err) {
     log.warn("[pond library] corrupt metadata.json", id, err);
     return null;
   }
+}
+
+/* The library has two on-disk metadata shapes:
+ *  - Legacy flat (`buildItemMetadata`): fields like `source`, `url`,
+ *    `name` live at the top level.
+ *  - Schema 2 (`pipeline/workers/finalize.writeMetadataJson`): the
+ *    serialized save row is nested under `pond.save`, with file and
+ *    task manifests alongside it.
+ *
+ * The scanner downstream of this function only understands the legacy
+ * shape, so we collapse schema 2 docs back into it here. Without the
+ * normalization, every pipeline-finalized item makes `reconcileLibrary`
+ * insert `source: undefined` and trip the NOT NULL constraint on every
+ * scan tick. */
+function normalizeItemMetadata(id: string, raw: unknown): ItemMetadata | null {
+  if (!raw || typeof raw !== "object") return null;
+  const doc = raw as Record<string, unknown>;
+  const pond = (doc.pond ?? {}) as Record<string, unknown>;
+  if (pond.schema === 2 && pond.save && typeof pond.save === "object") {
+    return adaptSchema2(id, doc, pond);
+  }
+  return doc as unknown as ItemMetadata;
+}
+
+function adaptSchema2(
+  id: string,
+  doc: Record<string, unknown>,
+  pond: Record<string, unknown>,
+): ItemMetadata | null {
+  const save = pond.save as Record<string, unknown>;
+  const source = typeof save.source === "string" ? save.source : null;
+  const sourceId = typeof save.sourceId === "string" ? save.sourceId : null;
+  if (!source || !sourceId) return null;
+
+  const files = Array.isArray(pond.files)
+    ? (pond.files as Array<Record<string, unknown>>).map((f) => ({
+        kind: String(f.kind ?? "other"),
+        path: String(f.path ?? ""),
+        sha256: String(f.sha256 ?? ""),
+        size: Number(f.size ?? 0),
+      }))
+    : [];
+  const parsedSavedAt = parseTimestamp(save.savedAt);
+  const parsedCreatedAt = parseTimestamp(save.createdAt);
+  const parsedDeletedAt = parseTimestamp(save.deletedAt);
+
+  return {
+    id,
+    source,
+    sourceId,
+    url: typeof save.url === "string" ? save.url : "",
+    name: typeof save.title === "string" ? save.title : null,
+    annotation: typeof save.notes === "string" ? save.notes : "",
+    tags: Array.isArray(save.tags) ? (save.tags as unknown[]).map(String) : [],
+    folders: [],
+    ext: files[0]?.path ? extname(files[0].path).slice(1) || null : null,
+    size:
+      typeof save.fileSize === "number"
+        ? save.fileSize
+        : (files[0]?.size ?? null),
+    width: typeof save.width === "number" ? save.width : null,
+    height: typeof save.height === "number" ? save.height : null,
+    btime: parsedCreatedAt ?? Date.now(),
+    mtime:
+      typeof (doc.mtime as unknown) === "number"
+        ? (doc.mtime as number)
+        : Date.now(),
+    importedAt: parsedSavedAt ?? Date.now(),
+    isDeleted: parsedDeletedAt != null,
+    files,
+    pond: {
+      schemaVersion: 2,
+      rawSource: pond.rawSource,
+      description:
+        typeof save.description === "string" ? save.description : null,
+      author: typeof save.author === "string" ? save.author : null,
+      notes: typeof save.notes === "string" ? save.notes : null,
+      mediaType: typeof save.mediaType === "string" ? save.mediaType : null,
+      coverIndex: typeof save.coverIndex === "number" ? save.coverIndex : 0,
+    },
+  };
+}
+
+function parseTimestamp(value: unknown): number | null {
+  if (value == null) return null;
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const ms = Date.parse(value);
+    return Number.isFinite(ms) ? ms : null;
+  }
+  return null;
 }
 
 export async function moveToTrash(id: string): Promise<void> {
