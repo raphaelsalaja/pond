@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { isTextOnlyTweet } from "@/components/card-thumb/tweet";
+import { pickPrimaryFile } from "@/pool/media";
 import type { Save } from "@/pool/types";
 
 const MIN_RATIO = 0.4;
@@ -65,10 +65,10 @@ export function aspectFor(save: Save): number {
   if (measured !== undefined) return measured;
   const cached = fallbackCache.get(save);
   if (cached !== undefined) return cached;
-  const cover = save.files[save.coverIndex ?? 0];
-  const w = cover?.width ?? save.width ?? null;
-  const h = cover?.height ?? save.height ?? null;
-  const ratio = w && h ? clampRatio(w, h) : isTextOnlyTweet(save) ? 4 / 3 : 1;
+  const primary = pickPrimaryFile(save);
+  const w = primary?.width ?? save.width ?? null;
+  const h = primary?.height ?? save.height ?? null;
+  const ratio = w && h ? clampRatio(w, h) : 1;
   fallbackCache.set(save, ratio);
   return ratio;
 }

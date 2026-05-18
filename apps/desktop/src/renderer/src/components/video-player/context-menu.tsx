@@ -1,19 +1,16 @@
-import type { useMediaRemote } from "@vidstack/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { REVEAL_LABEL } from "@/components/save-preview/helpers";
 import type { Save } from "@/pool/types";
+import { SPEED_OPTIONS } from "./speed-options";
 import styles from "./styles.module.css";
-
-type MediaRemote = ReturnType<typeof useMediaRemote>;
-
-const SPEED_OPTIONS = [0.5, 0.75, 1, 1.25, 1.5, 2] as const;
 
 interface VideoContextMenuProps {
   position: { x: number; y: number };
   save: Save;
   containerRef: React.RefObject<HTMLDivElement | null>;
-  remote: MediaRemote;
   playbackRate: number;
+  onSetPlaybackRate: (rate: number) => void;
+  onRequestPip: () => Promise<void>;
   onClose: () => void;
 }
 
@@ -38,8 +35,9 @@ export function VideoContextMenu({
   position,
   save,
   containerRef,
-  remote,
   playbackRate,
+  onSetPlaybackRate,
+  onRequestPip,
   onClose,
 }: VideoContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
@@ -104,9 +102,9 @@ export function VideoContextMenu({
   }, [save.id, onClose]);
 
   const onPip = useCallback(() => {
-    remote.enterPictureInPicture();
+    void onRequestPip().catch(() => {});
     onClose();
-  }, [remote, onClose]);
+  }, [onRequestPip, onClose]);
 
   return (
     <>
@@ -171,7 +169,7 @@ export function VideoContextMenu({
                   type="button"
                   className={styles["ctx-item"]}
                   onClick={() => {
-                    remote.changePlaybackRate(rate);
+                    onSetPlaybackRate(rate);
                     onClose();
                   }}
                 >

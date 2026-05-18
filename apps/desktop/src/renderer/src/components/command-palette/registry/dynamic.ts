@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSaves } from "@/pool/hooks";
 import { useSearchResults } from "@/pool/search";
 import type { Save } from "@/pool/types";
 import type { Command } from "./types";
@@ -6,11 +7,11 @@ import type { Command } from "./types";
 interface TagRow {
   id: string;
   name: string;
-  usageCount: number;
 }
 
 export function useTagCommands(open: boolean): Command[] {
   const [tags, setTags] = useState<TagRow[]>([]);
+  const saves = useSaves();
 
   useEffect(() => {
     if (!open) return;
@@ -19,12 +20,7 @@ export function useTagCommands(open: boolean): Command[] {
       .query("tags.list", {})
       .then((rows) => {
         if (cancelled) return;
-        const list = (rows as TagRow[]).slice().sort((a, b) => {
-          const u = (b.usageCount ?? 0) - (a.usageCount ?? 0);
-          if (u !== 0) return u;
-          return a.name.localeCompare(b.name);
-        });
-        setTags(list);
+        setTags(rows as TagRow[]);
       })
       .catch(() => {
         if (!cancelled) setTags([]);
@@ -34,19 +30,43 @@ export function useTagCommands(open: boolean): Command[] {
     };
   }, [open]);
 
-  return tags.map<Command>((tag) => ({
-    id: `tag.${tag.id}`,
-    label: `Filter by #${tag.name}`,
-    group: "Tags",
-    scope: "tags",
-    keywords: [tag.name, "tag", "filter"],
-    perform: ({ navigate, close }) => {
-      navigate(`/?tag=${encodeURIComponent(tag.name)}`, {
-        viewTransition: true,
-      });
-      close();
-    },
-  }));
+  const countsByLower = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const s of saves) {
+      if (s.deletedAt) continue;
+      for (const t of s.tags) {
+        const key = t.toLowerCase();
+        map.set(key, (map.get(key) ?? 0) + 1);
+      }
+    }
+    return map;
+  }, [saves]);
+
+  return useMemo(
+    () =>
+      tags
+        .slice()
+        .sort((a, b) => {
+          const ca = countsByLower.get(a.name.toLowerCase()) ?? 0;
+          const cb = countsByLower.get(b.name.toLowerCase()) ?? 0;
+          if (ca !== cb) return cb - ca;
+          return a.name.localeCompare(b.name);
+        })
+        .map<Command>((tag) => ({
+          id: `tag.${tag.id}`,
+          label: `Filter by #${tag.name}`,
+          group: "Tags",
+          scope: "tags",
+          keywords: [tag.name, "tag", "filter", "label"],
+          perform: ({ navigate, close }) => {
+            navigate(`/?tag=${encodeURIComponent(tag.name)}`, {
+              viewTransition: true,
+            });
+            close();
+          },
+        })),
+    [tags, countsByLower],
+  );
 }
 
 export function useSaveCommands(query: string): Command[] {

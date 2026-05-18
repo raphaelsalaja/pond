@@ -1,18 +1,14 @@
 import { useToast } from "@pond/ui";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { optimistic } from "@/pool/bootstrap";
-import { pool } from "@/pool/pool";
 import { selection, useSelectionSize } from "@/pool/selection";
 import type { SavesMode } from "./use-saves-data";
 
 export interface CardActions {
-  busy: string | null;
   selectionSize: number;
   multiSelectActive: boolean;
   handleCardClick: (id: string, e: React.MouseEvent) => void;
   focus: (id: string) => void;
-  moveToTrash: (id: string) => Promise<void>;
   onDragOver: (e: React.DragEvent) => void;
   onDrop: (e: React.DragEvent) => Promise<void>;
 }
@@ -26,7 +22,6 @@ export function useCardActions(
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const toast = useToast();
-  const [busy, setBusy] = useState<string | null>(null);
 
   const selectionSize = useSelectionSize();
   const multiSelectActive = selectionSize > 0;
@@ -114,35 +109,6 @@ export function useCardActions(
     selection.clear();
   }, [mode, sourceFilter]);
 
-  const moveToTrash = useCallback(
-    async (id: string) => {
-      const prev = pool.get(id);
-      if (!prev) return;
-      const now = Date.now();
-      setBusy(id);
-      try {
-        await optimistic(
-          () => {
-            pool.upsert({ ...prev, deletedAt: now } as typeof prev);
-          },
-          () => {
-            pool.upsert(prev);
-          },
-          async () =>
-            window.pond.tx({
-              kind: "trash",
-              model: "save",
-              id,
-            }),
-        );
-        toast.add({ title: "Moved to trash", type: "success" });
-      } finally {
-        setBusy(null);
-      }
-    },
-    [toast],
-  );
-
   const onDragOver = useCallback((e: React.DragEvent) => {
     if (!e.dataTransfer) return;
     const types = Array.from(e.dataTransfer.types ?? []);
@@ -206,12 +172,10 @@ export function useCardActions(
   );
 
   return {
-    busy,
     selectionSize,
     multiSelectActive,
     handleCardClick,
     focus,
-    moveToTrash,
     onDragOver,
     onDrop,
   };

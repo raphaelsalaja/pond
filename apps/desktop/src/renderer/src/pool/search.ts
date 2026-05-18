@@ -47,34 +47,3 @@ export function useSearchResults(query: string): {
 
   return { results, searching };
 }
-
-export function useSimilarSaves(id: string | null | undefined): Save[] | null {
-  const [results, setResults] = useState<Save[] | null>(null);
-
-  useEffect(() => {
-    if (!id) {
-      setResults(null);
-      return;
-    }
-    let cancelled = false;
-    void window.pond
-      .query("saves.similar", { id, limit: 12 })
-      .then((rows) => {
-        if (cancelled) return;
-        const normalised = (rows as Array<Partial<Save>>)
-          .map(normalise)
-          .filter((r): r is Save => r !== null);
-        for (const row of normalised) pool.upsert(row);
-        setResults(normalised);
-      })
-      .catch((err) => {
-        console.warn("[pond search] saves.similar failed", err);
-        if (!cancelled) setResults([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [id]);
-
-  return results;
-}

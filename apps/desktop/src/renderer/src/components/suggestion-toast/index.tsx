@@ -85,8 +85,8 @@ export function SuggestionToast() {
         <div className={styles.headerEnd}>
           {icons.length > 0 ? (
             <ul className={styles.icons} aria-hidden>
-              {icons.map((src, i) => (
-                <li key={`${i}-${src}`} className={styles.iconCell}>
+              {icons.map((src) => (
+                <li key={src} className={styles.iconCell}>
                   <img
                     src={src}
                     alt=""
@@ -173,6 +173,7 @@ function ChevronDown() {
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden
     >
+      <title>Dismiss</title>
       <path
         d="M4 6.5L8 10.5L12 6.5"
         stroke="currentColor"

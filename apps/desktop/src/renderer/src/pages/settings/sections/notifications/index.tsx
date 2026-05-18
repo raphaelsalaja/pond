@@ -49,21 +49,6 @@ export function NotificationsSection() {
 
           <Settings.Item>
             <Settings.ItemDetails>
-              <Settings.ItemTitle>AI Suggestion Ready</Settings.ItemTitle>
-              <Settings.ItemDescription>
-                Notify when an enrichment suggestion lands in the inbox.
-              </Settings.ItemDescription>
-            </Settings.ItemDetails>
-            <Settings.ItemControl>
-              <Switch.Root
-                checked={prefs.aiSuggestion}
-                onCheckedChange={(v) => patch({ aiSuggestion: v })}
-              />
-            </Settings.ItemControl>
-          </Settings.Item>
-
-          <Settings.Item>
-            <Settings.ItemDetails>
               <Settings.ItemTitle>Refresh Failures</Settings.ItemTitle>
               <Settings.ItemDescription>
                 Notify when refresh hits an auth wall or rate limit.

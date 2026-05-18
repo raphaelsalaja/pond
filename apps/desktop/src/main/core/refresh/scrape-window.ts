@@ -40,7 +40,12 @@ const PARTITION = "persist:pond-scrapers";
 const NAV_TIMEOUT_MS = 25_000;
 const HARVEST_TIMEOUT_MS = 20_000;
 
-export const POOL_SIZE = 3;
+// Sized to comfortably cover the reconciler's `harvest_metadata` +
+// `capture_tweet` per-op caps plus a slack window for occasional
+// list-harvest / bookmark sync calls. Each hidden window is ~150 MB
+// resident; six windows is the comfortable upper bound on a laptop
+// without leaning on swap.
+export const POOL_SIZE = 6;
 
 interface PoolSlot {
   win: BrowserWindow;
@@ -136,7 +141,7 @@ function drainQueue() {
 
 export interface HarvestArgs {
   url: string;
-  source: Source | null;
+  source: Source;
   sourceId?: string;
 }
 
@@ -191,6 +196,310 @@ export async function harvestUrl(args: HarvestArgs): Promise<HarvestResult> {
   } finally {
     lease.release();
   }
+}
+
+export interface TweetScreenshotArgs {
+  url: string;
+  sourceId: string;
+  // Forces the captured tweet's color scheme. Defaults to "dark" so the
+  // pre-dual-theme behaviour is preserved for any caller that hasn't
+  // been updated.
+  colorScheme?: "light" | "dark";
+}
+
+export interface TweetScreenshotResult {
+  ok: boolean;
+  png?: { bytes: Buffer; width: number; height: number };
+  reason?: "navigate_failed" | "auth_required" | "no_article" | "timeout";
+}
+
+const SCREENSHOT_ARTICLE_TIMEOUT_MS = 12_000;
+
+// 3x of the article's CSS-pixel rect. Electron's `capturePage` captures
+// at the WebContents' device scale factor, and the hidden pool window
+// inherits the primary display's DPR (typically 1 or 2). Override it via
+// CDP so captures look sharp regardless of the host display.
+const CAPTURE_DEVICE_SCALE_FACTOR = 3;
+
+// Vertical breathing room added below the article when we resize the
+// window to fit it. Without padding, lazy-loaded media in the last image
+// row can poke into the bottom edge.
+const SCREENSHOT_VERTICAL_PADDING = 40;
+
+// Absolute cap on hidden-window content height. Tweets with huge
+// embedded carousels can otherwise drive the window past safe limits;
+// anything beyond this just gets cropped at the bottom (rare).
+const SCREENSHOT_MAX_HEIGHT = 8192;
+
+// screenshotTweet — opens the tweet in a hidden window, finds the
+// rendered <article>, and captures just that element via
+// `webContents.capturePage(rect)`. Reuses the same window pool / cookies
+// as `harvestUrl`, so logged-in tweets work when the X integration is
+// connected. Returns `ok: false` for any failure — callers should treat
+// misses as a no-op and fall back to whatever they were rendering
+// before (we never want a screenshot miss to mark a save as failed).
+export async function screenshotTweet(
+  args: TweetScreenshotArgs,
+): Promise<TweetScreenshotResult> {
+  const colorScheme = args.colorScheme ?? "dark";
+  const lease = await leaseWindow();
+  // CDP's `Emulation.setEmulatedMedia` has to be in place before the
+  // navigation commits — X reads `prefers-color-scheme` once on mount
+  // and never reacts to a mid-life flip, so flipping it after the page
+  // has rendered would only repaint the platform chrome and leave the
+  // article unchanged.
+  let restoreEmulation: (() => Promise<void>) | null = null;
+  try {
+    restoreEmulation = await emulateColorScheme(lease.win, colorScheme);
+    const navOk = await navigateWithTimeout(
+      lease.win,
+      args.url,
+      NAV_TIMEOUT_MS,
+    );
+    if (!navOk) {
+      log.warn("[pond screenshot:tweet] navigate failed", args.url);
+      return { ok: false, reason: "navigate_failed" };
+    }
+
+    if (looksLikeAuthWall(lease.win.webContents.getURL())) {
+      log.info("[pond screenshot:tweet] auth wall hit", args.url);
+      return { ok: false, reason: "auth_required" };
+    }
+
+    // Belt-and-braces alongside the CDP emulated media: hide X's sticky
+    // sign-up chrome and pin the html background to match the requested
+    // scheme so any rounding in the article rect doesn't leak the host
+    // window's default color through the screenshot's edges.
+    const htmlBg = colorScheme === "light" ? "#fff" : "#000";
+    await lease.win.webContents
+      .insertCSS(
+        `[data-testid="BottomBar"], [data-testid="bottomBar"], [data-testid="login"] { display: none !important; }
+         html { color-scheme: ${colorScheme}; background: ${htmlBg} !important; }`,
+      )
+      .catch(() => {});
+
+    const initial = await readArticleRect(lease.win, args.sourceId);
+    if (!initial) {
+      log.info("[pond screenshot:tweet] no article", args.url);
+      return { ok: false, reason: "no_article" };
+    }
+
+    // Resize the hidden window tall enough to fit the entire article in
+    // a single viewport before capturing. `capturePage` only captures
+    // content that's been laid out within the live viewport; if the
+    // article overflows, the bottom is silently cropped. After the
+    // resize we re-measure because lazy media / sticky chrome can shift
+    // the article's rect when more vertical space becomes available.
+    const [contentWidth, originalContentHeight] = lease.win.getContentSize();
+    const requiredHeight = Math.ceil(
+      initial.y + initial.height + SCREENSHOT_VERTICAL_PADDING,
+    );
+    let rect = initial;
+    let resized = false;
+    if (requiredHeight > originalContentHeight) {
+      const target = Math.min(requiredHeight, SCREENSHOT_MAX_HEIGHT);
+      lease.win.setContentSize(contentWidth, target);
+      resized = true;
+      await sleep(400);
+      const remeasured = await readArticleRect(lease.win, args.sourceId);
+      if (remeasured) rect = remeasured;
+    }
+
+    try {
+      return await withDeviceScaleFactor(
+        lease.win,
+        CAPTURE_DEVICE_SCALE_FACTOR,
+        async () => {
+          const image = await lease.win.webContents.capturePage({
+            x: Math.max(0, Math.floor(rect.x)),
+            y: Math.max(0, Math.floor(rect.y)),
+            width: Math.max(1, Math.ceil(rect.width)),
+            height: Math.max(1, Math.ceil(rect.height)),
+          });
+          const bytes = image.toPNG();
+          const size = image.getSize();
+          if (bytes.byteLength === 0 || size.width === 0 || size.height === 0) {
+            log.warn("[pond screenshot:tweet] empty capture", args.url);
+            return { ok: false, reason: "no_article" } as const;
+          }
+          return {
+            ok: true,
+            png: { bytes, width: size.width, height: size.height },
+          } as const;
+        },
+      );
+    } finally {
+      if (resized) {
+        try {
+          lease.win.setContentSize(contentWidth, originalContentHeight);
+        } catch {
+          /* window may have been destroyed mid-capture; pool drops it */
+        }
+      }
+    }
+  } catch (err) {
+    log.warn("[pond screenshot:tweet] unexpected error", args.url, err);
+    return { ok: false, reason: "no_article" };
+  } finally {
+    if (restoreEmulation) await restoreEmulation().catch(() => {});
+    lease.release();
+  }
+}
+
+async function emulateColorScheme(
+  win: BrowserWindow,
+  scheme: "light" | "dark",
+): Promise<() => Promise<void>> {
+  const dbg = win.webContents.debugger;
+  const alreadyAttached = dbg.isAttached();
+  let attachedHere = false;
+  try {
+    if (!alreadyAttached) {
+      dbg.attach("1.3");
+      attachedHere = true;
+    }
+    await dbg.sendCommand("Emulation.setEmulatedMedia", {
+      features: [{ name: "prefers-color-scheme", value: scheme }],
+    });
+  } catch (err) {
+    log.warn(
+      "[pond screenshot:tweet] emulated media setup failed",
+      scheme,
+      err,
+    );
+    if (attachedHere) {
+      try {
+        dbg.detach();
+      } catch {
+        /* attach failed mid-flight; nothing to detach */
+      }
+    }
+    return async () => {};
+  }
+  return async () => {
+    try {
+      await dbg.sendCommand("Emulation.setEmulatedMedia", { features: [] });
+    } catch {
+      /* override may already be cleared; safe to ignore */
+    }
+    if (attachedHere) {
+      try {
+        dbg.detach();
+      } catch {
+        /* wc may have been destroyed mid-capture; pool drops it */
+      }
+    }
+  };
+}
+
+// Override Chromium's device scale factor for the duration of `fn` via
+// the DevTools Protocol. `capturePage` writes back a NativeImage sized at
+// `cssRect × deviceScaleFactor`, so this is the lever for sharper PNGs
+// without changing the page's CSS-pixel layout.
+async function withDeviceScaleFactor<T>(
+  win: BrowserWindow,
+  factor: number,
+  fn: () => Promise<T>,
+): Promise<T> {
+  const dbg = win.webContents.debugger;
+  const alreadyAttached = dbg.isAttached();
+  let attachedHere = false;
+  try {
+    if (!alreadyAttached) {
+      dbg.attach("1.3");
+      attachedHere = true;
+    }
+    const [width, height] = win.getContentSize();
+    await dbg.sendCommand("Emulation.setDeviceMetricsOverride", {
+      width,
+      height,
+      deviceScaleFactor: factor,
+      mobile: false,
+    });
+    return await fn();
+  } finally {
+    try {
+      await dbg.sendCommand("Emulation.clearDeviceMetricsOverride");
+    } catch {
+      /* override may already be cleared; safe to ignore */
+    }
+    if (attachedHere) {
+      try {
+        dbg.detach();
+      } catch {
+        /* detach can throw if the wc was destroyed mid-capture */
+      }
+    }
+  }
+}
+
+interface ArticleRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+async function readArticleRect(
+  win: BrowserWindow,
+  tweetId: string,
+): Promise<ArticleRect | null> {
+  const expr = buildArticleRectExpression(tweetId);
+  const raw = await Promise.race([
+    win.webContents.executeJavaScript(expr, true),
+    sleep(SCREENSHOT_ARTICLE_TIMEOUT_MS).then(
+      () => "__pond_screenshot_timeout__",
+    ),
+  ]);
+  if (raw === "__pond_screenshot_timeout__") return null;
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Partial<ArticleRect>;
+  if (
+    typeof r.x !== "number" ||
+    typeof r.y !== "number" ||
+    typeof r.width !== "number" ||
+    typeof r.height !== "number"
+  ) {
+    return null;
+  }
+  if (r.width < 8 || r.height < 8) return null;
+  return r as ArticleRect;
+}
+
+function buildArticleRectExpression(tweetId: string): string {
+  // Scroll to the very top of the document instead of centering the
+  // article — centering produces a negative top when the article is
+  // taller than the viewport, which the capture path used to clamp to
+  // 0, pulling in X's "Post" header above the article and clipping the
+  // bottom. With scrollTo(0, 0), `rect.y` is the article's natural
+  // distance below X's chrome (positive), and the caller resizes the
+  // window so `rect.y + rect.height` still fits inside the viewport.
+  return `(async () => {
+    try {
+      const tweetId = ${JSON.stringify(tweetId)};
+      const findArticle = () => {
+        const anchor = document.querySelector('a[href*="/status/' + tweetId + '"]');
+        return anchor && anchor.closest('article');
+      };
+      const articleDeadline = Date.now() + 10_000;
+      let article = findArticle();
+      while (!article && Date.now() < articleDeadline) {
+        await new Promise(r => setTimeout(r, 200));
+        article = findArticle();
+      }
+      if (!article) return null;
+
+      window.scrollTo(0, 0);
+      try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch (_) {}
+      await new Promise(r => requestAnimationFrame(() => r(null)));
+      await new Promise(r => setTimeout(r, 150));
+
+      const r = article.getBoundingClientRect();
+      return { x: r.left, y: r.top, width: r.width, height: r.height };
+    } catch (_) {
+      return null;
+    }
+  })()`;
 }
 
 export interface SourceListArgs extends ListHarvestArgs {
@@ -316,7 +625,6 @@ function listUrlForSource(
     case "tiktok":
       return accountKey ? tiktokFavouritesUrl(accountKey) : null;
     case "twitter":
-    case "article":
       return null;
   }
 }
@@ -339,7 +647,6 @@ function buildListExpressionFor(
     case "tiktok":
       return buildTiktokListExpression(args);
     case "twitter":
-    case "article":
       return null;
   }
 }
@@ -527,26 +834,11 @@ export async function harvestTwitterBookmarks(
   }
 }
 
-const PUBLIC_PROFILE_SOURCES = new Set<Source>(["cosmos", "arena"]);
-
-export function isPublicProfileSource(source: Source): boolean {
-  return PUBLIC_PROFILE_SOURCES.has(source);
-}
-
-export type SignInMode = "external" | "skipped";
+export type SignInMode = "external";
 
 export async function signInToSource(
   source: Source,
 ): Promise<{ ok: boolean; mode: SignInMode }> {
-  if (PUBLIC_PROFILE_SOURCES.has(source)) {
-    log.info(
-      "[pond refresh:signin] public-profile source ignored",
-      source,
-      "(set the handle via prefs.sync.handles instead)",
-    );
-    return { ok: false, mode: "skipped" };
-  }
-
   const url = homeUrlForSource(source);
   try {
     await shell.openExternal(url);
@@ -602,16 +894,33 @@ async function navigateWithTimeout(
     wc.once("did-finish-load", onDone);
     wc.once("did-fail-load", onFail);
   });
-  try {
-    await wc.loadURL(url);
-  } catch {
+
+  // `wc.loadURL` can hang indefinitely on stalled hosts (X under
+  // rate-limit / soft-block stops emitting both did-finish-load and
+  // did-fail-load, and the loadURL promise never settles). Previously
+  // we awaited loadURL before racing the load events against the
+  // timeout — a hang there leaked the pool window forever, eventually
+  // pinning the reconciler at MAX_GLOBAL_INFLIGHT. Race the entire
+  // navigation against a wall-clock budget and forcibly stop the
+  // WebContents on miss so the pool slot can be reused.
+  const navPromise = wc.loadURL(url).then(
+    () => finished,
+    () => false as const,
+  );
+  const TIMEOUT = Symbol("nav-timeout");
+  const result = await Promise.race([
+    navPromise,
+    sleep(timeoutMs).then(() => TIMEOUT),
+  ]);
+  if (result === TIMEOUT) {
+    try {
+      wc.stop();
+    } catch {
+      /* wc may be destroyed mid-flight; pool drops it */
+    }
     return false;
   }
-  const result = await Promise.race([
-    finished,
-    sleep(timeoutMs).then(() => false),
-  ]);
-  return result;
+  return result === true;
 }
 
 function sleep(ms: number): Promise<void> {
@@ -636,10 +945,6 @@ async function dumpCosmosCaptures(win: BrowserWindow): Promise<void> {
 }
 
 export async function isSourceConnected(source: Source): Promise<boolean> {
-  if (PUBLIC_PROFILE_SOURCES.has(source)) {
-    const handle = await readStoredHandle(source);
-    return handle !== null;
-  }
   const cookies = await listCookiesForSource(source);
   return cookies.some((c) => isAuthCookie(source, c));
 }
@@ -702,6 +1007,116 @@ export async function readStoredHandle(source: Source): Promise<string | null> {
   }
 }
 
+async function _writeStoredHandle(
+  source: Source,
+  handle: string,
+): Promise<void> {
+  const trimmed = handle.trim().replace(/^@/, "");
+  if (!trimmed) return;
+  try {
+    const prefs = await getPrefs();
+    const nextHandles = { ...(prefs.sync.handles ?? {}), [source]: trimmed };
+    await setPrefs({ sync: { handles: nextHandles } });
+  } catch (err) {
+    log.warn("[pond refresh:signin] writeStoredHandle failed", source, err);
+  }
+}
+
+// Opens the hidden window logged in via the partition cookies and reads
+// the user's own handle from the rendered DOM. We pick the handle off
+// the profile link in the top nav — it's the one stable, public-facing
+// identifier every social site exposes once you're authenticated.
+//
+// Returns `null` if the session isn't authenticated or the DOM probe
+// doesn't match (site redesign, sign-out, etc.). The caller should
+// surface that as `auth_required`.
+export async function probeUserHandle(source: Source): Promise<string | null> {
+  const lease = await leaseWindow();
+  try {
+    const url = homeUrlForSource(source);
+    const navOk = await navigateWithTimeout(lease.win, url, NAV_TIMEOUT_MS);
+    if (!navOk) {
+      log.warn("[pond refresh:probe] navigate failed", source, url);
+      return null;
+    }
+    const current = lease.win.webContents.getURL();
+    if (looksLikeAuthWall(current)) {
+      log.info("[pond refresh:probe] auth wall hit", source, current);
+      return null;
+    }
+
+    const expr = buildProbeExpression(source);
+    const raw = await Promise.race([
+      lease.win.webContents.executeJavaScript(expr, true),
+      sleep(HARVEST_TIMEOUT_MS).then(() => "__pond_probe_timeout__"),
+    ]);
+    if (typeof raw !== "string" || raw === "__pond_probe_timeout__") {
+      log.warn("[pond refresh:probe] no handle in DOM", source);
+      return null;
+    }
+    const handle = raw.trim().replace(/^@/, "");
+    return handle.length > 0 ? handle : null;
+  } catch (err) {
+    log.warn("[pond refresh:probe] unexpected error", source, err);
+    return null;
+  } finally {
+    lease.release();
+  }
+}
+
+function buildProbeExpression(source: Source): string {
+  // Each site exposes a profile/avatar link in the top nav pointing at
+  // `/<handle>`. We pick the first link whose href is a single-segment
+  // path on the site's own host. The expressions return the trimmed
+  // handle string or the empty string.
+  switch (source) {
+    case "cosmos":
+      return `(() => {
+        try {
+          const host = location.hostname.replace(/^www\\./, '');
+          const links = Array.from(document.querySelectorAll('a[href^="/"]'));
+          for (const a of links) {
+            const href = a.getAttribute('href') || '';
+            const m = href.match(/^\\/([A-Za-z0-9_-]{2,40})(\\?.*)?$/);
+            if (!m) continue;
+            const handle = m[1];
+            // Filter obvious non-user paths.
+            if (['login','signup','signin','about','pricing','settings','explore','search','feed','home','clusters'].includes(handle.toLowerCase())) continue;
+            // Prefer a link in the top nav / header.
+            const inNav = a.closest('header, nav, [role="navigation"]');
+            if (inNav) return handle;
+          }
+          // Fallback: any plausible match.
+          for (const a of links) {
+            const href = a.getAttribute('href') || '';
+            const m = href.match(/^\\/([A-Za-z0-9_-]{2,40})(\\?.*)?$/);
+            if (m && !['login','signup','signin','about','pricing','settings','explore','search','feed','home','clusters'].includes(m[1].toLowerCase())) return m[1];
+          }
+          void host;
+          return '';
+        } catch { return ''; }
+      })()`;
+    case "arena":
+      return `(() => {
+        try {
+          // Are.na's user nav has a "Profile" link to /<slug>.
+          const links = Array.from(document.querySelectorAll('a[href^="/"]'));
+          for (const a of links) {
+            const href = a.getAttribute('href') || '';
+            const m = href.match(/^\\/([a-z0-9-]{2,60})(\\/?$|\\?.*$)/i);
+            if (!m) continue;
+            const slug = m[1];
+            if (['about','blog','log-in','login','sign-up','signup','channels','search','explore','pricing','jobs','privacy','terms','team','press','help','support','settings'].includes(slug.toLowerCase())) continue;
+            return slug;
+          }
+          return '';
+        } catch { return ''; }
+      })()`;
+    default:
+      return `''`;
+  }
+}
+
 function isAuthCookie(source: Source, cookie: Cookie): boolean {
   const name = cookie.name;
   switch (source) {
@@ -720,11 +1135,25 @@ function isAuthCookie(source: Source, cookie: Cookie): boolean {
         name === "__Secure-1PSID" ||
         name === "__Secure-3PSID"
       );
-    case "cosmos":
     case "arena":
-      return false;
-    case "article":
-      return false;
+      // are.na (Rails) sets `_arena_session` when logged in; the
+      // `remember_user_token` cookie marks long-lived auth.
+      return (
+        name === "_arena_session" ||
+        name === "remember_user_token" ||
+        name === "cf_clearance" // not auth on its own; tolerated so the
+        // first sync probes — gets refined below if it's the only one.
+      );
+    case "cosmos":
+      // cosmos.so uses Supabase/NextAuth-style session tokens. Their cookie
+      // name has changed before, so accept the standard auth-token shapes
+      // rather than pinning to one literal.
+      return (
+        /^sb-[a-z0-9-]+-auth-token(\.\d+)?$/.test(name) ||
+        name === "__Secure-next-auth.session-token" ||
+        name === "next-auth.session-token" ||
+        name === "cosmos.session-token"
+      );
   }
 }
 
@@ -756,30 +1185,28 @@ export function primaryDomainForSource(source: Source): string | null {
       return ".are.na";
     case "youtube":
       return ".youtube.com";
-    case "article":
-      return null;
   }
 }
 
 export async function disconnectSource(
   source: Source,
 ): Promise<{ ok: boolean }> {
-  if (PUBLIC_PROFILE_SOURCES.has(source)) {
-    try {
-      const prefs = await getPrefs();
-      const nextHandles = { ...prefs.sync.handles };
-      delete nextHandles[source];
-      await setPrefs({ sync: { handles: nextHandles } });
-      return { ok: true };
-    } catch (err) {
-      log.warn("[pond refresh:disconnect] handle clear failed", source, err);
-      return { ok: false };
-    }
-  }
-
   const persistent = session.fromPartition(PARTITION);
   const domain = primaryDomainForSource(source);
   if (!domain) return { ok: true };
+
+  // Drop the cached handle too — derived from the session we're clearing.
+  try {
+    const prefs = await getPrefs();
+    if (prefs.sync.handles?.[source]) {
+      const nextHandles = { ...prefs.sync.handles };
+      delete nextHandles[source];
+      await setPrefs({ sync: { handles: nextHandles } });
+    }
+  } catch (err) {
+    log.warn("[pond refresh:disconnect] handle clear failed", source, err);
+  }
+
   try {
     const cookies = await persistent.cookies.get({ domain });
     await Promise.all(

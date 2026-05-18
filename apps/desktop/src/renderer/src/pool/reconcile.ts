@@ -9,7 +9,7 @@ export interface SyncActionEvent {
   action: "I" | "U" | "D" | "A";
   data: unknown;
   prevData: unknown;
-  actor: "user" | "ai" | "system";
+  actor: "user" | "system";
   actorReason: string | null;
   createdAt: string;
 }
@@ -68,7 +68,7 @@ export function normalise(raw: Partial<Save> | null | undefined): Save | null {
   if (!raw?.id) return null;
   return {
     id: raw.id,
-    source: raw.source ?? "article",
+    source: raw.source ?? "twitter",
     sourceId: raw.sourceId ?? "",
     url: raw.url ?? "",
     title: raw.title ?? null,
@@ -82,26 +82,14 @@ export function normalise(raw: Partial<Save> | null | undefined): Save | null {
     width: raw.width ?? null,
     height: raw.height ?? null,
     fileSize: raw.fileSize ?? null,
-    dominantColors: raw.dominantColors ?? null,
-    blurDataUrl: raw.blurDataUrl ?? null,
-    nsfwScore: raw.nsfwScore ?? null,
-    nsfwLabel: raw.nsfwLabel ?? null,
     tags: raw.tags ?? [],
-    aiTags: raw.aiTags ?? [],
-    aiCaption: raw.aiCaption ?? null,
-    aiSummary: raw.aiSummary ?? null,
-    aiSuggestions: raw.aiSuggestions ?? null,
-    classification: raw.classification ?? null,
-    articleHtml: raw.articleHtml ?? null,
-    articleText: raw.articleText ?? null,
-    articleReadingMinutes: raw.articleReadingMinutes ?? null,
-    ocrText: raw.ocrText ?? null,
-    annotations: raw.annotations ?? null,
     rawJson: raw.rawJson ?? undefined,
+    status: raw.status,
+    ingestStartedAt: toMs(raw.ingestStartedAt) ?? null,
+    ingestCompletedAt: toMs(raw.ingestCompletedAt) ?? null,
+    tasks: raw.tasks,
     savedAt: toMs(raw.savedAt) ?? Date.now(),
     createdAt: toMs(raw.createdAt) ?? Date.now(),
-    embeddingUpdatedAt: toMs(raw.embeddingUpdatedAt),
-    archivedAt: toMs(raw.archivedAt),
     deletedAt: toMs(raw.deletedAt),
   };
 }

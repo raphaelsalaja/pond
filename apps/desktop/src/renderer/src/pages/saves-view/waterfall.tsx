@@ -48,12 +48,13 @@ function packMasonry(
   gap: number,
   chromeHeight: number,
 ): PackResult {
-  if (containerWidth <= 0 || saves.length === 0) {
+  if (containerWidth <= 0) {
     return { items: [], totalHeight: 0 };
   }
   const cols = Math.max(1, Math.floor((containerWidth + gap) / (colMin + gap)));
   const colW = (containerWidth - gap * (cols - 1)) / cols;
   const heights = new Array<number>(cols).fill(0);
+
   const items: PackedItem[] = [];
   for (const save of saves) {
     const ratio = aspectFor(save);

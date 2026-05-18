@@ -1,9 +1,14 @@
 import type { MediaType } from "@pond/schema/db";
-import type { IngestPayload } from "@pond/schema/ingest";
-import type { ArenaChannel, RawArena } from "@pond/schema/raw";
+import type { Capture, CaptureMedia, CaptureMetrics } from "@pond/schema/raw";
 import log from "electron-log/main.js";
 import type { ListEntry, ListHarvestResult } from "../list-types";
-import type { ScrapedHarvest } from "../types";
+
+interface ArenaChannelInfo {
+  id?: string;
+  title?: string;
+  slug?: string;
+  href?: string;
+}
 
 const V3_BASE = "https://api.are.na/v3";
 
@@ -231,8 +236,8 @@ function pickMediaUrlAndDims(block: ArenaBlock): {
   };
 }
 
-function channelsFromBlock(block: ArenaBlock): ArenaChannel[] {
-  const out: ArenaChannel[] = [];
+function channelsFromBlock(block: ArenaBlock): ArenaChannelInfo[] {
+  const out: ArenaChannelInfo[] = [];
   const seen = new Set<string>();
   for (const c of block.channels ?? []) {
     if (!c) continue;
@@ -240,7 +245,7 @@ function channelsFromBlock(block: ArenaBlock): ArenaChannel[] {
     const key = id ?? c.slug ?? c.title;
     if (!key || seen.has(key)) continue;
     seen.add(key);
-    const entry: ArenaChannel = {};
+    const entry: ArenaChannelInfo = {};
     if (id) entry.id = id;
     if (typeof c.title === "string") entry.title = c.title;
     if (typeof c.slug === "string") entry.slug = c.slug;
@@ -254,208 +259,133 @@ function clampDescription(value: string): string {
   return value.length > 4_000 ? `${value.slice(0, 4_000)}…` : value;
 }
 
-function buildArenaRaw(
-  block: ArenaBlock,
-  extra?: { channels?: ArenaChannel[] },
-): RawArena {
-  const arena: RawArena = {};
-  if (typeof block.class === "string") arena.blockClass = block.class;
-  if (typeof block.created_at === "string") {
-    arena.publishedAt = block.created_at;
-  }
+export type ArenaCaptureResult =
+  | { ok: true; capture: Capture }
+  | { ok: false; reason: string };
 
-  const u = block.user ?? {};
-  if (typeof u.full_name === "string") arena.authorName = u.full_name;
-  if (typeof u.slug === "string") {
-    arena.authorSlug = u.slug;
-    arena.authorUrl = `https://www.are.na/${u.slug}`;
-  }
-  const avatar =
-    (typeof u.avatar_image?.thumb === "string" && u.avatar_image.thumb) ||
-    (typeof u.avatar_image?.display === "string" && u.avatar_image.display) ||
-    (typeof u.avatar === "string" && u.avatar) ||
-    null;
-  if (avatar) arena.authorAvatar = avatar;
-
-  const metrics: NonNullable<RawArena["metrics"]> = {};
-  const connFromObj = block.connections?.count;
-  const connFromCount = block.connections_count;
-  if (typeof connFromObj === "number") {
-    metrics.connections = connFromObj;
-  } else if (typeof connFromCount === "number") {
-    metrics.connections = connFromCount;
-  }
-  if (typeof block.comment_count === "number") {
-    metrics.comments = block.comment_count;
-  }
-  if (Object.keys(metrics).length > 0) arena.metrics = metrics;
-
-  const channels = extra?.channels ?? channelsFromBlock(block);
-  if (channels.length > 0) arena.channels = channels;
-
-  const sourceUrl =
-    typeof block.source?.url === "string" ? block.source.url : null;
-  if (sourceUrl) arena.sourceUrl = sourceUrl;
-
-  const attachmentUrl =
-    typeof block.attachment?.url === "string" ? block.attachment.url : null;
-  if (attachmentUrl) arena.attachmentUrl = attachmentUrl;
-
-  const embedUrl =
-    typeof block.embed?.url === "string" ? block.embed.url : null;
-  if (embedUrl) arena.embedUrl = embedUrl;
-
-  const content = typeof block.content === "string" ? block.content : null;
-  if (content) arena.content = clampDescription(content);
-
-  const variants: NonNullable<RawArena["imageVariants"]> = {};
-  if (typeof block.image?.original?.url === "string") {
-    variants.original = block.image.original.url;
-  }
-  if (typeof block.image?.large?.url === "string") {
-    variants.large = block.image.large.url;
-  }
-  if (typeof block.image?.display?.url === "string") {
-    variants.display = block.image.display.url;
-  }
-  if (typeof block.image?.thumb?.url === "string") {
-    variants.thumb = block.image.thumb.url;
-  }
-  if (Object.keys(variants).length > 0) arena.imageVariants = variants;
-
-  const original = block.image?.original ?? null;
-  if (typeof original?.width === "number") arena.imageWidth = original.width;
-  if (typeof original?.height === "number") arena.imageHeight = original.height;
-
-  return arena;
-}
-
-export interface AdaptedBlock {
+// Fetches a single Are.na block by source id and shapes it into the
+// universal `Capture`. Used by the URL-first pipeline extractor; the
+// list-refresh path (`harvestArenaListViaApi`) only needs sourceId+url
+// per entry and is wired separately.
+export async function fetchArenaCapture(args: {
   sourceId: string;
-  url: string;
-  harvest: ScrapedHarvest;
-  width?: number;
-  height?: number;
-  arenaUrl: string;
-}
+}): Promise<ArenaCaptureResult> {
+  const fetched = await fetchArenaBlock(args.sourceId);
+  if (!fetched.ok) return { ok: false, reason: fetched.reason };
 
-export function adaptBlock(
-  block: ArenaBlock,
-  opts: { channels?: ArenaChannel[] } = {},
-): AdaptedBlock | null {
+  const block = fetched.value;
   const id = block.id != null ? String(block.id) : null;
-  if (!id) return null;
+  if (!id) return { ok: false, reason: "no_match" };
 
-  const media = pickMediaUrlAndDims(block);
   const arenaUrl = `https://www.are.na/block/${id}`;
+
+  const title =
+    pickNonEmpty(block.title) ?? pickNonEmpty(block.generated_title);
+
+  const description =
+    pickNonEmpty(block.description) ?? pickNonEmpty(block.content);
+
+  const author = (() => {
+    const u = block.user ?? {};
+    const name = pickNonEmpty(u.full_name);
+    const slug = pickNonEmpty(u.slug);
+    const avatarUrl =
+      pickNonEmpty(u.avatar_image?.thumb) ??
+      pickNonEmpty(u.avatar_image?.display) ??
+      pickNonEmpty(u.avatar);
+    const out: NonNullable<Capture["author"]> = {};
+    if (name) out.name = name;
+    if (slug) {
+      out.handle = slug;
+      out.profileUrl = `https://www.are.na/${slug}`;
+    }
+    if (avatarUrl) out.avatarUrl = avatarUrl;
+    return Object.keys(out).length > 0 ? out : undefined;
+  })();
+
+  const media = ((): CaptureMedia[] => {
+    const picked = pickMediaUrlAndDims(block);
+    if (!picked.url) return [];
+    const entry: CaptureMedia = {
+      url: picked.url,
+      type: picked.type === "video" ? "video" : "image",
+    };
+    if (picked.width != null) entry.width = picked.width;
+    if (picked.height != null) entry.height = picked.height;
+    if (picked.poster && picked.type === "video")
+      entry.posterUrl = picked.poster;
+    return [entry];
+  })();
+
+  const metrics = ((): CaptureMetrics | undefined => {
+    const out: CaptureMetrics = {};
+    const connFromObj = block.connections?.count;
+    const connFromCount = block.connections_count;
+    if (typeof connFromObj === "number") out.connections = connFromObj;
+    else if (typeof connFromCount === "number") out.connections = connFromCount;
+    if (typeof block.comment_count === "number")
+      out.comments = block.comment_count;
+    return Object.keys(out).length > 0 ? out : undefined;
+  })();
+
+  // Upstream: prefer the embed (iframe target — YouTube/Vimeo/etc.),
+  // then the attachment, then the original `source.url`. The first one
+  // that parses as a valid URL wins. yt-dlp targets this host rather
+  // than the are.na permalink for video blocks.
+  const upstream = ((): Capture["upstream"] => {
+    const candidates = [
+      pickNonEmpty(block.embed?.url),
+      pickNonEmpty(block.attachment?.url),
+      pickNonEmpty(block.source?.url),
+    ];
+    for (const candidate of candidates) {
+      if (!candidate) continue;
+      try {
+        return { url: candidate, host: new URL(candidate).host };
+      } catch {
+        // try next candidate
+      }
+    }
+    return undefined;
+  })();
+
+  const channels = channelsFromBlock(block);
+  const extras = ((): Record<string, unknown> | undefined => {
+    const out: Record<string, unknown> = {};
+    if (typeof block.class === "string") out.blockClass = block.class;
+    if (channels.length > 0) out.channels = channels;
+    return Object.keys(out).length > 0 ? out : undefined;
+  })();
+
+  // The block's outward URL is the upstream `source.url` when present
+  // (so video embeds route to the real host), otherwise the are.na
+  // permalink.
   const url =
     typeof block.source?.url === "string" && block.source.url
       ? block.source.url
       : arenaUrl;
 
-  const arena = buildArenaRaw(block, opts);
-
-  const titleRaw =
-    typeof block.title === "string" && block.title.trim().length > 0
-      ? block.title.trim()
-      : typeof block.generated_title === "string"
-        ? block.generated_title.trim() || undefined
-        : undefined;
-
-  const descriptionRaw =
-    typeof block.description === "string" && block.description.trim().length > 0
-      ? clampDescription(block.description.trim())
-      : typeof block.content === "string" && block.content.trim().length > 0
-        ? clampDescription(block.content.trim())
-        : undefined;
-
-  const authorRaw =
-    typeof block.user?.full_name === "string" &&
-    block.user.full_name.trim().length > 0
-      ? block.user.full_name.trim()
-      : typeof block.user?.username === "string" && block.user.username
-        ? block.user.username
-        : undefined;
-
-  const mediaUrl = media.url ?? undefined;
-  const mediaEntry: ScrapedHarvest["mediaUrls"] =
-    mediaUrl !== undefined
-      ? [
-          {
-            url: mediaUrl,
-            type: media.type,
-            ...(media.poster ? { poster: media.poster } : {}),
-          },
-        ]
-      : undefined;
-
-  const harvest: ScrapedHarvest = {
-    ...(titleRaw ? { title: titleRaw } : {}),
-    ...(descriptionRaw ? { description: descriptionRaw } : {}),
-    ...(authorRaw ? { author: authorRaw } : {}),
-    ...(mediaUrl ? { mediaUrl } : {}),
-    ...(mediaEntry ? { mediaUrls: mediaEntry } : {}),
-    mediaType: media.type,
-    meta: arena as Record<string, unknown>,
-  };
-
-  const out: AdaptedBlock = {
-    sourceId: id,
-    url,
-    arenaUrl,
-    harvest,
-  };
-  if (media.width != null) out.width = media.width;
-  if (media.height != null) out.height = media.height;
-  return out;
-}
-
-export interface ArenaRefreshOk {
-  ok: true;
-  payload: IngestPayload;
-  width?: number;
-  height?: number;
-}
-
-export type ArenaRefreshResult = ArenaRefreshOk | { ok: false; reason: string };
-
-export async function refreshFromArenaApi(args: {
-  sourceId: string;
-}): Promise<ArenaRefreshResult> {
-  const fetched = await fetchArenaBlock(args.sourceId);
-  if (!fetched.ok) {
-    return { ok: false, reason: fetched.reason };
-  }
-  const adapted = adaptBlock(fetched.value);
-  if (!adapted) return { ok: false, reason: "no_match" };
-
-  const meta = adapted.harvest.meta ?? {};
-  const payload: IngestPayload = {
+  const capture: Capture = {
+    id,
     source: "arena",
-    sourceId: adapted.sourceId,
-    url: adapted.url,
-    title: adapted.harvest.title ?? null,
-    description: adapted.harvest.description ?? null,
-    author: adapted.harvest.author ?? null,
-    mediaUrl: adapted.harvest.mediaUrl ?? null,
-    mediaUrls: adapted.harvest.mediaUrls?.map((m) => ({
-      url: m.url,
-      ...(m.type ? { type: m.type } : {}),
-      ...(m.poster ? { poster: m.poster } : {}),
-      ...(adapted.width != null ? { width: adapted.width } : {}),
-      ...(adapted.height != null ? { height: adapted.height } : {}),
-    })),
-    mediaType: adapted.harvest.mediaType ?? null,
-    raw: {
-      kind: "arena-api-refresh",
-      capturedAt: new Date().toISOString(),
-      arena: meta,
-    },
+    url,
+    media,
   };
-  const result: ArenaRefreshOk = { ok: true, payload };
-  if (adapted.width != null) result.width = adapted.width;
-  if (adapted.height != null) result.height = adapted.height;
-  return result;
+  if (title) capture.title = title;
+  if (description) capture.description = clampDescription(description);
+  if (author) capture.author = author;
+  if (block.created_at) capture.publishedAt = block.created_at;
+  if (metrics) capture.metrics = metrics;
+  if (upstream) capture.upstream = upstream;
+  if (extras) capture.extras = extras;
+
+  return { ok: true, capture };
+}
+
+function pickNonEmpty(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
 }
 
 export interface ArenaListArgs {
@@ -589,37 +519,13 @@ function adaptV3ContentItem(item: V3ContentItem): ListEntry | null {
     return c.length > 4_000 ? `${c.slice(0, 4_000)}…` : c;
   })();
 
-  const arena: RawArena = {};
-  if (typeof item.type === "string") arena.blockClass = item.type;
-  if (typeof item.created_at === "string") arena.publishedAt = item.created_at;
-
   const u = item.user ?? item.owner ?? null;
-  if (u) {
-    if (typeof u.name === "string") arena.authorName = u.name;
-    if (typeof u.slug === "string") {
-      arena.authorSlug = u.slug;
-      arena.authorUrl = `https://www.are.na/${u.slug}`;
-    }
-    if (typeof u.avatar === "string") arena.authorAvatar = u.avatar;
-  }
-
-  if (sourceUrl) arena.sourceUrl = sourceUrl;
-  if (typeof item.content === "string" && item.content.trim().length > 0) {
-    const c = item.content.trim();
-    arena.content = c.length > 4_000 ? `${c.slice(0, 4_000)}…` : c;
-  }
-
-  if (image) {
-    const variants: NonNullable<RawArena["imageVariants"]> = {};
-    if (typeof image.src === "string") variants.original = image.src;
-    if (typeof image.large?.src === "string") variants.large = image.large.src;
-    if (typeof image.medium?.src === "string")
-      variants.display = image.medium.src;
-    if (typeof image.small?.src === "string") variants.thumb = image.small.src;
-    if (Object.keys(variants).length > 0) arena.imageVariants = variants;
-    if (typeof image.width === "number") arena.imageWidth = image.width;
-    if (typeof image.height === "number") arena.imageHeight = image.height;
-  }
+  const author =
+    typeof u?.name === "string" && u.name.trim().length > 0
+      ? u.name.trim()
+      : typeof u?.slug === "string" && u.slug
+        ? u.slug
+        : undefined;
 
   const mediaEntry =
     mediaUrl !== null
@@ -633,13 +539,10 @@ function adaptV3ContentItem(item: V3ContentItem): ListEntry | null {
         ]
       : undefined;
 
-  const author =
-    typeof u?.name === "string" && u.name.trim().length > 0
-      ? u.name.trim()
-      : typeof u?.slug === "string" && u.slug
-        ? u.slug
-        : undefined;
-
+  // List entries flow into `enqueueSaveByUrl(entry.url)` and the
+  // per-URL pipeline rebuilds the full Capture from scratch. The other
+  // fields are kept for the in-flight progress UI / future use, but no
+  // source-specific blob needs to ride along.
   const entry: ListEntry = {
     sourceId: id,
     url,
@@ -650,7 +553,6 @@ function adaptV3ContentItem(item: V3ContentItem): ListEntry | null {
     ...(mediaEntry ? { mediaUrls: mediaEntry } : {}),
     mediaType,
     ...(item.created_at ? { savedAt: item.created_at } : {}),
-    meta: arena as Record<string, unknown>,
   };
   return entry;
 }

@@ -3,29 +3,43 @@ import {
   saves as savesTable,
   tags as tagsTable,
 } from "@pond/schema/db";
+import { normalizeLabelName } from "@pond/schema/label-name";
 import type { Transaction } from "@pond/schema/tx";
-import { eq } from "drizzle-orm";
-import log from "electron-log/main.js";
+import { eq, sql } from "drizzle-orm";
 import { ulid } from "ulid";
+import type { Db } from "../db";
 import { getDb } from "../db";
 import { executeBatch, executeTransaction } from "./executor";
 
 export interface CreateTagInput {
   name: string;
   color?: string | null;
-  group?: string | null;
+  description?: string | null;
+}
+
+async function tagByLowerName(db: Db, lowered: string) {
+  const rows = await db
+    .select()
+    .from(tagsTable)
+    .where(sql`lower(${tagsTable.name}) = ${lowered}`);
+  return rows[0];
+}
+
+export async function listTags() {
+  const db = await getDb();
+  return await db.select().from(tagsTable);
 }
 
 export async function createTag(
   input: CreateTagInput,
 ): Promise<{ ok: boolean }> {
-  const name = input.name.trim();
+  const name = normalizeLabelName(input.name);
   if (!name) return { ok: false };
   const data: NewTag = {
     id: ulid(),
     name,
     color: input.color ?? null,
-    group: input.group ?? null,
+    description: input.description?.trim() || null,
     usageCount: 0,
   };
   await executeTransaction({
@@ -43,11 +57,8 @@ export async function updateTag(
   patch: Partial<NewTag>,
 ): Promise<{ ok: boolean }> {
   const db = await getDb();
-  const rows = await db
-    .select()
-    .from(tagsTable)
-    .where(eq(tagsTable.name, name));
-  const row = rows[0];
+  const lowered = name.trim().toLowerCase();
+  const row = await tagByLowerName(db, lowered);
   if (!row) return { ok: false };
   await executeTransaction({
     kind: "update",
@@ -64,25 +75,28 @@ export async function renameTag(
   from: string,
   to: string,
 ): Promise<{ ok: boolean; affected: number }> {
-  const fromName = from.trim();
-  const toName = to.trim();
-  if (!fromName || !toName || fromName === toName) {
+  const fromKey = normalizeLabelName(from);
+  const toStored = normalizeLabelName(to);
+  if (!fromKey || !toStored || fromKey === toStored) {
     return { ok: false, affected: 0 };
   }
   const db = await getDb();
+  const fromCanon = await tagByLowerName(db, fromKey);
+  const toCanon = await tagByLowerName(db, toStored);
+  if (fromCanon && toCanon && fromCanon.id !== toCanon.id) {
+    return mergeTags(from, to);
+  }
 
   const all = await db.select().from(savesTable);
   const txs: Transaction[] = [];
   for (const row of all) {
     const current = (row.tags ?? []).slice();
-    const idx = current.findIndex(
-      (t) => t.toLowerCase() === fromName.toLowerCase(),
-    );
+    const idx = current.findIndex((t) => t.toLowerCase() === fromKey);
     if (idx === -1) continue;
-    if (current.some((t) => t.toLowerCase() === toName.toLowerCase())) {
+    if (current.some((t) => t.toLowerCase() === toStored)) {
       current.splice(idx, 1);
     } else {
-      current[idx] = toName;
+      current[idx] = toStored;
     }
     txs.push({
       kind: "update",
@@ -94,17 +108,13 @@ export async function renameTag(
     });
   }
 
-  const tagRows = await db
-    .select()
-    .from(tagsTable)
-    .where(eq(tagsTable.name, fromName));
-  const tagRow = tagRows[0];
+  const tagRow = await tagByLowerName(db, fromKey);
   if (tagRow) {
     txs.push({
       kind: "update",
       model: "tag",
       id: tagRow.id,
-      patch: { name: toName },
+      patch: { name: toStored },
       before: tagRow,
       meta: { actor: "user", actorReason: "tag-rename" },
     });
@@ -119,40 +129,86 @@ export async function mergeTags(
   from: string,
   to: string,
 ): Promise<{ ok: boolean; affected: number }> {
-  const result = await renameTag(from, to);
-  if (!result.ok) return result;
+  const fromStored = normalizeLabelName(from);
+  const toStored = normalizeLabelName(to);
+  if (!fromStored || !toStored || fromStored === toStored) {
+    return { ok: false, affected: 0 };
+  }
+
   const db = await getDb();
-  const rows = await db
-    .select()
-    .from(tagsTable)
-    .where(eq(tagsTable.name, from));
-  if (rows[0]) {
-    try {
-      await executeTransaction({
-        kind: "delete",
+  const fromRow = await tagByLowerName(db, fromStored);
+  const toRow = await tagByLowerName(db, toStored);
+
+  const all = await db.select().from(savesTable);
+  const txs: Transaction[] = [];
+  for (const row of all) {
+    const current = (row.tags ?? []).slice();
+    const idx = current.findIndex((t) => t.toLowerCase() === fromStored);
+    if (idx === -1) continue;
+    if (current.some((t) => t.toLowerCase() === toStored)) {
+      current.splice(idx, 1);
+    } else {
+      current[idx] = toStored;
+    }
+    txs.push({
+      kind: "update",
+      model: "save",
+      id: row.id,
+      patch: { tags: current },
+      before: { tags: row.tags },
+      meta: { actor: "user", actorReason: "tag-merge" },
+    });
+  }
+
+  if (fromRow && toRow && fromRow.id !== toRow.id) {
+    txs.push({
+      kind: "delete",
+      model: "tag",
+      id: fromRow.id,
+      before: fromRow,
+      meta: { actor: "user", actorReason: "tag-merge" },
+    });
+    const patch: Partial<NewTag> = {};
+    if (!toRow.description?.trim() && fromRow.description?.trim()) {
+      patch.description = fromRow.description;
+    }
+    if (!toRow.color && fromRow.color) patch.color = fromRow.color;
+    if (Object.keys(patch).length > 0) {
+      txs.push({
+        kind: "update",
         model: "tag",
-        id: rows[0].id,
-        before: rows[0],
+        id: toRow.id,
+        patch,
+        before: toRow,
         meta: { actor: "user", actorReason: "tag-merge" },
       });
-    } catch (err) {
-      log.warn("[pond tags] merge cleanup failed", err);
     }
+  } else if (fromRow && !toRow) {
+    txs.push({
+      kind: "update",
+      model: "tag",
+      id: fromRow.id,
+      patch: { name: toStored },
+      before: fromRow,
+      meta: { actor: "user", actorReason: "tag-merge" },
+    });
   }
-  return result;
+
+  if (txs.length === 0) return { ok: true, affected: 0 };
+  await executeBatch(txs);
+  return { ok: true, affected: txs.length };
 }
 
 export async function deleteTag(name: string): Promise<{
   ok: boolean;
   affected: number;
 }> {
+  const key = normalizeLabelName(name) || name.trim().toLowerCase();
   const db = await getDb();
   const all = await db.select().from(savesTable);
   const txs: Transaction[] = [];
   for (const row of all) {
-    const current = (row.tags ?? []).filter(
-      (t) => t.toLowerCase() !== name.toLowerCase(),
-    );
+    const current = (row.tags ?? []).filter((t) => t.toLowerCase() !== key);
     if (current.length === (row.tags?.length ?? 0)) continue;
     txs.push({
       kind: "update",
@@ -163,22 +219,33 @@ export async function deleteTag(name: string): Promise<{
       meta: { actor: "user", actorReason: "tag-delete" },
     });
   }
-  const tagRows = await db
-    .select()
-    .from(tagsTable)
-    .where(eq(tagsTable.name, name));
-  if (tagRows[0]) {
+  const tagRow = await tagByLowerName(db, key);
+  if (tagRow) {
     txs.push({
       kind: "delete",
       model: "tag",
-      id: tagRows[0].id,
-      before: tagRows[0],
+      id: tagRow.id,
+      before: tagRow,
       meta: { actor: "user", actorReason: "tag-delete" },
     });
   }
   if (txs.length === 0) return { ok: true, affected: 0 };
   await executeBatch(txs);
   return { ok: true, affected: txs.length };
+}
+
+function normalizeTagList(names: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of names) {
+    const n = normalizeLabelName(raw);
+    if (!n) continue;
+    const key = n.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(n);
+  }
+  return out;
 }
 
 export async function setSaveTags(
@@ -192,26 +259,25 @@ export async function setSaveTags(
     .where(eq(savesTable.id, saveId));
   const row = rows[0];
   if (!row) return { ok: false };
+  const normalized = normalizeTagList(next);
   await executeTransaction({
     kind: "update",
     model: "save",
     id: saveId,
-    patch: { tags: next },
+    patch: { tags: normalized },
     before: { tags: row.tags },
     meta: { actor: "user", actorReason: "save-tags-set" },
   });
-  for (const name of next) {
-    const existing = await db
-      .select()
-      .from(tagsTable)
-      .where(eq(tagsTable.name, name));
-    if (existing[0]) continue;
+  for (const name of normalized) {
+    const existing = await tagByLowerName(db, name.toLowerCase());
+    if (existing) continue;
+    const id = ulid();
     try {
       await executeTransaction({
         kind: "create",
         model: "tag",
-        id: ulid(),
-        data: { id: ulid(), name, usageCount: 0 },
+        id,
+        data: { id, name, usageCount: 0 },
         meta: { actor: "system", actorReason: "tag-autocreate" },
       });
     } catch {

@@ -37,11 +37,9 @@ export function SavesView({ mode = "library" }: SavesViewProps) {
               viewMode={data.viewMode}
               saves={data.filtered}
               selectedId={data.selectedId}
-              busy={actions.busy}
               multiSelectActive={actions.multiSelectActive}
               onClick={actions.handleCardClick}
               onDoubleClick={actions.focus}
-              onTrash={actions.moveToTrash}
             />
           )}
         </Library.Root>

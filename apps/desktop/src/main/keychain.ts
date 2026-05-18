@@ -1,87 +1,79 @@
 import { randomBytes } from "node:crypto";
+import { readFile, writeFile } from "node:fs/promises";
+import { join } from "node:path";
+import { app, safeStorage } from "electron";
 import log from "electron-log/main.js";
-import {
-  KEYCHAIN_AI_GATEWAY_KEY,
-  KEYCHAIN_INGEST_TOKEN,
-  KEYCHAIN_SERVICE,
-} from "../shared/constants";
+import { KEYCHAIN_INGEST_TOKEN, KEYCHAIN_SERVICE } from "../shared/constants";
 
-interface KeyStore {
-  getPassword(service: string, account: string): Promise<string | null>;
-  setPassword(
-    service: string,
-    account: string,
-    password: string,
-  ): Promise<void>;
-  deletePassword(service: string, account: string): Promise<boolean>;
+const SECRETS_FILE = "secrets.json";
+
+type SecretMap = Record<string, string>;
+
+function secretsPath(): string {
+  return join(app.getPath("userData"), SECRETS_FILE);
 }
 
-const memoryStore = new Map<string, string>();
+function entryKey(service: string, account: string): string {
+  return `${service}:${account}`;
+}
 
-const inMemoryFallback: KeyStore = {
-  async getPassword(service, account) {
-    return memoryStore.get(`${service}:${account}`) ?? null;
-  },
-  async setPassword(service, account, password) {
-    memoryStore.set(`${service}:${account}`, password);
-  },
-  async deletePassword(service, account) {
-    return memoryStore.delete(`${service}:${account}`);
-  },
-};
-
-let cached: KeyStore | null = null;
-
-async function store(): Promise<KeyStore> {
-  if (cached) return cached;
+async function readAll(): Promise<SecretMap> {
   try {
-    const { Entry } = await import("@napi-rs/keyring");
-    const adapter: KeyStore = {
-      getPassword(service, account) {
-        try {
-          const entry = new Entry(service, account);
-          return Promise.resolve(entry.getPassword() ?? null);
-        } catch (err) {
-          log.warn(
-            "[pond] keyring getPassword failed, treating as missing",
-            err,
-          );
-          return Promise.resolve(null);
-        }
-      },
-      setPassword(service, account, password) {
-        const entry = new Entry(service, account);
-        entry.setPassword(password);
-        return Promise.resolve();
-      },
-      deletePassword(service, account) {
-        try {
-          const entry = new Entry(service, account);
-          return Promise.resolve(entry.deletePassword());
-        } catch {
-          return Promise.resolve(false);
-        }
-      },
-    };
-    cached = adapter;
+    const buf = await readFile(secretsPath(), "utf8");
+    const parsed = JSON.parse(buf) as unknown;
+    if (parsed && typeof parsed === "object") return parsed as SecretMap;
+    return {};
   } catch (err) {
-    log.warn(
-      "[pond] @napi-rs/keyring unavailable, falling back to in-memory keystore",
-      err,
-    );
-    cached = inMemoryFallback;
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") return {};
+    log.warn("[pond] failed to read secrets file, starting empty", err);
+    return {};
   }
-  return cached;
+}
+
+async function writeAll(map: SecretMap): Promise<void> {
+  await writeFile(secretsPath(), JSON.stringify(map), { mode: 0o600 });
+}
+
+function encrypt(plain: string): string {
+  if (safeStorage.isEncryptionAvailable()) {
+    return `enc:${safeStorage.encryptString(plain).toString("base64")}`;
+  }
+  // Linux without libsecret, or first-run before Electron has wired up
+  // a keychain backend. Tag the value so future reads don't try to
+  // decrypt plaintext as a Buffer.
+  log.warn(
+    "[pond] safeStorage encryption unavailable, persisting secret in plaintext",
+  );
+  return `raw:${Buffer.from(plain, "utf8").toString("base64")}`;
+}
+
+function decrypt(value: string): string | null {
+  try {
+    if (value.startsWith("enc:")) {
+      if (!safeStorage.isEncryptionAvailable()) return null;
+      return safeStorage.decryptString(Buffer.from(value.slice(4), "base64"));
+    }
+    if (value.startsWith("raw:")) {
+      return Buffer.from(value.slice(4), "base64").toString("utf8");
+    }
+    return null;
+  } catch (err) {
+    log.warn("[pond] failed to decrypt secret", err);
+    return null;
+  }
 }
 
 export async function getIngestToken(): Promise<string | null> {
-  const s = await store();
-  return s.getPassword(KEYCHAIN_SERVICE, KEYCHAIN_INGEST_TOKEN);
+  const all = await readAll();
+  const value = all[entryKey(KEYCHAIN_SERVICE, KEYCHAIN_INGEST_TOKEN)];
+  if (!value) return null;
+  return decrypt(value);
 }
 
 export async function setIngestToken(token: string): Promise<void> {
-  const s = await store();
-  await s.setPassword(KEYCHAIN_SERVICE, KEYCHAIN_INGEST_TOKEN, token);
+  const all = await readAll();
+  all[entryKey(KEYCHAIN_SERVICE, KEYCHAIN_INGEST_TOKEN)] = encrypt(token);
+  await writeAll(all);
 }
 
 export async function ensureIngestToken(): Promise<string> {
@@ -96,14 +88,4 @@ export async function rotateIngestToken(): Promise<string> {
   const token = randomBytes(24).toString("hex");
   await setIngestToken(token);
   return token;
-}
-
-export async function getAiGatewayKey(): Promise<string | null> {
-  const s = await store();
-  return s.getPassword(KEYCHAIN_SERVICE, KEYCHAIN_AI_GATEWAY_KEY);
-}
-
-export async function setAiGatewayKey(key: string): Promise<void> {
-  const s = await store();
-  await s.setPassword(KEYCHAIN_SERVICE, KEYCHAIN_AI_GATEWAY_KEY, key);
 }

@@ -1,6 +1,8 @@
 import { useMemo } from "react";
 import { getYouTubeChapters } from "@/components/save-preview/helpers";
 import { MediaViewer } from "@/components/save-preview/media-viewer";
+import { buildMediaUnits } from "@/pool/media";
+import { useResolvedTheme } from "@/pool/theme";
 import type { Save } from "@/pool/types";
 import { HeroVideo } from "./hero-video";
 import styles from "./styles.module.css";
@@ -8,34 +10,32 @@ import styles from "./styles.module.css";
 interface DetailContentProps {
   save: Save;
   videoRef?: React.MutableRefObject<HTMLVideoElement | null>;
-  onExpand?: () => void;
 }
 
-export function DetailContent({ save, videoRef, onExpand }: DetailContentProps) {
+export function DetailContent({ save, videoRef }: DetailContentProps) {
+  const theme = useResolvedTheme();
+  const units = useMemo(() => buildMediaUnits(save, { theme }), [save, theme]);
+  // HeroVideo is the single-stream player (YouTube / TikTok / single IG
+  // reel) with chapters and full-bleed framing. Anything multi-slide —
+  // mixed image+video carousels, IG carousels of N videos — needs the
+  // carousel UI with prev/next nav.
+  const useHero = units.length === 1 && units[0]?.isVideo === true;
+
   const chapters = useMemo(
-    () => (save.source === "youtube" ? getYouTubeChapters(save) : undefined),
-    [save],
+    () =>
+      useHero && save.source === "youtube"
+        ? getYouTubeChapters(save)
+        : undefined,
+    [save, useHero],
   );
-
-  const hasLocalVideo = useMemo(
-    () => (save.files ?? []).some((f) => f.kind === "video"),
-    [save.files],
-  );
-
-  const showVideoHero = save.source === "youtube" || hasLocalVideo;
 
   return (
     <div className={styles["card-inner"]}>
-      {showVideoHero ? (
-        <HeroVideo
-          save={save}
-          chapters={chapters}
-          videoRef={videoRef}
-          onExpand={onExpand}
-        />
+      {useHero ? (
+        <HeroVideo save={save} chapters={chapters} videoRef={videoRef} />
       ) : (
         <div className={styles["media-frame"]}>
-          <MediaViewer save={save} videoRef={videoRef} onExpand={onExpand} />
+          <MediaViewer save={save} videoRef={videoRef} />
         </div>
       )}
     </div>

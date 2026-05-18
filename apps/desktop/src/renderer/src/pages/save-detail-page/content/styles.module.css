@@ -1,73 +1,36 @@
 .card-inner {
   display: flex;
-  flex: 1 0 0;
+  flex: 1 1 auto;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
   min-width: 0;
   min-height: 0;
-  padding: 64px 32px 32px;
+  padding: 0;
 }
 
 .hero-frame {
   position: relative;
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: min(100%, 640px);
-  aspect-ratio: 16 / 9;
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 0;
   overflow: clip;
-  background: var(--ds-gray-2);
-  border-radius: var(--ds-radius-xl);
-  box-shadow:
-    0 0 0 1px rgb(0 0 0 / 6%),
-    0 2px 4px 0 rgb(0 0 0 / 6%);
+  background: light-dark(var(--ds-gray-2), #000);
 }
 
-.hero-frame[data-empty="true"] {
-  background: var(--ds-gray-a3);
-  box-shadow: 0 0 0 1px rgb(0 0 0 / 6%);
-}
-
-.hero-empty {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  text-align: center;
-}
-
-.hero-empty-title {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 550;
-  color: var(--ds-gray-12);
-  letter-spacing: 0.01px;
-}
-
-.hero-empty-body {
-  max-width: 360px;
-  margin: 0;
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--ds-gray-11);
-}
-
-.hero-empty-actions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  margin-top: 8px;
+.hero-frame > * {
+  position: absolute;
+  inset: 0;
 }
 
 .media-frame {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: min(100%, 640px);
+  position: relative;
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 0;
+  overflow: clip;
+  background: light-dark(var(--ds-gray-2), #000);
+}
+
+.media-frame > * {
+  position: absolute;
+  inset: 0;
 }

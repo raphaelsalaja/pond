@@ -1,58 +1,36 @@
-import { useSyncExternalStore } from "react";
+import type { Save } from "./types";
 
-let current: ReadonlySet<string> = new Set<string>();
-const listeners = new Set<() => void>();
-
-function setsEqual(a: ReadonlySet<string>, b: ReadonlySet<string>): boolean {
-  if (a === b) return true;
-  if (a.size !== b.size) return false;
-  for (const x of a) if (!b.has(x)) return false;
-  return true;
+// useIsVideoDownloading — pre-pipeline this listened to a separate IPC.
+// In the URL-first world the task rows live on the save itself, so we
+// just inspect the save's pipeline state. A save is "downloading" while
+// the fetch_video_ytdlp task is running or pending AND we have evidence
+// the save actually has video to fetch. Without the video-evidence gate
+// every text tweet, article, or image-only post would flash "Queued"
+// until the worker runs and bails out.
+export function useIsVideoDownloading(save: Save | null | undefined): boolean {
+  if (!save) return false;
+  if (save.status === "complete" || save.status === "failed") return false;
+  if (!hasVideoEvidence(save)) return false;
+  const tasks = save.tasks ?? [];
+  if (tasks.length === 0) return save.status === "ingesting";
+  const t = tasks.find((x) => x.op === "fetch_video_ytdlp");
+  if (!t) return false;
+  return t.status === "pending" || t.status === "running";
 }
 
-function publish(next: ReadonlySet<string>): void {
-  if (setsEqual(current, next)) return;
-  current = next;
-  for (const cb of listeners) cb();
-}
-
-let bootstrapped = false;
-function bootstrap(): void {
-  if (bootstrapped) return;
-  bootstrapped = true;
-  const fn = (
-    window.pond as unknown as {
-      onVideoDownloadStatus?: (
-        cb: (s: { pending: string[]; inFlight: string[] }) => void,
-      ) => () => void;
-    }
-  ).onVideoDownloadStatus;
-  if (typeof fn !== "function") {
-    console.debug("[pond downloads] onVideoDownloadStatus IPC not available");
-    return;
+function hasVideoEvidence(save: Save): boolean {
+  if (save.mediaType === "video" || save.mediaType === "mixed") return true;
+  if ((save.files ?? []).some((f) => f.kind === "video")) return true;
+  const captureMedia = (
+    save.rawJson as
+      | {
+          capture?: { media?: Array<{ type?: string }> };
+        }
+      | null
+      | undefined
+  )?.capture?.media;
+  if (Array.isArray(captureMedia)) {
+    return captureMedia.some((m) => m?.type === "video");
   }
-  fn(({ pending, inFlight }) => {
-    publish(new Set<string>([...pending, ...inFlight]));
-  });
-}
-
-function subscribe(cb: () => void): () => void {
-  bootstrap();
-  listeners.add(cb);
-  return () => listeners.delete(cb);
-}
-
-function getSnapshot(): ReadonlySet<string> {
-  bootstrap();
-  return current;
-}
-
-export function useIsVideoDownloading(
-  saveId: string | null | undefined,
-): boolean {
-  return useSyncExternalStore(
-    subscribe,
-    () => (saveId ? getSnapshot().has(saveId) : false),
-    () => (saveId ? getSnapshot().has(saveId) : false),
-  );
+  return false;
 }

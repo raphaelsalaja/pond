@@ -15,11 +15,9 @@ function ImageInner() {
   const [loaded, setLoaded] = useState(false);
 
   const url = state.unit?.url ?? "";
-  const cover = state.save.files[state.save.coverIndex ?? 0];
-  const w = cover?.width ?? state.save.width ?? undefined;
-  const h = cover?.height ?? state.save.height ?? undefined;
-  const blur = state.save.blurDataUrl ?? null;
-  const tint = state.save.dominantColors?.[0]?.hex;
+  const file = state.save.files.find((f) => f.path === state.unit?.key);
+  const w = file?.width ?? state.save.width ?? undefined;
+  const h = file?.height ?? state.save.height ?? undefined;
 
   useEffect(() => {
     const img = ref.current;
@@ -31,48 +29,22 @@ function ImageInner() {
   }, [state.save.id]);
 
   return (
-    <>
-      <Backdrop blur={blur} tint={tint} />
-      <img
-        ref={ref}
-        src={url}
-        alt=""
-        loading="lazy"
-        decoding="async"
-        width={w}
-        height={h}
-        className={styles.media}
-        data-loaded={loaded ? "true" : "false"}
-        onLoad={(e) => {
-          const img = e.currentTarget;
-          recordAspect(state.save.id, img.naturalWidth, img.naturalHeight);
-          setLoaded(true);
-        }}
-        onError={() => actions.setBroken(true)}
-      />
-    </>
-  );
-}
-
-function Backdrop({
-  blur,
-  tint,
-}: {
-  blur: string | null;
-  tint: string | undefined;
-}) {
-  if (blur) {
-    return (
-      <span className={styles["backdrop-blur"]} aria-hidden>
-        <img src={blur} alt="" decoding="sync" />
-      </span>
-    );
-  }
-  return (
-    <span
-      className={styles.tint}
-      style={tint ? { background: tint } : undefined}
-      aria-hidden
+    <img
+      ref={ref}
+      src={url}
+      alt=""
+      loading="lazy"
+      decoding="async"
+      width={w}
+      height={h}
+      className={styles.media}
+      data-loaded={loaded ? "true" : "false"}
+      onLoad={(e) => {
+        const img = e.currentTarget;
+        recordAspect(state.save.id, img.naturalWidth, img.naturalHeight);
+        setLoaded(true);
+      }}
+      onError={() => actions.setBroken(true)}
     />
   );
 }

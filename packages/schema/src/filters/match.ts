@@ -1,3 +1,4 @@
+import type { RawJson } from "../raw";
 import type { Clause, ComparatorId, FieldId, Predicate, Query } from "./types";
 
 export interface SaveLike {
@@ -8,18 +9,14 @@ export interface SaveLike {
   description?: string | null;
   author?: string | null;
   tags?: string[];
-  aiTags?: string[];
   notes?: string | null;
   mediaType?: string | null;
   width?: number | null;
   height?: number | null;
   fileSize?: number | null;
-  dominantColors?: Array<{ hex: string; weight?: number | null }> | null;
-  rawJson?: Record<string, unknown> | null;
+  rawJson?: RawJson | null;
   savedAt?: string | Date | number | null;
   createdAt?: string | Date | number | null;
-  archivedAt?: string | Date | number | null;
-  embeddingUpdatedAt?: string | Date | number | null;
   publishedAt?: string | Date | number | null;
 }
 
@@ -47,10 +44,8 @@ function evalPredicate(p: Predicate, s: SaveLike): boolean {
 
 function project(field: FieldId, s: SaveLike): unknown {
   switch (field) {
-    case "tags": {
-      const merged = [...(s.tags ?? []), ...(s.aiTags ?? [])];
-      return merged.map((t) => t.toLowerCase());
-    }
+    case "tags":
+      return (s.tags ?? []).map((t) => t.toLowerCase());
     case "source":
       return (s.source ?? "").toLowerCase();
     case "type":
@@ -73,10 +68,6 @@ function project(field: FieldId, s: SaveLike): unknown {
       const longest = Math.max(w, h);
       return longest || null;
     }
-    case "color":
-      return (s.dominantColors ?? [])
-        .map((c) => stripHash(c.hex).toLowerCase())
-        .filter((hex) => /^[0-9a-f]{6}$/.test(hex));
     case "creator":
       return (s.author ?? "").toLowerCase();
     case "url":
@@ -88,57 +79,29 @@ function project(field: FieldId, s: SaveLike): unknown {
     case "publishedAt":
       return toMillis(s.publishedAt);
     case "modifiedAt":
-      return toMillis(s.embeddingUpdatedAt ?? s.createdAt ?? s.savedAt);
+      return toMillis(s.createdAt ?? s.savedAt);
   }
-}
-
-function stripHash(hex: string): string {
-  return hex.replace(/^#/, "");
 }
 
 function durationSeconds(s: SaveLike): number | null {
   const raw = s.rawJson;
   if (!raw) return null;
 
-  const candidates: Array<unknown> = [
-    pick(raw, ["youtube", "durationSec"]),
-    pick(raw, ["youtube", "ytdlp", "duration"]),
-    pick(raw, ["tiktok", "durationSec"]),
-    pick(raw, ["tiktok", "ytdlp", "duration"]),
-    pick(raw, ["twitter", "ytdlp", "duration"]),
-    firstFiniteFromMedia(pick(raw, ["twitter", "media"])),
-    pick(raw, ["instagram", "ytdlp", "duration"]),
-    firstFiniteFromMedia(pick(raw, ["instagram", "media"])),
-    pick(raw, ["pinterest", "ytdlp", "duration"]),
-    pick(raw, ["arena", "ytdlp", "duration"]),
-    pick(raw, ["cosmos", "ytdlp", "duration"]),
-    pick(raw, ["article", "ytdlp", "duration"]),
-  ];
-  for (const c of candidates) {
-    if (typeof c === "number" && Number.isFinite(c) && c > 0) return c;
-  }
-  return null;
-}
+  const fromCapture = raw.capture?.duration;
+  if (typeof fromCapture === "number" && fromCapture > 0) return fromCapture;
 
-function firstFiniteFromMedia(media: unknown): unknown {
-  if (!Array.isArray(media)) return undefined;
-  for (const item of media) {
-    const d = (item as { durationSec?: unknown })?.durationSec;
-    if (typeof d === "number" && Number.isFinite(d) && d > 0) return d;
-  }
-  return undefined;
-}
-
-function pick(obj: unknown, path: string[]): unknown {
-  let cur: unknown = obj;
-  for (const key of path) {
-    if (cur && typeof cur === "object" && key in (cur as object)) {
-      cur = (cur as Record<string, unknown>)[key];
-    } else {
-      return undefined;
+  for (const m of raw.capture?.media ?? []) {
+    if (typeof m.durationSec === "number" && m.durationSec > 0) {
+      return m.durationSec;
     }
   }
-  return cur;
+
+  const ytdlpDuration = raw.ytdlp?.duration;
+  if (typeof ytdlpDuration === "number" && ytdlpDuration > 0) {
+    return ytdlpDuration;
+  }
+
+  return null;
 }
 
 function toMillis(v: string | Date | number | null | undefined): number | null {
@@ -209,23 +172,6 @@ function runComparator(
       return Array.isArray(projected) && Array.isArray(value)
         ? value.every((v) => !projected.includes(String(v).toLowerCase()))
         : true;
-    case "near": {
-      if (!Array.isArray(projected) || projected.length === 0) return false;
-      if (!isNearValue(value)) return false;
-      const targetRgb = hexToRgb(value.hex);
-      if (!targetRgb) return false;
-      const distance = value.distance ?? 96;
-      for (const hex of projected as string[]) {
-        const rgb = hexToRgb(hex);
-        if (!rgb) continue;
-        const d =
-          Math.abs(rgb.r - targetRgb.r) +
-          Math.abs(rgb.g - targetRgb.g) +
-          Math.abs(rgb.b - targetRgb.b);
-        if (d <= distance) return true;
-      }
-      return false;
-    }
     case "exists":
       return value ? projected != null : projected == null;
   }
@@ -275,22 +221,4 @@ function isoDurationToMillis(input: string): number | null {
   if (!Number.isFinite(days) || days === 0) return 0;
   const sign = signRaw === "-" ? -1 : 1;
   return sign * days * 86_400_000;
-}
-
-function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
-  const clean = hex.replace(/^#/, "");
-  if (clean.length !== 6) return null;
-  const r = Number.parseInt(clean.slice(0, 2), 16);
-  const g = Number.parseInt(clean.slice(2, 4), 16);
-  const b = Number.parseInt(clean.slice(4, 6), 16);
-  if ([r, g, b].some((n) => !Number.isFinite(n))) return null;
-  return { r, g, b };
-}
-
-function isNearValue(v: unknown): v is { hex: string; distance?: number } {
-  return (
-    typeof v === "object" &&
-    v !== null &&
-    typeof (v as { hex?: unknown }).hex === "string"
-  );
 }

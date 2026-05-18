@@ -1,11 +1,5 @@
 import type { Source } from "@pond/schema/db";
-import log from "electron-log/main.js";
 import { IPC } from "../../../shared/constants";
-import {
-  cancelSafetyScan,
-  getSafetyScanStatus,
-  startSafetyScan,
-} from "../../core/safety/backfill";
 import {
   cancelSync,
   getGlobalSync,
@@ -61,23 +55,5 @@ export function registerSyncHandlers(): void {
       lastFireAt: prefs.lastFireAt,
       nextDueAt: due ? due.toISOString() : null,
     };
-  });
-
-  safeHandle(IPC.safetyScanStart, async () => {
-    try {
-      return await startSafetyScan();
-    } catch (err) {
-      log.error("[pond ipc] safetyScanStart failed", err);
-      return { ok: false as const, reason: "already_running" as const };
-    }
-  });
-
-  safeHandle(IPC.safetyScanCancel, async () => {
-    cancelSafetyScan();
-    return { ok: true as const };
-  });
-
-  safeHandle(IPC.safetyScanStatus, async () => {
-    return getSafetyScanStatus();
   });
 }

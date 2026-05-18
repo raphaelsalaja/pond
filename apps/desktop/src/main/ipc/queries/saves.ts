@@ -1,23 +1,68 @@
-import { existsSync } from "node:fs";
-import { sep as pathSep, resolve as resolvePath } from "node:path";
-import { saves } from "@pond/schema/db";
+import { saves, type Task, tasks } from "@pond/schema/db";
 import { buildWhere, type Query } from "@pond/schema/filters";
 import type { Transaction } from "@pond/schema/tx";
-import { desc, eq, isNotNull } from "drizzle-orm";
-import { app } from "electron";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  inArray,
+  isNotNull,
+  isNull,
+  or,
+} from "drizzle-orm";
 import log from "electron-log/main.js";
 import { executeBatch } from "../../core/executor";
-import { refreshSave } from "../../core/refresh";
+import {
+  retryFailedSave,
+  startProcessingBackfill,
+} from "../../core/pipeline/backfill-failed";
+import { enqueueSaveByUrl } from "../../core/pipeline/enqueue";
+import { UnsupportedError } from "../../core/pipeline/extractors/errors";
 import { recordForUndo } from "../../core/undo";
+import type { Db } from "../../db";
 import { getDb } from "../../db";
 import {
-  hexToRgb,
-  inferSource,
   type QueryHandlerMap,
   resolveSaveFilePath,
   sanitizeFtsQuery,
 } from "../helpers";
 import { toWireSave, toWireSaves } from "../wire";
+
+export interface ProcessingDetailWire {
+  id: string;
+  url: string;
+  title: string | null;
+  source: string;
+  status: "ingesting" | "failed";
+  progress: { done: number; total: number };
+  stageOp:
+    | "harvest_metadata"
+    | "capture_tweet"
+    | "fetch_blobs"
+    | "fetch_video_ytdlp"
+    | "ensure_poster"
+    | "fetch_avatar"
+    | "finalize"
+    | null;
+  lastError: string | null;
+  ingestStartedAt: string | null;
+}
+
+async function loadTasksFor(
+  db: Db,
+  ids: string[],
+): Promise<Map<string, Task[]>> {
+  if (ids.length === 0) return new Map();
+  const rows = await db.select().from(tasks).where(inArray(tasks.saveId, ids));
+  const grouped = new Map<string, Task[]>();
+  for (const t of rows) {
+    const existing = grouped.get(t.saveId);
+    if (existing) existing.push(t);
+    else grouped.set(t.saveId, [t]);
+  }
+  return grouped;
+}
 
 export const savesQueries: QueryHandlerMap = {
   async "saves.list"(params) {
@@ -27,7 +72,11 @@ export const savesQueries: QueryHandlerMap = {
     const rows = hasExplicitLimit
       ? await baseQuery.limit(Math.min(Number(params.limit), 100_000))
       : await baseQuery;
-    return toWireSaves(rows);
+    const grouped = await loadTasksFor(
+      db,
+      rows.map((r) => r.id),
+    );
+    return toWireSaves(rows, grouped);
   },
 
   async "saves.find"(params) {
@@ -43,7 +92,11 @@ export const savesQueries: QueryHandlerMap = {
           .orderBy(desc(saves.savedAt))
           .limit(limit)
       : await db.select().from(saves).orderBy(desc(saves.savedAt)).limit(limit);
-    return toWireSaves(rows);
+    const grouped = await loadTasksFor(
+      db,
+      rows.map((r) => r.id),
+    );
+    return toWireSaves(rows, grouped);
   },
 
   async "saves.emptyTrash"() {
@@ -88,87 +141,23 @@ export const savesQueries: QueryHandlerMap = {
     const id = String(params.id ?? "");
     if (!id) return null;
     const rows = await db.select().from(saves).where(eq(saves.id, id));
-    return rows[0] ? toWireSave(rows[0]) : null;
+    if (!rows[0]) return null;
+    const taskRows = await db.select().from(tasks).where(eq(tasks.saveId, id));
+    return toWireSave(rows[0], taskRows);
   },
 
-  async "saves.dropFiles"(params) {
-    const items = Array.isArray(params.items)
-      ? (params.items as Array<{
-          path: string;
-          name?: string;
-          type?: string;
-        }>)
-      : [];
-    if (items.length === 0) return { ok: false, error: "no_items" };
-    const { ingestFromHttp } = await import("../../core/ingest");
-    const ids: string[] = [];
-    const allowedRoots = (() => {
-      const roots: string[] = [];
-      for (const key of [
-        "downloads",
-        "pictures",
-        "documents",
-        "desktop",
-        "music",
-        "videos",
-        "home",
-      ] as const) {
-        try {
-          const p = app.getPath(key);
-          if (p) roots.push(resolvePath(p));
-        } catch {
-          /* unsupported on this platform; skip */
-        }
-      }
-      return roots;
-    })();
-    const isUnderAllowedRoot = (p: string): boolean => {
-      const abs = resolvePath(p);
-      return allowedRoots.some(
-        (root) => abs === root || abs.startsWith(root + pathSep),
-      );
-    };
-    for (const it of items) {
-      if (!it.path || !existsSync(it.path)) continue;
-      if (!isUnderAllowedRoot(it.path)) {
-        log.warn("[pond ipc] dropFiles refused path outside user dirs", {
-          path: it.path,
-        });
-        continue;
-      }
-      const sid = `drop-${Date.now().toString(36)}-${Math.random()
-        .toString(36)
-        .slice(2, 8)}`;
-      const isImage =
-        (it.type ?? "").startsWith("image/") ||
-        /\.(png|jpe?g|gif|webp|avif|heic)$/i.test(it.path);
-      const isVideo =
-        (it.type ?? "").startsWith("video/") ||
-        /\.(mp4|mov|webm|m4v)$/i.test(it.path);
-      try {
-        const result = await ingestFromHttp(
-          {
-            source: "article",
-            sourceId: sid,
-            url: `file://${it.path}`,
-            title: it.name ?? null,
-            description: null,
-            author: null,
-            mediaUrl: null,
-            mediaType: isImage ? "image" : isVideo ? "video" : null,
-            tags: [],
-            raw: { drop: true },
-          },
-          {
-            mediaFiles: [{ path: it.path, mimeType: it.type }],
-          },
-        );
-        ids.push(result.id);
-      } catch (err) {
-        log.warn("[pond ipc] dropFiles ingest failed", err);
-      }
-    }
-    return { ok: ids.length > 0, ids };
+  async "saves.filePath"(params) {
+    const id = String(params.id ?? "");
+    const fileIndex = Number(params.fileIndex ?? 0);
+    if (!id) return { ok: false as const, reason: "not_found" as const };
+    return resolveSaveFilePath(id, Number.isFinite(fileIndex) ? fileIndex : 0);
+  },
+
+  async "saves.dropFiles"() {
+    // Local file drops aren't supported in the URL-first pipeline yet —
+    // every save now flows through enqueueSaveByUrl. Keep the IPC alive so
+    // the renderer's drop handler can no-op gracefully.
+    return { ok: false, error: "local_files_unsupported" };
   },
 
   async "saves.startDrag"(params, event) {
@@ -193,40 +182,16 @@ export const savesQueries: QueryHandlerMap = {
 
   async "saves.quickAdd"(params) {
     const url = String(params.url ?? "").trim();
-    const note = String(params.note ?? "");
-    const tagList = Array.isArray(params.tags)
-      ? (params.tags as unknown[]).map((t) => String(t))
-      : [];
     if (!url) return { ok: false, error: "no_url" };
-    let host = "";
     try {
-      host = new URL(url).hostname.toLowerCase();
-    } catch {
-      return { ok: false, error: "invalid_url" };
-    }
-    const source = inferSource(host);
-    const sourceId = `quick-${Date.now().toString(36)}`;
-    const { ingestFromHttp } = await import("../../core/ingest");
-    try {
-      const result = await ingestFromHttp({
-        source,
-        sourceId,
-        url,
-        title: null,
-        description: note ? note : null,
-        author: null,
-        mediaUrl: null,
-        mediaType: null,
-        tags: tagList,
-        raw: { quickCapture: true },
-      });
-      setImmediate(() => {
-        void refreshSave(result.id).catch(() => {
-          /* harvester errors are surfaced via the toast on the UI */
-        });
+      const result = await enqueueSaveByUrl(url, {
+        trigger: "user:quickAdd",
       });
       return { ok: true, id: result.id, created: result.created };
     } catch (err) {
+      if (err instanceof UnsupportedError) {
+        return { ok: false, error: "unsupported_url" };
+      }
       log.error("[pond ipc] quickAdd failed", err);
       return {
         ok: false,
@@ -265,92 +230,97 @@ export const savesQueries: QueryHandlerMap = {
       const lower = q.toLowerCase();
       const all = await db.select().from(saves);
       const matched = all.filter((r) => {
-        const hay = [r.title, r.description, r.author, r.url, r.aiCaption]
+        const hay = [r.title, r.description, r.author, r.url]
           .filter((v): v is string => Boolean(v))
           .join(" ")
           .toLowerCase();
         return hay.includes(lower);
       });
-      return toWireSaves(matched.slice(0, limit));
+      const slice = matched.slice(0, limit);
+      const grouped = await loadTasksFor(
+        db,
+        slice.map((r) => r.id),
+      );
+      return toWireSaves(slice, grouped);
     }
     const ids = ftsRows.map((r) => r.id);
     const rows = await db.select().from(saves);
     const byId = new Map(rows.map((r) => [r.id, r]));
-    return toWireSaves(
-      ids
-        .map((id) => byId.get(id))
-        .filter((r): r is NonNullable<typeof r> => !!r),
-    );
-  },
-
-  async "saves.searchByColor"(params) {
-    const db = await getDb();
-    const hex = String(params.hex ?? "")
-      .replace(/^#/, "")
-      .toLowerCase();
-    const tolerance = Math.max(
-      8,
-      Math.min(160, Number(params.tolerance ?? 64)),
-    );
-    const limit = Math.min(Number(params.limit ?? 200), 1000);
-    if (hex.length !== 6) return [];
-    const wanted = hexToRgb(hex);
-    if (!wanted) return [];
-    const all = await db.select().from(saves);
-    const scored = all
-      .map((r) => {
-        const cols = (r.dominantColors ?? []) as Array<{
-          hex: string;
-          weight?: number;
-        }>;
-        if (!cols.length) return null;
-        let best = Number.POSITIVE_INFINITY;
-        for (const c of cols) {
-          const rgb = hexToRgb(c.hex.replace(/^#/, "").toLowerCase());
-          if (!rgb) continue;
-          const dist =
-            Math.abs(rgb.r - wanted.r) +
-            Math.abs(rgb.g - wanted.g) +
-            Math.abs(rgb.b - wanted.b);
-          if (dist < best) best = dist;
-        }
-        return Number.isFinite(best) && best <= tolerance
-          ? { row: r, score: best }
-          : null;
-      })
-      .filter((x): x is { row: (typeof all)[number]; score: number } => !!x)
-      .sort((a, b) => a.score - b.score)
-      .slice(0, limit);
-    return toWireSaves(scored.map((s) => s.row));
-  },
-
-  async "saves.similar"(params) {
-    const db = await getDb();
-    const id = String(params.id ?? "");
-    const limit = Math.min(Number(params.limit ?? 12), 100);
-    if (!id) return [];
-    let neighbours: Array<{ save_id: string; distance: number }> = [];
-    try {
-      neighbours = db.$raw
-        .prepare(
-          `SELECT save_id, distance FROM saves_vec
-           WHERE embedding MATCH (SELECT embedding FROM saves_vec WHERE save_id = ?)
-           ORDER BY distance ASC
-           LIMIT ?`,
-        )
-        .all(id, limit + 1) as Array<{ save_id: string; distance: number }>;
-    } catch (err) {
-      log.warn("[pond search] saves_vec MATCH failed", err);
-      return [];
-    }
-    const ids = neighbours.map((n) => n.save_id).filter((n) => n !== id);
-    if (ids.length === 0) return [];
-    const rows = await db.select().from(saves);
-    const byId = new Map(rows.map((r) => [r.id, r]));
     const ordered = ids
-      .map((nid) => byId.get(nid))
+      .map((id) => byId.get(id))
       .filter((r): r is NonNullable<typeof r> => !!r);
-    return toWireSaves(ordered);
+    const grouped = await loadTasksFor(
+      db,
+      ordered.map((r) => r.id),
+    );
+    return toWireSaves(ordered, grouped);
+  },
+
+  async "saves.retryFailed"(params) {
+    const id = String(params.id ?? "");
+    if (!id) return { ok: false as const, reason: "not_found" as const };
+    const result = await retryFailedSave(id, "user:retry-failed");
+    return result;
+  },
+
+  async "saves.retryAllFailed"() {
+    const result = await startProcessingBackfill();
+    return result;
+  },
+
+  async "saves.processingDetails"() {
+    const db = await getDb();
+    /* Pull both ingesting + failed in one shot — the dialog renders the
+     * two as separate sections but the live count is one number. */
+    const rows = await db
+      .select()
+      .from(saves)
+      .where(
+        and(
+          isNull(saves.deletedAt),
+          or(eq(saves.status, "ingesting"), eq(saves.status, "failed")),
+        ),
+      )
+      .orderBy(asc(saves.savedAt));
+    if (rows.length === 0) return [] satisfies ProcessingDetailWire[];
+    const taskRows = await db
+      .select()
+      .from(tasks)
+      .where(
+        inArray(
+          tasks.saveId,
+          rows.map((r) => r.id),
+        ),
+      );
+    const byId = new Map<string, Task[]>();
+    for (const t of taskRows) {
+      const bucket = byId.get(t.saveId);
+      if (bucket) bucket.push(t);
+      else byId.set(t.saveId, [t]);
+    }
+    const out: ProcessingDetailWire[] = rows.map((row) => {
+      const peers = byId.get(row.id) ?? [];
+      const total = peers.length;
+      const done = peers.filter((t) => t.status === "done").length;
+      const failed = peers.find((t) => t.status === "failed");
+      const running = peers.find((t) => t.status === "running");
+      const blocked = peers.find((t) => t.status === "blocked");
+      const stageOp = running?.op ?? blocked?.op ?? failed?.op ?? null;
+      return {
+        id: row.id,
+        url: row.url,
+        title: row.title ?? null,
+        source: row.source,
+        status: row.status as "ingesting" | "failed",
+        progress: { done, total },
+        stageOp,
+        lastError: failed?.lastError ?? null,
+        ingestStartedAt: row.ingestStartedAt
+          ? row.ingestStartedAt.toISOString()
+          : null,
+      };
+    });
+    return out;
   },
 
   async "saves.activity"(params) {
@@ -372,26 +342,5 @@ export const savesQueries: QueryHandlerMap = {
           )
           .all(limit);
     return result as unknown[];
-  },
-
-  async "saves.inbox"(params) {
-    const db = await getDb();
-    const limit = Math.min(Number(params.limit ?? 200), 1000);
-    const all = await db.select().from(saves);
-    const pending = all.filter((r) => {
-      if (r.deletedAt) return false;
-      const sug = r.aiSuggestions as {
-        tags?: { appliedAt: string | null };
-        caption?: { appliedAt: string | null };
-        ocr?: { appliedAt: string | null };
-        classification?: { appliedAt: string | null };
-        summary?: { appliedAt: string | null };
-      } | null;
-      if (!sug) return false;
-      return Object.values(sug).some(
-        (s) => s && (s as { appliedAt: string | null }).appliedAt === null,
-      );
-    });
-    return toWireSaves(pending.slice(0, limit));
   },
 };

@@ -1,7 +1,6 @@
 import type { Source } from "@pond/schema/db";
 import * as arena from "./arena";
 import * as cosmos from "./cosmos";
-import * as generic from "./generic";
 import * as instagram from "./instagram";
 import * as pinterest from "./pinterest";
 import * as tiktok from "./tiktok";
@@ -15,7 +14,7 @@ export interface Harvester {
   sourceIdFromUrl: (url: string) => string | null;
 }
 
-const REGISTRY: Partial<Record<Source, Harvester>> = {
+const REGISTRY: Record<Source, Harvester> = {
   twitter: {
     buildExpression: twitter.buildExpression,
     adapt: twitter.adapt,
@@ -53,11 +52,6 @@ const REGISTRY: Partial<Record<Source, Harvester>> = {
   },
 };
 
-export function harvesterFor(source: Source | null): Harvester {
-  if (source && REGISTRY[source]) return REGISTRY[source] as Harvester;
-  return {
-    buildExpression: () => generic.buildExpression(),
-    adapt: generic.adapt,
-    sourceIdFromUrl: (url) => generic.sourceIdFromUrl(url),
-  };
+export function harvesterFor(source: Source): Harvester {
+  return REGISTRY[source];
 }

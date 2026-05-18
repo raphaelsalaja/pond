@@ -1,11 +1,11 @@
-import { saves, tags } from "@pond/schema/db";
+import { saves, type tags } from "@pond/schema/db";
 import { getDb } from "../../db";
 import type { QueryHandlerMap } from "../helpers";
 
 export const tagsQueries: QueryHandlerMap = {
   async "tags.list"() {
-    const db = await getDb();
-    return await db.select().from(tags);
+    const { listTags } = await import("../../core/tags");
+    return await listTags();
   },
 
   async "tags.create"(params) {
@@ -13,7 +13,7 @@ export const tagsQueries: QueryHandlerMap = {
     return await createTag({
       name: String(params.name ?? ""),
       color: params.color ? String(params.color) : null,
-      group: params.group ? String(params.group) : null,
+      description: params.description ? String(params.description) : null,
     });
   },
 
@@ -50,26 +50,18 @@ export const tagsQueries: QueryHandlerMap = {
   async "tags.allFromSaves"() {
     const db = await getDb();
     const all = await db.select().from(saves);
-    const counts = new Map<string, { user: number; ai: number }>();
+    const counts = new Map<string, number>();
     for (const row of all) {
       if (row.deletedAt) continue;
       for (const t of row.tags ?? []) {
         const key = String(t).toLowerCase();
-        const entry = counts.get(key) ?? { user: 0, ai: 0 };
-        entry.user += 1;
-        counts.set(key, entry);
-      }
-      for (const t of row.aiTags ?? []) {
-        const key = String(t).toLowerCase();
-        const entry = counts.get(key) ?? { user: 0, ai: 0 };
-        entry.ai += 1;
-        counts.set(key, entry);
+        counts.set(key, (counts.get(key) ?? 0) + 1);
       }
     }
-    return Array.from(counts.entries()).map(([name, c]) => ({
+    return Array.from(counts.entries()).map(([name, count]) => ({
       name,
-      userCount: c.user,
-      aiCount: c.ai,
+      userCount: count,
+      aiCount: 0,
     }));
   },
 };

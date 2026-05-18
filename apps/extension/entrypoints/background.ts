@@ -3,23 +3,21 @@ import type {
   ExtensionCookie,
   SessionImportResponse,
 } from "@pond/schema/session";
-import { type ScrapedSave, scrapeFnFor } from "@/utils/scrape";
 import {
   DEFAULT_SETTINGS,
+  enqueueUrl,
+  normalizeStoredSettings,
   type PondMessage,
   type PondSettings,
   type PushSessionResult,
-  SESSION_IMPORT_URL,
+  sessionImportUrl,
 } from "@/utils/types";
-import { cookieDomainForSource, sourceLabel, urlToSource } from "@/utils/url";
+import { cookieDomainForSource } from "@/utils/url";
 
 export default defineBackground(() => {
-  const MENU_PAGE = "pond:save-page";
-  const MENU_LINK = "pond:save-link";
-
   async function getSettings(): Promise<PondSettings> {
     const stored = await chrome.storage.local.get("settings");
-    return { ...DEFAULT_SETTINGS, ...(stored.settings ?? {}) };
+    return normalizeStoredSettings(stored.settings);
   }
 
   chrome.runtime.onInstalled.addListener(async () => {
@@ -27,12 +25,10 @@ export default defineBackground(() => {
     if (!existing.settings) {
       await chrome.storage.local.set({ settings: DEFAULT_SETTINGS });
     }
-    registerContextMenus();
     clearStaleBadge();
   });
 
   chrome.runtime.onStartup.addListener(() => {
-    registerContextMenus();
     clearStaleBadge();
   });
 
@@ -42,42 +38,6 @@ export default defineBackground(() => {
     if (!chrome.action) return;
     chrome.action.setBadgeText({ text: "" }).catch(() => {});
   }
-
-  function registerContextMenus() {
-    if (!chrome.contextMenus) return;
-    chrome.contextMenus.removeAll(() => {
-      chrome.contextMenus.create({
-        id: MENU_PAGE,
-        title: "Save this page to Pond",
-        contexts: ["page", "image", "video"],
-      });
-      chrome.contextMenus.create({
-        id: MENU_LINK,
-        title: "Save this link to Pond",
-        contexts: ["link"],
-      });
-    });
-  }
-
-  chrome.contextMenus?.onClicked.addListener(async (info, tab) => {
-    if (info.menuItemId === MENU_LINK && info.linkUrl) {
-      await captureUrl(info.linkUrl, tab?.id);
-      return;
-    }
-    if (info.menuItemId === MENU_PAGE) {
-      const url = info.pageUrl ?? tab?.url;
-      if (url) await captureUrl(url, tab?.id);
-    }
-  });
-
-  chrome.commands?.onCommand.addListener(async (command) => {
-    if (command !== "save-current-page") return;
-    const [tab] = await chrome.tabs.query({
-      active: true,
-      currentWindow: true,
-    });
-    if (tab?.url) await captureUrl(tab.url, tab.id);
-  });
 
   chrome.runtime.onMessage.addListener(
     (msg: PondMessage, sender, sendResponse) => {
@@ -102,16 +62,6 @@ export default defineBackground(() => {
         return true;
       }
 
-      if (msg.kind === "manualCapture") {
-        captureUrl(msg.url, sender.tab?.id)
-          .then((ok) => sendResponse({ ok }))
-          .catch((err) => {
-            console.error("[pond] manual capture failed", err);
-            sendResponse({ ok: false, error: String(err) });
-          });
-        return true;
-      }
-
       if (msg.kind === "pushSession") {
         pushSession(msg.source)
           .then((result) => sendResponse(result))
@@ -131,7 +81,7 @@ export default defineBackground(() => {
 
   async function pushSession(source: Source): Promise<PushSessionResult> {
     const settings = await getSettings();
-    if (!settings.endpoint || !settings.apiKey) {
+    if (!settings.apiKey) {
       return { ok: false, reason: "unpaired" };
     }
     const domain = cookieDomainForSource(source);
@@ -169,7 +119,7 @@ export default defineBackground(() => {
 
     let res: Response;
     try {
-      res = await fetch(SESSION_IMPORT_URL, {
+      res = await fetch(sessionImportUrl(settings.port), {
         method: "POST",
         headers: {
           "content-type": "application/json",
@@ -205,136 +155,42 @@ export default defineBackground(() => {
     return "unspecified";
   }
 
-  async function captureUrl(rawUrl: string, tabId?: number): Promise<boolean> {
-    const resolved = urlToSource(rawUrl);
-    if (!resolved) {
-      console.warn("[pond] manual capture: unsupported URL", rawUrl);
-      flashBadge(tabId, "?", "#dd9b00");
-      return false;
-    }
-    console.info(
-      "[pond] manual capture",
-      sourceLabel(resolved.source),
-      resolved.sourceId,
-    );
-
-    const scraped = await scrapeActiveTab(resolved.source, tabId, rawUrl);
-    if (scraped) {
-      console.info("[pond] scraped page metadata", scraped);
-    }
-
-    const raw: Record<string, unknown> = {
-      via: "manual",
-      capturedAt: new Date().toISOString(),
-    };
-    if (scraped?.videoUrl) raw.videoUrl = scraped.videoUrl;
-
-    return handleCapture(
-      {
-        source: resolved.source,
-        sourceId: resolved.sourceId,
-        url: resolved.url,
-        title: scraped?.title,
-        description: scraped?.description,
-        author: scraped?.author,
-        mediaUrl: scraped?.mediaUrl,
-        mediaUrls: scraped?.mediaUrls?.map((m) => ({
-          url: m.url,
-          type: m.type,
-          poster: m.poster,
-          width: m.width,
-          height: m.height,
-        })),
-        mediaType: scraped?.mediaType,
-        raw,
-      },
-      tabId,
-    );
-  }
-
-  async function scrapeActiveTab(
-    source: Source,
-    tabId: number | undefined,
-    rawUrl: string,
-  ): Promise<ScrapedSave | null> {
-    const fn = scrapeFnFor(source);
-    if (!fn) return null;
-
-    let target = tabId;
-    if (target === undefined) {
-      const [active] = await chrome.tabs.query({
-        active: true,
-        currentWindow: true,
-      });
-      target = active?.id;
-    }
-    if (target === undefined) return null;
-
-    try {
-      const tab = await chrome.tabs.get(target);
-      const tabUrl = tab.url ?? "";
-      if (!sameHost(tabUrl, rawUrl)) return null;
-
-      const [result] = await chrome.scripting.executeScript({
-        target: { tabId: target },
-        world: "MAIN",
-        func: fn,
-      });
-      return (result?.result as ScrapedSave | undefined) ?? null;
-    } catch (err) {
-      console.warn("[pond] scrapeActiveTab failed", err);
-      return null;
-    }
-  }
-
-  function sameHost(a: string, b: string): boolean {
-    try {
-      return new URL(a).hostname === new URL(b).hostname;
-    } catch {
-      return false;
-    }
-  }
-
   async function handleCapture(
-    payload: unknown,
+    payload: { url: string; trigger?: string },
     tabId?: number,
   ): Promise<boolean> {
+    if (!payload || typeof payload.url !== "string") return false;
     const settings = await getSettings();
-    if (!settings.endpoint || !settings.apiKey) {
-      console.warn(
-        "[pond] missing endpoint or apiKey; configure in the extension popup",
-      );
+    if (!settings.apiKey) {
+      console.warn("[pond] missing apiKey; pair the extension via the popup");
       flashBadge(tabId, "!", "#dd9b00");
       return false;
     }
 
-    console.info("[pond] sending capture", {
-      endpoint: settings.endpoint,
-      payload,
-    });
-
     let res: Response;
     try {
-      res = await fetch(settings.endpoint, {
+      res = await fetch(enqueueUrl(settings.port), {
         method: "POST",
         headers: {
           "content-type": "application/json",
           authorization: `Bearer ${settings.apiKey}`,
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          url: payload.url,
+          ...(payload.trigger ? { trigger: payload.trigger } : {}),
+        }),
       });
     } catch (err) {
-      console.error("[pond] ingest fetch failed", err);
+      console.error("[pond] enqueue fetch failed", err);
       flashBadge(tabId, "x", "#cc3333");
       return false;
     }
 
     if (!res.ok) {
-      console.warn("[pond] ingest rejected", res.status, await res.text());
+      console.warn("[pond] enqueue rejected", res.status, await res.text());
       flashBadge(tabId, "x", "#cc3333");
       return false;
     }
-    console.info("[pond] ingest ok", await res.json());
     flashBadge(tabId, "ok", "#1f9d55");
     return true;
   }

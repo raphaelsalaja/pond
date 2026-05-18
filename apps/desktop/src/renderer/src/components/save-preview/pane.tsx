@@ -1,20 +1,17 @@
 import {
   IconChevronDownOutline18,
-  IconFolder5Outline18,
-  IconGlobe2Outline18,
-  IconLabelOutline18,
+  IconPlusOutline18,
+  IconXmarkOutline18,
 } from "@pond/icons/outline/18";
 import { type ReactNode, useCallback, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
-import { Card, isTextOnlyTweet } from "@/components/card-thumb";
-import { NsfwOverlay } from "@/components/nsfw-overlay";
-import { useNsfwGuard } from "@/lib/use-nsfw-guard";
-import { buildMediaUnits } from "@/pool/media";
+import { pickPrimaryUnit } from "@/pool/media";
+import { useResolvedTheme } from "@/pool/theme";
 import type { Save } from "@/pool/types";
 import { pickAuthorAvatarUrl } from "@/pool/url";
 import { descriptionMatchesTitle, pickAuthorColor } from "./helpers";
 import { collectMetadataRows, collectPropertyRows, type PaneRow } from "./rows";
 import styles from "./styles.module.css";
+import { TagPicker } from "./tag-picker";
 
 interface PaneProps extends React.ComponentPropsWithoutRef<"article"> {
   save: Save;
@@ -23,9 +20,8 @@ interface PaneProps extends React.ComponentPropsWithoutRef<"article"> {
 export function Pane({ save, className, ...props }: PaneProps) {
   const [descExpanded, setDescExpanded] = useState(false);
   const [avatarBroken, setAvatarBroken] = useState(false);
-  const cover = useMemo(() => buildMediaUnits(save)[0] ?? null, [save]);
-  const textTweet = isTextOnlyTweet(save);
-  const nsfw = useNsfwGuard(save);
+  const theme = useResolvedTheme();
+  const cover = useMemo(() => pickPrimaryUnit(save, { theme }), [save, theme]);
   const stats = useMemo(() => collectMetadataRows(save), [save]);
   const props2 = useMemo(() => collectPropertyRows(save), [save]);
   const avatarUrl = useMemo(() => pickAuthorAvatarUrl(save), [save]);
@@ -34,19 +30,12 @@ export function Pane({ save, className, ...props }: PaneProps) {
     description.length > 0 && !descriptionMatchesTitle(save);
   const hasLocalFile = save.files.length > 0;
 
-  const [searchParams, setSearchParams] = useSearchParams();
-  const openLightbox = useCallback(() => {
-    const next = new URLSearchParams(searchParams);
-    next.set("focus", save.id);
-    setSearchParams(next, { replace: false });
-  }, [save.id, searchParams, setSearchParams]);
-
-  const openOriginal = useCallback(() => {
+  const _openOriginal = useCallback(() => {
     if (!save.url) return;
     void window.pond.openExternal(save.url);
   }, [save.url]);
 
-  const revealLocal = useCallback(() => {
+  const _revealLocal = useCallback(() => {
     if (!hasLocalFile) return;
     void window.pond.revealSave(save.id);
   }, [save.id, hasLocalFile]);
@@ -59,25 +48,16 @@ export function Pane({ save, className, ...props }: PaneProps) {
       {...props}
     >
       {cover ? (
-        <button
-          type="button"
-          className={styles["pane-cover"]}
-          onClick={openLightbox}
-          aria-label="Open media full screen"
-          data-nsfw-blur={nsfw.shouldBlur ? "true" : undefined}
-        >
-          <img
-            src={cover.isVideo ? (cover.posterUrl ?? cover.url) : cover.url}
-            alt=""
-            className={styles["pane-cover-img"]}
-          />
-          {nsfw.shouldBlur ? <NsfwOverlay onReveal={nsfw.reveal} /> : null}
-        </button>
-      ) : textTweet ? (
-        <div className={styles["pane-cover"]} data-text-tweet="true">
-          <Card.Root save={save}>
-            <Card.Tweet />
-          </Card.Root>
+        <div className={styles["pane-cover"]}>
+          {cover.isVideo ? (
+            <PaneCoverVideo
+              key={cover.url}
+              src={cover.url}
+              posterUrl={cover.posterUrl}
+            />
+          ) : (
+            <img src={cover.url} alt="" className={styles["pane-cover-img"]} />
+          )}
         </div>
       ) : null}
 
@@ -130,7 +110,6 @@ export function Pane({ save, className, ...props }: PaneProps) {
         </div>
       ) : null}
 
-
       {showDescription ? (
         <PaneSection label="Description">
           <div
@@ -158,11 +137,9 @@ export function Pane({ save, className, ...props }: PaneProps) {
         </PaneSection>
       ) : null}
 
-      <PaneButton
-        icon={<IconLabelOutline18 width={12} height={12} />}
-        label="Add Tags"
-        onClick={() => {}}
-      />
+      <PaneSection label="Tags">
+        <PaneTags save={save} />
+      </PaneSection>
 
       {stats.length > 0 ? (
         <PaneSection label="Metadata">
@@ -176,6 +153,36 @@ export function Pane({ save, className, ...props }: PaneProps) {
         </PaneSection>
       ) : null}
     </article>
+  );
+}
+
+function PaneCoverVideo({
+  src,
+  posterUrl,
+}: {
+  src: string;
+  posterUrl?: string;
+}) {
+  const [failed, setFailed] = useState(false);
+
+  if (failed && posterUrl) {
+    return <img src={posterUrl} alt="" className={styles["pane-cover-img"]} />;
+  }
+
+  return (
+    <video
+      src={src}
+      poster={posterUrl}
+      className={styles["pane-cover-video"]}
+      autoPlay
+      muted
+      loop
+      playsInline
+      preload="metadata"
+      onError={() => setFailed(true)}
+    >
+      <track kind="captions" />
+    </video>
   );
 }
 
@@ -197,12 +204,8 @@ function PaneSection({
 function PaneRowList({ rows }: { rows: PaneRow[] }) {
   return (
     <div className={styles["pane-row-list"]}>
-      {rows.map((row, idx) => (
-        <div
-          key={row.id}
-          className={styles["pane-row"]}
-          data-alt={idx % 2 === 1 ? "true" : undefined}
-        >
+      {rows.map((row) => (
+        <div key={row.id} className={styles["pane-row"]}>
           <span className={styles["pane-row-icon"]} aria-hidden>
             {row.icon}
           </span>
@@ -214,28 +217,52 @@ function PaneRowList({ rows }: { rows: PaneRow[] }) {
   );
 }
 
-function PaneButton({
-  icon,
-  label,
-  onClick,
-  disabled,
-}: {
-  icon: ReactNode;
-  label: string;
-  onClick: () => void;
-  disabled?: boolean;
-}) {
+function PaneTags({ save }: { save: Save }) {
+  const [busy, setBusy] = useState(false);
+
+  const remove = useCallback(
+    async (name: string) => {
+      setBusy(true);
+      try {
+        await window.pond.query("tags.setForSave", {
+          saveId: save.id,
+          tags: save.tags.filter((t) => t.toLowerCase() !== name.toLowerCase()),
+        });
+      } finally {
+        setBusy(false);
+      }
+    },
+    [save.id, save.tags],
+  );
+
   return (
-    <button
-      type="button"
-      className={styles["pane-button"]}
-      onClick={onClick}
-      disabled={disabled}
-    >
-      <span className={styles["pane-button-icon"]} aria-hidden>
-        {icon}
-      </span>
-      <span>{label}</span>
-    </button>
+    <div className={styles["pane-tags"]}>
+      {save.tags.map((tag) => (
+        <span key={tag} className={styles["pane-tag"]}>
+          <span className={styles["pane-tag-label"]}>{tag}</span>
+          <button
+            type="button"
+            className={styles["pane-tag-remove"]}
+            onClick={() => void remove(tag)}
+            aria-label={`Remove tag ${tag}`}
+            disabled={busy}
+          >
+            <IconXmarkOutline18 width={10} height={10} />
+          </button>
+        </span>
+      ))}
+      <TagPicker
+        save={save}
+        trigger={
+          <button
+            type="button"
+            className={styles["pane-tag-add"]}
+            aria-label="Add tag"
+          >
+            <IconPlusOutline18 width={10} height={10} />
+          </button>
+        }
+      />
+    </div>
   );
 }

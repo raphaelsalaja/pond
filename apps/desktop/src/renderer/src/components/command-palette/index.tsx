@@ -36,7 +36,6 @@ const DETAIL_PATTERNS: readonly string[] = [
   "/recents/save/:id",
   "/random/save/:id",
   "/trash/save/:id",
-  "/read/:id",
   "/item/:id",
 ];
 

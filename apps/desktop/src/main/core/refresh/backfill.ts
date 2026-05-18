@@ -149,9 +149,6 @@ async function runWorker(
       current += 1;
       if (outcome.ok) {
         succeeded += 1;
-      } else if (outcome.reason === "auth_required" && outcome.source) {
-        authRequired.add(outcome.source);
-        failed += 1;
       } else {
         failed += 1;
       }

@@ -40,8 +40,5 @@ deciding whether something is a vulnerability:
 - The browser extension communicates with the desktop app over the
   same loopback channel using the pairing token the user pastes into
   the popup. The token is never sent to a remote server.
-- AI enrichment is opt-in and uses a user-supplied AI Gateway key,
-  also kept in the keychain. The library content itself never leaves
-  the machine.
 
 We appreciate your help in keeping `pond` and its users safe.

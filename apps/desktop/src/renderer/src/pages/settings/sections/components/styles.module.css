@@ -54,7 +54,7 @@
 
 .collapsible-body {
   max-width: 180px;
-  margin-top: 4px;
+  margin-block-start: 4px;
   font-size: 12px;
   line-height: 1.4;
   color: var(--ds-gray-11);

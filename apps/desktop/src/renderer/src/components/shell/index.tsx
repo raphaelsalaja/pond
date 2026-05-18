@@ -5,7 +5,7 @@ import { CommandPalette } from "@/components/command-palette";
 import { FilterBar } from "@/components/filter-bar";
 import { HeaderToolbar } from "@/components/header-toolbar";
 import { LibrarySidebar } from "@/components/library-sidebar";
-import { MediaLightbox } from "@/components/media-lightbox";
+import { ProcessingButton } from "@/components/processing-button";
 import { QuickCapture } from "@/components/quick-capture";
 import { Sidebar } from "@/components/sidebar";
 import { SidebarTools } from "@/components/sidebar-tools";
@@ -100,7 +100,6 @@ export function AppRoot() {
       <HistoryHotkey />
       <UndoRedoBridge />
       <Outlet />
-      <MediaLightbox.Root />
       <BulkActionBar.Root />
       <QuickCapture.Root />
       <CommandPalette.Root />
@@ -124,6 +123,7 @@ export function LibraryChrome() {
     <Shell.Header>
       <HeaderToolbar.Root />
       <FilterBar.Root />
+      <ProcessingButton.Root />
     </Shell.Header>
   );
 }

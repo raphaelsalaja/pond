@@ -1,6 +1,6 @@
 export function parsePairingLink(
   raw: string,
-): { endpoint: string; token: string; port: number } | null {
+): { token: string; port: number } | null {
   try {
     const cleaned = raw.trim().replace(/^[<"']|[>"']$/g, "");
     if (!cleaned.startsWith("pond://pair")) return null;
@@ -9,11 +9,7 @@ export function parsePairingLink(
     const port = Number.parseInt(portRaw, 10) || 41610;
     const token = url.searchParams.get("token") ?? "";
     if (!token) return null;
-    return {
-      endpoint: `http://127.0.0.1:${port}/api/v2/item/add`,
-      token,
-      port,
-    };
+    return { token, port };
   } catch {
     return null;
   }

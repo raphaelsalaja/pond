@@ -11,8 +11,8 @@
 }
 
 .search {
-  padding-bottom: 6px;
-  margin-bottom: 4px;
+  padding-block-end: 6px;
+  margin-block-end: 4px;
   border-bottom: 1px solid var(--ds-gray-a3);
 }
 
@@ -33,9 +33,22 @@
   color: var(--ds-gray-12);
 }
 
+.swatch,
+.swatch-empty {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--ds-radius-full);
+}
+
+.swatch-empty {
+  background: var(--ds-gray-a4);
+}
+
 .count {
   flex-shrink: 0;
-  padding-left: 8px;
+  padding-inline-start: 8px;
   font-size: 11px;
   font-variant-numeric: tabular-nums;
   color: var(--ds-gray-11);

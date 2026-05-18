@@ -22,12 +22,13 @@ export async function reconcileLibrary(): Promise<{
     if (existing[0] && existing[0].mtimeMs === mtimeMs) continue;
     if (!metadata) continue;
 
-    const files: SaveFile[] = metadata.files.map((f) => ({
+    const files: SaveFile[] = (metadata.files ?? []).map((f) => ({
       kind: f.kind,
       path: f.path,
       sha256: f.sha256,
       size: f.size,
     }));
+    const tags = metadata.tags ?? [];
 
     await db
       .insert(saves)
@@ -48,19 +49,12 @@ export async function reconcileLibrary(): Promise<{
             | null
             | undefined) ?? null,
         rawJson: metadata.pond.rawSource ?? null,
-        tags: metadata.tags,
-        aiTags: metadata.aiTags,
-        aiCaption: metadata.aiCaption,
-        aiSuggestions: null,
-        ocrText: metadata.pond.ocrText ?? null,
-        dominantColors: metadata.palettes,
-        blurDataUrl: metadata.pond.blurDataUrl ?? null,
+        tags,
         files,
         coverIndex: metadata.pond.coverIndex ?? 0,
         width: metadata.width,
         height: metadata.height,
         fileSize: metadata.size,
-        archivedAt: null,
         deletedAt: metadata.isDeleted ? new Date(metadata.mtime) : null,
         savedAt: new Date(metadata.importedAt),
         createdAt: new Date(metadata.btime),
@@ -72,11 +66,7 @@ export async function reconcileLibrary(): Promise<{
           description: metadata.pond.description ?? null,
           author: metadata.pond.author ?? null,
           notes: metadata.annotation || null,
-          tags: metadata.tags,
-          aiTags: metadata.aiTags,
-          aiCaption: metadata.aiCaption,
-          dominantColors: metadata.palettes,
-          blurDataUrl: metadata.pond.blurDataUrl ?? null,
+          tags,
           files,
           width: metadata.width,
           height: metadata.height,

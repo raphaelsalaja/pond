@@ -40,32 +40,6 @@ export function registerScheme() {
 
 export function registerProtocol() {
   protocol.handle(POND_PROTOCOL, async (request) => {
-    // #region agent log
-    fetch("http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Debug-Session-Id": "7b119d",
-      },
-      body: JSON.stringify({
-        sessionId: "7b119d",
-        hypothesisId: "H_AB",
-        location: "protocol.ts:pondHandle",
-        message: "pond:// request",
-        data: {
-          url: request.url,
-          method: request.method,
-          range: request.headers.get("range"),
-          origin: request.headers.get("origin"),
-          referer: request.headers.get("referer"),
-          destination: (request as unknown as { destination?: string })
-            .destination,
-          mode: (request as unknown as { mode?: string }).mode,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
     try {
       const url = new URL(request.url);
       const host = url.hostname;
@@ -127,33 +101,6 @@ export function registerProtocol() {
         }
         headers.set("content-range", `bytes ${start}-${end}/${total}`);
         headers.set("content-length", String(length));
-        // #region agent log
-        fetch(
-          "http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Debug-Session-Id": "7b119d",
-            },
-            body: JSON.stringify({
-              sessionId: "7b119d",
-              hypothesisId: "H_E",
-              location: "protocol.ts:pondHandle",
-              message: "pond:// response 206 (buffer)",
-              data: {
-                url: request.url,
-                ext,
-                start,
-                end,
-                length,
-                total,
-              },
-              timestamp: Date.now(),
-            }),
-          },
-        ).catch(() => {});
-        // #endregion
         return new Response(buf, { status: 206, headers });
       }
 
@@ -165,31 +112,6 @@ export function registerProtocol() {
         await fh.close();
       }
       headers.set("content-length", String(total));
-      // #region agent log
-      fetch(
-        "http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Debug-Session-Id": "7b119d",
-          },
-          body: JSON.stringify({
-            sessionId: "7b119d",
-            hypothesisId: "H_E",
-            location: "protocol.ts:pondHandle",
-            message: "pond:// response 200 (buffer)",
-            data: {
-              url: request.url,
-              ext,
-              size: total,
-              contentType,
-            },
-            timestamp: Date.now(),
-          }),
-        },
-      ).catch(() => {});
-      // #endregion
       return new Response(fullBuf, { status: 200, headers });
     } catch (err) {
       const isMissing =
@@ -199,30 +121,6 @@ export function registerProtocol() {
       } else {
         log.warn("[pond://] resolve failed", request.url, err);
       }
-      // #region agent log
-      fetch(
-        "http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Debug-Session-Id": "7b119d",
-          },
-          body: JSON.stringify({
-            sessionId: "7b119d",
-            hypothesisId: "H_AB",
-            location: "protocol.ts:pondHandle",
-            message: "pond:// error",
-            data: {
-              url: request.url,
-              isMissing,
-              err: String(err),
-            },
-            timestamp: Date.now(),
-          }),
-        },
-      ).catch(() => {});
-      // #endregion
       return new Response("not found", { status: 404 });
     }
   });

@@ -1,32 +1,67 @@
-import "vidstack/styles/base.css";
+import "@videojs/react/video/skin.css";
 
 import {
-  IconExpand2Outline18,
+  IconFullScreenOutline18,
+  IconMediaNextOutline18,
   IconMediaPauseOutline18,
   IconMediaPlayOutline18,
+  IconMediaPreviousOutline18,
   IconVolumeOffOutline18,
   IconVolumeOutline18,
   IconWindowBottomRightOutline18,
 } from "@pond/icons/outline/18";
 import {
-  MediaMuteButton,
-  MediaOutlet,
-  MediaPIPButton,
-  MediaPlayButton,
-  MediaPlayer,
-  MediaTime,
-  MediaTimeSlider,
-  MediaVolumeSlider,
-  useMediaRemote,
-  useMediaStore,
-} from "@vidstack/react";
+  Controls,
+  createPlayer,
+  FullscreenButton,
+  Hotkey,
+  MuteButton,
+  PiPButton,
+  PlayButton,
+  Popover,
+  SeekButton,
+  Slider,
+  Time,
+  TimeSlider,
+  useHotkey,
+  usePlayer,
+  VolumeSlider,
+} from "@videojs/react";
+import { Video, videoFeatures } from "@videojs/react/video";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Save } from "@/pool/types";
 import { type ChapterCue, chaptersToVttUrl } from "./chapters-vtt";
 import { VideoContextMenu } from "./context-menu";
+import { ScrubPreview } from "./scrub-preview";
+import { SPEED_OPTIONS } from "./speed-options";
 import styles from "./styles.module.css";
 
-const SPEED_OPTIONS = [0.5, 0.75, 1, 1.25, 1.5, 2] as const;
+const Player = createPlayer({ features: videoFeatures });
+
+// The store's state is exposed as `UnknownState`; we know which features we
+// configured, so narrow at the selector boundary.
+type Availability = "available" | "unavailable" | "unsupported";
+type PlayerStateSlice = {
+  playbackRate: number;
+  setPlaybackRate: (rate: number) => void;
+  muted: boolean;
+  volume: number;
+  volumeAvailability: Availability;
+  pip: boolean;
+  pipAvailability: Availability;
+  requestPictureInPicture: () => Promise<void>;
+  togglePictureInPicture: () => Promise<void>;
+  fullscreenAvailability: Availability;
+};
+const select =
+  <K extends keyof PlayerStateSlice>(key: K) =>
+  (s: unknown) =>
+    (s as PlayerStateSlice)[key];
+
+const SEEK_BUTTON_STEP = 10;
+const SEEK_HOTKEY_STEP = 5;
+const VOLUME_HOTKEY_STEP = 0.1;
+const FRAME_STEP_SECONDS = 1 / 30;
 
 interface VideoPlayerProps {
   src: string;
@@ -35,7 +70,6 @@ interface VideoPlayerProps {
   videoRef?: React.MutableRefObject<HTMLVideoElement | null>;
   chapters?: readonly ChapterCue[];
   onError?: () => void;
-  onExpand?: () => void;
 }
 
 export function VideoPlayer({
@@ -45,18 +79,25 @@ export function VideoPlayer({
   videoRef,
   chapters,
   onError,
-  onExpand,
 }: VideoPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const internalVideoRef = useRef<HTMLVideoElement | null>(null);
+  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null);
 
-  useEffect(() => {
-    if (!videoRef || !containerRef.current) return;
-    const video = containerRef.current.querySelector("video");
-    if (video) videoRef.current = video;
-    return () => {
-      if (videoRef.current === video) videoRef.current = null;
-    };
-  });
+  const setVideoRef = useCallback(
+    (el: HTMLVideoElement | null) => {
+      internalVideoRef.current = el;
+      if (videoRef) videoRef.current = el;
+    },
+    [videoRef],
+  );
+
+  const onContextMenu = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setCtxMenu({ x: e.clientX, y: e.clientY });
+  }, []);
+
+  const closeCtxMenu = useCallback(() => setCtxMenu(null), []);
 
   const chaptersVttUrl = useMemo(
     () => (chapters && chapters.length > 0 ? chaptersToVttUrl(chapters) : null),
@@ -68,222 +109,346 @@ export function VideoPlayer({
     return () => URL.revokeObjectURL(chaptersVttUrl);
   }, [chaptersVttUrl]);
 
-  const textTracks = useMemo(() => {
-    if (!chaptersVttUrl) return undefined;
-    return [
-      {
-        src: chaptersVttUrl,
-        kind: "chapters" as const,
-        default: true,
-        language: "en",
-        label: "Chapters",
-      },
-    ];
-  }, [chaptersVttUrl]);
+  const handleError = useCallback(() => {
+    onError?.();
+  }, [onError]);
 
   return (
-    <div className={styles.root} ref={containerRef}>
-      <MediaPlayer
-        src={src}
-        poster={poster}
-        textTracks={textTracks}
-        playsinline
-        onError={(event: unknown) => {
-          // #region agent log
-          const detail = (event as { detail?: Record<string, unknown> })
-            ?.detail;
-          const mediaError = detail?.mediaError as
-            | { code?: number; message?: string }
-            | undefined;
-          fetch(
-            "http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "X-Debug-Session-Id": "7b119d",
-              },
-              body: JSON.stringify({
-                sessionId: "7b119d",
-                hypothesisId: "H_E_F",
-                location: "video-player/index.tsx:MediaPlayer.onError",
-                message: "vidstack onError fired",
-                data: {
-                  src,
-                  hasPoster: !!poster,
-                  detailMessage: detail?.message,
-                  detailCode: detail?.code,
-                  mediaErrorCode: mediaError?.code,
-                  mediaErrorMessage: mediaError?.message,
-                },
-                timestamp: Date.now(),
-              }),
-            },
-          ).catch(() => {});
-          // #endregion
-          onError?.();
-        }}
+    <Player.Provider>
+      <Player.Container
+        ref={containerRef}
+        className={styles.root}
+        onContextMenu={onContextMenu}
       >
-        <PlayerInternals
+        <Video
+          src={src}
+          poster={poster}
+          playsInline
+          ref={setVideoRef}
+          className={styles.video}
+          onError={handleError}
+        >
+          {chaptersVttUrl ? (
+            <track
+              src={chaptersVttUrl}
+              kind="chapters"
+              srcLang="en"
+              label="Chapters"
+              default
+            />
+          ) : null}
+        </Video>
+
+        <PlayerHotkeys videoRef={internalVideoRef} />
+
+        <PlayerControls
+          src={src}
           save={save}
           containerRef={containerRef}
-          onExpand={onExpand}
+          ctxMenu={ctxMenu}
+          onCloseCtxMenu={closeCtxMenu}
         />
-      </MediaPlayer>
-    </div>
+      </Player.Container>
+    </Player.Provider>
   );
 }
 
-function PlayerInternals({
+function PlayerHotkeys({
+  videoRef,
+}: {
+  videoRef: React.RefObject<HTMLVideoElement | null>;
+}) {
+  const setPlaybackRate = usePlayer(select("setPlaybackRate"));
+  const playbackRateRef = useRef(0);
+  playbackRateRef.current = usePlayer(select("playbackRate"));
+
+  const stepSpeed = useCallback(
+    (delta: 1 | -1) => {
+      const current = playbackRateRef.current;
+      const idx = SPEED_OPTIONS.indexOf(
+        current as (typeof SPEED_OPTIONS)[number],
+      );
+      const base = idx < 0 ? SPEED_OPTIONS.indexOf(1) : idx;
+      const next = Math.min(
+        SPEED_OPTIONS.length - 1,
+        Math.max(0, base + delta),
+      );
+      const target = SPEED_OPTIONS[next];
+      if (target !== undefined) setPlaybackRate(target);
+    },
+    [setPlaybackRate],
+  );
+
+  useHotkey({
+    keys: ">",
+    onActivate: () => stepSpeed(1),
+  });
+
+  useHotkey({
+    keys: "<",
+    onActivate: () => stepSpeed(-1),
+  });
+
+  const stepFrame = useCallback(
+    (delta: 1 | -1) => {
+      const video = videoRef.current;
+      if (!video) return;
+      if (!video.paused) video.pause();
+      video.currentTime = Math.max(
+        0,
+        video.currentTime + delta * FRAME_STEP_SECONDS,
+      );
+    },
+    [videoRef],
+  );
+
+  useHotkey({
+    keys: ".",
+    onActivate: () => stepFrame(1),
+  });
+
+  useHotkey({
+    keys: ",",
+    onActivate: () => stepFrame(-1),
+  });
+
+  return (
+    <>
+      <Hotkey keys="k" action="togglePaused" />
+      <Hotkey keys="Space" action="togglePaused" />
+      <Hotkey keys="m" action="toggleMuted" />
+      <Hotkey keys="f" action="toggleFullscreen" />
+      <Hotkey keys="p" action="togglePictureInPicture" />
+      <Hotkey keys="ArrowLeft" action="seekStep" value={-SEEK_HOTKEY_STEP} />
+      <Hotkey keys="ArrowRight" action="seekStep" value={SEEK_HOTKEY_STEP} />
+      <Hotkey keys="ArrowUp" action="volumeStep" value={VOLUME_HOTKEY_STEP} />
+      <Hotkey
+        keys="ArrowDown"
+        action="volumeStep"
+        value={-VOLUME_HOTKEY_STEP}
+      />
+      <Hotkey keys="0-9" action="seekToPercent" />
+    </>
+  );
+}
+
+function PlayerControls({
+  src,
   save,
   containerRef,
-  onExpand,
+  ctxMenu,
+  onCloseCtxMenu,
 }: {
+  src: string;
   save: Save;
   containerRef: React.RefObject<HTMLDivElement | null>;
-  onExpand?: () => void;
+  ctxMenu: { x: number; y: number } | null;
+  onCloseCtxMenu: () => void;
 }) {
-  const { paused, muted, volume, playbackRate } = useMediaStore();
-  const remote = useMediaRemote();
-  const [speedMenuOpen, setSpeedMenuOpen] = useState(false);
-  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null);
+  const playbackRate = usePlayer(select("playbackRate"));
+  const setPlaybackRate = usePlayer(select("setPlaybackRate"));
+  const requestPip = usePlayer(select("requestPictureInPicture"));
+  const pipAvailable = usePlayer(select("pipAvailability")) === "available";
+  const volumeUnsupported =
+    usePlayer(select("volumeAvailability")) === "unsupported";
+  const fullscreenAvailable =
+    usePlayer(select("fullscreenAvailability")) === "available";
+  const seekSliderRef = useRef<HTMLDivElement | null>(null);
 
-  const onContextMenu = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    setCtxMenu({ x: e.clientX, y: e.clientY });
-  }, []);
-
-  const closeCtxMenu = useCallback(() => setCtxMenu(null), []);
-
-  const setSpeed = useCallback(
-    (rate: number) => {
-      remote.changePlaybackRate(rate);
-      setSpeedMenuOpen(false);
+  const onSpeedChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>) => {
+      setPlaybackRate(Number(e.currentTarget.value));
     },
-    [remote],
+    [setPlaybackRate],
   );
 
   return (
     <>
-      {/* biome-ignore lint/a11y/noStaticElementInteractions: context menu trigger on video surface */}
-      <div className={styles["video-area"]} onContextMenu={onContextMenu}>
-        <MediaOutlet />
-      </div>
-
-      <div className={styles.controls}>
-        <MediaPlayButton className={styles.btn}>
-          {paused ? (
-            <IconMediaPlayOutline18 width={14} height={14} />
-          ) : (
-            <IconMediaPauseOutline18 width={14} height={14} />
-          )}
-        </MediaPlayButton>
-
-        <span className={styles.time}>
-          <MediaTime type="current" />
-          <span className={styles["time-separator"]}>/</span>
-          <MediaTime type="duration" />
-        </span>
-
-        <div className={styles["slider-group"]}>
-          <MediaTimeSlider className={styles["seek-slider"]} />
-        </div>
-
-        <div className={styles["volume-group"]}>
-          <MediaMuteButton className={styles.btn}>
-            {muted || volume === 0 ? (
-              <IconVolumeOffOutline18 width={14} height={14} />
-            ) : (
-              <IconVolumeOutline18 width={14} height={14} />
+      <Controls.Root className={styles.controls}>
+        <Controls.Group
+          className={styles["controls-group"]}
+          aria-label="Playback controls"
+        >
+          <PlayButton
+            className={styles.btn}
+            render={(props, state) => (
+              <button
+                {...props}
+                type="button"
+                aria-label={
+                  state.paused
+                    ? "Play (keyboard shortcut k)"
+                    : "Pause (keyboard shortcut k)"
+                }
+              >
+                {state.paused ? (
+                  <IconMediaPlayOutline18 width={14} height={14} />
+                ) : (
+                  <IconMediaPauseOutline18 width={14} height={14} />
+                )}
+              </button>
             )}
-          </MediaMuteButton>
-          <MediaVolumeSlider className={styles["volume-slider"]} />
-        </div>
+          />
 
-        <div style={{ position: "relative" }}>
-          <button
-            type="button"
-            className={styles["speed-btn"]}
-            onClick={() => setSpeedMenuOpen((v) => !v)}
-            aria-label={`Playback speed: ${playbackRate}x`}
+          <SeekButton
+            seconds={-SEEK_BUTTON_STEP}
+            className={styles.btn}
+            render={(props) => (
+              <button
+                {...props}
+                type="button"
+                aria-label={`Seek back ${SEEK_BUTTON_STEP} seconds`}
+              >
+                <IconMediaPreviousOutline18 width={14} height={14} />
+              </button>
+            )}
+          />
+
+          <SeekButton
+            seconds={SEEK_BUTTON_STEP}
+            className={styles.btn}
+            render={(props) => (
+              <button
+                {...props}
+                type="button"
+                aria-label={`Seek forward ${SEEK_BUTTON_STEP} seconds`}
+              >
+                <IconMediaNextOutline18 width={14} height={14} />
+              </button>
+            )}
+          />
+
+          <VolumeControl unsupported={volumeUnsupported} />
+
+          <Time.Value type="current" className={styles.time} />
+
+          <TimeSlider.Root
+            ref={seekSliderRef}
+            className={styles["seek-slider"]}
           >
-            {playbackRate}x
-          </button>
-          {speedMenuOpen ? (
-            <SpeedMenu
-              current={playbackRate}
-              onSelect={setSpeed}
-              onClose={() => setSpeedMenuOpen(false)}
+            <TimeSlider.Track className={styles["slider-track"]}>
+              <TimeSlider.Buffer className={styles["slider-buffer"]} />
+              <TimeSlider.Fill className={styles["slider-fill"]} />
+            </TimeSlider.Track>
+            <TimeSlider.Thumb className={styles["slider-thumb"]} />
+            <Slider.Preview className={styles["slider-preview"]}>
+              <ScrubPreview src={src} sliderRef={seekSliderRef} />
+              <TimeSlider.Value
+                type="pointer"
+                className={styles["slider-preview-time"]}
+              />
+            </Slider.Preview>
+          </TimeSlider.Root>
+
+          <Time.Value type="duration" className={styles.time} />
+
+          <select
+            className={styles["speed-select"]}
+            aria-label="Change playback rate (keyboard shortcut > or <)"
+            value={playbackRate}
+            onChange={onSpeedChange}
+          >
+            {SPEED_OPTIONS.map((rate) => (
+              <option key={rate} value={rate}>
+                {rate}×
+              </option>
+            ))}
+          </select>
+
+          {pipAvailable ? (
+            <PiPButton
+              className={styles.btn}
+              render={(props) => (
+                <button
+                  {...props}
+                  type="button"
+                  aria-label="Picture-in-Picture (keyboard shortcut p)"
+                >
+                  <IconWindowBottomRightOutline18 width={14} height={14} />
+                </button>
+              )}
             />
           ) : null}
-        </div>
 
-        <MediaPIPButton className={styles.btn}>
-          <IconWindowBottomRightOutline18 width={14} height={14} />
-        </MediaPIPButton>
-
-        {onExpand ? (
-          <button
-            type="button"
-            className={styles.btn}
-            onClick={onExpand}
-            aria-label="Expand to full screen"
-          >
-            <IconExpand2Outline18 width={14} height={14} />
-          </button>
-        ) : null}
-      </div>
+          {fullscreenAvailable ? (
+            <FullscreenButton
+              className={styles.btn}
+              render={(props) => (
+                <button
+                  {...props}
+                  type="button"
+                  aria-label="Full window (keyboard shortcut f)"
+                >
+                  <IconFullScreenOutline18 width={14} height={14} />
+                </button>
+              )}
+            />
+          ) : null}
+        </Controls.Group>
+      </Controls.Root>
 
       {ctxMenu ? (
         <VideoContextMenu
           position={ctxMenu}
           save={save}
           containerRef={containerRef}
-          remote={remote}
           playbackRate={playbackRate}
-          onClose={closeCtxMenu}
+          onSetPlaybackRate={setPlaybackRate}
+          onRequestPip={requestPip}
+          onClose={onCloseCtxMenu}
         />
       ) : null}
     </>
   );
 }
 
-function SpeedMenu({
-  current,
-  onSelect,
-  onClose,
-}: {
-  current: number;
-  onSelect: (rate: number) => void;
-  onClose: () => void;
-}) {
-  return (
-    <>
-      {/* biome-ignore lint/a11y/noStaticElementInteractions: backdrop dismiss */}
-      <div
-        className={styles["ctx-backdrop"]}
-        onClick={onClose}
-        onKeyDown={(e) => {
-          if (e.key === "Escape") onClose();
-        }}
-        onContextMenu={(e) => {
-          e.preventDefault();
-          onClose();
-        }}
-      />
-      <div className={styles.menu}>
-        {SPEED_OPTIONS.map((rate) => (
+function VolumeControl({ unsupported }: { unsupported: boolean }) {
+  const muted = usePlayer(select("muted"));
+  const volume = usePlayer(select("volume"));
+
+  const trigger = (
+    <MuteButton
+      className={styles.btn}
+      render={(props, state) => {
+        const isMuted = unsupported || state.muted || volume === 0;
+        return (
           <button
-            key={rate}
+            {...props}
             type="button"
-            className={styles["menu-item"]}
-            data-active={rate === current ? "true" : undefined}
-            onClick={() => onSelect(rate)}
+            disabled={unsupported || undefined}
+            aria-label={
+              isMuted
+                ? "Unmute (keyboard shortcut m)"
+                : "Mute (keyboard shortcut m)"
+            }
           >
-            {rate}x
+            {muted || volume === 0 ? (
+              <IconVolumeOffOutline18 width={14} height={14} />
+            ) : (
+              <IconVolumeOutline18 width={14} height={14} />
+            )}
           </button>
-        ))}
-      </div>
-    </>
+        );
+      }}
+    />
+  );
+
+  if (unsupported) return trigger;
+
+  return (
+    <Popover.Root openOnHover delay={200} closeDelay={120} side="top">
+      <Popover.Trigger render={trigger} />
+      <Popover.Popup className={styles["volume-popup"]}>
+        <VolumeSlider.Root
+          orientation="vertical"
+          className={styles["volume-slider"]}
+        >
+          <VolumeSlider.Track className={styles["slider-track"]}>
+            <VolumeSlider.Fill className={styles["slider-fill"]} />
+          </VolumeSlider.Track>
+          <VolumeSlider.Thumb className={styles["slider-thumb"]} />
+        </VolumeSlider.Root>
+      </Popover.Popup>
+    </Popover.Root>
   );
 }

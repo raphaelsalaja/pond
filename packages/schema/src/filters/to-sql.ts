@@ -1,10 +1,5 @@
 import { and as drizzleAnd, or as drizzleOr, type SQL, sql } from "drizzle-orm";
-import {
-  colorNear,
-  SCALAR_PROJECTIONS,
-  tagsDistinctCount,
-  tagsExists,
-} from "./fields";
+import { SCALAR_PROJECTIONS, tagsDistinctCount, tagsExists } from "./fields";
 import type { Clause, ComparatorId, FieldId, Predicate, Query } from "./types";
 
 export function buildWhere(query: Query): SQL | undefined {
@@ -43,7 +38,6 @@ function compileForField(
   raw: unknown,
 ): SQL | null {
   if (field === "tags") return tagsClause(cmp, raw);
-  if (field === "color") return colorClause(cmp, raw);
 
   const column = SCALAR_PROJECTIONS[field];
   if (!column) return null;
@@ -72,22 +66,6 @@ function tagsClause(cmp: ComparatorId, raw: unknown): SQL | null {
     default:
       return null;
   }
-}
-
-function colorClause(cmp: ComparatorId, raw: unknown): SQL | null {
-  if (cmp !== "near") return null;
-  if (!isObject(raw)) return null;
-  const hex = String(raw.hex ?? "")
-    .replace(/^#/, "")
-    .toLowerCase();
-  if (!/^[0-9a-f]{6}$/.test(hex)) return null;
-  const distance =
-    typeof raw.distance === "number" &&
-    Number.isFinite(raw.distance) &&
-    raw.distance > 0
-      ? raw.distance
-      : 96;
-  return colorNear(hex, distance);
 }
 
 function scalarClause(
@@ -228,8 +206,4 @@ function isoDurationToMillis(input: string): number | null {
   if (!Number.isFinite(days) || days === 0) return 0;
   const sign = signRaw === "-" ? -1 : 1;
   return sign * days * 86_400_000;
-}
-
-function isObject(v: unknown): v is Record<string, unknown> {
-  return typeof v === "object" && v !== null && !Array.isArray(v);
 }

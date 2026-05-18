@@ -7,8 +7,8 @@
 }
 
 .search {
-  padding-bottom: 6px;
-  margin-bottom: 4px;
+  padding-block-end: 6px;
+  margin-block-end: 4px;
   border-bottom: 1px solid var(--ds-gray-a3);
 }
 

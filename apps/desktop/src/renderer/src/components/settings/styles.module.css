@@ -6,8 +6,8 @@
   flex-direction: column;
   gap: 40px;
   max-width: var(--settings-max-width);
+  margin-block-start: var(--settings-margin-top);
   margin-inline: auto;
-  margin-top: var(--settings-margin-top);
 
   &[data-width="narrow"] {
     --settings-max-width: 384px;
@@ -90,5 +90,5 @@
 }
 
 .control {
-  margin-left: auto;
+  margin-inline-start: auto;
 }

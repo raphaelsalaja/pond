@@ -2,7 +2,6 @@ import { sql } from "drizzle-orm";
 import {
   index,
   integer,
-  real,
   sqliteTable,
   text,
   unique,
@@ -16,17 +15,34 @@ export const SOURCES = [
   "cosmos",
   "tiktok",
   "youtube",
-  "article",
 ] as const;
 export type Source = (typeof SOURCES)[number];
 
-export const MEDIA_TYPES = ["image", "video", "link", "article"] as const;
+export const MEDIA_TYPES = ["image", "video", "mixed", "link"] as const;
 export type MediaType = (typeof MEDIA_TYPES)[number];
 
-export interface DominantColor {
-  hex: string;
-  weight: number;
-}
+export const SAVE_STATUSES = ["ingesting", "complete", "failed"] as const;
+export type SaveStatus = (typeof SAVE_STATUSES)[number];
+
+export const OPS = [
+  "harvest_metadata",
+  "capture_tweet",
+  "fetch_blobs",
+  "fetch_video_ytdlp",
+  "ensure_poster",
+  "fetch_avatar",
+  "finalize",
+] as const;
+export type Op = (typeof OPS)[number];
+
+export const TASK_STATUSES = [
+  "pending",
+  "running",
+  "done",
+  "failed",
+  "blocked",
+] as const;
+export type TaskStatus = (typeof TASK_STATUSES)[number];
 
 export interface SaveFile {
   kind: string;
@@ -36,56 +52,6 @@ export interface SaveFile {
   mimeType?: string | null;
   width?: number | null;
   height?: number | null;
-}
-
-export interface AiSuggestion<T> {
-  value: T;
-  appliedAt: string | null;
-  reasoning: string;
-  promptHash?: string;
-}
-
-export interface AiSuggestionsForSave {
-  tags?: AiSuggestion<string[]>;
-  caption?: AiSuggestion<string>;
-  ocr?: AiSuggestion<string>;
-  classification?: AiSuggestion<SaveClassification>;
-  summary?: AiSuggestion<string>;
-}
-
-export const SAVE_CLASSIFICATIONS = [
-  "article",
-  "product",
-  "recipe",
-  "quote",
-  "video",
-  "image",
-  "code",
-  "other",
-] as const;
-export type SaveClassification = (typeof SAVE_CLASSIFICATIONS)[number];
-
-export const NSFW_LABELS = [
-  "drawing",
-  "hentai",
-  "neutral",
-  "porn",
-  "sexy",
-] as const;
-export type NsfwLabel = (typeof NSFW_LABELS)[number];
-
-export interface TextHighlight {
-  id: string;
-  start: number;
-  end: number;
-  text: string;
-  note?: string;
-  color?: string;
-  createdAt: string;
-}
-
-export interface SaveAnnotations {
-  highlights?: TextHighlight[];
 }
 
 export const saves = sqliteTable(
@@ -109,29 +75,6 @@ export const saves = sqliteTable(
       .$type<string[]>()
       .notNull()
       .default(sql`'[]'`),
-    aiTags: text("ai_tags", { mode: "json" })
-      .$type<string[]>()
-      .notNull()
-      .default(sql`'[]'`),
-    aiCaption: text("ai_caption"),
-    aiSuggestions: text("ai_suggestions", { mode: "json" })
-      .$type<AiSuggestionsForSave | null>()
-      .default(null),
-    classification: text("classification").$type<SaveClassification | null>(),
-    aiSummary: text("ai_summary"),
-    articleHtml: text("article_html"),
-    articleText: text("article_text"),
-    articleReadingMinutes: integer("article_reading_minutes"),
-    annotations: text("annotations", { mode: "json" })
-      .$type<SaveAnnotations | null>()
-      .default(null),
-    ocrText: text("ocr_text"),
-    dominantColors: text("dominant_colors", { mode: "json" })
-      .$type<DominantColor[] | null>()
-      .default(null),
-    blurDataUrl: text("blur_data_url"),
-    nsfwScore: real("nsfw_score"),
-    nsfwLabel: text("nsfw_label").$type<NsfwLabel | null>(),
     files: text("files", { mode: "json" })
       .$type<SaveFile[]>()
       .notNull()
@@ -140,11 +83,13 @@ export const saves = sqliteTable(
     width: integer("width"),
     height: integer("height"),
     fileSize: integer("file_size"),
-    archivedAt: integer("archived_at", { mode: "timestamp_ms" }),
+    status: text("status")
+      .$type<SaveStatus>()
+      .notNull()
+      .default(sql`'ingesting'`),
+    ingestStartedAt: integer("ingest_started_at", { mode: "timestamp_ms" }),
+    ingestCompletedAt: integer("ingest_completed_at", { mode: "timestamp_ms" }),
     deletedAt: integer("deleted_at", { mode: "timestamp_ms" }),
-    embeddingUpdatedAt: integer("embedding_updated_at", {
-      mode: "timestamp_ms",
-    }),
     savedAt: integer("saved_at", { mode: "timestamp_ms" })
       .notNull()
       .default(sql`(unixepoch() * 1000)`),
@@ -161,8 +106,41 @@ export const saves = sqliteTable(
     sourceIdx: index("saves_source_idx").on(t.source),
     sizeIdx: index("saves_size_idx").on(t.fileSize),
     dimsIdx: index("saves_dims_idx").on(t.width, t.height),
-    archivedIdx: index("saves_archived_idx").on(t.archivedAt),
     deletedIdx: index("saves_deleted_idx").on(t.deletedAt),
+    statusIdx: index("saves_status_idx").on(t.status),
+  }),
+);
+
+export const tasks = sqliteTable(
+  "tasks",
+  {
+    id: text("id").primaryKey(),
+    saveId: text("save_id")
+      .notNull()
+      .references(() => saves.id, { onDelete: "cascade" }),
+    op: text("op").$type<Op>().notNull(),
+    status: text("status")
+      .$type<TaskStatus>()
+      .notNull()
+      .default(sql`'pending'`),
+    attempts: integer("attempts").notNull().default(0),
+    maxAttempts: integer("max_attempts").notNull().default(5),
+    nextRunAt: integer("next_run_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
+    lastError: text("last_error"),
+    payload: text("payload", { mode: "json" }),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
+  },
+  (t) => ({
+    saveOpUnique: unique("tasks_save_op_unique").on(t.saveId, t.op),
+    nextRunIdx: index("tasks_next_run_idx").on(t.status, t.nextRunAt),
+    saveIdx: index("tasks_save_idx").on(t.saveId),
   }),
 );
 
@@ -172,6 +150,7 @@ export const tags = sqliteTable(
     id: text("id").primaryKey(),
     name: text("name").notNull().unique(),
     color: text("color"),
+    description: text("description"),
     group: text("group"),
     usageCount: integer("usage_count").notNull().default(0),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
@@ -189,7 +168,7 @@ export type SyncActionKind = (typeof SYNC_ACTIONS)[number];
 export const SYNC_MODELS = ["save", "tag", "settings"] as const;
 export type SyncModel = (typeof SYNC_MODELS)[number];
 
-export const SYNC_ACTORS = ["user", "ai", "system"] as const;
+export const SYNC_ACTORS = ["user", "system"] as const;
 export type SyncActor = (typeof SYNC_ACTORS)[number];
 
 export const syncActions = sqliteTable(
@@ -238,99 +217,6 @@ export const libraryScan = sqliteTable("library_scan", {
     .notNull()
     .default(sql`(unixepoch() * 1000)`),
 });
-
-export const AI_AUTONOMY_LEVELS = [
-  "off",
-  "suggest",
-  "auto-apply",
-  "auto",
-] as const;
-export type AiAutonomyLevel = (typeof AI_AUTONOMY_LEVELS)[number];
-
-export interface AiAutonomy {
-  tagging: AiAutonomyLevel;
-  additionalGuidance: string;
-}
-
-export const DEFAULT_AI_AUTONOMY: AiAutonomy = {
-  tagging: "suggest",
-  additionalGuidance: "",
-};
-
-export const AI_PROVIDER_KINDS = ["off", "local", "gateway", "direct"] as const;
-export type AiProviderKind = (typeof AI_PROVIDER_KINDS)[number];
-
-export interface AiProviderConfig {
-  kind: AiProviderKind;
-  baseUrl: string;
-  models: {
-    vision: string;
-    summary: string;
-    embedding: string;
-  };
-  embeddingDim: number;
-  dailyBudgetUsd: number | null;
-  sendImages: boolean;
-}
-
-export const DEFAULT_AI_PROVIDER: AiProviderConfig = {
-  kind: "off",
-  baseUrl: "http://127.0.0.1:11434/v1",
-  models: {
-    vision: "llava:7b",
-    summary: "llama3.2:3b",
-    embedding: "nomic-embed-text",
-  },
-  embeddingDim: 768,
-  dailyBudgetUsd: null,
-  sendImages: true,
-};
-
-export const ENRICH_JOB_KINDS = [
-  "colors",
-  "article",
-  "vision",
-  "embed",
-] as const;
-export type EnrichJobKind = (typeof ENRICH_JOB_KINDS)[number];
-
-export const ENRICH_JOB_STATES = [
-  "pending",
-  "running",
-  "done",
-  "error",
-  "skipped",
-] as const;
-export type EnrichJobState = (typeof ENRICH_JOB_STATES)[number];
-
-export const enrichJobs = sqliteTable(
-  "enrich_jobs",
-  {
-    id: text("id").primaryKey(),
-    saveId: text("save_id").notNull(),
-    kind: text("kind").$type<EnrichJobKind>().notNull(),
-    state: text("state").$type<EnrichJobState>().notNull().default("pending"),
-    attempts: integer("attempts").notNull().default(0),
-    lastError: text("last_error"),
-    nextAttemptAt: integer("next_attempt_at", {
-      mode: "timestamp_ms",
-    }).notNull(),
-    createdAt: integer("created_at", { mode: "timestamp_ms" })
-      .notNull()
-      .default(sql`(unixepoch() * 1000)`),
-    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-      .notNull()
-      .default(sql`(unixepoch() * 1000)`),
-  },
-  (t) => ({
-    saveKindUnique: unique("enrich_jobs_save_kind_unique").on(t.saveId, t.kind),
-    stateIdx: index("enrich_jobs_state_idx").on(t.state),
-    nextIdx: index("enrich_jobs_next_idx").on(t.nextAttemptAt),
-  }),
-);
-
-export type EnrichJob = typeof enrichJobs.$inferSelect;
-export type NewEnrichJob = typeof enrichJobs.$inferInsert;
 
 export interface VideoDownloadSettings {
   enabled: boolean;
@@ -397,7 +283,6 @@ export interface Prefs {
   notifications: {
     saveComplete: boolean;
     refreshFailed: boolean;
-    aiSuggestion: boolean;
     videoDone: boolean;
     sound: boolean;
   };
@@ -418,14 +303,8 @@ export interface Prefs {
     defaultTags: string[];
   };
   search: {
-    hybrid: boolean;
     recencyBoost: boolean;
     resultLimit: number;
-  };
-  captions: {
-    autoAltText: boolean;
-    videoTranscripts: boolean;
-    language: string;
   };
   backups: {
     schedule: "never" | "daily" | "weekly" | "monthly";
@@ -443,11 +322,6 @@ export interface Prefs {
   developer: {
     verboseLogging: boolean;
   };
-  aiPersonality: {
-    tone: "neutral" | "playful" | "terse" | "academic";
-    tagStyle: "kebab" | "snake" | "natural";
-    systemPrompt: string;
-  };
   sync: {
     global: GlobalSyncPrefs;
     sources: Partial<Record<Source, SourceSyncPrefs>>;
@@ -459,15 +333,6 @@ export interface Prefs {
     warnAtPercent: number;
     action: "warn" | "pauseSync" | "pauseVideo";
     watchIntervalMinutes: number;
-  };
-  safety: {
-    blur: "on" | "off";
-    threshold: number;
-    categories: {
-      porn: boolean;
-      hentai: boolean;
-      sexy: boolean;
-    };
   };
   views: {
     saved: SavedFilterView[];
@@ -495,7 +360,6 @@ export const DEFAULT_PREFS: Prefs = {
   notifications: {
     saveComplete: true,
     refreshFailed: true,
-    aiSuggestion: true,
     videoDone: true,
     sound: false,
   },
@@ -516,14 +380,8 @@ export const DEFAULT_PREFS: Prefs = {
     defaultTags: [],
   },
   search: {
-    hybrid: true,
     recencyBoost: false,
     resultLimit: 200,
-  },
-  captions: {
-    autoAltText: true,
-    videoTranscripts: false,
-    language: "en",
   },
   backups: {
     schedule: "never",
@@ -541,11 +399,6 @@ export const DEFAULT_PREFS: Prefs = {
   developer: {
     verboseLogging: false,
   },
-  aiPersonality: {
-    tone: "neutral",
-    tagStyle: "kebab",
-    systemPrompt: "",
-  },
   sync: {
     global: DEFAULT_GLOBAL_SYNC_PREFS,
     sources: {},
@@ -558,15 +411,6 @@ export const DEFAULT_PREFS: Prefs = {
     action: "warn",
     watchIntervalMinutes: 5,
   },
-  safety: {
-    blur: "on",
-    threshold: 0.6,
-    categories: {
-      porn: true,
-      hentai: true,
-      sexy: false,
-    },
-  },
   views: {
     saved: [],
   },
@@ -574,13 +418,6 @@ export const DEFAULT_PREFS: Prefs = {
 
 export const settings = sqliteTable("settings", {
   id: text("id").primaryKey().default("singleton"),
-  aiAutonomy: text("ai_autonomy", { mode: "json" })
-    .$type<AiAutonomy>()
-    .notNull(),
-  aiProvider: text("ai_provider", { mode: "json" })
-    .$type<AiProviderConfig>()
-    .notNull()
-    .default(sql`'${sql.raw(JSON.stringify(DEFAULT_AI_PROVIDER))}'`),
   videoDownload: text("video_download", { mode: "json" })
     .$type<VideoDownloadSettings>()
     .notNull()
@@ -606,3 +443,5 @@ export type TransactionRow = typeof transactionsLog.$inferSelect;
 export type LibraryScanRow = typeof libraryScan.$inferSelect;
 export type Settings = typeof settings.$inferSelect;
 export type NewSettings = typeof settings.$inferInsert;
+export type Task = typeof tasks.$inferSelect;
+export type NewTask = typeof tasks.$inferInsert;

@@ -31,7 +31,8 @@
     "./filters/types": "./src/filters/types.ts",
     "./filters/meta": "./src/filters/meta.ts",
     "./filters/url": "./src/filters/url.ts",
-    "./filters/match": "./src/filters/match.ts"
+    "./filters/match": "./src/filters/match.ts",
+    "./label-name": "./src/label-name.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

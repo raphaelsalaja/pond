@@ -8,28 +8,22 @@
   padding: 0 6px;
   font: inherit;
   color: var(--ds-gray-12);
-  text-align: left;
+  text-align: start;
   cursor: pointer;
   background: transparent;
   border: 0;
   border-radius: var(--sidebar-row-radius, 6px);
 }
 
-.account-avatar {
+.account-logo {
+  display: inline-flex;
   flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
   width: var(--sidebar-icon-slot, 18px);
   height: var(--sidebar-icon-slot, 18px);
-  overflow: hidden;
-  background: var(--ds-accent-3);
-  border-radius: var(--ds-radius-sm);
-
-  & img {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: inherit;
-  }
+  font-size: var(--sidebar-icon-slot, 18px);
+  color: var(--ds-gray-12);
 }
 
 .account-name {
@@ -118,7 +112,7 @@
   font: inherit;
   font-size: 13px;
   color: var(--ds-gray-11);
-  text-align: left;
+  text-align: start;
   cursor: pointer;
   background: transparent;
   border: 0;
@@ -137,7 +131,7 @@
   flex-shrink: 0;
   width: 6px;
   height: 6px;
-  margin-left: 5px;
+  margin-inline-start: 5px;
   background: var(--ds-gray-10);
   border-radius: var(--ds-radius-full);
 }

@@ -14,30 +14,3 @@ export interface ScrapedHarvest {
   mediaType?: MediaType;
   meta?: Record<string, unknown>;
 }
-
-export type {
-  ArenaChannel,
-  CosmosCluster,
-  InstagramMediaItem,
-  InstagramMetrics,
-  PinterestBoard,
-  PinterestMetrics,
-  QuotedTweetSummary,
-  RawArena,
-  RawArticle,
-  RawCosmos,
-  RawInstagram,
-  RawPinterest,
-  RawSaveMetadata,
-  RawShape,
-  RawTikTok,
-  RawTwitter,
-  RawYoutube,
-  RawYtdlp,
-  TikTokMetrics,
-  TikTokMusic,
-  TwitterMediaItem,
-  TwitterMetrics,
-  YoutubeCaptionTrack,
-  YoutubeChapter,
-} from "@pond/schema/raw";

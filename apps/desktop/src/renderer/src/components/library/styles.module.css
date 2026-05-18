@@ -150,35 +150,6 @@
   pointer-events: none;
 }
 
-.delete {
-  position: absolute;
-  top: 6px;
-  left: 6px;
-  padding: 3px 7px;
-  font: inherit;
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--ds-gray-12);
-  letter-spacing: 0.02em;
-  cursor: pointer;
-  background: light-dark(rgba(255, 255, 255, 0.85), rgba(0, 0, 0, 0.55));
-  border: 0;
-  border-radius: var(--ds-radius-md);
-  box-shadow: var(--ds-shadow-search);
-  opacity: 0;
-  backdrop-filter: blur(8px);
-  transition: opacity 120ms ease;
-}
-
-.delete:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
-.item:hover .delete {
-  opacity: 1;
-}
-
 .checkbox {
   position: absolute;
   top: 6px;
@@ -221,21 +192,6 @@
   color: light-dark(#fff, #141414);
   background: light-dark(#141414, #f5f5f5);
   border-color: light-dark(#141414, #f5f5f5);
-}
-
-.actions {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  opacity: 0;
-  transition: opacity 120ms ease;
-}
-
-.item:hover .actions {
-  opacity: 1;
 }
 
 .item-selected .title {

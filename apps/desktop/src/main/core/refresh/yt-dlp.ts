@@ -18,6 +18,8 @@ export interface DownloadedVideo {
   mimeType: string;
   size: number;
   infoJson: Record<string, unknown> | null;
+  posterPath: string | null;
+  posterMimeType: string | null;
   cleanup: () => Promise<void>;
 }
 
@@ -99,6 +101,9 @@ export async function downloadVideo(
       "--no-part",
       "--restrict-filenames",
       "--write-info-json",
+      "--write-thumbnail",
+      "--convert-thumbnails",
+      "jpg",
       "--socket-timeout",
       "30",
       "--retries",
@@ -144,12 +149,15 @@ export async function downloadVideo(
     }
 
     const infoJson = await readInfoJson(outputDir, produced.path);
+    const poster = await pickProducedPoster(outputDir, produced.path);
     log.info("[pond yt-dlp] wrote", produced.path, `(${produced.size} bytes)`);
     return {
       path: produced.path,
       mimeType: produced.mimeType,
       size: produced.size,
       infoJson,
+      posterPath: poster?.path ?? null,
+      posterMimeType: poster?.mimeType ?? null,
       cleanup,
     };
   } catch (err) {
@@ -301,6 +309,7 @@ async function pickProducedFile(
   const sized = await Promise.all(
     entries
       .filter((name) => !/\.info\.json$/i.test(name))
+      .filter((name) => !isThumbnail(name))
       .map(async (name) => {
         const full = join(dir, name);
         try {
@@ -319,6 +328,52 @@ async function pickProducedFile(
   const winner = valid[0];
   if (!winner) return null;
   return { ...winner, mimeType: mimeFor(winner.path) };
+}
+
+function isThumbnail(name: string): boolean {
+  const ext = extname(name).toLowerCase();
+  return (
+    ext === ".jpg" ||
+    ext === ".jpeg" ||
+    ext === ".png" ||
+    ext === ".webp" ||
+    ext === ".avif"
+  );
+}
+
+async function pickProducedPoster(
+  dir: string,
+  videoPath: string,
+): Promise<{ path: string; mimeType: string } | null> {
+  const stem = basename(videoPath, extname(videoPath));
+  const entries = await readdir(dir);
+  for (const name of entries) {
+    if (!name.startsWith(stem)) continue;
+    if (!isThumbnail(name)) continue;
+    const full = join(dir, name);
+    try {
+      const s = await stat(full);
+      if (s.size === 0) continue;
+    } catch {
+      continue;
+    }
+    return { path: full, mimeType: imageMimeFor(name) };
+  }
+  return null;
+}
+
+function imageMimeFor(name: string): string {
+  const ext = extname(name).toLowerCase();
+  switch (ext) {
+    case ".png":
+      return "image/png";
+    case ".webp":
+      return "image/webp";
+    case ".avif":
+      return "image/avif";
+    default:
+      return "image/jpeg";
+  }
 }
 
 function mimeFor(path: string): string {

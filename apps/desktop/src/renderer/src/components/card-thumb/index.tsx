@@ -1,8 +1,7 @@
 import { type ReactNode, useCallback, useMemo, useState } from "react";
-import { NsfwOverlay } from "@/components/nsfw-overlay";
-import { useNsfwGuard } from "@/lib/use-nsfw-guard";
 import { useIsVideoDownloading } from "@/pool/downloads";
 import { pickPrimaryUnit } from "@/pool/media";
+import { useResolvedTheme } from "@/pool/theme";
 import type { Save } from "@/pool/types";
 import {
   CardContext,
@@ -15,7 +14,6 @@ import { Image } from "./image";
 import { Media } from "./media";
 import { Placeholder } from "./placeholder";
 import styles from "./styles.module.css";
-import { Tweet } from "./tweet";
 import { Video } from "./video";
 
 interface RootProps {
@@ -26,8 +24,9 @@ interface RootProps {
 }
 
 function Root({ save, layout, selection, children }: RootProps) {
-  const unit = useMemo(() => pickPrimaryUnit(save), [save]);
-  const isDownloading = useIsVideoDownloading(save.id);
+  const theme = useResolvedTheme();
+  const unit = useMemo(() => pickPrimaryUnit(save, { theme }), [save, theme]);
+  const isDownloading = useIsVideoDownloading(save);
   const pickedSrc = unit?.url ?? null;
 
   const [brokenSrc, setBrokenSrc] = useState<string | null>(null);
@@ -39,8 +38,6 @@ function Root({ save, layout, selection, children }: RootProps) {
     },
     [pickedSrc],
   );
-
-  const nsfw = useNsfwGuard(save);
 
   const value = useMemo<CardContextValue>(
     () => ({
@@ -56,12 +53,8 @@ function Root({ save, layout, selection, children }: RootProps) {
         className={styles.thumb}
         data-layout={layout}
         data-selection={selection}
-        data-nsfw-blur={nsfw.shouldBlur ? "true" : undefined}
       >
         {children}
-        {nsfw.shouldBlur ? (
-          <NsfwOverlay onReveal={nsfw.reveal} size="sm" />
-        ) : null}
       </div>
     </CardContext>
   );
@@ -72,7 +65,6 @@ export const Card = {
   Media,
   Image,
   Video,
-  Tweet,
   Placeholder,
   DownloadingBadge,
 };
@@ -85,4 +77,3 @@ export type {
   CardState,
 } from "./context";
 export { CardContext, useCardContext } from "./context";
-export { isTextOnlyTweet } from "./tweet";

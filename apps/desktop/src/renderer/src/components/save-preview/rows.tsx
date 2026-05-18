@@ -2,12 +2,10 @@ import {
   IconClockOutline18,
   IconExpand2Outline18,
   IconEyeOutline18,
-  IconGlobe2Outline18,
   IconHeightMaxOutline18,
   IconMsgOutline18,
   IconStorageOutline18,
   IconThumbsUpOutline18,
-  IconUserOutline18,
   IconCalendarOutline18 as RowsCalendarIcon,
 } from "@pond/icons/outline/18";
 import type { ReactNode } from "react";
@@ -31,19 +29,14 @@ const ICON_SIZE = 12;
 
 export function collectMetadataRows(save: Save): PaneRow[] {
   const out: PaneRow[] = [];
-  const raw = save.rawJson ?? null;
-
-  const yt = raw?.youtube;
-  const tw = raw?.twitter;
-  const tt = raw?.tiktok;
-  const ig = raw?.instagram;
-  const ar = raw?.arena;
+  const capture = save.rawJson?.capture;
+  const ytdlp = save.rawJson?.ytdlp;
+  if (!capture) return out;
 
   const durationSec =
-    yt?.durationSec ??
-    tt?.durationSec ??
-    yt?.ytdlp?.duration ??
-    tt?.ytdlp?.duration ??
+    capture.duration ??
+    capture.media.find((m) => m.type === "video")?.durationSec ??
+    ytdlp?.duration ??
     null;
   if (durationSec && Number.isFinite(durationSec)) {
     out.push({
@@ -54,12 +47,8 @@ export function collectMetadataRows(save: Save): PaneRow[] {
     });
   }
 
-  const views =
-    yt?.metrics?.views ??
-    tw?.metrics?.views ??
-    tt?.metrics?.plays ??
-    ig?.metrics?.plays ??
-    null;
+  const metrics = capture.metrics ?? {};
+  const views = metrics.views ?? metrics.plays ?? ytdlp?.view_count ?? null;
   if (views !== null && views !== undefined) {
     out.push({
       id: "views",
@@ -69,12 +58,7 @@ export function collectMetadataRows(save: Save): PaneRow[] {
     });
   }
 
-  const likes =
-    yt?.metrics?.likes ??
-    tw?.metrics?.likes ??
-    tt?.metrics?.likes ??
-    ig?.metrics?.likes ??
-    null;
+  const likes = metrics.likes ?? ytdlp?.like_count ?? null;
   if (likes !== null && likes !== undefined) {
     out.push({
       id: "likes",
@@ -85,11 +69,7 @@ export function collectMetadataRows(save: Save): PaneRow[] {
   }
 
   const comments =
-    tw?.metrics?.replies ??
-    tt?.metrics?.comments ??
-    ig?.metrics?.comments ??
-    ar?.metrics?.comments ??
-    null;
+    metrics.comments ?? metrics.replies ?? ytdlp?.comment_count ?? null;
   if (comments !== null && comments !== undefined) {
     out.push({
       id: "comments",
@@ -99,19 +79,12 @@ export function collectMetadataRows(save: Save): PaneRow[] {
     });
   }
 
-  const publishedAt =
-    yt?.publishedAt ??
-    tw?.publishedAt ??
-    tt?.publishedAt ??
-    ig?.publishedAt ??
-    ar?.publishedAt ??
-    null;
-  if (publishedAt) {
+  if (capture.publishedAt) {
     out.push({
       id: "published",
       icon: <RowsCalendarIcon width={ICON_SIZE} height={ICON_SIZE} />,
       label: "Published",
-      value: formatShortDate(publishedAt),
+      value: formatShortDate(capture.publishedAt),
     });
   }
 
@@ -121,32 +94,13 @@ export function collectMetadataRows(save: Save): PaneRow[] {
 export function collectPropertyRows(save: Save): PaneRow[] {
   const out: PaneRow[] = [];
 
-  const type =
-    save.mediaType ?? save.classification ?? (save.url ? "Link" : null);
+  const type = save.mediaType ?? (save.url ? "Link" : null);
   if (type) {
     out.push({
       id: "type",
       icon: <IconStorageOutline18 width={ICON_SIZE} height={ICON_SIZE} />,
       label: "Type",
       value: prettifyType(type),
-    });
-  }
-
-  if (save.source) {
-    out.push({
-      id: "source",
-      icon: <IconGlobe2Outline18 width={ICON_SIZE} height={ICON_SIZE} />,
-      label: "Source",
-      value: save.source,
-    });
-  }
-
-  if (save.author) {
-    out.push({
-      id: "author",
-      icon: <IconUserOutline18 width={ICON_SIZE} height={ICON_SIZE} />,
-      label: "Author",
-      value: save.author,
     });
   }
 
@@ -159,13 +113,12 @@ export function collectPropertyRows(save: Save): PaneRow[] {
     });
   }
 
-  const modified = save.embeddingUpdatedAt ?? save.createdAt;
-  if (modified) {
+  if (save.createdAt) {
     out.push({
       id: "modified",
       icon: <RowsCalendarIcon width={ICON_SIZE} height={ICON_SIZE} />,
       label: "Modified",
-      value: formatShortDate(modified),
+      value: formatShortDate(save.createdAt),
     });
   }
 

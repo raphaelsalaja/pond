@@ -6,7 +6,6 @@ import {
   safeHandle,
 } from "../helpers";
 import { developerQueries } from "./developer";
-import { enrichmentQueries } from "./enrichment";
 import { libraryQueries } from "./library";
 import { savesQueries } from "./saves";
 import { settingsQueries } from "./settings";
@@ -19,7 +18,6 @@ const queryRegistry: QueryHandlerMap = {
   ...tagsQueries,
   ...libraryQueries,
   ...developerQueries,
-  ...enrichmentQueries,
   ...videoQueries,
 };
 

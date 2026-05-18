@@ -1,6 +1,5 @@
 import { Image } from "./image";
 import { Placeholder } from "./placeholder";
-import { Tweet } from "./tweet";
 import { Video } from "./video";
 
 export function Media() {
@@ -8,7 +7,6 @@ export function Media() {
     <>
       <Image />
       <Video />
-      <Tweet />
       <Placeholder />
     </>
   );

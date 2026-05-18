@@ -72,23 +72,6 @@ function Root() {
     }
   }, [ids, toast]);
 
-  const enrich = useCallback(async () => {
-    if (ids.length === 0) return;
-    setBusy(true);
-    try {
-      for (const id of ids) {
-        await window.pond.query("enrich.start", { saveId: id });
-      }
-      toast.add({
-        title: "Enrichment queued",
-        description: `${ids.length} save${ids.length === 1 ? "" : "s"} scheduled.`,
-        type: "success",
-      });
-    } finally {
-      setBusy(false);
-    }
-  }, [ids, toast]);
-
   if (size === 0) return null;
 
   return (
@@ -113,16 +96,6 @@ function Root() {
           disabled={busy || !tagDraft.trim()}
         >
           Add tag
-        </Button>
-      </Tooltip.Root>
-      <Tooltip.Root content="Schedule AI enrichment for every selected save">
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() => void enrich()}
-          disabled={busy}
-        >
-          Enrich
         </Button>
       </Tooltip.Root>
       <Tooltip.Root content="Move every selected save to trash">

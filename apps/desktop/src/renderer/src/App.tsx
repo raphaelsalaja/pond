@@ -15,8 +15,6 @@ import {
 } from "./components/shell";
 import { SaveCompleteToast } from "./effects/save-complete-toast";
 import { ActivityPage } from "./pages/activity";
-import { InboxPage } from "./pages/inbox";
-import { ReaderPage } from "./pages/reader";
 import { SaveDetailPage } from "./pages/save-detail-page";
 import { SavesView } from "./pages/saves-view";
 import { DEFAULT_SECTION, SECTIONS } from "./pages/settings/registry";
@@ -137,7 +135,6 @@ const router = createHashRouter([
           { path: "recents/detail/:id", element: <SaveDetailPage /> },
           { path: "random/detail/:id", element: <SaveDetailPage /> },
           { path: "trash/detail/:id", element: <SaveDetailPage /> },
-          { path: "inbox", element: <InboxPage /> },
           { path: "activity", element: <ActivityPage /> },
         ],
       },
@@ -148,10 +145,7 @@ const router = createHashRouter([
       },
       {
         element: <StandaloneLayout />,
-        children: [
-          { path: "welcome", element: <WelcomePage /> },
-          { path: "read/:id", element: <ReaderPage /> },
-        ],
+        children: [{ path: "welcome", element: <WelcomePage /> }],
       },
     ],
   },

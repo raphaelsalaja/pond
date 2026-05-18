@@ -120,18 +120,6 @@ function encodeValue(cmp: ComparatorId, value: unknown): string | null {
       const [min, max] = value;
       return `${encodeScalar(min)}..${encodeScalar(max)}`;
     }
-    case "near": {
-      if (!isObject(value)) return null;
-      const hex = String(value.hex ?? "")
-        .replace(/^#/, "")
-        .toLowerCase();
-      if (!/^[0-9a-f]{6}$/.test(hex)) return null;
-      const distance = Number(value.distance);
-      if (Number.isFinite(distance) && distance > 0) {
-        return `${hex}:${distance}`;
-      }
-      return hex;
-    }
     case "exists":
       return value === false ? "false" : "true";
     case "contains":
@@ -166,15 +154,6 @@ function decodeValue(cmp: ComparatorId, raw: string): unknown {
       const max = decodeScalar(maxRaw);
       if (min === null || max === null) return null;
       return [min, max];
-    }
-    case "near": {
-      const [hexRaw = "", distRaw] = raw.split(":");
-      const hex = hexRaw.replace(/^#/, "").toLowerCase();
-      if (!/^[0-9a-f]{6}$/.test(hex)) return null;
-      const distance =
-        distRaw === undefined ? undefined : Number.parseFloat(distRaw);
-      if (distance !== undefined && !Number.isFinite(distance)) return null;
-      return distance ? { hex, distance } : { hex };
     }
     case "exists":
       return raw !== "false";
@@ -239,8 +218,4 @@ export function extractFilterKeys(): readonly string[] {
     FULL_KEY,
     ...Object.keys(FIELD_META).map((id) => `${COMPACT_PREFIX}${id}`),
   ];
-}
-
-function isObject(v: unknown): v is Record<string, unknown> {
-  return typeof v === "object" && v !== null && !Array.isArray(v);
 }

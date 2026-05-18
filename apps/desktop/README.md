@@ -18,9 +18,9 @@ the browser extension over `http://127.0.0.1:41610`.
 
 - **App state** (rebuildable): `~/Library/Application Support/pond/` — `index.db`, `config.json`.
 - **Library** (source of truth): `~/Pond/My Pond.library/` — per-item `.info` folders, trash, library metadata.
-- **Secrets**: OS keyring via `@napi-rs/keyring` (macOS Keychain,
-  Windows Credential Manager, libsecret on Linux) — ingest token,
-  AI Gateway key.
+- **Secrets**: ingest token encrypted via Electron's `safeStorage`
+  (macOS Keychain, Windows DPAPI, libsecret on Linux) and persisted to
+  `secrets.json` in the app data directory.
 
 Blow away the index and Pond will rebuild it from the library on next launch.
 

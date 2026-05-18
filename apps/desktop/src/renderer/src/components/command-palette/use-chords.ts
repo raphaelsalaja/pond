@@ -30,13 +30,25 @@ export function useChords(commands: Command[], getCtx: () => PaletteCtx): void {
     };
 
     const onKey = (e: KeyboardEvent): void => {
-      if (e.metaKey || e.ctrlKey || e.altKey) return reset();
-      if (isEditableTarget(e.target)) return reset();
-      if (e.key === "Escape") return reset();
+      if (e.metaKey || e.ctrlKey || e.altKey) {
+        reset();
+        return;
+      }
+      if (isEditableTarget(e.target)) {
+        reset();
+        return;
+      }
+      if (e.key === "Escape") {
+        reset();
+        return;
+      }
 
       const key = e.key.toLowerCase();
       const isLetter = /^[a-z]$/.test(key);
-      if (!isLetter) return reset();
+      if (!isLetter) {
+        reset();
+        return;
+      }
 
       if (!pending) {
         const couldStart = cmdsRef.current.some(

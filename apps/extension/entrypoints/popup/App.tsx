@@ -3,24 +3,18 @@ import { Button, Field, Input } from "@pond/ui";
 import { useCallback, useEffect, useState } from "react";
 import { parsePairingLink } from "@/utils/pairing";
 import {
-  DEFAULT_SETTINGS,
-  LIBRARY_INFO_URL,
+  libraryInfoUrl,
+  normalizeStoredSettings,
   type PondMessage,
   type PondSettings,
   type PushSessionResult,
 } from "@/utils/types";
-import {
-  cookieDomainForSource,
-  hostToSource,
-  PUBLIC_PROFILE_SOURCES,
-  sourceLabel,
-  urlToSource,
-} from "@/utils/url";
+import { cookieDomainForSource, hostToSource, sourceLabel } from "@/utils/url";
 import styles from "./popup.module.css";
 
 interface LibraryInfo {
   name: string;
-  counts: { active: number; archived: number };
+  counts: { active: number };
 }
 
 type ProbeResult =
@@ -28,30 +22,14 @@ type ProbeResult =
   | { state: "offline" }
   | { state: "connected"; library: LibraryInfo };
 
-type CaptureResult =
-  | { tone: "ok"; label: string }
-  | { tone: "error"; label: string }
-  | null;
-
 type PushResult =
   | { tone: "ok"; label: string }
   | { tone: "error"; label: string }
   | null;
 
-const _SAVE_LABELS: Record<Source, string> = {
-  twitter: "Save tweet",
-  instagram: "Save post",
-  pinterest: "Save pin",
-  arena: "Save block",
-  cosmos: "Save cluster",
-  tiktok: "Save TikTok",
-  youtube: "Save video",
-  article: "Save article",
-};
-
 async function loadSettings(): Promise<PondSettings> {
   const stored = await chrome.storage.local.get("settings");
-  return { ...DEFAULT_SETTINGS, ...(stored.settings ?? {}) };
+  return normalizeStoredSettings(stored.settings);
 }
 
 async function saveSettings(next: PondSettings): Promise<void> {
@@ -61,7 +39,7 @@ async function saveSettings(next: PondSettings): Promise<void> {
 async function probe(settings: PondSettings): Promise<ProbeResult> {
   if (!settings.apiKey) return { state: "unpaired" };
   try {
-    const res = await fetch(LIBRARY_INFO_URL, {
+    const res = await fetch(libraryInfoUrl(settings.port), {
       headers: { authorization: `Bearer ${settings.apiKey}` },
       signal: AbortSignal.timeout(1500),
     });
@@ -89,8 +67,6 @@ export function App() {
   const [pairingInput, setPairingInput] = useState("");
   const [pairingError, setPairingError] = useState<string | null>(null);
   const [pairingBusy, setPairingBusy] = useState(false);
-  const [captureBusy, setCaptureBusy] = useState(false);
-  const [captureResult, setCaptureResult] = useState<CaptureResult>(null);
   const [pushBusy, setPushBusy] = useState(false);
   const [pushResult, setPushResult] = useState<PushResult>(null);
 
@@ -107,7 +83,6 @@ export function App() {
     void refresh();
   }, [refresh]);
 
-  const resolved = tabUrl ? urlToSource(tabUrl) : null;
   const tabSource: Source | null = tabUrl ? hostToSource(tabUrl) : null;
   const pushable: Source | null =
     tabSource && cookieDomainForSource(tabSource) ? tabSource : null;
@@ -124,7 +99,7 @@ export function App() {
       const current = await loadSettings();
       const next: PondSettings = {
         ...current,
-        endpoint: parsed.endpoint,
+        port: parsed.port,
         apiKey: parsed.token,
       };
       await saveSettings(next);
@@ -158,16 +133,10 @@ export function App() {
         return;
       }
       if (res.ok) {
-        const isPublicProfile = PUBLIC_PROFILE_SOURCES.has(pushable);
         if (res.data.connected) {
           setPushResult({
             tone: "ok",
             label: `Sent — Pond is connected to ${sourceLabel(pushable)}`,
-          });
-        } else if (isPublicProfile && res.data.imported > 0) {
-          setPushResult({
-            tone: "ok",
-            label: `Sent ${res.data.imported} cookies — also set your ${sourceLabel(pushable)} handle in Pond Settings to enable scraping`,
           });
         } else if (res.data.imported > 0) {
           setPushResult({
@@ -206,28 +175,6 @@ export function App() {
       });
     } finally {
       setPushBusy(false);
-    }
-  }
-
-  async function saveCurrent(): Promise<void> {
-    if (!tabUrl || !resolved || captureBusy) return;
-    setCaptureBusy(true);
-    setCaptureResult(null);
-    try {
-      const message: PondMessage = { kind: "manualCapture", url: tabUrl };
-      const res = (await chrome.runtime.sendMessage(message)) as
-        | { ok: boolean }
-        | undefined;
-      if (res?.ok) {
-        setCaptureResult({ tone: "ok", label: "Saved" });
-        return;
-      }
-      setCaptureResult({ tone: "error", label: "Save failed — check Pond" });
-      void refresh();
-    } catch {
-      setCaptureResult({ tone: "error", label: "Save failed — check Pond" });
-    } finally {
-      setCaptureBusy(false);
     }
   }
 
@@ -282,16 +229,6 @@ export function App() {
         <OfflineCard
           onRetry={refresh}
           onOpenPond={() => openDeepLink("pond://")}
-        />
-      ) : null}
-
-      {probeResult.state === "connected" ? (
-        <ConnectedCard
-          resolved={resolved}
-          tabUrl={tabUrl}
-          busy={captureBusy}
-          result={captureResult}
-          onSave={saveCurrent}
         />
       ) : null}
 
@@ -416,37 +353,6 @@ function OfflineCard({ onRetry, onOpenPond }: OfflineCardProps) {
       <Button variant="ghost" onClick={onOpenPond}>
         Open Pond
       </Button>
-    </section>
-  );
-}
-
-interface ConnectedCardProps {
-  resolved: ReturnType<typeof urlToSource>;
-  tabUrl: string | null;
-  busy: boolean;
-  result: CaptureResult;
-  onSave: () => void | Promise<void>;
-}
-
-function ConnectedCard({
-  resolved,
-  tabUrl,
-  busy,
-  result,
-  onSave,
-}: ConnectedCardProps) {
-  return (
-    <section className={styles.card}>
-      {resolved ? (
-        <p className={styles["capture-meta"]}>
-          {resolved.source} · {resolved.sourceId}
-        </p>
-      ) : null}
-      {result ? (
-        <p className={styles["capture-result"]} data-tone={result.tone}>
-          {result.label}
-        </p>
-      ) : null}
     </section>
   );
 }

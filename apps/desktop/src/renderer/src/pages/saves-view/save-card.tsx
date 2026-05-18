@@ -1,26 +1,24 @@
-import { Tooltip } from "@pond/ui";
 import { memo, useMemo } from "react";
 import {
   Card,
   type CardLayout,
   type CardSelection,
-  isTextOnlyTweet,
 } from "@/components/card-thumb";
 import { Library } from "@/components/library";
+import { SaveContextMenu } from "@/components/save-context-menu";
 import { SourceBadge } from "@/components/source-badge";
 import { useDisplayPrefs } from "@/lib/display-prefs";
+import { buildMediaUnits, pickPrimaryFile } from "@/pool/media";
 import { selection, useIsSelected } from "@/pool/selection";
 import type { Save } from "@/pool/types";
 
 interface SaveCardProps {
   save: Save;
   selectedId: string | null;
-  busy: boolean;
   multiSelectActive: boolean;
   layout: CardLayout;
   onClick: (id: string, e: React.MouseEvent) => void;
   onDoubleClick: (id: string) => void;
-  onTrash: (id: string) => void;
   packedWidth?: number;
   packedHeight?: number;
   packedTop?: number;
@@ -30,12 +28,10 @@ interface SaveCardProps {
 export const SaveCard = memo(function SaveCard({
   save,
   selectedId,
-  busy,
   multiSelectActive,
   layout,
   onClick,
   onDoubleClick,
-  onTrash,
   packedWidth,
   packedHeight,
   packedTop,
@@ -64,55 +60,41 @@ export const SaveCard = memo(function SaveCard({
   }, [packedWidth, packedHeight, packedTop, packedLeft]);
 
   return (
-    <Library.Item
-      selected={isPrimary}
-      multi={isMulti}
-      dimmed={multiSelectActive && !isMulti}
-      style={liStyle}
-      draggable={save.files.length > 0}
-      onDragStart={(e) => {
-        if (save.files.length === 0) return;
-        e.preventDefault();
-        void window.pond.query("saves.startDrag", {
-          id: save.id,
-          fileIndex: save.coverIndex ?? 0,
-        });
-      }}
-      onContextMenu={(e) => {
-        e.preventDefault();
-        void window.pond.showSaveContextMenu(save.id);
-      }}
-    >
-      <Library.Item.Checkbox
-        checked={isMulti}
-        aria-label={isMulti ? "Deselect" : "Select"}
-        onClick={(e) => {
+    <SaveContextMenu save={save}>
+      <Library.Item
+        selected={isPrimary}
+        multi={isMulti}
+        dimmed={multiSelectActive && !isMulti}
+        style={liStyle}
+        draggable={save.files.length > 0}
+        onDragStart={(e) => {
+          if (save.files.length === 0) return;
           e.preventDefault();
-          e.stopPropagation();
-          selection.toggle(save.id);
-          if (selection.has(save.id)) selection.setAnchor(save.id);
+          void window.pond.query("saves.startDrag", {
+            id: save.id,
+            fileIndex: save.coverIndex ?? 0,
+          });
         }}
-      />
-      <Library.Item.Select
-        aria-pressed={isPrimary}
-        onClick={(e) => onClick(save.id, e)}
-        onDoubleClick={() => onDoubleClick(save.id)}
       >
-        <SaveCardBody save={save} layout={layout} selection={cardSelection} />
-      </Library.Item.Select>
-      <Tooltip.Root content="Move to Trash">
-        <Library.Item.Delete
-          disabled={busy}
+        <Library.Item.Checkbox
+          checked={isMulti}
+          aria-label={isMulti ? "Deselect" : "Select"}
           onClick={(e) => {
             e.preventDefault();
-            onTrash(save.id);
+            e.stopPropagation();
+            selection.toggle(save.id);
+            if (selection.has(save.id)) selection.setAnchor(save.id);
           }}
-          aria-label="Move to Trash"
+        />
+        <Library.Item.Select
+          aria-pressed={isPrimary}
+          onClick={(e) => onClick(save.id, e)}
+          onDoubleClick={() => onDoubleClick(save.id)}
         >
-          Delete
-        </Library.Item.Delete>
-      </Tooltip.Root>
-    </Library.Item>
+          <SaveCardBody save={save} layout={layout} selection={cardSelection} />
+        </Library.Item.Select>
+      </Library.Item>
+    </SaveContextMenu>
   );
 });
 
@@ -125,24 +107,26 @@ const SaveCardBody = memo(function SaveCardBody({
   layout?: CardLayout;
   selection?: CardSelection;
 }) {
-  const cover = save.files[save.coverIndex ?? 0];
-  const w = cover?.width ?? save.width ?? null;
-  const h = cover?.height ?? save.height ?? null;
-  const textTweet = isTextOnlyTweet(save);
+  const primary = pickPrimaryFile(save);
+  const w = primary?.width ?? save.width ?? null;
+  const h = primary?.height ?? save.height ?? null;
   // Clamp to a sane range so panoramas / extreme portraits don't stretch
   // a justified row into a single tile or shrink a waterfall card.
-  const ratio =
-    w && h ? Math.min(2.5, Math.max(0.4, w / h)) : textTweet ? 4 / 3 : 1;
+  const ratio = w && h ? Math.min(2.5, Math.max(0.4, w / h)) : 1;
   const mediaStyle = useMemo<React.CSSProperties>(
     () =>
       ({
-        "--card-aspect": w && h ? `${w} / ${h}` : textTweet ? "4 / 3" : "1 / 1",
+        "--card-aspect": w && h ? `${w} / ${h}` : "1 / 1",
         "--card-aspect-num": String(ratio),
       }) as React.CSSProperties,
-    [w, h, ratio, textTweet],
+    [w, h, ratio],
   );
   const prefs = useDisplayPrefs();
   const showMeta = prefs.name || prefs.date;
+  // Carousel count = displayable media units only. Avatars are author
+  // metadata, and posters are paired with their video, so neither should
+  // pad the badge.
+  const mediaUnitCount = useMemo(() => buildMediaUnits(save).length, [save]);
   return (
     <>
       <Library.Item.Media style={mediaStyle}>
@@ -150,9 +134,9 @@ const SaveCardBody = memo(function SaveCardBody({
           <Card.Media />
           <Card.DownloadingBadge />
         </Card.Root>
-        {prefs.fileCount && save.files.length > 1 ? (
-          <Library.Item.Count aria-label={`${save.files.length} media files`}>
-            {save.files.length}
+        {prefs.fileCount && mediaUnitCount > 1 ? (
+          <Library.Item.Count aria-label={`${mediaUnitCount} media files`}>
+            {mediaUnitCount}
           </Library.Item.Count>
         ) : null}
         {prefs.sourceBadge ? (

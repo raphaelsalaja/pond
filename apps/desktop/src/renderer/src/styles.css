@@ -1,8 +1,6 @@
 @import "@pond/ui/reset.css";
 @import "@pond/ui/theme.css";
 
-@layer reset, base, components, utilities;
-
 @layer reset {
   #root {
     position: relative;

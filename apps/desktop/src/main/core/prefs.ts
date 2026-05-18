@@ -1,7 +1,4 @@
 import {
-  type AiProviderConfig,
-  DEFAULT_AI_AUTONOMY,
-  DEFAULT_AI_PROVIDER,
   DEFAULT_PREFS,
   DEFAULT_VIDEO_DOWNLOAD,
   type Prefs,
@@ -15,7 +12,6 @@ import { getDb } from "../db";
 interface SettingsCache {
   prefs: Prefs;
   videoDownload: VideoDownloadSettings;
-  aiProvider: AiProviderConfig;
 }
 
 let cache: SettingsCache | null = null;
@@ -34,10 +30,6 @@ export function invalidateVideoDownloadPrefs(): void {
   invalidate();
 }
 
-export function invalidateAiProviderConfig(): void {
-  invalidate();
-}
-
 async function loadSettings(): Promise<SettingsCache> {
   if (cache) return cache;
   if (inflight) return inflight;
@@ -48,7 +40,6 @@ async function loadSettings(): Promise<SettingsCache> {
         .select({
           prefs: settingsTable.prefs,
           videoDownload: settingsTable.videoDownload,
-          aiProvider: settingsTable.aiProvider,
         })
         .from(settingsTable)
         .where(eq(settingsTable.id, "singleton"));
@@ -56,7 +47,6 @@ async function loadSettings(): Promise<SettingsCache> {
       cache = {
         prefs: mergePrefs(DEFAULT_PREFS, row?.prefs),
         videoDownload: normalize(row?.videoDownload ?? DEFAULT_VIDEO_DOWNLOAD),
-        aiProvider: normalizeProvider(row?.aiProvider ?? DEFAULT_AI_PROVIDER),
       };
       return cache;
     } catch (err) {
@@ -64,7 +54,6 @@ async function loadSettings(): Promise<SettingsCache> {
       return {
         prefs: DEFAULT_PREFS,
         videoDownload: DEFAULT_VIDEO_DOWNLOAD,
-        aiProvider: DEFAULT_AI_PROVIDER,
       };
     } finally {
       inflight = null;
@@ -81,10 +70,6 @@ export async function getVideoDownloadPrefs(): Promise<VideoDownloadSettings> {
   return (await loadSettings()).videoDownload;
 }
 
-export async function getAiProviderConfig(): Promise<AiProviderConfig> {
-  return (await loadSettings()).aiProvider;
-}
-
 export async function setPrefs(patch: DeepPartial<Prefs>): Promise<Prefs> {
   const current = await loadSettings();
   const merged = mergePrefs(current.prefs, patch);
@@ -93,7 +78,6 @@ export async function setPrefs(patch: DeepPartial<Prefs>): Promise<Prefs> {
     .insert(settingsTable)
     .values({
       id: "singleton",
-      aiAutonomy: DEFAULT_AI_AUTONOMY,
       prefs: merged,
     })
     .onConflictDoUpdate({
@@ -115,7 +99,6 @@ export async function setVideoDownloadPrefs(
     .insert(settingsTable)
     .values({
       id: "singleton",
-      aiAutonomy: DEFAULT_AI_AUTONOMY,
       videoDownload: merged,
     })
     .onConflictDoUpdate({
@@ -124,32 +107,6 @@ export async function setVideoDownloadPrefs(
     })
     .run();
   if (cache) cache = { ...cache, videoDownload: merged };
-  return merged;
-}
-
-export async function setAiProviderConfig(
-  next: Partial<AiProviderConfig>,
-): Promise<AiProviderConfig> {
-  const current = await loadSettings();
-  const merged = normalizeProvider({
-    ...current.aiProvider,
-    ...next,
-    models: { ...current.aiProvider.models, ...(next.models ?? {}) },
-  });
-  const db = await getDb();
-  await db
-    .insert(settingsTable)
-    .values({
-      id: "singleton",
-      aiAutonomy: DEFAULT_AI_AUTONOMY,
-      aiProvider: merged,
-    })
-    .onConflictDoUpdate({
-      target: settingsTable.id,
-      set: { aiProvider: merged, updatedAt: new Date() },
-    })
-    .run();
-  if (cache) cache = { ...cache, aiProvider: merged };
   return merged;
 }
 
@@ -211,36 +168,4 @@ function mergePrefs(
     }
   }
   return out as unknown as Prefs;
-}
-
-function normalizeProvider(value: AiProviderConfig): AiProviderConfig {
-  const allowed = new Set(["off", "local", "gateway", "direct"]);
-  const kind = (allowed.has(value.kind) ? value.kind : "off") as
-    | "off"
-    | "local"
-    | "gateway"
-    | "direct";
-  const baseUrl = value.baseUrl?.trim() || DEFAULT_AI_PROVIDER.baseUrl;
-  const dim = Math.max(
-    64,
-    Math.min(8192, Math.floor(Number(value.embeddingDim) || 768)),
-  );
-  const budget =
-    value.dailyBudgetUsd === null || value.dailyBudgetUsd === undefined
-      ? null
-      : Math.max(0, Number(value.dailyBudgetUsd));
-  return {
-    kind,
-    baseUrl,
-    models: {
-      vision: value.models?.vision?.trim() || DEFAULT_AI_PROVIDER.models.vision,
-      summary:
-        value.models?.summary?.trim() || DEFAULT_AI_PROVIDER.models.summary,
-      embedding:
-        value.models?.embedding?.trim() || DEFAULT_AI_PROVIDER.models.embedding,
-    },
-    embeddingDim: dim,
-    dailyBudgetUsd: budget,
-    sendImages: value.sendImages !== false,
-  };
 }

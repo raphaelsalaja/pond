@@ -39,7 +39,7 @@ export interface RichTweet {
   url: string;
   bookmarkedAt?: string;
   fullText: string;
-  author: { handle: string; name: string };
+  author: { handle: string; name: string; avatarUrl?: string };
   media: RichTweetMedia[];
   metrics: RichTweetMetrics;
   quoted?: RichTweet;
@@ -166,7 +166,12 @@ interface TweetLike {
     user_results?: {
       result?: {
         core?: { screen_name?: string; name?: string };
-        legacy?: { screen_name?: string; name?: string };
+        legacy?: {
+          screen_name?: string;
+          name?: string;
+          profile_image_url_https?: string;
+        };
+        avatar?: { image_url?: string };
       };
     };
   };
@@ -191,6 +196,7 @@ function shapeRichTweet(raw: unknown): RichTweet | null {
     ? `https://x.com/${handle}/status/${tweetId}`
     : `https://x.com/i/status/${tweetId}`;
 
+  const avatarUrl = pickAuthorAvatar(tweet);
   return {
     tweetId,
     url,
@@ -198,6 +204,7 @@ function shapeRichTweet(raw: unknown): RichTweet | null {
     author: {
       handle: handle ?? "",
       name: pickAuthorName(tweet) ?? handle ?? "",
+      ...(avatarUrl ? { avatarUrl } : {}),
     },
     media: pickMedia(tweet),
     metrics: pickMetrics(tweet),
@@ -226,6 +233,17 @@ function pickAuthorName(tweet: TweetLike): string | null {
   if (core) return core;
   const legacy = tweet.core?.user_results?.result?.legacy?.name;
   return legacy ?? null;
+}
+
+// X serves a 48x48 `_normal` crop by default. Bookmark cards render the
+// avatar at ~32 CSS-pixels but on retina that's still 64+, so the
+// normal crop blurs. Promote to `_400x400` which is the largest fixed
+// size X exposes; the file dimensions/cdn are otherwise identical.
+function pickAuthorAvatar(tweet: TweetLike): string | null {
+  const user = tweet.core?.user_results?.result;
+  const raw = user?.avatar?.image_url ?? user?.legacy?.profile_image_url_https;
+  if (typeof raw !== "string" || raw.length === 0) return null;
+  return raw.replace(/_normal(\.(?:jpg|jpeg|png|webp))/i, "_400x400$1");
 }
 
 function pickMedia(tweet: TweetLike): RichTweetMedia[] {

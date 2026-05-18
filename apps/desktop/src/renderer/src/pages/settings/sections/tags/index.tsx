@@ -1,27 +1,26 @@
-import { IconChevronExpandYOutline12 } from "@pond/icons/outline/12";
 import {
   IconChevronDownOutline18,
-  IconChevronRightOutline18,
+  IconDotsOutline18,
   IconMagnifierOutline18,
 } from "@pond/icons/outline/18";
-import { AlertDialog, Button, Input, Select, useToast } from "@pond/ui";
+import {
+  AlertDialog,
+  Button,
+  Dialog,
+  Input,
+  Menu,
+  Popover,
+  useToast,
+} from "@pond/ui";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styles from "./styles.module.css";
-
-interface TagRow {
-  name: string;
-  color: string | null;
-  group: string | null;
-  userCount: number;
-  aiCount: number;
-  createdAt: string | null;
-}
 
 interface CanonTag {
   id: string;
   name: string;
   color: string | null;
-  group: string | null;
+  description: string | null;
+  group?: string | null;
   usageCount?: number;
   createdAt?: string | number | null;
 }
@@ -32,81 +31,87 @@ interface CountRow {
   aiCount: number;
 }
 
+interface LabelRow {
+  name: string;
+  color: string | null;
+  description: string | null;
+  userCount: number;
+  aiCount: number;
+  createdAt: string | null;
+}
+
 const DEFAULT_DOT = "var(--ds-gray-a6)";
-const NONE_VALUE = "__none__";
-const EMPTY_GROUPS_KEY = "pond.tags.emptyGroups";
+
+const LABEL_COLORS = [
+  "#6e6e6e",
+  "#eb5757",
+  "#f2994a",
+  "#f2c94c",
+  "#219653",
+  "#2f80ed",
+  "#56ccf2",
+  "#bb6bd9",
+  "#9b51e0",
+  "#ff6900",
+  "#fcb900",
+  "#7bdcb5",
+  "#0693e3",
+  "#abb8c3",
+  "#eb144c",
+  "#1f2937",
+] as const;
 
 export function TagsSection() {
   const toast = useToast();
-  const [rows, setRows] = useState<TagRow[]>([]);
+  const [rows, setRows] = useState<LabelRow[]>([]);
   const [busy, setBusy] = useState(false);
   const [filter, setFilter] = useState("");
-  const [editing, setEditing] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string[] | null>(null);
   const [creating, setCreating] = useState(false);
-  const [creatingGroup, setCreatingGroup] = useState(false);
   const [newName, setNewName] = useState("");
-  const [newGroup, setNewGroup] = useState<string | null>(null);
-  const [newGroupName, setNewGroupName] = useState("");
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
-  const [emptyGroups, setEmptyGroups] = useState<Set<string>>(() => {
-    try {
-      const raw = localStorage.getItem(EMPTY_GROUPS_KEY);
-      return new Set(raw ? (JSON.parse(raw) as string[]) : []);
-    } catch {
-      return new Set();
-    }
-  });
+  const [selected, setSelected] = useState<Set<string>>(() => new Set());
+  const [mergeOpen, setMergeOpen] = useState(false);
+  const [mergeTarget, setMergeTarget] = useState<string>("");
+  const [colorMenuFor, setColorMenuFor] = useState<string | null>(null);
   const newInputRef = useRef<HTMLInputElement>(null);
-  const newGroupInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(EMPTY_GROUPS_KEY, JSON.stringify([...emptyGroups]));
-    } catch {
-      /* localStorage may be unavailable in sandboxed contexts */
-    }
-  }, [emptyGroups]);
+  const headerCheckRef = useRef<HTMLInputElement>(null);
 
   const refresh = useCallback(async () => {
     const [canonical, counts] = (await Promise.all([
       window.pond.query("tags.list", {}),
       window.pond.query("tags.allFromSaves", {}),
     ])) as [CanonTag[], CountRow[]];
-    const byName = new Map<string, TagRow>();
+    const countByLower = new Map<string, CountRow>();
+    for (const c of counts) {
+      countByLower.set(c.name.toLowerCase(), c);
+    }
+    const byName = new Map<string, LabelRow>();
     for (const t of canonical) {
-      byName.set(t.name.toLowerCase(), {
+      const lowered = t.name.toLowerCase();
+      const countsFor = countByLower.get(lowered);
+      byName.set(lowered, {
         name: t.name,
         color: t.color ?? null,
-        group: t.group ?? null,
-        userCount: t.usageCount ?? 0,
-        aiCount: 0,
+        description: t.description ?? null,
+        userCount: countsFor?.userCount ?? t.usageCount ?? 0,
+        aiCount: countsFor?.aiCount ?? 0,
         createdAt: toIso(t.createdAt),
       });
+      countByLower.delete(lowered);
     }
-    for (const c of counts) {
-      const key = c.name.toLowerCase();
-      const existing = byName.get(key);
-      if (existing) {
-        existing.userCount = c.userCount;
-        existing.aiCount = c.aiCount;
-      } else {
-        byName.set(key, {
-          name: c.name,
-          color: null,
-          group: null,
-          userCount: c.userCount,
-          aiCount: c.aiCount,
-          createdAt: null,
-        });
-      }
+    for (const [lowered, c] of countByLower) {
+      byName.set(lowered, {
+        name: lowered,
+        color: null,
+        description: null,
+        userCount: c.userCount,
+        aiCount: c.aiCount,
+        createdAt: null,
+      });
     }
     setRows(
-      Array.from(byName.values()).sort(
-        (a, b) =>
-          b.userCount + b.aiCount - (a.userCount + a.aiCount) ||
-          a.name.localeCompare(b.name),
-      ),
+      Array.from(byName.values()).sort((a, b) => a.name.localeCompare(b.name)),
     );
   }, []);
 
@@ -114,9 +119,49 @@ export function TagsSection() {
     void refresh();
   }, [refresh]);
 
+  const visible = useMemo(() => {
+    const q = filter.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter((r) => {
+      const desc = (r.description ?? "").toLowerCase();
+      return r.name.toLowerCase().includes(q) || desc.includes(q);
+    });
+  }, [rows, filter]);
+
+  const selectedInView = useMemo(
+    () => visible.filter((r) => selected.has(r.name)),
+    [visible, selected],
+  );
+
+  useEffect(() => {
+    const el = headerCheckRef.current;
+    if (!el) return;
+    const n = selectedInView.length;
+    el.indeterminate = n > 0 && n < visible.length;
+    el.checked = visible.length > 0 && n === visible.length;
+  }, [selectedInView.length, visible.length]);
+
+  function toggleSelectAll(checked: boolean) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (checked) for (const r of visible) next.add(r.name);
+      else for (const r of visible) next.delete(r.name);
+      return next;
+    });
+  }
+
+  function toggleRow(name: string, checked: boolean) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(name);
+      else next.delete(name);
+      return next;
+    });
+  }
+
   async function rename(from: string, to: string) {
     if (!to.trim() || from === to) {
-      setEditing(null);
+      setEditingName(null);
       return;
     }
     setBusy(true);
@@ -126,7 +171,7 @@ export function TagsSection() {
         affected: number;
       };
       toast.add({
-        title: "Tag renamed",
+        title: "Label renamed",
         description: `${res.affected} save${res.affected === 1 ? "" : "s"} updated.`,
         type: "success",
       });
@@ -139,39 +184,53 @@ export function TagsSection() {
       });
     } finally {
       setBusy(false);
-      setEditing(null);
+      setEditingName(null);
     }
   }
 
-  async function regroup(name: string, group: string | null) {
+  async function patchColor(name: string, color: string | null) {
     setBusy(true);
     try {
-      await window.pond.query("tags.update", { name, patch: { group } });
-      if (group) {
-        setEmptyGroups((prev) => {
-          if (!prev.has(group)) return prev;
-          const next = new Set(prev);
-          next.delete(group);
-          return next;
-        });
-      }
+      await window.pond.query("tags.update", {
+        name,
+        patch: { color },
+      });
+      setColorMenuFor(null);
       void refresh();
     } finally {
       setBusy(false);
     }
   }
 
-  async function remove(name: string) {
+  async function patchDescription(name: string, description: string | null) {
     setBusy(true);
     try {
-      const res = (await window.pond.query("tags.delete", { name })) as {
-        affected: number;
-      };
+      await window.pond.query("tags.update", {
+        name,
+        patch: { description: description?.trim() || null },
+      });
+      void refresh();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove(names: string[]) {
+    setBusy(true);
+    try {
+      let total = 0;
+      for (const name of names) {
+        const res = (await window.pond.query("tags.delete", {
+          name,
+        })) as { affected: number };
+        total += res.affected ?? 0;
+      }
       toast.add({
-        title: "Tag deleted",
-        description: `Removed from ${res.affected} save${res.affected === 1 ? "" : "s"}.`,
+        title: names.length === 1 ? "Label deleted" : "Labels deleted",
+        description: `Removed from ${total} save${total === 1 ? "" : "s"}.`,
         type: "success",
       });
+      setSelected(new Set());
       void refresh();
     } finally {
       setBusy(false);
@@ -184,20 +243,8 @@ export function TagsSection() {
     if (!name) return;
     setBusy(true);
     try {
-      await window.pond.query("tags.create", {
-        name,
-        group: newGroup,
-      });
-      if (newGroup) {
-        setEmptyGroups((prev) => {
-          if (!prev.has(newGroup)) return prev;
-          const next = new Set(prev);
-          next.delete(newGroup);
-          return next;
-        });
-      }
+      await window.pond.query("tags.create", { name });
       setNewName("");
-      setNewGroup(null);
       setCreating(false);
       void refresh();
     } finally {
@@ -205,200 +252,145 @@ export function TagsSection() {
     }
   }
 
-  function startCreating() {
-    setCreatingGroup(false);
-    setCreating(true);
-    requestAnimationFrame(() => newInputRef.current?.focus());
-  }
-
-  function startCreatingGroup() {
-    setCreating(false);
-    setCreatingGroup(true);
-    requestAnimationFrame(() => newGroupInputRef.current?.focus());
-  }
-
-  function commitNewGroup() {
-    const name = newGroupName.trim();
-    if (!name) {
-      setCreatingGroup(false);
-      return;
-    }
-    setEmptyGroups((prev) => {
-      const next = new Set(prev);
-      next.add(name);
-      return next;
-    });
-    setNewGroupName("");
-    setCreatingGroup(false);
-  }
-
-  function toggleGroup(name: string) {
-    setCollapsed((prev) => {
-      const next = new Set(prev);
-      if (next.has(name)) next.delete(name);
-      else next.add(name);
-      return next;
-    });
-  }
-
-  async function deleteGroup(name: string) {
-    const targets = rows.filter((r) => r.group === name);
+  async function runMerge() {
+    const names = [...selected];
+    if (!mergeTarget || names.length < 2) return;
+    const sources = names.filter((n) => n !== mergeTarget);
+    if (sources.length === 0) return;
     setBusy(true);
     try {
-      await Promise.all(
-        targets.map((t) =>
-          window.pond.query("tags.update", {
-            name: t.name,
-            patch: { group: null },
-          }),
-        ),
-      );
-      setEmptyGroups((prev) => {
-        const next = new Set(prev);
-        next.delete(name);
-        return next;
-      });
+      for (const from of sources) {
+        await window.pond.query("tags.merge", { from, to: mergeTarget });
+      }
       toast.add({
-        title: targets.length ? "Group dissolved" : "Group removed",
-        description: targets.length
-          ? `${targets.length} tag${targets.length === 1 ? "" : "s"} ungrouped.`
-          : undefined,
+        title: "Labels merged",
+        description: `Kept ${mergeTarget}.`,
         type: "success",
       });
+      setMergeOpen(false);
+      setSelected(new Set());
       void refresh();
+    } catch (err) {
+      toast.add({
+        title: "Merge failed",
+        description: err instanceof Error ? err.message : String(err),
+        type: "error",
+      });
     } finally {
       setBusy(false);
     }
   }
 
-  const visible = useMemo(
-    () =>
-      rows.filter((r) =>
-        !filter ? true : r.name.toLowerCase().includes(filter.toLowerCase()),
-      ),
-    [rows, filter],
-  );
+  function startCreating() {
+    setCreating(true);
+    requestAnimationFrame(() => newInputRef.current?.focus());
+  }
 
-  const knownGroups = useMemo(() => {
-    const set = new Set<string>(emptyGroups);
-    for (const r of rows) if (r.group) set.add(r.group);
-    return Array.from(set).sort((a, b) => a.localeCompare(b));
-  }, [rows, emptyGroups]);
-
-  const { groupedItems, ungrouped } = useMemo(() => {
-    const map = new Map<string, TagRow[]>();
-    const flat: TagRow[] = [];
-    for (const r of visible) {
-      if (r.group) {
-        const list = map.get(r.group) ?? [];
-        list.push(r);
-        map.set(r.group, list);
-      } else {
-        flat.push(r);
-      }
-    }
-    return { groupedItems: map, ungrouped: flat };
-  }, [visible]);
+  function openMerge() {
+    const names = [...selected];
+    if (names.length < 2) return;
+    setMergeTarget(names[0] ?? "");
+    setMergeOpen(true);
+  }
 
   return (
-    <div className={styles["tags-page"]}>
-      <header className={styles["tags-page-header"]}>
-        <h1 className={styles["tags-page-title"]}>Tags</h1>
-        <p className={styles["tags-page-subtitle"]}>
-          Rename, group, and delete tags across every save.
+    <div className={styles["labels-page"]}>
+      <header className={styles["labels-page-header"]}>
+        <h1 className={styles["labels-page-title"]}>Labels</h1>
+        <p className={styles["labels-page-subtitle"]}>
+          Colors, descriptions, and bulk merge across every save.
         </p>
       </header>
 
       <div>
-        <div className={styles["tags-toolbar"]}>
-          <div className={styles["tags-filter"]}>
-            <span className={styles["tags-filter-icon"]} aria-hidden>
+        <div className={styles["labels-toolbar"]}>
+          <div className={styles["labels-filter"]}>
+            <span className={styles["labels-filter-icon"]} aria-hidden>
               <IconMagnifierOutline18 width={14} height={14} />
             </span>
-            <input
+            <Input
               type="search"
-              className={styles["tags-filter-input"]}
+              data-size="sm"
+              className={styles["labels-filter-input"]}
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
-              placeholder="Filter by name…"
+              placeholder="Filter by name or description…"
+              spellCheck={false}
             />
           </div>
-          <div className={styles["tags-toolbar-actions"]}>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={startCreatingGroup}
-              disabled={busy || creatingGroup}
-            >
-              New Group
-            </Button>
+          <div className={styles["labels-toolbar-actions"]}>
             <Button
               size="sm"
               variant="primary"
               onClick={startCreating}
               disabled={busy || creating}
             >
-              New Tag
+              New label
             </Button>
           </div>
         </div>
 
-        <div className={styles["tags-table"]}>
-          <div className={styles["tags-table-head"]}>
+        {selected.size > 0 ? (
+          <div className={styles["labels-bulk-bar"]} role="toolbar">
+            <span className={styles["labels-bulk-count"]}>
+              {selected.size} selected
+            </span>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={busy || selected.size < 2}
+              onClick={openMerge}
+            >
+              Merge…
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={busy}
+              onClick={() => setDeleting([...selected])}
+            >
+              Delete…
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={busy}
+              onClick={() => setSelected(new Set())}
+            >
+              Clear
+            </Button>
+          </div>
+        ) : null}
+
+        <div className={styles["labels-table"]}>
+          <div className={styles["labels-table-head"]}>
+            <span className={styles["labels-head-check"]}>
+              <input
+                ref={headerCheckRef}
+                type="checkbox"
+                className={styles["labels-checkbox"]}
+                aria-label="Select all visible labels"
+                onChange={(e) => toggleSelectAll(e.target.checked)}
+              />
+            </span>
+            <span className={styles["labels-head-swatch"]} aria-hidden />
             <span>
               Name
-              <span className={styles["tags-sort-caret"]} aria-hidden>
+              <span className={styles["labels-sort-caret"]} aria-hidden>
                 <IconChevronDownOutline18 width={12} height={12} />
               </span>
             </span>
-            <span className={styles["tags-col-numeric"]}>Saves</span>
-            <span className={styles["tags-col-numeric"]}>AI</span>
-            <span className={styles["tags-col-date"]}>Created</span>
+            <span>Description</span>
+            <span className={styles["labels-col-numeric"]}>Saves</span>
+            <span className={styles["labels-col-date"]}>Created</span>
+            <span className={styles["labels-head-menu"]} aria-hidden />
           </div>
 
-          {creatingGroup ? (
-            <div className={styles["tags-create-row"]}>
-              <span className={styles["tags-group-glyph"]} aria-hidden />
-              <Input
-                ref={newGroupInputRef}
-                data-size="sm"
-                value={newGroupName}
-                onChange={(e) => setNewGroupName(e.target.value)}
-                placeholder="Group name"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") commitNewGroup();
-                  if (e.key === "Escape") {
-                    setCreatingGroup(false);
-                    setNewGroupName("");
-                  }
-                }}
-              />
-              <div className={styles["tags-create-actions"]}>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => {
-                    setCreatingGroup(false);
-                    setNewGroupName("");
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={commitNewGroup}
-                  disabled={!newGroupName.trim()}
-                >
-                  Add Group
-                </Button>
-              </div>
-            </div>
-          ) : null}
-
           {creating ? (
-            <div className={styles["tags-create-row"]}>
+            <div className={styles["labels-create-row"]}>
+              <span className={styles["labels-head-check"]} aria-hidden />
               <span
-                className={styles["tags-dot"]}
+                className={styles["labels-dot"]}
                 style={{ background: DEFAULT_DOT }}
                 aria-hidden
               />
@@ -407,58 +399,29 @@ export function TagsSection() {
                 data-size="sm"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
-                placeholder="Tag name"
+                placeholder="Label name"
                 onKeyDown={(e) => {
                   if (e.key === "Enter") void create();
                   if (e.key === "Escape") {
                     setCreating(false);
                     setNewName("");
-                    setNewGroup(null);
                   }
                 }}
               />
-              {knownGroups.length > 0 ? (
-                <Select.Root
-                  value={newGroup ?? NONE_VALUE}
-                  onValueChange={(v) =>
-                    setNewGroup(v === NONE_VALUE ? null : v)
-                  }
-                >
-                  <Select.Trigger>
-                    <Select.Value>{newGroup ?? "No Group"}</Select.Value>
-                    <Select.Icon>
-                      <IconChevronExpandYOutline12 />
-                    </Select.Icon>
-                  </Select.Trigger>
-                  <Select.Portal>
-                    <Select.Positioner sideOffset={6}>
-                      <Select.Popup>
-                        <Select.Item value={NONE_VALUE}>No Group</Select.Item>
-                        {knownGroups.map((g) => (
-                          <Select.Item key={g} value={g}>
-                            {g}
-                          </Select.Item>
-                        ))}
-                      </Select.Popup>
-                    </Select.Positioner>
-                  </Select.Portal>
-                </Select.Root>
-              ) : null}
-              <div className={styles["tags-create-actions"]}>
+              <div className={styles["labels-create-actions"]}>
                 <Button
                   size="sm"
                   variant="ghost"
                   onClick={() => {
                     setCreating(false);
                     setNewName("");
-                    setNewGroup(null);
                   }}
                 >
                   Cancel
                 </Button>
                 <Button
                   size="sm"
-                  onClick={create}
+                  onClick={() => void create()}
                   disabled={busy || !newName.trim()}
                 >
                   Add
@@ -467,100 +430,104 @@ export function TagsSection() {
             </div>
           ) : null}
 
-          {knownGroups.map((groupName) => {
-            const items = groupedItems.get(groupName) ?? [];
-            const isCollapsed = collapsed.has(groupName);
-            return (
-              <div key={`group-${groupName}`}>
-                <div className={styles["tags-group-row"]}>
-                  <button
-                    type="button"
-                    className={styles["tags-group-trigger"]}
-                    onClick={() => toggleGroup(groupName)}
-                  >
-                    <span className={styles["tags-chevron"]} aria-hidden>
-                      {isCollapsed ? (
-                        <IconChevronRightOutline18 width={12} height={12} />
-                      ) : (
-                        <IconChevronDownOutline18 width={12} height={12} />
-                      )}
-                    </span>
-                    <span className={styles["tags-group-glyph"]} aria-hidden />
-                    <span className={styles["tags-group-name"]}>
-                      {groupName}
-                    </span>
-                    <span className={styles["tags-group-count"]}>
-                      {items.length}
-                    </span>
-                  </button>
-                  <div className={styles["tags-group-actions"]}>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => void deleteGroup(groupName)}
-                      disabled={busy}
-                    >
-                      Dissolve
-                    </Button>
-                  </div>
-                </div>
-
-                {!isCollapsed
-                  ? items.map((row, idx) => (
-                      <TagRowView
-                        key={row.name}
-                        row={row}
-                        isLast={idx === items.length - 1}
-                        nested
-                        editing={editing === row.name}
-                        busy={busy}
-                        knownGroups={knownGroups}
-                        onStartRename={() => setEditing(row.name)}
-                        onCancelRename={() => setEditing(null)}
-                        onRename={(next) => void rename(row.name, next)}
-                        onChangeGroup={(g) => void regroup(row.name, g)}
-                        onDelete={() => setDeleting(row.name)}
-                      />
-                    ))
-                  : null}
-              </div>
-            );
-          })}
-
-          {ungrouped.map((row) => (
-            <TagRowView
+          {visible.map((row) => (
+            <LabelRowView
               key={row.name}
               row={row}
-              editing={editing === row.name}
               busy={busy}
-              knownGroups={knownGroups}
-              onStartRename={() => setEditing(row.name)}
-              onCancelRename={() => setEditing(null)}
+              checked={selected.has(row.name)}
+              editingName={editingName === row.name}
+              colorMenuOpen={colorMenuFor === row.name}
+              onToggleCheck={(c) => toggleRow(row.name, c)}
+              onOpenColorMenu={(o) => setColorMenuFor(o ? row.name : null)}
+              onPickColor={(c) => void patchColor(row.name, c)}
+              onPatchDescription={(d) => void patchDescription(row.name, d)}
+              onStartRename={() => setEditingName(row.name)}
+              onCancelRename={() => setEditingName(null)}
               onRename={(next) => void rename(row.name, next)}
-              onChangeGroup={(g) => void regroup(row.name, g)}
-              onDelete={() => setDeleting(row.name)}
+              onDelete={() => setDeleting([row.name])}
             />
           ))}
 
-          {visible.length === 0 && knownGroups.length === 0 && !creating ? (
-            <div className={styles["tags-empty"]}>
+          {visible.length === 0 && !creating ? (
+            <div className={styles["labels-empty"]}>
               {filter
-                ? `No tags match "${filter}".`
-                : "No tags yet. Add one above or tag a save."}
+                ? `No labels match "${filter}".`
+                : "No labels yet. Add one above or label a save."}
             </div>
           ) : null}
         </div>
       </div>
+
+      <Dialog.Root open={mergeOpen} onOpenChange={setMergeOpen}>
+        <Dialog.Content className={styles["labels-merge-dialog"]}>
+          <Dialog.Title>Merge labels</Dialog.Title>
+          <Dialog.Description>
+            Choose the label to keep. The others are merged into it and removed
+            from this list.
+          </Dialog.Description>
+          <div className={styles["labels-merge-field"]}>
+            <label
+              className={styles["labels-merge-label"]}
+              htmlFor="merge-target"
+            >
+              Keep
+            </label>
+            <select
+              id="merge-target"
+              className={styles["labels-merge-select"]}
+              value={mergeTarget}
+              onChange={(e) => setMergeTarget(e.target.value)}
+            >
+              {[...selected].map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className={styles["labels-merge-actions"]}>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setMergeOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              variant="primary"
+              disabled={busy || selected.size < 2}
+              onClick={() => void runMerge()}
+            >
+              Merge
+            </Button>
+          </div>
+        </Dialog.Content>
+      </Dialog.Root>
 
       <AlertDialog.Root
         open={Boolean(deleting)}
         onOpenChange={(o) => !o && setDeleting(null)}
       >
         <AlertDialog.Content>
-          <AlertDialog.Title>Delete Tag?</AlertDialog.Title>
+          <AlertDialog.Title>
+            {deleting && deleting.length > 1
+              ? "Delete labels?"
+              : "Delete label?"}
+          </AlertDialog.Title>
           <AlertDialog.Description>
-            This removes <strong>{deleting}</strong> from every save and the
-            canonical list. Cmd+Z restores it.
+            {deleting && deleting.length > 1 ? (
+              <>
+                This removes <strong>{deleting.length} labels</strong> from
+                every save and from the catalog. Cmd+Z restores it.
+              </>
+            ) : (
+              <>
+                This removes <strong>{deleting?.[0]}</strong> from every save
+                and the catalog. Cmd+Z restores it.
+              </>
+            )}
           </AlertDialog.Description>
           <AlertDialog.Actions>
             <Button size="sm" variant="ghost" onClick={() => setDeleting(null)}>
@@ -569,9 +536,9 @@ export function TagsSection() {
             <Button
               size="sm"
               variant="danger"
-              onClick={() => deleting && void remove(deleting)}
+              onClick={() => deleting?.length && void remove(deleting)}
             >
-              Delete Tag
+              Delete
             </Button>
           </AlertDialog.Actions>
         </AlertDialog.Content>
@@ -580,51 +547,92 @@ export function TagsSection() {
   );
 }
 
-function TagRowView({
+function LabelRowView({
   row,
-  nested = false,
-  isLast = false,
-  editing,
   busy,
-  knownGroups,
+  checked,
+  editingName,
+  colorMenuOpen,
+  onToggleCheck,
+  onOpenColorMenu,
+  onPickColor,
+  onPatchDescription,
   onStartRename,
   onCancelRename,
   onRename,
-  onChangeGroup,
   onDelete,
 }: {
-  row: TagRow;
-  nested?: boolean;
-  isLast?: boolean;
-  editing: boolean;
+  row: LabelRow;
   busy: boolean;
-  knownGroups: string[];
+  checked: boolean;
+  editingName: boolean;
+  colorMenuOpen: boolean;
+  onToggleCheck: (checked: boolean) => void;
+  onOpenColorMenu: (open: boolean) => void;
+  onPickColor: (color: string | null) => void;
+  onPatchDescription: (description: string | null) => void;
   onStartRename: () => void;
   onCancelRename: () => void;
   onRename: (next: string) => void;
-  onChangeGroup: (group: string | null) => void;
   onDelete: () => void;
 }) {
+  const [editingDesc, setEditingDesc] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
     <div
-      className={[
-        styles["tags-row"],
-        nested ? styles["tags-row-nested"] : "",
-        nested && isLast ? styles["tags-row-nested-last"] : "",
-      ]
-        .filter(Boolean)
-        .join(" ")}
+      className={styles["labels-row"]}
+      data-active={editingName || editingDesc || menuOpen || colorMenuOpen}
     >
-      <div className={styles["tags-name"]}>
-        {nested ? (
-          <span className={styles["tags-tree-stub"]} aria-hidden />
-        ) : null}
-        <span
-          className={styles["tags-dot"]}
-          style={{ background: row.color ?? DEFAULT_DOT }}
-          aria-hidden
+      <span className={styles["labels-head-check"]}>
+        <input
+          type="checkbox"
+          className={styles["labels-checkbox"]}
+          checked={checked}
+          aria-label={`Select ${row.name}`}
+          onChange={(e) => onToggleCheck(e.target.checked)}
         />
-        {editing ? (
+      </span>
+      <Popover.Root open={colorMenuOpen} onOpenChange={onOpenColorMenu}>
+        <Popover.Trigger
+          render={
+            <button
+              type="button"
+              className={styles["labels-swatch-btn"]}
+              aria-label={`Color for ${row.name}`}
+              disabled={busy}
+            >
+              <span
+                className={styles["labels-dot"]}
+                style={{ background: row.color ?? DEFAULT_DOT }}
+              />
+            </button>
+          }
+        />
+        <Popover.Content
+          className={styles["labels-color-popup"]}
+          sideOffset={6}
+        >
+          <div className={styles["labels-color-grid"]}>
+            {LABEL_COLORS.map((c) => (
+              <button
+                key={c}
+                type="button"
+                className={styles["labels-color-opt"]}
+                style={{ background: c }}
+                aria-label={`Use ${c}`}
+                onClick={() => onPickColor(c)}
+              />
+            ))}
+          </div>
+          <Popover.Separator />
+          <Popover.Item type="button" onClick={() => onPickColor(null)}>
+            <Popover.ItemLabel>Clear color</Popover.ItemLabel>
+          </Popover.Item>
+        </Popover.Content>
+      </Popover.Root>
+      <div className={styles["labels-name-cell"]}>
+        {editingName ? (
           <RenameInput
             initial={row.name}
             onSubmit={onRename}
@@ -633,55 +641,105 @@ function TagRowView({
         ) : (
           <button
             type="button"
-            className={styles["tags-name-button"]}
+            className={styles["labels-text-trigger"]}
             onClick={onStartRename}
           >
             {row.name}
           </button>
         )}
       </div>
-      <span className={styles["tags-col-numeric"]}>{row.userCount || ""}</span>
-      <span className={styles["tags-col-numeric"]}>{row.aiCount || ""}</span>
-      <span className={styles["tags-col-date"]}>
+      <div className={styles["labels-desc-cell"]}>
+        {editingDesc ? (
+          <DescriptionInput
+            initial={row.description ?? ""}
+            onSubmit={(next) => {
+              const cleaned = next.trim() || null;
+              const prev = row.description?.trim() || null;
+              if (cleaned !== prev) onPatchDescription(cleaned);
+              setEditingDesc(false);
+            }}
+            onCancel={() => setEditingDesc(false)}
+          />
+        ) : (
+          <button
+            type="button"
+            className={[
+              styles["labels-text-trigger"],
+              row.description ? "" : styles["labels-text-empty"],
+            ]
+              .filter(Boolean)
+              .join(" ")}
+            onClick={() => setEditingDesc(true)}
+          >
+            {row.description ?? "Add label description…"}
+          </button>
+        )}
+      </div>
+      <span className={styles["labels-col-numeric"]}>
+        {row.userCount || ""}
+      </span>
+      <span className={styles["labels-col-date"]}>
         {formatDate(row.createdAt)}
       </span>
-      <div className={styles["tags-actions"]}>
-        <Select.Root
-          value={row.group ?? NONE_VALUE}
-          onValueChange={(v) => onChangeGroup(v === NONE_VALUE ? null : v)}
-        >
-          <Select.Trigger>
-            <Select.Value>{row.group ?? "No Group"}</Select.Value>
-            <Select.Icon>
-              <IconChevronExpandYOutline12 />
-            </Select.Icon>
-          </Select.Trigger>
-          <Select.Portal>
-            <Select.Positioner sideOffset={6}>
-              <Select.Popup>
-                <Select.Item value={NONE_VALUE}>No Group</Select.Item>
-                {knownGroups.map((g) => (
-                  <Select.Item key={g} value={g}>
-                    {g}
-                  </Select.Item>
-                ))}
-              </Select.Popup>
-            </Select.Positioner>
-          </Select.Portal>
-        </Select.Root>
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={onStartRename}
-          disabled={busy}
-        >
-          Rename
-        </Button>
-        <Button size="sm" variant="ghost" onClick={onDelete} disabled={busy}>
-          Delete
-        </Button>
+      <div className={styles["labels-row-menu"]}>
+        <Menu.Root open={menuOpen} onOpenChange={setMenuOpen}>
+          <Menu.Trigger
+            render={
+              <button
+                type="button"
+                className={styles["labels-menu-trigger"]}
+                aria-label={`Actions for ${row.name}`}
+                disabled={busy}
+              >
+                <IconDotsOutline18 width={14} height={14} />
+              </button>
+            }
+          />
+          <Menu.Portal>
+            <Menu.Positioner align="end" sideOffset={6}>
+              <Menu.Popup>
+                <Menu.Item onClick={onStartRename}>
+                  <Menu.ItemLabel>Rename</Menu.ItemLabel>
+                </Menu.Item>
+                <Menu.Item onClick={() => setEditingDesc(true)}>
+                  <Menu.ItemLabel>Edit description</Menu.ItemLabel>
+                </Menu.Item>
+                <Menu.Separator />
+                <Menu.Item onClick={onDelete}>
+                  <Menu.ItemLabel>Delete…</Menu.ItemLabel>
+                </Menu.Item>
+              </Menu.Popup>
+            </Menu.Positioner>
+          </Menu.Portal>
+        </Menu.Root>
       </div>
     </div>
+  );
+}
+
+function DescriptionInput({
+  initial,
+  onSubmit,
+  onCancel,
+}: {
+  initial: string;
+  onSubmit: (next: string) => void;
+  onCancel: () => void;
+}) {
+  const [value, setValue] = useState(initial);
+  return (
+    <Input
+      data-size="sm"
+      value={value}
+      autoFocus
+      placeholder="Add label description…"
+      onChange={(e) => setValue(e.target.value)}
+      onBlur={() => onSubmit(value)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") onSubmit(value);
+        if (e.key === "Escape") onCancel();
+      }}
+    />
   );
 }
 

@@ -13,6 +13,7 @@ import { useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Card, type CardLayout } from "@/components/card-thumb";
 import { type GridLayout, Library } from "@/components/library";
+import { SaveContextMenu } from "@/components/save-context-menu";
 import { readViewPref, writeViewPref } from "@/lib/view-prefs";
 import type { Save } from "@/pool/types";
 import { JustifiedView } from "./justified";
@@ -31,23 +32,15 @@ declare module "@tanstack/react-table" {
   }
 }
 
-export type ViewMode =
-  | "waterfall"
-  | "justified"
-  | "grid"
-  | "list"
-  | "timeline"
-  | "color";
+export type ViewMode = "waterfall" | "justified" | "grid" | "list" | "timeline";
 
 interface LayoutSwitcherProps {
   viewMode: ViewMode;
   saves: Save[];
   selectedId: string | null;
-  busy: string | null;
   multiSelectActive: boolean;
   onClick: (id: string, e: React.MouseEvent) => void;
   onDoubleClick: (id: string) => void;
-  onTrash: (id: string) => void;
 }
 
 export function LayoutSwitcher(props: LayoutSwitcherProps) {
@@ -55,11 +48,9 @@ export function LayoutSwitcher(props: LayoutSwitcherProps) {
     viewMode,
     saves,
     selectedId,
-    busy,
     multiSelectActive,
     onClick,
     onDoubleClick,
-    onTrash,
   } = props;
 
   const renderJustifiedCard = useCallback(
@@ -68,17 +59,15 @@ export function LayoutSwitcher(props: LayoutSwitcherProps) {
         key={save.id}
         save={save}
         selectedId={selectedId}
-        busy={busy === save.id}
         multiSelectActive={multiSelectActive}
         layout="justified"
         onClick={onClick}
         onDoubleClick={onDoubleClick}
-        onTrash={onTrash}
         packedWidth={w}
         packedHeight={h}
       />
     ),
-    [selectedId, busy, multiSelectActive, onClick, onDoubleClick, onTrash],
+    [selectedId, multiSelectActive, onClick, onDoubleClick],
   );
 
   const renderWaterfallCard = useCallback(
@@ -90,19 +79,17 @@ export function LayoutSwitcher(props: LayoutSwitcherProps) {
         key={save.id}
         save={save}
         selectedId={selectedId}
-        busy={busy === save.id}
         multiSelectActive={multiSelectActive}
         layout="waterfall"
         onClick={onClick}
         onDoubleClick={onDoubleClick}
-        onTrash={onTrash}
         packedWidth={packed.width}
         packedHeight={packed.height}
         packedTop={packed.top}
         packedLeft={packed.left}
       />
     ),
-    [selectedId, busy, multiSelectActive, onClick, onDoubleClick, onTrash],
+    [selectedId, multiSelectActive, onClick, onDoubleClick],
   );
 
   if (viewMode === "list") {
@@ -120,24 +107,9 @@ export function LayoutSwitcher(props: LayoutSwitcherProps) {
       <TimelineView
         saves={saves}
         selectedId={selectedId}
-        busy={busy}
         multiSelectActive={multiSelectActive}
         onClick={onClick}
         onDoubleClick={onDoubleClick}
-        onTrash={onTrash}
-      />
-    );
-  }
-  if (viewMode === "color") {
-    return (
-      <ColorView
-        saves={saves}
-        selectedId={selectedId}
-        busy={busy}
-        multiSelectActive={multiSelectActive}
-        onClick={onClick}
-        onDoubleClick={onDoubleClick}
-        onTrash={onTrash}
       />
     );
   }
@@ -169,12 +141,10 @@ export function LayoutSwitcher(props: LayoutSwitcherProps) {
           key={save.id}
           save={save}
           selectedId={selectedId}
-          busy={busy === save.id}
           multiSelectActive={multiSelectActive}
           layout={viewMode as CardLayout}
           onClick={onClick}
           onDoubleClick={onDoubleClick}
-          onTrash={onTrash}
         />
       ))}
     </Library.Grid>
@@ -184,20 +154,16 @@ export function LayoutSwitcher(props: LayoutSwitcherProps) {
 interface GroupViewProps {
   saves: Save[];
   selectedId: string | null;
-  busy: string | null;
   multiSelectActive: boolean;
   onClick: (id: string, e: React.MouseEvent) => void;
   onDoubleClick: (id: string) => void;
-  onTrash: (id: string) => void;
 }
 
 function useGroupedWaterfallRenderer({
   selectedId,
-  busy,
   multiSelectActive,
   onClick,
   onDoubleClick,
-  onTrash,
 }: Omit<GroupViewProps, "saves">) {
   return useCallback(
     (
@@ -208,19 +174,17 @@ function useGroupedWaterfallRenderer({
         key={save.id}
         save={save}
         selectedId={selectedId}
-        busy={busy === save.id}
         multiSelectActive={multiSelectActive}
         layout="waterfall"
         onClick={onClick}
         onDoubleClick={onDoubleClick}
-        onTrash={onTrash}
         packedWidth={packed.width}
         packedHeight={packed.height}
         packedTop={packed.top}
         packedLeft={packed.left}
       />
     ),
-    [selectedId, busy, multiSelectActive, onClick, onDoubleClick, onTrash],
+    [selectedId, multiSelectActive, onClick, onDoubleClick],
   );
 }
 
@@ -481,25 +445,22 @@ function ListView({
         {table.getRowModel().rows.map((row) => {
           const save = row.original;
           return (
-            <tr
-              key={save.id}
-              aria-selected={save.id === selectedId}
-              onClick={(e) => onClick(save.id, e)}
-              onDoubleClick={() => onDoubleClick(save.id)}
-              onContextMenu={(e) => {
-                e.preventDefault();
-                void window.pond.showSaveContextMenu(save.id);
-              }}
-            >
-              {row.getVisibleCells().map((cell) => (
-                <td
-                  key={cell.id}
-                  className={cell.column.columnDef.meta?.className}
-                >
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </td>
-              ))}
-            </tr>
+            <SaveContextMenu key={save.id} save={save}>
+              <tr
+                aria-selected={save.id === selectedId}
+                onClick={(e) => onClick(save.id, e)}
+                onDoubleClick={() => onDoubleClick(save.id)}
+              >
+                {row.getVisibleCells().map((cell) => (
+                  <td
+                    key={cell.id}
+                    className={cell.column.columnDef.meta?.className}
+                  >
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </td>
+                ))}
+              </tr>
+            </SaveContextMenu>
           );
         })}
       </tbody>
@@ -522,65 +483,12 @@ function TimelineView(props: GroupViewProps) {
     return Array.from(buckets.entries()).sort((a, b) => (a[0] < b[0] ? 1 : -1));
   }, [props.saves]);
   const renderCard = useGroupedWaterfallRenderer(props);
+
   return (
     <div className={styles.timeline}>
       {groups.map(([day, items]) => (
         <section key={day} className={styles["timeline-section"]}>
           <h3 className={styles["timeline-heading"]}>{formatDay(day)}</h3>
-          <WaterfallView
-            saves={items}
-            multiSelectActive={props.multiSelectActive}
-            renderCard={renderCard}
-          />
-        </section>
-      ))}
-    </div>
-  );
-}
-
-function ColorView(props: GroupViewProps) {
-  const groups = useMemo(() => {
-    const buckets = new Map<string, Save[]>();
-    for (const s of props.saves) {
-      const top = s.dominantColors?.[0]?.hex;
-      const bucket = top ? bucketHue(top) : "other";
-      const list = buckets.get(bucket) ?? [];
-      list.push(s);
-      buckets.set(bucket, list);
-    }
-    const order = [
-      "red",
-      "orange",
-      "yellow",
-      "green",
-      "cyan",
-      "blue",
-      "purple",
-      "pink",
-      "brown",
-      "gray",
-      "black",
-      "white",
-      "other",
-    ];
-    return Array.from(buckets.entries()).sort(
-      (a, b) => order.indexOf(a[0]) - order.indexOf(b[0]),
-    );
-  }, [props.saves]);
-  const renderCard = useGroupedWaterfallRenderer(props);
-  return (
-    <div className={styles.timeline}>
-      {groups.map(([bucket, items]) => (
-        <section key={bucket} className={styles["timeline-section"]}>
-          <h3 className={styles["timeline-heading"]}>
-            <span
-              className={styles.swatch}
-              style={{ background: bucketSwatch(bucket) }}
-              aria-hidden
-            />
-            {bucket}
-            <span className={styles["timeline-count"]}>{items.length}</span>
-          </h3>
           <WaterfallView
             saves={items}
             multiSelectActive={props.multiSelectActive}
@@ -602,69 +510,4 @@ function formatDay(iso: string): string {
     ? { weekday: "long", month: "short", day: "numeric" }
     : { year: "numeric", month: "short", day: "numeric" };
   return d.toLocaleDateString(undefined, opts);
-}
-
-function bucketHue(hex: string): string {
-  const m = /^#?([0-9a-f]{6})$/i.exec(hex);
-  if (!m) return "other";
-  const v = m[1];
-  if (!v) return "other";
-  const r = Number.parseInt(v.slice(0, 2), 16) / 255;
-  const g = Number.parseInt(v.slice(2, 4), 16) / 255;
-  const b = Number.parseInt(v.slice(4, 6), 16) / 255;
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  const l = (max + min) / 2;
-  const d = max - min;
-  let h = 0;
-  let s = 0;
-  if (d !== 0) {
-    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-    if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) * 60;
-    else if (max === g) h = ((b - r) / d + 2) * 60;
-    else h = ((r - g) / d + 4) * 60;
-  }
-  if (l < 0.08) return "black";
-  if (l > 0.92) return "white";
-  if (s < 0.12) return "gray";
-  if (h < 15 || h >= 345) return "red";
-  if (h < 45) return "orange";
-  if (h < 70) return "yellow";
-  if (h < 165) return "green";
-  if (h < 200) return "cyan";
-  if (h < 255) return "blue";
-  if (h < 290) return "purple";
-  if (h < 345) return "pink";
-  return "other";
-}
-
-function bucketSwatch(bucket: string): string {
-  switch (bucket) {
-    case "red":
-      return "#ff3b30";
-    case "orange":
-      return "#ff9500";
-    case "yellow":
-      return "#ffd60a";
-    case "green":
-      return "#34c759";
-    case "cyan":
-      return "#5ac8fa";
-    case "blue":
-      return "#007aff";
-    case "purple":
-      return "#af52de";
-    case "pink":
-      return "#ff2d55";
-    case "brown":
-      return "#a2845e";
-    case "gray":
-      return "#8e8e93";
-    case "black":
-      return "#1c1c1e";
-    case "white":
-      return "#fafafa";
-    default:
-      return "#c7c7cc";
-  }
 }

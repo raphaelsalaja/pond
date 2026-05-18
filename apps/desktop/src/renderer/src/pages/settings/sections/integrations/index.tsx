@@ -25,13 +25,7 @@ import { useSearchParams } from "react-router-dom";
 import { Settings } from "@/components/settings";
 import { SourceBadge } from "@/components/source-badge";
 import { usePrefs } from "@/pool/prefs";
-import {
-  ALL_SOURCES,
-  type AnySource,
-  type AuthWalledSource,
-  type PublicProfileSource,
-  SOURCE_DESCRIPTIONS,
-} from "../_types";
+import { ALL_SOURCES, type AnySource, SOURCE_DESCRIPTIONS } from "../_types";
 import styles from "./styles.module.css";
 
 const FREQUENCY_OPTIONS: Array<{ value: SyncFrequency; label: string }> = [
@@ -155,8 +149,6 @@ export function IntegrationsSection() {
     useState<Record<AnySource, boolean>>(emptyConnectedRecord);
   const [statusReady, setStatusReady] = useState(false);
   const [pendingSource, setPendingSource] = useState<AnySource | null>(null);
-  const [handleDialogFor, setHandleDialogFor] =
-    useState<PublicProfileSource | null>(null);
   const [customDialogOpen, setCustomDialogOpen] = useState(false);
 
   const refreshStatuses = useCallback(async () => {
@@ -202,8 +194,8 @@ export function IntegrationsSection() {
     return () => off();
   }, [toast]);
 
-  const connectAuthWalled = useCallback(
-    async (source: AuthWalledSource) => {
+  const connectSource = useCallback(
+    async (source: AnySource) => {
       setPendingSource(source);
       try {
         const res = await window.pond.connectSource(source);
@@ -240,21 +232,13 @@ export function IntegrationsSection() {
     const match = ALL_SOURCES.find((s) => s.id === wanted);
     if (!match) return;
     autoConnectFired.current = true;
-    if (match.kind === "public-profile") {
-      setHandleDialogFor(match.id as PublicProfileSource);
-    } else {
-      void connectAuthWalled(match.id as AuthWalledSource);
-    }
+    void connectSource(match.id);
     const next = new URLSearchParams(params);
     next.delete("connect");
     setParams(next, { replace: true });
-  }, [params, setParams, connectAuthWalled]);
+  }, [params, setParams, connectSource]);
 
   const global = syncReady ? syncPrefs.global : DEFAULT_GLOBAL_SYNC_PREFS;
-  const handles = useMemo(
-    () => (syncReady ? (syncPrefs.handles ?? {}) : {}),
-    [syncReady, syncPrefs],
-  );
   const scheduleKey = useMemo(
     () =>
       `${global.enabled}|${global.frequency}|${global.anchorTime}|${(
@@ -312,30 +296,6 @@ export function IntegrationsSection() {
       await refreshStatuses();
     } finally {
       setPendingSource(null);
-    }
-  }
-
-  async function saveHandle(source: PublicProfileSource, raw: string) {
-    const trimmed = raw.trim().replace(/^@+/, "");
-    if (!trimmed) return;
-    setPendingSource(source);
-    try {
-      const nextHandles = { ...handles, [source]: trimmed };
-      await patchSync({ handles: nextHandles });
-      await refreshStatuses();
-      toast.add({
-        title: `Connected as ${formatHandle(source, trimmed)}`,
-        description: `Future syncs read ${profileUrlPreview(source, trimmed)}.`,
-        type: "success",
-      });
-    } catch {
-      toast.add({
-        title: `Couldn't save your ${source} handle`,
-        type: "error",
-      });
-    } finally {
-      setPendingSource(null);
-      setHandleDialogFor(null);
     }
   }
 
@@ -548,10 +508,6 @@ export function IntegrationsSection() {
           {ALL_SOURCES.map((entry) => {
             const isConnected = connected[entry.id];
             const isPending = pendingSource === entry.id;
-            const handle =
-              entry.kind === "public-profile"
-                ? handles[entry.id as PublicProfileSource]
-                : undefined;
             return (
               <Fragment key={entry.id}>
                 <Settings.Item className={styles["app-row"]}>
@@ -559,9 +515,7 @@ export function IntegrationsSection() {
                   <Settings.ItemDetails>
                     <Settings.ItemTitle>{entry.label}</Settings.ItemTitle>
                     <Settings.ItemDescription>
-                      {entry.kind === "public-profile" && isConnected && handle
-                        ? `Connected as ${formatHandle(entry.id as PublicProfileSource, handle)}`
-                        : SOURCE_DESCRIPTIONS[entry.id]}
+                      {SOURCE_DESCRIPTIONS[entry.id]}
                     </Settings.ItemDescription>
                   </Settings.ItemDetails>
                   <Settings.ItemControl>
@@ -579,21 +533,9 @@ export function IntegrationsSection() {
                       <Button
                         size="sm"
                         disabled={isPending}
-                        onClick={() => {
-                          if (entry.kind === "public-profile") {
-                            setHandleDialogFor(entry.id as PublicProfileSource);
-                          } else {
-                            void connectAuthWalled(
-                              entry.id as AuthWalledSource,
-                            );
-                          }
-                        }}
+                        onClick={() => void connectSource(entry.id)}
                       >
-                        {isPending
-                          ? "Opening\u2026"
-                          : entry.kind === "public-profile"
-                            ? "+ Enable"
-                            : "Sign in"}
+                        {isPending ? "Opening\u2026" : "Sign in"}
                       </Button>
                     )}
                   </Settings.ItemControl>
@@ -614,17 +556,6 @@ export function IntegrationsSection() {
           ) : null}
         </Settings.List>
       </Settings.Section>
-
-      <HandleDialog
-        source={handleDialogFor}
-        initialHandle={handleDialogFor ? (handles[handleDialogFor] ?? "") : ""}
-        pending={handleDialogFor !== null && pendingSource === handleDialogFor}
-        onClose={() => setHandleDialogFor(null)}
-        onSubmit={(value) => {
-          if (!handleDialogFor) return;
-          void saveHandle(handleDialogFor, value);
-        }}
-      />
 
       <RepeatCustomDialog
         open={customDialogOpen}
@@ -760,125 +691,6 @@ function ConnectedButton({
     >
       {disabled ? "\u2026" : hover ? "Disconnect" : "Connected"}
     </Button>
-  );
-}
-
-const PROFILE_LABELS: Record<PublicProfileSource, string> = {
-  cosmos: "Cosmos",
-  arena: "Are.na",
-};
-
-const HANDLE_INPUT_HINTS: Record<
-  PublicProfileSource,
-  { placeholder: string; helper: string }
-> = {
-  cosmos: {
-    placeholder: "@yourhandle",
-    helper: "Your Cosmos username, with or without the @.",
-  },
-  arena: {
-    placeholder: "your-slug",
-    helper: "The slug from your profile URL (e.g. raphael-salaja).",
-  },
-};
-
-function profileUrlPreview(
-  source: PublicProfileSource,
-  handle: string,
-): string {
-  const slug = handle || "your-handle";
-  switch (source) {
-    case "cosmos":
-      return `https://www.cosmos.so/${slug}`;
-    case "arena":
-      return `https://www.are.na/${slug}/blocks`;
-  }
-}
-
-function formatHandle(source: PublicProfileSource, handle: string): string {
-  switch (source) {
-    case "cosmos":
-      return `@${handle}`;
-    case "arena":
-      return handle;
-  }
-}
-
-function HandleDialog({
-  source,
-  initialHandle,
-  pending,
-  onClose,
-  onSubmit,
-}: {
-  source: PublicProfileSource | null;
-  initialHandle: string;
-  pending: boolean;
-  onClose: () => void;
-  onSubmit: (value: string) => void;
-}) {
-  const [value, setValue] = useState(initialHandle);
-  useEffect(() => {
-    if (source) setValue(initialHandle);
-  }, [source, initialHandle]);
-
-  const trimmed = value.trim().replace(/^@+/, "");
-  const canSubmit = trimmed.length > 0 && !pending;
-  const label = source ? PROFILE_LABELS[source] : "";
-  const previewUrl = source ? profileUrlPreview(source, trimmed) : "";
-
-  return (
-    <Dialog.Root
-      open={source !== null}
-      onOpenChange={(open) => {
-        if (!open) onClose();
-      }}
-    >
-      <Dialog.Content>
-        <Dialog.Title>Connect {label}</Dialog.Title>
-        <Dialog.Description>
-          {label} profiles are public, so we just need your handle. Pond syncs
-          from <code>{previewUrl}</code>.
-        </Dialog.Description>
-        <form
-          className={styles["handle-form"]}
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (canSubmit) onSubmit(trimmed);
-          }}
-        >
-          <Field.Root>
-            <Field.Label>Handle</Field.Label>
-            <Field.Control
-              render={
-                <Input
-                  autoFocus
-                  data-size="md"
-                  placeholder={
-                    source ? HANDLE_INPUT_HINTS[source].placeholder : ""
-                  }
-                  value={value}
-                  onChange={(e) => setValue(e.currentTarget.value)}
-                />
-              }
-            />
-            {source ? (
-              <Field.Description>
-                {HANDLE_INPUT_HINTS[source].helper}
-              </Field.Description>
-            ) : null}
-          </Field.Root>
-          <div className={styles["handle-actions"]}>
-            <Dialog.Close render={<Button size="sm" variant="ghost" />}>
-              Cancel
-            </Dialog.Close>
-            <Button size="sm" type="submit" disabled={!canSubmit}>
-              {pending ? "Connecting\u2026" : "Connect"}
-            </Button>
-          </div>
-        </form>
-      </Dialog.Content>
-    </Dialog.Root>
   );
 }
 

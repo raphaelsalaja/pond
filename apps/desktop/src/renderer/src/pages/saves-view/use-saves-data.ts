@@ -58,6 +58,11 @@ export function useSavesData(mode: SavesMode): SavesData {
     const base = search.results ?? saves;
     const filteredList = base.filter((save) => {
       if (save.deletedAt) return false;
+      // Non-complete saves (ingesting / failed) live behind the
+      // ProcessingButton dialog, not in the grid. Keep them out of every
+      // mode so a fresh sync or stuck failure can't flood the view with
+      // placeholder / "Failed" cards.
+      if (save.status !== "complete") return false;
       if (sourceFilter && save.source.toLowerCase() !== sourceFilter) {
         return false;
       }

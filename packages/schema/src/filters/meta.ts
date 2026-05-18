@@ -8,13 +8,12 @@ const SOURCE_PRESETS = [
   { id: "cosmos", label: "Cosmos", value: "cosmos" },
   { id: "tiktok", label: "TikTok", value: "tiktok" },
   { id: "youtube", label: "YouTube", value: "youtube" },
-  { id: "article", label: "Article", value: "article" },
 ] as const;
 
 const TYPE_PRESETS = [
   { id: "image", label: "Image", value: "image" },
   { id: "video", label: "Video", value: "video" },
-  { id: "article", label: "Article", value: "article" },
+  { id: "mixed", label: "Mixed", value: "mixed" },
   { id: "url", label: "URL", value: "url" },
 ] as const;
 
@@ -49,7 +48,7 @@ export const FIELD_META: Readonly<Record<FieldId, FieldMeta>> = Object.freeze({
   tags: {
     id: "tags",
     type: "stringArray",
-    label: "Tags",
+    label: "Labels",
     group: "content",
   },
   source: {
@@ -93,12 +92,6 @@ export const FIELD_META: Readonly<Record<FieldId, FieldMeta>> = Object.freeze({
     label: "Dimensions",
     group: "media",
     presets: DIMENSIONS_PRESETS,
-  },
-  color: {
-    id: "color",
-    type: "color",
-    label: "Color",
-    group: "media",
   },
   creator: {
     id: "creator",

@@ -1,5 +1,4 @@
 import { registerAppHandlers } from "./handlers/app";
-import { registerContextMenuHandler } from "./handlers/context-menu";
 import { registerRefreshHandlers } from "./handlers/refresh";
 import { registerSuggestionHandlers } from "./handlers/suggestion";
 import { registerSyncHandlers } from "./handlers/sync";
@@ -11,7 +10,6 @@ export function registerIpc(): void {
   registerRefreshHandlers();
   registerSyncHandlers();
   registerVideoHandlers();
-  registerContextMenuHandler();
   registerSuggestionHandlers();
   registerQueryHandler();
 }

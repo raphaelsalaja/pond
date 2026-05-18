@@ -8,39 +8,31 @@ export interface YouTubeAuthor {
 }
 
 export function getYouTubeChapters(save: Save): ChapterCue[] | undefined {
-  const yt = save.rawJson?.youtube;
-  if (!yt) return undefined;
-  const typed = yt.chapters;
-  if (typed && typed.length > 0) {
-    return typed.map((c) => ({ title: c.title, startSec: c.startSec }));
+  const ytdlp = save.rawJson?.ytdlp?.chapters;
+  if (!ytdlp || ytdlp.length === 0) return undefined;
+  const out: ChapterCue[] = [];
+  for (const c of ytdlp) {
+    const title = (c.title ?? "").trim();
+    if (!title) continue;
+    if (typeof c.start_time !== "number") continue;
+    out.push({
+      title,
+      startSec: c.start_time,
+      endSec: typeof c.end_time === "number" ? c.end_time : undefined,
+    });
   }
-  const ytdlp = yt.ytdlp?.chapters;
-  if (ytdlp && ytdlp.length > 0) {
-    const out: ChapterCue[] = [];
-    for (const c of ytdlp) {
-      const title = (c.title ?? "").trim();
-      if (!title) continue;
-      if (typeof c.start_time !== "number") continue;
-      out.push({
-        title,
-        startSec: c.start_time,
-        endSec: typeof c.end_time === "number" ? c.end_time : undefined,
-      });
-    }
-    return out.length > 0 ? out : undefined;
-  }
-  return undefined;
+  return out.length > 0 ? out : undefined;
 }
 
 export function getYouTubeAuthor(save: Save): YouTubeAuthor {
-  const yt = save.rawJson?.youtube;
-  const ytdlp = yt?.ytdlp;
-  const rawAvatar = (yt as { authorAvatar?: string } | undefined)?.authorAvatar;
+  const author = save.rawJson?.capture?.author;
+  const ytdlp = save.rawJson?.ytdlp;
   return {
-    name: yt?.channelName ?? ytdlp?.channel ?? ytdlp?.uploader ?? save.author,
-    avatarUrl: rawAvatar ?? null,
+    name:
+      author?.name ?? ytdlp?.channel ?? ytdlp?.uploader ?? save.author ?? null,
+    avatarUrl: author?.avatarUrl ?? null,
     channelUrl:
-      yt?.channelUrl ?? ytdlp?.channel_url ?? ytdlp?.uploader_url ?? null,
+      author?.profileUrl ?? ytdlp?.channel_url ?? ytdlp?.uploader_url ?? null,
   };
 }
 
@@ -143,7 +135,6 @@ export function prettifyType(t: string): string {
   const lower = t.toLowerCase();
   if (lower === "video") return "MP4";
   if (lower === "image") return "Image";
-  if (lower === "article") return "Article";
   if (lower === "link") return "Link";
   return t.toUpperCase();
 }

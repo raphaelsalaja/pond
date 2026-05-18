@@ -61,13 +61,6 @@
   opacity: 1;
 }
 
-.thumb[data-nsfw-blur="true"] .media,
-.thumb[data-nsfw-blur="true"] .backdrop-blur img,
-.thumb[data-nsfw-blur="true"] .tweet {
-  filter: blur(28px) saturate(0.85);
-  transform: scale(1.06);
-}
-
 .thumb[data-layout="grid"] {
   width: auto;
   max-width: 100%;
@@ -115,80 +108,6 @@
   );
 }
 
-.tweet {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  height: 100%;
-  container-type: inline-size;
-  overflow: hidden;
-  background: light-dark(#ffffff, #18181b);
-  border-radius: var(--ds-radius-lg);
-  box-shadow: var(--ds-shadow-card);
-}
-
-.tweet-stripe {
-  flex-shrink: 0;
-  width: 100%;
-  height: clamp(2px, 1.2cqi, 5px);
-  background: #1da1f2;
-}
-
-.tweet-body {
-  display: flex;
-  flex: 1 1 auto;
-  flex-direction: column;
-  gap: clamp(6px, 4.5cqi, 16px);
-  min-height: 0;
-  padding: clamp(8px, 6cqi, 22px) clamp(10px, 7cqi, 24px);
-}
-
-.tweet-icon {
-  flex-shrink: 0;
-  width: clamp(14px, 7.5cqi, 26px);
-  height: clamp(14px, 7.5cqi, 26px);
-  color: var(--ds-gray-9);
-}
-
-.tweet-text {
-  flex: 1 1 0;
-  min-height: 0;
-  margin: 0;
-  overflow: hidden;
-  font-size: clamp(9px, 5cqi, 17px);
-  font-weight: 500;
-  line-height: 1.35;
-  color: var(--ds-gray-12);
-  letter-spacing: -0.1px;
-  word-break: break-word;
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    #000 calc(100% - clamp(12px, 8cqi, 32px)),
-    transparent
-  );
-  mask-image: linear-gradient(
-    to bottom,
-    #000 calc(100% - clamp(12px, 8cqi, 32px)),
-    transparent
-  );
-}
-
-.tweet-byline {
-  flex-shrink: 0;
-  margin: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: clamp(8px, 4cqi, 14px);
-  font-weight: 400;
-  color: var(--ds-gray-10);
-  white-space: nowrap;
-}
-
-.thumb[data-layout="grid"] .tweet {
-  border-radius: 4px;
-}
-
 .downloading {
   position: absolute;
   top: 6px;
@@ -204,6 +123,24 @@
   letter-spacing: 0.02em;
   pointer-events: none;
   background: rgba(0, 0, 0, 0.62);
+  border-radius: var(--ds-radius-full);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+.failed {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: 0.02em;
+  background: rgba(220, 38, 38, 0.85);
   border-radius: var(--ds-radius-full);
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);

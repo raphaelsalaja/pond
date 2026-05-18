@@ -1,17 +1,9 @@
 import type { Source } from "@pond/schema/db";
-import {
-  DEFAULT_SETTINGS,
-  POND_EVENT,
-  type PondMessage,
-  type PondSettings,
-} from "./types";
+import { normalizeStoredSettings, POND_EVENT, type PondMessage } from "./types";
 
 export function bridge(source: Source) {
   chrome.storage.local.get("settings").then((stored) => {
-    const settings: PondSettings = {
-      ...DEFAULT_SETTINGS,
-      ...(stored.settings ?? {}),
-    };
+    const settings = normalizeStoredSettings(stored.settings);
     if (!settings.enabled[source]) return;
 
     window.addEventListener("message", (event: MessageEvent) => {

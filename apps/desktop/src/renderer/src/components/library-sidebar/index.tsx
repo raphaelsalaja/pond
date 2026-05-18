@@ -15,12 +15,11 @@ import {
 import { IconGithub, IconXTwitter } from "@pond/icons/social-media";
 import { AlertDialog, Button, ContextMenu, Menu, useToast } from "@pond/ui";
 import type { SVGProps } from "react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Sidebar } from "@/components/sidebar";
 import { SidebarTools } from "@/components/sidebar-tools";
 import { usePrefs } from "@/pool/prefs";
-import { buildAvatarUrl } from "@/pool/url";
 import styles from "./styles.module.css";
 
 const REPO_URL = "https://github.com/raphaelsalaja/pond";
@@ -58,8 +57,6 @@ const routes = [
 ];
 
 function Root() {
-  const username = useDisplayName();
-  const [profile] = usePrefs("profile");
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -88,12 +85,10 @@ function Root() {
 
         <Sidebar.Header>
           <div className={styles["account-trigger"]}>
-            <span aria-hidden className={styles["account-avatar"]}>
-              {profile.avatarPath ? (
-                <img src={buildAvatarUrl(profile.avatarPath)} alt="" />
-              ) : null}
+            <span aria-hidden className={styles["account-logo"]}>
+              <PondLogo />
             </span>
-            <span className={styles["account-name"]}>{username}</span>
+            <span className={styles["account-name"]}>Pond</span>
           </div>
         </Sidebar.Header>
 
@@ -222,27 +217,6 @@ function TrashLink({ route }: TrashLinkProps) {
   );
 }
 
-function useDisplayName(): string {
-  const [profile] = usePrefs("profile");
-  const osName = useOsUsername();
-  return profile.displayName?.trim() || osName;
-}
-
-function useOsUsername(): string {
-  const [name, setName] = useState<string>("Pond");
-  useEffect(() => {
-    let cancelled = false;
-    void window.pond.appInfo().then((info) => {
-      if (cancelled) return;
-      setName(info.username || "Pond");
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-  return name;
-}
-
 export const LibrarySidebar = {
   Root,
 };
@@ -326,6 +300,25 @@ function HelpButton({ openUrl, navigate }: HelpButtonProps) {
         </Menu.Portal>
       </Menu.Root>
     </div>
+  );
+}
+
+function PondLogo(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 18 18"
+      xmlns="http://www.w3.org/2000/svg"
+      width="1em"
+      height="1em"
+      role="img"
+      {...props}
+    >
+      <title>Pond</title>
+      <path
+        d="M9 1.75a7.25 7.25 0 1 0 0 14.5A7.25 7.25 0 0 0 9 1.75Zm0 4a3.25 3.25 0 1 1 0 6.5 3.25 3.25 0 0 1 0-6.5Z"
+        fill="currentColor"
+      />
+    </svg>
   );
 }
 

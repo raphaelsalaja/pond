@@ -382,10 +382,12 @@ const ICON_TITLES: Record<IconName, string> = {
   views: "Views",
   plays: "Plays",
   likes: "Likes",
+  reactions: "Reactions",
   comments: "Comments",
   replies: "Replies",
   shares: "Shares",
   reposts: "Reposts",
+  quotes: "Quotes",
   bookmarks: "Bookmarks",
   downloads: "Downloads",
   connections: "Connections",
@@ -432,6 +434,7 @@ function iconPaths(name: IconName): React.ReactNode {
         </>
       );
     case "likes":
+    case "reactions":
       return (
         <path d="M8 13.5s-5-3.2-5-7a3 3 0 0 1 5-2.2A3 3 0 0 1 13 6.5c0 3.8-5 7-5 7z" />
       );
@@ -442,6 +445,13 @@ function iconPaths(name: IconName): React.ReactNode {
       return <path d="M11 5l3 3-3 3M14 8H6.5A2.5 2.5 0 0 0 4 10.5V13" />;
     case "reposts":
       return <path d="M3 6.5l2-2 2 2M5 4.5V11h6M13 9.5l-2 2-2-2M11 11.5V5H5" />;
+    case "quotes":
+      return (
+        <>
+          <path d="M3 6.5C3 5 4 4 5.5 4h1v2.5h-2v2H6V11H3.5L3 10.5v-4z" />
+          <path d="M9 6.5C9 5 10 4 11.5 4h1v2.5h-2v2H12V11H9.5L9 10.5v-4z" />
+        </>
+      );
     case "bookmarks":
       return <path d="M4 2.5h8V14l-4-2.5L4 14V2.5z" />;
     case "downloads":

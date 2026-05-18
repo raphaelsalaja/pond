@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { deflateSync } from "node:zlib";
 import { saves } from "@pond/schema/db";
-import { count, isNotNull, isNull } from "drizzle-orm";
+import { count, isNull } from "drizzle-orm";
 import { app, Menu, type NativeImage, nativeImage, Tray } from "electron";
 import log from "electron-log/main.js";
 import { DEFAULT_INGEST_PORT } from "../shared/constants";
@@ -86,16 +86,16 @@ export async function ensureTray(opts: TrayOptions): Promise<TrayHandle> {
 async function buildTooltip(): Promise<string> {
   try {
     const db = await getDb();
-    const [active] = await db
+    const [row] = await db
       .select({ n: count() })
       .from(saves)
-      .where(isNull(saves.archivedAt));
+      .where(isNull(saves.deletedAt));
     const libraryName =
       libraryRoot()
         .split("/")
         .pop()
         ?.replace(/\.library$/, "") ?? "Library";
-    return `${libraryName} · ${active?.n ?? 0} saves`;
+    return `${libraryName} · ${row?.n ?? 0} saves`;
   } catch {
     return "Pond";
   }
@@ -104,18 +104,12 @@ async function buildTooltip(): Promise<string> {
 async function buildMenu(opts: TrayOptions): Promise<Menu> {
   const db = await getDb().catch(() => null);
   let active = 0;
-  let archived = 0;
   if (db) {
     const [a] = await db
       .select({ n: count() })
       .from(saves)
-      .where(isNull(saves.archivedAt));
-    const [b] = await db
-      .select({ n: count() })
-      .from(saves)
-      .where(isNotNull(saves.archivedAt));
+      .where(isNull(saves.deletedAt));
     active = Number(a?.n ?? 0);
-    archived = Number(b?.n ?? 0);
   }
   const libraryName =
     libraryRoot()
@@ -126,7 +120,7 @@ async function buildMenu(opts: TrayOptions): Promise<Menu> {
 
   return Menu.buildFromTemplate([
     {
-      label: `${libraryName} · ${active} saves${archived ? ` (${archived} archived)` : ""}`,
+      label: `${libraryName} · ${active} saves`,
       enabled: false,
     },
     { type: "separator" },

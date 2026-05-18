@@ -38,7 +38,7 @@ first-class jobs, none of them subordinate:
   them. Deleted tweets, dead links, vanished Are.na accounts: still
   yours.
 - **Search.** Make everything findable. Full-text across articles,
-  metadata across saves, tags, filters, AI search.
+  metadata across saves, tags, filters.
 
 Success: you stop forgetting what you saved. The pile turns into a
 library.
@@ -49,8 +49,8 @@ library.
 
 Voice: precise, quiet, not promotional. Closer to a field notebook than
 a marketing site. Pond does not need an exclamation point. It does not
-celebrate features. It does not say "powered by AI." When it speaks, it
-says the smallest accurate thing.
+celebrate features. When it speaks, it says the smallest accurate
+thing.
 
 Tone: respectful of attention. The interface assumes the user has good
 taste and a finite amount of time. It explains what it has to and stops.
@@ -72,11 +72,11 @@ What Pond should explicitly not feel like:
 - **Pocket / Pinboard / read-it-later graveyard.** The dated
   utilitarian aesthetic where saves go to die. Pond is a library, not
   a holding pen.
-- **AI-generated dashboard slop.** Sky-blue gradients, glass blur,
+- **Generated dashboard slop.** Sky-blue gradients, glass blur,
   restated headings (the page title, then the page title again as a
   sentence), the hero-metric template, identical card grids. If the
-  page could be a screenshot in a "Designed with AI" landing page, it
-  is wrong.
+  page could be a screenshot in a generic SaaS landing page, it is
+  wrong.
 - **Bubbly consumer-warm.** Rounded blobs, mascots, pastels,
   illustrations of friendly characters with three-pixel mouths. Pond
   is not a productivity buddy.

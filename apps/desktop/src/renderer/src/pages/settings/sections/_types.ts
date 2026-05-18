@@ -4,21 +4,17 @@ export const AUTH_WALLED_SOURCES = [
   { id: "tiktok", label: "TikTok" },
   { id: "pinterest", label: "Pinterest" },
   { id: "youtube", label: "YouTube" },
-] as const;
-export type AuthWalledSource = (typeof AUTH_WALLED_SOURCES)[number]["id"];
-
-export const PUBLIC_PROFILE_SOURCES = [
   { id: "cosmos", label: "Cosmos" },
   { id: "arena", label: "Are.na" },
 ] as const;
-export type PublicProfileSource = (typeof PUBLIC_PROFILE_SOURCES)[number]["id"];
+export type AuthWalledSource = (typeof AUTH_WALLED_SOURCES)[number]["id"];
 
-export const ALL_SOURCES = [
-  ...AUTH_WALLED_SOURCES.map((s) => ({ ...s, kind: "auth-walled" }) as const),
-  ...PUBLIC_PROFILE_SOURCES.map(
-    (s) => ({ ...s, kind: "public-profile" }) as const,
-  ),
-] as const;
+// Every source connects the same way now — the extension pushes cookies,
+// the desktop derives any per-account info (e.g. the user's handle) from
+// the cookied session in the hidden window.
+export const ALL_SOURCES = AUTH_WALLED_SOURCES.map(
+  (s) => ({ ...s, kind: "auth-walled" }) as const,
+);
 export type AnySource = (typeof ALL_SOURCES)[number]["id"];
 
 export const SOURCE_DESCRIPTIONS: Record<AnySource, string> = {
@@ -30,8 +26,6 @@ export const SOURCE_DESCRIPTIONS: Record<AnySource, string> = {
   arena: "Connect blocks across channels.",
   youtube: "Videos, playlists, and watch-later.",
 };
-
-export type AiAutonomy = "off" | "suggest" | "auto-apply";
 
 export interface VideoDownloadPrefs {
   enabled: boolean;
@@ -45,22 +39,8 @@ export const DEFAULT_VIDEO_DOWNLOAD: VideoDownloadPrefs = {
   maxFileSizeMb: 500,
 };
 
-export interface AiProviderConfig {
-  kind: "off" | "local" | "gateway" | "direct";
-  baseUrl: string;
-  models: { vision: string; summary: string; embedding: string };
-  embeddingDim: number;
-  dailyBudgetUsd: number | null;
-  sendImages: boolean;
-}
-
 export interface SettingsRow {
   id: string;
-  aiAutonomy: {
-    tagging: AiAutonomy;
-    additionalGuidance: string;
-  };
-  aiProvider?: AiProviderConfig;
   videoDownload: VideoDownloadPrefs;
   libraryRoot: string | null;
 }

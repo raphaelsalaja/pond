@@ -59,8 +59,6 @@ export function emptyValueFor(cmp: ComparatorId): unknown {
       return [];
     case "between":
       return [0, 0];
-    case "near":
-      return { hex: "" };
     case "exists":
       return true;
     default:

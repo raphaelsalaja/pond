@@ -1,5 +1,15 @@
 import type { Source } from "./db";
 
+// Raw shapes written into `saves.rawJson`.
+//
+// Everything flows through the universal `RawJson` below — one
+// well-known shape regardless of source — so consumers never have to
+// branch on `source` to read a field.
+//
+// `RawYtdlp` is the only other shape we model directly, because it
+// mirrors the upstream yt-dlp JSON dump 1:1; that schema is owned by
+// yt-dlp, not us, and we want every field it gives us.
+
 export interface RawYtdlp {
   id?: string;
   title?: string;
@@ -70,229 +80,81 @@ export interface RawYtdlp {
   n_entries?: number;
 }
 
-export interface TwitterMediaItem {
+// v1 capture schema — the universal shape written to `saves.rawJson` by
+// the URL-first pipeline. Mirrors the `Capture` interface produced by
+// `apps/desktop/src/main/core/pipeline/extractors/types.ts` so the
+// renderer can read it without depending on main-process code.
+export interface CaptureAuthor {
+  name?: string;
+  handle?: string;
+  avatarUrl?: string;
+  profileUrl?: string;
+  verified?: boolean;
+}
+
+export interface CaptureMedia {
   url: string;
-  type: "image" | "video" | "gif";
-  altText?: string;
-  durationSec?: number;
+  type: "image" | "video" | "link";
   width?: number;
   height?: number;
-  poster?: string;
-}
-
-export interface TwitterMetrics {
-  likes?: number;
-  retweets?: number;
-  replies?: number;
-  views?: number;
-  bookmarks?: number;
-}
-
-export interface QuotedTweetSummary {
-  tweetId?: string;
-  author?: string;
-  authorName?: string;
-  text?: string;
-  url?: string;
-}
-
-export interface RawTwitter {
-  authorName?: string;
-  authorAvatar?: string;
-  authorUrl?: string;
-  verified?: boolean;
-  publishedAt?: string;
-  lang?: string;
-  conversationId?: string;
-  isReply?: boolean;
-  isQuote?: boolean;
-  isThreadRoot?: boolean;
-  quotedTweet?: QuotedTweetSummary;
-  metrics?: TwitterMetrics;
-  media?: TwitterMediaItem[];
-  bookmarkedAt?: string;
-  ytdlp?: RawYtdlp;
-}
-
-export interface InstagramMetrics {
-  likes?: number;
-  comments?: number;
-  plays?: number;
-}
-
-export interface InstagramMediaItem {
-  url: string;
-  type: "image" | "video";
-  altText?: string;
   durationSec?: number;
-  videoUrl?: string;
+  posterUrl?: string;
+  mimeType?: string;
 }
 
-export interface RawInstagram {
-  authorName?: string;
-  authorAvatar?: string;
-  authorUrl?: string;
-  verified?: boolean;
-  publishedAt?: string;
-  lang?: string;
-  metrics?: InstagramMetrics;
-  media?: InstagramMediaItem[];
-  isPaidPartnership?: boolean;
-  location?: string;
-  ytdlp?: RawYtdlp;
-}
-
-export interface PinterestMetrics {
-  repins?: number;
-  comments?: number;
-  reactions?: number;
-  saves?: number;
-}
-
-export interface PinterestBoard {
-  id?: string;
-  name?: string;
-  url?: string;
-}
-
-export interface RawPinterest {
-  authorName?: string;
-  authorAvatar?: string;
-  authorUrl?: string;
-  publishedAt?: string;
-  metrics?: PinterestMetrics;
-  board?: PinterestBoard;
-  domain?: string;
-  richSummary?: Record<string, unknown>;
-  ytdlp?: RawYtdlp;
-}
-
-export interface ArenaChannel {
-  id?: string;
-  title?: string;
-  slug?: string;
-  href?: string;
-}
-
-export interface RawArena {
-  authorName?: string;
-  authorAvatar?: string;
-  authorUrl?: string;
-  authorSlug?: string;
-  publishedAt?: string;
-  blockClass?: string;
-  channels?: ArenaChannel[];
-  metrics?: {
-    connections?: number;
-    comments?: number;
-  };
-  sourceUrl?: string;
-  attachmentUrl?: string;
-  embedUrl?: string;
-  content?: string;
-  imageWidth?: number;
-  imageHeight?: number;
-  imageVariants?: {
-    original?: string;
-    large?: string;
-    display?: string;
-    thumb?: string;
-  };
-  ytdlp?: RawYtdlp;
-}
-
-export interface CosmosCluster {
-  id: string;
-  title?: string;
-}
-
-export interface RawCosmos {
-  authorName?: string;
-  authorUrl?: string;
-  publishedAt?: string;
-  upstreamUrl?: string;
-  clusters?: CosmosCluster[];
-  ytdlp?: RawYtdlp;
-}
-
-export interface TikTokMetrics {
-  plays?: number;
+// Universal superset of public per-item metrics across the supported
+// platforms. Each extractor populates the subset its source exposes; the
+// renderer iterates over whatever is present.
+//
+// Mapping per source:
+//   twitter   — likes, retweets, replies, views, bookmarks, quotes
+//   instagram — likes, comments, plays
+//   tiktok    — likes, comments, shares, plays, bookmarks (collects)
+//   youtube   — views, likes
+//   pinterest — saves, repins, reactions, comments, shares
+//   arena     — connections, comments
+//   cosmos    — (none publicly exposed)
+export interface CaptureMetrics {
   likes?: number;
+  views?: number;
+  plays?: number;
   comments?: number;
+  replies?: number;
+  retweets?: number;
+  quotes?: number;
+  bookmarks?: number;
   shares?: number;
+  saves?: number;
+  repins?: number;
+  reactions?: number;
+  connections?: number;
   downloads?: number;
 }
 
-export interface TikTokMusic {
+export interface CaptureUpstream {
+  url: string;
+  host: string;
+}
+
+export interface Capture {
+  id: string;
+  source: Source;
+  url: string;
   title?: string;
-  author?: string;
-  id?: string;
-}
-
-export interface RawTikTok {
-  authorName?: string;
-  authorAvatar?: string;
-  authorHandle?: string;
-  publishedAt?: string;
-  durationSec?: number;
-  metrics?: TikTokMetrics;
-  music?: TikTokMusic;
-  ytdlp?: RawYtdlp;
-}
-
-export interface YoutubeChapter {
-  title: string;
-  startSec: number;
-}
-
-export interface YoutubeCaptionTrack {
-  lang: string;
-  name?: string;
-  vssId?: string;
-}
-
-export interface RawYoutube {
-  channelId?: string;
-  channelName?: string;
-  channelUrl?: string;
-  publishedAt?: string;
-  durationSec?: number;
-  metrics?: {
-    views?: number;
-    likes?: number;
-  };
-  shortDescription?: string;
-  keywords?: string[];
-  chapters?: YoutubeChapter[];
-  captions?: YoutubeCaptionTrack[];
-  kind?: string;
-  ytdlp?: RawYtdlp;
-}
-
-export interface RawArticle {
-  siteName?: string;
-  canonicalUrl?: string;
+  description?: string;
+  author?: CaptureAuthor;
   publishedAt?: string;
   lang?: string;
-  keywords?: string[];
-  feedUrl?: string;
+  media: CaptureMedia[];
+  metrics?: CaptureMetrics;
+  duration?: number;
+  upstream?: CaptureUpstream;
+  extras?: Record<string, unknown>;
+}
+
+export interface RawJson {
+  capture: Capture;
+  extractorId: string;
+  extractedAt: string;
   ytdlp?: RawYtdlp;
 }
-
-export interface RawSaveMetadata {
-  twitter?: RawTwitter;
-  instagram?: RawInstagram;
-  pinterest?: RawPinterest;
-  arena?: RawArena;
-  cosmos?: RawCosmos;
-  tiktok?: RawTikTok;
-  youtube?: RawYoutube;
-  article?: RawArticle;
-
-  kind?: string;
-  capturedAt?: string;
-
-  [key: string]: unknown;
-}
-
-export type RawShape = Source;

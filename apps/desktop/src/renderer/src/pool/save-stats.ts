@@ -1,15 +1,4 @@
-import type {
-  RawArena,
-  RawArticle,
-  RawCosmos,
-  RawInstagram,
-  RawPinterest,
-  RawSaveMetadata,
-  RawTikTok,
-  RawTwitter,
-  RawYoutube,
-  RawYtdlp,
-} from "@pond/schema/raw";
+import type { Capture, RawJson, RawYtdlp } from "@pond/schema/raw";
 import { unixSecondsToIso, ytdlpDateToIso } from "@/lib/format";
 import type { Save } from "./types";
 import { pickAuthorAvatarUrl } from "./url";
@@ -25,8 +14,10 @@ export type SaveMetricKey =
   | "downloads"
   | "connections"
   | "repins"
+  | "reactions"
   | "saves"
   | "replies"
+  | "quotes"
   | "dislikes";
 
 export interface SaveMetric {
@@ -62,38 +53,11 @@ export interface SaveStats {
 }
 
 export function extractSaveStats(save: Save): SaveStats {
-  const raw = (save.rawJson ?? null) as RawSaveMetadata | null;
+  const raw = save.rawJson ?? null;
   const stats: SaveStats = { metrics: [] };
 
-  switch (save.source) {
-    case "twitter":
-      mergeTwitter(stats, raw?.twitter);
-      break;
-    case "instagram":
-      mergeInstagram(stats, raw?.instagram);
-      break;
-    case "pinterest":
-      mergePinterest(stats, raw?.pinterest);
-      break;
-    case "arena":
-      mergeArena(stats, raw?.arena);
-      break;
-    case "cosmos":
-      mergeCosmos(stats, raw?.cosmos);
-      break;
-    case "tiktok":
-      mergeTikTok(stats, raw?.tiktok);
-      break;
-    case "youtube":
-      mergeYoutube(stats, raw?.youtube);
-      break;
-    case "article":
-      mergeArticle(stats, raw?.article);
-      break;
-  }
-
-  const ytdlp = pickYtdlp(raw, save.source);
-  if (ytdlp) mergeYtdlp(stats, ytdlp);
+  if (raw?.capture) mergeCapture(stats, raw.capture);
+  if (raw?.ytdlp) mergeYtdlp(stats, raw.ytdlp);
 
   if (save.author && !stats.uploader?.name) {
     stats.uploader = { ...stats.uploader, name: save.author };
@@ -107,191 +71,84 @@ export function extractSaveStats(save: Save): SaveStats {
   return stats;
 }
 
-function mergeTwitter(stats: SaveStats, raw: RawTwitter | undefined) {
-  if (!raw) return;
-  stats.publishedAt ??= raw.publishedAt;
-  stats.language ??= raw.lang;
-  stats.uploader = {
-    ...stats.uploader,
-    name: raw.authorName ?? stats.uploader?.name,
-    url: raw.authorUrl ?? stats.uploader?.url,
-    avatar: raw.authorAvatar ?? stats.uploader?.avatar,
-  };
-  if (raw.metrics) {
-    pushMetric(stats, "views", "Views", raw.metrics.views);
-    pushMetric(stats, "likes", "Likes", raw.metrics.likes);
-    pushMetric(stats, "reposts", "Reposts", raw.metrics.retweets);
-    pushMetric(stats, "replies", "Replies", raw.metrics.replies);
-    pushMetric(stats, "bookmarks", "Bookmarks", raw.metrics.bookmarks);
+function mergeCapture(stats: SaveStats, capture: Capture): void {
+  if (capture.publishedAt) stats.publishedAt = capture.publishedAt;
+  if (capture.lang) stats.language = capture.lang;
+  if (typeof capture.duration === "number") {
+    stats.durationSec = capture.duration;
   }
-  const firstVideo = raw.media?.find((m) => m.type === "video");
-  if (firstVideo?.durationSec) stats.durationSec ??= firstVideo.durationSec;
-}
 
-function mergeInstagram(stats: SaveStats, raw: RawInstagram | undefined) {
-  if (!raw) return;
-  stats.publishedAt ??= raw.publishedAt;
-  stats.language ??= raw.lang;
-  stats.location ??= raw.location;
-  stats.isPaidPartnership ??= raw.isPaidPartnership;
-  stats.uploader = {
-    ...stats.uploader,
-    name: raw.authorName ?? stats.uploader?.name,
-    url: raw.authorUrl ?? stats.uploader?.url,
-    avatar: raw.authorAvatar ?? stats.uploader?.avatar,
-  };
-  if (raw.metrics) {
-    pushMetric(stats, "plays", "Plays", raw.metrics.plays);
-    pushMetric(stats, "likes", "Likes", raw.metrics.likes);
-    pushMetric(stats, "comments", "Comments", raw.metrics.comments);
-  }
-  const firstVideo = raw.media?.find((m) => m.type === "video");
-  if (firstVideo?.durationSec) stats.durationSec ??= firstVideo.durationSec;
-}
-
-function mergePinterest(stats: SaveStats, raw: RawPinterest | undefined) {
-  if (!raw) return;
-  stats.publishedAt ??= raw.publishedAt;
-  stats.uploader = {
-    ...stats.uploader,
-    name: raw.authorName ?? stats.uploader?.name,
-    url: raw.authorUrl ?? stats.uploader?.url,
-    avatar: raw.authorAvatar ?? stats.uploader?.avatar,
-  };
-  if (raw.metrics) {
-    // Pinterest's heart-icon count is `totalReactionCount`, surfaced here as
-    // `reactions`; render it as "Likes" since that's what the UI shows.
-    pushMetric(stats, "likes", "Likes", raw.metrics.reactions);
-    pushMetric(stats, "saves", "Saves", raw.metrics.saves);
-    pushMetric(stats, "comments", "Comments", raw.metrics.comments);
-    pushMetric(stats, "repins", "Repins", raw.metrics.repins);
-  }
-  if (raw.board?.name || raw.board?.url) {
-    stats.board = { name: raw.board.name, url: raw.board.url };
-  }
-}
-
-function mergeArena(stats: SaveStats, raw: RawArena | undefined) {
-  if (!raw) return;
-  stats.publishedAt ??= raw.publishedAt;
-  stats.uploader = {
-    ...stats.uploader,
-    name: raw.authorName ?? stats.uploader?.name,
-    url: raw.authorUrl ?? stats.uploader?.url,
-    avatar: raw.authorAvatar ?? stats.uploader?.avatar,
-  };
-  if (raw.metrics) {
-    pushMetric(stats, "connections", "Connections", raw.metrics.connections);
-    pushMetric(stats, "comments", "Comments", raw.metrics.comments);
-  }
-  if (raw.channels?.length) {
-    stats.arenaChannels = raw.channels
-      .filter((c): c is { title?: string; href?: string } => Boolean(c))
-      .map((c) => ({ title: c.title, href: c.href }));
-  }
-}
-
-function mergeCosmos(stats: SaveStats, raw: RawCosmos | undefined) {
-  if (!raw) return;
-  stats.publishedAt ??= raw.publishedAt;
-  stats.uploader = {
-    ...stats.uploader,
-    name: raw.authorName ?? stats.uploader?.name,
-    url: raw.authorUrl ?? stats.uploader?.url,
-  };
-  if (raw.clusters?.length) {
-    stats.cosmosClusters = raw.clusters.map((c) => ({
-      id: c.id,
-      title: c.title,
-    }));
-  }
-}
-
-function mergeTikTok(stats: SaveStats, raw: RawTikTok | undefined) {
-  if (!raw) return;
-  stats.publishedAt ??= raw.publishedAt;
-  stats.durationSec ??= raw.durationSec;
-  stats.uploader = {
-    ...stats.uploader,
-    name: raw.authorName ?? raw.authorHandle ?? stats.uploader?.name,
-    avatar: raw.authorAvatar ?? stats.uploader?.avatar,
-  };
-  if (raw.metrics) {
-    pushMetric(stats, "plays", "Plays", raw.metrics.plays);
-    pushMetric(stats, "likes", "Likes", raw.metrics.likes);
-    pushMetric(stats, "comments", "Comments", raw.metrics.comments);
-    pushMetric(stats, "shares", "Shares", raw.metrics.shares);
-    pushMetric(stats, "downloads", "Downloads", raw.metrics.downloads);
-  }
-  if (raw.music?.title || raw.music?.author) {
-    stats.music = { title: raw.music.title, author: raw.music.author };
-  }
-}
-
-function mergeYoutube(stats: SaveStats, raw: RawYoutube | undefined) {
-  if (!raw) return;
-  stats.publishedAt ??= raw.publishedAt;
-  stats.durationSec ??= raw.durationSec;
-  if (raw.channelName || raw.channelUrl) {
-    stats.channel = {
-      name: raw.channelName,
-      url: raw.channelUrl,
-    };
+  if (capture.author) {
+    const name = capture.author.name ?? capture.author.handle;
     stats.uploader = {
-      ...stats.uploader,
-      name: raw.channelName ?? stats.uploader?.name,
-      url: raw.channelUrl ?? stats.uploader?.url,
+      ...(name ? { name } : {}),
+      ...(capture.author.profileUrl ? { url: capture.author.profileUrl } : {}),
+      ...(capture.author.avatarUrl ? { avatar: capture.author.avatarUrl } : {}),
     };
   }
-  if (raw.metrics) {
-    pushMetric(stats, "views", "Views", raw.metrics.views);
-    pushMetric(stats, "likes", "Likes", raw.metrics.likes);
+
+  const firstVideo = capture.media.find((m) => m.type === "video");
+  if (firstVideo?.durationSec && stats.durationSec === undefined) {
+    stats.durationSec = firstVideo.durationSec;
   }
-  if (raw.chapters?.length) {
-    stats.chapters = raw.chapters.map((c) => ({
+  if (firstVideo?.width && firstVideo?.height) {
+    stats.videoSize = { width: firstVideo.width, height: firstVideo.height };
+  }
+
+  if (capture.metrics) {
+    pushMetric(stats, "views", "Views", capture.metrics.views);
+    pushMetric(stats, "plays", "Plays", capture.metrics.plays);
+    pushMetric(stats, "likes", "Likes", capture.metrics.likes);
+    pushMetric(stats, "reactions", "Reactions", capture.metrics.reactions);
+    pushMetric(stats, "comments", "Comments", capture.metrics.comments);
+    pushMetric(stats, "replies", "Replies", capture.metrics.replies);
+    pushMetric(stats, "reposts", "Reposts", capture.metrics.retweets);
+    pushMetric(stats, "quotes", "Quotes", capture.metrics.quotes);
+    pushMetric(stats, "shares", "Shares", capture.metrics.shares);
+    pushMetric(stats, "bookmarks", "Bookmarks", capture.metrics.bookmarks);
+    pushMetric(stats, "saves", "Saves", capture.metrics.saves);
+    pushMetric(stats, "repins", "Repins", capture.metrics.repins);
+    pushMetric(
+      stats,
+      "connections",
+      "Connections",
+      capture.metrics.connections,
+    );
+    pushMetric(stats, "downloads", "Downloads", capture.metrics.downloads);
+  }
+
+  const extras = capture.extras ?? {};
+
+  // Pinterest board, Arena channels, Cosmos clusters all live under
+  // `capture.extras` keyed by their source-specific names.
+  const board = extras.board as { name?: string; url?: string } | undefined;
+  if (board?.name || board?.url) {
+    stats.board = { name: board.name, url: board.url };
+  }
+
+  const arenaChannels = extras.channels as
+    | Array<{ title?: string; href?: string }>
+    | undefined;
+  if (Array.isArray(arenaChannels) && arenaChannels.length > 0) {
+    stats.arenaChannels = arenaChannels.map((c) => ({
       title: c.title,
-      startSec: c.startSec,
+      href: c.href,
     }));
   }
-}
 
-function mergeArticle(stats: SaveStats, raw: RawArticle | undefined) {
-  if (!raw) return;
-  stats.publishedAt ??= raw.publishedAt;
-  stats.language ??= raw.lang;
-}
-
-function pickYtdlp(
-  raw: RawSaveMetadata | null,
-  source: string,
-): RawYtdlp | undefined {
-  if (!raw) return undefined;
-  const direct = (raw as Record<string, unknown>)[source];
-  if (
-    direct &&
-    typeof direct === "object" &&
-    "ytdlp" in direct &&
-    direct.ytdlp &&
-    typeof direct.ytdlp === "object"
-  ) {
-    return direct.ytdlp as RawYtdlp;
+  const cosmosClusters = extras.clusters as
+    | Array<{ id?: string; title?: string }>
+    | undefined;
+  if (Array.isArray(cosmosClusters) && cosmosClusters.length > 0) {
+    stats.cosmosClusters = cosmosClusters
+      .filter((c): c is { id: string; title?: string } => Boolean(c.id))
+      .map((c) => ({ id: c.id, title: c.title }));
   }
-  for (const value of Object.values(raw)) {
-    if (
-      value &&
-      typeof value === "object" &&
-      "ytdlp" in value &&
-      (value as { ytdlp?: unknown }).ytdlp
-    ) {
-      return (value as { ytdlp: RawYtdlp }).ytdlp;
-    }
-  }
-  return undefined;
 }
 
 function mergeYtdlp(stats: SaveStats, ytdlp: RawYtdlp) {
-  if (typeof ytdlp.duration === "number") {
-    stats.durationSec ??= ytdlp.duration;
+  if (typeof ytdlp.duration === "number" && stats.durationSec === undefined) {
+    stats.durationSec = ytdlp.duration;
   }
 
   if (!stats.publishedAt) {
@@ -387,3 +244,6 @@ function pushMetricIfMissing(
   if (stats.metrics.some((m) => m.key === key)) return;
   stats.metrics.push({ key, label, value });
 }
+
+// Re-export for callers that want to type-narrow `save.rawJson`.
+export type { RawJson };

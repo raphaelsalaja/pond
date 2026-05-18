@@ -6,25 +6,18 @@ import {
   IconCloudOutline18,
   IconConnectedDotsOutline18,
   IconImagesOutline18,
-  IconMagnifierSparkleOutline18,
   IconShapesOutline18,
-  IconShieldOutline18,
   IconSliderOutline18,
-  IconSparkleOutline18,
   IconStackOutline18,
   IconTagOutline18,
   IconTerminalOutline18,
   IconTrash2ContentOutline18,
-  IconWandSparkleOutline18,
   IconWindowCode2Outline18,
   IconWorkflowOutline18,
 } from "@pond/icons/outline/18";
 import type { IconComponent } from "@pond/icons/types";
 import type { ComponentType } from "react";
 import { AboutSection } from "./sections/about";
-import { AiEnrichmentSection } from "./sections/ai-enrichment";
-import { AiProviderSection } from "./sections/ai-provider";
-import { AiSearchSection } from "./sections/ai-search";
 import { AutomationSection } from "./sections/automation";
 import { BackupsSection } from "./sections/backups";
 import { CaptureBehaviorSection } from "./sections/capture-behavior";
@@ -35,18 +28,12 @@ import { IntegrationsSection } from "./sections/integrations";
 import { MediaSection } from "./sections/media";
 import { NotificationsSection } from "./sections/notifications";
 import { PreferencesSection } from "./sections/preferences";
-import { SafetySection } from "./sections/safety";
 import { StorageSection } from "./sections/storage";
 import { TagsSection } from "./sections/tags";
 import { TrashPrefsSection } from "./sections/trash";
 import { UpdatesSection } from "./sections/updates";
 
-export type SectionGroup =
-  | "library"
-  | "media"
-  | "capture"
-  | "intelligence"
-  | "app";
+export type SectionGroup = "library" | "media" | "capture" | "app";
 
 export interface SectionDef {
   id: string;
@@ -69,7 +56,7 @@ export const SECTIONS: SectionDef[] = [
   {
     id: "tags",
     path: "tags",
-    label: "Tags",
+    label: "Labels",
     icon: IconTagOutline18,
     group: "library",
     component: TagsSection,
@@ -81,14 +68,6 @@ export const SECTIONS: SectionDef[] = [
     icon: IconTrash2ContentOutline18,
     group: "library",
     component: TrashPrefsSection,
-  },
-  {
-    id: "safety",
-    path: "safety",
-    label: "Safety",
-    icon: IconShieldOutline18,
-    group: "library",
-    component: SafetySection,
   },
   {
     id: "backups",
@@ -131,31 +110,6 @@ export const SECTIONS: SectionDef[] = [
     icon: IconWindowCode2Outline18,
     group: "capture",
     component: ExtensionSection,
-  },
-
-  {
-    id: "ai-provider",
-    path: "ai/provider",
-    label: "AI Provider",
-    icon: IconSparkleOutline18,
-    group: "intelligence",
-    component: AiProviderSection,
-  },
-  {
-    id: "ai-enrichment",
-    path: "ai/enrichment",
-    label: "Enrichment",
-    icon: IconWandSparkleOutline18,
-    group: "intelligence",
-    component: AiEnrichmentSection,
-  },
-  {
-    id: "ai-search",
-    path: "ai/search",
-    label: "Search & Embeddings",
-    icon: IconMagnifierSparkleOutline18,
-    group: "intelligence",
-    component: AiSearchSection,
   },
 
   {
@@ -221,7 +175,6 @@ export const GROUP_ORDER: readonly SectionGroup[] = [
   "library",
   "media",
   "capture",
-  "intelligence",
 ] as const;
 
 export const GROUP_LABELS: Record<SectionGroup, string | null> = {
@@ -229,7 +182,6 @@ export const GROUP_LABELS: Record<SectionGroup, string | null> = {
   library: "Library",
   media: "Media",
   capture: "Capture",
-  intelligence: "Intelligence",
 };
 
 export function sectionsByGroup(group: SectionGroup): SectionDef[] {

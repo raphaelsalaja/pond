@@ -45,7 +45,6 @@ body:
         - Library / on-disk format
         - SQLite index / search
         - Ingest API
-        - AI enrichment
         - Auto-update / release
         - Other
     validations:

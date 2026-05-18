@@ -1,4 +1,4 @@
-import type { IngestPayload } from "@pond/schema/ingest";
+import type { Capture, CaptureMedia, CaptureMetrics } from "@pond/schema/raw";
 import log from "electron-log/main.js";
 
 const USER_AGENT =
@@ -83,18 +83,22 @@ interface RelayPin {
   };
 }
 
-export interface PinterestApiResult {
-  ok: boolean;
-  payload?: IngestPayload;
-  reason?: "fetch_failed" | "blocked" | "no_pin";
-  status?: number;
-}
+export type PinterestCaptureResult =
+  | { ok: true; capture: Capture }
+  | {
+      ok: false;
+      reason: "fetch_failed" | "blocked" | "no_pin";
+      status?: number;
+    };
 
-export async function refreshFromPinterestRelay({
+// Scrapes the Pinterest Relay payload (which holds the full title,
+// creator avatar, full-resolution image URL, and metrics that aren't
+// in OG tags) and reshapes it into a universal `Capture`.
+export async function fetchPinterestCapture({
   sourceId,
 }: {
   sourceId: string;
-}): Promise<PinterestApiResult> {
+}): Promise<PinterestCaptureResult> {
   const url = `https://www.pinterest.com/pin/${sourceId}/`;
   let res: Response;
   try {
@@ -123,7 +127,7 @@ export async function refreshFromPinterestRelay({
   const html = await res.text();
   const pin = extractPin(html);
   if (!pin) return { ok: false, reason: "no_pin" };
-  return { ok: true, payload: buildPayload(sourceId, url, pin) };
+  return { ok: true, capture: buildCapture(sourceId, url, pin) };
 }
 
 function extractPin(html: string): RelayPin | null {
@@ -240,148 +244,106 @@ function findSecondArgStart(inner: string): number {
   return -1;
 }
 
-function buildPayload(
-  sourceId: string,
-  url: string,
-  pin: RelayPin,
-): IngestPayload {
+function buildCapture(sourceId: string, url: string, pin: RelayPin): Capture {
   const title = pickStr([
     pin.title,
     pin.closeupUnifiedTitle,
     cleanSeoTitle(pin.seoTitle),
   ]);
   const description = pickDescription(pin);
-  // Prefer richer creator objects first; merged result usually puts the full
-  // user in nativeCreator / closeupUnifiedAttribution / originPinner.
+
+  // Prefer richer creator objects first; the merged Relay result usually
+  // puts the full user in nativeCreator / closeupUnifiedAttribution /
+  // originPinner.
   const creator = pickCreator(pin);
-  const author = creator?.fullName ?? null;
-  const avatar = pickStr([
-    creator?.imageLargeUrl,
-    creator?.imageMediumUrl,
-    creator?.imageSmallUrl,
-  ]);
-  const profileUrl = creator?.profileUrl
-    ? creator.profileUrl
-    : creator?.username
-      ? `https://www.pinterest.com/${creator.username}/`
-      : null;
-  const mediaUrl = pickStr([pin.images_orig?.url, pin.imageLargeUrl]);
-  const mediaType: "image" | "video" = pin.isVideo ? "video" : "image";
-  const mediaUrls = buildMediaUrls(pin, mediaUrl, mediaType);
+  const author = ((): Capture["author"] => {
+    if (!creator) return undefined;
+    const name = creator.fullName ?? undefined;
+    const handle = creator.username ?? undefined;
+    const avatarUrl =
+      pickStr([
+        creator.imageLargeUrl,
+        creator.imageMediumUrl,
+        creator.imageSmallUrl,
+      ]) ?? undefined;
+    const profileUrl =
+      creator.profileUrl ??
+      (creator.username
+        ? `https://www.pinterest.com/${creator.username}/`
+        : undefined);
+    const out: NonNullable<Capture["author"]> = {};
+    if (name) out.name = name;
+    if (handle) out.handle = handle;
+    if (avatarUrl) out.avatarUrl = avatarUrl;
+    if (profileUrl) out.profileUrl = profileUrl;
+    return Object.keys(out).length > 0 ? out : undefined;
+  })();
+
+  const media = ((): CaptureMedia[] => {
+    const primary = pickStr([pin.images_orig?.url, pin.imageLargeUrl]);
+    if (!primary) return [];
+    // The 736x variant carries width/height; the originals URL doesn't
+    // expose dimensions in the GraphQL response but shares the same
+    // aspect ratio, so we reuse those dims as a hint for the cover.
+    const dims = pin.images_736x ?? pin.images_564x ?? pin.images_474x;
+    const entry: CaptureMedia = {
+      url: primary,
+      type: pin.isVideo ? "video" : "image",
+    };
+    if (typeof dims?.width === "number") entry.width = dims.width;
+    if (typeof dims?.height === "number") entry.height = dims.height;
+    return [entry];
+  })();
+
+  const metrics = ((): CaptureMetrics | undefined => {
+    const out: CaptureMetrics = {};
+    if (typeof pin.totalReactionCount === "number") {
+      out.reactions = pin.totalReactionCount;
+    }
+    if (typeof pin.aggregatedPinData?.commentCount === "number") {
+      out.comments = pin.aggregatedPinData.commentCount;
+    }
+    if (typeof pin.aggregatedPinData?.aggregatedStats?.saves === "number") {
+      out.saves = pin.aggregatedPinData.aggregatedStats.saves;
+    }
+    if (typeof pin.repinCount === "number") out.repins = pin.repinCount;
+    if (typeof pin.shareCount === "number") out.shares = pin.shareCount;
+    return Object.keys(out).length > 0 ? out : undefined;
+  })();
+
+  const extras = ((): Record<string, unknown> | undefined => {
+    const out: Record<string, unknown> = {};
+    const externalLink = pickStr([pin.link, pin.mobileLink]);
+    if (externalLink) out.externalLink = externalLink;
+    if (pin.dominantColor) out.dominantColor = pin.dominantColor;
+    if (pin.board?.url) {
+      const boardUrl = pin.board.url.startsWith("http")
+        ? pin.board.url
+        : `https://www.pinterest.com${pin.board.url}`;
+      const slug = pin.board.url.replace(/\/+$/, "").split("/").pop();
+      const boardName = slug
+        ? decodeURIComponent(slug).replace(/-/g, " ")
+        : undefined;
+      out.board = { name: boardName, url: boardUrl };
+    }
+    return Object.keys(out).length > 0 ? out : undefined;
+  })();
+
   const publishedAt = parsePinterestDate(pin.createdAt);
 
-  const meta: Record<string, unknown> = {};
-  if (author) meta.authorName = author;
-  if (avatar) meta.authorAvatar = avatar;
-  if (profileUrl) meta.authorUrl = profileUrl;
-  if (creator?.username) meta.creatorUsername = creator.username;
-  if (creator?.websiteUrl) meta.creatorWebsite = creator.websiteUrl;
-  if (pin.pinner?.username) meta.pinnerUsername = pin.pinner.username;
-  if (pin.board?.url) {
-    const boardUrl = pin.board.url.startsWith("http")
-      ? pin.board.url
-      : `https://www.pinterest.com${pin.board.url}`;
-    const slug = pin.board.url.replace(/\/+$/, "").split("/").pop();
-    const boardName = slug
-      ? decodeURIComponent(slug).replace(/-/g, " ")
-      : undefined;
-    meta.board = { name: boardName, url: boardUrl };
-  }
-  if (pin.dominantColor) meta.dominantColor = pin.dominantColor;
-  if (pin.imageSignature) meta.imageSignature = pin.imageSignature;
-  if (publishedAt) meta.publishedAt = publishedAt;
-  if (pin.seoAltText && !description) meta.altText = pin.seoAltText;
-  if (typeof pin.isVideo === "boolean") meta.isVideo = pin.isVideo;
-  if (pin.domain) meta.domain = pin.domain;
-  const externalLink = pickStr([pin.link, pin.mobileLink]);
-  if (externalLink) meta.externalLink = externalLink;
-  if (pin.priceCurrency) meta.priceCurrency = pin.priceCurrency;
-  if (
-    pin.pinJoin?.visualAnnotation &&
-    pin.pinJoin.visualAnnotation.length > 0
-  ) {
-    meta.visualAnnotation = pin.pinJoin.visualAnnotation.slice(0, 32);
-  }
-  if (pin.pinJoin?.seoBreadcrumbs && pin.pinJoin.seoBreadcrumbs.length > 0) {
-    const cats = pin.pinJoin.seoBreadcrumbs
-      .map((b) => b.name?.trim())
-      .filter((s): s is string => Boolean(s && s.length > 0));
-    if (cats.length > 0) meta.categories = cats;
-  }
-  if (pin.pinJoin?.seoCanonicalUrl) {
-    meta.canonicalUrl = pin.pinJoin.seoCanonicalUrl.startsWith("http")
-      ? pin.pinJoin.seoCanonicalUrl
-      : `https://www.pinterest.com${pin.pinJoin.seoCanonicalUrl}`;
-  }
-  if (pin.pinJoin?.canonicalPin?.entityId) {
-    meta.canonicalPinId = pin.pinJoin.canonicalPin.entityId;
-  }
-  if (pin.storyPinData?.totalVideoDuration) {
-    meta.videoDurationSec = pin.storyPinData.totalVideoDuration;
-  }
-
-  const metrics: Record<string, number> = {};
-  if (typeof pin.totalReactionCount === "number") {
-    metrics.reactions = pin.totalReactionCount;
-  }
-  if (typeof pin.aggregatedPinData?.commentCount === "number") {
-    metrics.comments = pin.aggregatedPinData.commentCount;
-  }
-  if (typeof pin.aggregatedPinData?.aggregatedStats?.saves === "number") {
-    metrics.saves = pin.aggregatedPinData.aggregatedStats.saves;
-  }
-  if (typeof pin.repinCount === "number") {
-    metrics.repins = pin.repinCount;
-  }
-  if (typeof pin.shareCount === "number") metrics.shares = pin.shareCount;
-  if (Object.keys(metrics).length > 0) meta.metrics = metrics;
-
-  return {
+  const capture: Capture = {
+    id: sourceId,
     source: "pinterest",
-    sourceId,
     url,
-    title: title ?? undefined,
-    description: description ?? undefined,
-    author: author ?? undefined,
-    siteName: "Pinterest",
-    publishedAt: publishedAt ? new Date(publishedAt) : undefined,
-    mediaUrl: mediaUrl ?? undefined,
-    mediaUrls,
-    mediaType,
-    raw: {
-      kind: "pinterest-relay",
-      capturedAt: new Date().toISOString(),
-      pinterest: meta,
-    },
+    media,
   };
-}
-
-function buildMediaUrls(
-  pin: RelayPin,
-  primary: string | null,
-  mediaType: "image" | "video",
-):
-  | Array<{
-      url: string;
-      type?: "image" | "video";
-      width?: number;
-      height?: number;
-    }>
-  | undefined {
-  if (!primary) return undefined;
-  // The 736x variant carries width/height; the originals URL doesn't expose
-  // dimensions in the GraphQL response but shares the same aspect ratio, so
-  // we re-use those dims as a hint for the cover.
-  const dims = pin.images_736x ?? pin.images_564x ?? pin.images_474x;
-  return [
-    {
-      url: primary,
-      type: mediaType,
-      ...(typeof dims?.width === "number" && typeof dims?.height === "number"
-        ? { width: dims.width, height: dims.height }
-        : {}),
-    },
-  ];
+  if (title) capture.title = title;
+  if (description) capture.description = description;
+  if (author) capture.author = author;
+  if (publishedAt) capture.publishedAt = publishedAt;
+  if (metrics) capture.metrics = metrics;
+  if (extras) capture.extras = extras;
+  return capture;
 }
 
 function parsePinterestDate(raw: string | undefined): string | undefined {

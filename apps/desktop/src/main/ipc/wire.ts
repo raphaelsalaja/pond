@@ -1,4 +1,4 @@
-import type { Save, SyncAction } from "@pond/schema/db";
+import type { Op, Save, SyncAction, Task, TaskStatus } from "@pond/schema/db";
 
 type Stampable = Date | string | number | null | undefined;
 
@@ -20,37 +20,64 @@ function toMs(v: Stampable): number | null {
   return null;
 }
 
+export interface WireTask {
+  op: Op;
+  status: TaskStatus;
+  attempts: number;
+  maxAttempts: number;
+  lastError: string | null;
+  nextRunAt: number;
+  updatedAt: number;
+}
+
 export type WireSave = Omit<
   Save,
   | "savedAt"
   | "createdAt"
-  | "archivedAt"
   | "deletedAt"
-  | "embeddingUpdatedAt"
   | "publishedAt"
+  | "ingestStartedAt"
+  | "ingestCompletedAt"
 > & {
   savedAt: number;
   createdAt: number;
-  archivedAt: number | null;
   deletedAt: number | null;
-  embeddingUpdatedAt: number | null;
   publishedAt: number | null;
+  ingestStartedAt: number | null;
+  ingestCompletedAt: number | null;
+  tasks?: WireTask[];
 };
 
-export function toWireSave(row: Save): WireSave {
+export function toWireSave(row: Save, taskRows?: Task[]): WireSave {
   return {
     ...row,
     savedAt: toMs(row.savedAt) ?? 0,
     createdAt: toMs(row.createdAt) ?? 0,
-    archivedAt: toMs(row.archivedAt),
     deletedAt: toMs(row.deletedAt),
-    embeddingUpdatedAt: toMs(row.embeddingUpdatedAt),
     publishedAt: toMs(row.publishedAt),
+    ingestStartedAt: toMs(row.ingestStartedAt),
+    ingestCompletedAt: toMs(row.ingestCompletedAt),
+    ...(taskRows ? { tasks: taskRows.map(toWireTask) } : {}),
   };
 }
 
-export function toWireSaves(rows: Save[]): WireSave[] {
-  return rows.map(toWireSave);
+export function toWireSaves(
+  rows: Save[],
+  tasksBySave?: Map<string, Task[]>,
+): WireSave[] {
+  return rows.map((row) => toWireSave(row, tasksBySave?.get(row.id)));
+}
+
+export function toWireTask(task: Task): WireTask {
+  return {
+    op: task.op,
+    status: task.status,
+    attempts: task.attempts,
+    maxAttempts: task.maxAttempts,
+    lastError: task.lastError,
+    nextRunAt: toMs(task.nextRunAt) ?? 0,
+    updatedAt: toMs(task.updatedAt) ?? 0,
+  };
 }
 
 export function toWireSyncAction(action: SyncAction): SyncAction {
@@ -65,9 +92,7 @@ export function toWireSyncAction(action: SyncAction): SyncAction {
 const TIMESTAMP_KEYS = [
   "savedAt",
   "createdAt",
-  "archivedAt",
   "deletedAt",
-  "embeddingUpdatedAt",
   "publishedAt",
 ] as const;
 

@@ -14,18 +14,6 @@ export const NAVIGATION_COMMANDS: Command[] = [
     },
   },
   {
-    id: "nav.inbox",
-    label: "Go to Inbox",
-    group: "Navigation",
-    scope: "all",
-    keywords: ["unread"],
-    chord: ["g", "i"],
-    perform: ({ navigate, close }) => {
-      navigate("/inbox", { viewTransition: true });
-      close();
-    },
-  },
-  {
     id: "nav.activity",
     label: "Go to Activity",
     group: "Navigation",

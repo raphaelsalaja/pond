@@ -15,17 +15,6 @@ export interface RefreshBackfillStatusWire {
   message?: string;
 }
 
-export interface SafetyScanStatusWire {
-  state: "idle" | "running" | "done" | "error" | "cancelled";
-  total: number;
-  current: number;
-  scored: number;
-  skipped: number;
-  startedAt: string | null;
-  finishedAt: string | null;
-  message?: string;
-}
-
 export interface StorageGuardStatusWire {
   state: "ok" | "warn" | "exceeded";
   pondBytes: number;
@@ -33,6 +22,18 @@ export interface StorageGuardStatusWire {
   warnBytes: number | null;
   action: "warn" | "pauseSync" | "pauseVideo";
   appliedAt: string;
+}
+
+export interface ProcessingProgressWire {
+  state: "idle" | "running" | "done" | "error" | "cancelled";
+  total: number;
+  current: number;
+  recovered: number;
+  stillFailed: number;
+  startedAt: string | null;
+  finishedAt: string | null;
+  currentSaveId: string | null;
+  message?: string;
 }
 
 const api = {
@@ -108,10 +109,6 @@ const api = {
     return ipcRenderer.invoke(IPC.openSaveFile, id, fileIndex);
   },
 
-  showSaveContextMenu(id: string): Promise<{ ok: boolean }> {
-    return ipcRenderer.invoke(IPC.saveContextMenu, id);
-  },
-
   refreshSave(id: string): Promise<
     | { ok: true; method: "og" | "hidden-window"; created: boolean }
     | {
@@ -156,27 +153,6 @@ const api = {
     return () => ipcRenderer.off(IPC.refreshBackfillStatus, listener);
   },
 
-  safetyScanStart(): Promise<
-    | { ok: true; total: number }
-    | { ok: false; reason: "already_running" | "no_saves" }
-  > {
-    return ipcRenderer.invoke(IPC.safetyScanStart);
-  },
-
-  safetyScanCancel(): Promise<{ ok: boolean }> {
-    return ipcRenderer.invoke(IPC.safetyScanCancel);
-  },
-
-  safetyScanStatus(): Promise<SafetyScanStatusWire> {
-    return ipcRenderer.invoke(IPC.safetyScanStatus);
-  },
-
-  onSafetyScanStatus(cb: (status: SafetyScanStatusWire) => void): () => void {
-    const listener = (_: unknown, status: SafetyScanStatusWire) => cb(status);
-    ipcRenderer.on(IPC.safetyScanStatus, listener);
-    return () => ipcRenderer.off(IPC.safetyScanStatus, listener);
-  },
-
   connectSource(
     source: string,
   ): Promise<{ ok: boolean; mode: "external" | "skipped" }> {
@@ -214,12 +190,6 @@ const api = {
     return ipcRenderer.invoke(IPC.videoToolsReinstall);
   },
 
-  videoRegeneratePosters(
-    opts: { force?: boolean } = {},
-  ): Promise<{ ok: boolean; scheduled: number }> {
-    return ipcRenderer.invoke(IPC.videoRegeneratePosters, opts);
-  },
-
   redownloadVideo(id: string): Promise<
     | { ok: true }
     | {
@@ -228,17 +198,6 @@ const api = {
       }
   > {
     return ipcRenderer.invoke(IPC.videoRedownload, id);
-  },
-
-  onVideoDownloadStatus(
-    cb: (status: { pending: string[]; inFlight: string[] }) => void,
-  ): () => void {
-    const listener = (
-      _: unknown,
-      status: { pending: string[]; inFlight: string[] },
-    ) => cb(status);
-    ipcRenderer.on(IPC.autoVideoStatus, listener);
-    return () => ipcRenderer.off(IPC.autoVideoStatus, listener);
   },
 
   syncRunNow(
@@ -306,6 +265,14 @@ const api = {
     const listener = (_: unknown, status: StorageGuardStatusWire) => cb(status);
     ipcRenderer.on(IPC.storageStatus, listener);
     return () => ipcRenderer.off(IPC.storageStatus, listener);
+  },
+
+  onProcessingProgress(
+    cb: (status: ProcessingProgressWire) => void,
+  ): () => void {
+    const listener = (_: unknown, status: ProcessingProgressWire) => cb(status);
+    ipcRenderer.on(IPC.processingProgress, listener);
+    return () => ipcRenderer.off(IPC.processingProgress, listener);
   },
 
   suggestions: {

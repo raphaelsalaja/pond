@@ -80,6 +80,17 @@ export function harvestSource(): string {
       if (dt) meta.publishedAt = dt;
     }
 
+    // Fall back to any <time datetime> inside the article — newer Twitter
+    // renders the timestamp outside the User-Name block on the /i/web/status/
+    // route, so the User-Name-scoped selector above can miss it.
+    if (!meta.publishedAt) {
+      const time = Array.from(
+        article.querySelectorAll<HTMLTimeElement>("time[datetime]"),
+      ).find(notInNested);
+      const dt = time?.getAttribute("datetime");
+      if (dt) meta.publishedAt = dt;
+    }
+
     const avatarImg = article.querySelector<HTMLImageElement>(
       '[data-testid^="UserAvatar-Container"] img',
     );
@@ -181,6 +192,29 @@ export function harvestSource(): string {
       }
     }
     if (bookmarks !== undefined) metrics.bookmarks = bookmarks;
+
+    // X exposes quote count via the "Quotes" link on the tweet detail page
+    // (`/quotes` or `/retweets/with_comments`). There is no stable testid,
+    // so parse the aria-label / text.
+    let quotes: number | undefined;
+    {
+      const quoteCandidates = Array.from(
+        article.querySelectorAll<HTMLAnchorElement>(
+          'a[href*="/quotes"], a[href*="/retweets/with_comments"]',
+        ),
+      ).filter(notInNested);
+      for (const el of quoteCandidates) {
+        const lbl = el.getAttribute("aria-label") ?? el.textContent ?? "";
+        const match = lbl.match(/([\d.,]+\s*[KMB]?)\s+Quote/i);
+        if (!match?.[1]) continue;
+        const parsed = norm.parseMetric(match[1]);
+        if (parsed !== undefined) {
+          quotes = parsed;
+          break;
+        }
+      }
+    }
+    if (quotes !== undefined) metrics.quotes = quotes;
     if (Object.keys(metrics).length > 0) meta.metrics = metrics;
 
     const media: Array<Record<string, unknown>> = [];
@@ -267,7 +301,14 @@ export function harvestSource(): string {
         'meta[property="og:image"], meta[name="og:image"]',
       );
       const ogSrc = ogMeta?.content?.trim();
-      if (ogSrc) {
+      // X serves abs.twimg.com/rweb/ssr/default/v2/og/image.png as the
+      // og:image for any tweet without media — picking it up here would
+      // mark every text-only tweet as having an image and stop the
+      // text-tweet card from rendering.
+      const isSsrDefault =
+        typeof ogSrc === "string" &&
+        /^https?:\/\/abs\.twimg\.com\/rweb\/ssr\/default\//i.test(ogSrc);
+      if (ogSrc && !isSsrDefault) {
         const upgraded = norm.upgradeTwimgUrl(ogSrc);
         const type = videos.length > 0 ? "video" : "image";
         const entry =

@@ -156,18 +156,6 @@ function ItemSourceBadge({ className, ...props }: ItemSourceBadgeProps) {
   );
 }
 
-interface ItemDeleteProps extends React.ComponentPropsWithoutRef<"button"> {}
-
-function ItemDelete({ className, type, ...props }: ItemDeleteProps) {
-  return (
-    <button
-      type={type ?? "button"}
-      className={cn(styles.delete, className)}
-      {...props}
-    />
-  );
-}
-
 interface ItemCheckboxProps
   extends Omit<React.ComponentPropsWithoutRef<"button">, "children"> {
   checked: boolean;
@@ -193,12 +181,6 @@ function ItemCheckbox({
   );
 }
 
-interface ItemActionsProps extends React.ComponentPropsWithoutRef<"div"> {}
-
-function ItemActions({ className, ...props }: ItemActionsProps) {
-  return <div className={cn(styles.actions, className)} {...props} />;
-}
-
 const Item = Object.assign(ItemBase, {
   Select: ItemSelect,
   Media: ItemMedia,
@@ -207,9 +189,7 @@ const Item = Object.assign(ItemBase, {
   Time: ItemTime,
   Count: ItemCount,
   SourceBadge: ItemSourceBadge,
-  Delete: ItemDelete,
   Checkbox: ItemCheckbox,
-  Actions: ItemActions,
 });
 
 interface EmptyProps extends React.ComponentPropsWithoutRef<"p"> {}

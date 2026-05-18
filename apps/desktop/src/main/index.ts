@@ -10,33 +10,28 @@ import {
 } from "electron";
 import log from "electron-log/main.js";
 import { DEFAULT_INGEST_PORT, IPC } from "../shared/constants";
-import {
-  type AutoVideoStatus,
-  autoVideoQueueSnapshot,
-  subscribeToAutoVideoStatus,
-} from "./core/auto-video";
 import { startBackupCron } from "./core/backups";
-import { startEnrichWorker } from "./core/enrich";
 import { registerSyncActionListener } from "./core/executor";
 import { emptyTrashOlderThan } from "./core/library-ops";
 import { startSaveCompleteNotifier } from "./core/notifications";
-import { enqueueAllMissing as enqueueAllMissingPosters } from "./core/poster-backfill";
+import {
+  type ProcessingBackfillStatus,
+  subscribeProcessingBackfillStatus,
+} from "./core/pipeline/backfill-failed";
+import { enqueueCaptureTweetForExisting } from "./core/pipeline/enqueue";
+import { startReconciler } from "./core/pipeline/reconciler";
 import { getPrefs, invalidatePrefs } from "./core/prefs";
 import {
   type RefreshBackfillStatus,
   subscribeRefreshBackfillStatus,
 } from "./core/refresh/backfill";
 import { disposeHiddenWindow } from "./core/refresh/scrape-window";
-import {
-  type SafetyScanStatus,
-  subscribeSafetyScanStatus,
-} from "./core/safety/backfill";
 import { reconcileLibrary } from "./core/scan";
 import {
   startStorageWatcher,
   stopStorageWatcher,
 } from "./core/storage-watcher";
-import { initSuggestions, notifyToast } from "./core/suggestions";
+import { initSuggestions } from "./core/suggestions";
 import {
   getGlobalSync,
   patchGlobalSync,
@@ -77,14 +72,12 @@ function queueTrayRefresh() {
   }, 150);
 }
 
-const broadcastAutoVideoStatus = (status: AutoVideoStatus): void =>
-  broadcast(IPC.autoVideoStatus, status);
 const broadcastSyncStatus = (status: SyncStatusUpdate): void =>
   broadcast(IPC.syncStatus, status);
 const broadcastRefreshBackfillStatus = (status: RefreshBackfillStatus): void =>
   broadcast(IPC.refreshBackfillStatus, status);
-const broadcastSafetyScanStatus = (status: SafetyScanStatus): void =>
-  broadcast(IPC.safetyScanStatus, status);
+const broadcastProcessingProgress = (status: ProcessingBackfillStatus): void =>
+  broadcast(IPC.processingProgress, status);
 
 registerScheme();
 
@@ -226,7 +219,6 @@ async function createWindow(): Promise<BrowserWindow> {
 
   win.webContents.on("did-finish-load", () => {
     if (win.isDestroyed()) return;
-    win.webContents.send(IPC.autoVideoStatus, autoVideoQueueSnapshot());
     if (pendingDeepLink) {
       const route = pendingDeepLink;
       pendingDeepLink = null;
@@ -332,9 +324,10 @@ async function postLaunchInit(): Promise<void> {
   registerAutoUpdater();
 
   void reconcileLibrary().catch((err) => log.warn("[pond] scan failed", err));
-  startEnrichWorker();
-  void enqueueAllMissingPosters().catch((err) =>
-    log.warn("[pond] poster backfill failed", err),
+  startReconciler();
+
+  void enqueueCaptureTweetForExisting().catch((err) =>
+    log.warn("[pond] capture_tweet backfill failed", err),
   );
 
   try {
@@ -381,13 +374,11 @@ async function postLaunchInit(): Promise<void> {
     log.warn("[pond] applyPrefsAtRuntime failed", err),
   );
 
-  subscribeToAutoVideoStatus(broadcastAutoVideoStatus);
   subscribeToSyncStatus(broadcastSyncStatus);
   subscribeRefreshBackfillStatus(broadcastRefreshBackfillStatus);
-  subscribeSafetyScanStatus(broadcastSafetyScanStatus);
+  subscribeProcessingBackfillStatus(broadcastProcessingProgress);
 
   initSuggestions();
-  registerSuggestionDevHotkey();
 }
 
 function registerTrashCron() {
@@ -576,37 +567,6 @@ function registerSummonHotkey() {
   const summonAccel = isMac ? "Command+Shift+L" : "Control+Shift+L";
   const ok = globalShortcut.register(summonAccel, summonMainWindow);
   if (!ok) log.warn(`[pond] summon hotkey ${summonAccel} not registered`);
-}
-
-function registerSuggestionDevHotkey() {
-  if (app.isPackaged) return;
-  const isMac = process.platform === "darwin";
-  const accel = isMac ? "Command+Shift+T" : "Control+Shift+T";
-  const ok = globalShortcut.register(accel, () => {
-    void notifyToast({
-      key: `dev-toast-${Date.now()}`,
-      title: "10 saves haven't been touched in a while",
-      body: "Pond can tidy them up for you.\nYou can always reopen them from Trash.",
-      icons: [
-        "https://www.google.com/s2/favicons?domain=reddit.com&sz=64",
-        "https://www.google.com/s2/favicons?domain=youtube.com&sz=64",
-        "https://www.google.com/s2/favicons?domain=notion.so&sz=64",
-        "https://www.google.com/s2/favicons?domain=linear.app&sz=64",
-      ],
-      actions: [
-        { id: "dismiss", label: "Not Now", shortcut: "esc", variant: "ghost" },
-        { id: "once", label: "Clean Up Once", variant: "secondary" },
-        {
-          id: "daily",
-          label: "Clean Up Daily",
-          shortcut: "enter",
-          variant: "primary",
-        },
-      ],
-      autoDismissMs: 0,
-    }).then((r) => log.info("[pond suggestion-dev] outcome", r));
-  });
-  if (!ok) log.warn(`[pond] suggestion dev hotkey ${accel} not registered`);
 }
 
 export async function applyPrefsAtRuntime() {

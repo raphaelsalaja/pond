@@ -20,13 +20,10 @@ export async function itemGetHandler(c: Context) {
   const db = await getDb();
   const limit = Math.min(Number(params.limit ?? 200), 1000);
   const offset = Math.max(Number(params.offset ?? 0), 0);
-  const includeArchived =
-    params.includeArchived === "true" || params.includeArchived === true;
   const includeDeleted =
     params.includeDeleted === "true" || params.includeDeleted === true;
 
   const filters = [];
-  if (!includeArchived) filters.push(isNull(saves.archivedAt));
   if (!includeDeleted) filters.push(isNull(saves.deletedAt));
 
   const ids = Array.isArray(params.ids)

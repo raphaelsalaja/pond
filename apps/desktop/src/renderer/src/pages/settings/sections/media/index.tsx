@@ -2,8 +2,6 @@ import { IconChevronExpandYOutline12 } from "@pond/icons/outline/12";
 import { Button, Select, Switch, useToast } from "@pond/ui";
 import { useCallback, useEffect, useState } from "react";
 import { Settings } from "@/components/settings";
-import { useAiProvider } from "@/pool/ai-provider";
-import { usePrefs } from "@/pool/prefs";
 import {
   DEFAULT_VIDEO_DOWNLOAD,
   type SettingsRow,
@@ -18,13 +16,10 @@ interface VideoToolsStatus {
 
 export function MediaSection() {
   const toast = useToast();
-  const { provider, patchProvider, ready: providerReady } = useAiProvider();
-  const [captions, patchCaptions] = usePrefs("captions");
   const [settings, setSettings] = useState<SettingsRow | null>(null);
   const [busy, setBusy] = useState(false);
   const [toolsStatus, setToolsStatus] = useState<VideoToolsStatus | null>(null);
   const [reinstalling, setReinstalling] = useState(false);
-  const [regeneratingPosters, setRegeneratingPosters] = useState(false);
 
   useEffect(() => {
     void window.pond.query("settings.get", {}).then((s) => {
@@ -63,24 +58,6 @@ export function MediaSection() {
       setReinstalling(false);
     }
   }, [refreshTools, toast]);
-
-  const regeneratePosters = useCallback(async () => {
-    setRegeneratingPosters(true);
-    try {
-      const r = await window.pond.videoRegeneratePosters({ force: true });
-      toast.add({
-        title: r.ok ? "Regenerating thumbnails" : "Couldn't queue regeneration",
-        description: r.ok
-          ? r.scheduled > 0
-            ? `${r.scheduled} video${r.scheduled === 1 ? "" : "s"} queued. Thumbnails refresh in the background.`
-            : "No video saves found."
-          : "Try again. If it keeps happening, check Developer › Open Log Directory.",
-        type: r.ok ? "success" : "error",
-      });
-    } finally {
-      setRegeneratingPosters(false);
-    }
-  }, [toast]);
 
   async function patchVideoDownload(patch: Partial<VideoDownloadPrefs>) {
     if (!settings) return;
@@ -135,42 +112,6 @@ export function MediaSection() {
           How Pond handles photos, videos, and GIFs in your library.
         </Settings.Description>
       </Settings.Header>
-
-      <Settings.Section>
-        <Settings.SectionTitle>Photos</Settings.SectionTitle>
-        <Settings.List>
-          <Settings.Item>
-            <Settings.ItemDetails>
-              <Settings.ItemTitle>Generate Alt Text</Settings.ItemTitle>
-              <Settings.ItemDescription>
-                Fill alt text on import. Shared with AI › Enrichment.
-              </Settings.ItemDescription>
-            </Settings.ItemDetails>
-            <Settings.ItemControl>
-              <Switch.Root
-                checked={captions.autoAltText}
-                onCheckedChange={(v) => patchCaptions({ autoAltText: v })}
-              />
-            </Settings.ItemControl>
-          </Settings.Item>
-
-          <Settings.Item>
-            <Settings.ItemDetails>
-              <Settings.ItemTitle>Send Images to Provider</Settings.ItemTitle>
-              <Settings.ItemDescription>
-                Applies to cloud AI tiers only.
-              </Settings.ItemDescription>
-            </Settings.ItemDetails>
-            <Settings.ItemControl>
-              <Switch.Root
-                checked={provider.sendImages}
-                disabled={!providerReady || provider.kind === "local"}
-                onCheckedChange={(v) => patchProvider({ sendImages: v })}
-              />
-            </Settings.ItemControl>
-          </Settings.Item>
-        </Settings.List>
-      </Settings.Section>
 
       <Settings.Section>
         <Settings.SectionTitle>Videos</Settings.SectionTitle>
@@ -280,43 +221,6 @@ export function MediaSection() {
                   </Select.Positioner>
                 </Select.Portal>
               </Select.Root>
-            </Settings.ItemControl>
-          </Settings.Item>
-
-          <Settings.Item>
-            <Settings.ItemDetails>
-              <Settings.ItemTitle>Transcribe Downloads</Settings.ItemTitle>
-              <Settings.ItemDescription>
-                Speech-to-text on videos. Shared with AI › Enrichment.
-              </Settings.ItemDescription>
-            </Settings.ItemDetails>
-            <Settings.ItemControl>
-              <Switch.Root
-                checked={captions.videoTranscripts}
-                onCheckedChange={(v) => patchCaptions({ videoTranscripts: v })}
-              />
-            </Settings.ItemControl>
-          </Settings.Item>
-
-          <Settings.Item>
-            <Settings.ItemDetails>
-              <Settings.ItemTitle>
-                Regenerate Video Thumbnails
-              </Settings.ItemTitle>
-              <Settings.ItemDescription>
-                Re-run ffmpeg to pull a fresh first-frame thumbnail.
-              </Settings.ItemDescription>
-            </Settings.ItemDetails>
-            <Settings.ItemControl>
-              <Button
-                size="sm"
-                disabled={
-                  regeneratingPosters || toolsStatus?.ffmpeg.available !== true
-                }
-                onClick={() => void regeneratePosters()}
-              >
-                {regeneratingPosters ? "Queuing…" : "Regenerate"}
-              </Button>
             </Settings.ItemControl>
           </Settings.Item>
         </Settings.List>

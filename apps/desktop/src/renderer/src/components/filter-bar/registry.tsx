@@ -1,7 +1,6 @@
 import {
   IconCalendarOutline18,
   IconChevronRightOutline18,
-  IconColorPaletteOutline18,
   IconFileOutline18,
   IconLinkOutline18,
   IconPencilOutline18,
@@ -34,7 +33,6 @@ import {
 } from "react";
 import { useSaves } from "@/pool/hooks";
 import { DATE_PRESETS } from "./date-presets";
-import { ColorDropdown } from "./dropdowns/color";
 import { DateDropdown } from "./dropdowns/date";
 import { EnumDropdown } from "./dropdowns/enum";
 import { NumberDropdown } from "./dropdowns/number";
@@ -65,7 +63,6 @@ export const FIELD_ICONS: Record<FieldId, IconType> = {
   size: IconScaleOutline18,
   duration: IconStopwatchOutline18,
   dimensions: IconRulerOutline18,
-  color: IconColorPaletteOutline18,
   creator: IconUserOutline18,
   url: IconLinkOutline18,
   note: IconPencilOutline18,
@@ -124,7 +121,6 @@ export const COMPARATOR_LABELS: Record<ComparatorId, string> = {
   some: "include any",
   every: "include all",
   none: "exclude all",
-  near: "is close to",
   exists: "is set",
 };
 
@@ -141,8 +137,6 @@ export function dropdownFor(field: FieldId): ComponentType<DropdownProps> {
       return NumberDropdown;
     case "date":
       return DateDropdown;
-    case "color":
-      return ColorDropdown;
     case "optional":
       return OptionalDropdown;
     default:
@@ -310,7 +304,6 @@ export type SearchEntry =
 const TAG_CAP = 50;
 const CREATOR_CAP = 50;
 const HOST_CAP = 50;
-const COLOR_CAP = 36;
 
 export function buildSearchIndex(saves: readonly SaveLike[]): SearchEntry[] {
   const groups = fieldsByGroup();
@@ -406,7 +399,6 @@ export function buildSearchIndex(saves: readonly SaveLike[]): SearchEntry[] {
   appendTagEntries(out, saves);
   appendCreatorEntries(out, saves);
   appendHostEntries(out, saves);
-  appendColorEntries(out, saves);
 
   return out;
 }
@@ -418,8 +410,7 @@ function appendTagEntries(
   const counts = new Map<string, number>();
   for (const save of saves) {
     if ((save as { deletedAt?: unknown }).deletedAt) continue;
-    const merged = [...(save.tags ?? []), ...(save.aiTags ?? [])];
-    for (const tag of merged) {
+    for (const tag of save.tags ?? []) {
       const key = tag.toLowerCase();
       counts.set(key, (counts.get(key) ?? 0) + 1);
     }
@@ -481,34 +472,6 @@ function appendHostEntries(
       predicate: { kind: "p", field: "url", cmp: "contains", value: host },
       label: host,
       breadcrumb: FIELD_META.url.label,
-    });
-  }
-}
-
-function appendColorEntries(
-  out: SearchEntry[],
-  saves: readonly SaveLike[],
-): void {
-  const counts = new Map<string, number>();
-  for (const save of saves) {
-    if ((save as { deletedAt?: unknown }).deletedAt) continue;
-    const list = save.dominantColors ?? [];
-    for (const c of list) {
-      const hex = (c.hex ?? "").replace(/^#/, "").toLowerCase();
-      if (!/^[0-9a-f]{6}$/.test(hex)) continue;
-      counts.set(hex, (counts.get(hex) ?? 0) + 1);
-    }
-  }
-  const top = [...counts.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, COLOR_CAP);
-  for (const [hex] of top) {
-    out.push({
-      kind: "value",
-      predicate: { kind: "p", field: "color", cmp: "near", value: { hex } },
-      label: `#${hex}`,
-      breadcrumb: FIELD_META.color.label,
-      swatchHex: hex,
     });
   }
 }

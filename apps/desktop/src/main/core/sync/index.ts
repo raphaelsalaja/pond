@@ -6,27 +6,29 @@ import {
   type SourceSyncPrefs,
   saves,
 } from "@pond/schema/db";
-import type { RawTwitter, TwitterMediaItem } from "@pond/schema/raw";
 import { and, eq, inArray } from "drizzle-orm";
 import log from "electron-log/main.js";
 import pLimit from "p-limit";
 import { getDb } from "../../db";
-import { ingestFromHttp } from "../ingest";
+import { enqueueSaveByUrl } from "../pipeline/enqueue";
 import { getPrefs, setPrefs } from "../prefs";
-import type { ListEntry } from "../refresh/harvest/list-types";
-import type { BookmarksEntry } from "../refresh/harvest/twitter";
 import {
   harvestSourceList,
   harvestTwitterBookmarks,
-  harvestUrl,
   harvestYoutubeLikedList,
   isSourceConnected,
-  POOL_SIZE,
+  probeUserHandle,
+  readStoredHandle,
 } from "../refresh/scrape-window";
 import { isSyncBlockedByStorageGuard } from "../storage-watcher";
+import { buildTwitterBookmarkSeed } from "./twitter-seed";
 
 export interface SyncOptions {
   trigger?: "manual" | "cron";
+  // Caps the number of *new* (not-yet-in-library) items enqueued per source.
+  // The list-harvest pass still walks the full list, but only the first
+  // `maxItems` fresh entries get queued into the pipeline.
+  maxItems?: number;
 }
 
 export interface SyncStatusUpdate {
@@ -149,9 +151,9 @@ export async function syncSource(
   emit({ source, state: "running", message: "Starting…" });
   try {
     if (source === "twitter") {
-      await syncTwitter(controller.signal);
+      await syncTwitter(controller.signal, opts.maxItems);
     } else if (LIST_HARVEST_SOURCES.has(source)) {
-      await syncListSource(source, controller.signal);
+      await syncListSource(source, controller.signal, opts.maxItems);
     } else {
       await patchSourceSync(source, { lastError: "unsupported" });
       emit({
@@ -209,6 +211,43 @@ async function inferAccountKey(source: Source): Promise<string | null> {
   return null;
 }
 
+// Resolve the logged-in user's handle for sites where the list URL is
+// `/<handle>` (cosmos, arena). Cache → DB inference → hidden-window
+// probe → cache. The probe is the slow path; we only hit it the first
+// time after the user pushes their session.
+async function resolveAccountKey(source: Source): Promise<string | null> {
+  const cached = await readStoredHandle(source);
+  if (cached) return cached;
+
+  const inferred = await inferAccountKey(source);
+  if (inferred) {
+    await persistAccountKey(source, inferred);
+    return inferred;
+  }
+
+  log.info(`[pond sync:${source}] probing hidden window for handle`);
+  const probed = await probeUserHandle(source);
+  if (probed) {
+    log.info(`[pond sync:${source}] probed handle`, probed);
+    await persistAccountKey(source, probed);
+    return probed;
+  }
+  return null;
+}
+
+async function persistAccountKey(
+  source: Source,
+  handle: string,
+): Promise<void> {
+  try {
+    const prefs = await getPrefs();
+    const nextHandles = { ...(prefs.sync.handles ?? {}), [source]: handle };
+    await setPrefs({ sync: { handles: nextHandles } });
+  } catch (err) {
+    log.warn(`[pond sync:${source}] failed to cache handle`, err);
+  }
+}
+
 function handleFromUrl(source: Source, url: string): string | null {
   try {
     const u = new URL(url);
@@ -231,11 +270,12 @@ function handleFromUrl(source: Source, url: string): string | null {
   }
 }
 
-const RICH_INGEST_CONCURRENCY = 6;
+const ENQUEUE_CONCURRENCY = 8;
 
 async function syncListSource(
   source: Source,
   signal: AbortSignal,
+  maxItems?: number,
 ): Promise<void> {
   const db = await getDb();
   const knownRows = await db
@@ -254,16 +294,14 @@ async function syncListSource(
 
   let accountKey: string | undefined;
   if (source === "cosmos" || source === "arena") {
-    const prefs = await getPrefs();
-    const stored = prefs.sync.handles?.[source]?.trim().replace(/^@/, "");
-    accountKey = stored || (await inferAccountKey(source)) || undefined;
+    accountKey = (await resolveAccountKey(source)) ?? undefined;
     if (!accountKey) {
-      log.info(`[pond sync:${source}] no handle configured`);
+      log.info(`[pond sync:${source}] could not resolve account from session`);
       await patchSourceSync(source, { lastError: "auth_required" });
       emit({
         source,
         state: "auth_required",
-        message: `Add your ${source} handle in Connected Apps to enable sync.`,
+        message: `Sign in to ${source} to enable background sync.`,
         lastError: "auth_required",
       });
       return;
@@ -283,8 +321,6 @@ async function syncListSource(
     }
     accountKey = inferred;
   } else if (source === "pinterest") {
-    // Pinterest reads the logged-in user's pins from /me/pins/, so the URL is
-    // independent of any handle. Pass a sentinel so listUrlForSource resolves.
     accountKey = (await inferAccountKey(source)) || "me";
   }
 
@@ -308,7 +344,6 @@ async function syncListSource(
 
   if (!harvest.ok) {
     if (harvest.reason === "auth_required") {
-      log.info(`[pond sync:${source}] auth wall`);
       await patchSourceSync(source, { lastError: "auth_required" });
       emit({
         source,
@@ -318,7 +353,6 @@ async function syncListSource(
       });
       return;
     }
-    log.warn(`[pond sync:${source}] harvest failed`, harvest.reason);
     await patchSourceSync(source, { lastError: harvest.reason });
     emit({
       source,
@@ -342,11 +376,15 @@ async function syncListSource(
     }
   }
 
-  const fresh = combined.filter((e) => !knownIds.has(e.sourceId));
-  if (fresh.length === 0) {
+  const allFresh = combined.filter((e) => !knownIds.has(e.sourceId));
+  const fresh =
+    maxItems && maxItems > 0 ? allFresh.slice(0, maxItems) : allFresh;
+  if (maxItems && allFresh.length > fresh.length) {
     log.info(
-      `[pond sync:${source}] nothing new (scanned ${combined.length} items)`,
+      `[pond sync:${source}] test cap active — enqueueing ${fresh.length} of ${allFresh.length} fresh items`,
     );
+  }
+  if (fresh.length === 0) {
     const lastSyncedAt = new Date().toISOString();
     await patchSourceSync(source, { lastSyncedAt, lastError: null });
     emit({
@@ -359,202 +397,77 @@ async function syncListSource(
     return;
   }
 
-  const richEntries = fresh.filter(entryHasRichData);
-  const stubEntries = fresh.filter((e) => !entryHasRichData(e));
-
   log.info(
-    `[pond sync:${source}] importing ${fresh.length} new items (${richEntries.length} rich, ${stubEntries.length} need harvest)`,
+    `[pond sync:${source}] enqueueing ${fresh.length} new URLs into pipeline`,
   );
   emit({
     source,
     state: "running",
-    message: `Importing 0 of ${fresh.length}…`,
+    message: `Queueing 0 of ${fresh.length}…`,
     progress: { current: 0, total: fresh.length },
   });
 
   let processed = 0;
-
-  const reportProgress = () => {
-    emit({
-      source,
-      state: "running",
-      message: `Importing ${processed} of ${fresh.length}…`,
-      progress: { current: processed, total: fresh.length },
-    });
-  };
-
-  const ingestLimit = pLimit(RICH_INGEST_CONCURRENCY);
+  const limit = pLimit(ENQUEUE_CONCURRENCY);
   await Promise.all(
-    richEntries.map((entry) =>
-      ingestLimit(async () => {
+    fresh.map((entry) =>
+      limit(async () => {
         if (signal.aborted) return;
         try {
-          await ingestFromHttp({
-            source,
-            sourceId: entry.sourceId,
-            url: entry.url,
-            title: entry.title,
-            description: entry.description,
-            author: entry.author,
-            mediaUrl: entry.mediaUrl,
-            mediaUrls: entry.mediaUrls,
-            mediaType: entry.mediaType,
-            savedAt: entry.savedAt ? new Date(entry.savedAt) : new Date(),
-            raw: {
-              kind: `${source}-sync`,
-              capturedAt: new Date().toISOString(),
-              ...(entry.meta ? { [source]: entry.meta } : {}),
-            },
-          });
+          await enqueueSaveByUrl(entry.url, { trigger: `sync:${source}` });
         } catch (err) {
           log.warn(
-            `[pond sync:${source}] per-item failure`,
+            `[pond sync:${source}] enqueue failure`,
             entry.sourceId,
             err,
           );
         }
         processed += 1;
-        reportProgress();
+        emit({
+          source,
+          state: "running",
+          message: `Queueing ${processed} of ${fresh.length}…`,
+          progress: { current: processed, total: fresh.length },
+        });
       }),
     ),
   );
   if (signal.aborted) return;
 
-  const harvestLimit = pLimit(POOL_SIZE);
-  let sawAuthFailure = false;
-  await Promise.all(
-    stubEntries.map((entry) =>
-      harvestLimit(async () => {
-        if (signal.aborted || sawAuthFailure) return;
-        try {
-          const harv = await harvestUrl({
-            url: entry.url,
-            source,
-            sourceId: entry.sourceId,
-          });
-          if (harv.ok && harv.harvest) {
-            const meta = harv.harvest.meta ?? {};
-            if (entry.savedAt) {
-              (meta as Record<string, unknown>).savedAt = entry.savedAt;
-            }
-            await ingestFromHttp({
-              source,
-              sourceId: entry.sourceId,
-              url: entry.url,
-              title: harv.harvest.title,
-              description: harv.harvest.description,
-              author: harv.harvest.author,
-              mediaUrl: harv.harvest.mediaUrl,
-              mediaUrls: harv.harvest.mediaUrls,
-              mediaType: harv.harvest.mediaType,
-              savedAt: entry.savedAt ? new Date(entry.savedAt) : new Date(),
-              raw: {
-                kind: `${source}-sync`,
-                capturedAt: new Date().toISOString(),
-                [source]: meta,
-              },
-            });
-          } else if (harv.reason === "auth_required") {
-            sawAuthFailure = true;
-          }
-        } catch (err) {
-          log.warn(
-            `[pond sync:${source}] per-item failure`,
-            entry.sourceId,
-            err,
-          );
-        }
-        processed += 1;
-        reportProgress();
-      }),
-    ),
-  );
-
-  if (sawAuthFailure) {
-    log.info(`[pond sync:${source}] auth wall mid-run`);
-    await patchSourceSync(source, { lastError: "auth_required" });
-    emit({
-      source,
-      state: "auth_required",
-      message: `Lost ${source} session — please re-connect.`,
-      lastError: "auth_required",
-    });
-    return;
-  }
-  if (signal.aborted) return;
-
-  log.info(`[pond sync:${source}] done; imported ${processed}`);
   const lastSyncedAt = new Date().toISOString();
   await patchSourceSync(source, { lastSyncedAt, lastError: null });
   emit({
     source,
     state: "done",
-    message: `Imported ${processed} item${processed === 1 ? "" : "s"}.`,
+    message: `Queued ${processed} item${processed === 1 ? "" : "s"} for ingest.`,
     progress: { current: processed, total: fresh.length },
     lastSyncedAt,
     lastError: null,
   });
 }
 
-function buildRawForBookmark(entry: BookmarksEntry): {
-  capturedAt: string;
-  twitter: RawTwitter;
-  __verbatim?: unknown;
-} {
-  const capturedAt = new Date().toISOString();
-  const twitter: RawTwitter = {};
-  if (entry.bookmarkedAt) twitter.bookmarkedAt = entry.bookmarkedAt;
-
-  const r = entry.rich;
-  if (!r) return { capturedAt, twitter };
-
-  if (r.author.name) twitter.authorName = r.author.name;
-  if (r.author.handle) twitter.authorUrl = `https://x.com/${r.author.handle}`;
-
-  twitter.metrics = {
-    likes: r.metrics.likes,
-    retweets: r.metrics.retweets,
-    replies: r.metrics.replies,
-    views: r.metrics.views,
-    bookmarks: r.metrics.bookmarks,
-  };
-
-  if (r.media.length > 0) {
-    const media: TwitterMediaItem[] = r.media.map((m) => ({
-      url: m.url,
-      type: m.type === "video" ? "video" : "image",
-      poster: m.poster,
-    }));
-    twitter.media = media;
-  }
-
-  if (r.quoted) {
-    twitter.isQuote = true;
-    twitter.quotedTweet = {
-      tweetId: r.quoted.tweetId,
-      author: r.quoted.author.handle
-        ? `@${r.quoted.author.handle}`
-        : r.quoted.author.name || undefined,
-      authorName: r.quoted.author.name || undefined,
-      text: r.quoted.fullText || undefined,
-      url: r.quoted.url,
-    };
-  }
-
-  return { capturedAt, twitter, __verbatim: r.raw };
-}
-
-async function syncTwitter(signal: AbortSignal): Promise<void> {
+async function syncTwitter(
+  signal: AbortSignal,
+  maxItems?: number,
+): Promise<void> {
   const source: Source = "twitter";
-
   const db = await getDb();
   const knownRows = await db
-    .select({ sourceId: saves.sourceId })
+    .select({ sourceId: saves.sourceId, status: saves.status })
     .from(saves)
     .where(eq(saves.source, source));
   const knownIds = new Set<string>(knownRows.map((r) => r.sourceId));
+  // Tweets we already created a save for but whose pipeline blew up
+  // (typically: harvest_metadata returned `scrape returned no data` after
+  // X.com rate-limited the partition). When the same tweet shows up in
+  // the bookmark capture again we can lift it back out of `failed` and
+  // reseed its row from the GraphQL data we already have, instead of
+  // letting it sit dead forever.
+  const failedSourceIds = new Set<string>(
+    knownRows.filter((r) => r.status === "failed").map((r) => r.sourceId),
+  );
   log.info(
-    `[pond sync:twitter] starting; ${knownIds.size} tweets already in library`,
+    `[pond sync:twitter] starting; ${knownIds.size} tweets already in library (${failedSourceIds.size} failed)`,
   );
   emit({
     source,
@@ -583,7 +496,6 @@ async function syncTwitter(signal: AbortSignal): Promise<void> {
 
   if (!harvest.ok) {
     if (harvest.reason === "auth_required") {
-      log.info("[pond sync:twitter] auth wall");
       await patchSourceSync(source, { lastError: "auth_required" });
       emit({
         source,
@@ -593,7 +505,6 @@ async function syncTwitter(signal: AbortSignal): Promise<void> {
       });
       return;
     }
-    log.warn("[pond sync:twitter] harvest failed", harvest.reason);
     await patchSourceSync(source, { lastError: harvest.reason });
     emit({
       source,
@@ -604,10 +515,23 @@ async function syncTwitter(signal: AbortSignal): Promise<void> {
     return;
   }
 
-  const fresh = harvest.entries.filter((e) => !knownIds.has(e.tweetId));
-
-  if (fresh.length === 0) {
-    log.info("[pond sync:twitter] nothing new");
+  // Two batches:
+  //   `fresh`     — tweets we haven't seen yet (creates new saves).
+  //   `recovery`  — tweets we have but in `failed` status; seeding lets
+  //                 the pipeline restart with metadata already populated.
+  const allFresh = harvest.entries.filter((e) => !knownIds.has(e.tweetId));
+  const recovery = harvest.entries.filter((e) =>
+    failedSourceIds.has(e.tweetId),
+  );
+  const fresh =
+    maxItems && maxItems > 0 ? allFresh.slice(0, maxItems) : allFresh;
+  if (maxItems && allFresh.length > fresh.length) {
+    log.info(
+      `[pond sync:twitter] test cap active — enqueueing ${fresh.length} of ${allFresh.length} fresh bookmarks`,
+    );
+  }
+  const total = fresh.length + recovery.length;
+  if (total === 0) {
     const lastSyncedAt = new Date().toISOString();
     await patchSourceSync(source, { lastSyncedAt, lastError: null });
     emit({
@@ -620,59 +544,57 @@ async function syncTwitter(signal: AbortSignal): Promise<void> {
     return;
   }
 
-  log.info(`[pond sync:twitter] importing ${fresh.length} new bookmarks`);
+  log.info(
+    `[pond sync:twitter] enqueueing ${fresh.length} new + ${recovery.length} recover`,
+  );
   emit({
     source,
     state: "running",
-    message: `Importing 0 of ${fresh.length} bookmarks…`,
-    progress: { current: 0, total: fresh.length },
+    message:
+      recovery.length > 0
+        ? `Queueing 0 of ${total} (${recovery.length} recovering)…`
+        : `Queueing 0 of ${total} bookmarks…`,
+    progress: { current: 0, total },
   });
 
   let processed = 0;
-  let imported = 0;
-  for (const entry of fresh) {
-    if (signal.aborted) {
-      log.info("[pond sync:twitter] aborted by user");
-      return;
-    }
-    try {
-      await ingestFromHttp({
-        source,
-        sourceId: entry.tweetId,
-        url: entry.url,
-        title: entry.title,
-        description: entry.description,
-        author: entry.author,
-        mediaUrl: entry.mediaUrl,
-        mediaUrls: entry.mediaUrls,
-        savedAt: entry.bookmarkedAt ? new Date(entry.bookmarkedAt) : new Date(),
-        raw: { kind: "twitter-sync", ...buildRawForBookmark(entry) },
-      });
-      imported += 1;
-    } catch (err) {
-      log.warn(
-        "[pond sync:twitter] per-tweet ingest failure",
-        entry.tweetId,
-        err,
-      );
-    }
-    processed += 1;
-    emit({
-      source,
-      state: "running",
-      message: `Importing ${processed} of ${fresh.length} bookmarks…`,
-      progress: { current: processed, total: fresh.length },
-    });
-  }
+  const limit = pLimit(ENQUEUE_CONCURRENCY);
+  const queue = [...fresh, ...recovery];
+  await Promise.all(
+    queue.map((entry) =>
+      limit(async () => {
+        if (signal.aborted) return;
+        try {
+          const seed = buildTwitterBookmarkSeed(entry) ?? undefined;
+          await enqueueSaveByUrl(entry.url, {
+            trigger: "sync:twitter",
+            seed,
+          });
+        } catch (err) {
+          log.warn("[pond sync:twitter] enqueue failure", entry.tweetId, err);
+        }
+        processed += 1;
+        emit({
+          source,
+          state: "running",
+          message: `Queueing ${processed} of ${total} bookmarks…`,
+          progress: { current: processed, total },
+        });
+      }),
+    ),
+  );
+  if (signal.aborted) return;
 
   const lastSyncedAt = new Date().toISOString();
   await patchSourceSync(source, { lastSyncedAt, lastError: null });
-  log.info(`[pond sync:twitter] done; imported ${imported}`);
   emit({
     source,
     state: "done",
-    message: `Imported ${imported} bookmark${imported === 1 ? "" : "s"}.`,
-    progress: { current: processed, total: fresh.length },
+    message:
+      recovery.length > 0
+        ? `Queued ${fresh.length} new + recovered ${recovery.length} failed.`
+        : `Queued ${processed} bookmark${processed === 1 ? "" : "s"} for ingest.`,
+    progress: { current: processed, total },
     lastSyncedAt,
     lastError: null,
   });
@@ -685,10 +607,6 @@ export async function countSavesForSource(source: Source): Promise<number> {
     .from(saves)
     .where(eq(saves.source, source));
   return rows.length;
-}
-
-function entryHasRichData(entry: ListEntry): boolean {
-  return Boolean(entry.title || entry.mediaUrl);
 }
 
 export async function existingSourceIds(

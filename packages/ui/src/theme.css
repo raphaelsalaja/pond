@@ -149,6 +149,20 @@
 
   --ds-shadow-badge: 0 0 0 1px var(--ds-gray-a4), 0 1px 2px var(--ds-gray-a4);
 
+  /* Apple-style standard materials. Pair: -bg (tinted overlay) + -filter
+     (backdrop-filter value). Each surface composes both onto itself. */
+  --ds-material-chrome-bg: light-dark(
+    rgb(255 255 255 / 78%),
+    rgb(28 28 28 / 78%)
+  );
+  --ds-material-chrome-filter: blur(20px) saturate(1.8);
+
+  --ds-material-thick-bg: light-dark(
+    rgb(255 255 255 / 72%),
+    rgb(32 32 32 / 72%)
+  );
+  --ds-material-thick-filter: blur(24px) saturate(1.6);
+
   --ds-shadow-focus-halo:
     0 0 0 1px var(--ds-accent-9),
     0 0 0 3px color-mix(in srgb, var(--ds-accent-9) 20%, transparent);

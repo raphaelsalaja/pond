@@ -18,7 +18,7 @@
 .dot {
   width: 8px;
   height: 8px;
-  margin-top: 6px;
+  margin-block-start: 6px;
   background: var(--ds-gray-10);
   border-radius: var(--ds-radius-full);
 

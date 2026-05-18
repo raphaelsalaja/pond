@@ -7,32 +7,17 @@ export function inject() {
   const PLAYLIST_EDIT_HINT_RE =
     /(edit_playlist|add_to_watch_later|playlist\/(add|create|edit)|share\/get_share_panel)/i;
   const LIKE_RE = /\/youtubei\/v1\/like\/like\b/i;
-  const PLAYER_RE = /\/youtubei\/v1\/(player|next|browse|guide)\b/i;
   const VIDEO_ID_RE = /^[\w-]{11}$/;
-  const WATCH_LATER_PLAYLIST_ID = "WL";
-
-  const videoCache = new Map<string, any>();
-  const captionsCache = new Map<string, unknown[]>();
-  const chaptersCache = new Map<
-    string,
-    Array<{ title: string; startSec: number }>
-  >();
+  const _WATCH_LATER_PLAYLIST_ID = "WL";
 
   function emit(message: unknown) {
     window.postMessage({ type: POND_EVENT, message }, "*");
   }
-  function capture(payload: unknown) {
-    emit({ kind: "capture", payload });
+  function send(url: string, trigger: string) {
+    emit({ kind: "capture", payload: { url, trigger } });
   }
   function log(level: string, message: string, data?: unknown) {
     emit({ kind: "log", level, message, data });
-    const fn =
-      level === "error"
-        ? console.error
-        : level === "warn"
-          ? console.warn
-          : console.info;
-    fn("[pond youtube]", message, data ?? "");
   }
 
   function readJson(text: string | null) {
@@ -64,159 +49,11 @@ export function inject() {
         });
         return JSON.stringify(obj);
       }
-      if (input instanceof Request) {
-        return await input.clone().text();
-      }
-    } catch (err) {
-      log("warn", "readBody failed", { err: String(err) });
-    }
-    return null;
-  }
-
-  function harvestVideoDetails(obj: any) {
-    if (!obj || typeof obj !== "object") return;
-    if (Array.isArray(obj)) {
-      for (const x of obj) harvestVideoDetails(x);
-      return;
-    }
-    if (obj.videoId && (obj.title || obj.lengthSeconds || obj.author)) {
-      videoCache.set(String(obj.videoId), obj);
-    }
-    const tracks =
-      obj?.playerCaptionsTracklistRenderer?.captionTracks ??
-      (obj?.captionTracks &&
-      Array.isArray(obj.captionTracks) &&
-      obj.captionTracks.length > 0 &&
-      obj.captionTracks[0]?.languageCode
-        ? obj.captionTracks
-        : null);
-    if (Array.isArray(tracks) && obj?.videoId) {
-      captionsCache.set(String(obj.videoId), tracks);
-    }
-    if (
-      Array.isArray(obj.chapters) &&
-      obj.chapters[0]?.chapterRenderer?.title
-    ) {
-      const list = obj.chapters
-        .map((ch: any) => {
-          const r = ch?.chapterRenderer;
-          if (!r) return null;
-          const t = r?.title?.simpleText ?? r?.title?.runs?.[0]?.text ?? null;
-          const ms = r?.timeRangeStartMillis;
-          if (typeof t !== "string" || typeof ms !== "number") return null;
-          return { title: t, startSec: Math.round(ms / 1000) };
-        })
-        .filter(Boolean) as Array<{ title: string; startSec: number }>;
-      if (list.length > 0) {
-        for (const [vid] of videoCache) {
-          if (!chaptersCache.has(vid)) chaptersCache.set(vid, list);
-        }
-      }
-    }
-    for (const k of Object.keys(obj)) {
-      const v = obj[k];
-      if (v && typeof v === "object") harvestVideoDetails(v);
-    }
-  }
-
-  function pickThumbnail(details: any) {
-    const thumbs = details?.thumbnail?.thumbnails;
-    if (Array.isArray(thumbs) && thumbs.length > 0) {
-      return thumbs[thumbs.length - 1]?.url ?? null;
-    }
-    return null;
-  }
-
-  async function fetchOembed(id: string) {
-    try {
-      const res = await fetch(
-        `https://www.youtube.com/oembed?url=${encodeURIComponent(
-          `https://www.youtube.com/watch?v=${id}`,
-        )}&format=json`,
-        { credentials: "omit" },
-      );
-      if (!res.ok) return null;
-      return await res.json();
+      if (input instanceof Request) return await input.clone().text();
     } catch {
-      return null;
+      /* unreadable */
     }
-  }
-
-  async function emitSave(videoId: string, kind: string) {
-    if (!videoId) return;
-    const details = videoCache.get(String(videoId));
-    let title = details?.title ?? null;
-    if (typeof title === "object") {
-      title = title?.simpleText ?? title?.runs?.[0]?.text ?? null;
-    }
-    let author = details?.author ?? null;
-    if (typeof author === "object") {
-      author = author?.simpleText ?? author?.runs?.[0]?.text ?? null;
-    }
-    let thumb = pickThumbnail(details);
-
-    if (!title || !thumb) {
-      const oembed = await fetchOembed(videoId);
-      title = title ?? oembed?.title ?? null;
-      author = author ?? oembed?.author_name ?? null;
-      thumb = thumb ?? oembed?.thumbnail_url ?? null;
-    }
-
-    const youtube: Record<string, unknown> = { kind };
-    if (typeof details?.lengthSeconds === "string") {
-      const n = Number.parseInt(details.lengthSeconds, 10);
-      if (Number.isFinite(n)) youtube.durationSec = n;
-    } else if (typeof details?.lengthSeconds === "number") {
-      youtube.durationSec = details.lengthSeconds;
-    }
-    if (typeof details?.channelId === "string") {
-      youtube.channelId = details.channelId;
-      youtube.channelUrl = `https://www.youtube.com/channel/${details.channelId}`;
-    }
-    if (typeof author === "string") youtube.channelName = author;
-    if (typeof details?.shortDescription === "string") {
-      youtube.shortDescription = details.shortDescription;
-    }
-    if (Array.isArray(details?.keywords)) {
-      youtube.keywords = details.keywords as string[];
-    }
-    const metrics: Record<string, number> = {};
-    if (typeof details?.viewCount === "string") {
-      const n = Number.parseInt(details.viewCount, 10);
-      if (Number.isFinite(n)) metrics.views = n;
-    } else if (typeof details?.viewCount === "number") {
-      metrics.views = details.viewCount;
-    }
-    if (Object.keys(metrics).length > 0) youtube.metrics = metrics;
-    const captions = captionsCache.get(String(videoId));
-    if (Array.isArray(captions) && captions.length > 0) {
-      youtube.captions = captions
-        .map((c: any) => ({
-          lang: typeof c?.languageCode === "string" ? c.languageCode : "",
-          name: c?.name?.simpleText ?? c?.name?.runs?.[0]?.text ?? undefined,
-          vssId: typeof c?.vssId === "string" ? c.vssId : undefined,
-        }))
-        .filter((c: any) => c.lang);
-    }
-    const chapters = chaptersCache.get(String(videoId));
-    if (chapters && chapters.length > 0) youtube.chapters = chapters;
-
-    capture({
-      source: "youtube",
-      sourceId: String(videoId),
-      url: `https://www.youtube.com/watch?v=${videoId}`,
-      title,
-      description: details?.shortDescription ?? null,
-      author,
-      mediaUrl: thumb,
-      mediaType: "video",
-      raw: {
-        capturedAt: new Date().toISOString(),
-        kind,
-        ...(details ? { videoDetails: details } : {}),
-        youtube,
-      },
-    });
+    return null;
   }
 
   function collectAddedVideoIds(node: unknown, out: Set<string>): void {
@@ -238,13 +75,6 @@ export function inject() {
         collectAddedVideoIds(v, out);
       }
     }
-  }
-
-  function extractLikeVideoId(body: string | null): string | null {
-    const json = readJson(body);
-    const id =
-      json?.target?.videoId ?? json?.videoId ?? json?.params?.videoId ?? null;
-    return id && VIDEO_ID_RE.test(String(id)) ? String(id) : null;
   }
 
   function findPlaylistIds(node: unknown, out: Set<string>): void {
@@ -298,33 +128,18 @@ export function inject() {
     }
   }
 
-  function collectAffectedPlaylistIds(node: unknown, out: Set<string>): void {
-    if (!node || typeof node !== "object") return;
-    if (Array.isArray(node)) {
-      for (const x of node) collectAffectedPlaylistIds(x, out);
-      return;
-    }
-    const obj = node as Record<string, unknown>;
-    const refresh = obj.refreshPlaylistCommand as
-      | Record<string, unknown>
-      | undefined;
-    if (refresh && typeof refresh.listId === "string") {
-      out.add(refresh.listId);
-    }
-    if (typeof obj.playlistId === "string") out.add(obj.playlistId);
-    for (const v of Object.values(obj)) {
-      if (v && typeof v === "object") collectAffectedPlaylistIds(v, out);
-    }
+  function extractLikeVideoId(body: string | null): string | null {
+    const json = readJson(body);
+    const id =
+      json?.target?.videoId ?? json?.videoId ?? json?.params?.videoId ?? null;
+    return id && VIDEO_ID_RE.test(String(id)) ? String(id) : null;
   }
 
   function classifyYoutubeiPost(
     url: string,
     requestBody: string | null,
     responseBody: string | null,
-  ): {
-    saves: Array<{ videoId: string; kind: string }>;
-    summary: Record<string, unknown>;
-  } {
+  ): Set<string> {
     const reqJson = readJson(requestBody);
     const resJson = readJson(responseBody);
 
@@ -339,82 +154,35 @@ export function inject() {
 
     const resVideoIds = new Set<string>();
     collectEditedVideoIds(resJson, resVideoIds);
-    const resPlaylistIds = new Set<string>();
-    collectAffectedPlaylistIds(resJson, resPlaylistIds);
-
-    const allVideoIds = new Set<string>([...reqVideoIds, ...resVideoIds]);
-    const allPlaylistIds = new Set<string>([
-      ...reqPlaylistIds,
-      ...resPlaylistIds,
-    ]);
-    const isWatchLater = [...allPlaylistIds].some(
-      (p) => p.toUpperCase() === WATCH_LATER_PLAYLIST_ID,
-    );
+    const _allPlaylistIds = new Set<string>([...reqPlaylistIds]);
     const looksLikePlaylistEdit = PLAYLIST_EDIT_HINT_RE.test(url);
+    const allVideoIds = new Set<string>([...reqVideoIds, ...resVideoIds]);
 
-    const summary: Record<string, unknown> = {
-      url,
-      playlistIds: [...allPlaylistIds],
-      videoIds: [...allVideoIds],
-      isWatchLater,
-      hasAddVideoAction,
-      urlHint: looksLikePlaylistEdit,
-      bytes: {
-        req: requestBody?.length ?? 0,
-        res: responseBody?.length ?? 0,
-      },
-    };
-
-    if (allVideoIds.size === 0) return { saves: [], summary };
-
-    const saves: Array<{ videoId: string; kind: string }> = [];
-    const targets =
-      resVideoIds.size > 0
-        ? resVideoIds
-        : hasAddVideoAction || looksLikePlaylistEdit
-          ? allVideoIds
-          : new Set<string>();
-    for (const id of targets) {
-      saves.push({
-        videoId: id,
-        kind: isWatchLater ? "watch-later" : "playlist",
-      });
-    }
-    return { saves, summary };
+    if (allVideoIds.size === 0) return new Set();
+    if (resVideoIds.size > 0) return resVideoIds;
+    if (hasAddVideoAction || looksLikePlaylistEdit) return allVideoIds;
+    return new Set();
   }
 
-  async function handleYoutubeiPost(
+  const emitted = new Set<string>();
+  function emitSave(videoId: string) {
+    if (!videoId || emitted.has(videoId)) return;
+    emitted.add(videoId);
+    send(`https://www.youtube.com/watch?v=${videoId}`, "youtube:save");
+  }
+
+  function handleLike(_url: string, body: string | null) {
+    const id = extractLikeVideoId(body);
+    if (id) emitSave(id);
+  }
+
+  function handleYoutubeiPost(
     url: string,
     requestBody: string | null,
     responseBody: string | null,
-    via: "fetch" | "xhr" | "beacon",
   ) {
-    const { saves, summary } = classifyYoutubeiPost(
-      url,
-      requestBody,
-      responseBody,
-    );
-    if (saves.length > 0) {
-      log("info", "youtube save matched", {
-        via,
-        count: saves.length,
-        ...summary,
-      });
-      for (const s of saves) void emitSave(s.videoId, s.kind);
-    } else {
-      if (
-        PLAYLIST_EDIT_HINT_RE.test(url) ||
-        (summary.videoIds as string[]).length > 0
-      ) {
-        log("info", "youtube post unmatched", { via, ...summary });
-      }
-    }
-  }
-
-  async function handleLike(url: string, body: string | null) {
-    const id = extractLikeVideoId(body);
-    log("info", "youtube like", { url, id });
-    if (id) void emitSave(id, "like");
+    const ids = classifyYoutubeiPost(url, requestBody, responseBody);
+    for (const id of ids) emitSave(id);
   }
 
   const origFetch = window.fetch;
@@ -423,40 +191,24 @@ export function inject() {
     const method = (
       init?.method ?? (input instanceof Request ? input.method : "GET")
     ).toUpperCase();
-
     const bodyPromise =
       method === "POST" && typeof url === "string"
         ? readBody(input, init)
         : Promise.resolve<string | null>(null);
 
     const res = await origFetch.call(this, input, init);
-
     try {
-      if (typeof url === "string" && res.ok) {
-        if (method === "POST" && LIKE_RE.test(url)) {
-          await handleLike(url, await bodyPromise);
-        } else if (method === "POST" && YOUTUBEI_RE.test(url)) {
+      if (typeof url === "string" && res.ok && method === "POST") {
+        if (LIKE_RE.test(url)) {
+          handleLike(url, await bodyPromise);
+        } else if (YOUTUBEI_RE.test(url)) {
           let responseText: string | null = null;
           try {
             responseText = await res.clone().text();
           } catch {
-            /* response stream consumed elsewhere */
+            /* consumed */
           }
-          await handleYoutubeiPost(
-            url,
-            await bodyPromise,
-            responseText,
-            "fetch",
-          );
-        }
-        if (PLAYER_RE.test(url)) {
-          const clone = res.clone();
-          clone
-            .text()
-            .then((t) => {
-              harvestVideoDetails(readJson(t));
-            })
-            .catch(() => {});
+          handleYoutubeiPost(url, await bodyPromise, responseText);
         }
       }
     } catch (err) {
@@ -494,9 +246,9 @@ export function inject() {
                 body = JSON.stringify(obj);
               }
             } catch {
-              /* body unreadable */
+              /* unreadable */
             }
-            await handleYoutubeiPost(u, body, null, "beacon");
+            handleYoutubeiPost(u, body, null);
           })();
         }
       } catch (err) {
@@ -504,7 +256,6 @@ export function inject() {
       }
       return result;
     };
-    log("info", "youtube sendBeacon patched");
   }
 
   const OrigXHR = window.XMLHttpRequest;
@@ -530,13 +281,9 @@ export function inject() {
             xhr.responseType === "" || xhr.responseType === "text"
               ? xhr.responseText
               : null;
-          if (LIKE_RE.test(_url)) {
-            void handleLike(_url, _body);
-          } else if (YOUTUBEI_RE.test(_url)) {
-            void handleYoutubeiPost(_url, _body, responseText, "xhr");
-          }
-          if (PLAYER_RE.test(_url)) {
-            harvestVideoDetails(readJson(xhr.responseText));
+          if (LIKE_RE.test(_url)) handleLike(_url, _body);
+          else if (YOUTUBEI_RE.test(_url)) {
+            handleYoutubeiPost(_url, _body, responseText);
           }
         } catch (err) {
           log("warn", "youtube xhr hook", { err: String(err) });
@@ -549,31 +296,5 @@ export function inject() {
   PatchedXHR.prototype = OrigXHR.prototype;
   window.XMLHttpRequest = PatchedXHR as unknown as typeof XMLHttpRequest;
 
-  function harvestGlobals() {
-    try {
-      const keys = ["ytInitialPlayerResponse", "ytInitialData"];
-      for (const k of keys) {
-        const v = (window as any)[k];
-        if (v) harvestVideoDetails(v);
-      }
-    } catch {}
-  }
-  if (document.readyState === "loading") {
-    window.addEventListener("DOMContentLoaded", harvestGlobals, {
-      once: true,
-    });
-  } else {
-    harvestGlobals();
-  }
-
-  try {
-    console.log(
-      "%c[pond youtube]%c hooks installed → fetch + XHR + sendBeacon",
-      "background:#1f9d55;color:white;padding:2px 4px;border-radius:3px;font-weight:bold",
-      "color:#1f9d55",
-    );
-  } catch {
-    /* fallback handled by log() below */
-  }
-  log("info", "youtube inject loaded", { href: location.href });
+  log("info", "youtube inject ready");
 }

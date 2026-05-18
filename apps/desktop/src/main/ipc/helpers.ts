@@ -88,40 +88,6 @@ export function sanitizeFtsQuery(q: string): string {
   return tokens.map((t) => `${t}*`).join(" AND ");
 }
 
-export function hexToRgb(
-  hex: string,
-): { r: number; g: number; b: number } | null {
-  if (hex.length !== 6) return null;
-  const r = Number.parseInt(hex.slice(0, 2), 16);
-  const g = Number.parseInt(hex.slice(2, 4), 16);
-  const b = Number.parseInt(hex.slice(4, 6), 16);
-  if ([r, g, b].some((n) => !Number.isFinite(n))) return null;
-  return { r, g, b };
-}
-
-export type IngestSource =
-  | "twitter"
-  | "instagram"
-  | "pinterest"
-  | "arena"
-  | "cosmos"
-  | "tiktok"
-  | "youtube"
-  | "article";
-
-export function inferSource(host: string): IngestSource {
-  const tail = host.split(".").slice(-2).join(".");
-  if (host.endsWith("twitter.com") || host.endsWith("x.com")) return "twitter";
-  if (host.endsWith("instagram.com")) return "instagram";
-  if (host.endsWith("pinterest.com") || host.endsWith("pinterest.co.uk"))
-    return "pinterest";
-  if (host.endsWith("are.na")) return "arena";
-  if (host.endsWith("cosmos.so")) return "cosmos";
-  if (host.endsWith("tiktok.com")) return "tiktok";
-  if (host.endsWith("youtube.com") || tail === "youtu.be") return "youtube";
-  return "article";
-}
-
 export type QueryParams = Record<string, unknown>;
 export type QueryHandler = (
   params: QueryParams,

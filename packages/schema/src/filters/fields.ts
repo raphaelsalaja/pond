@@ -24,43 +24,25 @@ export const SCALAR_PROJECTIONS: Partial<Record<FieldId, SQL>> = {
   )`,
   savedAt: sql`${saves.savedAt}`,
   publishedAt: sql`${saves.publishedAt}`,
-  modifiedAt: sql`coalesce(
-    ${saves.embeddingUpdatedAt},
-    ${saves.createdAt},
-    ${saves.savedAt}
-  )`,
+  modifiedAt: sql`coalesce(${saves.createdAt}, ${saves.savedAt})`,
 };
 
 export function tagsExists(needle: SQL): SQL {
   return sql`exists (
     select 1 from json_each(${saves.tags}) where ${needle}
-    union all
-    select 1 from json_each(${saves.aiTags}) where ${needle}
   )`;
 }
 
 export function tagsDistinctCount(needle: SQL): SQL {
   return sql`(
-    select count(distinct lower(value)) from (
-      select value from json_each(${saves.tags})
-      union all
-      select value from json_each(${saves.aiTags})
-    ) where ${needle}
-  )`;
-}
-
-export function colorNear(hex: string, distance: number): SQL {
-  return sql`exists (
-    select 1 from json_each(${saves.dominantColors})
-    where color_distance(
-      json_extract(value, '$.hex'),
-      ${hex}
-    ) <= ${distance}
+    select count(distinct lower(value)) from json_each(${saves.tags})
+    where ${needle}
   )`;
 }
 
 function durationProjection(): SQL {
   return sql`coalesce(
+    cast(json_extract(${saves.rawJson}, '$.capture.duration') as real),
     cast(json_extract(${saves.rawJson}, '$.youtube.durationSec') as real),
     cast(json_extract(${saves.rawJson}, '$.youtube.ytdlp.duration') as real),
     cast(json_extract(${saves.rawJson}, '$.tiktok.durationSec') as real),
@@ -71,7 +53,6 @@ function durationProjection(): SQL {
     cast(json_extract(${saves.rawJson}, '$.instagram.media[0].durationSec') as real),
     cast(json_extract(${saves.rawJson}, '$.pinterest.ytdlp.duration') as real),
     cast(json_extract(${saves.rawJson}, '$.arena.ytdlp.duration') as real),
-    cast(json_extract(${saves.rawJson}, '$.cosmos.ytdlp.duration') as real),
-    cast(json_extract(${saves.rawJson}, '$.article.ytdlp.duration') as real)
+    cast(json_extract(${saves.rawJson}, '$.cosmos.ytdlp.duration') as real)
   )`;
 }

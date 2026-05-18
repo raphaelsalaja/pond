@@ -18,21 +18,22 @@ function packRows(
   targetHeight: number,
 ): PackedItem[] {
   if (containerWidth <= 0 || saves.length === 0) return [];
-  const out: PackedItem[] = [];
+  const items: PackedItem[] = [];
   let current: Save[] = [];
   let aspectSum = 0;
+
   const flushRow = (height: number) => {
-    for (const sv of current) {
-      const w = aspectFor(sv) * height;
-      out.push({ save: sv, width: w, height });
+    for (const s of current) {
+      items.push({ save: s, width: aspectFor(s) * height, height });
     }
     current = [];
     aspectSum = 0;
   };
-  for (const s of saves) {
-    const a = aspectFor(s);
-    current.push(s);
-    aspectSum += a;
+
+  for (const save of saves) {
+    const aspect = aspectFor(save);
+    current.push(save);
+    aspectSum += aspect;
     const naturalWidth =
       aspectSum * targetHeight + ITEM_GAP * (current.length - 1);
     if (naturalWidth >= containerWidth) {
@@ -43,7 +44,7 @@ function packRows(
   /* Last partial row keeps target height; cards retain natural widths
    * and trail off rather than over-stretching. Matches Eagle. */
   if (current.length > 0) flushRow(targetHeight);
-  return out;
+  return items;
 }
 
 export interface JustifiedViewProps {
@@ -95,14 +96,14 @@ export function JustifiedView({
     };
   }, []);
 
-  const packed = useMemo(
+  const items = useMemo(
     () => packRows(saves, width, targetHeight),
     [saves, width, targetHeight],
   );
 
   return (
     <Library.Grid ref={ref} layout="justified" multiSelect={multiSelectActive}>
-      {packed.map(({ save, width: w, height: h }) => renderCard(save, w, h))}
+      {items.map(({ save, width: w, height: h }) => renderCard(save, w, h))}
     </Library.Grid>
   );
 }

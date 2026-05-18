@@ -290,10 +290,6 @@ export function useActiveFilterCount(): number {
 function describePredicate(p: Predicate): string {
   const v = p.value;
   if (p.cmp === "exists") return v === false ? "not set" : "set";
-  if (p.cmp === "near" && typeof v === "object" && v !== null) {
-    const hex = String((v as { hex?: unknown }).hex ?? "");
-    return hex ? `#${hex}` : "any";
-  }
   if (Array.isArray(v)) {
     if (p.cmp === "between") {
       const [lo, hi] = v;

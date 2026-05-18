@@ -1,4 +1,3 @@
-export { ColorDropdown } from "./color";
 export { DateDropdown } from "./date";
 export { EnumDropdown } from "./enum";
 export { NumberDropdown } from "./number";

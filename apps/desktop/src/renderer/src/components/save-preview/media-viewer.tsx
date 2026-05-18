@@ -1,10 +1,8 @@
-import { Button, Tooltip, useToast } from "@pond/ui";
+import { Tooltip } from "@pond/ui";
 import { useCallback, useMemo, useState } from "react";
-import { NsfwOverlay } from "@/components/nsfw-overlay";
 import { VideoPlayer } from "@/components/video-player";
-import { useNsfwGuard } from "@/lib/use-nsfw-guard";
-import { useIsVideoDownloading } from "@/pool/downloads";
 import { buildMediaUnits } from "@/pool/media";
+import { useResolvedTheme } from "@/pool/theme";
 import type { Save } from "@/pool/types";
 import styles from "./styles.module.css";
 
@@ -17,26 +15,20 @@ interface MediaSlide {
 export function MediaViewer({
   save,
   videoRef,
-  onExpand,
 }: {
   save: Save;
   videoRef?: React.MutableRefObject<HTMLVideoElement | null>;
-  onExpand?: () => void;
 }) {
-  const isDownloading = useIsVideoDownloading(save.id);
-
-  const allSlides = useMemo<MediaSlide[]>(() => {
-    const units = buildMediaUnits(save);
-    const out: MediaSlide[] = units.map((u) => ({
-      src: u.url,
-      isVideo: u.isVideo,
-      posterUrl: u.posterUrl,
-    }));
-    if (out.length === 0 && save.mediaUrl) {
-      out.push({ src: save.mediaUrl, isVideo: save.mediaType === "video" });
-    }
-    return out;
-  }, [save]);
+  const theme = useResolvedTheme();
+  const allSlides = useMemo<MediaSlide[]>(
+    () =>
+      buildMediaUnits(save, { theme }).map((u) => ({
+        src: u.url,
+        isVideo: u.isVideo,
+        posterUrl: u.posterUrl,
+      })),
+    [save, theme],
+  );
 
   const [broken, setBroken] = useState<ReadonlySet<string>>(
     () => new Set<string>(),
@@ -55,32 +47,14 @@ export function MediaViewer({
     [allSlides, broken],
   );
 
-  const nsfw = useNsfwGuard(save);
-
   const [index, setIndex] = useState(0);
-  if (slides.length === 0) {
-    return <MediaMissing save={save} isDownloading={isDownloading} />;
-  }
+  if (slides.length === 0) return null;
   const slide = slides[Math.min(index, slides.length - 1)];
   if (!slide) return null;
   const hasMany = slides.length > 1;
 
   return (
-    <div
-      className={styles.carousel}
-      data-nsfw-blur={nsfw.shouldBlur ? "true" : undefined}
-    >
-      {isDownloading ? (
-        <span
-          className={styles.downloading}
-          role="status"
-          aria-label="Downloading video"
-          title="Downloading video in the background"
-        >
-          <span className={styles["downloading-dot"]} aria-hidden="true" />
-          Downloading video…
-        </span>
-      ) : null}
+    <div className={styles.carousel}>
       {slide.isVideo ? (
         <VideoPlayer
           key={slide.src}
@@ -89,7 +63,6 @@ export function MediaViewer({
           save={save}
           videoRef={videoRef}
           onError={() => markBroken(slide.src)}
-          onExpand={onExpand}
         />
       ) : (
         <div className={styles["media-shell"]}>
@@ -102,7 +75,6 @@ export function MediaViewer({
           />
         </div>
       )}
-      {nsfw.shouldBlur ? <NsfwOverlay onReveal={nsfw.reveal} /> : null}
       {hasMany ? (
         <>
           <Tooltip.Root content="Previous" side="right">
@@ -144,112 +116,5 @@ export function MediaViewer({
         </>
       ) : null}
     </div>
-  );
-}
-
-function MediaMissing({
-  save,
-  isDownloading,
-}: {
-  save: Save;
-  isDownloading: boolean;
-}) {
-  const toast = useToast();
-  const [busy, setBusy] = useState(false);
-
-  const downloading = isDownloading || busy;
-
-  const onDownload = useCallback(async () => {
-    if (downloading) return;
-    setBusy(true);
-    try {
-      const res = await window.pond.redownloadVideo(save.id);
-      if (res.ok) {
-        toast.add({
-          title: "Fetching video…",
-          description:
-            "If the file is already in the library it will reattach instantly, otherwise yt-dlp will run.",
-          type: "info",
-        });
-        return;
-      }
-      toast.add({
-        title: "Couldn't download",
-        description: humaniseRedownloadReason(res.reason),
-        type: "error",
-      });
-    } catch (err) {
-      toast.add({
-        title: "Couldn't download",
-        description: err instanceof Error ? err.message : String(err),
-        type: "error",
-      });
-    } finally {
-      setBusy(false);
-    }
-  }, [downloading, save.id, toast]);
-
-  return (
-    <div className={styles["media-missing"]} role="status">
-      <span className={styles["media-missing-icon"]} aria-hidden="true">
-        <PlayGlyph />
-      </span>
-      <p className={styles["media-missing-title"]}>
-        {downloading ? "Fetching video…" : "Video isn't attached"}
-      </p>
-      <p className={styles["media-missing-body"]}>
-        {downloading
-          ? "This usually takes a few seconds."
-          : "Pond will recover the file from disk if it's there, or fetch a fresh one."}
-      </p>
-      <div className={styles["media-missing-actions"]}>
-        <Button size="sm" onClick={onDownload} disabled={downloading}>
-          {downloading ? "Downloading…" : "Download video"}
-        </Button>
-        {save.url ? (
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => void window.pond.openExternal(save.url)}
-          >
-            Open original
-          </Button>
-        ) : null}
-      </div>
-    </div>
-  );
-}
-
-function humaniseRedownloadReason(
-  reason: "not_found" | "no_url" | "unsupported" | "internal_error",
-): string {
-  switch (reason) {
-    case "not_found":
-      return "This save no longer exists in the library.";
-    case "no_url":
-      return "Pond doesn't have a source URL to give yt-dlp.";
-    case "unsupported":
-      return "yt-dlp doesn't support downloads from this source.";
-    case "internal_error":
-      return "yt-dlp threw while running. Check the desktop logs.";
-  }
-}
-
-function PlayGlyph() {
-  return (
-    <svg
-      width={20}
-      height={20}
-      viewBox="0 0 20 20"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <circle cx="10" cy="10" r="7.5" />
-      <path d="M8.25 7.5l4 2.5-4 2.5z" fill="currentColor" />
-    </svg>
   );
 }

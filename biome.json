@@ -55,7 +55,10 @@
   },
   "overrides": [
     {
-      "includes": ["apps/extension/entrypoints/*-inject.content.ts"],
+      "includes": [
+        "apps/extension/entrypoints/*-inject.content.ts",
+        "apps/extension/sources/*/inject.ts"
+      ],
       "linter": {
         "rules": {
           "suspicious": {
@@ -63,6 +66,28 @@
           },
           "complexity": {
             "noArguments": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "apps/desktop/src/renderer/src/components/command-palette/cmdk/**"
+      ],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "useExhaustiveDependencies": "off"
+          },
+          "suspicious": {
+            "useIterableCallbackReturn": "off"
+          },
+          "a11y": {
+            "noStaticElementInteractions": "off",
+            "useFocusableInteractive": "off",
+            "useKeyWithClickEvents": "off",
+            "useSemanticElements": "off",
+            "useAriaPropsForRole": "off"
           }
         }
       }

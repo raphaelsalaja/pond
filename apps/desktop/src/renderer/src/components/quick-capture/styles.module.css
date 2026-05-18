@@ -22,5 +22,5 @@
   display: flex;
   gap: 8px;
   justify-content: flex-end;
-  margin-top: 6px;
+  margin-block-start: 6px;
 }

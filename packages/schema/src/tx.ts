@@ -1,6 +1,6 @@
 import type { NewSave, NewTag, Save, SyncAction, Tag } from "./db";
 
-export type ActorKind = "user" | "ai" | "system";
+export type ActorKind = "user" | "system";
 
 export interface TxMeta {
   actor?: ActorKind;
@@ -57,20 +57,6 @@ export type Transaction =
       model: "save";
       id: string;
       before: Save;
-      meta?: TxMeta;
-    }
-  /** @deprecated alias of `trash` — kept so old persisted entries parse. */
-  | {
-      kind: "archive";
-      model: "save";
-      id: string;
-      meta?: TxMeta;
-    }
-  /** @deprecated alias of `untrash`. See `archive`. */
-  | {
-      kind: "unarchive";
-      model: "save";
-      id: string;
       meta?: TxMeta;
     }
   | {
@@ -171,9 +157,5 @@ export function inverse(tx: Transaction): Transaction {
         data: tx.before as NewSave,
         meta: tx.meta,
       };
-    case "archive":
-      return { kind: "unarchive", model: "save", id: tx.id, meta: tx.meta };
-    case "unarchive":
-      return { kind: "archive", model: "save", id: tx.id, meta: tx.meta };
   }
 }

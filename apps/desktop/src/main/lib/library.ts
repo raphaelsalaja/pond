@@ -24,10 +24,7 @@ export interface ItemMetadata {
   name: string | null;
   annotation: string;
   tags: string[];
-  aiTags: string[];
-  aiCaption: string | null;
   folders: string[];
-  palettes: Array<{ hex: string; weight: number }>;
   ext: string | null;
   size: number | null;
   width: number | null;
@@ -35,7 +32,6 @@ export interface ItemMetadata {
   btime: number;
   mtime: number;
   importedAt: number;
-  archivedAt: number | null;
   isDeleted: boolean;
   files: Array<{
     kind: string;
@@ -46,14 +42,11 @@ export interface ItemMetadata {
   pond: {
     schemaVersion: number;
     rawSource?: unknown;
-    ocrText?: string | null;
     description?: string | null;
     author?: string | null;
     notes?: string | null;
     mediaType?: string | null;
     coverIndex?: number;
-    enrichedAt?: number;
-    blurDataUrl?: string | null;
   };
 }
 
@@ -97,10 +90,7 @@ export async function buildItemMetadata(
     name: save.title,
     annotation: save.notes ?? "",
     tags: save.tags ?? [],
-    aiTags: save.aiTags ?? [],
-    aiCaption: save.aiCaption,
     folders: [],
-    palettes: save.dominantColors ?? [],
     ext: files[0] ? extname(files[0].path).slice(1) || null : null,
     size: save.fileSize ?? files[0]?.size ?? null,
     width: save.width,
@@ -108,19 +98,16 @@ export async function buildItemMetadata(
     btime: save.createdAt?.getTime?.() ?? now,
     mtime: now,
     importedAt: save.savedAt?.getTime?.() ?? now,
-    archivedAt: save.archivedAt?.getTime?.() ?? null,
     isDeleted: save.deletedAt !== null,
     files,
     pond: {
       schemaVersion: LIBRARY_SCHEMA_VERSION,
       rawSource: save.rawJson,
-      ocrText: save.ocrText,
       description: save.description,
       author: save.author,
       notes: save.notes,
       mediaType: save.mediaType,
       coverIndex: save.coverIndex,
-      blurDataUrl: save.blurDataUrl,
     },
   };
 }

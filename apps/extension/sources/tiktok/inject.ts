@@ -4,13 +4,13 @@ export function inject() {
 
   const POND_EVENT = "pond:capture";
   const FAVORITE_RE = /\/api\/aweme\/favorite\/?/i;
-  const awemeCache = new Map<string, any>();
+  const usernameByAwemeId = new Map<string, string>();
 
   function emit(message: unknown) {
     window.postMessage({ type: POND_EVENT, message }, "*");
   }
-  function capture(payload: unknown) {
-    emit({ kind: "capture", payload });
+  function send(url: string, trigger: string) {
+    emit({ kind: "capture", payload: { url, trigger } });
   }
   function log(level: string, message: string, data?: unknown) {
     emit({ kind: "log", level, message, data });
@@ -32,13 +32,22 @@ export function inject() {
       return;
     }
     const id = obj.aweme_id ?? obj.awemeId ?? obj.id;
-    if (id && (obj.author || obj.video || obj.cover || obj.music)) {
-      awemeCache.set(String(id), obj);
+    if (id && obj.author) {
+      const username =
+        obj.author.unique_id ??
+        obj.author.uniqueId ??
+        obj.author.handle ??
+        null;
+      if (typeof username === "string" && username.length > 0) {
+        usernameByAwemeId.set(String(id), username);
+      }
     }
     for (const k of Object.keys(obj)) {
       try {
         walkForAweme(obj[k]);
-      } catch {}
+      } catch {
+        /* ignore */
+      }
     }
   }
 
@@ -66,126 +75,15 @@ export function inject() {
     }
   }
 
-  async function fetchOembed(id: string, username: string | null) {
-    const video =
-      username && id
-        ? `https://www.tiktok.com/@${username}/video/${id}`
-        : `https://www.tiktok.com/video/${id}`;
-    try {
-      const res = await fetch(
-        `https://www.tiktok.com/oembed?url=${encodeURIComponent(video)}`,
-        { credentials: "omit" },
-      );
-      if (!res.ok) return null;
-      return await res.json();
-    } catch {
-      return null;
-    }
-  }
-
-  function pickCover(aweme: any) {
-    const v = aweme?.video;
-    return (
-      v?.cover?.url_list?.[0] ??
-      v?.origin_cover?.url_list?.[0] ??
-      v?.dynamic_cover?.url_list?.[0] ??
-      aweme?.cover ??
-      null
-    );
-  }
-
-  function pickVideoUrl(aweme: any) {
-    const v = aweme?.video;
-    return (
-      v?.play_addr?.url_list?.[0] ??
-      v?.download_addr?.url_list?.[0] ??
-      v?.playAddr ??
-      null
-    );
-  }
-
-  async function emitFavorite(id: string, authorUsernameHint?: string | null) {
-    if (!id) return;
-    const aweme = awemeCache.get(String(id));
-    const author = aweme?.author ?? null;
-    const username =
-      author?.unique_id ??
-      author?.uniqueId ??
-      author?.handle ??
-      authorUsernameHint ??
-      null;
+  const emitted = new Set<string>();
+  function emitFavorite(id: string) {
+    if (!id || emitted.has(id)) return;
+    emitted.add(id);
+    const username = usernameByAwemeId.get(id);
     const url = username
       ? `https://www.tiktok.com/@${username}/video/${id}`
       : `https://www.tiktok.com/video/${id}`;
-
-    let title = aweme?.desc ?? aweme?.description ?? null;
-    let thumb = pickCover(aweme);
-    let displayAuthor =
-      author?.nickname ?? author?.displayName ?? author?.unique_id ?? null;
-
-    if (!title || !thumb) {
-      const oembed = await fetchOembed(id, username);
-      title = title ?? oembed?.title ?? null;
-      thumb = thumb ?? oembed?.thumbnail_url ?? null;
-      displayAuthor = displayAuthor ?? oembed?.author_name ?? null;
-    }
-
-    const videoUrl = pickVideoUrl(aweme);
-
-    const tiktok: Record<string, unknown> = {};
-    if (displayAuthor) tiktok.authorName = displayAuthor;
-    if (typeof username === "string") tiktok.authorHandle = username;
-    const avatar =
-      author?.avatar_thumb?.url_list?.[0] ??
-      author?.avatar_medium?.url_list?.[0] ??
-      author?.avatar_larger?.url_list?.[0] ??
-      null;
-    if (typeof avatar === "string") tiktok.authorAvatar = avatar;
-    if (typeof aweme?.create_time === "number") {
-      tiktok.publishedAt = new Date(aweme.create_time * 1000).toISOString();
-    }
-    if (typeof aweme?.video?.duration === "number") {
-      tiktok.durationSec = Math.round(aweme.video.duration / 1000);
-    }
-    const stats = aweme?.statistics ?? {};
-    const metrics: Record<string, number> = {};
-    if (typeof stats.play_count === "number") metrics.plays = stats.play_count;
-    if (typeof stats.digg_count === "number") metrics.likes = stats.digg_count;
-    if (typeof stats.comment_count === "number") {
-      metrics.comments = stats.comment_count;
-    }
-    if (typeof stats.share_count === "number") {
-      metrics.shares = stats.share_count;
-    }
-    if (typeof stats.download_count === "number") {
-      metrics.downloads = stats.download_count;
-    }
-    if (Object.keys(metrics).length > 0) tiktok.metrics = metrics;
-    const music = aweme?.music ?? null;
-    if (music && typeof music === "object") {
-      const m: Record<string, unknown> = {};
-      if (typeof music.title === "string") m.title = music.title;
-      if (typeof music.author === "string") m.author = music.author;
-      if (music.id != null) m.id = String(music.id);
-      if (Object.keys(m).length > 0) tiktok.music = m;
-    }
-
-    capture({
-      source: "tiktok",
-      sourceId: String(id),
-      url,
-      title,
-      description: typeof aweme?.desc === "string" ? aweme.desc : null,
-      author: displayAuthor,
-      mediaUrl: thumb,
-      mediaType: videoUrl ? "video" : thumb ? "image" : "link",
-      raw: {
-        capturedAt: new Date().toISOString(),
-        ...(videoUrl ? { videoUrl } : {}),
-        ...(aweme ? { aweme } : {}),
-        ...(Object.keys(tiktok).length > 0 ? { tiktok } : {}),
-      },
-    });
+    send(url, "tiktok:favorite");
   }
 
   const origFetch = window.fetch;
@@ -195,13 +93,11 @@ export function inject() {
       init?.method ?? (input instanceof Request ? input.method : "GET")
     ).toUpperCase();
     const res = await origFetch.call(this, input, init);
-
     try {
       if (typeof url === "string") {
         if (FAVORITE_RE.test(url) && isFavoriteType(url) && res.ok) {
           const id = awemeIdFromUrl(url);
-          log("info", "tiktok favorite", { url, id });
-          if (id) void emitFavorite(id);
+          if (id) emitFavorite(id);
         } else if (
           method === "GET" &&
           /\/api\/(aweme|item|feed|post)/i.test(url) &&
@@ -235,7 +131,7 @@ export function inject() {
         if (typeof url !== "string") return;
         if (FAVORITE_RE.test(url) && isFavoriteType(url)) {
           const id = awemeIdFromUrl(url);
-          if (id) void emitFavorite(id);
+          if (id) emitFavorite(id);
         } else if (/\/api\/(aweme|item|feed|post)/i.test(url)) {
           walkForAweme(readJson(this.responseText));
         }
@@ -246,5 +142,5 @@ export function inject() {
     return origSend.apply(this, arguments as any);
   };
 
-  log("info", "tiktok inject loaded", { href: location.href });
+  log("info", "tiktok inject ready");
 }

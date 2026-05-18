@@ -7,7 +7,7 @@ import { Hono } from "hono";
 import { DEFAULT_INGEST_PORT } from "../../shared/constants";
 import { getPrefs } from "../core/prefs";
 import { getIngestToken } from "../keychain";
-import { itemAddHandler } from "./item-add";
+import { enqueueHandler } from "./item-add";
 import { itemGetHandler } from "./item-get";
 import { itemInfoHandler } from "./item-info";
 import { libraryInfoHandler } from "./library-info";
@@ -119,12 +119,13 @@ function buildApp(): Hono {
     await next();
   };
 
+  api.use("/api/v2/enqueue", requireAuth);
   api.use("/api/v2/item/*", requireAuth);
   api.use("/api/v2/library/*", requireAuth);
   api.use("/api/v2/session/*", requireAuth);
   api.use("/api/v2/pair", requireAuth);
 
-  api.post("/api/v2/item/add", itemAddHandler);
+  api.post("/api/v2/enqueue", enqueueHandler);
   api.post("/api/v2/item/get", itemGetHandler);
   api.get("/api/v2/item/get", itemGetHandler);
   api.get("/api/v2/item/info", itemInfoHandler);

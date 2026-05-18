@@ -33,10 +33,8 @@ function dataForSyncAction(tx: Transaction): unknown {
   if ("patch" in tx) return tx.patch as unknown;
   switch (tx.kind) {
     case "trash":
-    case "archive":
       return { deletedAt: new Date() };
     case "untrash":
-    case "unarchive":
       return { deletedAt: null };
     default:
       return null;
@@ -54,14 +52,12 @@ function toActionKind(tx: Transaction): "I" | "U" | "D" | "A" {
       return "D";
     case "trash":
     case "untrash":
-    case "archive":
-    case "unarchive":
       return "A";
   }
 }
 
 function resolveActor(meta: TxMeta | undefined): {
-  actor: "user" | "ai" | "system";
+  actor: "user" | "system";
   reason: string | null;
 } {
   return {
@@ -222,11 +218,9 @@ async function applyToDisk(tx: Transaction): Promise<void> {
       await removeItem(tx.id);
       return;
     case "trash":
-    case "archive":
       await moveToTrash(tx.id);
       return;
     case "untrash":
-    case "unarchive":
       await restoreFromTrash(tx.id);
       return;
   }
@@ -241,30 +235,17 @@ function mapPatchToMetadata(patch: Partial<SaveRow>): {
   if (patch.title !== undefined) top.name = patch.title;
   if (patch.notes !== undefined) top.annotation = patch.notes ?? "";
   if (patch.tags !== undefined) top.tags = patch.tags;
-  if (patch.aiTags !== undefined) top.aiTags = patch.aiTags;
-  if (patch.aiCaption !== undefined) top.aiCaption = patch.aiCaption;
   if (patch.url !== undefined) top.url = patch.url;
   if (patch.width !== undefined) top.width = patch.width;
   if (patch.height !== undefined) top.height = patch.height;
   if (patch.fileSize !== undefined) top.size = patch.fileSize;
-  if (patch.dominantColors !== undefined) {
-    top.palettes = patch.dominantColors ?? [];
-  }
-  if (patch.archivedAt !== undefined) {
-    top.archivedAt =
-      patch.archivedAt instanceof Date
-        ? patch.archivedAt.getTime()
-        : patch.archivedAt;
-  }
   if (patch.deletedAt !== undefined) top.isDeleted = patch.deletedAt !== null;
 
   if (patch.description !== undefined) pond.description = patch.description;
   if (patch.author !== undefined) pond.author = patch.author;
   if (patch.mediaType !== undefined) pond.mediaType = patch.mediaType;
   if (patch.coverIndex !== undefined) pond.coverIndex = patch.coverIndex;
-  if (patch.ocrText !== undefined) pond.ocrText = patch.ocrText;
   if (patch.rawJson !== undefined) pond.rawSource = patch.rawJson;
-  if (patch.blurDataUrl !== undefined) pond.blurDataUrl = patch.blurDataUrl;
 
   return { top, pond };
 }
@@ -295,14 +276,12 @@ function applyToIndex(
         db.delete(savesTable).where(eq(savesTable.id, tx.id)).run();
         return;
       case "trash":
-      case "archive":
         db.update(savesTable)
           .set({ deletedAt: new Date() })
           .where(eq(savesTable.id, tx.id))
           .run();
         return;
       case "untrash":
-      case "unarchive":
         db.update(savesTable)
           .set({ deletedAt: null })
           .where(eq(savesTable.id, tx.id))

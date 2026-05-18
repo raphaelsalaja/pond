@@ -10,11 +10,11 @@ import { Menu, Tooltip, useToast } from "@pond/ui";
 import { useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTrackVisit } from "@/components/recents";
+import { SavePreview } from "@/components/save-preview";
 import {
   humaniseRefreshReason,
   REVEAL_LABEL,
 } from "@/components/save-preview/helpers";
-import { SavePreview } from "@/components/save-preview";
 import { useInspector } from "@/lib/use-inspector";
 import { optimistic } from "@/pool/bootstrap";
 import { useSave } from "@/pool/hooks";
@@ -60,11 +60,7 @@ export function SaveDetail() {
   );
 }
 
-function KebabMenu({
-  save,
-}: {
-  save: ReturnType<typeof useSave> | null;
-}) {
+function KebabMenu({ save }: { save: ReturnType<typeof useSave> | null }) {
   const navigate = useNavigate();
   const toast = useToast();
 
@@ -122,8 +118,7 @@ function KebabMenu({
       () => {
         pool.upsert(prev);
       },
-      async () =>
-        window.pond.tx({ kind: "trash", model: "save", id: save.id }),
+      async () => window.pond.tx({ kind: "trash", model: "save", id: save.id }),
     );
     toast.add({ title: "Moved to trash", type: "success" });
     navigate(-1);

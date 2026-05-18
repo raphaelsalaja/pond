@@ -1,25 +1,14 @@
 import { IconSidebarLeft2ShowOutline18 } from "@pond/icons/outline/18";
 import { Tooltip } from "@pond/ui";
 import { useCallback, useEffect, useRef } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useTrackVisit } from "@/components/recents";
-import { ActivitySection } from "@/components/save-preview/activity-section";
-import { DescriptionBody } from "@/components/save-preview/description";
-import { DominantColorSwatches } from "@/components/save-preview/dominant-colors";
-import { FileActions } from "@/components/save-preview/file-actions";
-import { descriptionMatchesTitle } from "@/components/save-preview/helpers";
-import { MediaViewer } from "@/components/save-preview/media-viewer";
-import { ReaderAction } from "@/components/save-preview/reader-action";
-import { RefreshAction } from "@/components/save-preview/refresh-action";
-import { RelatedSaves } from "@/components/save-preview/related-saves";
-import { SaveStats } from "@/components/save-stats";
 import { Shell } from "@/components/shell";
 import { useInspector } from "@/lib/use-inspector";
-import { useSave } from "@/pool/hooks";
 import { SaveDetail } from "@/pages/save-detail";
+import { useSave } from "@/pool/hooks";
 import { DetailContent } from "./content";
 import { DetailHeader } from "./header";
-import { PropertiesRail } from "./properties-rail";
 import styles from "./styles.module.css";
 import { useListContext } from "./use-list-context";
 
@@ -27,7 +16,6 @@ export function SaveDetailPage() {
   const { id } = useParams<{ id: string }>();
   const save = useSave(id);
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   useTrackVisit(id);
@@ -71,13 +59,6 @@ export function SaveDetailPage() {
     return () => window.removeEventListener("keydown", onKey);
   }, [goNext, goPrev, list.nextId, list.prevId, list.parentTo, navigate]);
 
-  const openLightbox = useCallback(() => {
-    if (!save) return;
-    const next = new URLSearchParams(searchParams);
-    next.set("focus", save.id);
-    setSearchParams(next, { replace: false });
-  }, [save, searchParams, setSearchParams]);
-
   if (!save) {
     return (
       <Shell.Main>
@@ -88,26 +69,11 @@ export function SaveDetailPage() {
     );
   }
 
-  if (save.source === "article") {
-    return (
-      <ArticleDetailLayout
-        save={save}
-        list={list}
-        videoRef={videoRef}
-        openLightbox={openLightbox}
-      />
-    );
-  }
-
   return (
     <>
-      <Shell.Main>
+      <Shell.Main className={styles["main-immersive"]}>
         <DetailHeader save={save} list={list} />
-        <DetailContent
-          save={save}
-          videoRef={videoRef}
-          onExpand={openLightbox}
-        />
+        <DetailContent save={save} videoRef={videoRef} />
         {!inspectorOpen ? (
           <Tooltip.Root content="Show inspector">
             <button
@@ -123,72 +89,5 @@ export function SaveDetailPage() {
       </Shell.Main>
       <SaveDetail />
     </>
-  );
-}
-
-function ArticleDetailLayout({
-  save,
-  list,
-  videoRef,
-  openLightbox,
-}: {
-  save: NonNullable<ReturnType<typeof useSave>>;
-  list: ReturnType<typeof useListContext>;
-  videoRef: React.MutableRefObject<HTMLVideoElement | null>;
-  openLightbox: () => void;
-}) {
-  const onTitleBlur = async (e: React.FocusEvent<HTMLHeadingElement>) => {
-    const next = e.currentTarget.textContent?.trim() ?? "";
-    if (next === (save.title ?? "")) return;
-    await window.pond.tx({
-      kind: "update",
-      model: "save",
-      id: save.id,
-      patch: { title: next || null },
-      before: { title: save.title },
-    });
-  };
-
-  return (
-    <Shell.Main>
-      <DetailHeader save={save} list={list} />
-      <div className={styles.layout}>
-        <article className={styles.body}>
-          <div className={styles["media-frame"]}>
-            <MediaViewer
-              save={save}
-              videoRef={videoRef}
-              onExpand={openLightbox}
-            />
-          </div>
-          <h1
-            className={styles.title}
-            contentEditable
-            suppressContentEditableWarning
-            onBlur={onTitleBlur}
-          >
-            {save.title ?? save.url}
-          </h1>
-          {save.url ? (
-            <p className={styles.url}>
-              <a href={save.url} target="_blank" rel="noreferrer">
-                {save.url}
-              </a>
-            </p>
-          ) : null}
-          {save.description && !descriptionMatchesTitle(save) ? (
-            <DescriptionBody text={save.description} />
-          ) : null}
-          <SaveStats.Root save={save} videoRef={videoRef} />
-          <ReaderAction save={save} />
-          <DominantColorSwatches save={save} />
-          <FileActions save={save} />
-          <RefreshAction save={save} />
-          <RelatedSaves save={save} />
-          <ActivitySection save={save} />
-        </article>
-        <PropertiesRail save={save} />
-      </div>
-    </Shell.Main>
   );
 }

@@ -28,8 +28,6 @@ export default defineConfig({
     },
     permissions: [
       "storage",
-      "scripting",
-      "contextMenus",
       "activeTab",
       "tabs",
       // Required by the "Push session to Pond" flow — reads httpOnly cookies the renderer can't see.

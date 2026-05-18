@@ -118,9 +118,6 @@ export interface PollingLoop {
   isRunning(): boolean;
 }
 
-// Interval-driven loop with re-entrancy guard. Used by the enrich worker
-// where job state lives in SQLite, so the runner abstraction is just the
-// timer + busy flag.
 export function createPollingLoop(opts: PollingLoopOptions): PollingLoop {
   const { name, tickMs, tick } = opts;
   let handle: NodeJS.Timeout | null = null;

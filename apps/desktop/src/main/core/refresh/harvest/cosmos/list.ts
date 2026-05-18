@@ -202,31 +202,6 @@ async function inPageCosmosList(
     const title = titleFromTile(obj);
     const description = descriptionFromTile(obj);
 
-    const source = obj.source as Record<string, unknown> | undefined;
-    const sourceUrl =
-      source && typeof source.url === "string" ? source.url : undefined;
-
-    const meta: Record<string, unknown> = {};
-    if (typename) meta.tileType = typename;
-    if (sourceUrl) meta.sourceUrl = sourceUrl;
-    if (author.authorUrl) meta.authorUrl = author.authorUrl;
-    if (author.avatarUrl) meta.authorAvatar = author.avatarUrl;
-    if (typeof obj.createdAt === "string") meta.publishedAt = obj.createdAt;
-    if (typeof obj.originalClusterId === "number") {
-      meta.originalClusterId = obj.originalClusterId;
-    }
-    const mediaNode = obj.media as Record<string, unknown> | undefined;
-    if (mediaNode) {
-      const mediaId = pickString(mediaNode, ["mediaId"]);
-      if (mediaId) meta.mediaId = mediaId;
-      if (typeof mediaNode.width === "number") {
-        meta.mediaWidth = mediaNode.width;
-      }
-      if (typeof mediaNode.height === "number") {
-        meta.mediaHeight = mediaNode.height;
-      }
-    }
-
     const entry: CosmosEntry = {
       sourceId: id,
       url: shareUrl,
@@ -248,7 +223,6 @@ async function inPageCosmosList(
       entry.mediaType = "link";
     }
     if (typeof obj.createdAt === "string") entry.savedAt = obj.createdAt;
-    if (Object.keys(meta).length > 0) entry.meta = meta;
     return entry;
   };
 

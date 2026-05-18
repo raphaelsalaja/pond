@@ -137,8 +137,8 @@ The system explicitly rejects the visual reflexes of its category. No
 SaaS dashboard chrome (no hero-metric blocks, no gradient accents, no
 identical card grids). No social-feed engagement furniture. No
 read-it-later utilitarianism. No bubbly consumer warmth. No
-AI-generated tool-marketing aesthetic — sky blue is the accent, but it
-is never the surface, and it never shows up as a gradient. The surface
+tool-marketing aesthetic — sky blue is the accent, but it is never
+the surface, and it never shows up as a gradient. The surface
 of Pond looks like a Mac power-user tool tended slowly: Linear's
 interface rigor, Are.na's cultural posture, the patience of a Bear
 notebook.
@@ -543,8 +543,8 @@ codebase: `Settings.Page` → `Settings.Header` → `Settings.Title` /
   gradient). Single solid colors only; emphasis comes from weight or
   size.
 - **Don't** use glassmorphism by default. Backdrop blur on
-  translucent panels is the AI-tool reflex; surfaces are opaque
-  tinted neutrals here.
+  translucent panels is the wrong reflex here; surfaces are opaque
+  tinted neutrals.
 - **Don't** use a `border-left` or `border-right` greater than 1 px
   as a colored accent stripe on cards, list items, callouts, or
   alerts. Rewrite with a tinted background, a leading badge, or

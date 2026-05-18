@@ -100,18 +100,6 @@ export const ACTION_COMMANDS: Command[] = [
     },
   },
   {
-    id: "action.ai.backfill",
-    label: "Run AI backfill",
-    description: "Re-run enrichment over rows missing AI fields",
-    group: "Actions",
-    scope: "actions",
-    keywords: ["ai", "enrich", "backfill", "tags", "summary"],
-    perform: async ({ pond, close }) => {
-      close();
-      await pond.query("enrich.backfill", {});
-    },
-  },
-  {
     id: "action.trash.empty",
     label: "Empty Trash",
     description: "Permanently delete every item in Trash",
