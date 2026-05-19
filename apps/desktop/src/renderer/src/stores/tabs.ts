@@ -157,7 +157,7 @@ export const useTabStore = create<TabStore>((set, get) => ({
     let nextActive = s.activeId;
     if (s.activeId === id) {
       const neighbor = nextTabs[Math.min(idx, nextTabs.length - 1)];
-      nextActive = neighbor?.id;
+      if (neighbor) nextActive = neighbor.id;
     }
 
     const next: TabState = {
@@ -222,18 +222,22 @@ export const useTabStore = create<TabStore>((set, get) => ({
 
   activateNext() {
     const s = get();
+    if (s.tabs.length === 0) return;
     const idx = s.tabs.findIndex((t) => t.id === s.activeId);
-    const nextIdx = (idx + 1) % s.tabs.length;
-    const next: TabState = { ...s, activeId: s.tabs[nextIdx]?.id };
+    const target = s.tabs[(idx + 1) % s.tabs.length];
+    if (!target) return;
+    const next: TabState = { ...s, activeId: target.id };
     persist(next);
     set(next);
   },
 
   activatePrev() {
     const s = get();
+    if (s.tabs.length === 0) return;
     const idx = s.tabs.findIndex((t) => t.id === s.activeId);
-    const prevIdx = (idx - 1 + s.tabs.length) % s.tabs.length;
-    const next: TabState = { ...s, activeId: s.tabs[prevIdx]?.id };
+    const target = s.tabs[(idx - 1 + s.tabs.length) % s.tabs.length];
+    if (!target) return;
+    const next: TabState = { ...s, activeId: target.id };
     persist(next);
     set(next);
   },
