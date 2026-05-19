@@ -101,3 +101,45 @@ export function useIsSelected(id: string): boolean {
     () => selection.has(id),
   );
 }
+
+// Primary selection (the card under the cursor / opened in detail).
+// Lives in its own tiny store so flipping the primary id only
+// re-renders the two cards whose primary state changed, not every
+// card in the grid.
+class PrimarySelectionStore {
+  private id: string | null = null;
+  private listeners = new Set<() => void>();
+
+  get(): string | null {
+    return this.id;
+  }
+
+  set(next: string | null): void {
+    if (this.id === next) return;
+    this.id = next;
+    for (const cb of this.listeners) cb();
+  }
+
+  subscribe(cb: () => void): () => void {
+    this.listeners.add(cb);
+    return () => this.listeners.delete(cb);
+  }
+}
+
+export const primarySelection = new PrimarySelectionStore();
+
+export function usePrimarySelectedId(): string | null {
+  return useSyncExternalStore(
+    (cb) => primarySelection.subscribe(cb),
+    () => primarySelection.get(),
+    () => primarySelection.get(),
+  );
+}
+
+export function useIsPrimary(id: string): boolean {
+  return useSyncExternalStore(
+    (cb) => primarySelection.subscribe(cb),
+    () => primarySelection.get() === id,
+    () => primarySelection.get() === id,
+  );
+}

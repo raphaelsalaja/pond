@@ -1,5 +1,7 @@
 import { IconChevronLeftFill18 } from "@pond/icons/fill/18";
+import { useCallback } from "react";
 import { NavLink, type NavLinkProps } from "react-router-dom";
+import { useTabStore } from "@/stores/tabs";
 import styles from "./styles.module.css";
 
 interface RootProps extends React.ComponentPropsWithoutRef<"aside"> {}
@@ -69,8 +71,23 @@ function Item({ ...props }: ItemProps) {
 
 interface LinkProps extends NavLinkProps {}
 
-function Link({ ...props }: LinkProps) {
-  return <NavLink className={styles.link} {...props} />;
+function Link({ onClick, to, ...props }: LinkProps) {
+  const handleClick = useCallback(
+    (e: React.MouseEvent<HTMLAnchorElement>) => {
+      if (e.metaKey || e.ctrlKey) {
+        e.preventDefault();
+        const path = typeof to === "string" ? to : (to.pathname ?? "/");
+        useTabStore.getState().open(path, { background: true });
+        return;
+      }
+      onClick?.(e);
+    },
+    [onClick, to],
+  );
+
+  return (
+    <NavLink className={styles.link} to={to} onClick={handleClick} {...props} />
+  );
 }
 
 interface AnchorProps extends React.ComponentPropsWithoutRef<"a"> {

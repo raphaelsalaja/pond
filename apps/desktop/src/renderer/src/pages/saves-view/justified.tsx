@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Library } from "@/components/library";
 import type { Save } from "@/pool/types";
 import { aspectFor } from "./aspect";
+import { useVisibleIndices } from "./virtual";
 
 const TARGET_ROW_HEIGHT = 180;
 const ITEM_GAP = 12;
@@ -10,22 +11,42 @@ interface PackedItem {
   save: Save;
   width: number;
   height: number;
+  top: number;
+  left: number;
+}
+
+interface PackResult {
+  items: PackedItem[];
+  totalHeight: number;
 }
 
 function packRows(
   saves: Save[],
   containerWidth: number,
   targetHeight: number,
-): PackedItem[] {
-  if (containerWidth <= 0 || saves.length === 0) return [];
+): PackResult {
+  if (containerWidth <= 0 || saves.length === 0) {
+    return { items: [], totalHeight: 0 };
+  }
   const items: PackedItem[] = [];
   let current: Save[] = [];
   let aspectSum = 0;
+  let cursorTop = 0;
 
   const flushRow = (height: number) => {
+    let cursorLeft = 0;
     for (const s of current) {
-      items.push({ save: s, width: aspectFor(s) * height, height });
+      const width = aspectFor(s) * height;
+      items.push({
+        save: s,
+        width,
+        height,
+        top: cursorTop,
+        left: cursorLeft,
+      });
+      cursorLeft += width + ITEM_GAP;
     }
+    cursorTop += height + ITEM_GAP;
     current = [];
     aspectSum = 0;
   };
@@ -44,12 +65,16 @@ function packRows(
   /* Last partial row keeps target height; cards retain natural widths
    * and trail off rather than over-stretching. Matches Eagle. */
   if (current.length > 0) flushRow(targetHeight);
-  return items;
+  const totalHeight = Math.max(0, cursorTop - ITEM_GAP);
+  return { items, totalHeight };
 }
 
 export interface JustifiedViewProps {
   saves: Save[];
-  renderCard: (save: Save, width: number, height: number) => React.ReactNode;
+  renderCard: (
+    save: Save,
+    packed: { top: number; left: number; width: number; height: number },
+  ) => React.ReactNode;
   multiSelectActive: boolean;
   targetHeight?: number;
 }
@@ -68,9 +93,15 @@ export function JustifiedView({
    * flash where everything piles up at width=0. */
   useLayoutEffect(() => {
     if (!ref.current) return;
-    setWidth(ref.current.getBoundingClientRect().width);
+    const w = ref.current.getBoundingClientRect().width;
+    if (w > 0) setWidth(w);
   }, []);
 
+  // Hidden tabs keep the component mounted via `display: none`
+  // (see `App.tsx`). ResizeObserver would otherwise fire with width
+  // 0 every time we leave the tab, collapsing the row layout. Hold
+  // the last non-zero width across visibility changes so returning
+  // to the tab doesn't trigger a full re-pack.
   useEffect(() => {
     if (!ref.current) return;
     let raf = 0;
@@ -78,7 +109,9 @@ export function JustifiedView({
     const ro = new ResizeObserver((entries) => {
       const last = entries[entries.length - 1];
       if (!last) return;
-      pending = last.contentRect.width;
+      const w = last.contentRect.width;
+      if (w <= 0) return;
+      pending = w;
       if (raf !== 0) return;
       raf = requestAnimationFrame(() => {
         raf = 0;
@@ -96,14 +129,35 @@ export function JustifiedView({
     };
   }, []);
 
-  const items = useMemo(
+  const { items, totalHeight } = useMemo(
     () => packRows(saves, width, targetHeight),
     [saves, width, targetHeight],
   );
 
+  const style = useMemo<React.CSSProperties>(
+    () => ({ height: `${totalHeight}px` }),
+    [totalHeight],
+  );
+
+  const visible = useVisibleIndices(ref, items);
+
   return (
-    <Library.Grid ref={ref} layout="justified" multiSelect={multiSelectActive}>
-      {items.map(({ save, width: w, height: h }) => renderCard(save, w, h))}
+    <Library.Grid
+      ref={ref}
+      layout="justified"
+      multiSelect={multiSelectActive}
+      style={style}
+    >
+      {visible.map((i) => {
+        const it = items[i];
+        if (!it) return null;
+        return renderCard(it.save, {
+          top: it.top,
+          left: it.left,
+          width: it.width,
+          height: it.height,
+        });
+      })}
     </Library.Grid>
   );
 }

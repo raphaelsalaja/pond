@@ -1,4 +1,5 @@
 import {
+  AlertDialog,
   Button,
   Collapsible,
   Field,
@@ -9,6 +10,22 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./styles.module.css";
+
+interface RelocatePreviewWire {
+  currentPath: string;
+  candidatePath: string;
+  samePath: boolean;
+  safety: { ok: boolean; reason: string | null };
+  cloudKind: string | null;
+  existing: {
+    exists: boolean;
+    hasItemsDir: boolean;
+    hasMetadataFile: boolean;
+    itemCount: number;
+    looksLikePondLibrary: boolean;
+  };
+  suggestedMode: "copy" | "adopt";
+}
 
 type SyncSource = "twitter";
 
@@ -64,6 +81,17 @@ export function WelcomePage() {
       </p>
 
       <ol className={styles.steps}>
+        <li>
+          <h3>Pick where your library lives</h3>
+          <p>
+            Pond stores your saves on disk so you keep full control. Default is
+            a folder in your home directory — pick somewhere in iCloud Drive (or
+            Dropbox, Google Drive…) if you want your saves to sync across
+            machines.
+          </p>
+          <LibraryLocationStep />
+        </li>
+
         <li>
           <h3>Install the browser extension</h3>
           <p>
@@ -155,6 +183,190 @@ export function WelcomePage() {
           I'm set up → Open library
         </Button>
       </div>
+    </div>
+  );
+}
+
+function LibraryLocationStep() {
+  const toast = useToast();
+  const [currentPath, setCurrentPath] = useState<string | null>(null);
+  const [preview, setPreview] = useState<RelocatePreviewWire | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    void (async () => {
+      const snap = (await window.pond
+        .query("storage.snapshot", {})
+        .catch(() => null)) as { libraryRoot?: string } | null;
+      if (snap?.libraryRoot) setCurrentPath(snap.libraryRoot);
+    })();
+  }, []);
+
+  async function chooseLocation() {
+    setBusy(true);
+    try {
+      const pick = (await window.pond.query("library.pickFolder", {})) as
+        | { ok: true; path: string }
+        | { ok: false; reason: string };
+      if (!pick.ok) {
+        if (pick.reason !== "cancelled") {
+          toast.add({
+            title: "Couldn't open picker",
+            description: pick.reason,
+            type: "error",
+          });
+        }
+        return;
+      }
+      const res = (await window.pond.query("library.previewRelocate", {
+        path: pick.path,
+      })) as
+        | { ok: true; preview: RelocatePreviewWire }
+        | { ok: false; reason: string };
+      if (!res.ok) {
+        toast.add({
+          title: "Couldn't inspect folder",
+          description: res.reason,
+          type: "error",
+        });
+        return;
+      }
+      if (res.preview.samePath) {
+        toast.add({
+          title: "Already there",
+          description: "That's the folder your library already uses.",
+          type: "info",
+        });
+        return;
+      }
+      if (!res.preview.safety.ok) {
+        toast.add({
+          title: "Can't use that folder",
+          description:
+            res.preview.safety.reason === "inside_user_data"
+              ? "That folder lives inside Pond's own data directory."
+              : "Pond can't write to that folder.",
+          type: "error",
+        });
+        return;
+      }
+      setPreview(res.preview);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function confirm() {
+    if (!preview) return;
+    setBusy(true);
+    const res = (await window.pond.query("library.relocate", {
+      path: preview.candidatePath,
+      mode: preview.suggestedMode,
+      restart: true,
+    })) as { ok: true; path: string } | { ok: false; reason: string };
+    if (!res.ok) {
+      setBusy(false);
+      toast.add({
+        title: "Couldn't change location",
+        description: res.reason,
+        type: "error",
+      });
+      return;
+    }
+    toast.add({
+      title: "Switching libraries",
+      description: "Pond is restarting…",
+      type: "success",
+    });
+  }
+
+  const mode = preview?.suggestedMode ?? "copy";
+
+  return (
+    <div className={styles.row}>
+      <code
+        style={{
+          flex: 1,
+          padding: "6px 10px",
+          fontSize: 11,
+          background: "var(--ds-gray-3)",
+          borderRadius: 4,
+          overflowX: "auto",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {currentPath ?? "~/Pond/My Pond.library/"}
+      </code>
+      <Button size="sm" disabled={busy} onClick={() => void chooseLocation()}>
+        Change…
+      </Button>
+
+      <AlertDialog.Root
+        open={preview !== null}
+        onOpenChange={(o) => {
+          if (!o && !busy) setPreview(null);
+        }}
+      >
+        <AlertDialog.Content>
+          <AlertDialog.Title>
+            {mode === "adopt"
+              ? "Use this Pond library?"
+              : "Move your library here?"}
+          </AlertDialog.Title>
+          <AlertDialog.Description>
+            {preview ? (
+              <div>
+                <p style={{ marginTop: 0 }}>
+                  {mode === "adopt"
+                    ? `That folder already looks like a Pond library (${preview.existing.itemCount} item${preview.existing.itemCount === 1 ? "" : "s"}). Pond will use it directly.`
+                    : "Pond will move your library to the new location and restart. Your current folder stays put so you can confirm everything before removing it yourself."}
+                </p>
+                <p style={{ fontSize: 11, color: "var(--ds-gray-11)" }}>
+                  <strong>From</strong> <code>{preview.currentPath}</code>
+                  <br />
+                  <strong>To</strong> <code>{preview.candidatePath}</code>
+                </p>
+                {preview.cloudKind ? (
+                  <p
+                    style={{
+                      padding: "8px 10px",
+                      background: "light-dark(#fef3c7, rgba(120, 53, 15, 0.4))",
+                      borderRadius: 6,
+                      fontSize: 11,
+                    }}
+                  >
+                    This folder is inside {preview.cloudKind}. Files will sync
+                    across devices; Pond's index stays per-Mac.
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+          </AlertDialog.Description>
+          <AlertDialog.Actions>
+            <AlertDialog.Close
+              render={
+                <Button variant="ghost" disabled={busy}>
+                  Cancel
+                </Button>
+              }
+            />
+            <Button
+              variant="primary"
+              disabled={busy}
+              onClick={(e) => {
+                e.preventDefault();
+                void confirm();
+              }}
+            >
+              {busy
+                ? "Relaunching…"
+                : mode === "adopt"
+                  ? "Switch and Relaunch"
+                  : "Move and Relaunch"}
+            </Button>
+          </AlertDialog.Actions>
+        </AlertDialog.Content>
+      </AlertDialog.Root>
     </div>
   );
 }

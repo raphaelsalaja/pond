@@ -11,6 +11,8 @@ import {
   setDisplayPref,
   useDisplayPrefs,
 } from "@/lib/display-prefs";
+import { useInspector } from "@/lib/use-inspector";
+import { useSidebar } from "@/lib/use-sidebar";
 import { readViewPref, writeViewPref } from "@/lib/view-prefs";
 import styles from "./styles.module.css";
 
@@ -233,6 +235,8 @@ function SortPickerRoot({ trigger }: PickerProps) {
 
 function DisplayPickerRoot({ trigger }: PickerProps) {
   const prefs = useDisplayPrefs();
+  const { open: sidebarOpen, setOpen: setSidebarOpen } = useSidebar();
+  const { open: inspectorOpen, setOpen: setInspectorOpen } = useInspector();
   return (
     <Popover.Root>
       <Popover.Trigger render={trigger} />
@@ -250,6 +254,19 @@ function DisplayPickerRoot({ trigger }: PickerProps) {
             />
           </Row>
         ))}
+        <hr className={styles.separator} />
+        <Row label="Show sidebar">
+          <Switch.Root
+            checked={sidebarOpen}
+            onCheckedChange={(v) => setSidebarOpen(Boolean(v))}
+          />
+        </Row>
+        <Row label="Show inspector">
+          <Switch.Root
+            checked={inspectorOpen}
+            onCheckedChange={(v) => setInspectorOpen(Boolean(v))}
+          />
+        </Row>
       </Popover.Content>
     </Popover.Root>
   );

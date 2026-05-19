@@ -3,6 +3,7 @@ import { Library } from "@/components/library";
 import { type DisplayPrefs, useDisplayPrefs } from "@/lib/display-prefs";
 import type { Save } from "@/pool/types";
 import { aspectFor, useAspectVersion } from "./aspect";
+import { useVisibleIndices } from "./virtual";
 
 const ITEM_GAP = 12;
 const DEFAULT_COL_MIN = 130;
@@ -122,9 +123,16 @@ export function WaterfallView({
 
   useLayoutEffect(() => {
     if (!ref.current) return;
-    setWidth(ref.current.getBoundingClientRect().width);
+    const w = ref.current.getBoundingClientRect().width;
+    if (w > 0) setWidth(w);
   }, []);
 
+  // Each tab is kept mounted and hidden via `display: none` (see
+  // `App.tsx`). A hidden element has no layout box, so ResizeObserver
+  // would otherwise fire with width 0 every time we leave the tab,
+  // wiping the packed grid and forcing a full re-pack on return. We
+  // keep the last known non-zero width across visibility changes so
+  // the layout survives tab switches without a visible reflow.
   useEffect(() => {
     if (!ref.current) return;
     let raf = 0;
@@ -132,7 +140,9 @@ export function WaterfallView({
     const ro = new ResizeObserver((entries) => {
       const last = entries[entries.length - 1];
       if (!last) return;
-      pending = last.contentRect.width;
+      const w = last.contentRect.width;
+      if (w <= 0) return;
+      pending = w;
       if (raf !== 0) return;
       raf = requestAnimationFrame(() => {
         raf = 0;
@@ -160,6 +170,12 @@ export function WaterfallView({
     [totalHeight],
   );
 
+  // Only render items whose absolute position intersects the
+  // viewport (plus an overscan band). The grid keeps its full
+  // `totalHeight` so the scrollbar stays accurate, but off-screen
+  // cards never reach React reconciliation, image decode, or paint.
+  const visible = useVisibleIndices(ref, items);
+
   return (
     <Library.Grid
       ref={ref}
@@ -167,9 +183,16 @@ export function WaterfallView({
       multiSelect={multiSelectActive}
       style={style}
     >
-      {items.map(({ save, top, left, width: w, height: h }) =>
-        renderCard(save, { top, left, width: w, height: h }),
-      )}
+      {visible.map((i) => {
+        const it = items[i];
+        if (!it) return null;
+        return renderCard(it.save, {
+          top: it.top,
+          left: it.left,
+          width: it.width,
+          height: it.height,
+        });
+      })}
     </Library.Grid>
   );
 }

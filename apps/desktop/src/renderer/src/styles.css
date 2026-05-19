@@ -65,6 +65,11 @@ body,
   background: var(--ds-background-primary);
 }
 
+#root {
+  display: flex;
+  flex-direction: column;
+}
+
 @keyframes app-sidebar-slide-in {
   from {
     opacity: 0;

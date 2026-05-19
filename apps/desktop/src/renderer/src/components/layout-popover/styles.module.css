@@ -27,6 +27,13 @@
   align-items: center;
 }
 
+.separator {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--ds-gray-a4);
+  border: 0;
+}
+
 .sort-controls {
   display: inline-flex;
   gap: 6px;

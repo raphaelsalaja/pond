@@ -14,20 +14,13 @@
   flex-shrink: 0;
   gap: 4px;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   height: 32px;
   -webkit-app-region: drag;
 
   & > * {
     -webkit-app-region: no-drag;
   }
-}
-
-.toolbar-btn-flip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transform: scaleX(-1);
 }
 
 .toolbar-btn {

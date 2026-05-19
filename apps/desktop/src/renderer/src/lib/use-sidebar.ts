@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { readViewPref, writeViewPref } from "@/lib/view-prefs";
 
-const EVENT_NAME = "pond:inspector-pref";
+const EVENT_NAME = "pond:sidebar-pref";
 
-export function useInspector(): {
+export function useSidebar(): {
   open: boolean;
   toggle: () => void;
   setOpen: (next: boolean) => void;
 } {
-  const [open, setOpenState] = useState<boolean>(() => readInspectorPref());
+  const [open, setOpenState] = useState<boolean>(() => readSidebarPref());
 
   useEffect(() => {
     const onCustom = (e: Event) => {
@@ -20,29 +20,27 @@ export function useInspector(): {
   }, []);
 
   const setOpen = useCallback((next: boolean) => {
-    setInspectorOpen(next);
+    setSidebarOpen(next);
   }, []);
 
   const toggle = useCallback(() => {
-    toggleInspector();
+    toggleSidebar();
   }, []);
 
   return { open, toggle, setOpen };
 }
 
-export function readInspectorPref(): boolean {
-  // Inspector defaults to open — the whole point of this layout is that
-  // users see the metadata without having to ask for it.
-  const v = readViewPref("inspector");
+export function readSidebarPref(): boolean {
+  const v = readViewPref("sidebar");
   if (v === "closed") return false;
   return true;
 }
 
-export function setInspectorOpen(next: boolean): void {
-  writeViewPref("inspector", next ? "open" : "closed");
+export function setSidebarOpen(next: boolean): void {
+  writeViewPref("sidebar", next ? "open" : "closed");
   window.dispatchEvent(new CustomEvent(EVENT_NAME, { detail: next }));
 }
 
-export function toggleInspector(): void {
-  setInspectorOpen(!readInspectorPref());
+export function toggleSidebar(): void {
+  setSidebarOpen(!readSidebarPref());
 }

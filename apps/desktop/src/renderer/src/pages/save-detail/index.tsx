@@ -3,10 +3,9 @@ import {
   IconFolder5Outline18,
   IconGlobe2Outline18,
   IconRefreshOutline18,
-  IconSidebarLeft2HideOutline18,
   IconTrashOutline18,
 } from "@pond/icons/outline/18";
-import { Menu, Tooltip, useToast } from "@pond/ui";
+import { Menu, useToast } from "@pond/ui";
 import { useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTrackVisit } from "@/components/recents";
@@ -24,7 +23,7 @@ import styles from "./styles.module.css";
 export function SaveDetail() {
   const { id } = useParams<{ id: string }>();
   const save = useSave(id);
-  const { open, toggle } = useInspector();
+  const { open } = useInspector();
 
   useTrackVisit(id);
 
@@ -33,18 +32,6 @@ export function SaveDetail() {
   return (
     <aside aria-label="Inspector" className={styles.pane}>
       <div className={styles.toolbar}>
-        <Tooltip.Root content="Hide inspector" side="bottom">
-          <button
-            type="button"
-            className={styles["toolbar-btn"]}
-            onClick={toggle}
-            aria-label="Hide inspector"
-          >
-            <span className={styles["toolbar-btn-flip"]} aria-hidden>
-              <IconSidebarLeft2HideOutline18 width={14} height={14} />
-            </span>
-          </button>
-        </Tooltip.Root>
         <KebabMenu save={save ?? null} />
       </div>
       <div className={styles.body}>

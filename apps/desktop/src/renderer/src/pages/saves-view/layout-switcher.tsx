@@ -9,7 +9,8 @@ import {
   type Updater,
   useReactTable,
 } from "@tanstack/react-table";
-import { useCallback, useMemo } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Card, type CardLayout } from "@/components/card-thumb";
 import { type GridLayout, Library } from "@/components/library";
@@ -54,20 +55,23 @@ export function LayoutSwitcher(props: LayoutSwitcherProps) {
   } = props;
 
   const renderJustifiedCard = useCallback(
-    (save: Save, w: number, h: number) => (
+    (
+      save: Save,
+      packed: { top: number; left: number; width: number; height: number },
+    ) => (
       <SaveCard
         key={save.id}
         save={save}
-        selectedId={selectedId}
-        multiSelectActive={multiSelectActive}
         layout="justified"
         onClick={onClick}
         onDoubleClick={onDoubleClick}
-        packedWidth={w}
-        packedHeight={h}
+        packedWidth={packed.width}
+        packedHeight={packed.height}
+        packedTop={packed.top}
+        packedLeft={packed.left}
       />
     ),
-    [selectedId, multiSelectActive, onClick, onDoubleClick],
+    [onClick, onDoubleClick],
   );
 
   const renderWaterfallCard = useCallback(
@@ -78,8 +82,6 @@ export function LayoutSwitcher(props: LayoutSwitcherProps) {
       <SaveCard
         key={save.id}
         save={save}
-        selectedId={selectedId}
-        multiSelectActive={multiSelectActive}
         layout="waterfall"
         onClick={onClick}
         onDoubleClick={onDoubleClick}
@@ -89,7 +91,7 @@ export function LayoutSwitcher(props: LayoutSwitcherProps) {
         packedLeft={packed.left}
       />
     ),
-    [selectedId, multiSelectActive, onClick, onDoubleClick],
+    [onClick, onDoubleClick],
   );
 
   if (viewMode === "list") {
@@ -140,8 +142,6 @@ export function LayoutSwitcher(props: LayoutSwitcherProps) {
         <SaveCard
           key={save.id}
           save={save}
-          selectedId={selectedId}
-          multiSelectActive={multiSelectActive}
           layout={viewMode as CardLayout}
           onClick={onClick}
           onDoubleClick={onDoubleClick}
@@ -160,8 +160,6 @@ interface GroupViewProps {
 }
 
 function useGroupedWaterfallRenderer({
-  selectedId,
-  multiSelectActive,
   onClick,
   onDoubleClick,
 }: Omit<GroupViewProps, "saves">) {
@@ -173,8 +171,6 @@ function useGroupedWaterfallRenderer({
       <SaveCard
         key={save.id}
         save={save}
-        selectedId={selectedId}
-        multiSelectActive={multiSelectActive}
         layout="waterfall"
         onClick={onClick}
         onDoubleClick={onDoubleClick}
@@ -184,7 +180,7 @@ function useGroupedWaterfallRenderer({
         packedLeft={packed.left}
       />
     ),
-    [selectedId, multiSelectActive, onClick, onDoubleClick],
+    [onClick, onDoubleClick],
   );
 }
 
@@ -395,8 +391,41 @@ function ListView({
     enableSortingRemoval: false,
   });
 
+  const rows = table.getRowModel().rows;
+  const headerColumns = columns.length;
+  const tableRef = useRef<HTMLTableElement | null>(null);
+  const [scrollParent, setScrollParent] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    let node: HTMLElement | null = tableRef.current?.parentElement ?? null;
+    while (node) {
+      const style = getComputedStyle(node);
+      const oy = style.overflowY;
+      if (oy === "auto" || oy === "scroll" || oy === "overlay") break;
+      node = node.parentElement;
+    }
+    setScrollParent(node);
+  }, []);
+
+  const rowVirtualizer = useVirtualizer({
+    count: rows.length,
+    // Row height = thumbnail (24) + vertical padding (6 + 6) + 1px
+    // border. Used as the initial estimate; real heights are
+    // measured per row to handle wrapping titles or tag chips.
+    estimateSize: () => 37,
+    getScrollElement: () => scrollParent,
+    overscan: 8,
+    getItemKey: (i) => rows[i]?.id ?? i,
+  });
+
+  const virtualRows = rowVirtualizer.getVirtualItems();
+  const totalSize = rowVirtualizer.getTotalSize();
+  const paddingTop = virtualRows[0]?.start ?? 0;
+  const lastRow = virtualRows[virtualRows.length - 1];
+  const paddingBottom = lastRow ? totalSize - lastRow.end : 0;
+
   return (
-    <table className={styles.table}>
+    <table className={styles.table} ref={tableRef}>
       <thead>
         {table.getHeaderGroups().map((hg) => (
           <tr key={hg.id}>
@@ -442,11 +471,20 @@ function ListView({
         ))}
       </thead>
       <tbody>
-        {table.getRowModel().rows.map((row) => {
+        {paddingTop > 0 ? (
+          <tr aria-hidden>
+            <td colSpan={headerColumns} style={{ height: paddingTop }} />
+          </tr>
+        ) : null}
+        {virtualRows.map((vRow) => {
+          const row = rows[vRow.index];
+          if (!row) return null;
           const save = row.original;
           return (
             <SaveContextMenu key={save.id} save={save}>
               <tr
+                ref={rowVirtualizer.measureElement}
+                data-index={vRow.index}
                 aria-selected={save.id === selectedId}
                 onClick={(e) => onClick(save.id, e)}
                 onDoubleClick={() => onDoubleClick(save.id)}
@@ -463,6 +501,11 @@ function ListView({
             </SaveContextMenu>
           );
         })}
+        {paddingBottom > 0 ? (
+          <tr aria-hidden>
+            <td colSpan={headerColumns} style={{ height: paddingBottom }} />
+          </tr>
+        ) : null}
       </tbody>
     </table>
   );

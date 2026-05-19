@@ -6,6 +6,7 @@ import {
   IconArchiveContent2Outline18,
   IconArrowUpRightOutline18,
   IconHourglassClockOutline18,
+  IconPlusOutline18,
   IconRefreshClockwiseOutline18,
   IconShuffleSparkleOutline18,
   IconTagSlashOutline18,
@@ -60,15 +61,9 @@ function Root() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const _openQuickCapture = useCallback(() => {
+  const openQuickCapture = useCallback(() => {
     const next = new URLSearchParams(searchParams);
     next.set("capture", "1");
-    setSearchParams(next);
-  }, [searchParams, setSearchParams]);
-
-  const _toggleSidebar = useCallback(() => {
-    const next = new URLSearchParams(searchParams);
-    next.set("sidebar", "1");
     setSearchParams(next);
   }, [searchParams, setSearchParams]);
 
@@ -90,6 +85,14 @@ function Root() {
             </span>
             <span className={styles["account-name"]}>Pond</span>
           </div>
+          <Sidebar.HeaderActions>
+            <Sidebar.ToolbarButton
+              aria-label="Quick capture"
+              onClick={openQuickCapture}
+            >
+              <IconPlusOutline18 width={14} height={14} />
+            </Sidebar.ToolbarButton>
+          </Sidebar.HeaderActions>
         </Sidebar.Header>
 
         <Sidebar.Group>

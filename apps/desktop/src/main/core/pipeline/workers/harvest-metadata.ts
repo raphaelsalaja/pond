@@ -31,10 +31,16 @@ export async function runHarvestMetadata(
   const url = new URL(save.url);
   const capture = await extractor.extract({ url });
 
+  const existingRaw =
+    save.rawJson && typeof save.rawJson === "object"
+      ? (save.rawJson as RawJson)
+      : null;
+
   const rawJson: RawJson = {
     capture,
     extractorId: extractor.id,
     extractedAt: new Date().toISOString(),
+    ...(existingRaw?.ytdlp ? { ytdlp: existingRaw.ytdlp } : {}),
   };
 
   const patch = buildSavePatch(capture, rawJson);

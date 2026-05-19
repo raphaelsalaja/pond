@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { app } from "electron";
+import { readLibraryPointer } from "./lib/library-pointer";
 
 export interface PondPaths {
   appData: string;
@@ -21,6 +22,18 @@ function ensureDir(p: string): string {
   return p;
 }
 
+export function defaultLibraryRoot(): string {
+  return join(app.getPath("home"), "Pond", "My Pond.library");
+}
+
+// Bust the cache. Call this after writing a new pointer so the next
+// call to resolvePaths() picks up the user's choice. In practice we
+// always pair this with `app.relaunch(); app.exit(0)` — live re-pointing
+// is hard because many modules captured the old paths at boot.
+export function invalidatePaths(): void {
+  cached = null;
+}
+
 export function resolvePaths(libraryRootOverride?: string): PondPaths {
   if (cached && !libraryRootOverride) return cached;
 
@@ -29,7 +42,7 @@ export function resolvePaths(libraryRootOverride?: string): PondPaths {
   const logs = ensureDir(app.getPath("logs"));
 
   const libraryRoot = ensureDir(
-    libraryRootOverride ?? join(app.getPath("home"), "Pond", "My Pond.library"),
+    libraryRootOverride ?? readLibraryPointer() ?? defaultLibraryRoot(),
   );
   const itemsDir = ensureDir(join(libraryRoot, "items"));
   const trashDir = ensureDir(join(libraryRoot, "trash"));

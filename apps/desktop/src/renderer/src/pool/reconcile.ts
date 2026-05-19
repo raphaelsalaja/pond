@@ -1,5 +1,24 @@
-import { notifyAll, notifyId, pool } from "./pool";
+import { notifyAll, notifyId, notifyListAndId, pool } from "./pool";
 import type { Save } from "./types";
+
+// Fields that influence whether (or where) a save shows up in any
+// filtered list. A change to one of these has to wake list
+// subscribers; everything else (title/description/files/etc.) only
+// wakes per-id subscribers.
+const LIST_AFFECTING_FIELDS: ReadonlyArray<keyof Save> = [
+  "status",
+  "deletedAt",
+  "tags",
+  "source",
+  "savedAt",
+];
+
+function affectsList(data: Partial<Save>): boolean {
+  for (const key of LIST_AFFECTING_FIELDS) {
+    if (key in data) return true;
+  }
+  return false;
+}
 
 export interface SyncActionEvent {
   id: number;
@@ -21,29 +40,33 @@ export function applyAction(event: SyncActionEvent): void {
     const save = normalise(event.data as Partial<Save>);
     if (!save) return;
     pool.upsert(save);
-    notifyId(save.id);
+    notifyListAndId(save.id);
     return;
   }
 
   if (event.action === "U") {
+    const patch = event.data as Partial<Save>;
     const existing = pool.get(event.modelId);
     if (!existing) {
-      // We don't have it yet — a reconciliation scan will pick it up.
-      const created = normalise(event.data as Partial<Save>);
+      const created = normalise(patch);
       if (created) {
         pool.upsert(created);
-        notifyId(created.id);
+        notifyListAndId(created.id);
       }
       return;
     }
     const merged = normalise({
       ...existing,
-      ...(event.data as Partial<Save>),
+      ...patch,
       id: existing.id,
     });
     if (!merged) return;
     pool.upsert(merged);
-    notifyId(merged.id);
+    if (affectsList(patch)) {
+      notifyListAndId(merged.id);
+    } else {
+      notifyId(merged.id);
+    }
     return;
   }
 
@@ -60,7 +83,11 @@ export function applyAction(event: SyncActionEvent): void {
     const merged = normalise({ ...existing, ...patched });
     if (!merged) return;
     pool.upsert(merged);
-    notifyId(event.modelId);
+    if (affectsList(patched)) {
+      notifyListAndId(event.modelId);
+    } else {
+      notifyId(event.modelId);
+    }
   }
 }
 

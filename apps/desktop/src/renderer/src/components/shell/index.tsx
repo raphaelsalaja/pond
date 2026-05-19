@@ -1,4 +1,5 @@
-import React, { type ReactNode } from "react";
+import type React from "react";
+import type { ReactNode } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { BulkActionBar } from "@/components/bulk-action-bar";
 import { CommandPalette } from "@/components/command-palette";
@@ -9,13 +10,13 @@ import { ProcessingButton } from "@/components/processing-button";
 import { QuickCapture } from "@/components/quick-capture";
 import { Sidebar } from "@/components/sidebar";
 import { SidebarTools } from "@/components/sidebar-tools";
-import { ThemeApplier } from "@/components/theme-applier";
+import { TabBar } from "@/components/tab-bar";
 import { DeepLinkBridge } from "@/effects/deep-link-bridge";
 import { HistoryHotkey } from "@/effects/history-hotkey";
 import { OnboardedGuard } from "@/effects/onboarded-guard";
 import { PreferencesHotkey } from "@/effects/preferences-hotkey";
-import { UndoRedoBridge } from "@/effects/undo-redo-bridge";
 import { usePlatform } from "@/lib/platform";
+import { useSidebar } from "@/lib/use-sidebar";
 import {
   GROUP_LABELS,
   GROUP_ORDER,
@@ -36,20 +37,35 @@ function Root({
   ...props
 }: RootProps) {
   return (
-    <React.Fragment>
-      <div
-        aria-hidden
-        data-platform={platform}
-        className={styles["drag-strip"]}
-      />
-      <div
-        data-platform={platform}
-        className={[styles.layout, className ?? ""].filter(Boolean).join(" ")}
-        {...props}
-      >
-        {children}
-      </div>
-    </React.Fragment>
+    <div
+      data-platform={platform}
+      className={[styles.layout, className ?? ""].filter(Boolean).join(" ")}
+      {...props}
+    >
+      {children}
+    </div>
+  );
+}
+
+interface ContentProps extends React.ComponentPropsWithoutRef<"div"> {}
+
+function Content({ className, ...props }: ContentProps) {
+  return (
+    <div
+      className={[styles.content, className ?? ""].filter(Boolean).join(" ")}
+      {...props}
+    />
+  );
+}
+
+interface SplitProps extends React.ComponentPropsWithoutRef<"div"> {}
+
+function Split({ className, ...props }: SplitProps) {
+  return (
+    <div
+      className={[styles.split, className ?? ""].filter(Boolean).join(" ")}
+      {...props}
+    />
   );
 }
 
@@ -88,32 +104,36 @@ function Empty({ className, ...props }: EmptyProps) {
   );
 }
 
-export const Shell = { Root, Main, Header, Empty };
+export const Shell = { Root, Content, Split, Main, Header, Empty };
 
 export function AppRoot() {
   return (
-    <>
-      <ThemeApplier />
+    <div className={styles.root}>
       <DeepLinkBridge />
       <OnboardedGuard />
       <PreferencesHotkey />
       <HistoryHotkey />
-      <UndoRedoBridge />
       <Outlet />
       <BulkActionBar.Root />
       <QuickCapture.Root />
       <CommandPalette.Root />
-    </>
+    </div>
   );
 }
 
 export function LibraryLayout() {
   const platform = usePlatform();
+  const { open: sidebarOpen } = useSidebar();
 
   return (
     <Shell.Root platform={platform}>
-      <LibrarySidebar.Root />
-      <Outlet />
+      {sidebarOpen ? <LibrarySidebar.Root /> : null}
+      <Shell.Content>
+        <TabBar.Root />
+        <Shell.Split>
+          <Outlet />
+        </Shell.Split>
+      </Shell.Content>
     </Shell.Root>
   );
 }
@@ -169,11 +189,14 @@ export function SettingsLayout() {
           })}
         </Sidebar.Scroll>
       </Sidebar.Root>
-      <Shell.Main>
-        <div className={styles.body}>
-          <Outlet />
-        </div>
-      </Shell.Main>
+      <Shell.Content>
+        <TabBar.Root />
+        <Shell.Main>
+          <div className={styles.body}>
+            <Outlet />
+          </div>
+        </Shell.Main>
+      </Shell.Content>
     </Shell.Root>
   );
 }
@@ -183,9 +206,13 @@ export function StandaloneLayout() {
 
   return (
     <Shell.Root platform={platform}>
-      <Shell.Main>
-        <Outlet />
-      </Shell.Main>
+      <Shell.Content>
+        <TabBar.Root />
+        <div aria-hidden className={styles["drag-strip"]} />
+        <Shell.Main>
+          <Outlet />
+        </Shell.Main>
+      </Shell.Content>
     </Shell.Root>
   );
 }

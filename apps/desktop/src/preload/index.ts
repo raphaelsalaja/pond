@@ -111,6 +111,24 @@ const api = {
     return () => ipcRenderer.off(IPC.editRedoRequested, listener);
   },
 
+  onTabNew(cb: () => void): () => void {
+    const listener = () => cb();
+    ipcRenderer.on(IPC.tabNew, listener);
+    return () => ipcRenderer.off(IPC.tabNew, listener);
+  },
+
+  onTabClose(cb: () => void): () => void {
+    const listener = () => cb();
+    ipcRenderer.on(IPC.tabClose, listener);
+    return () => ipcRenderer.off(IPC.tabClose, listener);
+  },
+
+  onTabReopen(cb: () => void): () => void {
+    const listener = () => cb();
+    ipcRenderer.on(IPC.tabReopen, listener);
+    return () => ipcRenderer.off(IPC.tabReopen, listener);
+  },
+
   appInfo(): Promise<{
     name: string;
     version: string;

@@ -44,6 +44,7 @@
     "@pond/schema": "workspace:*",
     "@pond/ui": "workspace:*",
     "@tanstack/react-table": "^8.21.3",
+    "@tanstack/react-virtual": "^3.13.24",
     "@videojs/react": "10.0.0-beta.23",
     "archiver": "^7.0.1",
     "better-sqlite3": "^12.9.0",
@@ -54,8 +55,10 @@
     "ffmpeg-static": "^5.2.0",
     "fuse.js": "^7.3.0",
     "hono": "^4.12.18",
+    "motion": "^12.39.0",
     "p-limit": "^7.3.0",
-    "ulid": "^3.0.2"
+    "ulid": "^3.0.2",
+    "zustand": "^5.0.13"
   },
   "devDependencies": {
     "@electron-toolkit/preload": "^3.0.2",

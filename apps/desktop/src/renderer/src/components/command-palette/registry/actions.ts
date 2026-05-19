@@ -1,6 +1,32 @@
+import { toggleInspector } from "@/lib/use-inspector";
+import { toggleSidebar } from "@/lib/use-sidebar";
 import type { Command } from "./types";
 
 export const ACTION_COMMANDS: Command[] = [
+  {
+    id: "view.sidebar.toggle",
+    label: "Toggle sidebar",
+    group: "Actions",
+    scope: "actions",
+    keywords: ["sidebar", "navigation", "hide", "show", "collapse"],
+    shortcut: ["⌥", "⌘", "1"],
+    perform: ({ close }) => {
+      close();
+      toggleSidebar();
+    },
+  },
+  {
+    id: "view.inspector.toggle",
+    label: "Toggle inspector",
+    group: "Actions",
+    scope: "actions",
+    keywords: ["inspector", "metadata", "hide", "show", "pane"],
+    shortcut: ["⌥", "⌘", "2"],
+    perform: ({ close }) => {
+      close();
+      toggleInspector();
+    },
+  },
   {
     id: "action.theme.light",
     label: "Switch to light theme",

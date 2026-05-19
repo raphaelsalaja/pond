@@ -1,6 +1,29 @@
+.root {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .layout {
   display: flex;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
+}
+
+.content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.split {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
 }
 
 .drag-strip {
@@ -9,7 +32,7 @@
   right: 0;
   left: 0;
   z-index: 99999;
-  height: 24px;
+  height: 38px;
   pointer-events: none;
 }
 

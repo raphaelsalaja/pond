@@ -1,5 +1,5 @@
 import { readQuery } from "@pond/schema/filters/url";
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { useRecents } from "@/components/recents";
 import { readViewPref } from "@/lib/view-prefs";
@@ -7,6 +7,25 @@ import { useSaves } from "@/pool/hooks";
 import { useSearchResults } from "@/pool/search";
 import type { Save } from "@/pool/types";
 import { useFilteredSaves } from "@/pool/use-filtered-saves";
+
+function useStableById<T extends { id: string }>(next: T[]): T[] {
+  const ref = useRef<T[]>(next);
+  const prev = ref.current;
+  if (prev.length === next.length) {
+    let same = true;
+    for (let i = 0; i < next.length; i++) {
+      const a = prev[i];
+      const b = next[i];
+      if (!a || !b || a.id !== b.id) {
+        same = false;
+        break;
+      }
+    }
+    if (same) return prev;
+  }
+  ref.current = next;
+  return next;
+}
 
 export type ListMode =
   | "library"
@@ -61,7 +80,7 @@ export function useListContext({ activeId }: ListContextOptions): ListContext {
 
   const randomSeed = useMemo(() => Math.random().toString(36).slice(2), []);
 
-  const narrowed = useMemo(() => {
+  const narrowedFresh = useMemo(() => {
     const base = mode === "trash" ? saves : (search.results ?? saves);
     const filteredList = base.filter((save) => {
       if (mode === "trash") return Boolean(save.deletedAt);
@@ -96,6 +115,8 @@ export function useListContext({ activeId }: ListContextOptions): ListContext {
     return filteredList;
   }, [saves, search.results, mode, sourceFilter, recentsOrder, randomSeed]);
 
+  const narrowed = useStableById(narrowedFresh);
+
   const sortOpts = useMemo(() => {
     if (mode === "recents" || mode === "random" || mode === "trash") {
       return undefined;
@@ -109,11 +130,12 @@ export function useListContext({ activeId }: ListContextOptions): ListContext {
     return { sortKey, sortDir };
   }, [mode, searchParams]);
 
-  const filtered = useFilteredSaves(
-    mode === "trash" ? narrowed : narrowed,
+  const filteredFresh = useFilteredSaves(
+    narrowed,
     mode === "trash" ? null : query,
     sortOpts,
   );
+  const filtered = useStableById(filteredFresh);
 
   return useMemo(() => {
     const ids = filtered.map((s) => s.id);

@@ -48,4 +48,9 @@ export const IPC = {
   suggestionNotify: "pond:suggestion-notify",
   notificationShow: "pond:notification-show",
   processingProgress: "pond:processing-progress",
+  tabNew: "pond:tab-new",
+  tabClose: "pond:tab-close",
+  tabNext: "pond:tab-next",
+  tabPrev: "pond:tab-prev",
+  tabReopen: "pond:tab-reopen",
 } as const;

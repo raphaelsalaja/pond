@@ -1,10 +1,11 @@
-export type ViewPrefKey = "view" | "sort" | "dir" | "inspector";
+export type ViewPrefKey = "view" | "sort" | "dir" | "inspector" | "sidebar";
 
 const STORAGE_KEYS: Record<ViewPrefKey, string> = {
   view: "pond.view",
   sort: "pond.sort",
   dir: "pond.dir",
   inspector: "pond.inspector",
+  sidebar: "pond.sidebar",
 };
 
 export function readViewPref(key: ViewPrefKey): string | null {

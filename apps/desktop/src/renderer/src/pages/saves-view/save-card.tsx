@@ -1,4 +1,4 @@
-import { memo, useMemo } from "react";
+import { memo, useCallback, useMemo } from "react";
 import {
   Card,
   type CardLayout,
@@ -9,14 +9,12 @@ import { SaveContextMenu } from "@/components/save-context-menu";
 import { SourceBadge } from "@/components/source-badge";
 import { useDisplayPrefs } from "@/lib/display-prefs";
 import { buildMediaUnits, pickPrimaryFile } from "@/pool/media";
-import { selection, useIsSelected } from "@/pool/selection";
+import { selection, useIsPrimary, useIsSelected } from "@/pool/selection";
 import { useResolvedTheme } from "@/pool/theme";
 import type { Save } from "@/pool/types";
 
 interface SaveCardProps {
   save: Save;
-  selectedId: string | null;
-  multiSelectActive: boolean;
   layout: CardLayout;
   onClick: (id: string, e: React.MouseEvent) => void;
   onDoubleClick: (id: string) => void;
@@ -28,8 +26,6 @@ interface SaveCardProps {
 
 export const SaveCard = memo(function SaveCard({
   save,
-  selectedId,
-  multiSelectActive,
   layout,
   onClick,
   onDoubleClick,
@@ -39,7 +35,7 @@ export const SaveCard = memo(function SaveCard({
   packedLeft,
 }: SaveCardProps) {
   const isMulti = useIsSelected(save.id);
-  const isPrimary = selectedId === save.id;
+  const isPrimary = useIsPrimary(save.id);
   const cardSelection: CardSelection | undefined = isPrimary
     ? "primary"
     : isMulti
@@ -60,37 +56,55 @@ export const SaveCard = memo(function SaveCard({
     return base;
   }, [packedWidth, packedHeight, packedTop, packedLeft]);
 
+  const onDragStart = useCallback(
+    (e: React.DragEvent) => {
+      if (save.files.length === 0) return;
+      e.preventDefault();
+      void window.pond.query("saves.startDrag", {
+        id: save.id,
+        fileIndex: save.coverIndex ?? 0,
+      });
+    },
+    [save],
+  );
+
+  const onCheckboxClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      selection.toggle(save.id);
+      if (selection.has(save.id)) selection.setAnchor(save.id);
+    },
+    [save.id],
+  );
+
+  const onSelectClick = useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>) => onClick(save.id, e),
+    [onClick, save.id],
+  );
+  const onSelectDoubleClick = useCallback(
+    () => onDoubleClick(save.id),
+    [onDoubleClick, save.id],
+  );
+
   return (
     <SaveContextMenu save={save}>
       <Library.Item
         selected={isPrimary}
         multi={isMulti}
-        dimmed={multiSelectActive && !isMulti}
         style={liStyle}
         draggable={save.files.length > 0}
-        onDragStart={(e) => {
-          if (save.files.length === 0) return;
-          e.preventDefault();
-          void window.pond.query("saves.startDrag", {
-            id: save.id,
-            fileIndex: save.coverIndex ?? 0,
-          });
-        }}
+        onDragStart={onDragStart}
       >
         <Library.Item.Checkbox
           checked={isMulti}
           aria-label={isMulti ? "Deselect" : "Select"}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            selection.toggle(save.id);
-            if (selection.has(save.id)) selection.setAnchor(save.id);
-          }}
+          onClick={onCheckboxClick}
         />
         <Library.Item.Select
           aria-pressed={isPrimary}
-          onClick={(e) => onClick(save.id, e)}
-          onDoubleClick={() => onDoubleClick(save.id)}
+          onClick={onSelectClick}
+          onDoubleClick={onSelectDoubleClick}
         >
           <SaveCardBody save={save} layout={layout} selection={cardSelection} />
         </Library.Item.Select>

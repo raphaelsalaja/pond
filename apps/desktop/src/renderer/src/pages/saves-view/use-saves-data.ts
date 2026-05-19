@@ -1,13 +1,54 @@
 import { readQuery } from "@pond/schema/filters/url";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useRecents } from "@/components/recents";
 import { readViewPref } from "@/lib/view-prefs";
 import { useBootReady, useSaves } from "@/pool/hooks";
 import { useSearchResults } from "@/pool/search";
+import { primarySelection } from "@/pool/selection";
 import type { Save } from "@/pool/types";
 import { useFilteredSaves } from "@/pool/use-filtered-saves";
 import type { ViewMode } from "./layout-switcher";
+
+// Reuses the previous array reference when the new array has the
+// same length and id sequence. Stops downstream `useMemo`s and
+// `useCallback`s from invalidating just because the upstream pool
+// produced a fresh array on a field-only update.
+function useStableById<T extends { id: string }>(next: T[]): T[] {
+  const ref = useRef<T[]>(next);
+  const prev = ref.current;
+  if (prev.length === next.length) {
+    let same = true;
+    for (let i = 0; i < next.length; i++) {
+      const a = prev[i];
+      const b = next[i];
+      if (!a || !b || a.id !== b.id) {
+        same = false;
+        break;
+      }
+    }
+    if (same) return prev;
+  }
+  ref.current = next;
+  return next;
+}
+
+function useStableStrings(next: string[]): string[] {
+  const ref = useRef<string[]>(next);
+  const prev = ref.current;
+  if (prev.length === next.length) {
+    let same = true;
+    for (let i = 0; i < next.length; i++) {
+      if (prev[i] !== next[i]) {
+        same = false;
+        break;
+      }
+    }
+    if (same) return prev;
+  }
+  ref.current = next;
+  return next;
+}
 
 export type SavesMode =
   | "library"
@@ -36,6 +77,16 @@ export function useSavesData(mode: SavesMode): SavesData {
 
   const sourceFilter = mode === "source" ? (params.source ?? "") : "";
   const selectedId = params.id ?? null;
+
+  // Mirror the URL `selectedId` into the primary-selection store so
+  // `useIsPrimary(id)` consumers (each `SaveCard`) re-render only
+  // when their own primary state changes. Without this, every card
+  // would re-render on primary change because `selectedId` was being
+  // passed down as a prop.
+  useEffect(() => {
+    primarySelection.set(selectedId);
+  }, [selectedId]);
+
   const recents = useRecents();
   const recentsOrder = useMemo(() => {
     if (mode !== "recents") return null;
@@ -54,7 +105,7 @@ export function useSavesData(mode: SavesMode): SavesData {
 
   const search = useSearchResults(q);
 
-  const narrowed = useMemo(() => {
+  const narrowedFresh = useMemo(() => {
     const base = search.results ?? saves;
     const filteredList = base.filter((save) => {
       if (save.deletedAt) return false;
@@ -89,6 +140,8 @@ export function useSavesData(mode: SavesMode): SavesData {
     return filteredList;
   }, [saves, search.results, sourceFilter, mode, recentsOrder, randomSeed]);
 
+  const narrowed = useStableById(narrowedFresh);
+
   const sortOpts = useMemo(() => {
     if (mode === "recents" || mode === "random") return undefined;
     const rawSort =
@@ -100,8 +153,10 @@ export function useSavesData(mode: SavesMode): SavesData {
     return { sortKey, sortDir };
   }, [mode, searchParams]);
 
-  const filtered = useFilteredSaves(narrowed, query, sortOpts);
-  const filteredIds = useMemo(() => filtered.map((r) => r.id), [filtered]);
+  const filteredFresh = useFilteredSaves(narrowed, query, sortOpts);
+  const filtered = useStableById(filteredFresh);
+  const filteredIdsFresh = useMemo(() => filtered.map((r) => r.id), [filtered]);
+  const filteredIds = useStableStrings(filteredIdsFresh);
 
   return {
     bootReady,

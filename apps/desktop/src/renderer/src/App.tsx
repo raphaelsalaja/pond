@@ -1,26 +1,24 @@
 import { Toast, Tooltip, useToast } from "@pond/ui";
-import { useEffect, useRef } from "react";
-import {
-  createHashRouter,
-  Navigate,
-  type RouteObject,
-  RouterProvider,
-} from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import type { PondApi } from "../../preload";
-import {
-  AppRoot,
-  LibraryLayout,
-  SettingsLayout,
-  StandaloneLayout,
-} from "./components/shell";
+import { ThemeApplier } from "./components/theme-applier";
 import { SaveCompleteToast } from "./effects/save-complete-toast";
-import { ActivityPage } from "./pages/activity";
-import { SaveDetailPage } from "./pages/save-detail-page";
-import { SavesView } from "./pages/saves-view";
-import { DEFAULT_SECTION, SECTIONS } from "./pages/settings/registry";
-import { TrashView } from "./pages/trash-view";
-import { WelcomePage } from "./pages/welcome";
+import { TabShortcuts } from "./effects/tab-shortcuts";
+import { UndoRedoBridge } from "./effects/undo-redo-bridge";
+import { ViewShortcuts } from "./effects/view-shortcuts";
 import { getPrefsSnapshot } from "./pool/prefs";
+import { buildRoutes } from "./routes";
+import { useTabStore } from "./stores/tabs";
+
+// Cap on how many tabs stay mounted at the same time. Each live tab
+// keeps a full router tree, grid, and component state in memory; once
+// the user is past this many, the least-recently-active ones get
+// evicted. Reactivating an evicted tab re-mounts it from its
+// persisted path (one-off cost, then it's live again).
+const LIVE_TAB_CAP = 10;
+
+type MemoryRouter = ReturnType<typeof createMemoryRouter>;
 
 function ToastChime() {
   const { toasts } = useToast();
@@ -68,96 +66,119 @@ declare global {
   }
 }
 
-const settingsChildren: RouteObject[] = [
-  {
-    index: true,
-    element: <Navigate to={`/settings/${DEFAULT_SECTION.path}`} replace />,
-  },
-  ...SECTIONS.map(
-    (section): RouteObject => ({
-      path: section.path,
-      element: <section.component />,
-    }),
-  ),
-  {
-    path: "*",
-    element: <Navigate to={`/settings/${DEFAULT_SECTION.path}`} replace />,
-  },
-];
+const routerCache = new Map<string, MemoryRouter>();
 
-const saveSplitChild: RouteObject = {
-  path: "save/:id",
-};
+function getOrCreateRouter(tabId: string, initialPath: string): MemoryRouter {
+  let router = routerCache.get(tabId);
+  if (!router) {
+    router = createMemoryRouter(buildRoutes(), {
+      initialEntries: [initialPath],
+    });
+    routerCache.set(tabId, router);
+  }
+  return router;
+}
 
-const router = createHashRouter([
-  {
-    element: <AppRoot />,
-    children: [
-      {
-        element: <LibraryLayout />,
-        children: [
-          {
-            path: "/",
-            element: <SavesView />,
-            children: [saveSplitChild],
-          },
-          {
-            path: "source/:source",
-            element: <SavesView mode="source" />,
-            children: [saveSplitChild],
-          },
-          {
-            path: "untagged",
-            element: <SavesView mode="untagged" />,
-            children: [saveSplitChild],
-          },
-          {
-            path: "recents",
-            element: <SavesView mode="recents" />,
-            children: [saveSplitChild],
-          },
-          {
-            path: "random",
-            element: <SavesView mode="random" />,
-            children: [saveSplitChild],
-          },
-          {
-            path: "trash",
-            element: <TrashView />,
-            children: [saveSplitChild],
-          },
-          { path: "detail/:id", element: <SaveDetailPage /> },
-          {
-            path: "source/:source/detail/:id",
-            element: <SaveDetailPage />,
-          },
-          { path: "untagged/detail/:id", element: <SaveDetailPage /> },
-          { path: "recents/detail/:id", element: <SaveDetailPage /> },
-          { path: "random/detail/:id", element: <SaveDetailPage /> },
-          { path: "trash/detail/:id", element: <SaveDetailPage /> },
-          { path: "activity", element: <ActivityPage /> },
-        ],
+export function getRouterForTab(tabId: string): MemoryRouter | undefined {
+  return routerCache.get(tabId);
+}
+
+export function removeRouterForTab(tabId: string): void {
+  const router = routerCache.get(tabId);
+  if (router) {
+    router.dispose();
+    routerCache.delete(tabId);
+  }
+}
+
+function TabContent({ tabId, path }: { tabId: string; path: string }) {
+  const router = useMemo(() => getOrCreateRouter(tabId, path), [tabId, path]);
+  const updatePath = useTabStore((s) => s.updatePath);
+
+  useEffect(() => {
+    const unsubscribe = router.subscribe(
+      (state: { location: { pathname: string; search: string } }) => {
+        updatePath(tabId, state.location.pathname + state.location.search);
       },
-      {
-        path: "settings",
-        element: <SettingsLayout />,
-        children: settingsChildren,
-      },
-      {
-        element: <StandaloneLayout />,
-        children: [{ path: "welcome", element: <WelcomePage /> }],
-      },
-    ],
-  },
-]);
+    );
+    return unsubscribe;
+  }, [router, tabId, updatePath]);
+
+  return <RouterProvider router={router} />;
+}
 
 export function App() {
+  const tabs = useTabStore((s) => s.tabs);
+  const activeId = useTabStore((s) => s.activeId);
+
+  useEffect(() => {
+    const currentIds = new Set(tabs.map((t) => t.id));
+    for (const id of routerCache.keys()) {
+      if (!currentIds.has(id)) {
+        removeRouterForTab(id);
+      }
+    }
+  }, [tabs]);
+
+  // LRU bookkeeping: an ordered list of tab ids, most-recently-active
+  // first. Tabs beyond LIVE_TAB_CAP get evicted from `liveIds` and
+  // their router is disposed so RAM stays bounded with many tabs.
+  const lruRef = useRef<string[]>([activeId]);
+  const [liveIds, setLiveIds] = useState<Set<string>>(
+    () => new Set([activeId]),
+  );
+
+  useEffect(() => {
+    const existing = new Set(tabs.map((t) => t.id));
+    const next = [
+      activeId,
+      ...lruRef.current.filter((id) => id !== activeId && existing.has(id)),
+    ];
+    // Also include any tabs we've never seen so newly-opened tabs
+    // are immediately live; they slot in right after the active one.
+    for (const t of tabs) {
+      if (!next.includes(t.id)) next.push(t.id);
+    }
+    lruRef.current = next;
+
+    const live = new Set(next.slice(0, LIVE_TAB_CAP));
+    for (const id of routerCache.keys()) {
+      if (!live.has(id)) removeRouterForTab(id);
+    }
+    setLiveIds((prev) => {
+      if (prev.size === live.size) {
+        let same = true;
+        for (const id of live) {
+          if (!prev.has(id)) {
+            same = false;
+            break;
+          }
+        }
+        if (same) return prev;
+      }
+      return live;
+    });
+  }, [activeId, tabs]);
+
   return (
     <Tooltip.Provider>
       <Toast.Provider>
+        <ThemeApplier />
+        <TabShortcuts />
+        <ViewShortcuts />
+        <UndoRedoBridge />
         <ToastChime />
         <SaveCompleteToast />
-        <RouterProvider router={router} />
+        {tabs.map((tab) =>
+          liveIds.has(tab.id) ? (
+            <div
+              key={tab.id}
+              style={{ display: tab.id === activeId ? "contents" : "none" }}
+            >
+              <TabContent tabId={tab.id} path={tab.path} />
+            </div>
+          ) : null,
+        )}
       </Toast.Provider>
     </Tooltip.Provider>
   );

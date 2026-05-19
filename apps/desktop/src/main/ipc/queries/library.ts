@@ -1,11 +1,13 @@
-import { BrowserWindow, dialog, shell } from "electron";
+import { app, BrowserWindow, dialog, shell } from "electron";
 import log from "electron-log/main.js";
 import {
   emptyTrashOlderThan,
   exportLibraryJson,
   exportLibraryZip,
-  moveLibrary,
+  previewRelocate,
   purgeLibrarySubdir,
+  type RelocateMode,
+  relocateLibrary,
   verifyLibraryIntegrity,
 } from "../../core/library-ops";
 import { setPrefs } from "../../core/prefs";
@@ -38,10 +40,15 @@ export const libraryQueries: QueryHandlerMap = {
     }
   },
 
-  async "library.move"() {
+  // Open the OS folder picker. Returns the chosen absolute path so
+  // the renderer can hand it back to `library.previewRelocate` and
+  // show a confirm dialog. We keep "pick" and "preview" separate so
+  // the renderer is free to call preview against a hard-coded path
+  // too (used during onboarding tests).
+  async "library.pickFolder"() {
     const win = BrowserWindow.getFocusedWindow() ?? undefined;
     const dialogOpts = {
-      title: "Pick a new location for your Pond library",
+      title: "Pick a folder for your Pond library",
       properties: ["openDirectory" as const, "createDirectory" as const],
     };
     const result = win
@@ -52,9 +59,79 @@ export const libraryQueries: QueryHandlerMap = {
     }
     const dest = result.filePaths[0];
     if (!dest) return { ok: false as const, reason: "cancelled" as const };
+    return { ok: true as const, path: dest };
+  },
+
+  async "library.previewRelocate"(params) {
+    const candidate = String(params.path ?? "").trim();
+    if (!candidate) {
+      return { ok: false as const, reason: "no_path" as const };
+    }
     try {
-      const moved = await moveLibrary(dest);
-      return { ok: true as const, path: moved };
+      const preview = previewRelocate(candidate);
+      return { ok: true as const, preview };
+    } catch (err) {
+      return {
+        ok: false as const,
+        reason: err instanceof Error ? err.message : "preview_failed",
+      };
+    }
+  },
+
+  async "library.relocate"(params) {
+    const dest = String(params.path ?? "").trim();
+    const mode = (params.mode === "adopt" ? "adopt" : "copy") as RelocateMode;
+    const restart = params.restart !== false;
+    if (!dest) {
+      return { ok: false as const, reason: "no_path" as const };
+    }
+    try {
+      const result = await relocateLibrary(dest, mode);
+      if (restart) {
+        // Defer so the IPC response can land before we tear down the
+        // process. The renderer's `await` resolves with the success
+        // payload, then the app vanishes and comes back pointing at
+        // the new library.
+        setTimeout(() => {
+          log.info("[pond library-ops] relaunching after relocate");
+          app.relaunch();
+          app.exit(0);
+        }, 150);
+      }
+      return { ok: true as const, ...result };
+    } catch (err) {
+      return {
+        ok: false as const,
+        reason: err instanceof Error ? err.message : "relocate_failed",
+      };
+    }
+  },
+
+  // Back-compat: old "Move Library…" calls funnel through here. New
+  // UI uses pickFolder + previewRelocate + relocate.
+  async "library.move"(params) {
+    const explicitDest =
+      typeof params.path === "string" ? params.path.trim() : "";
+    let dest = explicitDest;
+    if (!dest) {
+      const win = BrowserWindow.getFocusedWindow() ?? undefined;
+      const dialogOpts = {
+        title: "Pick a folder for your Pond library",
+        properties: ["openDirectory" as const, "createDirectory" as const],
+      };
+      const result = win
+        ? await dialog.showOpenDialog(win, dialogOpts)
+        : await dialog.showOpenDialog(dialogOpts);
+      if (result.canceled || result.filePaths.length === 0) {
+        return { ok: false as const, reason: "cancelled" as const };
+      }
+      const picked = result.filePaths[0];
+      if (!picked) return { ok: false as const, reason: "cancelled" as const };
+      dest = picked;
+    }
+    try {
+      const result = await relocateLibrary(dest, "copy");
+      return { ok: true as const, path: result.path };
     } catch (err) {
       return {
         ok: false as const,

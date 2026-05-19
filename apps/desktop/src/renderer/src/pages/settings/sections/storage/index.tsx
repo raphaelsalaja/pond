@@ -1,5 +1,5 @@
 import { IconChevronExpandYOutline12 } from "@pond/icons/outline/12";
-import { Button, Input, Select, Switch, useToast } from "@pond/ui";
+import { AlertDialog, Button, Input, Select, Switch, useToast } from "@pond/ui";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { InlineRow } from "@/components/inline-row";
 import { Settings } from "@/components/settings";
@@ -30,6 +30,22 @@ interface IntegrityReport {
   errors: Record<string, string>;
   totalIndexed: number;
   totalOnDisk: number;
+}
+
+interface RelocatePreviewWire {
+  currentPath: string;
+  candidatePath: string;
+  samePath: boolean;
+  safety: { ok: boolean; reason: string | null };
+  cloudKind: string | null;
+  existing: {
+    exists: boolean;
+    hasItemsDir: boolean;
+    hasMetadataFile: boolean;
+    itemCount: number;
+    looksLikePondLibrary: boolean;
+  };
+  suggestedMode: "copy" | "adopt";
 }
 
 interface StorageSnapshotWire {
@@ -175,27 +191,93 @@ export function StorageSection() {
     await window.pond.query("library.openInFinder", {});
   }
 
-  async function move() {
-    await withBusy("move", async () => {
-      const res = (await window.pond.query("library.move", {})) as
+  const [relocatePreview, setRelocatePreview] =
+    useState<RelocatePreviewWire | null>(null);
+  const [relocating, setRelocating] = useState(false);
+
+  async function chooseLocation() {
+    await withBusy("relocate", async () => {
+      const pick = (await window.pond.query("library.pickFolder", {})) as
         | { ok: true; path: string }
         | { ok: false; reason: string };
-      if (!res.ok) {
-        if (res.reason !== "cancelled") {
+      if (!pick.ok) {
+        if (pick.reason !== "cancelled") {
           toast.add({
-            title: "Move failed",
-            description: res.reason,
+            title: "Couldn't open picker",
+            description: pick.reason,
             type: "error",
           });
         }
         return;
       }
+      const preview = (await window.pond.query("library.previewRelocate", {
+        path: pick.path,
+      })) as
+        | { ok: true; preview: RelocatePreviewWire }
+        | { ok: false; reason: string };
+      if (!preview.ok) {
+        toast.add({
+          title: "Couldn't inspect folder",
+          description: preview.reason,
+          type: "error",
+        });
+        return;
+      }
+      if (preview.preview.samePath) {
+        toast.add({
+          title: "Already there",
+          description: "That's the folder your library already uses.",
+          type: "info",
+        });
+        return;
+      }
+      if (!preview.preview.safety.ok) {
+        toast.add({
+          title: "Can't use that folder",
+          description: explainSafety(preview.preview.safety.reason),
+          type: "error",
+        });
+        return;
+      }
+      setRelocatePreview(preview.preview);
+    });
+  }
+
+  async function confirmRelocate() {
+    if (!relocatePreview) return;
+    setRelocating(true);
+    try {
+      const res = (await window.pond.query("library.relocate", {
+        path: relocatePreview.candidatePath,
+        mode: relocatePreview.suggestedMode,
+        restart: true,
+      })) as
+        | { ok: true; path: string; mode: "copy" | "adopt"; copied: number }
+        | { ok: false; reason: string };
+      if (!res.ok) {
+        setRelocating(false);
+        toast.add({
+          title: "Couldn't change location",
+          description: res.reason,
+          type: "error",
+        });
+        return;
+      }
+      // The main process will relaunch ~150ms after responding, so we
+      // just leave the dialog showing a "Relaunching…" state.
       toast.add({
-        title: "Library copied",
-        description: "Restart Pond to use the new location.",
+        title: "Switching libraries",
+        description: "Pond is restarting…",
         type: "success",
       });
-    });
+    } catch (err) {
+      setRelocating(false);
+      toast.add({
+        title: "Couldn't change location",
+        description: err instanceof Error ? err.message : String(err),
+        type: "error",
+      });
+    }
   }
 
   async function verify() {
@@ -607,16 +689,23 @@ export function StorageSection() {
                 </Button>
                 <Button
                   size="sm"
-                  disabled={busy === "move"}
-                  onClick={() => void move()}
+                  disabled={busy === "relocate"}
+                  onClick={() => void chooseLocation()}
                 >
-                  Move Library…
+                  Change Location…
                 </Button>
               </InlineRow>
             </Settings.ItemControl>
           </Settings.Item>
         </Settings.List>
       </Settings.Section>
+
+      <RelocateConfirmDialog
+        preview={relocatePreview}
+        busy={relocating}
+        onCancel={() => setRelocatePreview(null)}
+        onConfirm={() => void confirmRelocate()}
+      />
 
       <MetadataSection />
 
@@ -854,6 +943,110 @@ function pctOfCap(status: StorageGuardStatusWire): number | null {
 function clamp(value: number, min: number, max: number): number {
   if (!Number.isFinite(value)) return min;
   return Math.max(min, Math.min(max, Math.floor(value)));
+}
+
+function explainSafety(reason: string | null): string {
+  switch (reason) {
+    case "inside_user_data":
+      return "That folder lives inside Pond's own data directory. Pick somewhere else.";
+    case "not_writable":
+      return "Pond can't write to that folder.";
+    case "not_a_directory":
+      return "That path isn't a folder.";
+    case "unknown_error":
+      return "Something went wrong inspecting that folder.";
+    default:
+      return "Pond can't use that folder.";
+  }
+}
+
+function RelocateConfirmDialog({
+  preview,
+  busy,
+  onCancel,
+  onConfirm,
+}: {
+  preview: RelocatePreviewWire | null;
+  busy: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const open = preview !== null;
+  const mode = preview?.suggestedMode ?? "copy";
+  const itemCount = preview?.existing.itemCount ?? 0;
+
+  const title =
+    mode === "adopt" ? "Use this Pond library?" : "Move your library here?";
+
+  const primaryLabel = busy
+    ? "Relaunching…"
+    : mode === "adopt"
+      ? "Switch and Relaunch"
+      : "Copy and Relaunch";
+
+  return (
+    <AlertDialog.Root
+      open={open}
+      onOpenChange={(o) => {
+        if (!o && !busy) onCancel();
+      }}
+    >
+      <AlertDialog.Content>
+        <AlertDialog.Title>{title}</AlertDialog.Title>
+        <AlertDialog.Description>
+          {preview ? (
+            <div className={styles["relocate-body"]}>
+              <p>
+                {mode === "adopt"
+                  ? `That folder already looks like a Pond library (${itemCount} item${itemCount === 1 ? "" : "s"}). Pond will use it directly without copying anything.`
+                  : "Pond will copy the files from your current library to the new location, then restart. The old folder stays put so you can verify everything looks right before deleting it yourself."}
+              </p>
+              <dl className={styles["relocate-paths"]}>
+                <div>
+                  <dt>From</dt>
+                  <dd>
+                    <code>{preview.currentPath}</code>
+                  </dd>
+                </div>
+                <div>
+                  <dt>To</dt>
+                  <dd>
+                    <code>{preview.candidatePath}</code>
+                  </dd>
+                </div>
+              </dl>
+              {preview.cloudKind ? (
+                <p className={styles["relocate-cloud"]}>
+                  This folder is inside {preview.cloudKind}. Your saved files
+                  will sync across devices, but Pond's index stays on this Mac —
+                  each Mac maintains its own index over the shared files.
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+        </AlertDialog.Description>
+        <AlertDialog.Actions>
+          <AlertDialog.Close
+            render={
+              <Button variant="ghost" disabled={busy}>
+                Cancel
+              </Button>
+            }
+          />
+          <Button
+            variant="primary"
+            disabled={busy}
+            onClick={(e) => {
+              e.preventDefault();
+              onConfirm();
+            }}
+          >
+            {primaryLabel}
+          </Button>
+        </AlertDialog.Actions>
+      </AlertDialog.Content>
+    </AlertDialog.Root>
+  );
 }
 
 function formatBytes(n: number): string {

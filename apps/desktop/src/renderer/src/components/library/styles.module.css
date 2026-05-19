@@ -18,6 +18,9 @@
 .grid {
   padding: 0;
   margin: 0;
+  /* Scope layout and paint so a thumbnail finishing load or a
+   * selection flip doesn't invalidate the rest of the page. */
+  contain: layout paint;
   list-style: none;
 }
 
@@ -31,10 +34,12 @@
   gap: 12px;
 }
 
+/* Justified mode used to rely on flex-wrap to lay out its rows.
+ * Switching to absolute positioning lets it virtualise the same way
+ * waterfall does (skip off-screen items entirely) — each item gets
+ * `position: absolute` with packed `top`/`left` from the packer. */
 .grid-justified {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
+  position: relative;
 }
 
 .item {
@@ -43,6 +48,14 @@
   flex-direction: column;
   gap: 12px;
   align-items: center;
+  contain-intrinsic-size: 100% calc(var(--packed-h, 200px) + 36px);
+  contain: layout paint;
+  /* `content-visibility: auto` lets the browser skip layout, style,
+   * and paint for off-screen items entirely. `contain-intrinsic-size`
+   * keeps the scrollbar honest while skipped: `--packed-h` is the
+   * media slot height (set by waterfall/justified) plus a generous
+   * fallback for grid mode where intrinsic height is unknown. */
+  content-visibility: auto;
 }
 
 .select {
@@ -200,6 +213,16 @@
 
 .item-dimmed .media,
 .item-dimmed .meta {
+  opacity: 0.55;
+  transition: opacity 120ms ease;
+}
+
+/* While the grid is in multi-select mode, dim every item that isn't
+ * itself selected. Driven by `data-multi-select` on the grid and
+ * `data-multi` on each item so a selection change is a single class
+ * flip on the grid root rather than re-rendering every card. */
+.grid-multiselect .item:not([data-multi="true"]) .media,
+.grid-multiselect .item:not([data-multi="true"]) .meta {
   opacity: 0.55;
   transition: opacity 120ms ease;
 }

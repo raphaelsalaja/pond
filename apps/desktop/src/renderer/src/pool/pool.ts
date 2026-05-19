@@ -30,14 +30,19 @@ class PondPool {
     return this.version;
   }
 
-  upsert(save: Save, _opts?: MutateOpts): void {
+  upsert(save: Save, _opts?: MutateOpts): { inserted: boolean } {
     const prev = this.byId.get(save.id);
     this.byId.set(save.id, save);
     this.version++;
 
-    if (!prev || savedAtMs(prev) !== savedAtMs(save)) {
+    if (!prev) {
       this.cached = null;
-      return;
+      return { inserted: true };
+    }
+
+    if (savedAtMs(prev) !== savedAtMs(save)) {
+      this.cached = null;
+      return { inserted: false };
     }
 
     if (this.cached) {
@@ -50,6 +55,7 @@ class PondPool {
         this.cached = null;
       }
     }
+    return { inserted: false };
   }
 
   bulkUpsert(list: Save[], _opts?: MutateOpts): void {
@@ -101,7 +107,19 @@ export function subscribeToAll(cb: () => void): () => void {
   return () => listSubs.delete(cb);
 }
 
+// Field-only update on a single save: only wake the subscribers tied
+// to that id. The list snapshot itself doesn't change (membership and
+// order are preserved), so re-running every `useSaves()` consumer
+// would be wasted work.
 export function notifyId(id: string): void {
+  idSubs.get(id)?.forEach((cb) => {
+    cb();
+  });
+}
+
+// Membership / order change (insert, delete, status flip): wake both
+// list subscribers and the affected id.
+export function notifyListAndId(id: string): void {
   idSubs.get(id)?.forEach((cb) => {
     cb();
   });

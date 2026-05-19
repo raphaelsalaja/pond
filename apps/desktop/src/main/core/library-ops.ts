@@ -17,6 +17,12 @@ import { eq, isNotNull } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../db";
 import { readItemMetadata } from "../lib/library";
+import {
+  checkPointerSafety,
+  detectCloudKind,
+  probeExistingLibrary,
+  writeLibraryPointer,
+} from "../lib/library-pointer";
 import { libraryRoot, resolvePaths, trashRoot } from "../paths";
 import { executeBatch } from "./executor";
 import { recordForUndo } from "./undo";
@@ -72,33 +78,111 @@ export async function verifyLibraryIntegrity(): Promise<IntegrityReport> {
   };
 }
 
-export async function moveLibrary(dest: string): Promise<string> {
-  const src = libraryRoot();
-  if (!existsSync(dest)) await mkdir(dest, { recursive: true });
+export type RelocateMode = "copy" | "adopt";
 
+export interface RelocateResult {
+  path: string;
+  mode: RelocateMode;
+  copied: number;
+  skipped: number;
+}
+
+// Two modes of "switch library folder":
+//
+//  - copy:  copy contents of the current library into `dest`, then
+//           switch. Leaves the source intact so it's a safe operation
+//           — users can verify the destination then delete the source
+//           themselves. This is the right default when moving the
+//           library somewhere new (e.g. opting into iCloud).
+//
+//  - adopt: don't copy anything; just switch to `dest`. This is the
+//           right move when `dest` already contains a Pond library
+//           (e.g. iCloud has it synced from another Mac, or the user
+//           is rolling back to an old location).
+export async function relocateLibrary(
+  dest: string,
+  mode: RelocateMode,
+): Promise<RelocateResult> {
+  const src = libraryRoot();
   const srcResolved = src.replace(/\/$/, "");
   const destResolved = dest.replace(/\/$/, "");
-  if (srcResolved === destResolved) return src;
-
-  for (const entry of await readdir(src)) {
-    const from = join(src, entry);
-    const to = join(dest, entry);
-    if (existsSync(to)) {
-      log.warn("[pond library-ops] destination already has", entry);
-      continue;
-    }
-    await cp(from, to, { recursive: true });
+  if (srcResolved === destResolved) {
+    return { path: src, mode, copied: 0, skipped: 0 };
   }
+
+  const safety = checkPointerSafety(destResolved);
+  if (!safety.ok) {
+    throw new Error(`destination rejected: ${safety.reason ?? "unknown"}`);
+  }
+  if (!existsSync(destResolved)) {
+    await mkdir(destResolved, { recursive: true });
+  }
+
+  let copied = 0;
+  let skipped = 0;
+
+  if (mode === "copy") {
+    for (const entry of await readdir(srcResolved)) {
+      const from = join(srcResolved, entry);
+      const to = join(destResolved, entry);
+      if (existsSync(to)) {
+        log.warn("[pond library-ops] destination already has", entry);
+        skipped += 1;
+        continue;
+      }
+      await cp(from, to, { recursive: true });
+      copied += 1;
+    }
+  }
+
+  writeLibraryPointer(destResolved);
 
   const db = await getDb();
   await db
     .update(settingsTable)
-    .set({ libraryRoot: dest, updatedAt: new Date() })
+    .set({ libraryRoot: destResolved, updatedAt: new Date() })
     .where(eq(settingsTable.id, "singleton"))
     .run();
 
-  log.info("[pond library-ops] library copied to", dest);
-  return dest;
+  log.info(
+    `[pond library-ops] library ${mode === "copy" ? "copied" : "adopted"} → ${destResolved} (copied ${copied}, skipped ${skipped})`,
+  );
+  return { path: destResolved, mode, copied, skipped };
+}
+
+// Inspect a candidate folder so the renderer can show a confirm
+// dialog with all the relevant context (cloud-storage notice, "looks
+// like a Pond library already" hint, suggested mode).
+export interface RelocatePreview {
+  currentPath: string;
+  candidatePath: string;
+  samePath: boolean;
+  safety: {
+    ok: boolean;
+    reason: string | null;
+  };
+  cloudKind: string | null;
+  existing: ReturnType<typeof probeExistingLibrary>;
+  suggestedMode: RelocateMode;
+}
+
+export function previewRelocate(candidate: string): RelocatePreview {
+  const current = libraryRoot();
+  const candidateResolved = candidate.replace(/\/$/, "");
+  const samePath =
+    current.replace(/\/$/, "") === candidateResolved.replace(/\/$/, "");
+  const safety = checkPointerSafety(candidateResolved);
+  const existing = probeExistingLibrary(candidateResolved);
+  const cloudKind = detectCloudKind(candidateResolved);
+  return {
+    currentPath: current,
+    candidatePath: candidateResolved,
+    samePath,
+    safety: { ok: safety.ok, reason: safety.reason ?? null },
+    cloudKind,
+    existing,
+    suggestedMode: existing.looksLikePondLibrary ? "adopt" : "copy",
+  };
 }
 
 export async function exportLibraryZip(outPath: string): Promise<string> {

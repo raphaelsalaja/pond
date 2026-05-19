@@ -10,6 +10,8 @@ interface MediaSlide {
   src: string;
   isVideo: boolean;
   posterUrl?: string;
+  width?: number;
+  height?: number;
 }
 
 export function MediaViewer({
@@ -22,11 +24,16 @@ export function MediaViewer({
   const theme = useResolvedTheme();
   const allSlides = useMemo<MediaSlide[]>(
     () =>
-      buildMediaUnits(save, { theme }).map((u) => ({
-        src: u.url,
-        isVideo: u.isVideo,
-        posterUrl: u.posterUrl,
-      })),
+      buildMediaUnits(save, { theme }).map((u) => {
+        const file = save.files.find((f) => f.path === u.key);
+        return {
+          src: u.url,
+          isVideo: u.isVideo,
+          posterUrl: u.posterUrl,
+          width: file?.width ?? save.width ?? undefined,
+          height: file?.height ?? save.height ?? undefined,
+        };
+      }),
     [save, theme],
   );
 
@@ -71,6 +78,10 @@ export function MediaViewer({
             src={slide.src}
             alt={save.title ?? ""}
             className={styles.media}
+            decoding="async"
+            fetchPriority="high"
+            width={slide.width}
+            height={slide.height}
             onError={() => markBroken(slide.src)}
           />
         </div>
