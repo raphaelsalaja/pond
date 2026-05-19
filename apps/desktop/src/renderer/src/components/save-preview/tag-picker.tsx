@@ -179,7 +179,7 @@ export function TagPicker({ save, trigger }: TagPickerProps) {
   async function apply(rawName: string) {
     const cleaned = normalizeLabelName(rawName);
     if (!cleaned) return;
-    if (applied.has(cleaned)) {
+    if (applied.has(cleaned.toLowerCase())) {
       setOpen(false);
       return;
     }

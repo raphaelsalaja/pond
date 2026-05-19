@@ -51,15 +51,18 @@ export const tagsQueries: QueryHandlerMap = {
     const db = await getDb();
     const all = await db.select().from(saves);
     const counts = new Map<string, number>();
+    const display = new Map<string, string>();
     for (const row of all) {
       if (row.deletedAt) continue;
-      for (const t of row.tags ?? []) {
-        const key = String(t).toLowerCase();
+      for (const raw of row.tags ?? []) {
+        const t = String(raw);
+        const key = t.toLowerCase();
         counts.set(key, (counts.get(key) ?? 0) + 1);
+        if (!display.has(key)) display.set(key, t);
       }
     }
-    return Array.from(counts.entries()).map(([name, count]) => ({
-      name,
+    return Array.from(counts.entries()).map(([key, count]) => ({
+      name: display.get(key) ?? key,
       userCount: count,
       aiCount: 0,
     }));

@@ -3,7 +3,7 @@ import {
   saves as savesTable,
   tags as tagsTable,
 } from "@pond/schema/db";
-import { normalizeLabelName } from "@pond/schema/label-name";
+import { labelKey, normalizeLabelName } from "@pond/schema/label-name";
 import type { Transaction } from "@pond/schema/tx";
 import { eq, sql } from "drizzle-orm";
 import { ulid } from "ulid";
@@ -75,14 +75,15 @@ export async function renameTag(
   from: string,
   to: string,
 ): Promise<{ ok: boolean; affected: number }> {
-  const fromKey = normalizeLabelName(from);
+  const fromKey = labelKey(from);
   const toStored = normalizeLabelName(to);
-  if (!fromKey || !toStored || fromKey === toStored) {
+  const toKey = toStored.toLowerCase();
+  if (!fromKey || !toStored || fromKey === toKey) {
     return { ok: false, affected: 0 };
   }
   const db = await getDb();
   const fromCanon = await tagByLowerName(db, fromKey);
-  const toCanon = await tagByLowerName(db, toStored);
+  const toCanon = await tagByLowerName(db, toKey);
   if (fromCanon && toCanon && fromCanon.id !== toCanon.id) {
     return mergeTags(from, to);
   }
@@ -93,7 +94,7 @@ export async function renameTag(
     const current = (row.tags ?? []).slice();
     const idx = current.findIndex((t) => t.toLowerCase() === fromKey);
     if (idx === -1) continue;
-    if (current.some((t) => t.toLowerCase() === toStored)) {
+    if (current.some((t) => t.toLowerCase() === toKey)) {
       current.splice(idx, 1);
     } else {
       current[idx] = toStored;
@@ -129,23 +130,24 @@ export async function mergeTags(
   from: string,
   to: string,
 ): Promise<{ ok: boolean; affected: number }> {
-  const fromStored = normalizeLabelName(from);
+  const fromKey = labelKey(from);
   const toStored = normalizeLabelName(to);
-  if (!fromStored || !toStored || fromStored === toStored) {
+  const toKey = toStored.toLowerCase();
+  if (!fromKey || !toStored || fromKey === toKey) {
     return { ok: false, affected: 0 };
   }
 
   const db = await getDb();
-  const fromRow = await tagByLowerName(db, fromStored);
-  const toRow = await tagByLowerName(db, toStored);
+  const fromRow = await tagByLowerName(db, fromKey);
+  const toRow = await tagByLowerName(db, toKey);
 
   const all = await db.select().from(savesTable);
   const txs: Transaction[] = [];
   for (const row of all) {
     const current = (row.tags ?? []).slice();
-    const idx = current.findIndex((t) => t.toLowerCase() === fromStored);
+    const idx = current.findIndex((t) => t.toLowerCase() === fromKey);
     if (idx === -1) continue;
-    if (current.some((t) => t.toLowerCase() === toStored)) {
+    if (current.some((t) => t.toLowerCase() === toKey)) {
       current.splice(idx, 1);
     } else {
       current[idx] = toStored;
@@ -203,7 +205,7 @@ export async function deleteTag(name: string): Promise<{
   ok: boolean;
   affected: number;
 }> {
-  const key = normalizeLabelName(name) || name.trim().toLowerCase();
+  const key = labelKey(name) || name.trim().toLowerCase();
   const db = await getDb();
   const all = await db.select().from(savesTable);
   const txs: Transaction[] = [];

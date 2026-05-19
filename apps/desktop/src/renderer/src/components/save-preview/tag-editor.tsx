@@ -60,7 +60,8 @@ export function TagEditor({ save }: { save: Save }) {
   async function commit(name: string) {
     const cleaned = normalizeLabelName(name);
     if (!cleaned) return;
-    if (save.tags.some((t) => t.toLowerCase() === cleaned)) {
+    const cleanedKey = cleaned.toLowerCase();
+    if (save.tags.some((t) => t.toLowerCase() === cleanedKey)) {
       setDraft("");
       return;
     }
