@@ -26,8 +26,8 @@ body {
 }
 
 body {
-  width: 320px;
-  padding: 16px;
+  width: 400px;
+  padding: 24px 24px 16px;
   color: var(--ds-gray-12);
   background: var(--ds-background-primary);
 }

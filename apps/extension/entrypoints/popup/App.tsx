@@ -1,5 +1,6 @@
 import type { Source } from "@pond/schema/db";
 import { Button, Field, Input } from "@pond/ui";
+import type { ReactNode } from "react";
 import { useCallback, useEffect, useState } from "react";
 import { parsePairingLink } from "@/utils/pairing";
 import {
@@ -26,6 +27,8 @@ type PushResult =
   | { tone: "ok"; label: string }
   | { tone: "error"; label: string }
   | null;
+
+const BRAND_ICON = chrome.runtime.getURL("icons/128.png");
 
 async function loadSettings(): Promise<PondSettings> {
   const stored = await chrome.storage.local.get("settings");
@@ -186,37 +189,15 @@ export function App() {
   if (!probeResult) {
     return (
       <div className={styles.shell}>
-        <Header tone="warn" label="Connecting…" />
+        <Hero title="Pond" sub={<>Connecting…</>} />
       </div>
     );
   }
 
   return (
     <div className={styles.shell}>
-      <Header
-        tone={
-          probeResult.state === "connected"
-            ? "ok"
-            : probeResult.state === "offline"
-              ? "warn"
-              : "error"
-        }
-        label={
-          probeResult.state === "connected"
-            ? probeResult.library.name
-            : probeResult.state === "offline"
-              ? "Pond is offline"
-              : "Not paired"
-        }
-        meta={
-          probeResult.state === "connected"
-            ? formatCount(probeResult.library.counts.active)
-            : undefined
-        }
-      />
-
       {probeResult.state === "unpaired" ? (
-        <UnpairedCard
+        <UnpairedBody
           value={pairingInput}
           onChange={setPairingInput}
           onApply={applyPairing}
@@ -226,21 +207,30 @@ export function App() {
       ) : null}
 
       {probeResult.state === "offline" ? (
-        <OfflineCard
+        <OfflineBody
           onRetry={refresh}
           onOpenPond={() => openDeepLink("pond://")}
         />
       ) : null}
 
       {probeResult.state === "connected" && pushable ? (
-        <PushSessionCard
+        <PushSessionBody
           source={pushable}
+          libraryName={probeResult.library.name}
           busy={pushBusy}
           result={pushResult}
           onPush={pushSessionForTab}
         />
       ) : null}
 
+      {probeResult.state === "connected" && !pushable ? (
+        <ConnectedBody
+          libraryName={probeResult.library.name}
+          activeCount={probeResult.library.counts.active}
+        />
+      ) : null}
+
+      <hr className={styles.divider} aria-hidden />
       <footer className={styles.footer}>
         <button
           type="button"
@@ -264,24 +254,22 @@ export function App() {
   );
 }
 
-interface HeaderProps {
-  tone: "ok" | "warn" | "error";
-  label: string;
-  meta?: string;
+interface HeroProps {
+  title: string;
+  sub: ReactNode;
 }
 
-function Header({ tone, label, meta }: HeaderProps) {
+function Hero({ title, sub }: HeroProps) {
   return (
-    <header className={styles.header}>
-      <span aria-hidden className={styles["status-dot"]} data-tone={tone} />
-      <h1 className={styles.wordmark}>Pond</h1>
-      <span className={styles["status-label"]}>· {label}</span>
-      {meta ? <span className={styles["status-meta"]}>{meta}</span> : null}
-    </header>
+    <div className={styles.hero}>
+      <img src={BRAND_ICON} alt="" className={styles.brand} />
+      <h1 className={styles.title}>{title}</h1>
+      <p className={styles.sub}>{sub}</p>
+    </div>
   );
 }
 
-interface UnpairedCardProps {
+interface UnpairedBodyProps {
   value: string;
   onChange: (v: string) => void;
   onApply: () => void | Promise<void>;
@@ -289,109 +277,153 @@ interface UnpairedCardProps {
   error: string | null;
 }
 
-function UnpairedCard({
+function UnpairedBody({
   value,
   onChange,
   onApply,
   busy,
   error,
-}: UnpairedCardProps) {
+}: UnpairedBodyProps) {
   return (
-    <section className={styles.card}>
-      <h2 className={styles["card-title"]}>Pair with Pond</h2>
-      <p className={styles["card-description"]}>
-        Open the Pond menu bar icon → <strong>Copy Pairing Token</strong>, then
-        paste the link below.
-      </p>
-      <Field.Root>
-        <Field.Label htmlFor="pairing">Pairing link</Field.Label>
-        <Input
-          id="pairing"
-          data-variant="code"
-          type="text"
-          placeholder="pond://pair?port=41610&token=…"
-          value={value}
-          onChange={(e) => onChange(e.currentTarget.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !busy) void onApply();
-          }}
-        />
-        {error ? <p className={styles["pairing-error"]}>{error}</p> : null}
-      </Field.Root>
+    <>
+      <Hero title="Pair with Pond" sub="to sync this tab to your library" />
+      <div className={styles.block}>
+        <Field.Root>
+          <Field.Label htmlFor="pairing">Pairing link</Field.Label>
+          <Input
+            id="pairing"
+            data-variant="code"
+            type="text"
+            placeholder="pond://pair?port=41610&token=…"
+            value={value}
+            onChange={(e) => onChange(e.currentTarget.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !busy) void onApply();
+            }}
+          />
+          {error ? <p className={styles["pairing-error"]}>{error}</p> : null}
+        </Field.Root>
+      </div>
       <Button
-        variant="primary"
-        className={styles["primary-button"]}
+        variant="accent"
+        size="lg"
+        className={styles.cta}
         disabled={busy || !value.trim()}
         onClick={() => void onApply()}
       >
         {busy ? "Pairing…" : "Pair"}
       </Button>
-    </section>
+      <p className={styles.helper}>
+        Open the Pond menu bar icon → <strong>Copy Pairing Token</strong>
+      </p>
+    </>
   );
 }
 
-interface OfflineCardProps {
+interface OfflineBodyProps {
   onRetry: () => void | Promise<void>;
   onOpenPond: () => void;
 }
 
-function OfflineCard({ onRetry, onOpenPond }: OfflineCardProps) {
+function OfflineBody({ onRetry, onOpenPond }: OfflineBodyProps) {
   return (
-    <section className={styles.card}>
-      <h2 className={styles["card-title"]}>Pond isn't running</h2>
-      <p className={styles["card-description"]}>
-        Start the Pond app to capture saves. Bookmarks and likes you make in the
-        meantime won't sync until it's back.
+    <>
+      <Hero
+        title="Pond isn't running"
+        sub="Start the app to keep saves in sync"
+      />
+      <div className={styles.actions}>
+        <Button
+          variant="accent"
+          size="lg"
+          className={styles.cta}
+          onClick={onOpenPond}
+        >
+          Open Pond
+        </Button>
+        <Button
+          variant="ghost"
+          className={styles.ghost}
+          onClick={() => void onRetry()}
+        >
+          Try again
+        </Button>
+      </div>
+      <p className={styles.helper}>
+        Bookmarks and likes won't sync until Pond is back
       </p>
-      <Button
-        variant="primary"
-        className={styles["primary-button"]}
-        onClick={() => void onRetry()}
-      >
-        Try again
-      </Button>
-      <Button variant="ghost" onClick={onOpenPond}>
-        Open Pond
-      </Button>
-    </section>
+    </>
   );
 }
 
-interface PushSessionCardProps {
+interface PushSessionBodyProps {
   source: Source;
+  libraryName: string;
   busy: boolean;
   result: PushResult;
   onPush: () => void | Promise<void>;
 }
 
-function PushSessionCard({
+function PushSessionBody({
   source,
+  libraryName,
   busy,
   result,
   onPush,
-}: PushSessionCardProps) {
+}: PushSessionBodyProps) {
   const label = sourceLabel(source);
   return (
-    <section className={styles.card}>
-      <h2 className={styles["card-title"]}>Push {label} session to Pond</h2>
-      <p className={styles["card-description"]}>
-        Once you're signed in to {label} here, send the session over so Pond can
-        scrape on your behalf — no embedded sign-in window needed.
-      </p>
+    <>
+      <Hero
+        title={`Push your ${label} session`}
+        sub={
+          <>
+            to <strong>{libraryName}</strong>
+          </>
+        }
+      />
+      <div className={styles.block}>
+        <div className={styles["block-row"]}>
+          <span aria-hidden className={styles["block-dot"]} />
+          <span>
+            Pond uses your {label} cookies to scrape on your behalf — no
+            embedded sign-in window
+          </span>
+        </div>
+        <div className={styles["block-row"]}>
+          <span aria-hidden className={styles["block-dot"]} />
+          <span>Sign in to {label} in this tab first, then push</span>
+        </div>
+      </div>
       <Button
-        variant="primary"
-        className={styles["primary-button"]}
+        variant="accent"
+        size="lg"
+        className={styles.cta}
         disabled={busy}
         onClick={() => void onPush()}
       >
         {busy ? "Sending…" : `Push ${label} session`}
       </Button>
       {result ? (
-        <p className={styles["capture-result"]} data-tone={result.tone}>
+        <p className={styles.helper} data-tone={result.tone}>
           {result.label}
         </p>
       ) : null}
-    </section>
+    </>
+  );
+}
+
+interface ConnectedBodyProps {
+  libraryName: string;
+  activeCount: number;
+}
+
+function ConnectedBody({ libraryName, activeCount }: ConnectedBodyProps) {
+  return (
+    <Hero
+      title={`Connected to ${libraryName}`}
+      sub={<>{formatCount(activeCount)} in your library</>}
+    />
   );
 }
 
