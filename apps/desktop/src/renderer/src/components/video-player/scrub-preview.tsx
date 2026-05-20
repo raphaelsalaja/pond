@@ -88,7 +88,6 @@ export function ScrubPreview({ src, sliderRef }: ScrubPreviewProps) {
         height={PREVIEW_H}
         className={styles["slider-thumbnail"]}
       />
-      {/* biome-ignore lint/a11y/useMediaCaption: silent scrub-only video, not user-facing */}
       <video
         ref={videoRef}
         src={src}

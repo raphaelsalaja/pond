@@ -57,7 +57,8 @@
     {
       "includes": [
         "apps/extension/entrypoints/*-inject.content.ts",
-        "apps/extension/sources/*/inject.ts"
+        "apps/extension/sources/*/inject.ts",
+        "apps/desktop/src/main/core/refresh/harvest/**/*.ts"
       ],
       "linter": {
         "rules": {

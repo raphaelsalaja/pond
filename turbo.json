@@ -3,25 +3,21 @@
   "ui": "tui",
   "globalDependencies": ["tsconfig.base.json", "pnpm-workspace.yaml", ".env"],
   "tasks": {
-    "//#check": {},
-    "//#check:fix": {
-      "cache": false
-    },
     "build": {
       "dependsOn": ["^build"],
       "inputs": [
         "src/**",
         "public/**",
+        "entrypoints/**",
+        "sources/**",
+        "utils/**",
         "package.json",
         "tsconfig.json",
-        "next.config.ts",
-        "next.config.js",
-        "tailwind.config.*",
-        "postcss.config.*",
         "electron.vite.config.ts",
-        "electron-builder.yml"
+        "electron-builder.yml",
+        "wxt.config.ts"
       ],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**", "out/**"]
+      "outputs": ["out/**", ".output/**"]
     },
     "dev": {
       "cache": false,
