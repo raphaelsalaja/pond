@@ -15,7 +15,7 @@ import {
 import { getRecentTags, pushRecentTag } from "@/lib/recent-tags";
 import { useSaves } from "@/pool/hooks";
 import type { Save } from "@/pool/types";
-import styles from "./tag-picker.module.css";
+import styles from "./styles.module.css";
 
 interface CanonTag {
   name: string;
@@ -232,14 +232,18 @@ export function TagPicker({ save, trigger }: TagPickerProps) {
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
       <Popover.Trigger render={trigger} />
-      <Popover.Content className={styles.popup} sideOffset={6} align="start">
-        <div className={styles.header}>
-          <span className={styles["header-icon"]} aria-hidden>
+      <Popover.Content
+        className={styles["tag-picker-popup"]}
+        sideOffset={6}
+        align="start"
+      >
+        <div className={styles["tag-picker-header"]}>
+          <span className={styles["tag-picker-header-icon"]} aria-hidden>
             <IconMagnifierOutline18 width={14} height={14} />
           </span>
           <Input
             data-size="sm"
-            className={styles.search}
+            className={styles["tag-picker-search"]}
             placeholder="Search…"
             value={q}
             onChange={(e) => setQ(e.target.value)}
@@ -249,7 +253,7 @@ export function TagPicker({ save, trigger }: TagPickerProps) {
             disabled={busy}
           />
         </div>
-        <div className={styles.body}>
+        <div className={styles["tag-picker-body"]}>
           {filtered.recently.length > 0 ? (
             <Section
               title="Recently"
@@ -277,7 +281,7 @@ export function TagPicker({ save, trigger }: TagPickerProps) {
               items={filtered.others}
               renderIcon={(color) => (
                 <span
-                  className={styles["item-dot"]}
+                  className={styles["tag-picker-item-dot"]}
                   style={{ background: color ?? "var(--ds-gray-a6)" }}
                 />
               )}
@@ -285,23 +289,23 @@ export function TagPicker({ save, trigger }: TagPickerProps) {
             />
           ) : null}
           {!hasAny ? (
-            <div className={styles.empty}>
+            <div className={styles["tag-picker-empty"]}>
               {q.trim() ? `Press ↵ to create "${q.trim()}"` : "No tags yet."}
             </div>
           ) : null}
         </div>
-        <div className={styles.footer}>
-          <span className={styles["footer-cell"]}>
+        <div className={styles["tag-picker-footer"]}>
+          <span className={styles["tag-picker-footer-cell"]}>
             <Kbd.Cluster keys={["↑", "↓", "←", "→"]} />
-            <span className={styles["footer-label"]}>Move</span>
+            <span className={styles["tag-picker-footer-label"]}>Move</span>
           </span>
-          <span className={styles["footer-cell"]}>
+          <span className={styles["tag-picker-footer-cell"]}>
             <Kbd.Key>↵</Kbd.Key>
-            <span className={styles["footer-label"]}>Select</span>
+            <span className={styles["tag-picker-footer-label"]}>Select</span>
           </span>
-          <span className={styles["footer-cell"]}>
+          <span className={styles["tag-picker-footer-cell"]}>
             <Kbd.Key>esc</Kbd.Key>
-            <span className={styles["footer-label"]}>Close</span>
+            <span className={styles["tag-picker-footer-label"]}>Close</span>
           </span>
         </div>
       </Popover.Content>
@@ -323,25 +327,28 @@ function Section({
   onPick: (name: string) => void;
 }) {
   return (
-    <section className={styles.section}>
-      <h4 className={styles["section-title"]}>
-        {title} <span className={styles["section-count"]}>({count})</span>
+    <section className={styles["tag-picker-section"]}>
+      <h4 className={styles["tag-picker-section-title"]}>
+        {title}{" "}
+        <span className={styles["tag-picker-section-count"]}>({count})</span>
       </h4>
-      <div className={styles.grid}>
+      <div className={styles["tag-picker-grid"]}>
         {items.map((item) => (
           <button
             key={item.name}
             type="button"
-            className={styles.item}
+            className={styles["tag-picker-item"]}
             onClick={() => onPick(item.name)}
             title={item.name}
           >
-            <span className={styles["item-icon"]} aria-hidden>
+            <span className={styles["tag-picker-item-icon"]} aria-hidden>
               {renderIcon(item.color)}
             </span>
-            <span className={styles["item-name"]}>{item.name}</span>
+            <span className={styles["tag-picker-item-name"]}>{item.name}</span>
             {item.count > 0 ? (
-              <span className={styles["item-count"]}>({item.count})</span>
+              <span className={styles["tag-picker-item-count"]}>
+                ({item.count})
+              </span>
             ) : null}
           </button>
         ))}
