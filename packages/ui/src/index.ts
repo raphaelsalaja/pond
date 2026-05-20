@@ -8,6 +8,7 @@ export { Field } from "./field";
 export { Freeze } from "./freeze";
 export { Input } from "./input";
 export { Kbd } from "./kbd";
+export { cn } from "./lib/cn";
 export { Menu } from "./menu";
 export { NumberField } from "./number-field";
 export { Popover } from "./popover";

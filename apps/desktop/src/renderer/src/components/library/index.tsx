@@ -1,5 +1,5 @@
+import { cn } from "@pond/ui";
 import { createContext, type ReactNode, use } from "react";
-import { cn } from "@/lib/cn";
 import styles from "./styles.module.css";
 
 type LibraryView = "grid" | "list";

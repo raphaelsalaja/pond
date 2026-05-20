@@ -1,3 +1,4 @@
+import { cn } from "@pond/ui";
 import type React from "react";
 import type { ReactNode } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
@@ -38,7 +39,7 @@ function Root({
   return (
     <div
       data-platform={platform}
-      className={[styles.layout, className ?? ""].filter(Boolean).join(" ")}
+      className={cn(styles.layout, className)}
       {...props}
     >
       {children}
@@ -49,45 +50,25 @@ function Root({
 interface ContentProps extends React.ComponentPropsWithoutRef<"div"> {}
 
 function Content({ className, ...props }: ContentProps) {
-  return (
-    <div
-      className={[styles.content, className ?? ""].filter(Boolean).join(" ")}
-      {...props}
-    />
-  );
+  return <div className={cn(styles.content, className)} {...props} />;
 }
 
 interface SplitProps extends React.ComponentPropsWithoutRef<"div"> {}
 
 function Split({ className, ...props }: SplitProps) {
-  return (
-    <div
-      className={[styles.split, className ?? ""].filter(Boolean).join(" ")}
-      {...props}
-    />
-  );
+  return <div className={cn(styles.split, className)} {...props} />;
 }
 
 interface MainProps extends React.ComponentProps<"main"> {}
 
 function Main({ className, ...props }: MainProps) {
-  return (
-    <main
-      className={[styles.main, className ?? ""].filter(Boolean).join(" ")}
-      {...props}
-    />
-  );
+  return <main className={cn(styles.main, className)} {...props} />;
 }
 
 interface HeaderProps extends React.ComponentPropsWithoutRef<"div"> {}
 
 function Header({ className, ...props }: HeaderProps) {
-  return (
-    <div
-      className={[styles.header, className ?? ""].filter(Boolean).join(" ")}
-      {...props}
-    />
-  );
+  return <div className={cn(styles.header, className)} {...props} />;
 }
 
 interface EmptyProps extends React.ComponentPropsWithoutRef<"p"> {
@@ -95,12 +76,7 @@ interface EmptyProps extends React.ComponentPropsWithoutRef<"p"> {
 }
 
 function Empty({ className, ...props }: EmptyProps) {
-  return (
-    <p
-      className={[styles.empty, className ?? ""].filter(Boolean).join(" ")}
-      {...props}
-    />
-  );
+  return <p className={cn(styles.empty, className)} {...props} />;
 }
 
 export const Shell = { Root, Content, Split, Main, Header, Empty };

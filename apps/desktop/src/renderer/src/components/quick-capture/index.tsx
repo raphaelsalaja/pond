@@ -1,4 +1,4 @@
-import { Button, Dialog, Field, Input, useToast } from "@pond/ui";
+import { Button, cn, Dialog, Field, Input, useToast } from "@pond/ui";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import styles from "./styles.module.css";
@@ -139,45 +139,25 @@ function Root() {
 interface FormProps extends React.ComponentPropsWithoutRef<"form"> {}
 
 function Form({ className, ...props }: FormProps) {
-  return (
-    <form
-      className={[styles.form, className ?? ""].filter(Boolean).join(" ")}
-      {...props}
-    />
-  );
+  return <form className={cn(styles.form, className)} {...props} />;
 }
 
 interface TitleProps extends React.ComponentPropsWithoutRef<"h2"> {}
 
 function Title({ className, ...props }: TitleProps) {
-  return (
-    <h2
-      className={[styles.title, className ?? ""].filter(Boolean).join(" ")}
-      {...props}
-    />
-  );
+  return <h2 className={cn(styles.title, className)} {...props} />;
 }
 
 interface HintProps extends React.ComponentPropsWithoutRef<"p"> {}
 
 function Hint({ className, ...props }: HintProps) {
-  return (
-    <p
-      className={[styles.hint, className ?? ""].filter(Boolean).join(" ")}
-      {...props}
-    />
-  );
+  return <p className={cn(styles.hint, className)} {...props} />;
 }
 
 interface ActionsProps extends React.ComponentPropsWithoutRef<"div"> {}
 
 function Actions({ className, ...props }: ActionsProps) {
-  return (
-    <div
-      className={[styles.actions, className ?? ""].filter(Boolean).join(" ")}
-      {...props}
-    />
-  );
+  return <div className={cn(styles.actions, className)} {...props} />;
 }
 
 export const QuickCapture = {

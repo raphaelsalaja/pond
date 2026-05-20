@@ -12,7 +12,7 @@ import {
   type Query,
 } from "@pond/schema/filters/types";
 import { readQuery, writeQuery } from "@pond/schema/filters/url";
-import { Menu } from "@pond/ui";
+import { cn, Menu } from "@pond/ui";
 import { useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
@@ -78,7 +78,7 @@ function Bar({ className, ...props }: BarProps) {
     <div
       role="toolbar"
       aria-label="Active filters"
-      className={[styles.bar, className ?? ""].filter(Boolean).join(" ")}
+      className={cn(styles.bar, className)}
       {...props}
     />
   );

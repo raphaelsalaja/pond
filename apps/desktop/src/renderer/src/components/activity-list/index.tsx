@@ -1,3 +1,4 @@
+import { cn } from "@pond/ui";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import styles from "./styles.module.css";
@@ -47,10 +48,7 @@ function Root({ saveId, limit = 50, className, ...props }: RootProps) {
   }
 
   return (
-    <ul
-      className={[styles.list, className ?? ""].filter(Boolean).join(" ")}
-      {...props}
-    >
+    <ul className={cn(styles.list, className)} {...props}>
       {rows.map((row) => (
         <li key={row.id} className={styles.item}>
           <span className={styles.dot} data-actor={row.actor} aria-hidden />

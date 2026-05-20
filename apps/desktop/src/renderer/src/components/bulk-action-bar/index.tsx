@@ -1,4 +1,4 @@
-import { Button, Input, Tooltip, useToast } from "@pond/ui";
+import { Button, cn, Input, Tooltip, useToast } from "@pond/ui";
 import { useCallback, useState } from "react";
 import { pool } from "@/pool/pool";
 import { selection, useSelectedIds, useSelectionSize } from "@/pool/selection";
@@ -152,7 +152,7 @@ function Bar({ className, ...props }: BarProps) {
     <div
       role="toolbar"
       aria-label="Bulk actions"
-      className={[styles.bar, className ?? ""].filter(Boolean).join(" ")}
+      className={cn(styles.bar, className)}
       {...props}
     />
   );
@@ -161,23 +161,14 @@ function Bar({ className, ...props }: BarProps) {
 interface CountProps extends React.ComponentPropsWithoutRef<"span"> {}
 
 function Count({ className, ...props }: CountProps) {
-  return (
-    <span
-      className={[styles.count, className ?? ""].filter(Boolean).join(" ")}
-      {...props}
-    />
-  );
+  return <span className={cn(styles.count, className)} {...props} />;
 }
 
 interface DividerProps extends React.ComponentPropsWithoutRef<"div"> {}
 
 function Divider({ className, ...props }: DividerProps) {
   return (
-    <div
-      aria-hidden
-      className={[styles.divider, className ?? ""].filter(Boolean).join(" ")}
-      {...props}
-    />
+    <div aria-hidden className={cn(styles.divider, className)} {...props} />
   );
 }
 

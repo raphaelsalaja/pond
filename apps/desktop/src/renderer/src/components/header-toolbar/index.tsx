@@ -9,7 +9,7 @@ import {
 } from "@pond/icons/outline/18";
 import { EMPTY_QUERY } from "@pond/schema/filters/types";
 import { readQuery, writeQuery } from "@pond/schema/filters/url";
-import { Menu, Tooltip } from "@pond/ui";
+import { cn, Menu, Tooltip } from "@pond/ui";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
@@ -216,7 +216,7 @@ function Toolbar({ className, ...props }: ToolbarProps) {
     <div
       role="toolbar"
       aria-label="Library toolbar"
-      className={[styles.toolbar, className ?? ""].filter(Boolean).join(" ")}
+      className={cn(styles.toolbar, className)}
       {...props}
     />
   );
@@ -225,12 +225,7 @@ function Toolbar({ className, ...props }: ToolbarProps) {
 interface SearchProps extends React.ComponentPropsWithoutRef<"div"> {}
 
 function Search({ className, ...props }: SearchProps) {
-  return (
-    <div
-      className={[styles.search, className ?? ""].filter(Boolean).join(" ")}
-      {...props}
-    />
-  );
+  return <div className={cn(styles.search, className)} {...props} />;
 }
 
 interface SearchIconProps extends React.ComponentPropsWithoutRef<"span"> {}
@@ -239,9 +234,7 @@ function SearchIcon({ className, ...props }: SearchIconProps) {
   return (
     <span
       aria-hidden
-      className={[styles["search-icon"], className ?? ""]
-        .filter(Boolean)
-        .join(" ")}
+      className={cn(styles["search-icon"], className)}
       {...props}
     />
   );
@@ -250,25 +243,13 @@ function SearchIcon({ className, ...props }: SearchIconProps) {
 interface SearchInputProps extends React.ComponentPropsWithoutRef<"input"> {}
 
 function SearchInput({ className, ...props }: SearchInputProps) {
-  return (
-    <input
-      className={[styles["search-input"], className ?? ""]
-        .filter(Boolean)
-        .join(" ")}
-      {...props}
-    />
-  );
+  return <input className={cn(styles["search-input"], className)} {...props} />;
 }
 
 interface RightProps extends React.ComponentPropsWithoutRef<"div"> {}
 
 function Right({ className, ...props }: RightProps) {
-  return (
-    <div
-      className={[styles.right, className ?? ""].filter(Boolean).join(" ")}
-      {...props}
-    />
-  );
+  return <div className={cn(styles.right, className)} {...props} />;
 }
 
 interface IconButtonProps extends React.ComponentPropsWithoutRef<"button"> {
