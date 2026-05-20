@@ -203,27 +203,45 @@ function SortPickerRoot({ trigger }: PickerProps) {
             </Select.Root>
             <fieldset className={styles["dir-group"]}>
               <legend className={styles["sr-only"]}>Sort direction</legend>
-              <Tooltip.Root content="Ascending" side="bottom">
-                <button
-                  type="button"
-                  aria-label="Sort ascending"
-                  aria-pressed={sortDir === "asc"}
-                  className={styles["dir-btn"]}
-                  onClick={() => setSortDir("asc")}
-                >
-                  <IconArrowUpOutline18 width="0.85em" height="0.85em" />
-                </button>
+              <Tooltip.Root>
+                <Tooltip.Trigger
+                  render={
+                    <button
+                      type="button"
+                      aria-label="Sort ascending"
+                      aria-pressed={sortDir === "asc"}
+                      className={styles["dir-btn"]}
+                      onClick={() => setSortDir("asc")}
+                    >
+                      <IconArrowUpOutline18 width="0.85em" height="0.85em" />
+                    </button>
+                  }
+                />
+                <Tooltip.Portal>
+                  <Tooltip.Positioner side="bottom">
+                    <Tooltip.Popup>Ascending</Tooltip.Popup>
+                  </Tooltip.Positioner>
+                </Tooltip.Portal>
               </Tooltip.Root>
-              <Tooltip.Root content="Descending" side="bottom">
-                <button
-                  type="button"
-                  aria-label="Sort descending"
-                  aria-pressed={sortDir === "desc"}
-                  className={styles["dir-btn"]}
-                  onClick={() => setSortDir("desc")}
-                >
-                  <IconArrowDownOutline18 width="0.85em" height="0.85em" />
-                </button>
+              <Tooltip.Root>
+                <Tooltip.Trigger
+                  render={
+                    <button
+                      type="button"
+                      aria-label="Sort descending"
+                      aria-pressed={sortDir === "desc"}
+                      className={styles["dir-btn"]}
+                      onClick={() => setSortDir("desc")}
+                    >
+                      <IconArrowDownOutline18 width="0.85em" height="0.85em" />
+                    </button>
+                  }
+                />
+                <Tooltip.Portal>
+                  <Tooltip.Positioner side="bottom">
+                    <Tooltip.Popup>Descending</Tooltip.Popup>
+                  </Tooltip.Positioner>
+                </Tooltip.Portal>
               </Tooltip.Root>
             </fieldset>
           </span>

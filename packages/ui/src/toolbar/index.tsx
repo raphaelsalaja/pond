@@ -1,12 +1,6 @@
 import { Toolbar as Base } from "@base-ui/react/toolbar";
-import { Button } from "../button";
 import { cn } from "../lib/cn";
 import styles from "./styles.module.css";
-
-interface ToolbarButtonProps extends React.ComponentProps<"button"> {
-  "data-variant"?: "default" | "ghost" | "primary" | "danger";
-  "data-size"?: "sm" | "md" | "lg";
-}
 
 type GroupAlign = "start" | "center" | "end";
 
@@ -16,10 +10,6 @@ interface GroupProps extends React.ComponentProps<"div"> {
 
 function Root({ className, ...props }: Base.Root.Props) {
   return <Base.Root className={cn(styles.root, className)} {...props} />;
-}
-
-function ToolbarButtonImpl(props: ToolbarButtonProps) {
-  return <Base.Button render={<Button variant="ghost" {...props} />} />;
 }
 
 function Separator({ className, ...props }: Base.Separator.Props) {
@@ -34,7 +24,6 @@ function Group({ className, ...props }: GroupProps) {
 
 export const Toolbar = {
   Root,
-  Button: ToolbarButtonImpl,
   Separator,
   Group,
 };

@@ -51,15 +51,24 @@ export function DetailHeader({ save, list }: HeaderProps) {
 
       <div className={styles["header-actions"]}>
         <StatusPill save={save} />
-        <Tooltip.Root content="Star" side="bottom">
-          <button
-            type="button"
-            className={styles["header-icon-btn"]}
-            aria-label="Star (coming soon)"
-            disabled
-          >
-            <IconStar2Outline18 width={14} height={14} />
-          </button>
+        <Tooltip.Root>
+          <Tooltip.Trigger
+            render={
+              <button
+                type="button"
+                className={styles["header-icon-btn"]}
+                aria-label="Star (coming soon)"
+                disabled
+              >
+                <IconStar2Outline18 width={14} height={14} />
+              </button>
+            }
+          />
+          <Tooltip.Portal>
+            <Tooltip.Positioner side="bottom">
+              <Tooltip.Popup>Star</Tooltip.Popup>
+            </Tooltip.Positioner>
+          </Tooltip.Portal>
         </Tooltip.Root>
         <SaveActionsMenu save={save}>
           <button
@@ -71,27 +80,45 @@ export function DetailHeader({ save, list }: HeaderProps) {
           </button>
         </SaveActionsMenu>
         <span className={styles["header-divider"]} aria-hidden />
-        <Tooltip.Root content="Previous (K)" side="bottom">
-          <button
-            type="button"
-            className={styles["header-icon-btn"]}
-            onClick={goPrev}
-            disabled={!list.prevId}
-            aria-label="Previous save"
-          >
-            <IconChevronLeftOutline18 width={14} height={14} />
-          </button>
+        <Tooltip.Root>
+          <Tooltip.Trigger
+            render={
+              <button
+                type="button"
+                className={styles["header-icon-btn"]}
+                onClick={goPrev}
+                disabled={!list.prevId}
+                aria-label="Previous save"
+              >
+                <IconChevronLeftOutline18 width={14} height={14} />
+              </button>
+            }
+          />
+          <Tooltip.Portal>
+            <Tooltip.Positioner side="bottom">
+              <Tooltip.Popup>Previous (K)</Tooltip.Popup>
+            </Tooltip.Positioner>
+          </Tooltip.Portal>
         </Tooltip.Root>
-        <Tooltip.Root content="Next (J)" side="bottom">
-          <button
-            type="button"
-            className={styles["header-icon-btn"]}
-            onClick={goNext}
-            disabled={!list.nextId}
-            aria-label="Next save"
-          >
-            <IconChevronRightOutline18 width={14} height={14} />
-          </button>
+        <Tooltip.Root>
+          <Tooltip.Trigger
+            render={
+              <button
+                type="button"
+                className={styles["header-icon-btn"]}
+                onClick={goNext}
+                disabled={!list.nextId}
+                aria-label="Next save"
+              >
+                <IconChevronRightOutline18 width={14} height={14} />
+              </button>
+            }
+          />
+          <Tooltip.Portal>
+            <Tooltip.Positioner side="bottom">
+              <Tooltip.Popup>Next (J)</Tooltip.Popup>
+            </Tooltip.Positioner>
+          </Tooltip.Portal>
         </Tooltip.Root>
       </div>
     </header>

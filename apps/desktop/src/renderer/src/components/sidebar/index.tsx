@@ -33,12 +33,6 @@ function Toolbar({ ...props }: ToolbarProps) {
   return <div className={styles.toolbar} {...props} />;
 }
 
-interface ToolbarButtonProps extends React.ComponentPropsWithoutRef<"button"> {}
-
-function ToolbarButton({ type = "button", ...props }: ToolbarButtonProps) {
-  return <button type={type} className={styles["toolbar-button"]} {...props} />;
-}
-
 interface HeaderProps extends React.ComponentPropsWithoutRef<"div"> {}
 
 function Header({ ...props }: HeaderProps) {
@@ -123,7 +117,6 @@ export const Sidebar = {
   HeaderActions: HeaderActions,
   Scroll: Scroll,
   Toolbar: Toolbar,
-  ToolbarButton: ToolbarButton,
   Group: Group,
   GroupLabel: GroupLabel,
   Item: Item,

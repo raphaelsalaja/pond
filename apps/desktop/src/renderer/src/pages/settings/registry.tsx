@@ -56,7 +56,7 @@ export const SECTIONS: SectionDef[] = [
   {
     id: "tags",
     path: "tags",
-    label: "Labels",
+    label: "Tags",
     icon: IconTagOutline18,
     group: "library",
     component: TagsSection,

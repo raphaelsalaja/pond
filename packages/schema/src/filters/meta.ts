@@ -48,7 +48,7 @@ export const FIELD_META: Readonly<Record<FieldId, FieldMeta>> = Object.freeze({
   tags: {
     id: "tags",
     type: "stringArray",
-    label: "Labels",
+    label: "Tags",
     group: "content",
   },
   source: {

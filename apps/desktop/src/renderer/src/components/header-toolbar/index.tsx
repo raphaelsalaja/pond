@@ -109,7 +109,7 @@ function Root() {
     <Toolbar>
       <Search>
         <SearchIcon>
-          <IconMagnifierOutline18 width="0.85em" height="0.85em" />
+          <IconMagnifierOutline18 />
         </SearchIcon>
         <SearchInput
           type="search"
@@ -123,51 +123,87 @@ function Root() {
       <Right>
         <ZoomControls value={zoom} onChange={setZoom} />
         <SavedFilters.Root />
-        <Tooltip.Root content="Layout" side="bottom">
-          <LayoutPicker.Root
-            trigger={
-              <IconButton aria-label="Layout">
-                <IconGridOutline18 width="0.95em" height="0.95em" />
-              </IconButton>
+        <Tooltip.Root>
+          <Tooltip.Trigger
+            render={
+              <LayoutPicker.Root
+                trigger={
+                  <IconButton aria-label="Layout">
+                    <IconGridOutline18 />
+                  </IconButton>
+                }
+              />
             }
           />
+          <Tooltip.Portal>
+            <Tooltip.Positioner side="bottom">
+              <Tooltip.Popup>Layout</Tooltip.Popup>
+            </Tooltip.Positioner>
+          </Tooltip.Portal>
         </Tooltip.Root>
-        <Tooltip.Root content="Sort" side="bottom">
-          <SortPicker.Root
-            trigger={
-              <IconButton aria-label="Sort">
-                <IconAscendingSortingOutline18 width="0.95em" height="0.95em" />
-              </IconButton>
+        <Tooltip.Root>
+          <Tooltip.Trigger
+            render={
+              <SortPicker.Root
+                trigger={
+                  <IconButton aria-label="Sort">
+                    <IconAscendingSortingOutline18 />
+                  </IconButton>
+                }
+              />
             }
           />
+          <Tooltip.Portal>
+            <Tooltip.Positioner side="bottom">
+              <Tooltip.Popup>Sort</Tooltip.Popup>
+            </Tooltip.Positioner>
+          </Tooltip.Portal>
         </Tooltip.Root>
-        <Tooltip.Root content="Display" side="bottom">
-          <DisplayPicker.Root
-            trigger={
-              <IconButton aria-label="Display">
-                <IconEyeOutline18 width="0.95em" height="0.95em" />
-              </IconButton>
+        <Tooltip.Root>
+          <Tooltip.Trigger
+            render={
+              <DisplayPicker.Root
+                trigger={
+                  <IconButton aria-label="Display">
+                    <IconEyeOutline18 />
+                  </IconButton>
+                }
+              />
             }
           />
+          <Tooltip.Portal>
+            <Tooltip.Positioner side="bottom">
+              <Tooltip.Popup>Display</Tooltip.Popup>
+            </Tooltip.Positioner>
+          </Tooltip.Portal>
         </Tooltip.Root>
-        <Tooltip.Root content="Add filter" side="bottom">
-          <Menu.Root open={filterOpen} onOpenChange={setFilterOpen}>
-            <Menu.Trigger
+        <Menu.Root open={filterOpen} onOpenChange={setFilterOpen}>
+          <Tooltip.Root>
+            <Tooltip.Trigger
               render={
-                <IconButton aria-label="Add filter">
-                  <IconBarsFilterOutline18 width="0.95em" height="0.95em" />
-                </IconButton>
+                <Menu.Trigger
+                  render={
+                    <IconButton aria-label="Add filter">
+                      <IconBarsFilterOutline18 />
+                    </IconButton>
+                  }
+                />
               }
             />
-            <Menu.Portal>
-              <Menu.Positioner side="bottom" align="end" sideOffset={6}>
-                <Menu.Popup>
-                  <AddFilterMenu api={addApi} inputRef={filterInputRef} />
-                </Menu.Popup>
-              </Menu.Positioner>
-            </Menu.Portal>
-          </Menu.Root>
-        </Tooltip.Root>
+            <Tooltip.Portal>
+              <Tooltip.Positioner side="bottom">
+                <Tooltip.Popup>Add filter</Tooltip.Popup>
+              </Tooltip.Positioner>
+            </Tooltip.Portal>
+          </Tooltip.Root>
+          <Menu.Portal>
+            <Menu.Positioner side="bottom" align="end" sideOffset={6}>
+              <Menu.Popup>
+                <AddFilterMenu api={addApi} inputRef={filterInputRef} />
+              </Menu.Popup>
+            </Menu.Positioner>
+          </Menu.Portal>
+        </Menu.Root>
       </Right>
     </Toolbar>
   );
@@ -283,14 +319,23 @@ function ZoomControls({ value, onChange }: ZoomControlsProps) {
   return (
     <fieldset className={styles.zoom}>
       <legend className={styles["sr-only"]}>Grid zoom</legend>
-      <Tooltip.Root content="Smaller cards" side="bottom">
-        <IconButton
-          aria-label="Smaller cards"
-          onClick={() => step(-ZOOM_STEP)}
-          disabled={value <= ZOOM_MIN}
-        >
-          <IconMinusOutline18 width="0.85em" height="0.85em" />
-        </IconButton>
+      <Tooltip.Root>
+        <Tooltip.Trigger
+          render={
+            <IconButton
+              aria-label="Smaller cards"
+              onClick={() => step(-ZOOM_STEP)}
+              disabled={value <= ZOOM_MIN}
+            >
+              <IconMinusOutline18 width="0.85em" height="0.85em" />
+            </IconButton>
+          }
+        />
+        <Tooltip.Portal>
+          <Tooltip.Positioner side="bottom">
+            <Tooltip.Popup>Smaller cards</Tooltip.Popup>
+          </Tooltip.Positioner>
+        </Tooltip.Portal>
       </Tooltip.Root>
       <input
         type="range"
@@ -302,14 +347,23 @@ function ZoomControls({ value, onChange }: ZoomControlsProps) {
         aria-label="Grid zoom"
         className={styles["zoom-slider"]}
       />
-      <Tooltip.Root content="Larger cards" side="bottom">
-        <IconButton
-          aria-label="Larger cards"
-          onClick={() => step(ZOOM_STEP)}
-          disabled={value >= ZOOM_MAX}
-        >
-          <IconPlusOutline18 width="0.85em" height="0.85em" />
-        </IconButton>
+      <Tooltip.Root>
+        <Tooltip.Trigger
+          render={
+            <IconButton
+              aria-label="Larger cards"
+              onClick={() => step(ZOOM_STEP)}
+              disabled={value >= ZOOM_MAX}
+            >
+              <IconPlusOutline18 width="0.85em" height="0.85em" />
+            </IconButton>
+          }
+        />
+        <Tooltip.Portal>
+          <Tooltip.Positioner side="bottom">
+            <Tooltip.Popup>Larger cards</Tooltip.Popup>
+          </Tooltip.Positioner>
+        </Tooltip.Portal>
       </Tooltip.Root>
     </fieldset>
   );

@@ -48,8 +48,15 @@ export function FileActions({ save }: { save: Save }) {
         {hasFile ? (
           revealButton
         ) : (
-          <Tooltip.Root content="This save has no local file yet — nothing to reveal.">
-            <span>{revealButton}</span>
+          <Tooltip.Root>
+            <Tooltip.Trigger render={<span>{revealButton}</span>} />
+            <Tooltip.Portal>
+              <Tooltip.Positioner>
+                <Tooltip.Popup>
+                  This save has no local file yet — nothing to reveal.
+                </Tooltip.Popup>
+              </Tooltip.Positioner>
+            </Tooltip.Portal>
           </Tooltip.Root>
         )}
         <Button

@@ -64,14 +64,32 @@ function Root({ save, videoRef }: RootProps) {
         <div className={styles["meta-row"]}>
           {stats.liveStatus ? <LiveBadge status={stats.liveStatus} /> : null}
           {relative ? (
-            <Tooltip.Root content={absolute ?? undefined}>
+            absolute ? (
+              <Tooltip.Root>
+                <Tooltip.Trigger
+                  render={
+                    <time
+                      className={styles["meta-item"]}
+                      dateTime={stats.publishedAt}
+                    >
+                      {relative}
+                    </time>
+                  }
+                />
+                <Tooltip.Portal>
+                  <Tooltip.Positioner>
+                    <Tooltip.Popup>{absolute}</Tooltip.Popup>
+                  </Tooltip.Positioner>
+                </Tooltip.Portal>
+              </Tooltip.Root>
+            ) : (
               <time
                 className={styles["meta-item"]}
                 dateTime={stats.publishedAt}
               >
                 {relative}
               </time>
-            </Tooltip.Root>
+            )
           ) : null}
           {typeof stats.durationSec === "number" ? (
             <span className={styles["meta-item"]}>
@@ -94,17 +112,25 @@ function Root({ save, videoRef }: RootProps) {
       {stats.metrics.length > 0 ? (
         <div className={styles.metrics}>
           {stats.metrics.map((m) => (
-            <Tooltip.Root
-              key={m.key}
-              content={`${formatFullNumber(m.value)} ${m.label.toLowerCase()}`}
-            >
-              <span className={styles["metric-chip"]}>
-                <MetricIcon name={m.key} />
-                <span className={styles["metric-value"]}>
-                  {formatCompactNumber(m.value)}
-                </span>
-                <span className={styles["metric-label"]}>{m.label}</span>
-              </span>
+            <Tooltip.Root key={m.key}>
+              <Tooltip.Trigger
+                render={
+                  <span className={styles["metric-chip"]}>
+                    <MetricIcon name={m.key} />
+                    <span className={styles["metric-value"]}>
+                      {formatCompactNumber(m.value)}
+                    </span>
+                    <span className={styles["metric-label"]}>{m.label}</span>
+                  </span>
+                }
+              />
+              <Tooltip.Portal>
+                <Tooltip.Positioner>
+                  <Tooltip.Popup>
+                    {`${formatFullNumber(m.value)} ${m.label.toLowerCase()}`}
+                  </Tooltip.Popup>
+                </Tooltip.Positioner>
+              </Tooltip.Portal>
             </Tooltip.Root>
           ))}
         </div>

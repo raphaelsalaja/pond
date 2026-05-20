@@ -194,4 +194,15 @@
       background-color: var(--ds-tomato-4);
     }
   }
+
+  /* ghost */
+  &[data-variant="ghost"] {
+    color: var(--ds-gray-11);
+    background-color: transparent;
+
+    &:hover {
+      color: var(--ds-gray-12);
+      background-color: var(--ds-gray-2);
+    }
+  }
 }

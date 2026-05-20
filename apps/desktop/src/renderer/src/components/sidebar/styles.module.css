@@ -8,7 +8,6 @@
   --sidebar-account-height: 32px;
   --sidebar-item-height: 28px;
   --sidebar-icon-slot: 18px;
-  --sidebar-mac-inset: 16px;
 
   position: relative;
   display: flex;
@@ -45,6 +44,7 @@
   justify-content: center;
   width: 24px;
   height: 24px;
+  padding: 4px;
   font-size: 14px;
   color: var(--ds-gray-11);
   cursor: pointer;
@@ -203,7 +203,7 @@
 }
 
 :global([data-platform="mac"]) .scroll {
-  padding-top: var(--sidebar-mac-inset);
+  padding-top: var(--ds-mac-inset);
 }
 
 :global([data-platform="mac"]) .scroll > * {

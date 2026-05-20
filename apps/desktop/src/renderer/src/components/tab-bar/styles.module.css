@@ -1,4 +1,5 @@
 .bar {
+  padding-top: 24px;
   display: flex;
   flex-shrink: 0;
   align-items: center;
@@ -15,9 +16,6 @@
   display: none;
 }
 
-/* Must be a real flex box, not `display: contents` — motion needs
- * a measurable element to track child layout, otherwise items get
- * re-detected as "new" on reorder and flash. */
 .group {
   display: flex;
   flex-shrink: 0;

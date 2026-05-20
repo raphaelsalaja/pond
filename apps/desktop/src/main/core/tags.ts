@@ -78,14 +78,19 @@ export async function renameTag(
   const fromKey = labelKey(from);
   const toStored = normalizeLabelName(to);
   const toKey = toStored.toLowerCase();
-  if (!fromKey || !toStored || fromKey === toKey) {
+  if (!fromKey || !toStored) {
     return { ok: false, affected: 0 };
   }
   const db = await getDb();
   const fromCanon = await tagByLowerName(db, fromKey);
-  const toCanon = await tagByLowerName(db, toKey);
-  if (fromCanon && toCanon && fromCanon.id !== toCanon.id) {
-    return mergeTags(from, to);
+
+  // Only treat as a merge when the canonical keys actually differ.
+  // Same-key renames (e.g. "meme" → "Meme") just restyle the casing.
+  if (fromKey !== toKey) {
+    const toCanon = await tagByLowerName(db, toKey);
+    if (fromCanon && toCanon && fromCanon.id !== toCanon.id) {
+      return mergeTags(from, to);
+    }
   }
 
   const all = await db.select().from(savesTable);
@@ -94,9 +99,12 @@ export async function renameTag(
     const current = (row.tags ?? []).slice();
     const idx = current.findIndex((t) => t.toLowerCase() === fromKey);
     if (idx === -1) continue;
-    if (current.some((t) => t.toLowerCase() === toKey)) {
+    const collidesWithExistingTarget =
+      fromKey !== toKey && current.some((t) => t.toLowerCase() === toKey);
+    if (collidesWithExistingTarget) {
       current.splice(idx, 1);
     } else {
+      if (current[idx] === toStored) continue;
       current[idx] = toStored;
     }
     txs.push({
@@ -109,14 +117,13 @@ export async function renameTag(
     });
   }
 
-  const tagRow = await tagByLowerName(db, fromKey);
-  if (tagRow) {
+  if (fromCanon && fromCanon.name !== toStored) {
     txs.push({
       kind: "update",
       model: "tag",
-      id: tagRow.id,
+      id: fromCanon.id,
       patch: { name: toStored },
-      before: tagRow,
+      before: fromCanon,
       meta: { actor: "user", actorReason: "tag-rename" },
     });
   }

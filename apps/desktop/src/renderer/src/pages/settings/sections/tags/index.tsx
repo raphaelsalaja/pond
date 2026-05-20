@@ -171,7 +171,7 @@ export function TagsSection() {
         affected: number;
       };
       toast.add({
-        title: "Label renamed",
+        title: "Tag renamed",
         description: `${res.affected} save${res.affected === 1 ? "" : "s"} updated.`,
         type: "success",
       });
@@ -226,7 +226,7 @@ export function TagsSection() {
         total += res.affected ?? 0;
       }
       toast.add({
-        title: names.length === 1 ? "Label deleted" : "Labels deleted",
+        title: names.length === 1 ? "Tag deleted" : "Tags deleted",
         description: `Removed from ${total} save${total === 1 ? "" : "s"}.`,
         type: "success",
       });
@@ -263,7 +263,7 @@ export function TagsSection() {
         await window.pond.query("tags.merge", { from, to: mergeTarget });
       }
       toast.add({
-        title: "Labels merged",
+        title: "Tags merged",
         description: `Kept ${mergeTarget}.`,
         type: "success",
       });
@@ -296,7 +296,7 @@ export function TagsSection() {
   return (
     <div className={styles["labels-page"]}>
       <header className={styles["labels-page-header"]}>
-        <h1 className={styles["labels-page-title"]}>Labels</h1>
+        <h1 className={styles["labels-page-title"]}>Tags</h1>
         <p className={styles["labels-page-subtitle"]}>
           Colors, descriptions, and bulk merge across every save.
         </p>
@@ -325,7 +325,7 @@ export function TagsSection() {
               onClick={startCreating}
               disabled={busy || creating}
             >
-              New label
+              New tag
             </Button>
           </div>
         </div>
@@ -369,7 +369,7 @@ export function TagsSection() {
                 ref={headerCheckRef}
                 type="checkbox"
                 className={styles["labels-checkbox"]}
-                aria-label="Select all visible labels"
+                aria-label="Select all visible tags"
                 onChange={(e) => toggleSelectAll(e.target.checked)}
               />
             </span>
@@ -399,7 +399,7 @@ export function TagsSection() {
                 data-size="sm"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
-                placeholder="Label name"
+                placeholder="Tag name"
                 onKeyDown={(e) => {
                   if (e.key === "Enter") void create();
                   if (e.key === "Escape") {
@@ -452,8 +452,8 @@ export function TagsSection() {
           {visible.length === 0 && !creating ? (
             <div className={styles["labels-empty"]}>
               {filter
-                ? `No labels match "${filter}".`
-                : "No labels yet. Add one above or label a save."}
+                ? `No tags match "${filter}".`
+                : "No tags yet. Add one above or tag a save."}
             </div>
           ) : null}
         </div>
@@ -461,9 +461,9 @@ export function TagsSection() {
 
       <Dialog.Root open={mergeOpen} onOpenChange={setMergeOpen}>
         <Dialog.Content className={styles["labels-merge-dialog"]}>
-          <Dialog.Title>Merge labels</Dialog.Title>
+          <Dialog.Title>Merge tags</Dialog.Title>
           <Dialog.Description>
-            Choose the label to keep. The others are merged into it and removed
+            Choose the tag to keep. The others are merged into it and removed
             from this list.
           </Dialog.Description>
           <div className={styles["labels-merge-field"]}>
@@ -512,15 +512,13 @@ export function TagsSection() {
       >
         <AlertDialog.Content>
           <AlertDialog.Title>
-            {deleting && deleting.length > 1
-              ? "Delete labels?"
-              : "Delete label?"}
+            {deleting && deleting.length > 1 ? "Delete tags?" : "Delete tag?"}
           </AlertDialog.Title>
           <AlertDialog.Description>
             {deleting && deleting.length > 1 ? (
               <>
-                This removes <strong>{deleting.length} labels</strong> from
-                every save and from the catalog. Cmd+Z restores it.
+                This removes <strong>{deleting.length} tags</strong> from every
+                save and from the catalog. Cmd+Z restores it.
               </>
             ) : (
               <>
@@ -671,7 +669,7 @@ function LabelRowView({
               .join(" ")}
             onClick={() => setEditingDesc(true)}
           >
-            {row.description ?? "Add label description…"}
+            {row.description ?? "Add tag description…"}
           </button>
         )}
       </div>
@@ -732,7 +730,7 @@ function DescriptionInput({
       data-size="sm"
       value={value}
       autoFocus
-      placeholder="Add label description…"
+      placeholder="Add tag description…"
       onChange={(e) => setValue(e.target.value)}
       onBlur={() => onSubmit(value)}
       onKeyDown={(e) => {

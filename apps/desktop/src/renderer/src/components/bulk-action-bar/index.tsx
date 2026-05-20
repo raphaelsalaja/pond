@@ -89,30 +89,57 @@ function Root() {
         disabled={busy}
         style={{ width: 140 }}
       />
-      <Tooltip.Root content="Add this tag to every selected save">
-        <Button
-          size="sm"
-          onClick={() => void addTag(tagDraft)}
-          disabled={busy || !tagDraft.trim()}
-        >
-          Add tag
-        </Button>
+      <Tooltip.Root>
+        <Tooltip.Trigger
+          render={
+            <Button
+              size="sm"
+              onClick={() => void addTag(tagDraft)}
+              disabled={busy || !tagDraft.trim()}
+            >
+              Add tag
+            </Button>
+          }
+        />
+        <Tooltip.Portal>
+          <Tooltip.Positioner>
+            <Tooltip.Popup>Add this tag to every selected save</Tooltip.Popup>
+          </Tooltip.Positioner>
+        </Tooltip.Portal>
       </Tooltip.Root>
-      <Tooltip.Root content="Move every selected save to trash">
-        <Button
-          size="sm"
-          variant="danger"
-          onClick={() => void trash()}
-          disabled={busy}
-        >
-          Trash
-        </Button>
+      <Tooltip.Root>
+        <Tooltip.Trigger
+          render={
+            <Button
+              size="sm"
+              variant="danger"
+              onClick={() => void trash()}
+              disabled={busy}
+            >
+              Trash
+            </Button>
+          }
+        />
+        <Tooltip.Portal>
+          <Tooltip.Positioner>
+            <Tooltip.Popup>Move every selected save to trash</Tooltip.Popup>
+          </Tooltip.Positioner>
+        </Tooltip.Portal>
       </Tooltip.Root>
       <Divider />
-      <Tooltip.Root content="Clear selection (Esc)">
-        <Button size="sm" variant="ghost" onClick={close} disabled={busy}>
-          Done
-        </Button>
+      <Tooltip.Root>
+        <Tooltip.Trigger
+          render={
+            <Button size="sm" variant="ghost" onClick={close} disabled={busy}>
+              Done
+            </Button>
+          }
+        />
+        <Tooltip.Portal>
+          <Tooltip.Positioner>
+            <Tooltip.Popup>Clear selection (Esc)</Tooltip.Popup>
+          </Tooltip.Positioner>
+        </Tooltip.Portal>
       </Tooltip.Root>
     </Bar>
   );

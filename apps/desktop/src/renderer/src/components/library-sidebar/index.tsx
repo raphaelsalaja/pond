@@ -86,12 +86,15 @@ function Root() {
             <span className={styles["account-name"]}>Pond</span>
           </div>
           <Sidebar.HeaderActions>
-            <Sidebar.ToolbarButton
+            <Button
+              variant="ghost"
+              size="sm"
+              icon
               aria-label="Quick capture"
               onClick={openQuickCapture}
             >
-              <IconPlusOutline18 width={14} height={14} />
-            </Sidebar.ToolbarButton>
+              <IconPlusOutline18 />
+            </Button>
           </Sidebar.HeaderActions>
         </Sidebar.Header>
 

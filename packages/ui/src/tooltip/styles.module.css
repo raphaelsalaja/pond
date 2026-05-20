@@ -1,19 +1,16 @@
 .positioner {
-  z-index: 1100;
+  filter: var(--ds-filter-shadow-2);
 }
 
 .popup {
-  max-width: 220px;
-  padding: 4px 8px;
+  max-width: 256px;
+  padding: 6px 12px;
   font-size: 11px;
   font-weight: 500;
-  line-height: 1.4;
-  color: var(--ds-gray-1);
-  pointer-events: none;
-  outline: none;
-  background: var(--ds-gray-12);
-  border-radius: var(--ds-radius-md);
-  box-shadow: var(--ds-shadow-tooltip);
+  line-height: 1;
+  color: var(--ds-gray-12);
+  background: var(--ds-background-primary);
+  border-radius: var(--ds-radius-full);
   transition:
     opacity var(--ds-duration-snap) var(--ds-easing-standard),
     transform var(--ds-duration-snap) var(--ds-easing-standard);
@@ -24,4 +21,34 @@
     opacity: 0;
     transform: translateY(2px);
   }
+}
+
+.arrow {
+  display: flex;
+}
+
+.arrow-half {
+  width: 12px;
+  height: 8px;
+  background: var(--ds-background-primary);
+}
+
+.arrow-half-start {
+  clip-path: shape(
+    from 0% 0%,
+    curve to 100% 100% with 50% 0% /
+    50% 100%,
+    vline to 0%,
+    hline to 0%
+  );
+}
+
+.arrow-half-end {
+  clip-path: shape(
+    from 100% 0%,
+    curve to 0% 100% with 50% 0% /
+    50% 100%,
+    vline to 0%,
+    hline to 100%
+  );
 }

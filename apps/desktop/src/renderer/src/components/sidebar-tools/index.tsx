@@ -3,10 +3,10 @@ import {
   IconChevronRightOutline18,
   IconClockRotateAnticlockwiseOutline18,
 } from "@pond/icons/outline/18";
-import { Menu, Tooltip } from "@pond/ui";
+import { Button, Menu, Tooltip } from "@pond/ui";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useRecents } from "@/components/recents";
-import { Sidebar } from "@/components/sidebar";
 import { pool } from "@/pool/pool";
 import styles from "./styles.module.css";
 
@@ -20,26 +20,70 @@ export function SidebarTools() {
   });
 
   return (
-    <>
-      <Tooltip.Root content="Back" side="bottom">
-        <Sidebar.ToolbarButton aria-label="Back" onClick={() => navigate(-1)}>
-          <IconChevronLeftOutline18 />
-        </Sidebar.ToolbarButton>
+    <React.Fragment>
+      <Tooltip.Root>
+        <Tooltip.Trigger
+          render={
+            <Button
+              variant="ghost"
+              size="sm"
+              icon
+              aria-label="Back"
+              onClick={() => navigate(-1)}
+            >
+              <IconChevronLeftOutline18 />
+            </Button>
+          }
+        />
+        <Tooltip.Portal>
+          <Tooltip.Positioner side="bottom">
+            <Tooltip.Popup>Back</Tooltip.Popup>
+          </Tooltip.Positioner>
+        </Tooltip.Portal>
       </Tooltip.Root>
-      <Tooltip.Root content="Forward" side="bottom">
-        <Sidebar.ToolbarButton aria-label="Forward" onClick={() => navigate(1)}>
-          <IconChevronRightOutline18 />
-        </Sidebar.ToolbarButton>
+      <Tooltip.Root>
+        <Tooltip.Trigger
+          render={
+            <Button
+              variant="ghost"
+              size="sm"
+              icon
+              aria-label="Forward"
+              onClick={() => navigate(1)}
+            >
+              <IconChevronRightOutline18 />
+            </Button>
+          }
+        />
+        <Tooltip.Portal>
+          <Tooltip.Positioner side="bottom">
+            <Tooltip.Popup>Forward</Tooltip.Popup>
+          </Tooltip.Positioner>
+        </Tooltip.Portal>
       </Tooltip.Root>
       <Menu.Root>
-        <Tooltip.Root content="Recently viewed" side="bottom">
-          <Menu.Trigger
+        <Tooltip.Root>
+          <Tooltip.Trigger
             render={
-              <Sidebar.ToolbarButton aria-label="Recently viewed">
-                <IconClockRotateAnticlockwiseOutline18 />
-              </Sidebar.ToolbarButton>
+              <Menu.Trigger
+                render={
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    icon
+                    aria-label="Recently Viewed"
+                  >
+                    <IconClockRotateAnticlockwiseOutline18 />
+                  </Button>
+                }
+              />
             }
           />
+          <Tooltip.Portal>
+            <Tooltip.Positioner side="bottom">
+              <Tooltip.Popup>Recently viewed</Tooltip.Popup>
+            </Tooltip.Positioner>
+          </Tooltip.Portal>
         </Tooltip.Root>
         <Menu.Portal>
           <Menu.Positioner side="bottom" align="start" sideOffset={6}>
@@ -71,6 +115,6 @@ export function SidebarTools() {
           </Menu.Positioner>
         </Menu.Portal>
       </Menu.Root>
-    </>
+    </React.Fragment>
   );
 }

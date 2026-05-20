@@ -66,19 +66,28 @@ function Root() {
 
   return (
     <Menu.Root open={open} onOpenChange={setOpen}>
-      <Tooltip.Root content="Saved filters" side="bottom">
-        <Menu.Trigger
+      <Tooltip.Root>
+        <Tooltip.Trigger
           render={
-            <button
-              type="button"
-              aria-label="Saved filters"
-              className={styles.trigger}
-              data-active={saved.length > 0 ? "true" : undefined}
-            >
-              <IconFiltersOutline18 width="0.95em" height="0.95em" />
-            </button>
+            <Menu.Trigger
+              render={
+                <button
+                  type="button"
+                  aria-label="Saved filters"
+                  className={styles.trigger}
+                  data-active={saved.length > 0 ? "true" : undefined}
+                >
+                  <IconFiltersOutline18 width="0.95em" height="0.95em" />
+                </button>
+              }
+            />
           }
         />
+        <Tooltip.Portal>
+          <Tooltip.Positioner side="bottom">
+            <Tooltip.Popup>Saved filters</Tooltip.Popup>
+          </Tooltip.Positioner>
+        </Tooltip.Portal>
       </Tooltip.Root>
       <Menu.Portal>
         <Menu.Positioner align="end" side="bottom" sideOffset={6}>

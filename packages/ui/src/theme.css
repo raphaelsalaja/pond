@@ -105,7 +105,7 @@
 }
 
 :root {
-  --ds-background-primary: light-dark(var(--white-a12), var(--black-a12));
+  --ds-background-primary: light-dark(white, black);
   --ds-background-secondary: var(--ds-gray-1);
   --ds-background-tertiary: var(--ds-gray-2);
 
@@ -116,52 +116,19 @@
   --ds-radius-xl: 16px;
   --ds-radius-full: 9999px;
 
-  --ds-shadow-1:
-    0 0 0 1px light-dark(var(--gray-a3), var(--gray-a4)),
-    0 1px 2px 0 light-dark(var(--gray-a4), var(--black-a4));
+  --ds-shadow-1: 0 0 0 1px var(--gray-a3), 0 1px 2px 0 var(--black-a1);
 
-  --ds-shadow-2:
-    0 0 0 1px light-dark(var(--gray-a3), var(--gray-a4)),
-    0 2px 4px 0 light-dark(var(--gray-a4), var(--black-a4));
+  --ds-shadow-2: 0 0 0 1px var(--gray-a3), 0 2px 4px 0 var(--black-a1);
+
+  --ds-filter-shadow-2: drop-shadow(1px 0 0 var(--gray-a3))
+    drop-shadow(-1px 0 0 var(--gray-a3)) drop-shadow(0 1px 0 var(--gray-a3))
+    drop-shadow(0 -1px 0 var(--gray-a3)) drop-shadow(0 2px 4px var(--black-a1));
 
   --ds-shadow-2-focused:
-    0 0 0 1px var(--ds-accent-9),
-    0 2px 4px 0 light-dark(var(--gray-a3), var(--black-a4)),
+    0 0 0 1px var(--ds-accent-9), 0 2px 4px 0 var(--black-a1),
     0 0 0 3px color-mix(in srgb, var(--ds-accent-9) 20%, transparent);
 
-  --ds-shadow-3:
-    0 0 0 1px light-dark(var(--gray-a3), var(--gray-a4)),
-    0 4px 8px 0 light-dark(var(--gray-a3), var(--black-a4));
-
-  --ds-shadow-popover:
-    0 0 0 1px var(--ds-gray-a4), 0 12px 12px -6px var(--ds-gray-a8);
-
-  --ds-shadow-dialog:
-    0 0 0 1px var(--ds-gray-a4), 0 12px 32px -8px var(--ds-gray-a8),
-    0 4px 10px -2px var(--ds-gray-a6);
-
-  --ds-shadow-toast:
-    0 0 0 1px var(--ds-gray-a4), 0 8px 24px -6px var(--ds-gray-a7);
-
-  --ds-shadow-tooltip: 0 4px 16px -4px var(--ds-gray-a8);
-
-  --ds-shadow-thumb: 0 1px 2px var(--ds-gray-a5);
-
-  --ds-shadow-badge: 0 0 0 1px var(--ds-gray-a4), 0 1px 2px var(--ds-gray-a4);
-
-  /* Apple-style standard materials. Pair: -bg (tinted overlay) + -filter
-     (backdrop-filter value). Each surface composes both onto itself. */
-  --ds-material-chrome-bg: light-dark(
-    rgb(255 255 255 / 78%),
-    rgb(28 28 28 / 78%)
-  );
-  --ds-material-chrome-filter: blur(20px) saturate(1.8);
-
-  --ds-material-thick-bg: light-dark(
-    rgb(255 255 255 / 72%),
-    rgb(32 32 32 / 72%)
-  );
-  --ds-material-thick-filter: blur(24px) saturate(1.6);
+  --ds-shadow-3: 0 0 0 1px var(--gray-a3), 0 4px 8px 0 var(--black-a1);
 
   --ds-shadow-focus-halo:
     0 0 0 1px var(--ds-accent-9),
@@ -182,7 +149,8 @@
   --ds-duration-snap: 120ms;
   --ds-duration-medium: 180ms;
   --ds-duration-emphasized: 250ms;
-
   --ds-easing-standard: ease;
   --ds-easing-snap: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --ds-mac-inset: 16px;
 }

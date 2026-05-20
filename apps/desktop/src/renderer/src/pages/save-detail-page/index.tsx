@@ -105,15 +105,24 @@ export function SaveDetailPage() {
         <DetailHeader save={save} list={list} />
         <DetailContent save={save} videoRef={videoRef} />
         {!inspectorOpen ? (
-          <Tooltip.Root content="Show inspector">
-            <button
-              type="button"
-              className={styles["inspector-restore"]}
-              onClick={toggleInspector}
-              aria-label="Show inspector"
-            >
-              <IconSidebarLeft2ShowOutline18 width={16} height={16} />
-            </button>
+          <Tooltip.Root>
+            <Tooltip.Trigger
+              render={
+                <button
+                  type="button"
+                  className={styles["inspector-restore"]}
+                  onClick={toggleInspector}
+                  aria-label="Show inspector"
+                >
+                  <IconSidebarLeft2ShowOutline18 width={16} height={16} />
+                </button>
+              }
+            />
+            <Tooltip.Portal>
+              <Tooltip.Positioner>
+                <Tooltip.Popup>Show inspector</Tooltip.Popup>
+              </Tooltip.Positioner>
+            </Tooltip.Portal>
           </Tooltip.Root>
         ) : null}
       </Shell.Main>

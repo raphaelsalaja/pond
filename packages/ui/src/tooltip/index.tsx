@@ -1,51 +1,70 @@
 import { Tooltip as Base } from "@base-ui/react/tooltip";
-import type { ReactElement, ReactNode } from "react";
 import { renderFrozenPopup } from "../freeze/popup";
+import { cn } from "../lib/cn";
 import styles from "./styles.module.css";
 
-interface RootProps {
-  children: ReactElement<Record<string, unknown>>;
-  content?: ReactNode;
-  side?: "top" | "right" | "bottom" | "left";
-  delay?: number;
-  open?: boolean;
+function Root(props: Base.Root.Props) {
+  return <Base.Root {...props} />;
 }
 
-function Root({ children, content, side = "top", delay, open }: RootProps) {
-  if (!content) return children;
+function Provider(props: Base.Provider.Props) {
+  return <Base.Provider {...props} />;
+}
+
+function Trigger(props: Base.Trigger.Props) {
+  return <Base.Trigger {...props} />;
+}
+
+function Portal(props: Base.Portal.Props) {
+  return <Base.Portal {...props} />;
+}
+
+function Viewport(props: Base.Viewport.Props) {
+  return <Base.Viewport {...props} />;
+}
+
+function Positioner({
+  className,
+  sideOffset = 16,
+  ...props
+}: Base.Positioner.Props) {
   return (
-    <Base.Root open={open}>
-      <Base.Trigger render={children} delay={delay} />
-      <Base.Portal>
-        <Base.Positioner
-          sideOffset={6}
-          side={side}
-          className={styles.positioner}
-        >
-          <Base.Popup className={styles.popup} render={renderFrozenPopup}>
-            {content}
-          </Base.Popup>
-        </Base.Positioner>
-      </Base.Portal>
-    </Base.Root>
+    <Base.Positioner
+      sideOffset={sideOffset}
+      className={cn(styles.positioner, className)}
+      {...props}
+    />
   );
 }
 
-interface ProviderProps {
-  children: ReactNode;
-  delay?: number;
-  closeDelay?: number;
+function Popup({ className, render, ...props }: Base.Popup.Props) {
+  return (
+    <Base.Popup
+      {...props}
+      className={cn(styles.popup, className)}
+      render={render ?? renderFrozenPopup}
+    />
+  );
 }
 
-function Provider({ children, delay = 200, closeDelay = 0 }: ProviderProps) {
+function Arrow({ className, ...props }: Base.Arrow.Props) {
   return (
-    <Base.Provider delay={delay} closeDelay={closeDelay}>
-      {children}
-    </Base.Provider>
+    <Base.Arrow className={cn(styles.arrow, className)} {...props}>
+      <div className={cn(styles["arrow-half"], styles["arrow-half-start"])} />
+      <div className={cn(styles["arrow-half"], styles["arrow-half-end"])} />
+    </Base.Arrow>
   );
 }
 
 export const Tooltip = {
   Root,
   Provider,
+  Trigger,
+  Portal,
+  Positioner,
+  Popup,
+  Arrow,
+  Viewport,
+  createHandle: Base.createHandle,
+  Handle: Base.Handle,
 };

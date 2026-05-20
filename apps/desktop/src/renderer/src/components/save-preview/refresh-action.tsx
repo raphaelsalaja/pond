@@ -134,17 +134,28 @@ export function RefreshAction({ save }: { save: Save }) {
         >
           {status === "refreshing" ? "Refreshing…" : "Refresh metadata"}
         </Button>
-        <Tooltip.Root content="Open the source URL in your default browser.">
-          <span>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={openInBrowser}
-              disabled={!save.url}
-            >
-              Open original
-            </Button>
-          </span>
+        <Tooltip.Root>
+          <Tooltip.Trigger
+            render={
+              <span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={openInBrowser}
+                  disabled={!save.url}
+                >
+                  Open original
+                </Button>
+              </span>
+            }
+          />
+          <Tooltip.Portal>
+            <Tooltip.Positioner>
+              <Tooltip.Popup>
+                Open the source URL in your default browser.
+              </Tooltip.Popup>
+            </Tooltip.Positioner>
+          </Tooltip.Portal>
         </Tooltip.Root>
       </div>
 
@@ -158,18 +169,29 @@ export function RefreshAction({ save }: { save: Save }) {
           <Button size="sm" onClick={connect} disabled={connecting}>
             {connecting ? "Opening…" : `Open ${auth.label}`}
           </Button>
-          <Tooltip.Root content="Manage all connected apps from the settings page.">
-            <span>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() =>
-                  navigate(`/settings/integrations?connect=${auth.source}`)
-                }
-              >
-                Settings
-              </Button>
-            </span>
+          <Tooltip.Root>
+            <Tooltip.Trigger
+              render={
+                <span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() =>
+                      navigate(`/settings/integrations?connect=${auth.source}`)
+                    }
+                  >
+                    Settings
+                  </Button>
+                </span>
+              }
+            />
+            <Tooltip.Portal>
+              <Tooltip.Positioner>
+                <Tooltip.Popup>
+                  Manage all connected apps from the settings page.
+                </Tooltip.Popup>
+              </Tooltip.Positioner>
+            </Tooltip.Portal>
           </Tooltip.Root>
         </div>
       ) : null}

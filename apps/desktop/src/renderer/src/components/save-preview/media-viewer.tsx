@@ -88,29 +88,47 @@ export function MediaViewer({
       )}
       {hasMany ? (
         <>
-          <Tooltip.Root content="Previous" side="right">
-            <button
-              type="button"
-              className={styles.nav}
-              data-side="prev"
-              onClick={() =>
-                setIndex((i) => (i - 1 + slides.length) % slides.length)
+          <Tooltip.Root>
+            <Tooltip.Trigger
+              render={
+                <button
+                  type="button"
+                  className={styles.nav}
+                  data-side="prev"
+                  onClick={() =>
+                    setIndex((i) => (i - 1 + slides.length) % slides.length)
+                  }
+                  aria-label="Previous"
+                >
+                  ‹
+                </button>
               }
-              aria-label="Previous"
-            >
-              ‹
-            </button>
+            />
+            <Tooltip.Portal>
+              <Tooltip.Positioner side="right">
+                <Tooltip.Popup>Previous</Tooltip.Popup>
+              </Tooltip.Positioner>
+            </Tooltip.Portal>
           </Tooltip.Root>
-          <Tooltip.Root content="Next" side="left">
-            <button
-              type="button"
-              className={styles.nav}
-              data-side="next"
-              onClick={() => setIndex((i) => (i + 1) % slides.length)}
-              aria-label="Next"
-            >
-              ›
-            </button>
+          <Tooltip.Root>
+            <Tooltip.Trigger
+              render={
+                <button
+                  type="button"
+                  className={styles.nav}
+                  data-side="next"
+                  onClick={() => setIndex((i) => (i + 1) % slides.length)}
+                  aria-label="Next"
+                >
+                  ›
+                </button>
+              }
+            />
+            <Tooltip.Portal>
+              <Tooltip.Positioner side="left">
+                <Tooltip.Popup>Next</Tooltip.Popup>
+              </Tooltip.Positioner>
+            </Tooltip.Portal>
           </Tooltip.Root>
           <div className={styles.dots} aria-hidden="true">
             {slides.map((s, i) => (
