@@ -2,10 +2,10 @@ import { useCallback, useMemo } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Card } from "@/components/card-thumb";
 import { EmptyState } from "@/components/empty-state";
+import { Inspector } from "@/components/inspector";
 import { Library } from "@/components/library";
 import { SaveContextMenu } from "@/components/save-context-menu";
 import { LibraryChrome, Shell } from "@/components/shell";
-import { SaveDetail } from "@/pages/save-detail";
 import { useSaves } from "@/pool/hooks";
 import { buildMediaUnits } from "@/pool/media";
 import type { Save } from "@/pool/types";
@@ -75,7 +75,7 @@ export function TrashView() {
           </Library.Grid>
         )}
       </Shell.Main>
-      <SaveDetail />
+      <Inspector />
     </>
   );
 }

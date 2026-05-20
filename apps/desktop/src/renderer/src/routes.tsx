@@ -6,7 +6,7 @@ import {
   StandaloneLayout,
 } from "./components/shell";
 import { ActivityPage } from "./pages/activity";
-import { SaveDetailPage } from "./pages/save-detail-page";
+import { SaveDetailPage } from "./pages/save-detail";
 import { SavesView } from "./pages/saves-view";
 import { DEFAULT_SECTION, SECTIONS } from "./pages/settings/registry";
 import { TrashView } from "./pages/trash-view";

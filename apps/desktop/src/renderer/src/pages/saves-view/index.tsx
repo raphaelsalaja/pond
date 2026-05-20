@@ -1,6 +1,6 @@
+import { Inspector } from "@/components/inspector";
 import { Library } from "@/components/library";
 import { LibraryChrome, Shell } from "@/components/shell";
-import { SaveDetail } from "@/pages/save-detail";
 import { LayoutSwitcher } from "./layout-switcher";
 import { useCardActions } from "./use-card-actions";
 import { type SavesMode, useSavesData } from "./use-saves-data";
@@ -44,7 +44,7 @@ export function SavesView({ mode = "library" }: SavesViewProps) {
           )}
         </Library.Root>
       </Shell.Main>
-      <SaveDetail />
+      <Inspector />
     </>
   );
 }

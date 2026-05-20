@@ -1,161 +1,132 @@
-import {
-  IconDotsOutline18,
-  IconFolder5Outline18,
-  IconGlobe2Outline18,
-  IconRefreshOutline18,
-  IconTrashOutline18,
-} from "@pond/icons/outline/18";
-import { Menu, useToast } from "@pond/ui";
-import { useCallback } from "react";
+import { IconSidebarLeft2ShowOutline18 } from "@pond/icons/outline/18";
+import { Tooltip } from "@pond/ui";
+import { useCallback, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { Inspector } from "@/components/inspector";
 import { useTrackVisit } from "@/components/recents";
-import { SavePreview } from "@/components/save-preview";
-import {
-  humaniseRefreshReason,
-  REVEAL_LABEL,
-} from "@/components/save-preview/helpers";
+import { Shell } from "@/components/shell";
 import { useInspector } from "@/lib/use-inspector";
-import { optimistic } from "@/pool/bootstrap";
 import { useSave } from "@/pool/hooks";
+import { pickPrimaryUnit } from "@/pool/media";
 import { pool } from "@/pool/pool";
+import { useResolvedTheme } from "@/pool/theme";
+import { DetailContent } from "./content";
+import { DetailHeader } from "./header";
 import styles from "./styles.module.css";
+import { useListContext } from "./use-list-context";
 
-export function SaveDetail() {
+export function SaveDetailPage() {
   const { id } = useParams<{ id: string }>();
   const save = useSave(id);
-  const { open } = useInspector();
+  const navigate = useNavigate();
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   useTrackVisit(id);
 
-  if (!open) return null;
+  const list = useListContext({ activeId: id ?? null });
+  const { open: inspectorOpen, toggle: toggleInspector } = useInspector();
+  const theme = useResolvedTheme();
 
-  return (
-    <aside aria-label="Inspector" className={styles.pane}>
-      <div className={styles.toolbar}>
-        <KebabMenu save={save ?? null} />
-      </div>
-      <div className={styles.body}>
-        {save ? (
-          <SavePreview.Pane save={save} />
-        ) : id ? (
-          <p className={styles.empty}>Save not found.</p>
-        ) : (
-          <p className={styles.empty}>Select a save to inspect.</p>
-        )}
-      </div>
-    </aside>
-  );
-}
-
-function KebabMenu({ save }: { save: ReturnType<typeof useSave> | null }) {
-  const navigate = useNavigate();
-  const toast = useToast();
-
-  const hasUrl = !!save?.url;
-  const hasLocalFile = (save?.files ?? []).length > 0;
-
-  const onOpenOriginal = useCallback(() => {
-    if (!save?.url) return;
-    void window.pond.openExternal(save.url);
-  }, [save?.url]);
-
-  const onReveal = useCallback(() => {
-    if (!save || !hasLocalFile) return;
-    void window.pond.revealSave(save.id);
-  }, [save, hasLocalFile]);
-
-  const onRefresh = useCallback(async () => {
-    if (!save?.url) return;
-    try {
-      const res = await window.pond.refreshSave(save.id);
-      if (res.ok) {
-        toast.add({
-          title: "Metadata refreshed",
-          type: "success",
-          description:
-            res.method === "og"
-              ? "Pulled fresh OpenGraph data from the source."
-              : "Re-scraped via signed-in session.",
-        });
-        return;
-      }
-      toast.add({
-        title: "Refresh failed",
-        type: "error",
-        description: humaniseRefreshReason(res.reason),
-      });
-    } catch (err) {
-      toast.add({
-        title: "Refresh failed",
-        type: "error",
-        description: err instanceof Error ? err.message : String(err),
-      });
+  // Warm the browser cache for the next / previous save's primary
+  // image so j / k feels instant. Skips videos — they're too heavy to
+  // speculatively fetch.
+  useEffect(() => {
+    const targets: string[] = [];
+    for (const adjacent of [list.nextId, list.prevId]) {
+      if (!adjacent) continue;
+      const save = pool.get(adjacent);
+      if (!save) continue;
+      const unit = pickPrimaryUnit(save, { theme });
+      if (!unit || unit.isVideo) continue;
+      targets.push(unit.url);
     }
-  }, [save?.id, save?.url, toast]);
+    if (targets.length === 0) return;
+    const imgs = targets.map((src) => {
+      const img = new Image();
+      img.decoding = "async";
+      img.src = src;
+      return img;
+    });
+    return () => {
+      // Drop refs so GC can reclaim — pending decode aborts on its own.
+      for (const img of imgs) img.src = "";
+    };
+  }, [list.nextId, list.prevId, theme]);
 
-  const onDelete = useCallback(async () => {
-    if (!save) return;
-    const prev = pool.get(save.id);
-    if (!prev) return;
-    const now = Date.now();
-    await optimistic(
-      () => {
-        pool.upsert({ ...prev, deletedAt: now } as typeof prev);
-      },
-      () => {
-        pool.upsert(prev);
-      },
-      async () => window.pond.tx({ kind: "trash", model: "save", id: save.id }),
+  const goPrev = useCallback(() => {
+    if (!list.prevId) return;
+    navigate(list.buildDetailPath(list.prevId));
+  }, [list, navigate]);
+
+  const goNext = useCallback(() => {
+    if (!list.nextId) return;
+    navigate(list.buildDetailPath(list.nextId));
+  }, [list, navigate]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName;
+      const isInput =
+        tag === "INPUT" ||
+        tag === "TEXTAREA" ||
+        target?.isContentEditable === true;
+      if (isInput) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key === "j" || e.key === "ArrowDown") {
+        if (!list.nextId) return;
+        e.preventDefault();
+        goNext();
+      } else if (e.key === "k" || e.key === "ArrowUp") {
+        if (!list.prevId) return;
+        e.preventDefault();
+        goPrev();
+      } else if (e.key === "Escape") {
+        navigate(list.parentTo);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [goNext, goPrev, list.nextId, list.prevId, list.parentTo, navigate]);
+
+  if (!save) {
+    return (
+      <Shell.Main>
+        <Shell.Empty>
+          {id ? "Save not found." : "Select a save to inspect."}
+        </Shell.Empty>
+      </Shell.Main>
     );
-    toast.add({ title: "Moved to trash", type: "success" });
-    navigate(-1);
-  }, [save, toast, navigate]);
+  }
 
   return (
-    <Menu.Root>
-      <Menu.Trigger
-        render={
-          <button
-            type="button"
-            aria-label="More options"
-            className={styles["toolbar-btn"]}
-            disabled={!save}
-          >
-            <IconDotsOutline18 width={14} height={14} />
-          </button>
-        }
-      />
-      <Menu.Portal>
-        <Menu.Positioner align="end" sideOffset={6}>
-          <Menu.Popup>
-            <Menu.Item disabled={!hasUrl} onClick={onOpenOriginal}>
-              <Menu.ItemIcon>
-                <IconGlobe2Outline18 width={14} height={14} />
-              </Menu.ItemIcon>
-              <Menu.ItemLabel>Open Original</Menu.ItemLabel>
-            </Menu.Item>
-            <Menu.Item disabled={!hasLocalFile} onClick={onReveal}>
-              <Menu.ItemIcon>
-                <IconFolder5Outline18 width={14} height={14} />
-              </Menu.ItemIcon>
-              <Menu.ItemLabel>{REVEAL_LABEL}</Menu.ItemLabel>
-            </Menu.Item>
-            <Menu.Item disabled={!hasUrl} onClick={onRefresh}>
-              <Menu.ItemIcon>
-                <IconRefreshOutline18 width={14} height={14} />
-              </Menu.ItemIcon>
-              <Menu.ItemLabel>Refresh</Menu.ItemLabel>
-            </Menu.Item>
-            <Menu.Separator />
-            <Menu.Item disabled={!save} onClick={onDelete}>
-              <Menu.ItemIcon>
-                <IconTrashOutline18 width={14} height={14} />
-              </Menu.ItemIcon>
-              <Menu.ItemLabel>Move to Trash</Menu.ItemLabel>
-            </Menu.Item>
-          </Menu.Popup>
-        </Menu.Positioner>
-      </Menu.Portal>
-    </Menu.Root>
+    <>
+      <Shell.Main className={styles["main-immersive"]}>
+        <DetailHeader save={save} list={list} />
+        <DetailContent save={save} videoRef={videoRef} />
+        {!inspectorOpen ? (
+          <Tooltip.Root>
+            <Tooltip.Trigger
+              render={
+                <button
+                  type="button"
+                  className={styles["inspector-restore"]}
+                  onClick={toggleInspector}
+                  aria-label="Show inspector"
+                >
+                  <IconSidebarLeft2ShowOutline18 width={16} height={16} />
+                </button>
+              }
+            />
+            <Tooltip.Portal>
+              <Tooltip.Positioner>
+                <Tooltip.Popup>Show inspector</Tooltip.Popup>
+              </Tooltip.Positioner>
+            </Tooltip.Portal>
+          </Tooltip.Root>
+        ) : null}
+      </Shell.Main>
+      <Inspector />
+    </>
   );
 }
