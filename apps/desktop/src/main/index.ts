@@ -478,40 +478,7 @@ function installAppMenu() {
       : []),
     {
       label: "File",
-      submenu: [
-        {
-          label: "New Tab",
-          accelerator: "CommandOrControl+T",
-          click: () => {
-            const win = BrowserWindow.getFocusedWindow();
-            if (win && !win.isDestroyed()) {
-              win.webContents.send(IPC.tabNew);
-            }
-          },
-        },
-        {
-          label: "Close Tab",
-          accelerator: "CommandOrControl+W",
-          click: () => {
-            const win = BrowserWindow.getFocusedWindow();
-            if (win && !win.isDestroyed()) {
-              win.webContents.send(IPC.tabClose);
-            }
-          },
-        },
-        {
-          label: "Reopen Closed Tab",
-          accelerator: "CommandOrControl+Shift+T",
-          click: () => {
-            const win = BrowserWindow.getFocusedWindow();
-            if (win && !win.isDestroyed()) {
-              win.webContents.send(IPC.tabReopen);
-            }
-          },
-        },
-        { type: "separator" as const },
-        isMac ? { role: "close" as const } : { role: "quit" as const },
-      ],
+      submenu: [isMac ? { role: "close" as const } : { role: "quit" as const }],
     },
     {
       label: "Edit",

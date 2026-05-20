@@ -22,7 +22,7 @@ export class InstagramPostExtractor implements Extractor {
     const code = match?.[1] ?? null;
     if (!code) throw new TerminalError("could not parse instagram code");
 
-    const segment = /\/reel\//i.test(input.url.href)
+    const segment = /\/reels?\//i.test(input.url.href)
       ? "reel"
       : /\/tv\//i.test(input.url.href)
         ? "tv"

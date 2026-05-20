@@ -7,7 +7,7 @@
   padding: 6px 12px;
   font-size: 11px;
   font-weight: 500;
-  line-height: 1;
+  line-height: 1.5;
   color: var(--ds-gray-12);
   background: var(--ds-background-primary);
   border-radius: var(--ds-radius-full);
@@ -25,30 +25,51 @@
 
 .arrow {
   display: flex;
+  width: 24px;
+  height: 8px;
+
+  &[data-side="top"] {
+    bottom: -8px;
+  }
+
+  &[data-side="bottom"] {
+    top: -8px;
+    rotate: 180deg;
+  }
+
+  &[data-side="left"] {
+    right: -16px;
+    rotate: -90deg;
+  }
+
+  &[data-side="right"] {
+    left: -16px;
+    rotate: 90deg;
+  }
 }
 
-.arrow-half {
+.curve {
   width: 12px;
   height: 8px;
   background: var(--ds-background-primary);
-}
 
-.arrow-half-start {
-  clip-path: shape(
-    from 0% 0%,
-    curve to 100% 100% with 50% 0% /
-    50% 100%,
-    vline to 0%,
-    hline to 0%
-  );
-}
+  &[data-side="left"] {
+    clip-path: shape(
+      from 0% 0%,
+      curve to 100% 100% with 50% 0% /
+      50% 100%,
+      vline to 0%,
+      hline to 0%
+    );
+  }
 
-.arrow-half-end {
-  clip-path: shape(
-    from 100% 0%,
-    curve to 0% 100% with 50% 0% /
-    50% 100%,
-    vline to 0%,
-    hline to 100%
-  );
+  &[data-side="right"] {
+    clip-path: shape(
+      from 100% 0%,
+      curve to 0% 100% with 50% 0% /
+      50% 100%,
+      vline to 0%,
+      hline to 100%
+    );
+  }
 }

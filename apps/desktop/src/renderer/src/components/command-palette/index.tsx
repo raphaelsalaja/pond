@@ -12,7 +12,6 @@ import { NAVIGATION_COMMANDS } from "./registry/navigation";
 import { SAVE_CONTEXT_COMMANDS } from "./registry/save-context";
 import { SETTINGS_COMMANDS } from "./registry/settings";
 import { SOURCE_COMMANDS } from "./registry/sources";
-import { useTabCommands } from "./registry/tabs";
 import {
   type Command,
   type CommandScope,
@@ -117,7 +116,6 @@ function Root() {
 
   const tagCommands = useTagCommands(open);
   const saveCommands = useSaveCommands(search);
-  const tabCommands = useTabCommands();
 
   const staticCommands = useMemo<Command[]>(
     () => [
@@ -131,8 +129,8 @@ function Root() {
   );
 
   const allCommands = useMemo<Command[]>(
-    () => [...staticCommands, ...tagCommands, ...saveCommands, ...tabCommands],
-    [staticCommands, tagCommands, saveCommands, tabCommands],
+    () => [...staticCommands, ...tagCommands, ...saveCommands],
+    [staticCommands, tagCommands, saveCommands],
   );
 
   useChords(staticCommands, () => ctx);

@@ -65,9 +65,16 @@ body,
   background: var(--ds-background-primary);
 }
 
+html,
+body {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
 #root {
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 @keyframes app-sidebar-slide-in {

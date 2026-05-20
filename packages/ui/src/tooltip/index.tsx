@@ -50,8 +50,8 @@ function Popup({ className, render, ...props }: Base.Popup.Props) {
 function Arrow({ className, ...props }: Base.Arrow.Props) {
   return (
     <Base.Arrow className={cn(styles.arrow, className)} {...props}>
-      <div className={cn(styles["arrow-half"], styles["arrow-half-start"])} />
-      <div className={cn(styles["arrow-half"], styles["arrow-half-end"])} />
+      <div data-side="left" className={styles.curve} />
+      <div data-side="right" className={styles.curve} />
     </Base.Arrow>
   );
 }

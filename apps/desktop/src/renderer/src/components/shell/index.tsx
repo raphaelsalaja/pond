@@ -10,7 +10,6 @@ import { ProcessingButton } from "@/components/processing-button";
 import { QuickCapture } from "@/components/quick-capture";
 import { Sidebar } from "@/components/sidebar";
 import { SidebarTools } from "@/components/sidebar-tools";
-import { TabBar } from "@/components/tab-bar";
 import { DeepLinkBridge } from "@/effects/deep-link-bridge";
 import { HistoryHotkey } from "@/effects/history-hotkey";
 import { OnboardedGuard } from "@/effects/onboarded-guard";
@@ -129,7 +128,7 @@ export function LibraryLayout() {
     <Shell.Root platform={platform}>
       {sidebarOpen ? <LibrarySidebar.Root /> : null}
       <Shell.Content>
-        <TabBar.Root />
+        <div aria-hidden className={styles["drag-strip"]} />
         <Shell.Split>
           <Outlet />
         </Shell.Split>
@@ -190,7 +189,7 @@ export function SettingsLayout() {
         </Sidebar.Scroll>
       </Sidebar.Root>
       <Shell.Content>
-        <TabBar.Root />
+        <div aria-hidden className={styles["drag-strip"]} />
         <Shell.Main>
           <div className={styles.body}>
             <Outlet />
@@ -207,7 +206,6 @@ export function StandaloneLayout() {
   return (
     <Shell.Root platform={platform}>
       <Shell.Content>
-        <TabBar.Root />
         <div aria-hidden className={styles["drag-strip"]} />
         <Shell.Main>
           <Outlet />

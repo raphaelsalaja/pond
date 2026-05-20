@@ -124,13 +124,19 @@ async function inPageInstagramHarvest(
     )) {
       if (v.poster) push({ url: v.poster, type: "video", poster: v.poster });
     }
+    let avatarUrl: string | null = null;
     for (const img of Array.from(
       article.querySelectorAll<HTMLImageElement>("img"),
     )) {
       const best = pickLargestSrcset(img.srcset) ?? img.currentSrc ?? img.src;
-      if (!best || looksLikeAvatar(best)) continue;
+      if (!best) continue;
+      if (looksLikeAvatar(best)) {
+        if (!avatarUrl) avatarUrl = best;
+        continue;
+      }
       push({ url: best, type: "image" });
     }
+    if (avatarUrl) meta.authorAvatar = avatarUrl;
 
     if (media.length > 0) {
       out.mediaUrls = media;
@@ -180,7 +186,7 @@ export function adapt(raw: unknown): ScrapedHarvest | null {
 export function sourceIdFromUrl(rawUrl: string): string | null {
   try {
     const u = new URL(rawUrl);
-    const m = u.pathname.match(/\/(?:p|reel|tv)\/([A-Za-z0-9_-]+)/);
+    const m = u.pathname.match(/\/(?:p|reels?|tv)\/([A-Za-z0-9_-]+)/);
     return m?.[1] ?? null;
   } catch {
     return null;

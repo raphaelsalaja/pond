@@ -1,12 +1,12 @@
 .page {
   --settings-padding-inline-inset: 16px;
-  --settings-margin-top: 64px;
+  --settings-margin-block: 64px;
 
   display: flex;
   flex-direction: column;
   gap: 40px;
   max-width: var(--settings-max-width);
-  margin-block-start: var(--settings-margin-top);
+  margin-block: var(--settings-margin-block);
   margin-inline: auto;
 
   &[data-width="narrow"] {

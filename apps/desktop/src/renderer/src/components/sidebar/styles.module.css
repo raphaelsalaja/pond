@@ -26,6 +26,7 @@
   min-height: 0;
   padding: var(--sidebar-padding);
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .toolbar {

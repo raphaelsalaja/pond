@@ -10,7 +10,6 @@ export type CommandGroup =
   | "Actions"
   | "Sources"
   | "Tags"
-  | "Tabs"
   | "Saves"
   | "Save";
 
@@ -20,8 +19,7 @@ export type CommandScope =
   | "settings"
   | "actions"
   | "sources"
-  | "tags"
-  | "tabs";
+  | "tags";
 
 export interface PaletteCtx {
   navigate: NavigateFunction;
@@ -64,7 +62,6 @@ export const SCOPE_LABEL: Record<CommandScope, string> = {
   actions: "Actions",
   sources: "Sources",
   tags: "Tags",
-  tabs: "Tabs",
 };
 
 export const SCOPE_ORDER: CommandScope[] = [
@@ -74,13 +71,11 @@ export const SCOPE_ORDER: CommandScope[] = [
   "actions",
   "sources",
   "tags",
-  "tabs",
 ];
 
 export const GROUP_ORDER: CommandGroup[] = [
   "Save",
   "Navigation",
-  "Tabs",
   "Actions",
   "Settings",
   "Sources",

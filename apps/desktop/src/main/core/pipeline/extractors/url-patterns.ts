@@ -8,7 +8,7 @@ export const TWITTER_PATTERNS: readonly RegExp[] = [
 ];
 
 export const INSTAGRAM_PATTERNS: readonly RegExp[] = [
-  /^https?:\/\/(?:www\.)?instagram\.com\/(?:p|reel|tv)\/([A-Za-z0-9_-]+)/i,
+  /^https?:\/\/(?:www\.)?instagram\.com\/(?:p|reels?|tv)\/([A-Za-z0-9_-]+)/i,
 ];
 
 export const PINTEREST_PATTERNS: readonly RegExp[] = [
