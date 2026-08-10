@@ -10,7 +10,7 @@ import {
   ScrollRestorationContext,
   useScrollRestoration,
 } from "@/hooks/use-scroll-restoration";
-import { findScrollAnchor, PackedGrid } from ".";
+import { findScrollAnchor, PackedGrid, surroundingBandIndexes } from ".";
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
@@ -260,5 +260,56 @@ describe("PackedGrid", () => {
       /** Same card 25, now repacked to a different pixel position. */
       expect(restoredScroller?.scrollTop).toBe(1500);
     });
+  });
+
+  it("keeps the exact offset when a repack only changes by a pixel", async () => {
+    container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+
+    await act(async () => {
+      root?.render(<RestorationHarness detail={false} />);
+    });
+    const firstScroller = container.querySelector<HTMLDivElement>(
+      "[data-restoration-scroller]",
+    );
+
+    await act(async () => {
+      if (!firstScroller) return;
+      firstScroller.scrollTop = 2500;
+      firstScroller.dispatchEvent(new Event("scroll"));
+      await new Promise(requestAnimationFrame);
+    });
+    await vi.waitFor(() =>
+      expect(recallScrollAnchor("live-tab:/")).toEqual({
+        id: "25",
+        offset: 0,
+      }),
+    );
+
+    await act(async () => {
+      root?.render(<RestorationHarness detail rowHeight={100.04} />);
+    });
+    await act(async () => {
+      root?.render(<RestorationHarness detail={false} rowHeight={100.04} />);
+      await new Promise(requestAnimationFrame);
+      await new Promise(requestAnimationFrame);
+      await new Promise(requestAnimationFrame);
+    });
+
+    const restoredScroller = container.querySelector<HTMLDivElement>(
+      "[data-restoration-scroller]",
+    );
+    expect(restoredScroller?.scrollTop).toBe(2500);
+  });
+});
+
+describe("surroundingBandIndexes", () => {
+  it("returns a bounded runway outside the mounted bands", () => {
+    expect(surroundingBandIndexes([5, 6, 7], 20, 2)).toEqual([3, 4, 8, 9]);
+  });
+
+  it("clamps the runway to the virtual surface", () => {
+    expect(surroundingBandIndexes([0, 1], 4, 3)).toEqual([2, 3]);
   });
 });

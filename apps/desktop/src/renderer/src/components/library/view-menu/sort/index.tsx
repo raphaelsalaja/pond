@@ -4,6 +4,7 @@ import {
   IconTextAFill18 as ContentIcon,
   IconCalendarFill18 as DateIcon,
   IconFileFill18 as FileIcon,
+  IconMediaPlayFill18 as MediaIcon,
 } from "@pond/icons/fill/18";
 import { TrayCard } from "@pond/ui";
 import { motion, useReducedMotion } from "motion/react";
@@ -16,11 +17,11 @@ import { dockMode } from "@/stores/dock-mode";
 import styles from "./styles.module.css";
 
 type KeyOption = { value: SortKey; label: string };
-export type SortGroupId = "date" | "content" | "file";
+export type SortGroupId = "date" | "content" | "media" | "file";
 
 const KEY_GROUPS: Array<{
   id: SortGroupId;
-  section: "sort-date" | "sort-content" | "sort-file";
+  section: "sort-date" | "sort-content" | "sort-media" | "sort-file";
   label: string;
   icon: ReactNode;
   options: KeyOption[];
@@ -33,6 +34,7 @@ const KEY_GROUPS: Array<{
     options: [
       { value: "savedAt", label: "Date Saved" },
       { value: "createdAt", label: "Date Added" },
+      { value: "publishedAt", label: "Date Published" },
     ],
   },
   {
@@ -45,6 +47,21 @@ const KEY_GROUPS: Array<{
       { value: "type", label: "Type" },
       { value: "creator", label: "Creator" },
       { value: "source", label: "Source" },
+      { value: "tagName", label: "First Tag" },
+      { value: "tagCount", label: "Tag Count" },
+    ],
+  },
+  {
+    id: "media",
+    section: "sort-media",
+    label: "Media",
+    icon: <MediaIcon size={18} />,
+    options: [
+      { value: "duration", label: "Duration" },
+      { value: "width", label: "Width" },
+      { value: "height", label: "Height" },
+      { value: "dimensions", label: "Dimensions" },
+      { value: "aspectRatio", label: "Aspect Ratio" },
     ],
   },
   {
@@ -55,7 +72,6 @@ const KEY_GROUPS: Array<{
     options: [
       { value: "fileSize", label: "Size" },
       { value: "fileCount", label: "Count" },
-      { value: "dimensions", label: "Dimensions" },
     ],
   },
 ];

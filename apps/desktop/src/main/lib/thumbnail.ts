@@ -1,13 +1,13 @@
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
-import { mkdir, open, rename, stat } from "node:fs/promises";
+import { copyFile, mkdir, open, rename, stat, unlink } from "node:fs/promises";
 import { extname, join } from "node:path";
 import log from "electron-log/main.js";
 import sharp, { type Metadata } from "sharp";
 import { isThumbnailFileExtension } from "../../shared/media-index";
-import { libraryRoot } from "../paths";
+import { libraryRoot, thumbnailCacheRoot } from "../paths";
 
-const THUMBS_DIRNAME = "_thumbs";
+const LEGACY_THUMBS_DIRNAME = "_thumbs";
 const MIN_WIDTH = 32;
 const MAX_WIDTH = 2048;
 const WEBP_QUALITY = 78;
@@ -143,7 +143,7 @@ export async function getOrCreateThumbnail(
   const { saveId, sourcePath, width } = req;
   const version = await resolveVersion(sourcePath, req.version);
   if (!version) return null;
-  const dir = join(libraryRoot(), THUMBS_DIRNAME, sanitizeSegment(saveId));
+  const dir = join(thumbnailCacheRoot(), sanitizeSegment(saveId));
   const out = thumbnailOutput(dir, sourcePath, version, width);
 
   if (existsSync(out)) return { path: out };
@@ -152,6 +152,23 @@ export async function getOrCreateThumbnail(
   if (existing) {
     const done = await existing;
     return done ? { path: done } : null;
+  }
+
+  const legacyDir = join(
+    libraryRoot(),
+    LEGACY_THUMBS_DIRNAME,
+    sanitizeSegment(saveId),
+  );
+  const legacyOut = thumbnailOutput(legacyDir, sourcePath, version, width);
+  if (existsSync(legacyOut)) {
+    const promotion = promoteLegacyThumbnail(legacyOut, out, dir);
+    inflight.set(out, promotion);
+    try {
+      const done = await promotion;
+      return done ? { path: done } : null;
+    } finally {
+      inflight.delete(out);
+    }
   }
 
   const kind = await detectThumbnailKind(sourcePath);
@@ -181,19 +198,32 @@ export async function prepareThumbnails(
   if (widths.length === 0) return;
   const version = await resolveVersion(req.sourcePath, req.version);
   if (!version) return;
-  const dir = join(libraryRoot(), THUMBS_DIRNAME, sanitizeSegment(req.saveId));
+  const segment = sanitizeSegment(req.saveId);
+  const dir = join(thumbnailCacheRoot(), segment);
+  const legacyDir = join(libraryRoot(), LEGACY_THUMBS_DIRNAME, segment);
   const outputs = widths.map((width) => ({
     width,
     out: thumbnailOutput(dir, req.sourcePath, version, width),
+    legacyOut: thumbnailOutput(legacyDir, req.sourcePath, version, width),
   }));
 
   const waits: Promise<string | null>[] = [];
   const missing: ThumbnailOutput[] = [];
+  const owned: Array<readonly [string, Promise<string | null>]> = [];
   for (const output of outputs) {
     if (existsSync(output.out)) continue;
     const existing = inflight.get(output.out);
     if (existing) waits.push(existing);
-    else missing.push(output);
+    else if (existsSync(output.legacyOut)) {
+      const promotion = promoteLegacyThumbnail(
+        output.legacyOut,
+        output.out,
+        dir,
+      );
+      inflight.set(output.out, promotion);
+      waits.push(promotion);
+      owned.push([output.out, promotion] as const);
+    } else missing.push(output);
   }
 
   if (missing.length > 0) {
@@ -206,7 +236,7 @@ export async function prepareThumbnails(
         kind,
         req.priority ?? "foreground",
       );
-      const owned = missing.map((output) => {
+      const generated = missing.map((output) => {
         const promise = batch.then(
           (results) => results.get(output.out) ?? null,
         );
@@ -214,17 +244,39 @@ export async function prepareThumbnails(
         waits.push(promise);
         return [output.out, promise] as const;
       });
-      try {
-        await Promise.all(waits);
-      } finally {
-        for (const [out, promise] of owned) {
-          if (inflight.get(out) === promise) inflight.delete(out);
-        }
-      }
-      return;
+      owned.push(...generated);
     }
   }
-  await Promise.all(waits);
+  try {
+    await Promise.all(waits);
+  } finally {
+    for (const [out, promise] of owned) {
+      if (inflight.get(out) === promise) inflight.delete(out);
+    }
+  }
+}
+
+async function promoteLegacyThumbnail(
+  legacyOut: string,
+  out: string,
+  dir: string,
+): Promise<string | null> {
+  if (existsSync(out)) return out;
+  const tmp = `${out}.${process.pid}.${Date.now()}.tmp`;
+  try {
+    await mkdir(dir, { recursive: true });
+    await copyFile(legacyOut, tmp);
+    await rename(tmp, out);
+    return out;
+  } catch (err) {
+    await unlink(tmp).catch(() => {});
+    /** Keep serving the portable legacy cache if iCloud promotion is unavailable. */
+    if (existsSync(legacyOut)) {
+      log.warn("[pond thumbnail] local promotion failed", legacyOut, err);
+      return legacyOut;
+    }
+    return null;
+  }
 }
 
 async function generate(

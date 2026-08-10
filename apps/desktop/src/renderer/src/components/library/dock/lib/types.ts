@@ -10,6 +10,7 @@ export type DockView =
   | "sort"
   | "sort-date"
   | "sort-content"
+  | "sort-media"
   | "sort-file"
   | "display"
   | "connect-source"
@@ -44,6 +45,7 @@ export type ViewMenuSection =
   | "sort"
   | "sort-date"
   | "sort-content"
+  | "sort-media"
   | "sort-file"
   | "display"
   | "search-help"
@@ -77,6 +79,7 @@ const VIEW_MENU_SECTIONS: readonly ViewMenuSection[] = [
   "sort",
   "sort-date",
   "sort-content",
+  "sort-media",
   "sort-file",
   "display",
   "search-help",

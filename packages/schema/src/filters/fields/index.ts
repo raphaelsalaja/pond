@@ -22,7 +22,12 @@ export type {
   FieldPreset,
 } from "./descriptor";
 export { aspectFromDims, shapeFromDims } from "./dims";
-export { tagsDistinctCount, tagsEmpty, tagsExists } from "./sql";
+export {
+  durationProjection,
+  tagsDistinctCount,
+  tagsEmpty,
+  tagsExists,
+} from "./sql";
 
 /** Insertion order is the field display order for FIELD_IDS and the filter bar chips. */
 export const FIELD_DESCRIPTORS: Record<FieldId, FieldDescriptor> = {

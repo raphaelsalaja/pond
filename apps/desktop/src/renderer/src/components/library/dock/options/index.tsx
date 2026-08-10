@@ -40,6 +40,7 @@ const SECTIONS: Record<ViewMenuSection, () => React.JSX.Element | null> = {
   sort: SortSection,
   "sort-date": () => <SortGroupSection group="date" />,
   "sort-content": () => <SortGroupSection group="content" />,
+  "sort-media": () => <SortGroupSection group="media" />,
   "sort-file": () => <SortGroupSection group="file" />,
   display: DisplaySection,
   "search-help": SearchHelpSection,

@@ -1,5 +1,6 @@
 import { type Save, saves, type Task, tasks } from "@pond/schema/db";
 import { buildWhere, isEmptyQuery, type Query } from "@pond/schema/filters";
+import { durationProjection } from "@pond/schema/filters/fields";
 import type { RawJson } from "@pond/schema/raw";
 import type { Transaction } from "@pond/schema/tx";
 import {
@@ -13,6 +14,7 @@ import {
   isNotNull,
   isNull,
   type SQL,
+  type SQLWrapper,
   sql,
 } from "drizzle-orm";
 import { clipboard, nativeImage } from "electron";
@@ -237,14 +239,7 @@ export const savesQueries: QueryHandlerMap = {
     const where = compiled ? and(trash, compiled) : trash;
     const sortKey = String(params.sortKey ?? "savedAt");
     const sortDir = params.sortDir === "asc" ? "asc" : "desc";
-    const orderCol =
-      sortKey === "createdAt"
-        ? saves.createdAt
-        : sortKey === "title"
-          ? saves.title
-          : sortKey === "fileSize"
-            ? saves.fileSize
-            : saves.savedAt;
+    const orderCol = sortColumn(sortKey);
     const order = sortDir === "asc" ? asc(orderCol) : desc(orderCol);
     const limit =
       params.limit != null
@@ -255,7 +250,7 @@ export const savesQueries: QueryHandlerMap = {
       .select({ id: saves.id })
       .from(saves)
       .where(where)
-      .orderBy(order);
+      .orderBy(asc(sql`${orderCol} is null`), order, desc(saves.id));
     const rows = limit != null ? await base.limit(limit) : await base;
     return { ids: rows.map((r) => r.id) };
   },
@@ -539,6 +534,44 @@ export const savesQueries: QueryHandlerMap = {
     return { ok: true as const, captured };
   },
 };
+
+/** Equivalent sortable projections for SQL-filtered library results. */
+function sortColumn(sortKey: string): SQLWrapper {
+  switch (sortKey) {
+    case "createdAt":
+      return saves.createdAt;
+    case "publishedAt":
+      return saves.publishedAt;
+    case "title":
+      return sql`lower(coalesce(${saves.title}, ''))`;
+    case "tagName":
+      return sql`(select lower(value) from json_each(${saves.tags}) order by lower(value) limit 1)`;
+    case "tagCount":
+      return sql`json_array_length(${saves.tags})`;
+    case "duration":
+      return durationProjection();
+    case "fileSize":
+      return saves.fileSize;
+    case "fileCount":
+      return sql`json_array_length(${saves.files})`;
+    case "width":
+      return saves.width;
+    case "height":
+      return saves.height;
+    case "dimensions":
+      return sql`cast(${saves.width} as real) * cast(${saves.height} as real)`;
+    case "aspectRatio":
+      return sql`cast(${saves.width} as real) / nullif(cast(${saves.height} as real), 0)`;
+    case "creator":
+      return sql`lower(coalesce(${saves.author}, ''))`;
+    case "source":
+      return sql`lower(${saves.source})`;
+    case "type":
+      return sql`lower(coalesce(${saves.mediaType}, ''))`;
+    default:
+      return saves.savedAt;
+  }
+}
 
 /** Quote tokens for FTS5; AND for "all", OR for "any". */
 function toFtsMatchQuery(q: string, mode: "all" | "any"): string | null {

@@ -1,4 +1,3 @@
-import { isStaticThumbnailFile } from "@shared/media-index";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { BlurPlaceholder } from "@/components/save/card/media/blur-placeholder";
 import { DownloadingBadge } from "@/components/save/card/media/downloading-badge";
@@ -7,6 +6,7 @@ import { HoverVideo } from "@/components/save/card/media/hover-video";
 import { CardImage } from "@/components/save/card/media/image";
 import { useIsVideoDownloading } from "@/hooks/use-is-video-downloading";
 import { useResolvedTheme } from "@/hooks/use-resolved-theme";
+import { cardPreviewSource } from "@/lib/media/card-preview";
 import { buildMediaUnits, pickPrimaryUnit } from "@/lib/media/units";
 import { withThumbWidth } from "@/lib/media/url";
 import { ensureTextCover } from "@/lib/save/ensure-text-cover";
@@ -85,12 +85,8 @@ export const CardThumb = memo(function CardThumb({
 
   const previewSrc = useMemo(() => {
     if (!unit || broken) return null;
-    const src = unit.isVideo ? unit.posterUrl : unit.url;
-    const previewKey = unit.isVideo ? unit.posterKey : unit.key;
-    if (!src || !previewKey) return null;
-    const file = save.files.find((candidate) => candidate.path === previewKey);
-    return file && isStaticThumbnailFile(file) ? src : null;
-  }, [broken, save.files, unit]);
+    return cardPreviewSource(save, unit);
+  }, [broken, save, unit]);
   const [loadedPreviewSrc, setLoadedPreviewSrc] = useState<string | null>(null);
   const onPreviewReady = useCallback(() => {
     if (previewSrc) setLoadedPreviewSrc(previewSrc);

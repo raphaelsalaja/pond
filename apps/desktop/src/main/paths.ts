@@ -13,6 +13,8 @@ interface PondPaths {
   /** Active pond's index cache; switching ponds swaps this file. */
   indexDb: string;
   indexesDir: string;
+  /** Rebuildable per-pond previews stay local even when the library is in iCloud. */
+  thumbnailCache: string;
   config: string;
   libraryRoot: string;
   itemsDir: string;
@@ -44,7 +46,8 @@ export function resolvePaths(libraryRootOverride?: string): PondPaths {
   if (cached && !libraryRootOverride) return cached;
 
   const appData = ensureDir(app.getPath("userData"));
-  const cache = ensureDir(join(appData, "cache"));
+  /** Keep Pond derivatives separate from Chromium's case-insensitive `Cache` directory. */
+  const cache = ensureDir(join(appData, "pond-cache"));
   const logs = ensureDir(app.getPath("logs"));
   const indexesDir = ensureDir(join(appData, "indexes"));
 
@@ -64,6 +67,7 @@ export function resolvePaths(libraryRootOverride?: string): PondPaths {
     globalDb: join(appData, "global.db"),
     indexDb: join(indexesDir, `${pondId}.db`),
     indexesDir,
+    thumbnailCache: ensureDir(join(cache, "thumbs", pondId)),
     config: join(appData, "config.json"),
     libraryRoot: root,
     itemsDir: join(root, "items"),
@@ -98,6 +102,10 @@ export function appDataRoot(): string {
 
 export function libraryRoot(): string {
   return resolvePaths().libraryRoot;
+}
+
+export function thumbnailCacheRoot(): string {
+  return resolvePaths().thumbnailCache;
 }
 
 export function itemsRoot(): string {

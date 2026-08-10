@@ -99,6 +99,7 @@ export function normalise(raw: Partial<Save> | null | undefined): Save | null {
     tasks: raw.tasks,
     savedAt: toMs(raw.savedAt) ?? Date.now(),
     createdAt: toMs(raw.createdAt) ?? Date.now(),
+    publishedAt: toMs(raw.publishedAt),
     deletedAt: toMs(raw.deletedAt),
   };
 }

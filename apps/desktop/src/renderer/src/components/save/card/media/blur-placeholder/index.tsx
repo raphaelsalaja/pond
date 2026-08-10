@@ -21,7 +21,7 @@ export function BlurPlaceholder({
         alt=""
         loading="eager"
         decoding="async"
-        fetchPriority="auto"
+        fetchPriority="high"
         draggable={false}
         className={styles.media}
       />

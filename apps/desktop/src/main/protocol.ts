@@ -1,6 +1,7 @@
-import { existsSync } from "node:fs";
-import { open, stat } from "node:fs/promises";
+import { createReadStream, existsSync } from "node:fs";
+import { stat } from "node:fs/promises";
 import { extname, join, normalize, resolve } from "node:path";
+import { Readable } from "node:stream";
 import { app, net, protocol } from "electron";
 import log from "electron-log/main.js";
 import mime from "mime-types";
@@ -140,27 +141,19 @@ export function registerProtocol() {
           });
         }
         const length = end - start + 1;
-        const buf = Buffer.alloc(length);
-        const fh = await open(target, "r");
-        try {
-          await fh.read(buf, 0, length, start);
-        } finally {
-          await fh.close();
-        }
         headers.set("content-range", `bytes ${start}-${end}/${total}`);
         headers.set("content-length", String(length));
-        return new Response(buf, { status: 206, headers });
+        return new Response(
+          request.method === "HEAD" ? null : fileBody(target, { start, end }),
+          { status: 206, headers },
+        );
       }
 
-      const fullBuf = Buffer.alloc(total);
-      const fh = await open(target, "r");
-      try {
-        await fh.read(fullBuf, 0, total, 0);
-      } finally {
-        await fh.close();
-      }
       headers.set("content-length", String(total));
-      return new Response(fullBuf, { status: 200, headers });
+      return new Response(request.method === "HEAD" ? null : fileBody(target), {
+        status: 200,
+        headers,
+      });
     } catch (err) {
       const isMissing =
         err instanceof Error && /ENOENT/.test(err.message ?? "");
@@ -173,6 +166,16 @@ export function registerProtocol() {
     }
   });
   void net;
+}
+
+/** Streams local media instead of allocating an ArrayBuffer the size of the file. */
+function fileBody(
+  path: string,
+  range?: { start: number; end: number },
+): ReadableStream<Uint8Array> {
+  return Readable.toWeb(
+    createReadStream(path, range),
+  ) as ReadableStream<Uint8Array>;
 }
 
 function resolveTarget(

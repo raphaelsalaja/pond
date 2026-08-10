@@ -16,6 +16,7 @@ export type DockMode =
   | "sort"
   | "sort-date"
   | "sort-content"
+  | "sort-media"
   | "sort-file"
   | "display"
   | "connect-source"

@@ -1,3 +1,4 @@
+import { CARD_LQIP_WIDTH } from "@shared/media-index";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   type ReactNode,
@@ -16,6 +17,7 @@ import {
 import { SaveCard } from "@/components/save/card";
 import type { CardLayout } from "@/components/save/card/media";
 import { useMultiSelectActive } from "@/components/shared/grid-context";
+import { useResolvedTheme } from "@/hooks/use-resolved-theme";
 import {
   recallScroll,
   recallScrollAnchor,
@@ -24,7 +26,13 @@ import {
   type ScrollAnchor,
   ScrollRestorationContext,
 } from "@/hooks/use-scroll-restoration";
+import { cardPreviewSource } from "@/lib/media/card-preview";
+import { retainPreviewRunway } from "@/lib/media/preview-runway";
+import { pickPrimaryUnit } from "@/lib/media/units";
+import { withThumbWidth } from "@/lib/media/url";
 import { findScrollParent } from "@/lib/util/dom";
+import { pool } from "@/stores/pool";
+import { usePrefs } from "@/stores/prefs";
 import type { PackedItem } from "./uniform-pack";
 import {
   buildVirtualBands,
@@ -37,6 +45,7 @@ export { LIBRARY_ITEM_GAP, packUniform } from "./uniform-pack";
 
 const END_THRESHOLD_ITEMS = 8;
 const BAND_OVERSCAN = 3;
+const LQIP_RUNWAY_BANDS = 6;
 const estimateBandSize = () => PACKED_GRID_BAND_PX;
 const virtualBandKey = (index: number) => `packed-grid-band-${index}`;
 const INITIAL_VIEWPORT_RECT = {
@@ -45,6 +54,8 @@ const INITIAL_VIEWPORT_RECT = {
 };
 const RESTORATION_SETTLE_MS = 750;
 const MISSING_ANCHOR_TIMEOUT_MS = 5000;
+/** Preserve the exact pixel position when a fresh layout only differs by sub-pixel rounding. */
+const ANCHOR_RESTORE_TOLERANCE_PX = 2;
 
 export function findScrollAnchor(
   itemsByTop: ReadonlyArray<PackedItem>,
@@ -81,6 +92,24 @@ interface PackedGridProps {
   /** Called once the visible window reaches the final rows of the grid. */
   onEndReached?: () => void;
   renderItem: (item: PackedItem) => ReactNode;
+  /** Cheap low-resolution previews to retain outside the mounted card window. */
+  onRunwayChange?: (itemIndexes: readonly number[]) => void;
+}
+
+export function surroundingBandIndexes(
+  mounted: readonly number[],
+  count: number,
+  runway = LQIP_RUNWAY_BANDS,
+): number[] {
+  if (mounted.length === 0 || count <= 0 || runway <= 0) return [];
+  const first = Math.min(...mounted);
+  const last = Math.max(...mounted);
+  const result: number[] = [];
+  for (let i = Math.max(0, first - runway); i < first; i += 1) result.push(i);
+  for (let i = last + 1; i <= Math.min(count - 1, last + runway); i += 1) {
+    result.push(i);
+  }
+  return result;
 }
 
 export function PackedGrid({
@@ -89,6 +118,7 @@ export function PackedGrid({
   totalHeight,
   onEndReached,
   renderItem,
+  onRunwayChange,
 }: PackedGridProps) {
   const ref = useRef<HTMLUListElement>(null);
   const restoration = useContext(ScrollRestorationContext);
@@ -99,6 +129,7 @@ export function PackedGrid({
   const activeRestoration = useRef<{
     key: string;
     anchor: ScrollAnchor;
+    top: number;
   } | null>(null);
   const restorationSettleTimer = useRef<ReturnType<typeof setTimeout> | null>(
     null,
@@ -107,7 +138,9 @@ export function PackedGrid({
     initializedRestorationKey.current = restorationKey;
     const anchor = restorationKey ? recallScrollAnchor(restorationKey) : null;
     activeRestoration.current =
-      restorationKey && anchor ? { key: restorationKey, anchor } : null;
+      restorationKey && anchor
+        ? { key: restorationKey, anchor, top: recallScroll(restorationKey) }
+        : null;
   }
   const multiSelectActive = useMultiSelectActive();
   const style = useMemo<React.CSSProperties>(
@@ -190,8 +223,19 @@ export function PackedGrid({
     let innerFrame = 0;
     const outerFrame = requestAnimationFrame(() => {
       innerFrame = requestAnimationFrame(() => {
-        parent.scrollTop = target;
-        rememberScroll(restoration.key, target);
+        /**
+         * `useScrollRestoration` has already restored the precise saved offset.
+         * Only let the identity anchor take over for a meaningful layout change;
+         * otherwise fractional packing measurements make returning from a save
+         * visibly nudge the library by a pixel or two.
+         */
+        const savedTop = active.top;
+        const nextTop =
+          Math.abs(savedTop - target) <= ANCHOR_RESTORE_TOLERANCE_PX
+            ? savedTop
+            : target;
+        if (parent.scrollTop !== nextTop) parent.scrollTop = nextTop;
+        if (nextTop !== savedTop) rememberScroll(restoration.key, nextTop);
         if (restorationSettleTimer.current !== null) {
           clearTimeout(restorationSettleTimer.current);
         }
@@ -249,14 +293,16 @@ export function PackedGrid({
     scrollMargin,
     initialOffset: () => {
       if (!restoration) return 0;
-      const anchor =
-        activeRestoration.current?.anchor ??
-        recallScrollAnchor(restoration.key);
-      if (!anchor) return recallScroll(restoration.key);
+      const active = activeRestoration.current;
+      const anchor = active?.anchor ?? recallScrollAnchor(restoration.key);
+      const savedTop = active?.top ?? recallScroll(restoration.key);
+      if (!anchor) return savedTop;
       const item = itemById.get(anchor.id);
-      return item
-        ? scrollMargin + item.top + anchor.offset
-        : recallScroll(restoration.key);
+      if (!item) return savedTop;
+      const anchoredTop = scrollMargin + item.top + anchor.offset;
+      return Math.abs(savedTop - anchoredTop) <= ANCHOR_RESTORE_TOLERANCE_PX
+        ? savedTop
+        : anchoredTop;
     },
     onChange: (instance, sync) => {
       if (!sync || !restoration || instance.scrollOffset == null) return;
@@ -281,7 +327,18 @@ export function PackedGrid({
     () => indicesForVirtualBands(bands, virtualBandIndexes),
     [bands, virtualBandIndexes],
   );
+  const runway = useMemo(() => {
+    const mounted = new Set(visible);
+    return indicesForVirtualBands(
+      bands,
+      surroundingBandIndexes(virtualBandIndexes, bands.length),
+    ).filter((index) => !mounted.has(index));
+  }, [bands, virtualBandIndexes, visible]);
   const endReached = useRef(false);
+
+  useEffect(() => {
+    onRunwayChange?.(runway);
+  }, [onRunwayChange, runway]);
 
   useEffect(() => {
     const nearEnd =
@@ -324,12 +381,36 @@ export function SavePackedGrid({
   totalHeight,
   onEndReached,
 }: SavePackedGridProps) {
+  const theme = useResolvedTheme();
+  const [preferences] = usePrefs("preferences");
+  const tweetCover = preferences?.tweetCover;
+  const onRunwayChange = useCallback(
+    (indexes: readonly number[]) => {
+      const sources = new Set<string>();
+      for (const index of indexes) {
+        const item = items[index];
+        if (!item) continue;
+        const save = pool.get(item.id);
+        if (!save) continue;
+        const unit = pickPrimaryUnit(save, { theme, tweetCover });
+        if (!unit) continue;
+        const src = cardPreviewSource(save, unit);
+        if (src) sources.add(withThumbWidth(src, CARD_LQIP_WIDTH));
+      }
+      retainPreviewRunway([...sources]);
+    },
+    [items, theme, tweetCover],
+  );
+
+  useEffect(() => () => retainPreviewRunway([]), []);
+
   return (
     <PackedGrid
       layout={layout}
       items={items}
       totalHeight={totalHeight}
       onEndReached={onEndReached}
+      onRunwayChange={onRunwayChange}
       renderItem={(it) => (
         <SaveCard
           key={it.id}

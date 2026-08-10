@@ -9,10 +9,17 @@ import { hydrateFullPool } from "@/stores/bootstrap";
 export type SortKey =
   | "savedAt"
   | "createdAt"
+  | "publishedAt"
   | "title"
+  | "tagName"
+  | "tagCount"
+  | "duration"
   | "fileSize"
   | "fileCount"
+  | "width"
+  | "height"
   | "dimensions"
+  | "aspectRatio"
   | "creator"
   | "source"
   | "type";
@@ -21,10 +28,17 @@ export type SortDir = "asc" | "desc";
 const SORT_KEYS: readonly SortKey[] = [
   "savedAt",
   "createdAt",
+  "publishedAt",
   "title",
+  "tagName",
+  "tagCount",
+  "duration",
   "fileSize",
   "fileCount",
+  "width",
+  "height",
   "dimensions",
+  "aspectRatio",
   "creator",
   "source",
   "type",
@@ -142,14 +156,20 @@ export function intersectSqlResults(
   return list;
 }
 
-function sortSaves(
+export function sortSaves(
   saves: ReadonlyArray<Save>,
   key: SortKey,
   dir: SortDir,
 ): Save[] {
   const sign = dir === "asc" ? 1 : -1;
   const out = saves.slice();
-  out.sort((a, b) => sign * cmp(a, b, key));
+  out.sort((a, b) => {
+    const aMissing = isMissingSortValue(a, key);
+    const bMissing = isMissingSortValue(b, key);
+    if (aMissing || bMissing)
+      return aMissing === bMissing ? 0 : aMissing ? 1 : -1;
+    return sign * cmp(a, b, key);
+  });
   return out;
 }
 
@@ -159,14 +179,28 @@ function cmp(a: Save, b: Save, key: SortKey): number {
       return savedAtMs(a) - savedAtMs(b);
     case "createdAt":
       return createdAtMs(a) - createdAtMs(b);
+    case "publishedAt":
+      return nullableNumber(publishedAtMs(a), publishedAtMs(b));
     case "title":
       return titleFor(a).localeCompare(titleFor(b));
+    case "tagName":
+      return (tagNameFor(a) ?? "").localeCompare(tagNameFor(b) ?? "");
+    case "tagCount":
+      return a.tags.length - b.tags.length;
+    case "duration":
+      return nullableNumber(durationFor(a), durationFor(b));
     case "fileSize":
       return nullableNumber(sizeFor(a), sizeFor(b));
     case "fileCount":
       return a.files.length - b.files.length;
+    case "width":
+      return nullableNumber(widthFor(a), widthFor(b));
+    case "height":
+      return nullableNumber(heightFor(a), heightFor(b));
     case "dimensions":
       return nullableNumber(areaFor(a), areaFor(b));
+    case "aspectRatio":
+      return nullableNumber(aspectRatioFor(a), aspectRatioFor(b));
     case "creator":
       return textFor(a.author).localeCompare(textFor(b.author));
     case "source":
@@ -194,6 +228,11 @@ function createdAtMs(s: Save): number {
   return Number.isFinite(t) ? t : Number.NEGATIVE_INFINITY;
 }
 
+function publishedAtMs(s: Save): number | null {
+  const value = s.publishedAt;
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
 function titleFor(s: Save): string {
   return (s.title ?? s.url ?? "").toLowerCase();
 }
@@ -206,15 +245,72 @@ function typeFor(s: Save): string {
   return (s.mediaType ?? s.files[0]?.kind ?? "").toLowerCase();
 }
 
+function tagNameFor(s: Save): string | null {
+  return s.tags.map((tag) => tag.toLowerCase()).sort()[0] ?? null;
+}
+
+function durationFor(s: Save): number | null {
+  const raw = s.rawJson;
+  const captureDuration = raw?.capture?.duration;
+  if (typeof captureDuration === "number" && captureDuration > 0) {
+    return captureDuration;
+  }
+  const mediaDuration = raw?.capture?.media.find(
+    (media) => typeof media.durationSec === "number" && media.durationSec > 0,
+  )?.durationSec;
+  if (typeof mediaDuration === "number") return mediaDuration;
+  const ytdlpDuration = raw?.ytdlp?.duration;
+  return typeof ytdlpDuration === "number" && ytdlpDuration > 0
+    ? ytdlpDuration
+    : null;
+}
+
 function sizeFor(s: Save): number | null {
-  const cover = s.files[s.coverIndex ?? 0];
+  const cover = s.files?.[s.coverIndex ?? 0];
   return cover?.size ?? s.fileSize ?? null;
 }
 
 function areaFor(s: Save): number | null {
-  const cover = s.files[s.coverIndex ?? 0];
-  const w = cover?.width ?? s.width ?? null;
-  const h = cover?.height ?? s.height ?? null;
+  const w = widthFor(s);
+  const h = heightFor(s);
   if (w == null || h == null) return null;
   return w * h;
+}
+
+function widthFor(s: Save): number | null {
+  return s.files?.[s.coverIndex ?? 0]?.width ?? s.width ?? null;
+}
+
+function heightFor(s: Save): number | null {
+  return s.files?.[s.coverIndex ?? 0]?.height ?? s.height ?? null;
+}
+
+function aspectRatioFor(s: Save): number | null {
+  const w = widthFor(s);
+  const h = heightFor(s);
+  if (w == null || h == null || w <= 0 || h <= 0) return null;
+  return w / h;
+}
+
+function isMissingSortValue(s: Save, key: SortKey): boolean {
+  switch (key) {
+    case "publishedAt":
+      return publishedAtMs(s) == null;
+    case "tagName":
+      return tagNameFor(s) == null;
+    case "duration":
+      return durationFor(s) == null;
+    case "fileSize":
+      return sizeFor(s) == null;
+    case "width":
+      return widthFor(s) == null;
+    case "height":
+      return heightFor(s) == null;
+    case "dimensions":
+      return areaFor(s) == null;
+    case "aspectRatio":
+      return aspectRatioFor(s) == null;
+    default:
+      return false;
+  }
 }

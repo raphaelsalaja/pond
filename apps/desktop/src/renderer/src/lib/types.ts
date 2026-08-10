@@ -66,5 +66,6 @@ export interface Save {
   tasks?: SaveTask[];
   savedAt: number;
   createdAt: number;
+  publishedAt?: number | null;
   deletedAt: number | null;
 }

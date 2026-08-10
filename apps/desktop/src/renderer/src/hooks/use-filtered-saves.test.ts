@@ -6,6 +6,7 @@ import type { Save } from "@/lib/types";
 import {
   intersectSqlResults,
   needsFullPoolHydration,
+  sortSaves,
 } from "./use-filtered-saves";
 
 function save(id: string): Save {
@@ -42,6 +43,65 @@ describe("needsFullPoolHydration", () => {
   it("hydrates client-only filters but trusts complete SQL query results", () => {
     expect(needsFullPoolHydration(false, false, "savedAt", "desc")).toBe(true);
     expect(needsFullPoolHydration(false, true, "title", "asc")).toBe(false);
+  });
+});
+
+describe("sortSaves", () => {
+  it("orders the expanded library details while keeping missing values last", () => {
+    const tagged = {
+      ...save("tagged"),
+      tags: ["zebra", "alpha"],
+      publishedAt: 200,
+      width: 200,
+      height: 100,
+      rawJson: {
+        capture: {
+          id: "tagged",
+          source: "twitter",
+          url: "https://x.com/tagged",
+          media: [],
+          duration: 60,
+        },
+        extractorId: "test",
+        extractedAt: "2026-01-01T00:00:00.000Z",
+      },
+    } as Save;
+    const untagged = { ...save("untagged"), tags: [] } as Save;
+    const longer = {
+      ...save("longer"),
+      tags: ["beta"],
+      publishedAt: 100,
+      width: 300,
+      height: 100,
+      rawJson: {
+        capture: {
+          id: "longer",
+          source: "twitter",
+          url: "https://x.com/longer",
+          media: [],
+          duration: 120,
+        },
+        extractorId: "test",
+        extractedAt: "2026-01-01T00:00:00.000Z",
+      },
+    } as Save;
+
+    expect(sortSaves([tagged, longer, untagged], "tagName", "asc")).toEqual([
+      tagged,
+      longer,
+      untagged,
+    ]);
+    expect(sortSaves([tagged, longer, untagged], "duration", "desc")).toEqual([
+      longer,
+      tagged,
+      untagged,
+    ]);
+    expect(
+      sortSaves([tagged, longer, untagged], "aspectRatio", "desc"),
+    ).toEqual([longer, tagged, untagged]);
+    expect(sortSaves([tagged, longer, untagged], "publishedAt", "asc")).toEqual(
+      [longer, tagged, untagged],
+    );
   });
 });
 
