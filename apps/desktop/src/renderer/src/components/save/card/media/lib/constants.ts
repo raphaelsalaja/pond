@@ -1,2 +1,1 @@
-/** A single width bucket keeps the on-disk cache key stable; the detail view loads originals. */
-export const CARD_THUMB_WIDTH = 768;
+export { CARD_LQIP_WIDTH, CARD_THUMB_WIDTH } from "@shared/media-index";

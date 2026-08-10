@@ -3,7 +3,12 @@ import { Outlet, useRouterState } from "@tanstack/react-router";
 import { motion, useReducedMotion } from "motion/react";
 import { useRef } from "react";
 import { AppShell } from "@/components/shell/app-shell";
+import {
+  ScrollRestorationContext,
+  useScrollRestoration,
+} from "@/hooks/use-scroll-restoration";
 import { routeSwapTransition } from "@/lib/ui/motion";
+import { useActiveTabId } from "@/stores/tabs";
 import styles from "./styles.module.css";
 
 /** Mirrors the dock's nav order so travel direction matches the tab you aimed at. */
@@ -63,15 +68,22 @@ function RoutedContent() {
 
 export function Library() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const search = useRouterState({ select: (s) => s.location.searchStr });
+  const activeTabId = useActiveTabId();
+  const restoration = useScrollRestoration(
+    `${activeTabId}:${pathname}${search}`,
+  );
   const isSave = pathname.startsWith("/save/");
 
   if (isSave) return <Outlet />;
 
   return (
     <AppShell.Content>
-      <Shell.Main className={styles.main}>
-        <RoutedContent />
-      </Shell.Main>
+      <ScrollRestorationContext.Provider value={restoration}>
+        <Shell.Main ref={restoration.ref} className={styles.main}>
+          <RoutedContent />
+        </Shell.Main>
+      </ScrollRestorationContext.Provider>
     </AppShell.Content>
   );
 }

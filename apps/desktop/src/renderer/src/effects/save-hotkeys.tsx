@@ -2,7 +2,7 @@ import { useHotkeys } from "@tanstack/react-hotkeys";
 import { useSelector } from "@tanstack/react-store";
 import {
   copyableImageIndex,
-  copyImage,
+  copyPrimaryMedia,
   copyTags,
   copyUrl,
   exportFile,
@@ -10,6 +10,7 @@ import {
   pasteTags,
   purgeForever,
   refreshSaveMetadata,
+  resolveFileIndex,
   trashSave,
   untrashSave,
 } from "@/lib/save/actions";
@@ -36,6 +37,10 @@ function withPrimary(action: (save: Save) => void): () => void {
   };
 }
 
+function canCopyPrimaryMedia(save: Save): boolean {
+  return copyableImageIndex(save) != null || resolveFileIndex(save) != null;
+}
+
 /** Binds the shortcuts advertised in the save menus; `enabled` gates on selection state so unbound keys pass through untouched. */
 export function SaveHotkeys() {
   const hasPrimary = useSelector(primarySelectionStore, (s) => s.id) != null;
@@ -48,22 +53,15 @@ export function SaveHotkeys() {
       options: { enabled: hasPrimary },
     },
     {
-      hotkey: SHORTCUTS["save.copy-url"].keys,
-      callback: withPrimary((save) => {
-        if (save.url) void copyUrl(save.url);
-      }),
-      options: { enabled: hasPrimary },
-    },
-    {
       /** Ordinary text copy must keep working: never preventDefault when text is selected or the target is editable. */
       hotkey: SHORTCUTS["save.copy-image"].keys,
       callback: (event) => {
         const save = primarySave();
-        if (!save || copyableImageIndex(save) == null) return;
+        if (!save || !canCopyPrimaryMedia(save)) return;
         const textSelection = window.getSelection();
         if (textSelection && !textSelection.isCollapsed) return;
         event.preventDefault();
-        void copyImage(save);
+        void copyPrimaryMedia(save);
       },
       options: {
         enabled: hasPrimary,
@@ -72,7 +70,13 @@ export function SaveHotkeys() {
       },
     },
     {
-      /** Mod combos fire in inputs by library default; keep tag/export/delete shortcuts out of text editing. */
+      hotkey: SHORTCUTS["save.copy-url"].keys,
+      callback: withPrimary((save) => {
+        if (save.url) void copyUrl(save.url);
+      }),
+      options: { enabled: hasPrimary, ignoreInputs: true },
+    },
+    {
       hotkey: SHORTCUTS["save.copy-tags"].keys,
       callback: withPrimary((save) => copyTags(save)),
       options: { enabled: hasPrimary, ignoreInputs: true },

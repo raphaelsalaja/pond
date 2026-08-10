@@ -13,6 +13,7 @@ import {
   type SettingsSearchEntry,
 } from "@/lib/settings/search-index";
 import { settingsModal, useSettingsModal } from "@/stores/settings-modal";
+import styles from "./styles.module.css";
 
 interface SectionResult {
   section: SectionDef;
@@ -91,14 +92,12 @@ export function SettingsSidebar() {
   };
 
   return (
-    <Sidebar.Root>
-      <Sidebar.Group>
-        <Sidebar.Search
-          value={query}
-          onChange={(value) => setQuery(value.target.value)}
-          placeholder="Search…"
-        />
-      </Sidebar.Group>
+    <Sidebar.Root className={styles.sidebar}>
+      <Sidebar.Search
+        value={query}
+        onChange={(value) => setQuery(value.target.value)}
+        placeholder="Search…"
+      />
 
       <Sidebar.Scroll>
         {results === null ? (

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useInViewRef, useMergeRefs } from "rooks";
+import { useImageReady } from "@/components/save/card/media/lib/use-image-ready";
 import { recordAspect } from "@/stores/aspect";
 import styles from "./styles.module.css";
 
@@ -9,34 +9,38 @@ export function HoverVideo({
   posterUrl,
   label,
   onBroken,
+  onReady,
 }: {
   saveId: string;
   src: string;
   posterUrl?: string;
   label: string;
   onBroken: () => void;
+  onReady: () => void;
 }) {
   const internalRef = useRef<HTMLVideoElement | null>(null);
-
-  /** rootMargin primes media before it scrolls in. */
-  const [inViewRef, inView] = useInViewRef({ rootMargin: "200px" });
-  const setVideoRef = useMergeRefs<HTMLVideoElement>(internalRef, inViewRef);
-
   const [primed, setPrimed] = useState(false);
-  useEffect(() => {
-    if (inView && !primed) setPrimed(true);
-  }, [inView, primed]);
+  const [active, setActive] = useState(false);
+  const [videoReady, setVideoReady] = useState(false);
+  const poster = useImageReady(posterUrl ?? null, onReady);
 
-  const onEnter = useCallback(() => {
+  useEffect(() => {
+    if (!active || !primed) return;
     const el = internalRef.current;
     if (!el) return;
     const promise = el.play();
     if (promise && typeof promise.catch === "function") {
       promise.catch(() => {});
     }
+  }, [active, primed]);
+
+  const onEnter = useCallback(() => {
+    setActive(true);
+    setPrimed(true);
   }, []);
 
   const onLeave = useCallback(() => {
+    setActive(false);
     const el = internalRef.current;
     if (!el) return;
     el.pause();
@@ -59,24 +63,42 @@ export function HoverVideo({
   }, [onBroken, saveId]);
 
   return (
-    <video
-      ref={setVideoRef}
-      {...(primed ? { src } : {})}
-      poster={posterUrl}
-      muted
-      loop
-      playsInline
-      preload={primed ? "metadata" : "none"}
-      className={styles.media}
-      aria-label={label}
-      onMouseEnter={onEnter}
-      onMouseLeave={onLeave}
-      onFocus={onEnter}
-      onBlur={onLeave}
-      onError={onBroken}
-      onLoadedMetadata={onLoadedMetadata}
-    >
-      <track kind="captions" />
-    </video>
+    <>
+      {posterUrl ? (
+        <img
+          ref={poster.ref}
+          src={posterUrl}
+          alt=""
+          decoding="async"
+          fetchPriority="auto"
+          className={styles.poster}
+          data-loaded={poster.loaded ? "true" : "false"}
+          draggable={false}
+          onLoad={poster.onLoad}
+          onError={onBroken}
+        />
+      ) : null}
+      <video
+        ref={internalRef}
+        {...(primed ? { src } : {})}
+        muted
+        loop
+        playsInline
+        preload={primed ? "metadata" : "none"}
+        className={styles.media}
+        data-active={active ? "true" : undefined}
+        data-ready={videoReady ? "true" : undefined}
+        aria-label={label}
+        onMouseEnter={onEnter}
+        onMouseLeave={onLeave}
+        onFocus={onEnter}
+        onBlur={onLeave}
+        onError={onBroken}
+        onLoadedMetadata={onLoadedMetadata}
+        onPlaying={() => setVideoReady(true)}
+      >
+        <track kind="captions" />
+      </video>
+    </>
   );
 }

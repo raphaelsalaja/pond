@@ -5,7 +5,6 @@
   flex-direction: column;
   width: 200px;
   height: 100%;
-  margin-top: 32px;
 }
 
 .toolbar {
@@ -63,8 +62,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 13px;
-  font-weight: 400;
-  line-height: 1.35;
   color: var(--ds-gray-11);
   white-space: nowrap;
   text-decoration: none;

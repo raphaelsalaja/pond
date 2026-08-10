@@ -1,10 +1,7 @@
 import { Toast as Base } from "@base-ui/react/toast";
-import {
-  IconCheck3Outline12,
-  IconXmarkOutline12,
-} from "@pond/icons/outline/12";
+import { IconXmarkOutline12 } from "@pond/icons/outline/12";
 import { clsx as cn } from "clsx";
-import type { ReactNode } from "react";
+import type { ComponentPropsWithoutRef } from "react";
 import { Button } from "../button";
 import styles from "./styles.module.css";
 
@@ -39,6 +36,10 @@ function Content({ className, ...props }: Base.Content.Props) {
   return <Base.Content className={cn(styles.content, className)} {...props} />;
 }
 
+function Header({ className, ...props }: ComponentPropsWithoutRef<"div">) {
+  return <div className={cn(styles.header, className)} {...props} />;
+}
+
 function Title({ className, ...props }: Base.Title.Props) {
   return <Base.Title className={cn(styles.title, className)} {...props} />;
 }
@@ -66,30 +67,16 @@ function Close({ className, ...props }: Base.Close.Props) {
   );
 }
 
-function Icon({
-  className,
-  children,
-}: {
-  className?: string;
-  children?: ReactNode;
-}) {
-  return (
-    <span className={cn(styles.icon, className)} aria-hidden>
-      {children ?? <IconCheck3Outline12 />}
-    </span>
-  );
-}
-
 export const Toast = {
   Provider,
   Portal,
   Viewport,
   Root,
   Content,
+  Header,
   Title,
   Description,
   Close,
-  Icon,
   createToastManager: Base.createToastManager,
   useToastManager: Base.useToastManager,
 };

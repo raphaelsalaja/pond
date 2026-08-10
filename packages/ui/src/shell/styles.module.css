@@ -12,6 +12,10 @@
   overflow-y: auto;
 }
 
+.main[data-restoring-scroll] {
+  scroll-behavior: auto;
+}
+
 .aside {
   display: flex;
   width: 250px;

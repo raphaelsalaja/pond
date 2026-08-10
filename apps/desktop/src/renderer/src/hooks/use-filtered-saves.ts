@@ -1,10 +1,10 @@
-import { queryHasColorPredicate } from "@pond/schema/filters";
+import { queryIsFullySqlSupported } from "@pond/schema/filters";
 import { matches } from "@pond/schema/filters/match";
 import { isEmptyQuery, type Query } from "@pond/schema/filters/types";
 import { useEffect, useMemo, useState } from "react";
 import { ensureSaves } from "@/lib/save/ensure-saves";
 import type { Save } from "@/lib/types";
-import { pool } from "@/stores/pool";
+import { hydrateFullPool } from "@/stores/bootstrap";
 
 export type SortKey =
   | "savedAt"
@@ -39,6 +39,16 @@ interface FilterOptions {
   sortDir?: SortDir;
 }
 
+export function needsFullPoolHydration(
+  empty: boolean,
+  useSql: boolean,
+  sortKey: SortKey,
+  sortDir: SortDir,
+): boolean {
+  const isDefaultOrder = sortKey === "savedAt" && sortDir === "desc";
+  return !((empty && isDefaultOrder) || (!empty && useSql));
+}
+
 export function useFilteredSaves(
   saves: ReadonlyArray<Save>,
   query: Query | null,
@@ -47,13 +57,26 @@ export function useFilteredSaves(
   const sortKey = opts?.sortKey ?? "savedAt";
   const sortDir = opts?.sortDir ?? "desc";
   const empty = !query || isEmptyQuery(query);
-  const useSql = !empty && !queryHasColorPredicate(query);
+  const useSql = !empty && queryIsFullySqlSupported(query);
 
-  const [sqlIds, setSqlIds] = useState<string[] | null>(null);
+  /** Client-only projections and non-recency sorts need the complete pool, not just the current recency page. */
+  useEffect(() => {
+    if (!needsFullPoolHydration(empty, useSql, sortKey, sortDir)) return;
+    void hydrateFullPool().catch((error) => {
+      console.warn("[pond filters] full hydrate for projection failed", error);
+    });
+  }, [empty, useSql, sortKey, sortDir]);
+
+  const [sqlResult, setSqlResult] = useState<{
+    query: Query;
+    sortKey: SortKey;
+    sortDir: SortDir;
+    ids: string[];
+  } | null>(null);
 
   useEffect(() => {
     if (!useSql || !query) {
-      setSqlIds(null);
+      setSqlResult(null);
       return;
     }
     let cancelled = false;
@@ -68,15 +91,22 @@ export function useFilteredSaves(
         const ids = (res as { ids: string[] }).ids ?? [];
         await ensureSaves(ids);
         if (cancelled) return;
-        setSqlIds(ids);
+        setSqlResult({ query, sortKey, sortDir, ids });
       })
       .catch(() => {
-        if (!cancelled) setSqlIds(null);
+        if (!cancelled) setSqlResult(null);
       });
     return () => {
       cancelled = true;
     };
   }, [useSql, query, sortKey, sortDir]);
+
+  const sqlIds =
+    sqlResult?.query === query &&
+    sqlResult.sortKey === sortKey &&
+    sqlResult.sortDir === sortDir
+      ? sqlResult.ids
+      : null;
 
   return useMemo(() => {
     if (empty) {
@@ -84,12 +114,7 @@ export function useFilteredSaves(
       return sortSaves(saves, sortKey, sortDir);
     }
     if (useSql && sqlIds) {
-      const list: Save[] = [];
-      for (const id of sqlIds) {
-        const save = pool.get(id);
-        if (save) list.push(save);
-      }
-      return list;
+      return intersectSqlResults(saves, sqlIds);
     }
     if (useSql && sqlIds === null) {
       /** SQL in flight: keep prior in-memory filter so the grid doesn't flash empty. */
@@ -101,6 +126,20 @@ export function useFilteredSaves(
     if (sortKey === "savedAt" && sortDir === "desc") return filtered;
     return sortSaves(filtered, sortKey, sortDir);
   }, [saves, query, sortKey, sortDir, empty, useSql, sqlIds]);
+}
+
+/** Preserve the SQL sort order without widening a previously narrowed input (for example, FTS search hits). */
+export function intersectSqlResults(
+  saves: ReadonlyArray<Save>,
+  sqlIds: ReadonlyArray<string>,
+): Save[] {
+  const byId = new Map(saves.map((save) => [save.id, save]));
+  const list: Save[] = [];
+  for (const id of sqlIds) {
+    const save = byId.get(id);
+    if (save) list.push(save);
+  }
+  return list;
 }
 
 function sortSaves(

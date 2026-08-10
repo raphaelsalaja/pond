@@ -1,6 +1,6 @@
 import { useSelector } from "@tanstack/react-store";
 import type { Save } from "@/lib/types";
-import { bootStore } from "@/stores/bootstrap";
+import { pagingStore } from "@/stores/bootstrap";
 import { savesStore } from "@/stores/pool";
 
 export function useSave(id: string | null | undefined): Save | undefined {
@@ -40,5 +40,14 @@ export function useIngestingProgressSum(): number {
   });
 }
 export function useBootReady(): boolean {
-  return useSelector(bootStore, (s) => s.ready);
+  return useSelector(pagingStore, (s) => s.ready);
+}
+
+export function useSavePaging() {
+  return useSelector(pagingStore, (s) => ({
+    hasMore: s.hasMore,
+    loading: s.loading,
+    loaded: s.loaded,
+    total: s.total,
+  }));
 }

@@ -10,13 +10,14 @@ function ToastList() {
         {toasts.map((toast) => (
           <Toast.Root key={toast.id} toast={toast}>
             <Toast.Content>
-              <Toast.Icon />
-              {toast.title ? <Toast.Title>{toast.title}</Toast.Title> : null}
+              <Toast.Header>
+                {toast.title ? <Toast.Title>{toast.title}</Toast.Title> : null}
+                <Toast.Close />
+              </Toast.Header>
               {toast.description ? (
                 <Toast.Description>{toast.description}</Toast.Description>
               ) : null}
             </Toast.Content>
-            <Toast.Close />
           </Toast.Root>
         ))}
       </Toast.Viewport>

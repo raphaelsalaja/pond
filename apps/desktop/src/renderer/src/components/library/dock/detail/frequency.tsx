@@ -5,7 +5,7 @@ import { dockMode } from "@/stores/dock-mode";
 import { usePrefs } from "@/stores/prefs";
 import styles from "./frequency.module.css";
 
-type DetailView = "account-detail" | "watch-detail";
+type DetailView = "account-detail" | "account-sync" | "watch-detail";
 
 /** The page is reached from either detail card; module state survives the card swap so Back returns to the right one. */
 let returnTo: DetailView = "account-detail";

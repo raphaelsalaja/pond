@@ -20,6 +20,9 @@ export type DockView =
   | "watch-kind"
   | "watch-target"
   | "account-detail"
+  | "account-profile"
+  | "account-sync"
+  | "account-maintenance"
   | "watch-detail"
   | "sync-frequency"
   | "source-new"
@@ -52,6 +55,9 @@ export type ViewMenuSection =
   | "watch-kind"
   | "watch-target"
   | "account-detail"
+  | "account-profile"
+  | "account-sync"
+  | "account-maintenance"
   | "watch-detail"
   | "sync-frequency"
   | "source-new"
@@ -82,6 +88,9 @@ const VIEW_MENU_SECTIONS: readonly ViewMenuSection[] = [
   "watch-kind",
   "watch-target",
   "account-detail",
+  "account-profile",
+  "account-sync",
+  "account-maintenance",
   "watch-detail",
   "sync-frequency",
   "source-new",

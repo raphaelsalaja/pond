@@ -8,8 +8,9 @@ import {
   PointerSensor,
 } from "@dnd-kit/react";
 import { useSortable } from "@dnd-kit/react/sortable";
-import { IconGear3Fill18, IconPlusFill18 } from "@pond/icons/fill/18";
+import { IconPlusFill18 } from "@pond/icons/fill/18";
 import { IconXmarkOutline12 } from "@pond/icons/outline/12";
+import { IconGear3Outline18 } from "@pond/icons/outline/18";
 import { Button, type MenuItemSpec } from "@pond/ui";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { pickAuthorColor } from "@/components/save/preview/lib/helpers";
@@ -30,6 +31,7 @@ import { ErrorsPanel } from "./attention";
 import { iconForTab } from "./icons";
 import { computeLabel } from "./labels";
 import type { Panel } from "./lib";
+import { MediaIndexPanel } from "./media-index";
 import { RecentPanel } from "./recent";
 import styles from "./styles.module.css";
 import { OngoingPanel } from "./sync";
@@ -466,6 +468,7 @@ export function Toolbar() {
           watches={watches}
           byAccount={byAccount}
         />
+        <MediaIndexPanel open={open === "media-index"} onOpenChange={setOpen} />
         <Button
           variant="ghost"
           size="sm"
@@ -473,7 +476,7 @@ export function Toolbar() {
           onClick={() => settingsModal.open()}
           aria-label="Settings"
         >
-          <IconGear3Fill18 />
+          <IconGear3Outline18 />
         </Button>
       </div>
     </div>

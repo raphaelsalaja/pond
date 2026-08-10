@@ -2,10 +2,11 @@ import { debounce } from "@tanstack/pacer";
 import type { Save } from "@/lib/types";
 import { pool } from "@/stores/pool";
 
-/** Cold-start cache so the grid paints before the SQLite hydrate returns; best-effort, reconciled against `saves.list`. */
+/** Cold-start cache so the grid paints before the first SQLite page returns. */
 const DB_NAME = "pond-pool";
 const STORE = "snapshot";
 const VERSION = 1;
+export const SNAPSHOT_LIMIT = 250;
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 
@@ -51,7 +52,7 @@ const WRITE_DEBOUNCE_MS = 2000;
 
 export const scheduleSnapshotWrite = debounce(
   () => {
-    void writeSnapshot(pool.snapshot());
+    void writeSnapshot(pool.snapshot().slice(0, SNAPSHOT_LIMIT));
   },
   { wait: WRITE_DEBOUNCE_MS },
 );

@@ -6,7 +6,7 @@ import {
   RouterProvider,
 } from "@tanstack/react-router";
 import { MotionConfig } from "motion/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { PondApi } from "../../preload";
 import { ConfirmDialogHost } from "./components/shared/confirm-dialog";
 import { PromptDialogHost } from "./components/shared/prompt-dialog";
@@ -20,6 +20,7 @@ import { Toolbar } from "./components/shell/toolbar";
 import { AppHotkeys } from "./effects/app-hotkeys";
 import { DeveloperApplier } from "./effects/developer-applier";
 import { EnrichmentSweep } from "./effects/enrichment-sweep";
+import { ExtensionCaptureToast } from "./effects/extension-capture-toast";
 import { MenuBridge } from "./effects/menu-bridge";
 import { MenuRecentsBridge } from "./effects/menu-recents-bridge";
 import { SaveHotkeys } from "./effects/save-hotkeys";
@@ -64,9 +65,6 @@ declare module "@tanstack/react-router" {
 const LAST_PATH_KEY = pondScopedKey("pond:lastPath");
 const STARTUP_PAGE_KEY = "pond:startupPage";
 
-/** Cap live routers so many background tabs do not keep every grid tree mounted. */
-const LIVE_TAB_CAP = 10;
-
 const STARTUP_ROUTES: Record<string, string> = {
   library: "/",
   sources: "/sources",
@@ -104,65 +102,33 @@ function buildRouter(entry: string) {
   });
 }
 
-type AppRouter = ReturnType<typeof buildRouter>;
-
-const routerCache = new Map<string, AppRouter>();
-
-function getOrCreateRouter(tabId: string, path: string): AppRouter {
-  let router = routerCache.get(tabId);
-  if (!router) {
-    router = buildRouter(path);
-    routerCache.set(tabId, router);
-  }
-  return router;
-}
-
-function removeRouterForTab(tabId: string): void {
-  const router = routerCache.get(tabId);
-  if (!router) return;
-  routerCache.delete(tabId);
-}
-
-function TabContent({
-  tabId,
-  path,
-  active,
-}: {
-  tabId: string;
-  path: string;
-  active: boolean;
-}) {
-  const router = useMemo(() => getOrCreateRouter(tabId, path), [tabId, path]);
+function TabContent({ path }: { path: string }) {
+  /** TabContent is keyed by tab id, so each activation restores from the tab store's saved path without keeping an inactive router alive. */
+  const [router] = useState(() => buildRouter(path));
 
   useEffect(() => {
     const unsub = router.subscribe("onResolved", () => {
       const loc = router.state.location;
       const next = loc.pathname + loc.searchStr;
-      tabs.updatePath(tabId, next);
-      if (tabs.getState().activeId === tabId) {
-        try {
-          localStorage.setItem(LAST_PATH_KEY, loc.pathname);
-        } catch {
-          /** Best-effort; navigation still works without persistence. */
-        }
-        syncPrimaryFromPath(loc.pathname);
-        setAppRouter(router);
+      const activeId = tabs.getState().activeId;
+      tabs.updatePath(activeId, next);
+      try {
+        localStorage.setItem(LAST_PATH_KEY, loc.pathname);
+      } catch {
+        /** Best-effort; navigation still works without persistence. */
       }
+      syncPrimaryFromPath(loc.pathname);
+      setAppRouter(router);
     });
     return unsub;
-  }, [router, tabId]);
+  }, [router]);
 
   useEffect(() => {
-    if (!active) return;
     setAppRouter(router);
     syncPrimaryFromPath(router.state.location.pathname);
-  }, [active, router]);
+  }, [router]);
 
-  return (
-    <div style={{ display: active ? "contents" : "none" }}>
-      <RouterProvider router={router} />
-    </div>
-  );
+  return <RouterProvider router={router} />;
 }
 
 export function App() {
@@ -173,41 +139,7 @@ export function App() {
 
   const tabList = useTabs();
   const activeId = useActiveTabId();
-
-  const lruRef = useRef<string[]>([activeId]);
-  const [liveIds, setLiveIds] = useState<Set<string>>(
-    () => new Set([activeId]),
-  );
-
-  useEffect(() => {
-    const existing = new Set(tabList.map((t) => t.id));
-    const next = [
-      activeId,
-      ...lruRef.current.filter((id) => id !== activeId && existing.has(id)),
-    ];
-    for (const t of tabList) {
-      if (!next.includes(t.id)) next.push(t.id);
-    }
-    lruRef.current = next;
-
-    const live = new Set(next.slice(0, LIVE_TAB_CAP));
-    for (const id of routerCache.keys()) {
-      if (!live.has(id)) removeRouterForTab(id);
-    }
-    setLiveIds((prev) => {
-      if (prev.size === live.size) {
-        let same = true;
-        for (const id of live) {
-          if (!prev.has(id)) {
-            same = false;
-            break;
-          }
-        }
-        if (same) return prev;
-      }
-      return live;
-    });
-  }, [activeId, tabList]);
+  const activeTab = tabList.find((tab) => tab.id === activeId);
 
   /** The "settings" startup page lands on "/" and opens the modal on top. */
   useEffect(() => {
@@ -253,20 +185,14 @@ export function App() {
           <AppHotkeys />
           <TabShortcuts />
           <SyncStatusBridge />
+          <ExtensionCaptureToast />
           <EnrichmentSweep />
           <BootScreen />
           <ErrorBoundary>
             <AppShell.Root header={<Toolbar />}>
-              {tabList.map((tab) =>
-                liveIds.has(tab.id) ? (
-                  <TabContent
-                    key={tab.id}
-                    tabId={tab.id}
-                    path={tab.path}
-                    active={tab.id === activeId}
-                  />
-                ) : null,
-              )}
+              {activeTab ? (
+                <TabContent key={activeTab.id} path={activeTab.path} />
+              ) : null}
             </AppShell.Root>
           </ErrorBoundary>
           <ConfirmDialogHost />

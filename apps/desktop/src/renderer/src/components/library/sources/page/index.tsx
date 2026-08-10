@@ -17,6 +17,7 @@ import { useGridMin } from "@/hooks/use-grid-min";
 import { useWatches, type WatchRow } from "@/hooks/use-watches";
 import { getSourceDef } from "@/lib/save/sources-registry";
 import { getAppRouter } from "@/lib/ui/app-router";
+import { clearAsk } from "@/stores/ask-store";
 import {
   connectFlow,
   useConnectedBefore,
@@ -41,6 +42,7 @@ type SourceEntry =
   | { kind: "watch"; row: WatchRow };
 
 function viewItemsFor(id: string): void {
+  clearAsk();
   setSearchInput([{ field: "account", operator: "eq", value: id }], "");
   void getAppRouter()?.navigate({ to: "/" });
 }
@@ -89,8 +91,12 @@ function cellStyle(item: PackedItem): CSSProperties {
 }
 
 export function SourcesPage() {
-  const { accounts, refetch } = useAccounts();
-  const { watches, refetch: refetchWatches } = useWatches();
+  const { accounts, loading: accountsLoading, refetch } = useAccounts();
+  const {
+    watches,
+    loading: watchesLoading,
+    refetch: refetchWatches,
+  } = useWatches();
   const byAccount = useSyncByAccount();
   const width = useGridWidth();
   const colMin = useGridMin();
@@ -176,7 +182,9 @@ export function SourcesPage() {
     void refetchWatches();
   }, [detailRevision, refetch, refetchWatches]);
 
-  if (entries.length === 0) {
+  /** Both lists begin as empty while their IPC queries are in flight. Wait for them
+   * to settle before deciding that this is the genuine first-run empty state. */
+  if (!accountsLoading && !watchesLoading && entries.length === 0) {
     return (
       <LibraryGrid.Root className={styles.root}>
         <div className={emptyStyles.welcome}>

@@ -42,6 +42,10 @@ export class TikTokVideoExtractor implements Extractor {
         handle: "scout2015",
       },
     },
+    {
+      url: "https://www.tiktok.com/video/6718335390845095173",
+      id: "6718335390845095173",
+    },
   ];
 
   suitable(url: URL): boolean {

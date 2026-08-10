@@ -5,7 +5,8 @@ export interface PositionedItem {
 
 export type VisibilityMode = "monotonic" | "scan";
 
-export const OVERSCAN_PX = 600;
+/** Roughly two laptop viewports: enough runway for local preview reads + decode during a fast trackpad scroll. */
+export const OVERSCAN_PX = 1600;
 
 /** First index whose bottom edge reaches `viewMin` (items ordered by nondecreasing `top`). */
 function lowerBoundMonotonic<T extends PositionedItem>(

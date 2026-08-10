@@ -158,7 +158,10 @@ export const saves = sqliteTable(
       t.source,
       t.sourceId,
     ),
-    savedAtIdx: index("saves_saved_at_idx").on(t.savedAt),
+    savedAtIdIdx: index("saves_saved_at_id_idx").on(
+      sql`${t.savedAt} DESC`,
+      sql`${t.id} DESC`,
+    ),
     sourceIdx: index("saves_source_idx").on(t.source),
     accountIdx: index("saves_account_idx").on(t.accountId),
     sizeIdx: index("saves_size_idx").on(t.fileSize),

@@ -48,11 +48,60 @@ export async function enqueueSaveByUrl(
 ): Promise<EnqueueResult> {
   const normalizedUrl = normalizeUrl(rawUrl);
   const classification = classifyUrlToSource(normalizedUrl);
+  // #region agent log
+  fetch("http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Debug-Session-Id": "384c19",
+    },
+    body: JSON.stringify({
+      sessionId: "384c19",
+      runId: "post-fix",
+      hypothesisId: "A",
+      location: "enqueue.ts:enqueueSaveByUrl",
+      message: "classify result",
+      data: {
+        rawUrl,
+        normalizedUrl,
+        source: classification.source,
+        extractorId: classification.extractorId,
+        trigger: opts.trigger ?? null,
+        isHandleLessTiktok: /tiktok\.com\/video\/\d+/i.test(normalizedUrl),
+        isHandleTiktok: /tiktok\.com\/@[^/]+\/video\/\d+/i.test(normalizedUrl),
+      },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
   if (!classification.source) {
     throw new UnsupportedError(`no extractor matches url: ${rawUrl}`);
   }
   const source = classification.source;
   const sourceId = sourceIdFromUrl(source, normalizedUrl);
+  // #region agent log
+  fetch("http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Debug-Session-Id": "384c19",
+    },
+    body: JSON.stringify({
+      sessionId: "384c19",
+      runId: "post-fix",
+      hypothesisId: "D",
+      location: "enqueue.ts:enqueueSaveByUrl",
+      message: "sourceId derived",
+      data: {
+        source,
+        sourceId,
+        normalizedUrl,
+        trigger: opts.trigger ?? null,
+      },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
   if (!sourceId) {
     throw new UnsupportedError(
       `could not derive sourceId for ${normalizedUrl}`,

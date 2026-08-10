@@ -1,4 +1,4 @@
-import { IconStopwatchFill18 as ProgressIcon } from "@pond/icons/fill/18";
+import { IconStopwatchOutline18 as ProgressIcon } from "@pond/icons/outline/18";
 import { AnimatePresence, motion } from "motion/react";
 import { useSaveQueue } from "@/components/settings/funnel/lib/queue";
 import { useActivityEntries } from "@/stores/activity";

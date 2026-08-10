@@ -5,6 +5,7 @@ import type { Transaction } from "@pond/schema/tx";
 import {
   and,
   asc,
+  count,
   desc,
   eq,
   getTableColumns,
@@ -12,6 +13,7 @@ import {
   isNotNull,
   isNull,
   type SQL,
+  sql,
 } from "drizzle-orm";
 import { clipboard, nativeImage } from "electron";
 import log from "electron-log/main.js";
@@ -26,6 +28,7 @@ import { type QueryHandlerMap, resolveSaveFilePath } from "../helpers";
 import { toWireSaves } from "../wire";
 import { savesExportQueries } from "./saves-export";
 import { savesImportQueries } from "./saves-import";
+import { cursorFor, type SavePageCursor } from "./saves-page";
 
 function isHttpUrl(u: string | undefined | null): u is string {
   if (!u) return false;
@@ -132,6 +135,54 @@ export const savesQueries: QueryHandlerMap = {
       rawJson: rawSlim,
     })) as Save[];
     return toWireSaves(listRows, grouped);
+  },
+
+  /** Cursor-paged, recency-sorted listing for the ordinary library grid. */
+  async "saves.listPage"(params) {
+    const limit = Math.min(Math.max(1, Number(params.limit) || 250), 500);
+    const raw = params.cursor as Partial<SavePageCursor> | undefined;
+    const savedAt = raw?.savedAt;
+    const cursor =
+      typeof savedAt === "number" &&
+      Number.isFinite(savedAt) &&
+      typeof raw?.id === "string" &&
+      raw.id
+        ? { savedAt, id: raw.id }
+        : null;
+    /** Row-value comparison lets SQLite seek directly into the matching composite index instead of merging two scans and sorting through a temporary B-tree. */
+    const after = cursor
+      ? sql`(${saves.savedAt}, ${saves.id}) < (${cursor.savedAt}, ${cursor.id})`
+      : undefined;
+    const db = await getDb();
+    const rows = await db
+      .select(SAVE_LIST_COLUMNS)
+      .from(saves)
+      .where(after)
+      .orderBy(desc(saves.savedAt), desc(saves.id))
+      .limit(limit + 1);
+    const pageRows = rows.slice(0, limit);
+    const grouped = await loadTasksFor(
+      db,
+      pageRows.map((row) => row.id),
+    );
+    const totalRow = (await db.select({ value: count() }).from(saves))[0];
+    const listRows = pageRows.map(({ rawSlim, ...rest }) => ({
+      ...rest,
+      rawJson: rawSlim,
+    })) as Save[];
+    return {
+      rows: toWireSaves(listRows, grouped),
+      nextCursor:
+        rows.length > limit
+          ? cursorFor(
+              pageRows.map((row) => ({
+                savedAt: row.savedAt.getTime(),
+                id: row.id,
+              })),
+            )
+          : null,
+      total: Number(totalRow?.value ?? 0),
+    };
   },
 
   /** Keyword search via saves_fts; scores are BM25 rank (lower is better in FTS5, inverted for callers). */

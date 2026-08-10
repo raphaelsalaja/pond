@@ -1,4 +1,4 @@
-import { IconArrowRotateClockwiseFill18 as SyncIcon } from "@pond/icons/fill/18";
+import { IconArrowRotateClockwiseOutline18 as SyncIcon } from "@pond/icons/outline/18";
 import { useMemo } from "react";
 import type { AccountRow } from "@/hooks/use-accounts";
 import type { WatchRow } from "@/hooks/use-watches";

@@ -12,7 +12,7 @@
 
 .media[data-loaded] {
   opacity: 0;
-  transition: opacity var(--ds-duration-emphasized) var(--ds-easing-standard);
+  transition: opacity var(--ds-duration-fast) var(--ds-easing-standard);
 }
 
 .media[data-loaded="true"] {

@@ -1,4 +1,5 @@
 import {
+  deriveTypeKind,
   isImageFile,
   pickPrimaryFile,
   pickPrimaryUnit,
@@ -163,7 +164,12 @@ export async function copyFile(
     id: save.id,
     fileIndex,
   });
-  notify({ id: "copy-image", title: "Image copied to clipboard" });
+  const file = save.files[fileIndex];
+  const title =
+    file && deriveTypeKind(file, save) === "video"
+      ? "Video copied to clipboard"
+      : "File copied to clipboard";
+  notify({ id: "copy-media", title });
 }
 
 export async function openInBrowser(save: Save): Promise<void> {
@@ -217,7 +223,19 @@ export async function copyImage(
   const fileIndex = copyableImageIndex(save, preferredIndex);
   if (fileIndex == null) return;
   await window.pond.query("saves.copyImage", { id: save.id, fileIndex });
-  notify({ id: "copy-image", title: "Image copied to clipboard" });
+  notify({ id: "copy-media", title: "Image copied to clipboard" });
+}
+
+/** Copies raster image data when available; otherwise copies the primary file (e.g. video). */
+export async function copyPrimaryMedia(
+  save: Save,
+  preferredIndex?: number | null,
+): Promise<void> {
+  if (copyableImageIndex(save, preferredIndex) != null) {
+    await copyImage(save, preferredIndex);
+    return;
+  }
+  await copyFile(save, preferredIndex);
 }
 
 export function copyTags(save: Save): void {

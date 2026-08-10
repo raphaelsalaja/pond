@@ -8,46 +8,10 @@
   overflow: hidden;
 }
 
-/* Registered so the fade heights animate when the scroll-state attribute flips. */
-@property --ask-fade-top {
-  syntax: "<length>";
-  inherits: false;
-  initial-value: 0px;
-}
-
-@property --ask-fade-bottom {
-  syntax: "<length>";
-  inherits: false;
-  initial-value: 0px;
-}
-
-/* Mask, not overlay: fades to transparent so it holds up over any dock surface. */
 .transcript-viewport {
-  --ask-fade-top: 0px;
-  --ask-fade-bottom: 0px;
-
   overflow-y: auto;
   overscroll-behavior: contain;
   outline: none;
-  mask-image: linear-gradient(
-    to bottom,
-    transparent,
-    black var(--ask-fade-top),
-    black calc(100% - var(--ask-fade-bottom)),
-    transparent
-  );
-  transition:
-    --ask-fade-top var(--ds-duration-medium) var(--ds-easing-standard),
-    --ask-fade-bottom var(--ds-duration-medium) var(--ds-easing-standard);
-}
-
-/* MessageScroller marks the viewport with data-scrollable="start end" as content clips past each edge. */
-.transcript-viewport[data-scrollable~="start"] {
-  --ask-fade-top: 32px;
-}
-
-.transcript-viewport[data-scrollable~="end"] {
-  --ask-fade-bottom: 32px;
 }
 
 .transcript-content {

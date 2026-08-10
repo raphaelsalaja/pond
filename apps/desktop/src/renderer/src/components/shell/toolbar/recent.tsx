@@ -1,4 +1,4 @@
-import { IconClockRotateClockwiseFill18 as RecentIcon } from "@pond/icons/fill/18";
+import { IconClockRotateClockwiseOutline18 as RecentIcon } from "@pond/icons/outline/18";
 import {
   humanizeError,
   useSaveQueue,

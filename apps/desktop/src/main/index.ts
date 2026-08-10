@@ -11,6 +11,7 @@ import { backfillEnrichmentSidecars } from "./core/enrichment-sidecar";
 import { ensureDefaultLibrary } from "./core/ensure-default-library";
 import { registerSyncActionListener } from "./core/executor";
 import { syncLibraryRootMetadata } from "./core/library-ops";
+import { startMediaWarmer, stopMediaWarmer } from "./core/media-warm/service";
 import { flushGovernor } from "./core/pipeline/rate-governor";
 import { startReconciler } from "./core/pipeline/reconciler";
 import { getPrefs, invalidatePrefs } from "./core/prefs";
@@ -212,6 +213,8 @@ async function postLaunchInit(): Promise<void> {
 
   void reconcileLibrary()
     .catch((err) => log.warn("[pond] scan failed", err))
+    /** Preview warming can begin as soon as the durable index is reconciled; slower maintenance backfills continue alongside it. */
+    .finally(() => startMediaWarmer())
     /** Self-heal saves whose archives predate the current WARC format; no-op when everything is current. */
     .then(() => startArchiveBackfill())
     .catch((err) => log.warn("[pond] archive backfill failed", err))
@@ -334,6 +337,7 @@ app.on("window-all-closed", () => {
 
 app.on("before-quit", async () => {
   beginQuit();
+  stopMediaWarmer();
   globalShortcut.unregisterAll();
   try {
     await flushTagsDump();

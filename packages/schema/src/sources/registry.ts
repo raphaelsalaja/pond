@@ -74,6 +74,8 @@ export const SOURCE_DESCRIPTORS = [
     hosts: ["tiktok.com"],
     urlPatterns: [
       /^https?:\/\/(?:[a-z]+\.)?tiktok\.com\/[^/]+\/video\/(\d+)/i,
+      /** Extension favorite emit when the feed cache has not yet seen the author handle. */
+      /^https?:\/\/(?:[a-z]+\.)?tiktok\.com\/video\/(\d+)/i,
       /^https?:\/\/(?:vm|vt)\.tiktok\.com\/[A-Za-z0-9]+/i,
     ],
     sync: { strategy: "scroll" },

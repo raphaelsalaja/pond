@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS saves (
   deleted_at INTEGER, saved_at INTEGER NOT NULL DEFAULT (unixepoch()*1000), created_at INTEGER NOT NULL DEFAULT (unixepoch()*1000),
   UNIQUE(source, source_id)
 );
-CREATE INDEX IF NOT EXISTS saves_saved_at_idx ON saves(saved_at);
+CREATE INDEX IF NOT EXISTS saves_saved_at_id_idx ON saves(saved_at DESC, id DESC);
 CREATE INDEX IF NOT EXISTS saves_source_idx ON saves(source);
 CREATE INDEX IF NOT EXISTS saves_size_idx ON saves(file_size);
 CREATE INDEX IF NOT EXISTS saves_dims_idx ON saves(width, height);

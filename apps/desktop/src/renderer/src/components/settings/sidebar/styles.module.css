@@ -1,0 +1,7 @@
+.sidebar {
+  display: flex;
+  flex: none;
+  width: var(--settings-sidebar-width);
+  min-height: 0;
+  padding: 16 px;
+}

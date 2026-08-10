@@ -2,6 +2,7 @@ import { useCallback, useEffect } from "react";
 import type { SaveListMode } from "@/lib/save/list";
 import { asUrlList, filePathsFromText } from "@/lib/save/url-list";
 import { openSave } from "@/lib/ui/save-nav";
+import { notify } from "@/lib/ui/toast";
 import { selection, useSelectionSize } from "@/stores/selection";
 
 interface CardActions {
@@ -14,10 +15,41 @@ interface CardActions {
   onDrop: (e: React.DragEvent) => Promise<void>;
 }
 
+function pasteSavedTitle(count: number): string {
+  return count === 1 ? "Saved to Pond" : `Saved ${count} items to Pond`;
+}
+
+async function importFilesAndNotify(paths: readonly string[]): Promise<void> {
+  const result = (await window.pond.query("saves.importFiles", {
+    paths: [...paths],
+  })) as { ok: boolean; ids?: string[] };
+  if (!result.ok) return;
+  const count = result.ids?.length ?? paths.length;
+  if (count === 0) return;
+  notify({ id: "paste-import", title: pasteSavedTitle(count) });
+}
+
 async function quickAddUrls(urls: readonly string[]): Promise<void> {
+  let added = 0;
   for (const url of urls) {
-    await window.pond.query("saves.quickAdd", { url });
+    const result = (await window.pond.query("saves.quickAdd", { url })) as {
+      ok: boolean;
+    };
+    if (result.ok) added += 1;
   }
+  if (added === 0) return;
+  notify({ id: "paste-import", title: pasteSavedTitle(added) });
+}
+
+async function importClipboardAndNotify(): Promise<void> {
+  const result = (await window.pond.query("saves.importClipboard", {})) as {
+    ok: boolean;
+    ids?: string[];
+  };
+  if (!result.ok) return;
+  const count = result.ids?.length ?? 1;
+  if (count === 0) return;
+  notify({ id: "paste-import", title: pasteSavedTitle(count) });
 }
 
 export function useCardActions(
@@ -96,7 +128,7 @@ export function useCardActions(
 
       if (paths.length > 0) {
         e.preventDefault();
-        void window.pond.query("saves.importFiles", { paths });
+        void importFilesAndNotify(paths);
         return;
       }
 
@@ -105,7 +137,7 @@ export function useCardActions(
       const textPaths = filePathsFromText(text);
       if (textPaths.length > 0) {
         e.preventDefault();
-        void window.pond.query("saves.importFiles", { paths: textPaths });
+        void importFilesAndNotify(textPaths);
         return;
       }
 
@@ -125,7 +157,7 @@ export function useCardActions(
         types.some((t) => t.startsWith("image/"))
       ) {
         e.preventDefault();
-        void window.pond.query("saves.importClipboard", {});
+        void importClipboardAndNotify();
       }
     };
 

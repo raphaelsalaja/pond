@@ -79,7 +79,7 @@ function toWireTask(task: Task): WireTask {
 export function toWireSyncAction(action: SyncAction): SyncAction {
   return {
     ...action,
-    createdAt: toMs(action.createdAt as unknown as Stampable) ?? 0,
+    createdAt: toMs(action.createdAt) ?? 0,
     data: normaliseDataPayload(action.data),
     prevData: normaliseDataPayload(action.prevData),
   } as unknown as SyncAction;
@@ -98,7 +98,7 @@ function normaliseDataPayload(value: unknown): unknown {
   const obj = value as Record<string, unknown>;
   const out: Record<string, unknown> = { ...obj };
   for (const key of TIMESTAMP_KEYS) {
-    if (key in out) out[key] = toMs(out[key] as Stampable);
+    if (key in out) out[key] = toMs(out[key]);
   }
   return out;
 }

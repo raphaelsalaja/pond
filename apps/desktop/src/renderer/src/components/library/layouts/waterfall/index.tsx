@@ -45,9 +45,10 @@ function packMasonry(
 
 interface WaterfallViewProps {
   saves: ReadonlyArray<Save>;
+  onEndReached?: () => void;
 }
 
-export function WaterfallView({ saves }: WaterfallViewProps) {
+export function WaterfallView({ saves, onEndReached }: WaterfallViewProps) {
   const width = useGridWidth();
   const colMin = useGridMin();
   const prefs = useDisplayPrefs();
@@ -65,6 +66,7 @@ export function WaterfallView({ saves }: WaterfallViewProps) {
       layout="waterfall"
       items={items}
       totalHeight={totalHeight}
+      onEndReached={onEndReached}
     />
   );
 }

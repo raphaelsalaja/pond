@@ -12,9 +12,10 @@ import { useGridWidth } from "@/stores/shell-state";
 
 interface GridViewProps {
   saves: ReadonlyArray<Save>;
+  onEndReached?: () => void;
 }
 
-export function GridView({ saves }: GridViewProps) {
+export function GridView({ saves, onEndReached }: GridViewProps) {
   const width = useGridWidth();
   const colMin = useGridMin();
   const prefs = useDisplayPrefs();
@@ -34,6 +35,11 @@ export function GridView({ saves }: GridViewProps) {
   );
 
   return (
-    <SavePackedGrid layout="grid" items={items} totalHeight={totalHeight} />
+    <SavePackedGrid
+      layout="grid"
+      items={items}
+      totalHeight={totalHeight}
+      onEndReached={onEndReached}
+    />
   );
 }

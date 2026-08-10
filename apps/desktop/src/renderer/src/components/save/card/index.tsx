@@ -23,9 +23,6 @@ import { useIsTumbling } from "@/stores/trash-tumble";
 
 const MotionCardRoot = motion.create(Card.Root);
 
-const ENTER_INITIAL = { opacity: 0, y: 12, scale: 0.96 };
-const ENTER_ANIMATE = { opacity: 1, y: 0, scale: 1 };
-
 const TUMBLE_TRANSITION = {
   duration: 0.34,
   ease: [0.5, 0, 0.85, 0.4] as const,
@@ -44,8 +41,6 @@ interface SaveCardProps {
   packedHeight?: number;
   packedTop?: number;
   packedLeft?: number;
-  /** True only for saves that joined the list after first paint, so scroll-in mounts stay quiet. */
-  entering?: boolean;
 }
 
 export const SaveCard = memo(function SaveCard({
@@ -55,7 +50,6 @@ export const SaveCard = memo(function SaveCard({
   packedHeight,
   packedTop,
   packedLeft,
-  entering,
 }: SaveCardProps) {
   /** Callbacks come from grid context so this memoized card doesn't re-render on a sibling's selection change. */
   const { onClick, onAuxClick, onDoubleClick } = useLibraryCardCallbacks();
@@ -129,10 +123,8 @@ export const SaveCard = memo(function SaveCard({
         style={liStyle}
         draggable={save.files.length > 0}
         onNativeDragStart={onDragStart}
-        initial={entering ? ENTER_INITIAL : false}
-        animate={
-          tumbling ? tumbleTarget(id) : entering ? ENTER_ANIMATE : undefined
-        }
+        initial={false}
+        animate={tumbling ? tumbleTarget(id) : undefined}
         transition={tumbling ? TUMBLE_TRANSITION : gentleSpring}
       >
         <Card.Checkbox

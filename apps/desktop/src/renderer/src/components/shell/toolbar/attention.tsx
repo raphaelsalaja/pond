@@ -1,4 +1,4 @@
-import { IconTriangleWarningFill18 as WarningIcon } from "@pond/icons/fill/18";
+import { IconTriangleWarningOutline18 as WarningIcon } from "@pond/icons/outline/18";
 import { useMemo } from "react";
 import {
   humanizeError,

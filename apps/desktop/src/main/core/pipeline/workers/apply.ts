@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import { existsSync } from "node:fs";
-import { mkdir, writeFile } from "node:fs/promises";
+import { createReadStream, existsSync } from "node:fs";
+import { copyFile, mkdir, rm, stat, writeFile } from "node:fs/promises";
 import { extname, join } from "node:path";
 import {
   type NewSave,
@@ -18,16 +18,21 @@ import { withRawSlim } from "../../../lib/raw-slim";
 import { itemDir } from "../../../paths";
 import { broadcastSyncAction } from "../../executor";
 
-export interface WriteFileArgs {
+interface WriteFileMetadata {
   kind: SaveFile["kind"];
   filename: string;
-  bytes: Buffer;
   mimeType?: string;
   width?: number;
   height?: number;
   /** Origin URL this file was downloaded from; persisted for smart per-URL skip. */
   sourceUrl?: string;
 }
+
+export type WriteFileArgs = WriteFileMetadata &
+  (
+    | { bytes: Buffer; sourcePath?: never }
+    | { bytes?: never; sourcePath: string }
+  );
 
 interface ApplyPatchOptions {
   actorReason: string;
@@ -76,7 +81,10 @@ export async function applySavePatch(
     const dir = itemDir(saveId);
     if (!existsSync(dir)) await mkdir(dir, { recursive: true });
     for (const file of opts.newFiles) {
-      if (file.bytes.byteLength === 0) {
+      const target = uniqueFilename(file.filename, baseFiles, written);
+      const targetPath = join(dir, target);
+      const details = await persistWriteFile(file, targetPath);
+      if (!details) {
         log.warn(
           "[pond pipeline] applySavePatch: empty file skipped",
           saveId,
@@ -84,13 +92,11 @@ export async function applySavePatch(
         );
         continue;
       }
-      const target = uniqueFilename(file.filename, baseFiles, written);
-      await writeFile(join(dir, target), file.bytes);
       const entry: SaveFile = {
         kind: file.kind,
         path: target,
-        sha256: createHash("sha256").update(file.bytes).digest("hex"),
-        size: file.bytes.byteLength,
+        sha256: details.sha256,
+        size: details.size,
         ...(file.mimeType ? { mimeType: file.mimeType } : {}),
         ...(file.width ? { width: file.width } : {}),
         ...(file.height ? { height: file.height } : {}),
@@ -133,6 +139,31 @@ export async function applySavePatch(
   if (inserted) broadcastSyncAction(inserted);
 
   return updated;
+}
+
+/** Materialize a pending file without requiring large derivatives in memory. */
+export async function persistWriteFile(
+  file: WriteFileArgs,
+  targetPath: string,
+): Promise<{ sha256: string; size: number } | null> {
+  if (file.bytes) {
+    if (file.bytes.byteLength === 0) return null;
+    await writeFile(targetPath, file.bytes);
+    return {
+      sha256: createHash("sha256").update(file.bytes).digest("hex"),
+      size: file.bytes.byteLength,
+    };
+  }
+
+  await copyFile(file.sourcePath, targetPath);
+  const { size } = await stat(targetPath);
+  if (size === 0) {
+    await rm(targetPath, { force: true });
+    return null;
+  }
+  const hash = createHash("sha256");
+  for await (const chunk of createReadStream(targetPath)) hash.update(chunk);
+  return { sha256: hash.digest("hex"), size };
 }
 
 export async function readSave(saveId: string): Promise<Save | null> {

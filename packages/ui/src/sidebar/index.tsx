@@ -100,7 +100,7 @@ function Search({ ...props }: SearchProps) {
   return (
     <Input.Root className={styles.search}>
       <Input.Icon>
-        <Magnifier width={14} height={14} />
+        <Magnifier />
       </Input.Icon>
       <Input.Field {...props} />
     </Input.Root>

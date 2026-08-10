@@ -31,6 +31,16 @@ export const SHORTCUTS = {
   "nav.trash": { keys: "Mod+4", label: "Go to Trash", group: "Navigate" },
   "nav.back": { keys: "Mod+[", label: "Back", group: "Navigate" },
   "nav.forward": { keys: "Mod+]", label: "Forward", group: "Navigate" },
+  "nav.scroll-top": {
+    keys: "Mod+ArrowUp",
+    label: "Scroll to Top",
+    group: "Navigate",
+  },
+  "nav.scroll-bottom": {
+    keys: "Mod+ArrowDown",
+    label: "Scroll to Bottom",
+    group: "Navigate",
+  },
   "dock.ask": { keys: "Mod+K", label: "Ask Your Library", group: "Navigate" },
   "dock.search": { keys: "Mod+F", label: "Search", group: "Navigate" },
   "app.shortcuts": {
@@ -84,10 +94,14 @@ export const SHORTCUTS = {
   },
 
   "save.open": { keys: "O", label: "Open with Default App", group: "Saves" },
-  "save.copy-url": { keys: "C", label: "Copy URL", group: "Saves" },
-  "save.copy-image": { keys: "Mod+C", label: "Copy Image", group: "Saves" },
+  "save.copy-image": {
+    keys: "C",
+    label: "Copy Image or Video",
+    group: "Saves",
+  },
+  "save.copy-url": { keys: "Mod+Shift+C", label: "Copy URL", group: "Saves" },
   "save.copy-tags": {
-    keys: "Mod+Shift+C",
+    keys: "Mod+Shift+T",
     label: "Copy Tags",
     group: "Saves",
   },

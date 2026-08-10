@@ -6,7 +6,7 @@
 .popup {
   composes: popup from "../shared/styles/popup/styles.module.css";
   width: var(--popup-width, auto);
-  min-width: var(--popup-min-width, calc(100% + 43px));
+  min-width: var(--popup-min-width, calc(100% + 48px));
   max-width: 512px;
 }
 

@@ -107,6 +107,7 @@ export function buildSaveMenu(
     {
       label: copyFileLabel,
       hidden: !hasFiles,
+      shortcut: shortcutGlyphs("save.copy-image"),
       onClick: () => void copyFileAction(save, fileIndex),
     },
     {

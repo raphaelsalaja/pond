@@ -5,11 +5,7 @@ import { app, net, protocol } from "electron";
 import log from "electron-log/main.js";
 import mime from "mime-types";
 import { POND_PROTOCOL } from "../shared/constants";
-import {
-  clampThumbWidth,
-  getOrCreateThumbnail,
-  isThumbnailable,
-} from "./lib/thumbnail";
+import { clampThumbWidth, getOrCreateThumbnail } from "./lib/thumbnail";
 import { itemFile, libraryRoot, resolvePaths } from "./paths";
 
 const ONE_YEAR_SECONDS = 31_536_000;
@@ -79,11 +75,7 @@ export function registerProtocol() {
       let immutable = version !== null;
 
       const widthParam = url.searchParams.get("w");
-      if (
-        host !== META_HOST &&
-        widthParam &&
-        isThumbnailable(extname(resolved).toLowerCase())
-      ) {
+      if (host !== META_HOST && widthParam) {
         const width = clampThumbWidth(Number(widthParam));
         if (width !== null) {
           const thumb = await getOrCreateThumbnail({

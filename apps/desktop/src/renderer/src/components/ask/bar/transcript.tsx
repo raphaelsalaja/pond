@@ -18,6 +18,7 @@ export function Transcript({
       <MessageScroller.Root className={styles.transcript}>
         <MessageScroller.Viewport
           className={styles["transcript-viewport"]}
+          data-scroll-fade=""
           aria-label="Chat transcript"
         >
           <MessageScroller.Content

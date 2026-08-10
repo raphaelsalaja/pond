@@ -8,10 +8,16 @@ function Body({ ...props }: BodyProps) {
   return <div className={styles.body} {...props} />;
 }
 
-interface MainProps extends React.ComponentPropsWithoutRef<"main"> {}
+interface MainProps extends React.ComponentPropsWithRef<"main"> {}
 
 function Main({ className, ...props }: MainProps) {
-  return <main className={cn(styles.main, className)} {...props} />;
+  return (
+    <main
+      className={cn(styles.main, className)}
+      {...props}
+      data-scroll-viewport=""
+    />
+  );
 }
 
 interface HeaderProps extends React.ComponentPropsWithoutRef<"header"> {}

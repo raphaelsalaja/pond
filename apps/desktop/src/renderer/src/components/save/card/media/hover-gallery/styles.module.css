@@ -10,19 +10,9 @@
   border-radius: 4px;
   box-shadow: var(--ds-shadow-2);
   opacity: 0;
-  transition: opacity var(--ds-duration-medium) var(--ds-easing-standard);
+  transition: opacity var(--ds-duration-fast) var(--ds-easing-standard);
 }
 
-.slide[data-active] {
+.slide[data-active][data-loaded="true"] {
   opacity: 1;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .slide {
-    transition: none;
-  }
-}
-
-:global(html[data-reduce-motion="true"]) .slide {
-  transition: none;
 }

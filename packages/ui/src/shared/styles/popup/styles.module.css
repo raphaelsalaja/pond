@@ -69,6 +69,7 @@
 .item {
   position: relative;
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   height: 32px;
   padding-inline: 12px;

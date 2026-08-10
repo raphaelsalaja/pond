@@ -237,8 +237,14 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
         { role: "selectAll" },
         { type: "separator" },
         {
-          label: "Copy URL",
+          label: "Copy Image or Video",
           accelerator: "C",
+          registerAccelerator: false,
+          click: sendMenuAction("save.copy-media"),
+        },
+        {
+          label: "Copy URL",
+          accelerator: "CmdOrCtrl+Shift+C",
           registerAccelerator: false,
           click: sendMenuAction("save.copy-url"),
         },

@@ -1,12 +1,15 @@
 import {
   capture,
   installInterceptor,
+  log,
   type RequestLens,
 } from "@/utils/intercept";
 
 /** Match the favorite/collect verb at the end of any /api/ path so prefix reshuffles keep matching; likes ("digg") are excluded. */
 const FAVORITE_RE = /\/api\/(?:[a-z_]+\/)*(?:favorite|collect)\/?(?:\?|$)/i;
-const FEED_RE = /\/api\/(aweme|item|feed|post)/i;
+/** Feed/detail payloads that carry author handles; TikTok reshuffles these often and uses POST as well as GET. */
+const FEED_RE =
+  /\/api\/(?:[a-z_]+\/)*(?:aweme|item|feed|post|recommend|detail|list)/i;
 
 function readJson(text: string | null): any {
   if (!text) return null;
@@ -71,6 +74,33 @@ function isFavoriteType(url: string): boolean {
   }
 }
 
+function usernameFromLocation(): string | null {
+  try {
+    const m = location.pathname.match(/^\/@([^/]+)/);
+    return m?.[1] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** FYP and related surfaces keep `/@handle/video/{id}` links even when the location bar does not. */
+function usernameFromDom(id: string): string | null {
+  try {
+    const needle = `/video/${id}`;
+    const anchors = document.querySelectorAll<HTMLAnchorElement>(
+      `a[href*="${needle}"]`,
+    );
+    for (const a of anchors) {
+      const href = a.getAttribute("href") ?? a.href;
+      const m = href.match(/\/@([^/]+)\/video\/\d+/);
+      if (m?.[1]) return m[1];
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export function inject(): void {
   const usernameByAwemeId = new Map<string, string>();
   const emitted = new Set<string>();
@@ -104,10 +134,56 @@ export function inject(): void {
   function emitFavorite(id: string): void {
     if (!id || emitted.has(id)) return;
     emitted.add(id);
-    const username = usernameByAwemeId.get(id);
+    const fromCache = usernameByAwemeId.get(id) ?? null;
+    const fromDom = fromCache ? null : usernameFromDom(id);
+    const fromLocation = fromCache || fromDom ? null : usernameFromLocation();
+    const username = fromCache ?? fromDom ?? fromLocation;
     const url = username
       ? `https://www.tiktok.com/@${username}/video/${id}`
       : `https://www.tiktok.com/video/${id}`;
+    // #region agent log
+    log("info", "tiktok emitFavorite", {
+      id,
+      hasUsername: Boolean(username),
+      source: fromCache
+        ? "cache"
+        : fromDom
+          ? "dom"
+          : fromLocation
+            ? "location"
+            : "none",
+      url,
+      cacheSize: usernameByAwemeId.size,
+    });
+    fetch("http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Debug-Session-Id": "384c19",
+      },
+      body: JSON.stringify({
+        sessionId: "384c19",
+        runId: "post-fix",
+        hypothesisId: "F",
+        location: "tiktok/inject.ts:emitFavorite",
+        message: "tiktok emitFavorite",
+        data: {
+          id,
+          hasUsername: Boolean(username),
+          source: fromCache
+            ? "cache"
+            : fromDom
+              ? "dom"
+              : fromLocation
+                ? "location"
+                : "none",
+          url,
+          cacheSize: usernameByAwemeId.size,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
     capture(url, "tiktok:favorite");
   }
 
@@ -119,10 +195,45 @@ export function inject(): void {
       if (!res.ok) return;
       if (FAVORITE_RE.test(req.url) && isFavoriteType(req.url)) {
         const id = awemeIdFromUrl(req.url) ?? (await awemeIdFromBody(req));
-        if (id) emitFavorite(id);
+        // #region agent log
+        log("info", "tiktok favorite response", {
+          matched: Boolean(id),
+          id,
+          reqUrl: req.url.slice(0, 180),
+          method: req.method,
+        });
+        fetch(
+          "http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Debug-Session-Id": "384c19",
+            },
+            body: JSON.stringify({
+              sessionId: "384c19",
+              runId: "post-fix",
+              hypothesisId: "C",
+              location: "tiktok/inject.ts:onResponse",
+              message: "tiktok favorite response",
+              data: {
+                matched: Boolean(id),
+                id,
+                reqUrl: req.url.slice(0, 180),
+                method: req.method,
+              },
+              timestamp: Date.now(),
+            }),
+          },
+        ).catch(() => {});
+        // #endregion
+        if (id) {
+          walkForAweme(readJson(await res.readText()));
+          emitFavorite(id);
+        }
         return;
       }
-      if (req.method === "GET" && FEED_RE.test(req.url)) {
+      if (FEED_RE.test(req.url)) {
         walkForAweme(readJson(await res.readText()));
       }
     },

@@ -83,4 +83,9 @@ export function openFunnel(): void {
   settingsModal.open("funnel");
 }
 
-export type Panel = "progress" | "recent" | "errors" | "ongoing";
+export type Panel =
+  | "progress"
+  | "recent"
+  | "errors"
+  | "ongoing"
+  | "media-index";

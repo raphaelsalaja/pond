@@ -144,6 +144,7 @@ export function KebabMenu({
             label: "File",
             icon: <File />,
             hidden: !hasFiles,
+            shortcut: shortcutGlyphs("save.copy-image"),
             onClick: () => void copyFile(save, fileIndex),
           },
           {

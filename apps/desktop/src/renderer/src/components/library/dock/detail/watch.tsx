@@ -29,7 +29,9 @@ import {
   WATCH_NEEDS_SESSION,
   type WatchRow,
 } from "@/hooks/use-watches";
+import { getSourceDef } from "@/lib/save/sources-registry";
 import { formatNumber } from "@/lib/util/format";
+import { clearAsk } from "@/stores/ask-store";
 import { sourceDetail, useDetailWatchId } from "@/stores/source-detail";
 import { useSyncByAccount } from "@/stores/sync-monitor";
 import { setSearchInput } from "@/stores/view-store";
@@ -89,6 +91,7 @@ function WatchDetail({
   };
 
   const viewItems = () => {
+    clearAsk();
     setSearchInput([{ field: "account", operator: "eq", value: watch.id }], "");
     dock.closeViewMenu();
     void navigate({ to: "/" });
@@ -122,7 +125,16 @@ function WatchDetail({
       <TrayCard.Close />
       <div className={styles.hero}>
         <HeroAvatar source={source} avatarUrl={watch.avatarUrl} ring />
-        <TrayCard.Title>{watchName(watch)}</TrayCard.Title>
+        <div className={styles["hero-copy"]}>
+          <TrayCard.Title>
+            {watch.label ?? getSourceDef(source).label}
+          </TrayCard.Title>
+          <span className={styles["hero-handle"]}>
+            {watch.kind === "playlist" || watch.kind === "list"
+              ? watch.handle
+              : `@${watch.handle}`}
+          </span>
+        </div>
       </div>
 
       <div className={styles.rows}>

@@ -66,11 +66,13 @@ function packRows(
 interface JustifiedViewProps {
   saves: ReadonlyArray<Save>;
   targetHeight?: number;
+  onEndReached?: () => void;
 }
 
 export function JustifiedView({
   saves,
   targetHeight = TARGET_ROW_HEIGHT,
+  onEndReached,
 }: JustifiedViewProps) {
   const width = useGridWidth();
   const prefs = useDisplayPrefs();
@@ -88,6 +90,7 @@ export function JustifiedView({
       layout="justified"
       items={items}
       totalHeight={totalHeight}
+      onEndReached={onEndReached}
     />
   );
 }

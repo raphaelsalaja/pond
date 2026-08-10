@@ -4,8 +4,9 @@ import { useMemo } from "react";
 import { parseMode, type SaveListMode } from "@/lib/save/list";
 import { listBaseFromPath } from "@/lib/search/schemas";
 import type { Save, ViewMode } from "@/lib/types";
+import { useAskResult } from "@/stores/ask-store";
 import { primarySelectionStore } from "@/stores/selection";
-import { useLayout } from "@/stores/view-store";
+import { useFilterQuery, useLayout, useSearchText } from "@/stores/view-store";
 import { useNarrowedSaves } from "./use-narrowed-saves";
 import { useBootReady, useSaves } from "./use-saves";
 import { useStableStrings } from "./use-stable-array";
@@ -17,6 +18,9 @@ interface LibraryState {
   filteredIds: ReadonlyArray<string>;
   mode: SaveListMode;
   sourceFilter: string;
+  hasActiveSearch: boolean;
+  hasActiveFilter: boolean;
+  askActive: boolean;
   selectedId: string | null;
   viewMode: ViewMode;
   /** True when the URL's mode segment wasn't recognized, so callers can navigate away. */
@@ -31,6 +35,9 @@ export function useLibraryState(): LibraryState {
   };
   const location = useLocation();
   const layout = useLayout();
+  const searchText = useSearchText();
+  const filterQuery = useFilterQuery();
+  const ask = useAskResult();
 
   const parentBase = listBaseFromPath(location.pathname);
   const recognized = parseMode(parentBase);
@@ -38,6 +45,8 @@ export function useLibraryState(): LibraryState {
   const unknown = recognized === null;
 
   const sourceFilter = mode === "source" ? (params.source ?? "") : "";
+  const hasActiveSearch = searchText.trim().length > 0;
+  const hasActiveFilter = filterQuery.rules.length > 0;
 
   /** The open save is pure client state; cards read it via `useIsPrimary`. */
   const selectedId = useSelector(primarySelectionStore, (s) => s.id);
@@ -55,6 +64,9 @@ export function useLibraryState(): LibraryState {
     filteredIds,
     mode,
     sourceFilter,
+    hasActiveSearch,
+    hasActiveFilter,
+    askActive: ask.active,
     selectedId,
     viewMode,
     unknown,

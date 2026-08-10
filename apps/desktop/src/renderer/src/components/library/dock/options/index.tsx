@@ -8,6 +8,9 @@ import { ConnectSourceSection } from "@/components/library/dock/connect";
 import { ConnectHelpSection } from "@/components/library/dock/connect/help";
 import { ConnectWaitSection } from "@/components/library/dock/connect/wait";
 import { AccountDetailSection } from "@/components/library/dock/detail";
+import { AccountMaintenanceSection } from "@/components/library/dock/detail/account-maintenance";
+import { AccountProfileSection } from "@/components/library/dock/detail/account-profile";
+import { AccountSyncSection } from "@/components/library/dock/detail/account-sync";
 import { FrequencySection } from "@/components/library/dock/detail/frequency";
 import { WatchDetailSection } from "@/components/library/dock/detail/watch";
 import type { ViewMenuSection } from "@/components/library/dock/lib/types";
@@ -48,6 +51,9 @@ const SECTIONS: Record<ViewMenuSection, () => React.JSX.Element | null> = {
   "watch-kind": WatchKindSection,
   "watch-target": WatchTargetSection,
   "account-detail": AccountDetailSection,
+  "account-profile": AccountProfileSection,
+  "account-sync": AccountSyncSection,
+  "account-maintenance": AccountMaintenanceSection,
   "watch-detail": WatchDetailSection,
   "sync-frequency": FrequencySection,
   "source-new": SourceNewSection,

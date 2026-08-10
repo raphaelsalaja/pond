@@ -59,32 +59,41 @@ export function useSearchResults(
       setSearching(false);
       return;
     }
+    /** Never show the full library (or hits from the previous query) while this query is in flight. */
+    setResults(resolveHits(trimmed, deletedOnly) ?? []);
     setSearching(true);
     let cancelled = false;
     const timer = setTimeout(() => {
       void (async () => {
-        const scores = await searchFtsScores(trimmed, "all", { deletedOnly });
-        if (cancelled) return;
-        if (scores.size === 0) {
-          commitHits(trimmed, deletedOnly, []);
-          setResults([]);
-          setSearching(false);
-          return;
+        try {
+          const scores = await searchFtsScores(trimmed, "all", {
+            deletedOnly,
+          });
+          if (cancelled) return;
+          if (scores.size === 0) {
+            commitHits(trimmed, deletedOnly, []);
+            setResults([]);
+            return;
+          }
+          await ensureSaves([...scores.keys()]);
+          if (cancelled) return;
+          const scored: Array<{ save: Save; score: number }> = [];
+          for (const [id, score] of scores) {
+            const save = pool.get(id);
+            if (!save) continue;
+            if (deletedOnly ? !save.deletedAt : save.deletedAt) continue;
+            scored.push({ save, score });
+          }
+          scored.sort((a, b) => b.score - a.score);
+          const next = scored.slice(0, MAX_RESULTS).map((row) => row.save);
+          commitHits(trimmed, deletedOnly, next);
+          setResults(next);
+        } catch (error) {
+          if (!cancelled)
+            console.warn("[pond search] keyword search failed", error);
+        } finally {
+          if (!cancelled) setSearching(false);
         }
-        await ensureSaves([...scores.keys()]);
-        if (cancelled) return;
-        const scored: Array<{ save: Save; score: number }> = [];
-        for (const [id, score] of scores) {
-          const save = pool.get(id);
-          if (!save) continue;
-          if (deletedOnly ? !save.deletedAt : save.deletedAt) continue;
-          scored.push({ save, score });
-        }
-        scored.sort((a, b) => b.score - a.score);
-        const next = scored.slice(0, MAX_RESULTS).map((row) => row.save);
-        commitHits(trimmed, deletedOnly, next);
-        setResults(next);
-        setSearching(false);
       })();
     }, DEBOUNCE_MS);
     return () => {

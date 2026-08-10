@@ -1,4 +1,6 @@
+import { isStaticThumbnailFile } from "@shared/media-index";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { BlurPlaceholder } from "@/components/save/card/media/blur-placeholder";
 import { DownloadingBadge } from "@/components/save/card/media/downloading-badge";
 import { HoverGallery } from "@/components/save/card/media/hover-gallery";
 import { HoverVideo } from "@/components/save/card/media/hover-video";
@@ -81,6 +83,20 @@ export const CardThumb = memo(function CardThumb({
   const broken = brokenSrc !== null && brokenSrc === pickedSrc;
   const onBroken = useCallback(() => setBrokenSrc(pickedSrc), [pickedSrc]);
 
+  const previewSrc = useMemo(() => {
+    if (!unit || broken) return null;
+    const src = unit.isVideo ? unit.posterUrl : unit.url;
+    const previewKey = unit.isVideo ? unit.posterKey : unit.key;
+    if (!src || !previewKey) return null;
+    const file = save.files.find((candidate) => candidate.path === previewKey);
+    return file && isStaticThumbnailFile(file) ? src : null;
+  }, [broken, save.files, unit]);
+  const [loadedPreviewSrc, setLoadedPreviewSrc] = useState<string | null>(null);
+  const onPreviewReady = useCallback(() => {
+    if (previewSrc) setLoadedPreviewSrc(previewSrc);
+  }, [previewSrc]);
+  const previewLoaded = previewSrc !== null && loadedPreviewSrc === previewSrc;
+
   const safeActive = slides ? Math.min(active, slides.length - 1) : 0;
   const showPlaceholder = !unit || broken;
   const textPreview =
@@ -94,6 +110,9 @@ export const CardThumb = memo(function CardThumb({
       onPointerMove={onPointerMove}
       onPointerLeave={onPointerLeave}
     >
+      {previewSrc ? (
+        <BlurPlaceholder src={previewSrc} loaded={previewLoaded} />
+      ) : null}
       {slides && !broken ? (
         <HoverGallery
           save={save}
@@ -101,12 +120,20 @@ export const CardThumb = memo(function CardThumb({
           active={safeActive}
           seen={seen}
           onBroken={onBroken}
+          onReady={onPreviewReady}
         />
       ) : unit && !broken && !unit.isVideo ? (
-        <CardImage key={unit.url} save={save} unit={unit} onBroken={onBroken} />
+        <CardImage
+          key={unit.url}
+          save={save}
+          unit={unit}
+          onBroken={onBroken}
+          onReady={onPreviewReady}
+        />
       ) : null}
       {unit?.isVideo && !broken ? (
         <HoverVideo
+          key={unit.url}
           saveId={save.id}
           src={unit.url}
           posterUrl={
@@ -116,6 +143,7 @@ export const CardThumb = memo(function CardThumb({
           }
           label={save.title ?? "video"}
           onBroken={onBroken}
+          onReady={onPreviewReady}
         />
       ) : null}
       {showPlaceholder ? (

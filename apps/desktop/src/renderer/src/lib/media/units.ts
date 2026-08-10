@@ -43,6 +43,7 @@ export interface MediaUnit {
   url: string;
   isVideo: boolean;
   posterUrl?: string;
+  posterKey?: string;
 }
 
 interface MediaPickOptions {
@@ -70,7 +71,13 @@ export function buildMediaUnits(
       !isQuoteScreenshotKind(f.kind),
   );
   const posters = files.filter((f) => f.kind === "poster");
-  const slides = files.filter((f) => f.kind !== "poster");
+  const covers = files.filter((f) => f.kind === "cover");
+  const withoutPosters = files.filter((f) => f.kind !== "poster");
+  const hasVideo = withoutPosters.some(isVideoFile);
+  /** A cover is a video poster when video exists; for image-only saves it is the media itself. */
+  const slides = hasVideo
+    ? withoutPosters.filter((f) => f.kind !== "cover")
+    : withoutPosters;
 
   /** Quote-tweet screenshots are appended after the parent's extracted media. */
   const quoteUnits = buildQuoteScreenshotUnits(save, opts.theme);
@@ -82,13 +89,18 @@ export function buildMediaUnits(
   if (videos.length === 1 && images.length <= 1 && quoteUnits.length === 0) {
     const video = videos[0];
     if (!video) return [];
-    const poster = posters[0] ?? images[0];
+    const poster = posters[0] ?? covers[0] ?? images[0];
     return [
       {
         key: video.path,
         url: buildPondUrl(save.id, video),
         isVideo: true,
-        ...(poster ? { posterUrl: buildPondUrl(save.id, poster) } : {}),
+        ...(poster
+          ? {
+              posterUrl: buildPondUrl(save.id, poster),
+              posterKey: poster.path,
+            }
+          : {}),
       },
     ];
   }
@@ -97,12 +109,18 @@ export function buildMediaUnits(
   let videoSeen = 0;
   for (const f of slides) {
     if (isVideoFile(f)) {
-      const poster = posters[videoSeen];
+      /** Use the first imported poster until the background sweep fills per-video poster slots. */
+      const poster = posters[videoSeen] ?? posters[0] ?? covers[0];
       units.push({
         key: f.path,
         url: buildPondUrl(save.id, f),
         isVideo: true,
-        ...(poster ? { posterUrl: buildPondUrl(save.id, poster) } : {}),
+        ...(poster
+          ? {
+              posterUrl: buildPondUrl(save.id, poster),
+              posterKey: poster.path,
+            }
+          : {}),
       });
       videoSeen++;
     } else if (isImageFile(f)) {
@@ -273,6 +291,7 @@ function isVideoFile(file: SaveFile): boolean {
 
 /** Extension/mime only; kind stays out because tweet screenshots and posters are images too. */
 export function isImageFile(file: SaveFile): boolean {
+  if (file.kind === "cover") return true;
   const ext = file.path.split(".").pop()?.toLowerCase() ?? "";
   if (IMAGE_EXT.test(ext)) return true;
   return file.mimeType?.startsWith("image/") === true;
@@ -288,6 +307,7 @@ const DOC_EXT = /^(pdf|docx?|txt|md|markdown|rtf|csv|tsv|xlsx?|pptx?|epub)$/;
 
 export function deriveTypeKind(file: SaveFile | null, save: Save): TypeKind {
   if (file && TEXT_COVER_KINDS.has(file.kind)) return "text";
+  if (file?.kind === "cover") return "image";
 
   const ext = file?.path.split(".").pop()?.toLowerCase() ?? "";
   if (IMAGE_EXT.test(ext)) return "image";

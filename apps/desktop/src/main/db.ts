@@ -157,7 +157,9 @@ function migratePond(sqlite: Database.Database): void {
 					UNIQUE(source, source_id)
 				);
 
-				CREATE INDEX IF NOT EXISTS saves_saved_at_idx ON saves(saved_at);
+				CREATE INDEX IF NOT EXISTS saves_saved_at_id_idx
+					ON saves(saved_at DESC, id DESC);
+				DROP INDEX IF EXISTS saves_saved_at_idx;
 				CREATE INDEX IF NOT EXISTS saves_source_idx ON saves(source);
 				CREATE INDEX IF NOT EXISTS saves_size_idx ON saves(file_size);
 				CREATE INDEX IF NOT EXISTS saves_dims_idx ON saves(width, height);

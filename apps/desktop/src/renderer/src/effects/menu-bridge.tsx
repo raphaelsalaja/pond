@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import { openShortcutsSheet } from "@/components/shared/shortcuts-sheet";
 import {
   copyId,
+  copyPrimaryMedia,
   copyUrl,
   focusPaneTitle,
   openDefaultApp,
@@ -172,6 +173,13 @@ export function MenuBridge() {
           const save = currentSave();
           if (!save?.url) return;
           void copyUrl(save.url);
+          return;
+        }
+
+        case "save.copy-media": {
+          const save = currentSave();
+          if (!save) return;
+          void copyPrimaryMedia(save);
           return;
         }
 

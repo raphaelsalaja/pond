@@ -12,6 +12,7 @@ interface LayoutSwitcherProps {
   onClick: (id: string, e: React.MouseEvent) => void;
   onAuxClick: (id: string, e: React.MouseEvent) => void;
   onDoubleClick: (id: string) => void;
+  onEndReached?: () => void;
 }
 
 export function LayoutSwitcher(props: LayoutSwitcherProps) {
@@ -22,6 +23,7 @@ export function LayoutSwitcher(props: LayoutSwitcherProps) {
     onClick,
     onAuxClick,
     onDoubleClick,
+    onEndReached,
   } = props;
 
   const callbacks = useMemo(
@@ -35,11 +37,11 @@ export function LayoutSwitcher(props: LayoutSwitcherProps) {
       multiSelectActive={multiSelectActive}
     >
       {viewMode === "justified" ? (
-        <JustifiedView saves={saves} />
+        <JustifiedView saves={saves} onEndReached={onEndReached} />
       ) : viewMode === "waterfall" ? (
-        <WaterfallView saves={saves} />
+        <WaterfallView saves={saves} onEndReached={onEndReached} />
       ) : (
-        <GridView saves={saves} />
+        <GridView saves={saves} onEndReached={onEndReached} />
       )}
     </LibraryGridProvider>
   );
