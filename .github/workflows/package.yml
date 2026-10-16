@@ -1,0 +1,116 @@
+name: Package
+
+# Builds unsigned installers so reviewers can try a pull request without
+# building it locally. These are test builds only: they are not signed,
+# notarized, or published, and they cannot auto-update.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "apps/desktop/**"
+      - "apps/extension/**"
+      - "packages/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "turbo.json"
+      - ".nvmrc"
+      - ".github/workflows/package.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+
+    steps:
+      # The repository has deep paths that exceed MAX_PATH on Windows runners.
+      - name: Enable git long paths
+        run: git config --system core.longpaths true
+
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Set up Turborepo Remote Cache
+        if: ${{ vars.TURBO_TEAM != '' }}
+        uses: vercel/setup-turborepo-remote-cache-action@v1.1.0
+        with:
+          team: ${{ vars.TURBO_TEAM }}
+
+      - name: Package Windows installer
+        run: pnpm dist:win
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v7
+        with:
+          name: Pond-windows-x64
+          path: |
+            apps/desktop/dist/Pond-*-x64.exe
+            apps/desktop/dist/latest.yml
+          if-no-files-found: error
+          retention-days: 7
+
+  macos:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        # electron-builder.yml packages both Mac architectures, so install both
+        # native dependency variants, as the release workflow does.
+        run: pnpm install --frozen-lockfile --os=darwin --cpu=arm64 --cpu=x64
+
+      - name: Set up Turborepo Remote Cache
+        if: ${{ vars.TURBO_TEAM != '' }}
+        uses: vercel/setup-turborepo-remote-cache-action@v1.1.0
+        with:
+          team: ${{ vars.TURBO_TEAM }}
+
+      # No signing identity is available to pull requests. Disabling discovery
+      # keeps electron-builder from picking up a stray keychain certificate,
+      # and notarization is skipped because the Apple variables are absent.
+      - name: Package unsigned macOS app
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: |
+          pnpm exec turbo run build --filter @pond/desktop --filter @pond/extension
+          pnpm --filter @pond/desktop dist:mac --publish never
+
+      - name: Upload disk images
+        uses: actions/upload-artifact@v7
+        with:
+          name: Pond-macos
+          path: |
+            apps/desktop/dist/Pond-*-arm64.dmg
+            apps/desktop/dist/Pond-*-x64.dmg
+          if-no-files-found: error
+          retention-days: 7

@@ -46,7 +46,6 @@ jobs:
       - name: Native database tests
         run: ELECTRON_RUN_AS_NODE=1 pnpm --filter @pond/desktop exec electron node_modules/vitest/vitest.mjs run src/main/db.test.ts src/main/core/vec-index.test.ts
 
-
       - name: Build
         run: pnpm build
 
@@ -56,3 +55,84 @@ jobs:
           sudo chown root:root "$SANDBOX"
           sudo chmod 4755 "$SANDBOX"
           xvfb-run -a pnpm --filter @pond/desktop smoke:desktop
+
+  windows:
+    runs-on: windows-latest
+
+    steps:
+      # The repository has deep paths that exceed MAX_PATH on Windows runners.
+      - name: Enable git long paths
+        run: git config --system core.longpaths true
+
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Set up Turborepo Remote Cache
+        if: ${{ vars.TURBO_TEAM != '' }}
+        uses: vercel/setup-turborepo-remote-cache-action@v1.1.0
+        with:
+          team: ${{ vars.TURBO_TEAM }}
+
+      - name: Verify workspace
+        run: pnpm check
+
+      - name: Native database tests
+        env:
+          ELECTRON_RUN_AS_NODE: "1"
+        run: pnpm --filter @pond/desktop exec electron node_modules/vitest/vitest.mjs run src/main/db.test.ts src/main/core/vec-index.test.ts
+
+      - name: Build
+        run: pnpm build
+
+      # Windows runners provide an interactive desktop session, so no xvfb.
+      - name: Desktop end-to-end smoke
+        run: pnpm --filter @pond/desktop smoke:desktop
+
+  # Platform-specific code (native modules, window chrome, the native host)
+  # is what differs on macOS. Lint, types, and generic tests already run on
+  # Ubuntu, so this job only covers what the other jobs cannot.
+  macos:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Set up Turborepo Remote Cache
+        if: ${{ vars.TURBO_TEAM != '' }}
+        uses: vercel/setup-turborepo-remote-cache-action@v1.1.0
+        with:
+          team: ${{ vars.TURBO_TEAM }}
+
+      - name: Native database tests
+        env:
+          ELECTRON_RUN_AS_NODE: "1"
+        run: pnpm --filter @pond/desktop exec electron node_modules/vitest/vitest.mjs run src/main/db.test.ts src/main/core/vec-index.test.ts
+
+      - name: Build
+        run: pnpm build
+
+      - name: Desktop end-to-end smoke
+        run: pnpm --filter @pond/desktop smoke:desktop

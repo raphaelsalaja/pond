@@ -10,34 +10,21 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  release:
-    runs-on: macos-latest
+  # Validates the tag and credentials once, then creates the draft release that
+  # the platform jobs upload into in parallel. Nothing is public until the
+  # publish job runs, so a failed platform build never ships a partial release.
+  draft:
+    runs-on: ubuntu-latest
 
     permissions:
       contents: write
-      id-token: write
 
     steps:
       - uses: actions/checkout@v6
 
-      - uses: pnpm/action-setup@v6
-
       - uses: actions/setup-node@v6
         with:
           node-version-file: .nvmrc
-          cache: pnpm
-
-      - name: Install dependencies
-        # electron-builder packages both Mac architectures in this job. Install
-        # both native dependency variants here without bloating normal dev/CI
-        # installs with every dependency's second architecture.
-        run: pnpm install --frozen-lockfile --os=darwin --cpu=arm64 --cpu=x64
-
-      - name: Set up Turborepo Remote Cache
-        if: ${{ vars.TURBO_TEAM != '' }}
-        uses: vercel/setup-turborepo-remote-cache-action@v1.1.0
-        with:
-          team: ${{ vars.TURBO_TEAM }}
 
       - name: Verify release versions
         run: |
@@ -83,19 +70,6 @@ jobs:
           }
           NODE
 
-      - name: Generated files are up to date
-        run: pnpm generate && git diff --exit-code
-
-      - name: Verify workspace
-        run: pnpm check
-
-
-      - name: Build workspace
-        run: pnpm build
-
-      - name: Desktop end-to-end smoke
-        run: pnpm --filter @pond/desktop smoke:desktop
-
       - name: Require signing credentials
         env:
           CSC_LINK: ${{ secrets.CSC_LINK }}
@@ -119,6 +93,48 @@ jobs:
             gh release create "$GITHUB_REF_NAME" --draft --verify-tag \
               --title "Pond ${GITHUB_REF_NAME#v}" --generate-notes
           fi
+
+  macos:
+    needs: draft
+    runs-on: macos-latest
+
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        # electron-builder packages both Mac architectures in this job. Install
+        # both native dependency variants here without bloating normal dev/CI
+        # installs with every dependency's second architecture.
+        run: pnpm install --frozen-lockfile --os=darwin --cpu=arm64 --cpu=x64
+
+      - name: Set up Turborepo Remote Cache
+        if: ${{ vars.TURBO_TEAM != '' }}
+        uses: vercel/setup-turborepo-remote-cache-action@v1.1.0
+        with:
+          team: ${{ vars.TURBO_TEAM }}
+
+      - name: Generated files are up to date
+        run: pnpm generate && git diff --exit-code
+
+      - name: Verify workspace
+        run: pnpm check
+
+      - name: Build workspace
+        run: pnpm build
+
+      - name: Desktop end-to-end smoke
+        run: pnpm --filter @pond/desktop smoke:desktop
 
       - name: Package macOS app and upload to release
         env:
@@ -146,13 +162,100 @@ jobs:
           cp "$ZIP" "pond-extension-${VERSION}.zip"
           gh release upload "$GITHUB_REF_NAME" "pond-extension-${VERSION}.zip" --clobber
 
+  windows:
+    needs: draft
+    runs-on: windows-latest
+
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+      # The repository has deep paths that exceed MAX_PATH on Windows runners.
+      - name: Enable git long paths
+        run: git config --system core.longpaths true
+
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Set up Turborepo Remote Cache
+        if: ${{ vars.TURBO_TEAM != '' }}
+        uses: vercel/setup-turborepo-remote-cache-action@v1.1.0
+        with:
+          team: ${{ vars.TURBO_TEAM }}
+
+      - name: Build workspace
+        run: pnpm build
+
+      - name: Desktop end-to-end smoke
+        run: pnpm --filter @pond/desktop smoke:desktop
+
+      # Windows code signing is optional. When WIN_CSC_LINK and
+      # WIN_CSC_KEY_PASSWORD are set, electron-builder signs the installer;
+      # otherwise it ships unsigned (Windows SmartScreen will warn).
+      - name: Report Windows signing mode
+        shell: bash
+        env:
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+        run: |
+          if [ -n "$WIN_CSC_LINK" ]; then
+            echo "Windows code signing: enabled"
+          else
+            echo "::warning::WIN_CSC_LINK is not set; the Windows installer will be unsigned."
+          fi
+
+      - name: Package Windows app and upload to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+        run: pnpm dist:win:publish
+
+  publish:
+    needs: [macos, windows]
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Verify release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          ASSETS="$(gh release view "$GITHUB_REF_NAME" --json assets --jq '.assets[].name')"
+          missing=0
+          for name in             "Pond-${VERSION}-arm64.dmg"             "Pond-${VERSION}-x64.dmg"             "Pond-${VERSION}-arm64.zip"             "Pond-${VERSION}-x64.zip"             "latest-mac.yml"             "Pond-${VERSION}-x64.exe"             "Pond-${VERSION}-x64.exe.blockmap"             "latest.yml"             "pond-extension-${VERSION}.zip"; do
+            if ! grep -Fxq "$name" <<<"$ASSETS"; then
+              echo "Missing release asset: $name"
+              missing=1
+            fi
+          done
+          exit "$missing"
+
       - name: Publish release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
         run: gh release edit "$GITHUB_REF_NAME" --draft=false --latest
 
   homebrew:
-    needs: release
+    needs: publish
     runs-on: ubuntu-latest
 
     permissions:
