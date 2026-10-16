@@ -5,7 +5,7 @@
 - **Node** 24 and **pnpm** 11.27.0 (see `.nvmrc` and `package.json`).
 - **Style**: [Biome](https://biomejs.dev/) handles formatting; `pnpm lint` and `pnpm oxlint` check the repository standards.
 - **Commits**: [Conventional Commits](https://www.conventionalcommits.org/) enforced by commitlint + husky.
-- **Checks**: run `pnpm check` and `pnpm build` before opening a PR. CI also verifies generated source documentation.
+- **Checks**: run `pnpm check` and `pnpm build` before opening a PR. CI also verifies generated source documentation, and it runs the build, tests, and desktop smoke test on Ubuntu, Windows, and macOS.
 - **PRs**: Keep scope focused; link issues when relevant. Generated source documentation must stay in sync: run `pnpm generate` after descriptor changes.
 
 ## Engineering standards
@@ -29,6 +29,33 @@ After building the desktop, `pnpm --filter @pond/desktop exec electron scripts/s
 The desktop package also retains focused manual checks outside `pnpm check`. Run `pnpm --filter @pond/desktop smoke:folder-tags` for folder rules, Undo, import recovery, and transfers. Run `pnpm --filter @pond/desktop smoke:library-trust` for backup manifests and detection of password-protected folders in imported Eagle metadata. These checks require a built desktop and a desktop session. Run `pnpm --filter @pond/desktop smoke:sensitive-content` to download the pinned on-device model, verify its checksum, and exercise one inference without Electron.
 
 Use temporary libraries and fixtures in tests. Never require a contributor's personal library, source accounts, or API keys for a PR check. Keep live source tests separate.
+
+## Windows development
+
+Pond builds and runs on Windows 10 and 11 (x64). In addition to Node 24 and pnpm 11.27.0:
+
+- Install the **Visual Studio C++ Build Tools** (the "Desktop development with C++" workload, which includes MSVC and the Windows SDK). `pnpm dist:win` compiles the native messaging host, `pond-native-host.exe`, with `cl` and finds it through Visual Studio's `vswhere`. Set `CC` to use a different MSVC-compatible compiler.
+- Install Python 3, which `node-gyp` uses if a native module has to be rebuilt.
+- Enable long paths before cloning, because the repository has paths deeper than the 260-character Windows limit: `git config --global core.longpaths true` (or `git clone -c core.longpaths=true`). Also turn on long path support in Windows if installs fail with path-length errors.
+- Some tests create symbolic links. Without Developer Mode or the symlink privilege they skip those cases instead of failing.
+
+`pnpm dev`, `pnpm check`, and `pnpm build` work as on macOS. To produce the installer:
+
+```bash
+pnpm dist:win
+```
+
+This builds the desktop app and extension, compiles the native host, and writes `Pond-X.Y.Z-x64.exe` and `latest.yml` to `apps/desktop/dist/`. Local builds are unsigned, so SmartScreen may warn when you run them. Windows on Arm is not supported yet.
+
+After `pnpm build`, run the end-to-end smoke test from a normal desktop session (it opens a window and uses a temporary isolated library):
+
+```bash
+pnpm --filter @pond/desktop smoke:desktop
+```
+
+Pull requests that touch the desktop app, extension, or packages also run [`package.yml`](.github/workflows/package.yml), which builds unsigned test installers. Reviewers can download `Pond-windows-x64` (the installer and `latest.yml`) and `Pond-macos` (Apple Silicon and Intel disk images) from the workflow run's artifacts; they are kept for 7 days and cannot auto-update. The same workflow can be started manually with `workflow_dispatch`.
+
+Keep platform-specific code behind `process.platform` checks and add tests that pass the platform in as a parameter, so Windows and macOS behavior is covered on every CI runner.
 
 ## Add a source
 

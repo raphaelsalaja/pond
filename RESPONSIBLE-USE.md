@@ -4,7 +4,7 @@ Pond is a personal archive. Use it to keep what you've already saved, liked, or 
 
 ## You're responsible for how you use it
 
-Pond runs on your Mac and acts as you. Every request a source makes comes from your account, through your own browser session. That means:
+Pond runs on your computer and acts as you. Every request a source makes comes from your account, through your own browser session. That means:
 
 - Follow the terms of service of every platform you connect. Pond can't agree to them for you, and some platforms limit automated access.
 - Connect only accounts you own.
@@ -23,7 +23,7 @@ Pond runs on your Mac and acts as you. Every request a source makes comes from y
 
 - Run scraping servers. Your sync traffic never passes through a Pond server.
 - Ask for your platform passwords.
-- Send your cookies or sessions off your Mac.
+- Send your cookies or sessions off your computer.
 
 ## If a platform pushes back
 

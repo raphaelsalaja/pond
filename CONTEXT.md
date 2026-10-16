@@ -1,6 +1,6 @@
 # Pond
 
-A local-first archive of things you saved on the web. Pond runs on your Mac. The browser extension talks to that app. There is no Pond cloud.
+A local-first archive of things you saved on the web. Pond runs on your computer (macOS or Windows). The browser extension talks to that app. There is no Pond cloud.
 
 ## Language
 
