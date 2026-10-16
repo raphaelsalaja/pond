@@ -13,7 +13,15 @@ writeFileSync(
   ),
 );
 process.env.POND_SANDBOX = sandbox;
-process.once("exit", () => rmSync(sandbox, { recursive: true, force: true }));
+process.once("exit", () => {
+  try {
+    rmSync(sandbox, { recursive: true, force: true });
+  } catch {
+    // Windows keeps the Library's open files locked until this process ends.
+    // Throwing here would raise a modal error dialog that blocks exit, so the
+    // temporary sandbox is left for the OS to clean up instead.
+  }
+});
 let complete = false;
 let resolvePreview;
 const previewReady = new Promise((resolve) => {
