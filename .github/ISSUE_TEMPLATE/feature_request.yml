@@ -44,6 +44,14 @@ body:
         - Other
     validations:
       required: true
+  - type: checkboxes
+    id: platforms
+    attributes:
+      label: Platforms
+      description: Which platforms should this apply to? Leave blank if it doesn't matter.
+      options:
+        - label: macOS
+        - label: Windows
   - type: input
     id: site
     attributes:

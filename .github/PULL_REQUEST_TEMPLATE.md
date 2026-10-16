@@ -46,6 +46,20 @@ Add manual repro steps for the desktop app or extension where relevant.
 - [ ] Offline tests pass
 - [ ] Manual testing notes:
 
+## Platforms tested
+
+<!--
+Check every platform you ran this on. CI builds and smoke-tests all of them,
+but only a human can confirm platform-specific behavior. If you touched
+platform-specific code (paths, windowing, shortcuts, native modules, packaging),
+say what you verified and what you couldn't.
+-->
+
+- [ ] macOS
+- [ ] Windows
+- [ ] Not platform-specific
+- Notes:
+
 ## Checklist
 
 - [ ] Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/)
