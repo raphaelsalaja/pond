@@ -1,5 +1,5 @@
 import { Wordmark } from "@pond/ui/wordmark";
-import { dmgUrl, extensionZipUrl } from "@/lib/release";
+import { dmgUrl, extensionZipUrl, windowsInstallerUrl } from "@/lib/release";
 import { Cta } from "../cta";
 import styles from "./styles.module.css";
 
@@ -16,11 +16,12 @@ export function Intro() {
       </h1>
       <p className={styles.text}>
         Keep what you save on X, Instagram, Pinterest, and more in a folder on
-        your Mac. Free and open source.
+        your Mac or Windows PC. Free and open source.
       </p>
       <nav className={styles.actions} aria-label="Downloads and links">
         <div className={styles.buttons}>
           <Cta href={dmgUrl("arm64")}>Download for Mac</Cta>
+          <Cta href={windowsInstallerUrl()}>Download for Windows</Cta>
           <Cta href={extensionZipUrl()} variant="soft">
             Browser Extension
           </Cta>
