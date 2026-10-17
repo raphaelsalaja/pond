@@ -1,3 +1,6 @@
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
   CreateManualParamsSchema,
@@ -9,20 +12,17 @@ import {
 
 describe("save import input normalization", () => {
   it("combines native URI and text paths without duplicates", () => {
+    const first = join(tmpdir(), "first image.png");
+    const second = join(tmpdir(), "second.png");
+    const firstUrl = pathToFileURL(first).href;
     expect(
       normalizeClipboardFilePaths(
-        [
-          "# Finder files",
-          "file:///tmp/first%20image.png",
-          "https://example.com/not-a-file",
-        ].join("\r\n"),
-        [
-          "/tmp/second.png",
-          "file:///tmp/first%20image.png",
-          "relative.png",
-        ].join("\n"),
+        ["# Native files", firstUrl, "https://example.com/not-a-file"].join(
+          "\r\n",
+        ),
+        [second, firstUrl, "relative.png"].join("\n"),
       ),
-    ).toEqual(["/tmp/first image.png", "/tmp/second.png"]);
+    ).toEqual([first, second]);
   });
 
   it("ignores malformed file URLs", () => {

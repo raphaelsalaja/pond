@@ -2,6 +2,7 @@ import { Settings, Switch } from "@pond/ui";
 import { MCP_HOST_CATALOG, type McpHostDefinition } from "@shared/mcp-hosts";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
+import { THIS_DEVICE } from "@/shared/lib/platform";
 import { usePrefs } from "@/shared/state/prefs";
 import { HostPopover } from "./host-popover";
 import { HostLogo } from "./logo";
@@ -45,7 +46,8 @@ export function McpSection() {
         <Settings.HeaderText>
           <Settings.Title>Model Context Protocol</Settings.Title>
           <Settings.Description>
-            Let Cursor and Claude search this library over stdio on this Mac.
+            Let Cursor and Claude search this library over stdio on{" "}
+            {THIS_DEVICE}.
           </Settings.Description>
         </Settings.HeaderText>
       </Settings.Header>

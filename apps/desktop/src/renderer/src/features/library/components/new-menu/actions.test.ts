@@ -11,6 +11,7 @@ import {
 } from "@/features/library/state/organization-review";
 import { libraryViewContext } from "@/features/saves";
 import { selection } from "@/features/saves/navigation";
+import { REVEAL_LABEL } from "@/shared/lib/platform";
 import { createNewActions, type NewActionServices } from "./actions";
 
 let notificationSequence = 0;
@@ -421,7 +422,7 @@ describe("new menu actions", () => {
     expect(updateNotification).toHaveBeenLastCalledWith(
       expect.objectContaining({
         title: "2 saves are missing from disk. 1 file isn't in the index",
-        description: "Reveal the Library in Finder to check, or rescan.",
+        description: `${REVEAL_LABEL} to check the Library, or rescan.`,
       }),
     );
   });

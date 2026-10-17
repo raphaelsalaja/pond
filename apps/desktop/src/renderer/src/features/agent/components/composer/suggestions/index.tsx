@@ -37,6 +37,8 @@ import {
   useState,
 } from "react";
 import { z } from "zod";
+import { IS_MAC } from "@/shared/lib/platform";
+import { platformGlyphs } from "@/shared/lib/shortcuts";
 import {
   $applyMarkdownBlock,
   type MarkdownBlock,
@@ -338,7 +340,9 @@ export function ComposerSuggestions({
                               </Menu.ItemLabel>
                               {option.shortcut ? (
                                 <Menu.ItemKeyboard>
-                                  {option.shortcut.join("")}
+                                  {IS_MAC
+                                    ? option.shortcut.join("")
+                                    : platformGlyphs(option.shortcut)}
                                 </Menu.ItemKeyboard>
                               ) : null}
                             </Menu.Row>

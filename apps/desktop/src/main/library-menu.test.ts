@@ -1,8 +1,8 @@
 import { expect, it } from "vitest";
-import { LIBRARY_MENU_LABELS } from "./library-menu";
+import { libraryMenuLabels } from "./library-menu";
 
 it("exposes create, switch, backup, restore, merge, and verify", () => {
-  expect(LIBRARY_MENU_LABELS).toEqual([
+  expect(libraryMenuLabels(true)).toEqual([
     "New Library",
     "Open Library",
     "Reveal Library in Finder",
@@ -17,4 +17,8 @@ it("exposes create, switch, backup, restore, merge, and verify", () => {
     "Restore All from Trash",
     "Clear History",
   ]);
+});
+
+it("uses File Explorer language on Windows", () => {
+  expect(libraryMenuLabels(false)[2]).toBe("Reveal Library in File Explorer");
 });

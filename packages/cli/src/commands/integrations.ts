@@ -5,6 +5,8 @@ import { join } from "node:path";
 import { createInterface } from "node:readline";
 import type { Command } from "commander";
 import { z } from "zod";
+import { resolveWindowsCommand, windowsInvocation } from "../windows-command";
+import { findPondExecutable } from "../windows-install";
 import { action, commandContext } from "./shared";
 
 export function registerIntegrationCommands(
@@ -17,7 +19,7 @@ export function registerIntegrationCommands(
       process.platform === "darwin"
         ? "/Applications/Pond.app/Contents/MacOS/Pond"
         : process.platform === "win32"
-          ? join(process.env.LOCALAPPDATA ?? "", "Programs", "Pond", "Pond.exe")
+          ? (findPondExecutable() ?? "")
           : "pond-desktop";
     await access(executable).catch(() => {
       if (process.platform !== "linux")
@@ -65,7 +67,21 @@ export function registerIntegrationCommands(
       if (!parsedTarget.success)
         throw new Error("Target must be cursor, claude, or codex.");
       const selected = commands[parsedTarget.data];
-      const child = spawn(selected[0], [...selected[1]], { stdio: "inherit" });
+      let file: string = selected[0];
+      let args: string[] = [...selected[1]];
+      let verbatim = false;
+      if (process.platform === "win32") {
+        const resolved = resolveWindowsCommand(file);
+        if (!resolved)
+          throw new Error(
+            `Could not find "${file}" on PATH. Install it and try again.`,
+          );
+        ({ file, args, verbatim } = windowsInvocation(resolved, args));
+      }
+      const child = spawn(file, args, {
+        stdio: "inherit",
+        windowsVerbatimArguments: verbatim,
+      });
       const code = await new Promise<number | null>((resolve, reject) => {
         child.once("error", reject);
         child.once("exit", resolve);

@@ -8,6 +8,10 @@ export function dmgUrl(arch: "arm64" | "x64"): string {
   return `${RELEASES_BASE}/Pond-${POND_VERSION}-${arch}.dmg`;
 }
 
+export function windowsInstallerUrl(): string {
+  return `${RELEASES_BASE}/Pond-${POND_VERSION}-x64.exe`;
+}
+
 export function extensionZipUrl(): string {
   return `${RELEASES_BASE}/pond-extension-${POND_VERSION}.zip`;
 }

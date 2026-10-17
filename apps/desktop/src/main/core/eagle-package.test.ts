@@ -14,6 +14,7 @@ import JSZip from "jszip";
 import sharp from "sharp";
 import { afterEach, describe, expect, it } from "vitest";
 import { z } from "zod";
+import { isWindowsSymlinkPrivilegeError } from "../test/symlink";
 import {
   type EaglePackageExportInput,
   type EaglePackageImportRuntime,
@@ -238,11 +239,19 @@ describe("Eagle package transfer", () => {
     );
   });
 
-  it("rejects directory symlinks before importing anything", async () => {
+  it("rejects directory symlinks before importing anything", async (ctx) => {
     const fixture = await directoryFixture();
     const outside = join(fixture.root, "outside.txt");
     await writeFile(outside, "outside");
-    await symlink(outside, join(fixture.packageRoot, "linked.txt"));
+    try {
+      await symlink(outside, join(fixture.packageRoot, "linked.txt"));
+    } catch (error) {
+      if (error instanceof Error && isWindowsSymlinkPrivilegeError(error)) {
+        ctx.skip("Windows symlink privilege is unavailable");
+        return;
+      }
+      throw error;
+    }
     const target = fakeRuntime();
     await expect(
       importEaglePackage(fixture.packageRoot, target.runtime),

@@ -36,6 +36,7 @@ import {
   detachedWindowChrome,
   detachedWindowTitle,
 } from "../lib/detached-window-chrome";
+import { openSavedFile } from "../lib/open-saved-file";
 import { resolveMainOut, resolvePreload } from "../lib/resolve-preload";
 import { mainWindowState } from "../window-state";
 import { copyExportFile } from "./export-files";
@@ -403,7 +404,7 @@ async function runPreviewFileAction(
   }
 
   if (input.action === "open") {
-    const error = await shell.openPath(target.path);
+    const error = await openSavedFile(target.path, shell);
     return error ? { ok: false, error } : { ok: true };
   }
 

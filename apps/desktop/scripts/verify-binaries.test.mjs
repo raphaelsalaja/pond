@@ -8,7 +8,7 @@ import {
 } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, sep } from "node:path";
 import { afterEach, describe, it } from "node:test";
 
 const { verifySharpRuntime } = createRequire(import.meta.url)(
@@ -80,7 +80,7 @@ describe("verifySharpRuntime", () => {
 
 function list(root) {
   return readdirSync(root, { recursive: true })
-    .map(String)
+    .map((entry) => String(entry).split(sep).join("/"))
     .filter((entry) => entry.endsWith(".node") || entry.endsWith(".dylib"))
     .sort();
 }

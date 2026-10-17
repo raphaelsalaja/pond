@@ -20,6 +20,7 @@ export {
   isValidShortcut,
   RATING_COMMANDS,
   resolveShortcuts,
+  SHORTCUT_PLATFORM,
   SHORTCUTS,
   type ShortcutDef,
   type ShortcutId,
@@ -130,6 +131,21 @@ function unfuseGlyphs(token: string): string[] {
     break;
   }
   return parts;
+}
+
+const MAC_GLYPH_WORDS = new Map([
+  ["⌘", "Ctrl"],
+  ["⌥", "Alt"],
+  ["⇧", "Shift"],
+]);
+
+/** Editor shortcuts are authored with macOS glyphs; other platforms spell the modifiers out. */
+export function platformGlyphs(
+  glyphs: readonly string[],
+  platform = SHORTCUT_PLATFORM,
+): string[] {
+  if (platform === "mac") return [...glyphs];
+  return glyphs.map((glyph) => MAC_GLYPH_WORDS.get(glyph) ?? glyph);
 }
 
 export function chordGlyphs(keys: string): string[] {

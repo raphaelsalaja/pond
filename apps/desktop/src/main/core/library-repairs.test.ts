@@ -266,8 +266,12 @@ describe("Library repair previews", () => {
       readFile(join(directory, "image.png_thumbnail.png")),
     ).rejects.toMatchObject({ code: "ENOENT" });
     expect(
-      (await sharp(join(directory, "image.png_thumbnail.webp")).metadata())
-        .format,
+      // A buffer keeps sharp from holding the file open, which blocks the Undo rename on Windows.
+      (
+        await sharp(
+          await readFile(join(directory, "image.png_thumbnail.webp")),
+        ).metadata()
+      ).format,
     ).toBe("webp");
 
     await applySaveFiles(directory, inverse(transaction));

@@ -23,9 +23,14 @@
         "scripts/build-native-host.mjs",
         "scripts/fix-dmg-window.cjs",
         "scripts/prepare-dmg-background.mjs",
+        "scripts/verify-binaries.cjs",
         "out/**"
       ],
-      "outputs": ["dist/**", "resources/bin/pond-native-host"]
+      "outputs": [
+        "dist/**",
+        "resources/bin/pond-native-host",
+        "resources/bin/pond-native-host.exe"
+      ]
     }
   }
 }

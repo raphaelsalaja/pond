@@ -179,9 +179,20 @@ function runCommand(command, token) {
     cwd: process.cwd(),
     env: { ...process.env, POND_DEV_RUNTIME_TOKEN: token },
     stdio: "inherit",
+    // Node refuses to spawn .cmd files directly since CVE-2024-27980. The
+    // arguments come from the package scripts, never from user input.
+    shell: process.platform === "win32",
   });
 
   const forwardSignal = (signal) => {
+    if (process.platform === "win32" && child.pid) {
+      // child.kill() would only end cmd.exe, leaving the dev tree running.
+      spawn("taskkill", ["/pid", String(child.pid), "/T", "/F"], {
+        stdio: "ignore",
+        windowsHide: true,
+      }).on("error", () => {});
+      return;
+    }
     if (!child.killed) {
       child.kill(signal);
     }

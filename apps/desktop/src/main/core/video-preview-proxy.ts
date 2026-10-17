@@ -4,6 +4,7 @@ import { mkdir, rename, rm, stat } from "node:fs/promises";
 import { join } from "node:path";
 import log from "electron-log/main.js";
 import { resolvePondSavePath } from "../ipc/helpers";
+import { killProcessTree, trackChildProcess } from "../lib/process-tree";
 import { libraryRoot } from "../paths";
 import { binariesAvailable } from "./refresh/binaries";
 
@@ -135,13 +136,17 @@ async function createVideoPreviewProxy(input: {
 
 function runFfmpeg(path: string, args: string[]): Promise<void> {
   return new Promise((resolve, reject) => {
-    const child = spawn(path, args, { stdio: ["ignore", "ignore", "pipe"] });
+    const child = spawn(path, args, {
+      stdio: ["ignore", "ignore", "pipe"],
+      windowsHide: true,
+    });
+    trackChildProcess(child);
     let stderr = "";
     child.stderr.on("data", (chunk: Buffer) => {
       stderr = `${stderr}${chunk.toString("utf8")}`.slice(-2_000);
     });
     const timer = setTimeout(() => {
-      child.kill("SIGKILL");
+      killProcessTree(child, "SIGKILL");
     }, PROXY_TIMEOUT_MS);
     timer.unref();
     child.once("error", (error) => {

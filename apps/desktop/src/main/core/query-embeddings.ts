@@ -1,3 +1,4 @@
+import { join } from "node:path";
 import type {
   PreTrainedModel,
   PreTrainedTokenizer,
@@ -12,6 +13,7 @@ import {
   textEmbeddingVersion,
 } from "../../shared/embeddings";
 import { EMBEDDING_MODEL } from "../../shared/on-device-models";
+import { appDataRoot } from "../paths";
 import { getPrefs } from "./prefs";
 
 export interface VersionedVector {
@@ -76,10 +78,24 @@ function memo<T extends Disposable>(
   return pending;
 }
 
+/**
+ * transformers.js caches downloads beside its own package, which on Windows is
+ * inside the install directory (read-only in app.asar, wiped by updates), so
+ * Windows keeps them in user data. Other platforms keep the library default.
+ */
+export function modelCacheDir(
+  platform: NodeJS.Platform,
+  userData: string,
+): string | undefined {
+  return platform === "win32" ? join(userData, "models") : undefined;
+}
+
 async function embeddingTextBundle(): Promise<EmbeddingTextBundle> {
   return memo(embeddingCache, EMBEDDING_MODEL.revision, async () => {
     const transformers = await import("@huggingface/transformers");
     transformers.env.allowLocalModels = false;
+    const cacheDir = modelCacheDir(process.platform, appDataRoot());
+    if (cacheDir) transformers.env.cacheDir = cacheDir;
     const options = { revision: EMBEDDING_MODEL.revision };
     const config = await transformers.AutoConfig.from_pretrained(
       EMBEDDING_MODEL.id,

@@ -23,7 +23,7 @@ test("classifies desktop setup steps by runtime requirement", () => {
       ["prepare-icon-previews.mjs", false],
       ["patch-electron-name.mjs", false],
       ["copy-replay-assets.mjs", true],
-      ["build-native-host.mjs", true],
+      ["build-native-host.mjs", process.platform !== "win32"],
     ],
   );
 });

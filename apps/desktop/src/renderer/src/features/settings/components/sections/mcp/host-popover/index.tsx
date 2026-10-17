@@ -4,6 +4,7 @@ import {
   hostSetupCommands,
   isMcpDeeplinkHost,
   type McpHostDefinition,
+  mcpHostConfigPath,
 } from "@shared/mcp-hosts";
 import { useState } from "react";
 import { CopyLine } from "../copy-line";
@@ -29,6 +30,10 @@ export function HostPopover({
     : [];
   const json = snippet?.json ?? "";
   const deeplink = isMcpDeeplinkHost(host.id) ? host.id : null;
+  const configPath = mcpHostConfigPath(
+    host,
+    globalThis.navigator?.platform ?? "",
+  );
 
   async function addToClient() {
     if (!deeplink) return;
@@ -73,8 +78,8 @@ export function HostPopover({
               <>
                 <p className={styles.merge}>
                   {deeplink
-                    ? `Or merge into ${host.configPath}:`
-                    : `Merge into ${host.configPath}:`}
+                    ? `Or merge into ${configPath}:`
+                    : `Merge into ${configPath}:`}
                 </p>
                 <JsonBlock json={json} />
               </>

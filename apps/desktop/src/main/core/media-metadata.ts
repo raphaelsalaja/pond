@@ -33,6 +33,7 @@ export async function extractMediaMetadata(
   try {
     await execFileAsync(ffmpeg, ["-hide_banner", "-i", path], {
       maxBuffer: 1024 * 1024,
+      windowsHide: true,
     });
     return {};
   } catch (error) {

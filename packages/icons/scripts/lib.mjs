@@ -26,8 +26,13 @@ export function fileName(glyph) {
 /** Generated files go through Biome so `--check` compares against what CI enforces. */
 function format(path, source) {
   return execFileSync(
-    resolve(repoRoot, "node_modules/.bin/biome"),
-    ["check", "--write", `--stdin-file-path=${relative(repoRoot, path)}`],
+    process.execPath,
+    [
+      resolve(repoRoot, "node_modules/@biomejs/biome/bin/biome"),
+      "check",
+      "--write",
+      `--stdin-file-path=${relative(repoRoot, path)}`,
+    ],
     { cwd: repoRoot, encoding: "utf8", input: source },
   );
 }

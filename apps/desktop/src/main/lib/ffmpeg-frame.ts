@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import log from "electron-log/main.js";
 import { binariesAvailable } from "../core/refresh/binaries";
+import { killProcessTree } from "./process-tree";
 
 const HARD_TIMEOUT_MS = 10_000;
 const SAMPLE_TIMEOUT_MS = 30_000;
@@ -287,7 +288,10 @@ function runWithTimeout(
   timeoutMs: number,
 ): Promise<ProcOutcome> {
   return new Promise((resolve) => {
-    const child = spawn(bin, argv, { stdio: ["ignore", "ignore", "pipe"] });
+    const child = spawn(bin, argv, {
+      stdio: ["ignore", "ignore", "pipe"],
+      windowsHide: true,
+    });
     let stderr = "";
     let settled = false;
 
@@ -295,7 +299,7 @@ function runWithTimeout(
       if (settled) return;
       settled = true;
       try {
-        child.kill("SIGKILL");
+        killProcessTree(child, "SIGKILL");
       } catch {}
       resolve({ code: 124, stderr: `${stderr}\n[pond ffmpeg-frame] timeout` });
     }, timeoutMs);

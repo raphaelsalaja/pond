@@ -1,6 +1,8 @@
+import { execFile } from "node:child_process";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { promisify } from "node:util";
 import {
   EXTENSION_ID,
   FIREFOX_EXTENSION_ID,
@@ -10,6 +12,8 @@ import { app } from "electron";
 import log from "electron-log/main.js";
 
 const HOST_FILENAME = `${NATIVE_HOST_NAME}.json`;
+const FIREFOX_HOST_FILENAME = `${NATIVE_HOST_NAME}.firefox.json`;
+const execFileAsync = promisify(execFile);
 
 const CHROMIUM_NMH_DIRS = [
   "Library/Application Support/Google/Chrome/NativeMessagingHosts",
@@ -50,17 +54,47 @@ const FIREFOX_NMH_TARGETS = [
   },
 ] as const;
 
-function nativeHostBinaryPath(): string {
+export const WINDOWS_NATIVE_MESSAGING_REGISTRY_KEYS = [
+  `HKCU\\Software\\Google\\Chrome\\NativeMessagingHosts\\${NATIVE_HOST_NAME}`,
+  `HKCU\\Software\\Google\\Chrome SxS\\NativeMessagingHosts\\${NATIVE_HOST_NAME}`,
+  `HKCU\\Software\\Chromium\\NativeMessagingHosts\\${NATIVE_HOST_NAME}`,
+  `HKCU\\Software\\Microsoft\\Edge\\NativeMessagingHosts\\${NATIVE_HOST_NAME}`,
+  `HKCU\\Software\\BraveSoftware\\Brave-Browser\\NativeMessagingHosts\\${NATIVE_HOST_NAME}`,
+  `HKCU\\Software\\Vivaldi\\NativeMessagingHosts\\${NATIVE_HOST_NAME}`,
+] as const;
+
+/** Zen reads Firefox's key; the other forks keep their own. */
+export const WINDOWS_FIREFOX_REGISTRY_KEYS = [
+  `HKCU\\Software\\Mozilla\\NativeMessagingHosts\\${NATIVE_HOST_NAME}`,
+  `HKCU\\Software\\LibreWolf\\NativeMessagingHosts\\${NATIVE_HOST_NAME}`,
+  `HKCU\\Software\\Floorp\\NativeMessagingHosts\\${NATIVE_HOST_NAME}`,
+] as const;
+
+export function nativeHostFilename(platform: NodeJS.Platform): string {
+  return platform === "win32" ? "pond-native-host.exe" : "pond-native-host";
+}
+
+function nativeHostBinaryPath(
+  platform: NodeJS.Platform = process.platform,
+): string {
+  const filename = nativeHostFilename(platform);
   if (app.isPackaged) {
-    return join(process.resourcesPath, "bin", "pond-native-host");
+    return join(process.resourcesPath, "bin", filename);
   }
   const candidates = [
-    join(app.getAppPath(), "resources", "bin", "pond-native-host"),
-    join(app.getAppPath(), "..", "resources", "bin", "pond-native-host"),
-    join(process.cwd(), "resources", "bin", "pond-native-host"),
+    join(app.getAppPath(), "resources", "bin", filename),
+    join(app.getAppPath(), "..", "resources", "bin", filename),
+    join(process.cwd(), "resources", "bin", filename),
   ];
   const found = candidates.find((p) => existsSync(p));
-  return found ?? join(process.cwd(), "resources", "bin", "pond-native-host");
+  return found ?? join(process.cwd(), "resources", "bin", filename);
+}
+
+export function windowsRegistryArgs(
+  key: string,
+  manifestPath: string,
+): string[] {
+  return ["ADD", key, "/ve", "/t", "REG_SZ", "/d", manifestPath, "/f"];
 }
 
 function hostManifest(
@@ -80,7 +114,7 @@ function hostManifest(
   )}\n`;
 }
 
-function chromiumNativeHostManifest(hostPath: string): string {
+export function chromiumNativeHostManifest(hostPath: string): string {
   return hostManifest(hostPath, {
     allowed_origins: [`chrome-extension://${EXTENSION_ID}/`],
   });
@@ -100,6 +134,8 @@ interface NativeHostManifestDependencies {
   makeDirectory: (path: string) => void;
   writeFile: (path: string, body: string) => void;
   warn: (...values: unknown[]) => void;
+  userDataDirectory: () => string;
+  runRegistry: (args: string[]) => Promise<void>;
 }
 
 const defaultDependencies: NativeHostManifestDependencies = {
@@ -110,17 +146,32 @@ const defaultDependencies: NativeHostManifestDependencies = {
   makeDirectory: (path) => mkdirSync(path, { recursive: true }),
   writeFile: (path, body) => writeFileSync(path, body, { encoding: "utf8" }),
   warn: (...values) => log.warn(...values),
+  userDataDirectory: () => app.getPath("userData"),
+  runRegistry: async (args) => {
+    await execFileAsync("reg.exe", args, {
+      windowsHide: true,
+      timeout: 5_000,
+      killSignal: "SIGKILL",
+    });
+  },
 };
 
-export function writeNativeHostManifests(
+export async function writeNativeHostManifests(
   overrides: Partial<NativeHostManifestDependencies> = {},
-): void {
+): Promise<void> {
   const dependencies = { ...defaultDependencies, ...overrides };
-  if (dependencies.platform !== "darwin") return;
+  if (dependencies.platform !== "darwin" && dependencies.platform !== "win32") {
+    return;
+  }
 
   const hostPath = dependencies.hostPath();
   if (!dependencies.exists(hostPath)) {
     dependencies.warn("[pond native] host binary missing", hostPath);
+    return;
+  }
+
+  if (dependencies.platform === "win32") {
+    await writeWindowsNativeHostManifest(hostPath, dependencies);
     return;
   }
 
@@ -155,5 +206,55 @@ export function writeNativeHostManifests(
         err,
       );
     }
+  }
+}
+
+async function writeWindowsNativeHostManifest(
+  hostPath: string,
+  dependencies: NativeHostManifestDependencies,
+): Promise<void> {
+  const dir = join(dependencies.userDataDirectory(), "native-messaging");
+  // Chromium and Firefox reject each other's allow-list field, so each family
+  // registers its own manifest.
+  const targets = [
+    {
+      manifestPath: join(dir, HOST_FILENAME),
+      body: chromiumNativeHostManifest(hostPath),
+      keys: WINDOWS_NATIVE_MESSAGING_REGISTRY_KEYS,
+    },
+    {
+      manifestPath: join(dir, FIREFOX_HOST_FILENAME),
+      body: firefoxNativeHostManifest(hostPath),
+      keys: WINDOWS_FIREFOX_REGISTRY_KEYS,
+    },
+  ];
+  for (const { manifestPath, body, keys } of targets) {
+    try {
+      dependencies.makeDirectory(dir);
+      dependencies.writeFile(manifestPath, body);
+    } catch (err) {
+      dependencies.warn(
+        "[pond native] failed to write host manifest",
+        manifestPath,
+        err,
+      );
+      continue;
+    }
+
+    await Promise.all(
+      keys.map(async (key) => {
+        try {
+          await dependencies.runRegistry(
+            windowsRegistryArgs(key, manifestPath),
+          );
+        } catch (err) {
+          dependencies.warn(
+            "[pond native] failed to register host manifest",
+            key,
+            err,
+          );
+        }
+      }),
+    );
   }
 }

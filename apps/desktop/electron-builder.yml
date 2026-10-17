@@ -10,6 +10,9 @@ asarUnpack:
   - "**/node_modules/better-sqlite3/**"
   - "**/node_modules/sqlite-vec/**"
   - "**/node_modules/sqlite-vec-*/**"
+  # onnxruntime loads sibling shared libraries (onnxruntime.dll on Windows)
+  # that the .node unpack above does not take along.
+  - "**/node_modules/onnxruntime-node/**"
   # sharp loads a sibling dylib. The .node unpack above does not take it along.
   - "**/node_modules/@img/**"
   - "**/node_modules/sharp/**"
@@ -42,7 +45,8 @@ files:
 # `node_modules/ffmpeg-static/ffmpeg` is the static ffmpeg yt-dlp uses
 # to mux adaptive streams (most TikTok / IG Reels / YT downloads need
 # it). `extraResources` flattens it into `bin/` so `binariesAvailable`
-# can spawn it as a separate process (asar paths aren't executable).
+# can spawn it as a separate process (asar paths aren't executable). The
+# executable name differs per OS, so it is declared in `mac:` and `win:`.
 # yt-dlp is not bundled: it's fetched at runtime into userData.
 extraResources:
   - from: resources
@@ -53,8 +57,6 @@ extraResources:
     to: app-icons
     filter:
       - "**/default.png"
-  - from: node_modules/ffmpeg-static/ffmpeg
-    to: bin/ffmpeg
   - from: ../extension/.output/chrome-mv3
     to: extension
   - from: ../extension/.output/firefox-mv3
@@ -106,6 +108,9 @@ mac:
   # the hardened runtime after notarization.
   entitlements: packaging/entitlements.mac.plist
   entitlementsInherit: packaging/entitlements.mac.inherit.plist
+  extraResources:
+    - from: node_modules/ffmpeg-static/ffmpeg
+      to: bin/ffmpeg
   # Register `.pond` as a macOS package so Finder shows a library as a
   # single bundle instead of a folder full of items/, trash/, metadata.
   # LaunchServices only honors this in packaged builds, not `dev`.
@@ -144,14 +149,35 @@ dmg:
       type: link
       path: /Applications
 
-# Windows and Linux targets are disabled until those builds ship.
-# Coming soon:
-# win:
-#   target:
-#     - target: nsis
-#       arch:
-#         - x64
-#         - arm64
+# Windows arm64 stays disabled until the native dependency set is verified on
+# an arm64 runner. The x64 build produces the installer and latest.yml used by
+# electron-updater.
+win:
+  artifactName: ${productName}-${version}-${arch}.${ext}
+  extraResources:
+    - from: node_modules/ffmpeg-static/ffmpeg.exe
+      to: bin/ffmpeg.exe
+  target:
+    - target: nsis
+      arch:
+        - x64
+
+# Per-user one-click install: no UAC prompt, and electron-updater can replace
+# the app silently. The installer is unsigned until a code-signing certificate
+# is configured. `pond://` is registered at runtime by
+# `app.setAsDefaultProtocolClient`, which writes to HKCU in packaged builds.
+nsis:
+  oneClick: true
+  perMachine: false
+  runAfterFinish: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: ${productName}
+  deleteAppDataOnUninstall: false
+  # Removes the HKCU registrations Pond writes at runtime; keeps the Library.
+  include: packaging/installer.nsh
+
+# Linux remains disabled until that build ships.
 # linux:
 #   target:
 #     - target: AppImage

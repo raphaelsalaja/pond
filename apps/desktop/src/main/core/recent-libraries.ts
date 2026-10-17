@@ -1,16 +1,11 @@
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  renameSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { stat } from "node:fs/promises";
 import { basename, dirname, join, resolve } from "node:path";
 import { app } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
 import { writeLibraryPointer } from "../lib/library-pointer";
+import { renameSyncWithRetry } from "../lib/rename-retry";
 import { readLibraryIdentity } from "./library-identity";
 
 const RecentLibrariesSchema = z.array(
@@ -33,7 +28,7 @@ function writeHistory(
 ): void {
   mkdirSync(dirname(file), { recursive: true });
   writeFileSync(`${file}.tmp`, JSON.stringify(history, null, 2));
-  renameSync(`${file}.tmp`, file);
+  renameSyncWithRetry(`${file}.tmp`, file);
 }
 
 export function recordRecentLibrary(

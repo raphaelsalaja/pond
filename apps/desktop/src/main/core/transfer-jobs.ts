@@ -4,7 +4,6 @@ import {
   mkdir,
   readFile,
   realpath,
-  rename,
   writeFile,
 } from "node:fs/promises";
 import { join } from "node:path";
@@ -17,6 +16,7 @@ import {
   TransferJobSchema,
   type TransferRequest,
 } from "../../shared/transfer-contracts";
+import { renameWithRetry } from "../lib/rename-retry";
 import { libraryRoot } from "../paths";
 import { runLibraryTransfer } from "./library-transfers";
 
@@ -56,7 +56,10 @@ export function createTransferJobStore(directory: string) {
       .then(async () => {
         await mkdir(directory, { recursive: true });
         await writeFile(join(directory, "jobs.tmp"), text);
-        await rename(join(directory, "jobs.tmp"), join(directory, "jobs.json"));
+        await renameWithRetry(
+          join(directory, "jobs.tmp"),
+          join(directory, "jobs.json"),
+        );
       });
     writes = next;
     await next;

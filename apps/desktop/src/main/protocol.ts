@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { stat } from "node:fs/promises";
-import { extname, join, normalize, resolve } from "node:path";
+import { extname, join, resolve } from "node:path";
 import { Readable } from "node:stream";
 import { app, net, protocol } from "electron";
 import log from "electron-log/main.js";
@@ -16,6 +16,7 @@ import {
   lookupCachedThumbnail,
 } from "./core/thumbnail";
 import { VIDEO_CACHE_HOST } from "./core/video-preview-proxy";
+import { isPathInside } from "./lib/path-identity";
 import { clampThumbWidth } from "./lib/thumbnail";
 import { libraryRoot, resolvePaths, saveFile } from "./paths";
 
@@ -69,8 +70,8 @@ export function registerProtocol() {
       if (!host || !file) {
         return new Response("bad request", { status: 400 });
       }
-      const { resolved, prefix } = resolveTarget(host, file);
-      if (!resolved.startsWith(prefix)) {
+      const { resolved, root } = resolveTarget(host, file);
+      if (!root || !isPathInside(root, resolved)) {
         return new Response("forbidden", { status: 403 });
       }
 
@@ -206,28 +207,28 @@ function fileBody(path: string, range?: { start: number; end: number }) {
 
 interface ProtocolTarget {
   resolved: string;
-  prefix: string;
+  root: string | null;
 }
 
 function resolveTarget(host: string, file: string): ProtocolTarget {
   if (host === META_HOST) {
     const base = join(libraryRoot(), META_DIR);
-    return { resolved: resolve(join(base, file)), prefix: normalize(base) };
+    return { resolved: resolve(join(base, file)), root: base };
   }
   if (host === REPLAY_HOST) {
     const base = replayAssetsDir();
     const asset = base ? REPLAY_ASSETS.get(file) : undefined;
     if (!base || !asset) {
-      return { resolved: "", prefix: "\u0000" };
+      return { resolved: "", root: null };
     }
-    return { resolved: join(base, asset), prefix: normalize(base) };
+    return { resolved: join(base, asset), root: base };
   }
   if (host === VIDEO_CACHE_HOST) {
     const base = join(libraryRoot(), VIDEO_CACHE_HOST);
-    return { resolved: resolve(join(base, file)), prefix: normalize(base) };
+    return { resolved: resolve(join(base, file)), root: base };
   }
   return {
     resolved: resolve(saveFile(host, file)),
-    prefix: normalize(resolvePaths().savesDir),
+    root: resolvePaths().savesDir,
   };
 }

@@ -6,7 +6,7 @@ import {
   unlinkSync,
   writeFileSync,
 } from "node:fs";
-import { dirname, isAbsolute, join, resolve } from "node:path";
+import { dirname, isAbsolute, join, resolve, win32 } from "node:path";
 import { app } from "electron";
 import { z } from "zod";
 
@@ -24,6 +24,19 @@ function pointerPath(): string {
   return join(app.getPath("userData"), POINTER_FILE);
 }
 
+export function isPathInside(
+  root: string,
+  target: string,
+  platform: NodeJS.Platform = process.platform,
+): boolean {
+  if (platform !== "win32") return target.startsWith(`${root}/`);
+  const child = win32.relative(root, target);
+  return (
+    child === "" ||
+    (child !== ".." && !child.startsWith("..\\") && !win32.isAbsolute(child))
+  );
+}
+
 export function readLibraryPointer(): string | null {
   try {
     const raw = readFileSync(pointerPath(), "utf-8");
@@ -31,7 +44,7 @@ export function readLibraryPointer(): string | null {
     if (!parsed.success) return null;
     const candidate = parsed.data.path;
     const abs = isAbsolute(candidate) ? candidate : resolve(candidate);
-    if (abs.startsWith(`${app.getPath("userData")}/`)) return null;
+    if (isPathInside(app.getPath("userData"), abs)) return null;
     return abs;
   } catch {
     return null;
@@ -63,7 +76,7 @@ interface PointerSafetyReport {
 
 export function checkPointerSafety(target: string): PointerSafetyReport {
   const abs = isAbsolute(target) ? target : resolve(target);
-  if (abs.startsWith(`${app.getPath("userData")}/`)) {
+  if (isPathInside(app.getPath("userData"), abs)) {
     return { ok: false, reason: "inside_user_data" };
   }
   try {

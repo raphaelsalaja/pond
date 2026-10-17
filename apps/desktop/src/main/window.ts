@@ -47,6 +47,10 @@ export function beginQuit(): void {
   isQuitting = true;
 }
 
+export function isCloseToTrayEnabled(): boolean {
+  return closeToTrayEnabled;
+}
+
 export function setCloseToTray(enabled: boolean): void {
   closeToTrayEnabled = enabled;
 }

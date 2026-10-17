@@ -33,6 +33,7 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
+import { platformGlyphs } from "@/shared/lib/shortcuts";
 import {
   $applyNoteBlock,
   insertNoteFiles,
@@ -306,7 +307,7 @@ export function SlashMenu() {
                           <Menu.ItemLabel>{option.label}</Menu.ItemLabel>
                           {option.shortcut ? (
                             <Menu.ItemKeyboard>
-                              {option.shortcut}
+                              {platformGlyphs(option.shortcut)}
                             </Menu.ItemKeyboard>
                           ) : null}
                         </Menu.Row>

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, type TestContext } from "vitest";
 import { embeddingDimensions } from "../../shared/embeddings";
 import {
   backfillVecBatch,
@@ -9,6 +9,26 @@ import {
   toVecBlob,
   upsertVec,
 } from "./vec-index";
+
+/**
+ * better-sqlite3 is built for Electron's ABI, so plain Node usually cannot load it.
+ * That skips these tests visibly; Electron, or POND_REQUIRE_NATIVE=1, makes it a failure.
+ */
+const nativeRequired =
+  Boolean(process.versions.electron) || process.env.POND_REQUIRE_NATIVE === "1";
+
+async function openMemoryDb(context: TestContext) {
+  try {
+    const Database = (await import("better-sqlite3")).default;
+    return new Database(":memory:");
+  } catch (error) {
+    if (nativeRequired) throw error;
+    context.skip(
+      "better-sqlite3 cannot load under plain Node (set POND_REQUIRE_NATIVE=1 to require it)",
+    );
+    throw error;
+  }
+}
 
 describe("vec-index packing", () => {
   it("serializes floats as a 4-byte-per-dim blob", () => {
@@ -26,21 +46,8 @@ describe("vec-index packing", () => {
 });
 
 describe("vec-index knn", () => {
-  it("ranks the nearest neighbor in sqlite-vec", async () => {
-    let Database: typeof import("better-sqlite3");
-    try {
-      Database = (await import("better-sqlite3")).default;
-    } catch (error) {
-      if (process.versions.electron) throw error;
-      return;
-    }
-    let db: InstanceType<typeof Database>;
-    try {
-      db = new Database(":memory:");
-    } catch (error) {
-      if (process.versions.electron) throw error;
-      return;
-    }
+  it("ranks the nearest neighbor in sqlite-vec", async (context) => {
+    const db = await openMemoryDb(context);
     expect(loadSqliteVec(db)).toBe(true);
     ensureVecTables(db, { text: 4, clip: 4 });
     upsertVec(db, "text", "near", [1, 0, 0, 0]);
@@ -53,21 +60,8 @@ describe("vec-index knn", () => {
     db.close();
   });
 
-  it("backfills JSON embeddings into vec0", async () => {
-    let Database: typeof import("better-sqlite3");
-    try {
-      Database = (await import("better-sqlite3")).default;
-    } catch (error) {
-      if (process.versions.electron) throw error;
-      return;
-    }
-    let db: InstanceType<typeof Database>;
-    try {
-      db = new Database(":memory:");
-    } catch (error) {
-      if (process.versions.electron) throw error;
-      return;
-    }
+  it("backfills JSON embeddings into vec0", async (context) => {
+    const db = await openMemoryDb(context);
     expect(loadSqliteVec(db)).toBe(true);
     db.exec(`
       CREATE TABLE saves (
@@ -86,21 +80,8 @@ describe("vec-index knn", () => {
     db.close();
   });
 
-  it("keeps embedding-sized tables when reopened with defaults", async () => {
-    let Database: typeof import("better-sqlite3");
-    try {
-      Database = (await import("better-sqlite3")).default;
-    } catch (error) {
-      if (process.versions.electron) throw error;
-      return;
-    }
-    let db: InstanceType<typeof Database>;
-    try {
-      db = new Database(":memory:");
-    } catch (error) {
-      if (process.versions.electron) throw error;
-      return;
-    }
+  it("keeps embedding-sized tables when reopened with defaults", async (context) => {
+    const db = await openMemoryDb(context);
     expect(loadSqliteVec(db)).toBe(true);
     const vector = Array.from({ length: embeddingDimensions() }, (_, index) =>
       index === 0 ? 1 : 0,

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { SETTINGS_GROUP_LABELS, SETTINGS_SECTIONS } from "@pond/schema";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { SETTINGS_SEARCH_INDEX } from "./search-index";
 
 function entry(id: string) {
@@ -43,5 +43,27 @@ describe("settings search index", () => {
     for (const section of SETTINGS_SECTIONS) {
       expect(section.label).not.toBe(SETTINGS_GROUP_LABELS[section.group]);
     }
+  });
+});
+
+describe("settings search index platform rows", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  async function indexFor(isMac: boolean) {
+    vi.resetModules();
+    vi.stubGlobal("navigator", { platform: isMac ? "MacIntel" : "Win32" });
+    return (await import("./search-index")).SETTINGS_SEARCH_INDEX;
+  }
+
+  it("hides macOS-only rows off macOS", async () => {
+    const ids = (await indexFor(false)).map((candidate) => candidate.id);
+    expect(ids).not.toContain("general:dockVisibility");
+    expect(ids).not.toContain("general:raycast");
+  });
+
+  it("keeps macOS-only rows on macOS", async () => {
+    const ids = (await indexFor(true)).map((candidate) => candidate.id);
+    expect(ids).toContain("general:dockVisibility");
+    expect(ids).toContain("general:raycast");
   });
 });

@@ -15,6 +15,7 @@ import {
 } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { z } from "zod";
+import { isPathInside, isSamePath } from "../lib/path-identity";
 
 const MANIFEST = "pond-backup-manifest.json";
 const BackupEntrySchema = z.object({
@@ -152,9 +153,9 @@ export async function createLibraryBackup(input: {
   const parent = await realpath(dirname(resolve(input.destination)));
   const destination = join(parent, basename(resolve(input.destination)));
   if (
-    destination === source ||
-    destination.startsWith(`${source}${sep}`) ||
-    source.startsWith(`${destination}${sep}`)
+    isSamePath(destination, source) ||
+    isPathInside(source, destination) ||
+    isPathInside(destination, source)
   )
     throw new Error("The backup must be outside the source library.");
   const existing = await lstat(destination).catch(() => null);

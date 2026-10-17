@@ -145,7 +145,7 @@ export const savesExportQueries = {
         return { ok: false, error: "This Save has no file to share." };
       }
       if (process.platform !== "darwin") {
-        return { ok: false, error: "Share is unavailable on this Mac." };
+        return { ok: false, error: "Share is unavailable on this system." };
       }
       try {
         const parentWindow = event

@@ -19,6 +19,7 @@ export interface McpHostDefinition {
   name: string;
   featured: boolean;
   configPath: string;
+  windowsConfigPath?: string;
   hint: string;
   addLabel: string;
 }
@@ -62,6 +63,7 @@ export const MCP_HOST_CATALOG: readonly McpHostDefinition[] = [
     featured: false,
     configPath:
       "~/Library/Application Support/Claude/claude_desktop_config.json",
+    windowsConfigPath: "%APPDATA%\\Claude\\claude_desktop_config.json",
     hint: "Claude Desktop MCP shows Pond when connected.",
     addLabel: "Add to Claude Desktop",
   },
@@ -70,6 +72,7 @@ export const MCP_HOST_CATALOG: readonly McpHostDefinition[] = [
     name: "VS Code",
     featured: false,
     configPath: "~/Library/Application Support/Code/User/mcp.json",
+    windowsConfigPath: "%APPDATA%\\Code\\User\\mcp.json",
     hint: "VS Code MCP shows Pond when connected.",
     addLabel: "Add to VS Code",
   },
@@ -82,6 +85,15 @@ export const MCP_HOST_CATALOG: readonly McpHostDefinition[] = [
     addLabel: "Copy Config",
   },
 ];
+
+export function mcpHostConfigPath(
+  host: McpHostDefinition,
+  platform: string,
+): string {
+  return platform.toLowerCase().includes("win")
+    ? (host.windowsConfigPath ?? host.configPath)
+    : host.configPath;
+}
 
 export interface McpSetupCommand {
   label: string;

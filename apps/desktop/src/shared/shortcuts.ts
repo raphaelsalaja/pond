@@ -5,8 +5,25 @@ import {
 } from "@tanstack/hotkeys";
 import { GLOBAL_SHORTCUTS, LAYOUT_CYCLE_SHORTCUT } from "./global-shortcuts";
 
-/** Pond ships only on macOS; pinning it keeps `Control` distinct from `Mod` when tests run on Linux. */
-export const SHORTCUT_PLATFORM = "mac";
+/** An unknown platform (such as jsdom's empty string) keeps the original macOS behavior. */
+export function shortcutPlatformFromName(
+  platform: string,
+): "mac" | "windows" | "linux" {
+  const value = platform.toLowerCase();
+  if (!value || value.includes("mac") || value === "darwin") return "mac";
+  if (value.includes("win")) return "windows";
+  return "linux";
+}
+
+export const SHORTCUT_PLATFORM = shortcutPlatformFromName(
+  globalThis.navigator?.platform ?? "",
+);
+
+const REVEAL_SHORTCUT_LABEL = {
+  mac: "Reveal in Finder",
+  windows: "Reveal in File Explorer",
+  linux: "Show in File Manager",
+} as const;
 
 type ShortcutGroup =
   | "Global"
@@ -235,7 +252,11 @@ export const SHORTCUTS = {
     label: "Open Original in Browser",
     group: "Saves",
   },
-  "save.reveal": { keys: "F", label: "Reveal in Finder", group: "Saves" },
+  "save.reveal": {
+    keys: "F",
+    label: REVEAL_SHORTCUT_LABEL[SHORTCUT_PLATFORM],
+    group: "Saves",
+  },
   "save.trash": { keys: "Backspace", label: "Move to Trash", group: "Saves" },
   "save.restore": {
     keys: "Backspace",

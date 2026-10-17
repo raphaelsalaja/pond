@@ -14,6 +14,7 @@ import {
   undo,
 } from "../../core/undo";
 import { hasUserTitle } from "../../core/user-metadata";
+import { openSavedFile } from "../../lib/open-saved-file";
 import { resolveSaveFilePath, safeHandle } from "../helpers";
 
 export function registerAppHandlers(): void {
@@ -112,7 +113,7 @@ export function registerAppHandlers(): void {
   safeHandle(IPC.openSaveFile, async (_, id: string, fileIndex?: number) => {
     const target = await resolveSaveFilePath(id, fileIndex);
     if (!target.ok) return target;
-    const err = await shell.openPath(target.path);
+    const err = await openSavedFile(target.path, shell);
     if (err) {
       log.warn("[pond ipc] openSaveFile failed", err);
       return { ok: false as const, reason: err };

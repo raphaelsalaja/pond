@@ -11,7 +11,15 @@ const { tmpdir } = require("node:os");
 const { join } = require("node:path");
 const sandbox = mkdtempSync(join(tmpdir(), "pond-library-trust-"));
 process.env.POND_SANDBOX = sandbox;
-process.once("exit", () => rmSync(sandbox, { recursive: true, force: true }));
+process.once("exit", () => {
+  try {
+    rmSync(sandbox, { recursive: true, force: true });
+  } catch {
+    // Windows keeps the Library's open files locked until this process ends.
+    // Throwing here would raise a modal error dialog that blocks exit, so the
+    // temporary sandbox is left for the OS to clean up instead.
+  }
+});
 let started = false;
 const timer = setTimeout(() => {
   console.error("LIBRARY_TRUST_SMOKE_FAILED: timed out");

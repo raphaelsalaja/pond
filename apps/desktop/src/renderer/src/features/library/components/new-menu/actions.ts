@@ -18,6 +18,7 @@ import { openSources } from "@/features/sources";
 import { tagCreation } from "@/features/tags";
 import { getAppRouter } from "@/shared/lib/app-router";
 import { errorCopy } from "@/shared/lib/error-copy";
+import { REVEAL_LABEL } from "@/shared/lib/platform";
 import { notify, updateNotification } from "@/shared/lib/toast";
 import { getPrefsSnapshot } from "@/shared/state/prefs";
 
@@ -453,7 +454,7 @@ export function createNewActions({
       title: happened.join(". "),
       description:
         result.errors?.library ??
-        "Reveal the Library in Finder to check, or rescan.",
+        `${REVEAL_LABEL} to check the Library, or rescan.`,
       timeout: 5000,
     });
   }

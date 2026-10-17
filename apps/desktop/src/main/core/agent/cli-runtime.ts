@@ -13,6 +13,7 @@ import { delimiter, join, resolve } from "node:path";
 import which from "which";
 import { z } from "zod";
 import type { OkResult } from "../../../shared/query-contracts-shared";
+import { killProcessTree, trackChildProcess } from "../../lib/process-tree";
 
 export type CliProvider = "codex" | "claude-code";
 
@@ -232,36 +233,114 @@ function commandFor(provider: CliProvider) {
   return provider === "codex" ? "codex" : "claude";
 }
 
-function loginHint(provider: CliProvider) {
+function loginHint(provider: CliProvider, platform = process.platform) {
+  const terminal = platform === "darwin" ? "Terminal" : "a terminal";
   return provider === "codex"
-    ? "Run codex login in Terminal and sign in with ChatGPT."
-    : "Run claude auth login in Terminal and sign in with your Claude plan.";
+    ? `Run codex login in ${terminal} and sign in with ChatGPT.`
+    : `Run claude auth login in ${terminal} and sign in with your Claude plan.`;
+}
+
+/** Windows environment names are case-insensitive and usually spelled `Path`. */
+export function pathEnvKey(env: NodeJS.ProcessEnv) {
+  return Object.keys(env).find((key) => key.toUpperCase() === "PATH") ?? "PATH";
+}
+
+function windowsCliDirectories() {
+  const home = homedir();
+  const { APPDATA, LOCALAPPDATA, NVM_SYMLINK, VOLTA_HOME } = process.env;
+  return [
+    APPDATA && join(APPDATA, "npm"),
+    join(home, ".local/bin"),
+    LOCALAPPDATA && join(LOCALAPPDATA, "Programs"),
+    NVM_SYMLINK,
+    join(home, ".bun/bin"),
+    VOLTA_HOME && join(VOLTA_HOME, "bin"),
+  ].filter((directory): directory is string => Boolean(directory));
+}
+
+const CMD_META_CHARS = /([()\][%!^"`<>&|;, *?])/g;
+
+/**
+ * Quotes one argument for cmd.exe. Batch shims re-parse `%*`, so the escaping
+ * runs once per parse. Characters cmd.exe would still expand are rejected.
+ * Keep in sync with packages/cli/src/windows-command.ts (separately published,
+ * so the helper cannot be shared without a new package dependency).
+ */
+export function quoteCmdArg(arg: string, passes = 2) {
+  if (/[\r\n%!]/.test(arg) || arg.includes("\0"))
+    throw new Error(
+      "A CLI argument contains characters Windows cannot pass safely (%, ! or a line break), usually from a user or temp folder name. Use a folder name without them, or install the CLI as a native executable instead of an npm .cmd shim.",
+    );
+  const escaped = arg.replace(/(\\*)"/g, '$1$1\\"').replace(/(\\+)$/, "$1$1");
+  let quoted = `"${escaped}"`;
+  for (let pass = 0; pass < passes; pass++)
+    quoted = quoted.replace(CMD_META_CHARS, "^$1");
+  return quoted;
+}
+
+/** Node refuses to spawn .cmd/.bat files directly (CVE-2024-27980), so run them through cmd.exe without a shell. */
+export function cmdShimInvocation(executable: string, args: string[]) {
+  const commandLine = [
+    quoteCmdArg(executable, 1),
+    ...args.map((arg) => quoteCmdArg(arg)),
+  ];
+  return {
+    file: process.env.ComSpec ?? "cmd.exe",
+    args: ["/d", "/s", "/c", `"${commandLine.join(" ")}"`],
+  };
+}
+
+/** Removes provider billing variables and applies the isolated Codex home. Windows names are case-insensitive. */
+export function scrubbedEnvironment(
+  source: NodeJS.ProcessEnv,
+  platform: NodeJS.Platform,
+  codexHome?: string,
+) {
+  const env = { ...source };
+  const fold = (name: string) =>
+    platform === "win32" ? name.toUpperCase() : name;
+  const inherited = new Set<string>(INHERITED_PROVIDER_ENV.map(fold));
+  // Subscription connections must never silently use inherited API billing.
+  for (const key of Object.keys(env)) {
+    const name = fold(key);
+    if (
+      inherited.has(name) ||
+      (name.startsWith("CODEX_") && name !== "CODEX_HOME")
+    )
+      delete env[key];
+  }
+  const assign = (name: string, value: string) => {
+    for (const key of Object.keys(env)) if (fold(key) === name) delete env[key];
+    env[name] = value;
+  };
+  if (codexHome) {
+    assign("CODEX_HOME", codexHome);
+    assign("HOME", codexHome);
+    assign("USERPROFILE", codexHome);
+    assign("XDG_CACHE_HOME", join(codexHome, "cache"));
+    assign("XDG_CONFIG_HOME", join(codexHome, "config"));
+    assign("XDG_DATA_HOME", join(codexHome, "data"));
+  }
+  return env;
 }
 
 async function cliEnvironment(codexHome?: string) {
   const nvm = join(homedir(), ".nvm/versions/node");
   const versions = await readdir(nvm).catch(() => []);
-  const env = { ...process.env };
-  // Subscription connections must never silently use inherited API billing.
-  for (const key of INHERITED_PROVIDER_ENV) delete env[key];
-  for (const key of Object.keys(env))
-    if (key.startsWith("CODEX_") && key !== "CODEX_HOME") delete env[key];
-  if (codexHome) {
-    env.CODEX_HOME = codexHome;
-    env.HOME = codexHome;
-    env.USERPROFILE = codexHome;
-    env.XDG_CACHE_HOME = join(codexHome, "cache");
-    env.XDG_CONFIG_HOME = join(codexHome, "config");
-    env.XDG_DATA_HOME = join(codexHome, "data");
-  }
-  env.PATH = [
-    env.PATH ?? "",
-    join(homedir(), ".local/bin"),
-    "/opt/homebrew/bin",
-    "/usr/local/bin",
-    ...versions
-      .sort((a, b) => b.localeCompare(a, undefined, { numeric: true }))
-      .map((version) => join(nvm, version, "bin")),
+  const env = scrubbedEnvironment(process.env, process.platform, codexHome);
+  const pathKey = pathEnvKey(env);
+  env[pathKey] = [
+    env[pathKey] ?? "",
+    ...(process.platform === "win32"
+      ? windowsCliDirectories()
+      : [
+          join(homedir(), ".local/bin"),
+          "/opt/homebrew/bin",
+          "/usr/local/bin",
+          ...versions
+            .sort((a, b) => b.localeCompare(a, undefined, { numeric: true }))
+            .map((version) => join(nvm, version, "bin")),
+        ]),
   ].join(delimiter);
   return env;
 }
@@ -278,19 +357,27 @@ export async function runCli(input: {
   input.signal?.throwIfAborted();
   const env = await cliEnvironment(input.codexHome);
   const command = commandFor(input.provider);
-  const executable = await which(command, { path: env.PATH }).catch(() => null);
+  const executable = await which(command, { path: env[pathEnvKey(env)] }).catch(
+    () => null,
+  );
   if (!executable)
     throw new Error(`Install ${command} first. ${loginHint(input.provider)}`);
   input.signal?.throwIfAborted();
   return new Promise((resolve, reject) => {
-    const child = spawn(executable, input.args, {
+    const shim =
+      process.platform === "win32" && /\.(cmd|bat)$/i.test(executable)
+        ? cmdShimInvocation(executable, input.args)
+        : { file: executable, args: input.args };
+    const child = spawn(shim.file, shim.args, {
       cwd: input.cwd,
       env,
       shell: false,
+      windowsVerbatimArguments: shim.file !== executable,
       windowsHide: true,
       detached: process.platform !== "win32",
       stdio: ["pipe", "pipe", "pipe"],
     });
+    trackChildProcess(child);
     let stdout = "";
     let stderr = "";
     let bytes = 0;
@@ -300,7 +387,7 @@ export async function runCli(input: {
       if (!child.pid) return;
       try {
         if (process.platform !== "win32") process.kill(-child.pid, signal);
-        else child.kill(signal);
+        else killProcessTree(child, signal);
       } catch {
         /* The process group may already have exited. */
       }
@@ -417,6 +504,15 @@ async function loadBundledCodexCatalog(
   return bundledCodexCatalog;
 }
 
+export class CodexSymlinkUnavailableError extends Error {
+  constructor() {
+    super(
+      "Codex on Windows needs symlink permission. Turn on Developer Mode in Windows Settings (System, For developers), then connect Codex again.",
+    );
+    this.name = "CodexSymlinkUnavailableError";
+  }
+}
+
 export type CodexRuntime = {
   codexHome: string;
   catalogPath: string;
@@ -426,6 +522,10 @@ export async function prepareCodexRuntime(
   directory: string,
   model = "default",
   signal?: AbortSignal,
+  deps: { symlink: typeof symlink; platform: NodeJS.Platform } = {
+    symlink,
+    platform: process.platform,
+  },
 ): Promise<CodexRuntime> {
   const codexHomePath = join(directory, "codex-home");
   await mkdir(codexHomePath, { recursive: true, mode: 0o700 });
@@ -433,7 +533,26 @@ export async function prepareCodexRuntime(
   const sourceHome = resolve(
     process.env.CODEX_HOME ?? join(homedir(), ".codex"),
   );
-  await symlink(join(sourceHome, "auth.json"), join(codexHome, "auth.json"));
+  try {
+    await deps.symlink(
+      join(sourceHome, "auth.json"),
+      join(codexHome, "auth.json"),
+    );
+  } catch (error) {
+    // Provider credentials are never copied: a copy would outlive a crash in
+    // the temp directory and swallow token rotation. A hard link is rejected
+    // too: it cannot cross volumes (temp and profile may differ) and, like the
+    // symlink, loses a rotated token when Codex replaces the file by rename.
+    // Windows refuses symlinks without Developer Mode, so Codex is gated there.
+    if (
+      deps.platform === "win32" &&
+      error instanceof Error &&
+      "code" in error &&
+      error.code === "EPERM"
+    )
+      throw new CodexSymlinkUnavailableError();
+    throw error;
+  }
   const bundled = await loadBundledCodexCatalog(directory, codexHome, signal);
   const models = bundled.models.map(isolatedCodexModel);
   if (model !== "default" && !models.some((entry) => entry.slug === model)) {

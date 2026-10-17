@@ -2,11 +2,11 @@ import {
   defineCustomSection,
   group,
 } from "@/features/settings/lib/engine-types";
+import { THIS_DEVICE } from "@/shared/lib/platform";
 
 export const mcpSection = defineCustomSection({
   title: "Model Context Protocol",
-  description:
-    "Let Cursor and Claude search this library over stdio on this Mac.",
+  description: `Let Cursor and Claude search this library over stdio on ${THIS_DEVICE}.`,
   keywords: [
     "mcp",
     "model context protocol",

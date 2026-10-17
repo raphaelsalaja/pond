@@ -11,7 +11,7 @@ import { basename, dirname } from "node:path";
 import type { JsonValue } from "@pond/schema/json";
 import type { NativeMessage, NativeResponse } from "@pond/schema/native";
 import log from "electron-log/main.js";
-import { encodeFrame, tryDecodeFrame } from "./frame";
+import { encodeReplyFrame, tryDecodeFrame } from "./frame";
 import { nativeSocketPath } from "./paths";
 import { liveNativePorts } from "./ports";
 import { dispatchNative } from "./rpc";
@@ -35,7 +35,7 @@ const listenPaths = new WeakMap<Server, BoundSocket>();
 const openSockets = new WeakMap<Server, Set<Socket>>();
 
 function writeFrame(socket: Socket, value: NativeMessage): void {
-  socket.end(encodeFrame(value));
+  socket.end(encodeReplyFrame(value));
 }
 
 function handleConn(socket: Socket, dispatch: NativeDispatch): void {
@@ -97,6 +97,10 @@ function bindPath(server: Server, path: string): void {
   listenPaths.set(server, { path, ino, restore, watcher, restoring: false });
 }
 
+function isNamedPipe(path: string): boolean {
+  return path.startsWith("\\\\.\\pipe\\");
+}
+
 /** Recreate the path after Node's unix close() unlinks it, including when an older process exits. */
 function restoreSocket(server: Server): void {
   const bound = listenPaths.get(server);
@@ -125,13 +129,16 @@ function restoreSocket(server: Server): void {
 export async function startNativeServer(
   opts: NativeServerOpts = {},
 ): Promise<Server> {
-  const path = opts.path ?? nativeSocketPath();
+  const path = opts.path ?? (await nativeSocketPath());
   const dispatch =
     opts.dispatch ?? ((raw) => dispatchNative(raw, liveNativePorts()));
-  await mkdir(dirname(path), { recursive: true });
-  try {
-    unlinkSync(path);
-  } catch {}
+  const namedPipe = isNamedPipe(path);
+  if (!namedPipe) {
+    await mkdir(dirname(path), { recursive: true });
+    try {
+      unlinkSync(path);
+    } catch {}
+  }
 
   const sockets = new Set<Socket>();
   const server = createServer((socket) => {
@@ -141,11 +148,16 @@ export async function startNativeServer(
   });
   openSockets.set(server, sockets);
   await new Promise<void>((resolve, reject) => {
-    server.once("error", reject);
+    server.once("error", (err) => {
+      log.error("[pond native] listen failed", path, err);
+      reject(err);
+    });
     server.listen(path, () => resolve());
   });
-  await chmod(path, 0o600);
-  bindPath(server, path);
+  if (!namedPipe) {
+    await chmod(path, 0o600);
+    bindPath(server, path);
+  }
   log.info("[pond native] listening", path);
   return server;
 }

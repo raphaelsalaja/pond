@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { basename, extname } from "node:path";
 import { saves } from "@pond/schema/db";
 import type { Transaction } from "@pond/schema/tx";
@@ -91,7 +92,10 @@ export const savesFontQueries = {
 
   "saves.fontStatus": query(z.object({ id: StringParam }), ({ id }) => {
     const path = readFontActivation(id);
-    return path ? { activated: true, path } : { activated: false };
+    // The sidecar travels with the library; trust it only while the file exists here.
+    return path && existsSync(path)
+      ? { activated: true, path }
+      : { activated: false };
   }),
 
   "saves.activateFont": query(

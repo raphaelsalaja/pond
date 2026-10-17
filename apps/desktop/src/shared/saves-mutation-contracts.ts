@@ -79,7 +79,7 @@ export interface SavesMutationQueryResults {
     changedFiles: number;
     skipped: number;
   }>;
-  "saves.activateFont": OkResult<{ path: string }>;
+  "saves.activateFont": OkResult<{ path: string; requiresSignIn?: boolean }>;
   "saves.deactivateFont": OkResult;
   "saves.setAudioAnalysis": OkResult;
   "saves.setCustomThumbnail": CancellableResult;

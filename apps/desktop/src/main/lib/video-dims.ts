@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import { stat } from "node:fs/promises";
 import log from "electron-log/main.js";
 import { binariesAvailable } from "../core/refresh/binaries";
+import { killProcessTree } from "./process-tree";
 import { frameRateFromProbe } from "./video-timing";
 
 const HARD_TIMEOUT_MS = 10_000;
@@ -56,6 +57,7 @@ function runFfmpegProbe(
   return new Promise((resolve) => {
     const child = spawn(bin, ["-hide_banner", "-i", videoPath], {
       stdio: ["ignore", "ignore", "pipe"],
+      windowsHide: true,
     });
     let stderr = "";
     let settled = false;
@@ -64,7 +66,7 @@ function runFfmpegProbe(
       if (settled) return;
       settled = true;
       try {
-        child.kill("SIGKILL");
+        killProcessTree(child, "SIGKILL");
       } catch {}
       resolve({ code: 124, stderr });
     }, HARD_TIMEOUT_MS);

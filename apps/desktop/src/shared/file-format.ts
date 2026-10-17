@@ -338,6 +338,14 @@ export function classifyLibraryFileFromHeader(
   return classifyLibraryFile(path, suppliedMimeType);
 }
 
+/** Device names Windows refuses as file names, with or without an extension. */
+const WINDOWS_RESERVED_NAME = /^(?:con|prn|aux|nul|com[1-9¹²³]|lpt[1-9¹²³])$/i;
+
+function avoidWindowsReservedName(name: string): string {
+  const stem = (name.split(".")[0] ?? "").trimEnd();
+  return WINDOWS_RESERVED_NAME.test(stem) ? `_${name}` : name;
+}
+
 export function libraryFilename(path: string, fallback = "file.bin"): string {
   const slash = Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\"));
   const original = path.slice(slash + 1).trim();
@@ -351,7 +359,7 @@ export function libraryFilename(path: string, fallback = "file.bin"): string {
     .replace(/[. ]+$/, "")
     .trim();
   if (!cleaned) return fallback;
-  return cleaned.slice(0, 180);
+  return avoidWindowsReservedName(cleaned).slice(0, 180);
 }
 
 export function typeLabelForPath(path: string): string | null {

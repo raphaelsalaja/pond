@@ -15,6 +15,7 @@ import {
 import { flushTagsDump } from "../../core/tags-bundle";
 import { LibraryMetadataError, readLibraryId } from "../../lib/library-id";
 import { readLibraryPointer } from "../../lib/library-pointer";
+import { isSamePath } from "../../lib/path-identity";
 import { libraryRoot as libraryRootDir } from "../../paths";
 import { recentLibrariesFile } from "./library-location-paths";
 import {
@@ -166,13 +167,12 @@ export const libraryLocationOpenQueries = {
       const dest = params.path.trim();
       if (!dest) return { ok: false as const, reason: "no_path" as const };
 
-      const destNorm = dest.replace(/\/+$/, "");
-      const pointerNorm = readLibraryPointer()?.replace(/\/+$/, "") ?? "";
-      const cachedNorm = libraryRootDir().replace(/\/+$/, "");
+      const pointer = readLibraryPointer() ?? "";
+      const cached = libraryRootDir();
 
       if (
-        destNorm === cachedNorm &&
-        (!pointerNorm || pointerNorm === cachedNorm)
+        isSamePath(dest, cached) &&
+        (!pointer || isSamePath(pointer, cached))
       ) {
         return { ok: true as const, path: dest, mode: "adopt" as const };
       }

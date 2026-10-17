@@ -125,7 +125,7 @@ export function buildViewSection(context: AppMenuContext): AppMenuItem {
         click: sendMenuAction("save.open-original"),
       },
       {
-        label: "Reveal in Finder",
+        label: context.isMac ? "Reveal in Finder" : "Reveal in File Explorer",
         accelerator: accelerator("save.reveal"),
         registerAccelerator: false,
         click: sendMenuAction("save.reveal"),

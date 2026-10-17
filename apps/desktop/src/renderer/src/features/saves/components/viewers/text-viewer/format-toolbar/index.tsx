@@ -42,6 +42,7 @@ import {
   useState,
 } from "react";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
+import { platformGlyphs } from "@/shared/lib/shortcuts";
 import { $inCollapsible } from "../collapsible";
 import {
   $getNoteBlock,
@@ -404,7 +405,7 @@ export function FormatToolbar() {
                               </Menu.ItemIcon>
                               <Menu.ItemLabel>{item.label}</Menu.ItemLabel>
                               <Menu.ItemKeyboard>
-                                {item.shortcut}
+                                {platformGlyphs(item.shortcut)}
                               </Menu.ItemKeyboard>
                             </Menu.Item>
                           ))}
@@ -527,7 +528,7 @@ export function FormatToolbar() {
                               <Menu.ItemIcon>{item.icon}</Menu.ItemIcon>
                               <Menu.ItemLabel>{item.label}</Menu.ItemLabel>
                               <Menu.ItemKeyboard>
-                                {item.shortcut}
+                                {platformGlyphs(item.shortcut)}
                               </Menu.ItemKeyboard>
                             </Menu.Item>
                           ))}
@@ -570,7 +571,9 @@ function FormatButton({
       label={label}
       shortcut={
         shortcut ? (
-          <Keyboard.Shortcut density="flat">{shortcut}</Keyboard.Shortcut>
+          <Keyboard.Shortcut density="flat">
+            {platformGlyphs(shortcut)}
+          </Keyboard.Shortcut>
         ) : undefined
       }
       side="top"

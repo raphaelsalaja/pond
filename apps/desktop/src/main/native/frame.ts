@@ -1,12 +1,21 @@
 import type { JsonValue } from "@pond/schema/json";
 import type { NativeMessage } from "@pond/schema/native";
 export const MAX_NATIVE_MSG = 8 * 1024 * 1024;
+/** Chrome closes the port when the host sends more than 1 MiB; stay below it. */
+export const MAX_NATIVE_REPLY = 1024 * 1024 - 4096;
 
 export function encodeFrame(value: NativeMessage): Buffer {
   const payload = Buffer.from(JSON.stringify(value), "utf8");
   const header = Buffer.alloc(4);
   header.writeUInt32LE(payload.length, 0);
   return Buffer.concat([header, payload]);
+}
+
+/** Encodes a reply for the browser, substituting an error that fits the browser's limit. */
+export function encodeReplyFrame(value: NativeMessage): Buffer {
+  const frame = encodeFrame(value);
+  if (frame.length - 4 <= MAX_NATIVE_REPLY) return frame;
+  return encodeFrame({ ok: false, error: "too_large" });
 }
 
 export type DecodeFrame =

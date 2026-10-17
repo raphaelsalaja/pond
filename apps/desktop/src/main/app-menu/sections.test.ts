@@ -13,6 +13,7 @@ import {
 } from "./system-sections";
 import { buildAppMenuTemplate } from "./template";
 import type { AppMenuContext } from "./types";
+import { buildViewSection } from "./view-section";
 
 function createContext({
   isMac,
@@ -75,6 +76,32 @@ describe("app menu sections", () => {
     expect(buildDeveloperSections(development)).toMatchObject([
       { label: "Developer" },
     ]);
+
+    expect(buildHelpSection(development).submenu).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ role: "about", label: "About Pond" }),
+        expect.objectContaining({ label: "Show Logs in File Explorer" }),
+      ]),
+    );
+  });
+
+  it("exposes Windows Settings and Quit in conventional menus", () => {
+    const context = createContext({ isMac: false, isPackaged: true });
+    const settings = buildSettingsItem(context);
+    expect(buildEditSection(context, settings).submenu).toEqual(
+      expect.arrayContaining([expect.objectContaining({ label: "Settings" })]),
+    );
+    expect(buildFileSection(context).submenu).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ label: "Reveal in File Explorer" }),
+        expect.objectContaining({ role: "quit" }),
+      ]),
+    );
+    expect(buildViewSection(context).submenu).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ label: "Reveal in File Explorer" }),
+      ]),
+    );
   });
 
   it("keeps navigation and empty history labels", () => {
@@ -131,6 +158,11 @@ describe("app menu sections", () => {
 
   it("backfills Window and Help commands", () => {
     const context = createContext({ isMac: true, isPackaged: true });
+    const externalUrls: string[] = [];
+    context.openExternalUrl = (url) => {
+      externalUrls.push(url);
+      return () => undefined;
+    };
     expect(buildWindowSection(context).submenu).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ role: "togglefullscreen" }),
@@ -142,6 +174,9 @@ describe("app menu sections", () => {
         expect.objectContaining({ label: "Export Debug Report" }),
         expect.objectContaining({ label: "Report an Issue" }),
       ]),
+    );
+    expect(externalUrls).toContain(
+      "https://github.com/raphaelsalaja/pond/releases",
     );
   });
 

@@ -1,10 +1,13 @@
+import { normalizeHotkey } from "@tanstack/hotkeys";
 import { describe, expect, it } from "vitest";
 import type { ShortcutDef } from "./shortcuts";
 import {
   bindingKeys,
   bindingSequence,
   chordGlyphs,
+  platformGlyphs,
   resolveShortcuts,
+  SHORTCUT_PLATFORM,
   SHORTCUTS,
   shortcutConflict,
   shortcutGlyphs,
@@ -35,7 +38,9 @@ describe("shortcut binding access", () => {
       overrides: { "save.add-tag": "Control+Shift+T" },
     });
 
-    expect(bindingKeys(bindings, "save.add-tag")).toBe("Control+Shift+T");
+    expect(bindingKeys(bindings, "save.add-tag")).toBe(
+      normalizeHotkey("Control+Shift+T", SHORTCUT_PLATFORM),
+    );
   });
 
   it("returns configured shortcut sequences", () => {
@@ -91,7 +96,9 @@ describe("shortcut profiles", () => {
         profile,
         overrides: { "app.summon": "Control+Alt+F12" },
       });
-      expect(bindings["app.summon"].keys).toBe("Control+Alt+F12");
+      expect(bindings["app.summon"].keys).toBe(
+        normalizeHotkey("Control+Alt+F12", SHORTCUT_PLATFORM),
+      );
     }
   });
 
@@ -116,9 +123,23 @@ describe("shortcut profiles", () => {
         "save.rate-4": "DefinitelyNotAKey",
       },
     });
-    expect(bindings["save.add-tag"].keys).toBe("Control+Shift+T");
+    expect(bindings["save.add-tag"].keys).toBe(
+      normalizeHotkey("Control+Shift+T", SHORTCUT_PLATFORM),
+    );
     expect(bindings["save.rate-4"].keys).toBe("Alt+4");
     expect(SHORTCUTS["save.add-tag"].keys).toBe("A");
+  });
+
+  it("keeps Mod portable while retaining explicit Control on macOS", () => {
+    const bindings = resolveShortcuts({
+      profile: "pond",
+      overrides: { "save.add-tag": "Mod+Shift+T" },
+    });
+    expect(bindings["library.search"].keys).toBe("Mod+K");
+    expect(bindings["save.add-tag"].keys).toBe("Mod+Shift+T");
+    expect(normalizeHotkey("Control+K", SHORTCUT_PLATFORM)).toBe(
+      SHORTCUT_PLATFORM === "mac" ? "Control+K" : "Mod+K",
+    );
   });
 
   it("keeps library create and import chords unique", () => {
@@ -149,5 +170,18 @@ describe("shortcut profiles", () => {
         overrides: {},
       }),
     ).toBeNull();
+  });
+});
+
+describe("platform glyphs", () => {
+  it("keeps macOS glyphs and spells modifiers out elsewhere", () => {
+    const glyphs = ["⌘", "⌥", "⇧", "K"];
+    expect(platformGlyphs(glyphs, "mac")).toEqual(glyphs);
+    expect(platformGlyphs(glyphs, "windows")).toEqual([
+      "Ctrl",
+      "Alt",
+      "Shift",
+      "K",
+    ]);
   });
 });

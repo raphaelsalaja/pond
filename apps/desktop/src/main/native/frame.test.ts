@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { encodeFrame, MAX_NATIVE_MSG, tryDecodeFrame } from "./frame";
+import {
+  encodeFrame,
+  encodeReplyFrame,
+  MAX_NATIVE_MSG,
+  MAX_NATIVE_REPLY,
+  tryDecodeFrame,
+} from "./frame";
 
 describe("native frame", () => {
   it("round-trips JSON", () => {
@@ -36,6 +42,23 @@ describe("native frame", () => {
     expect(tryDecodeFrame(header)).toEqual({
       status: "invalid",
       error: "invalid",
+    });
+  });
+
+  it("keeps replies the browser can accept unchanged", () => {
+    const reply = { ok: true as const, data: { app: "pond" } };
+    expect(encodeReplyFrame(reply)).toEqual(encodeFrame(reply));
+  });
+
+  it("replaces a reply over the browser limit with a too_large error", () => {
+    const frame = encodeReplyFrame({
+      ok: true,
+      data: { blob: "x".repeat(2 * 1024 * 1024) },
+    });
+    expect(frame.length - 4).toBeLessThanOrEqual(MAX_NATIVE_REPLY);
+    expect(tryDecodeFrame(frame)).toEqual({
+      status: "ok",
+      value: { ok: false, error: "too_large" },
     });
   });
 });

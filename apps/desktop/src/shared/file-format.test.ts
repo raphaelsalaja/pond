@@ -151,6 +151,30 @@ describe("libraryFilename", () => {
     expect(libraryFilename("unsafe\u0000/name\\part.pdf")).toBe("part.pdf");
   });
 
+  it.each([
+    ["CON.png", "_CON.png"],
+    ["nul", "_nul"],
+    ["Aux.tar.gz", "_Aux.tar.gz"],
+    ["com1.txt", "_com1.txt"],
+    ["LPT9", "_LPT9"],
+    ["CON .txt", "_CON .txt"],
+  ])("prefixes the Windows device name %s", (name, expected) => {
+    expect(libraryFilename(name)).toBe(expected);
+  });
+
+  it.each(["console.png", "conn.png", "com10.png", "a.con", "lpt.txt"])(
+    "keeps %s, which Windows accepts",
+    (name) => {
+      expect(libraryFilename(name)).toBe(name);
+    },
+  );
+
+  it("replaces colons and trailing dots that Windows rejects", () => {
+    expect(libraryFilename("a:b.png")).toBe("a_b.png");
+    expect(libraryFilename("report.")).toBe("report");
+    expect(libraryFilename("C:/Users/x/CON")).toBe("_CON");
+  });
+
   it("falls back for an unusable filename", () => {
     expect(libraryFilename("...", "file.bin")).toBe("file.bin");
   });

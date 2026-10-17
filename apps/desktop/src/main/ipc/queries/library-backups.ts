@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { basename, dirname, join, resolve } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { BrowserWindow, dialog } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
@@ -13,6 +13,11 @@ import { relocateLibrary } from "../../core/library-ops";
 import { flushPortableMetadata } from "../../core/portable-metadata";
 import { setPrefs } from "../../core/prefs";
 import { flushTagsDump } from "../../core/tags-bundle";
+import {
+  isPathInside,
+  isSamePath,
+  normalizeLibraryPath,
+} from "../../lib/path-identity";
 import { libraryRoot as libraryRootDir } from "../../paths";
 import { ensurePondSuffix } from "./library-location-paths";
 import {
@@ -26,7 +31,7 @@ export const libraryBackupQueries = {
   "library.backupTo": query(
     z.object({ path: z.string().optional() }),
     async (params): Promise<QueryResult<"library.backupTo">> => {
-      const src = libraryRootDir().replace(/\/+$/, "");
+      const src = normalizeLibraryPath(libraryRootDir());
       if (!src || !existsSync(src)) {
         return { ok: false as const, reason: "no_library" as const };
       }
@@ -50,26 +55,21 @@ export const libraryBackupQueries = {
         return { ok: false as const, reason: "cancelled" as const };
       }
 
-      const dest = ensurePondSuffix(picked.filePath).replace(/\/+$/, "");
-      const srcResolved = resolve(src);
-      const destResolved = resolve(dest);
+      const dest = ensurePondSuffix(picked.filePath);
+      const destResolved = normalizeLibraryPath(dest);
 
-      if (srcResolved === destResolved) {
+      if (isSamePath(src, destResolved)) {
         return { ok: false as const, reason: "same_path" as const };
       }
-      if (
-        destResolved.startsWith(`${srcResolved}/`) ||
-        srcResolved.startsWith(`${destResolved}/`)
-      ) {
+      if (isPathInside(src, destResolved) || isPathInside(destResolved, src)) {
         return { ok: false as const, reason: "nested_path" as const };
       }
-
       try {
         await suspendLibraryWork();
         await flushTagsDump();
         await flushPortableMetadata();
         const { copied } = await createLibraryBackup({
-          source: srcResolved,
+          source: src,
           destination: destResolved,
         });
 
@@ -77,7 +77,7 @@ export const libraryBackupQueries = {
           storage: {
             lastBackup: {
               path: destResolved,
-              libraryRoot: srcResolved,
+              libraryRoot: src,
               completedAt: new Date().toISOString(),
             },
           },

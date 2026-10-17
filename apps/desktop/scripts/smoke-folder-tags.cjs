@@ -16,7 +16,15 @@ const originalPaths = Array.from({ length: 50 }, (_, index) => {
   writeFileSync(path, `File import recovery fixture ${index}.`);
   return path;
 });
-process.once("exit", () => rmSync(sandbox, { recursive: true, force: true }));
+process.once("exit", () => {
+  try {
+    rmSync(sandbox, { recursive: true, force: true });
+  } catch {
+    // Windows keeps the Library's open files locked until this process ends.
+    // Throwing here would raise a modal error dialog that blocks exit, so the
+    // temporary sandbox is left for the OS to clean up instead.
+  }
+});
 let started = false;
 const timer = setTimeout(() => {
   console.error("FOLDER_TAGS_FAILED: timed out");

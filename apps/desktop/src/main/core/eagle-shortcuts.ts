@@ -5,6 +5,7 @@ import {
   isValidShortcut,
   SHORTCUT_PLATFORM,
   type ShortcutId,
+  shortcutPlatformFromName,
 } from "../../shared/shortcuts";
 
 const EagleSettingsSchema = z.object({
@@ -156,7 +157,10 @@ function normalizeEagleKey(value: string): string {
   }
 }
 
-export function normalizeEagleShortcut(value: string): string | null {
+export function normalizeEagleShortcut(
+  value: string,
+  platform = SHORTCUT_PLATFORM,
+): string | null {
   const parts = value
     .split("+")
     .map((part) => part.trim())
@@ -176,7 +180,7 @@ export function normalizeEagleShortcut(value: string): string | null {
   });
   const shortcut = normalized.join("+");
   if (!isValidShortcut(shortcut)) return null;
-  return normalizeHotkey(shortcut, SHORTCUT_PLATFORM);
+  return normalizeHotkey(shortcut, platform);
 }
 
 export function mapEagleShortcuts(
@@ -188,7 +192,10 @@ export function mapEagleShortcuts(
     for (const source of mapping.sources) {
       const value = keybinds[source]?.trim();
       if (!value) continue;
-      const shortcut = normalizeEagleShortcut(value);
+      const shortcut = normalizeEagleShortcut(
+        value,
+        shortcutPlatformFromName(platform),
+      );
       if (shortcut) overrides[mapping.target] = shortcut;
       break;
     }

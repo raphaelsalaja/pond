@@ -10,6 +10,7 @@ import {
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { isWindowsSymlinkPrivilegeError } from "../test/symlink";
 import { copyExportFile, type ExportItem, exportFiles } from "./export-files";
 
 const roots: string[] = [];
@@ -125,11 +126,19 @@ describe("export files", () => {
     expect(await readdir(destination)).not.toContain("pond-export.json");
   });
 
-  it("does not follow a destination folder symlink outside the export", async () => {
+  it("does not follow a destination folder symlink outside the export", async (ctx) => {
     const { root, destination, item } = await fixture();
     const outside = join(root, "outside");
     await mkdir(outside);
-    await symlink(outside, join(destination, "Design"));
+    try {
+      await symlink(outside, join(destination, "Design"));
+    } catch (error) {
+      if (error instanceof Error && isWindowsSymlinkPrivilegeError(error)) {
+        ctx.skip("Windows symlink privilege is unavailable");
+        return;
+      }
+      throw error;
+    }
     item.folderIds = ["folder"];
     await expect(
       exportFiles({

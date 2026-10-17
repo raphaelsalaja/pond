@@ -4,6 +4,7 @@ import { existsSync } from "node:fs";
 import {
   chmod,
   mkdir,
+  readdir,
   readFile,
   rename,
   rm,
@@ -12,6 +13,7 @@ import {
 import { join } from "node:path";
 import log from "electron-log/main.js";
 import { z } from "zod";
+import { killProcessTree } from "../../lib/process-tree";
 import {
   invalidateBinariesCache,
   userBinDir,
@@ -27,46 +29,110 @@ const ReleaseSchema = z.object({
 });
 
 const SMOKE_TIMEOUT_MS = 20_000;
+const RENAME_ATTEMPTS = 5;
+/** Windows briefly locks a fresh exe while Defender scans it or a job still runs it. */
+const RETRYABLE_RENAME_CODES = new Set(["EBUSY", "EPERM", "EACCES"]);
 
-const ASSET_BY_PLATFORM = new Map<string, string>(
-  Object.entries({
-    darwin: "yt-dlp_macos",
-    linux: "yt-dlp_linux",
-    win32: "yt-dlp.exe",
-  }),
-);
+/**
+ * Release asset for a platform and architecture, or undefined when yt-dlp does
+ * not publish one we support. Windows ships separate x64 and arm64 builds.
+ */
+export function ytDlpAsset(
+  platform: NodeJS.Platform,
+  arch: string,
+): string | undefined {
+  if (platform === "darwin") return "yt-dlp_macos";
+  if (platform === "linux") return "yt-dlp_linux";
+  if (platform === "win32") {
+    if (arch === "x64") return "yt-dlp.exe";
+    if (arch === "arm64") return "yt-dlp_arm64.exe";
+  }
+  return undefined;
+}
 
 const VERSION_FILE = ".yt-dlp-version";
 const VERSION_PREVIOUS_FILE = ".yt-dlp-version.previous";
 const PREVIOUS_FILENAME = `${YTDLP_FILENAME}.previous`;
 const LAST_CHECK_FILE = ".yt-dlp-last-check";
+/** Download targets are named `<binary>.<pid>.tmp`. */
+function isStaleTmp(name: string): boolean {
+  return (
+    name.startsWith(`${YTDLP_FILENAME}.`) &&
+    name.endsWith(".tmp") &&
+    /^[0-9]+$/.test(name.slice(YTDLP_FILENAME.length + 1, -".tmp".length))
+  );
+}
+
+/** Filesystem, network, and process seams, so the lifecycle can be tested offline. */
+export interface UpdaterDeps {
+  dir: string;
+  asset: string | undefined;
+  rename: (from: string, to: string) => Promise<void>;
+  smokeTest: (binaryPath: string) => Promise<boolean>;
+  fetchLatestTag: () => Promise<string | null>;
+  fetchExpectedSha: (tag: string, asset: string) => Promise<string | null>;
+  fetchBinary: (url: string) => Promise<Buffer>;
+}
+
+function defaultDeps(): UpdaterDeps {
+  const asset = ytDlpAsset(process.platform, process.arch);
+  if (!asset && process.platform === "win32")
+    log.warn("[pond yt-dlp-update] no yt-dlp build for", process.arch);
+  return {
+    dir: userBinDir(),
+    asset,
+    rename,
+    smokeTest,
+    fetchLatestTag,
+    fetchExpectedSha,
+    fetchBinary,
+  };
+}
 
 let inFlight: Promise<void> | null = null;
+let recovering: Promise<void> | null = null;
 
 export function maybeUpdateYtDlp(
   opts: { force?: boolean } = {},
 ): Promise<void> {
   if (inFlight) return inFlight;
-  inFlight = runUpdate(opts.force ?? false).finally(() => {
+  inFlight = runUpdate(defaultDeps(), opts.force ?? false).finally(() => {
     inFlight = null;
   });
   return inFlight;
 }
 
-async function runUpdate(force: boolean): Promise<void> {
-  const asset = ASSET_BY_PLATFORM.get(process.platform);
+/**
+ * Restores a working managed binary after an interrupted update. Needs no
+ * network, so it can run at startup before the first scheduled update check.
+ */
+export function recoverYtDlp(): Promise<void> {
+  recovering ??= recoverFiles(defaultDeps())
+    .catch((err) => log.warn("[pond yt-dlp-update] recovery failed", err))
+    .finally(() => {
+      recovering = null;
+    });
+  return recovering;
+}
+
+export async function runUpdate(
+  deps: UpdaterDeps,
+  force: boolean,
+): Promise<void> {
+  const { asset, dir } = deps;
   if (!asset) return;
 
-  const dir = userBinDir();
   const active = join(dir, YTDLP_FILENAME);
   const previous = join(dir, PREVIOUS_FILENAME);
+  const move = (from: string, to: string) =>
+    renameWithRetry(from, to, { rename: deps.rename });
 
   try {
-    await healthCheckAndRollback(dir, active, previous);
+    await (recovering ?? recoverFiles(deps));
 
     if (!force && (await checkedRecently(dir))) return;
 
-    const tag = await fetchLatestTag();
+    const tag = await deps.fetchLatestTag();
     if (!tag) return;
 
     const installedTag = await readText(join(dir, VERSION_FILE));
@@ -75,13 +141,13 @@ async function runUpdate(force: boolean): Promise<void> {
       return;
     }
 
-    const expectedSha = await fetchExpectedSha(tag, asset);
+    const expectedSha = await deps.fetchExpectedSha(tag, asset);
     if (!expectedSha) {
       log.warn("[pond yt-dlp-update] no sha for asset in SHA2-256SUMS", asset);
       return;
     }
 
-    const buf = await fetchBinary(assetUrl(tag, asset));
+    const buf = await deps.fetchBinary(assetUrl(tag, asset));
     const actualSha = createHash("sha256").update(buf).digest("hex");
     if (actualSha !== expectedSha) {
       log.warn("[pond yt-dlp-update] sha256 mismatch, refusing", {
@@ -97,14 +163,23 @@ async function runUpdate(force: boolean): Promise<void> {
     await writeFile(tmp, buf);
     if (process.platform !== "win32") await chmod(tmp, 0o755);
 
-    if (!(await smokeTest(tmp))) {
+    if (!(await deps.smokeTest(tmp))) {
       log.warn("[pond yt-dlp-update] downloaded binary failed --version");
       await rm(tmp, { force: true });
       return;
     }
 
-    if (existsSync(active)) await rotateToPrevious(dir, active, previous);
-    await rename(tmp, active);
+    if (existsSync(active)) await rotateToPrevious(dir, active, previous, move);
+    try {
+      await move(tmp, active);
+    } catch (err) {
+      await rm(tmp, { force: true });
+      if (!existsSync(active) && existsSync(previous)) {
+        await move(previous, active);
+        invalidateBinariesCache();
+      }
+      throw err;
+    }
     await writeFile(join(dir, VERSION_FILE), tag, "utf8");
     invalidateBinariesCache();
     await markChecked(dir);
@@ -114,20 +189,49 @@ async function runUpdate(force: boolean): Promise<void> {
   }
 }
 
-async function healthCheckAndRollback(
+/** Removes leftovers of an interrupted download, then restores a healthy binary. */
+export async function recoverFiles(
+  deps: Pick<UpdaterDeps, "dir" | "rename" | "smokeTest">,
+): Promise<void> {
+  const { dir } = deps;
+  const active = join(dir, YTDLP_FILENAME);
+  const previous = join(dir, PREVIOUS_FILENAME);
+  const move = (from: string, to: string) =>
+    renameWithRetry(from, to, { rename: deps.rename });
+
+  // Downloads are written to `<name>.<pid>.tmp` only after recovery has run.
+  for (const name of await readdir(dir).catch(() => [])) {
+    if (isStaleTmp(name)) await rm(join(dir, name), { force: true });
+  }
+
+  if (existsSync(active) && (await deps.smokeTest(active))) {
+    if (!existsSync(previous))
+      await rm(join(dir, VERSION_PREVIOUS_FILE), { force: true });
+    return;
+  }
+  if (!existsSync(previous)) {
+    if (existsSync(active))
+      log.warn(
+        "[pond yt-dlp-update] active binary failed --version, no backup",
+      );
+    return;
+  }
+  // A backup that cannot run would only replace one broken state with another.
+  if (!(await deps.smokeTest(previous))) {
+    log.warn("[pond yt-dlp-update] backup binary failed --version, keeping it");
+    return;
+  }
+  await restorePrevious(dir, active, previous, move);
+}
+
+async function restorePrevious(
   dir: string,
   active: string,
   previous: string,
+  move: (from: string, to: string) => Promise<void>,
 ): Promise<void> {
-  if (!existsSync(active)) return;
-  if (await smokeTest(active)) return;
-  if (!existsSync(previous)) {
-    log.warn("[pond yt-dlp-update] active binary failed --version, no backup");
-    return;
-  }
-
   await rm(active, { force: true });
-  await rename(previous, active);
+  await move(previous, active);
 
   const prevVersion = await readText(join(dir, VERSION_PREVIOUS_FILE));
   if (prevVersion) {
@@ -147,14 +251,45 @@ async function rotateToPrevious(
   dir: string,
   active: string,
   previous: string,
+  move: (from: string, to: string) => Promise<void>,
 ): Promise<void> {
   const currentVersion = await readText(join(dir, VERSION_FILE));
   await rm(previous, { force: true });
-  await rename(active, previous);
+  await move(active, previous);
   if (currentVersion) {
     await writeFile(join(dir, VERSION_PREVIOUS_FILE), currentVersion, "utf8");
   } else {
     await rm(join(dir, VERSION_PREVIOUS_FILE), { force: true });
+  }
+}
+
+export async function renameWithRetry(
+  from: string,
+  to: string,
+  deps: {
+    rename?: (from: string, to: string) => Promise<void>;
+    platform?: NodeJS.Platform;
+    sleep?: (ms: number) => Promise<void>;
+  } = {},
+): Promise<void> {
+  const {
+    rename: move = rename,
+    platform = process.platform,
+    sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+  } = deps;
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await move(from, to);
+    } catch (err) {
+      const code = z.object({ code: z.string() }).safeParse(err).data?.code;
+      const retry =
+        platform === "win32" &&
+        attempt < RENAME_ATTEMPTS &&
+        code !== undefined &&
+        RETRYABLE_RENAME_CODES.has(code);
+      if (!retry) throw err;
+      await sleep(Math.min(500, 100 * attempt));
+    }
   }
 }
 
@@ -214,10 +349,11 @@ function smokeTest(binaryPath: string): Promise<boolean> {
   return new Promise((resolve) => {
     const child = spawn(binaryPath, ["--version"], {
       stdio: ["ignore", "ignore", "ignore"],
+      windowsHide: true,
     });
     const timer = setTimeout(() => {
       try {
-        child.kill("SIGKILL");
+        killProcessTree(child, "SIGKILL");
       } catch {}
       resolve(false);
     }, SMOKE_TIMEOUT_MS);

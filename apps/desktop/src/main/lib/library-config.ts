@@ -4,13 +4,13 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
-  renameSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import log from "electron-log/main.js";
 import { z } from "zod";
+import { renameSyncWithRetry } from "./rename-retry";
 
 const BUNDLE_JSON_SCHEMA = 1;
 
@@ -34,7 +34,7 @@ export function writeBundleJson<T>(file: string, data: T): void {
   mkdirSync(dirname(file), { recursive: true });
   const tmp = join(dirname(file), `.${basename(file)}.tmp`);
   writeFileSync(tmp, JSON.stringify(body, null, 2));
-  renameSync(tmp, file);
+  renameSyncWithRetry(tmp, file);
 }
 
 export function readBundleJson<T>(

@@ -9,6 +9,7 @@ import { getDb, getGlobalDb } from "../db";
 import { readSaveMetadata } from "../lib/library";
 import { readOrCreateLibraryId } from "../lib/library-id";
 import { checkPointerSafety, readLibraryPointer } from "../lib/library-pointer";
+import { isSamePath, normalizeLibraryPath } from "../lib/path-identity";
 import { libraryRoot, resolvePaths, trashRoot } from "../paths";
 import { executeBatch } from "./executor";
 import { verifyLibraryBackup } from "./library-backup";
@@ -88,9 +89,9 @@ export async function relocateLibrary(
   mode: RelocateMode,
 ): Promise<RelocateResult> {
   const src = libraryRoot();
-  const srcResolved = src.replace(/\/$/, "");
-  const destResolved = dest.replace(/\/$/, "");
-  if (srcResolved === destResolved) {
+  const srcResolved = normalizeLibraryPath(src);
+  const destResolved = normalizeLibraryPath(dest);
+  if (isSamePath(srcResolved, destResolved)) {
     return { path: src, mode, copied: 0, skipped: 0 };
   }
 
@@ -140,7 +141,8 @@ export async function relocateLibrary(
 }
 
 export async function syncLibraryRootMetadata(): Promise<void> {
-  const pointer = readLibraryPointer()?.replace(/\/+$/, "");
+  const pointerPath = readLibraryPointer();
+  const pointer = pointerPath ? normalizeLibraryPath(pointerPath) : "";
   if (!pointer) return;
 
   const globalDb = await getGlobalDb();
@@ -148,8 +150,8 @@ export async function syncLibraryRootMetadata(): Promise<void> {
     .select({ libraryRoot: settingsTable.libraryRoot })
     .from(settingsTable)
     .where(eq(settingsTable.id, "singleton"));
-  const stored = rows[0]?.libraryRoot?.replace(/\/+$/, "") ?? "";
-  if (stored === pointer) return;
+  const stored = rows[0]?.libraryRoot ?? "";
+  if (isSamePath(stored, pointer)) return;
 
   await globalDb
     .insert(settingsTable)

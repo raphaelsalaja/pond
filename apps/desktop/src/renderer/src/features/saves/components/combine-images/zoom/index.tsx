@@ -1,5 +1,6 @@
 import { IconArrowsExpandDiagonal, IconMinus, IconPlus } from "@pond/icons";
 import { Button, Menu, type MenuItemSpec, Slider } from "@pond/ui";
+import { platformGlyphs } from "@/shared/lib/shortcuts";
 import styles from "./styles.module.css";
 
 const PRESETS = [0.05, 0.1, 0.25, 0.5, 1, 1.25, 1.5, 2, 3, 4, 8] as const;
@@ -61,7 +62,7 @@ export function ZoomBar({
       type: "checkbox",
       indicator: "check",
       label: "Actual Size",
-      shortcut: ["⌘", "0"],
+      shortcut: platformGlyphs(["⌘", "0"]),
       checked: !fit && scale === 1,
       onCheckedChange: () => onZoom(1),
     },
@@ -69,7 +70,7 @@ export function ZoomBar({
       type: "checkbox",
       indicator: "check",
       label: "Zoom to Fit",
-      shortcut: ["⌘", "9"],
+      shortcut: platformGlyphs(["⌘", "9"]),
       checked: fit,
       onCheckedChange: onFit,
     },

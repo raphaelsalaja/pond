@@ -7,6 +7,7 @@ import { Hono } from "hono";
 import { DEFAULT_INGEST_PORT } from "../../shared/constants";
 import { getPrefs } from "../core/prefs";
 import { getIngestToken } from "../keychain";
+import { createAuthLimiter, tokensMatch } from "./auth";
 import { enqueueHandler } from "./enqueue";
 import { libraryRoutes } from "./library";
 import { libraryInfoHandler } from "./library-info";
@@ -39,24 +40,7 @@ function isAllowedOrigin(
   return false;
 }
 
-const AUTH_FAILURES = new Map<string, { count: number; resetAt: number }>();
-const AUTH_WINDOW_MS = 5 * 60_000;
-const AUTH_MAX_FAILURES = 10;
-
-function recordAuthFailure(ip: string): boolean {
-  const now = Date.now();
-  const entry = AUTH_FAILURES.get(ip);
-  if (!entry || entry.resetAt < now) {
-    AUTH_FAILURES.set(ip, { count: 1, resetAt: now + AUTH_WINDOW_MS });
-    return false;
-  }
-  entry.count += 1;
-  return entry.count > AUTH_MAX_FAILURES;
-}
-
-function clearAuthFailure(ip: string): void {
-  AUTH_FAILURES.delete(ip);
-}
+const authLimiter = createAuthLimiter();
 
 function buildApp(): Hono {
   const api = new Hono();
@@ -95,29 +79,21 @@ function buildApp(): Hono {
     c: Parameters<Parameters<Hono["use"]>[1]>[0],
     next: () => Promise<void>,
   ) => {
-    const ip =
-      c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ||
-      getConnInfo(c).remote.address ||
-      "unknown";
-    const blocked = AUTH_FAILURES.get(ip);
-    if (
-      blocked &&
-      blocked.resetAt > Date.now() &&
-      blocked.count > AUTH_MAX_FAILURES
-    ) {
+    const ip = getConnInfo(c).remote.address || "unknown";
+    if (authLimiter.isBlocked(ip)) {
       return c.json({ status: "error", error: "rate_limited" }, 429);
     }
     const auth = c.req.header("authorization") ?? "";
     const expected = await getIngestToken();
     const presented = auth.replace(/^Bearer\s+/i, "");
-    if (!expected || !presented || presented !== expected) {
-      const tripped = recordAuthFailure(ip);
+    if (!expected || !presented || !tokensMatch(expected, presented)) {
+      const tripped = authLimiter.recordFailure(ip);
       if (tripped) {
         log.warn("[pond http] rate limited after repeated auth failures", ip);
       }
       return c.json({ status: "error", error: "unauthorized" }, 401);
     }
-    clearAuthFailure(ip);
+    authLimiter.clear(ip);
     await next();
   };
 

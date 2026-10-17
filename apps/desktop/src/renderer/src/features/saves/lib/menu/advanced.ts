@@ -8,6 +8,7 @@ import sauceNaoLogo from "@/assets/logos/reverse-search/saucenao.png";
 import tineyeLogo from "@/assets/logos/reverse-search/tineye.png";
 import yandexLogo from "@/assets/logos/reverse-search/yandex.png";
 import { copyId } from "@/features/saves/lib/actions";
+import { setFontActivation } from "@/features/saves/lib/font-activation";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
 import {
   REVERSE_SEARCH_ENGINES,
@@ -162,10 +163,7 @@ export function buildSupplementalItems(
         icon: glyph(IconFile),
         hidden: batch || save.mediaType !== "font",
         onClick: () => {
-          void window.pond.query(
-            fontActivated ? "saves.deactivateFont" : "saves.activateFont",
-            { id: save.id },
-          );
+          void setFontActivation(save.id, !fontActivated);
         },
       },
       ...details.file,

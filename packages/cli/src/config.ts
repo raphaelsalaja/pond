@@ -11,16 +11,8 @@ const ConfigSchema = z.object({
 
 export type PondCliConfig = z.infer<typeof ConfigSchema>;
 
-export function configPath(env = process.env): string {
-  if (env.POND_CONFIG) return env.POND_CONFIG;
-  if (process.platform === "darwin")
-    return join(
-      homedir(),
-      "Library",
-      "Application Support",
-      "Pond",
-      "cli.json",
-    );
+/** Earlier versions kept the Windows file at the XDG location. */
+function xdgConfigPath(env: NodeJS.ProcessEnv): string {
   return join(
     env.XDG_CONFIG_HOME ?? join(homedir(), ".config"),
     "pond",
@@ -28,14 +20,55 @@ export function configPath(env = process.env): string {
   );
 }
 
-export async function readConfig(path = configPath()): Promise<PondCliConfig> {
-  try {
-    return ConfigSchema.parse(JSON.parse(await readFile(path, "utf8")));
-  } catch (error) {
-    if (error instanceof Error && "code" in error && error.code === "ENOENT")
-      return {};
-    throw error;
+export function configPath(
+  env: NodeJS.ProcessEnv = process.env,
+  platform: NodeJS.Platform = process.platform,
+): string {
+  if (env.POND_CONFIG) return env.POND_CONFIG;
+  if (platform === "win32")
+    return join(
+      env.APPDATA ?? join(homedir(), "AppData", "Roaming"),
+      "Pond",
+      "cli.json",
+    );
+  if (platform === "darwin")
+    return join(
+      homedir(),
+      "Library",
+      "Application Support",
+      "Pond",
+      "cli.json",
+    );
+  return xdgConfigPath(env);
+}
+
+/** Files to read, newest location first. Windows still reads the pre-%APPDATA% file. */
+export function configReadPaths(
+  env: NodeJS.ProcessEnv = process.env,
+  platform: NodeJS.Platform = process.platform,
+): string[] {
+  const current = configPath(env, platform);
+  return platform === "win32" && !env.POND_CONFIG
+    ? [current, xdgConfigPath(env)]
+    : [current];
+}
+
+export async function readConfig(
+  path?: string,
+  env: NodeJS.ProcessEnv = process.env,
+  platform: NodeJS.Platform = process.platform,
+): Promise<PondCliConfig> {
+  for (const candidate of path ? [path] : configReadPaths(env, platform)) {
+    try {
+      return ConfigSchema.parse(JSON.parse(await readFile(candidate, "utf8")));
+    } catch (error) {
+      if (
+        !(error instanceof Error && "code" in error && error.code === "ENOENT")
+      )
+        throw error;
+    }
   }
+  return {};
 }
 
 export async function writeConfig(

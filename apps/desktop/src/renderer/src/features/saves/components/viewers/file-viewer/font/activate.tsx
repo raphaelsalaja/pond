@@ -1,6 +1,7 @@
 import { IconTypography } from "@pond/icons";
 import { useEffect, useState } from "react";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
+import { setFontActivation } from "@/features/saves/lib/font-activation";
 import type { Save } from "@/features/saves/types";
 
 export function FontActivate({ save }: { save: Save }) {
@@ -23,13 +24,9 @@ export function FontActivate({ save }: { save: Save }) {
       label={activated ? "Deactivate Font" : "Activate Font"}
       pressed={activated}
       onClick={() => {
-        void window.pond
-          .query(activated ? "saves.deactivateFont" : "saves.activateFont", {
-            id: save.id,
-          })
-          .then((result) => {
-            if (result.ok) setActivated(!activated);
-          });
+        void setFontActivation(save.id, !activated).then((ok) => {
+          if (ok) setActivated(!activated);
+        });
       }}
     >
       <IconTypography />

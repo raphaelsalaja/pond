@@ -62,7 +62,8 @@ it("resizes and converts copies with collision-safe names while preserving the o
     const first = await convertMedia(input);
     const second = await convertMedia(input);
     expect(first).not.toBe(second);
-    const metadata = await sharp(first).metadata();
+    /** Reading bytes first avoids holding a Windows file handle during cleanup. */
+    const metadata = await sharp(await readFile(first)).metadata();
     expect(metadata.format).toBe("webp");
     expect(metadata.width).toBe(20);
     expect(metadata.height).toBe(10);
@@ -73,7 +74,12 @@ it("resizes and converts copies with collision-safe names while preserving the o
       convertMedia({ ...input, signal: aborted.signal }),
     ).rejects.toThrow();
   } finally {
-    await rm(directory, { recursive: true, force: true });
+    await rm(directory, {
+      recursive: true,
+      force: true,
+      maxRetries: 5,
+      retryDelay: 50,
+    });
   }
 });
 

@@ -1,3 +1,4 @@
+import { IS_MAC } from "@/shared/lib/platform";
 import { defineCustomSection, group } from "./engine-types";
 
 export const viewerSection = defineCustomSection({
@@ -24,7 +25,9 @@ export const viewerSection = defineCustomSection({
           description: "Choose what Space opens for the selected Save.",
           options: [
             { value: "preview", label: "Quick Preview" },
-            { value: "quick-look", label: "macOS Quick Look" },
+            ...(IS_MAC
+              ? [{ value: "quick-look", label: "macOS Quick Look" }]
+              : []),
             { value: "presentation", label: "Presentation" },
             { value: "detached", label: "Detached Window" },
             { value: "open", label: "Save Details" },

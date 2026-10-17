@@ -3,8 +3,10 @@ import { join } from "node:path";
 import { app } from "electron";
 import log from "electron-log/main.js";
 import { DEFAULT_LIBRARY_NAME } from "../../shared/constants";
+import { libraryFilename } from "../../shared/file-format";
 import { readOrCreateLibraryId } from "../lib/library-id";
 import { checkPointerSafety, readLibraryPointer } from "../lib/library-pointer";
+import { normalizeLibraryPath } from "../lib/path-identity";
 import { invalidatePaths, resolvePaths } from "../paths";
 import { commitLibraryPointer } from "./recent-libraries";
 
@@ -28,7 +30,12 @@ export function createPondBundle(
   if (!trimmedParent) return { ok: false, reason: "no_path" };
 
   const safeName = name.trim() || DEFAULT_LIBRARY_NAME;
-  const bundlePath = ensurePondSuffix(join(trimmedParent, safeName));
+  /** Windows rejects `:`, device names and trailing dots in a folder name; the library keeps its display name. */
+  const folderName =
+    process.platform === "win32"
+      ? libraryFilename(safeName, DEFAULT_LIBRARY_NAME)
+      : safeName;
+  const bundlePath = ensurePondSuffix(join(trimmedParent, folderName));
   const safety = checkPointerSafety(bundlePath);
   if (!safety.ok) {
     return { ok: false, reason: safety.reason ?? "unknown_error" };
@@ -70,6 +77,6 @@ export function ensureDefaultLibrary(): void {
 }
 
 function ensurePondSuffix(path: string): string {
-  const trimmed = path.replace(/\/+$/, "");
+  const trimmed = normalizeLibraryPath(path);
   return trimmed.endsWith(".pond") ? trimmed : `${trimmed}.pond`;
 }

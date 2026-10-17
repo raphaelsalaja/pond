@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
 import {
@@ -6,6 +6,7 @@ import {
   LibraryMarkSourceSchema,
 } from "../../shared/library-mark";
 import { libraryNameFromPath } from "../lib/library-id";
+import { renameSyncWithRetry } from "../lib/rename-retry";
 
 const AccentSchema = z
   .string()
@@ -82,6 +83,6 @@ export function updateLibraryIdentity(
   });
   const temporary = `${file}.tmp`;
   writeFileSync(temporary, JSON.stringify(parsed, null, 2));
-  renameSync(temporary, file);
+  renameSyncWithRetry(temporary, file);
   return readLibraryIdentity(root);
 }

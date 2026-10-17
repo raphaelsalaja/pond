@@ -1,4 +1,4 @@
-import { Tray } from "electron";
+import { nativeTheme, Tray } from "electron";
 import log from "electron-log/main.js";
 import type { MenuActionId } from "../shared/constants";
 import { pipelineSnapshot } from "./core/pipeline/reconciler";
@@ -52,6 +52,13 @@ export async function ensureTray(opts: TrayOptions): Promise<TrayHandle> {
   tray.setToolTip("Pond");
   log.info("[pond tray] created");
 
+  // Windows shows only the context menu on right-click; a plain click should open Pond.
+  const onThemeUpdated = () => tray.setImage(loadTrayIcon());
+  if (process.platform === "win32") {
+    tray.on("click", () => void opts.onOpenLibrary());
+    nativeTheme.on("updated", onThemeUpdated);
+  }
+
   const instance: TrayHandle = {
     tray,
     async refresh() {
@@ -68,6 +75,7 @@ export async function ensureTray(opts: TrayOptions): Promise<TrayHandle> {
     },
     destroy() {
       clearBusyPoll();
+      nativeTheme.off("updated", onThemeUpdated);
       if (process.platform === "darwin") tray.setTitle("");
       tray.destroy();
       handle = null;

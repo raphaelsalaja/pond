@@ -6,13 +6,13 @@ import {
   mkdir,
   readdir,
   readFile,
-  rename,
   rm,
   writeFile,
 } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import type { Transaction } from "@pond/schema/tx";
 import { z } from "zod";
+import { renameWithRetry } from "../lib/rename-retry";
 import { saveDirIn, trashSaveDirIn } from "../paths";
 
 const SnapshotSchema = z.object({
@@ -137,7 +137,7 @@ async function restoreJournal(
       await mkdir(dirname(destination), { recursive: true });
       const temporary = `${destination}.pond-restore`;
       await copyFile(backup, temporary);
-      await rename(temporary, destination);
+      await renameWithRetry(temporary, destination);
     }
   }
 }
@@ -190,7 +190,7 @@ export async function prepareBatchJournal(
     await writeFile(`${manifest}.tmp`, JSON.stringify(journal), {
       flush: true,
     });
-    await rename(`${manifest}.tmp`, manifest);
+    await renameWithRetry(`${manifest}.tmp`, manifest);
     return {
       async discard(): Promise<void> {
         await rm(directory, { recursive: true, force: true });

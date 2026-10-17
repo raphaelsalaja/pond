@@ -8,7 +8,11 @@ import {
   group,
 } from "@/features/settings/lib/engine-types";
 
+import { SHORTCUT_PLATFORM } from "@/shared/lib/shortcuts";
 import { notify } from "@/shared/lib/toast";
+
+const IS_MAC = SHORTCUT_PLATFORM === "mac";
+const IS_WINDOWS = SHORTCUT_PLATFORM === "windows";
 
 function runApply(
   channel:
@@ -28,7 +32,9 @@ function runApply(
 
 export const generalSection = defineCustomSection({
   title: "Preferences",
-  description: "Window behavior, menu bar, and updates.",
+  description: IS_WINDOWS
+    ? "Window behavior, notification area, and updates."
+    : "Window behavior, menu bar, and updates.",
   groups: [
     group.prefs("window", {
       title: "Startup",
@@ -110,6 +116,7 @@ export const generalSection = defineCustomSection({
           key: "dockVisibility",
           title: "Dock Visibility",
           description: "Keep Pond in the Dock or hide it with closed windows.",
+          visible: () => IS_MAC,
           options: [
             { value: "automatic", label: "Automatic" },
             { value: "always", label: "Always Visible" },
@@ -243,19 +250,22 @@ export const generalSection = defineCustomSection({
       ],
     }),
     group.prefs("quickCapture", {
-      title: "Menu Bar",
+      title: IS_WINDOWS ? "Notification Area" : "Menu Bar",
       items: [
         {
           control: "switch",
           key: "menuBarIcon",
-          title: "Menu Bar Icon",
-          description: "Show Pond in the menu bar.",
+          title: IS_WINDOWS ? "Notification Area Icon" : "Menu Bar Icon",
+          description: IS_WINDOWS
+            ? "Show Pond in the notification area."
+            : "Show Pond in the menu bar.",
           apply: () => runApply("quickCapture.applyPrefs"),
         },
       ],
     }),
     group.plain({
       title: "Integrations",
+      visible: () => IS_MAC,
       items: [
         {
           control: "custom",

@@ -1,7 +1,7 @@
 import { existsSync, readdirSync } from "node:fs";
 import { mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, posix } from "node:path";
 import {
   BLANK_DOCUMENTS,
   type BlankDocumentKind,
@@ -33,16 +33,23 @@ const defaultReader: AppDirReader = {
 
 export function listInstalledBlankDocuments(
   reader: AppDirReader = defaultReader,
+  platform: NodeJS.Platform = process.platform,
 ): BlankDocumentKind[] {
-  return listInstalledBlankDocumentApps(reader).map((item) => item.kind);
+  return listInstalledBlankDocumentApps(reader, platform).map(
+    (item) => item.kind,
+  );
 }
 
 export function listInstalledBlankDocumentApps(
   reader: AppDirReader = defaultReader,
+  platform: NodeJS.Platform = process.platform,
 ): InstalledBlankDocumentApp[] {
+  if (platform !== "darwin") return [];
   const apps = APP_DIRS.flatMap((dir) =>
     reader.exists(dir)
-      ? reader.entries(dir).map((name) => ({ name, path: join(dir, name) }))
+      ? reader
+          .entries(dir)
+          .map((name) => ({ name, path: posix.join(dir, name) }))
       : [],
   );
   return BLANK_DOCUMENTS.flatMap((document) => {

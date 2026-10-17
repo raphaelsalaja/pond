@@ -71,6 +71,7 @@ apps/desktop/resources/replay/sw.js
 
 # compiled Chrome native-messaging host
 apps/desktop/resources/bin/pond-native-host
+apps/desktop/resources/bin/pond-native-host.exe
 
 # generated icon previews
 apps/desktop/src/renderer/src/generated/

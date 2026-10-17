@@ -56,12 +56,18 @@ function resolveFfmpeg(): string | null {
     candidates.push(join(process.resourcesPath, "bin", FFMPEG_FILENAME));
   }
   candidates.push(
-    resolve(__dirname, "../../../node_modules/ffmpeg-static/ffmpeg"),
+    resolve(__dirname, "../../../node_modules/ffmpeg-static", FFMPEG_FILENAME),
   );
   candidates.push(
-    resolve(process.cwd(), "apps/desktop/node_modules/ffmpeg-static/ffmpeg"),
+    resolve(
+      process.cwd(),
+      "apps/desktop/node_modules/ffmpeg-static",
+      FFMPEG_FILENAME,
+    ),
   );
-  candidates.push(resolve(process.cwd(), "node_modules/ffmpeg-static/ffmpeg"));
+  candidates.push(
+    resolve(process.cwd(), "node_modules/ffmpeg-static", FFMPEG_FILENAME),
+  );
 
   for (const c of candidates) {
     if (existsSync(c)) return c;

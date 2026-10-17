@@ -47,6 +47,10 @@
   grid-template-columns: 1fr 1fr;
   gap: 8px;
 
+  & > :last-child {
+    grid-column: 1 / -1;
+  }
+
   @media (max-width: 420px) {
     grid-template-columns: 1fr;
   }

@@ -9,6 +9,7 @@ import {
 } from "@shared/assistant";
 import type { ReactNode } from "react";
 import { AnimateHeight } from "@/shared/components/animate-height";
+import { THIS_DEVICE } from "@/shared/lib/platform";
 import { ProviderLogo } from "./icons";
 import { ProviderConnection } from "./provider";
 import styles from "./styles.module.css";
@@ -30,7 +31,7 @@ export const GROUPS = [
   {
     kind: "subscription" as const,
     title: "Subscriptions",
-    description: "Use Codex or Claude Code signed in on this Mac.",
+    description: `Use Codex or Claude Code signed in on ${THIS_DEVICE}.`,
     empty: "No subscription connections",
   },
 ];

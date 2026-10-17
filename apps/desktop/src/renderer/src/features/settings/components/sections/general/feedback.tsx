@@ -1,5 +1,6 @@
 import { Button, Settings, Switch } from "@pond/ui";
 import { useEffect, useState } from "react";
+import { IS_MAC } from "@/shared/lib/platform";
 import { usePrefs } from "@/shared/state/prefs";
 
 const SOUND_ROWS = [
@@ -93,7 +94,9 @@ export function NotificationPreferences() {
             {permission === "granted"
               ? "Notifications are allowed."
               : permission === "denied"
-                ? "Notifications are blocked in System Settings."
+                ? IS_MAC
+                  ? "Notifications are blocked in System Settings."
+                  : "Notifications are blocked in Windows Settings."
                 : permission === "unsupported"
                   ? "Notifications aren't available on this platform."
                   : "Allow Pond to show system notifications."}
@@ -116,7 +119,9 @@ export function NotificationPreferences() {
             >
               {permission === "default"
                 ? "Allow Notifications"
-                : "Open System Settings"}
+                : IS_MAC
+                  ? "Open System Settings"
+                  : "Open Settings"}
             </Button>
           </Settings.ItemControl>
         ) : null}

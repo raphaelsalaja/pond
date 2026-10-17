@@ -1,3 +1,5 @@
+# Normalize to LF on every platform: Biome and the shell hooks in .husky expect
+# it, and Windows checkouts must not rewrite files to CRLF.
 * text=auto eol=lf
 
 *.png binary
@@ -5,6 +7,15 @@
 *.jpeg binary
 *.gif binary
 *.ico binary
+*.webp binary
+*.heic binary
+*.mp4 binary
+*.wav binary
+*.woff binary
+*.woff2 binary
+*.eaglepack binary
+*.node binary
+*.dll binary
 *.icns binary
 *.dmg binary
 *.exe binary

@@ -2,6 +2,8 @@
 
 ## Install
 
+### macOS
+
 Download the latest `.dmg` from [GitHub Releases](https://github.com/raphaelsalaja/pond/releases), or install it with Homebrew:
 
 ```bash
@@ -9,11 +11,19 @@ brew tap raphaelsalaja/pond https://github.com/raphaelsalaja/pond
 brew install --cask raphaelsalaja/pond/pond
 ```
 
-Pond needs macOS 13 or later, on Apple Silicon or Intel. It's signed and notarized, and it updates itself from GitHub Releases. Windows and Linux are on the [roadmap](ROADMAP.md).
+Pond needs macOS 13 or later, on Apple Silicon or Intel. It's signed and notarized, and it updates itself from GitHub Releases.
+
+### Windows
+
+Download `Pond-X.Y.Z-x64.exe` from [GitHub Releases](https://github.com/raphaelsalaja/pond/releases) and run it. The installer sets Pond up for your user account and does not need administrator rights. Pond needs 64-bit Windows 10 or 11 on x64, and it updates itself from GitHub Releases.
+
+The installer is not code-signed yet, so Windows SmartScreen may show "Windows protected your PC" on first run. Choose **More info**, then **Run anyway**. Windows on Arm is not built yet.
+
+Linux is on the [roadmap](ROADMAP.md).
 
 ### Browser extension
 
-Saving from the web and connecting accounts in Sources both need the Pond extension. It works in Chrome, Arc, Brave, and Edge.
+Saving from the web and connecting accounts in Sources both need the Pond extension. It works in Chrome, Brave, and Edge on macOS and Windows, and in Arc on macOS.
 
 1. In Pond, open the library menu at the top of the sidebar, choose **Browser Extension**, then click **Download**. A Pond Extension folder lands in Downloads. You can also download `pond-extension-X.Y.Z.zip` from the release, or build it from source with [`apps/extension/README.md`](apps/extension/README.md).
 2. Open `chrome://extensions`, turn on Developer mode, click **Load unpacked**, and choose the folder.
@@ -41,7 +51,7 @@ Run `pond --help` for commands and output formats.
 
 ## Development
 
-Requires Node.js 24 (see `.nvmrc`) and pnpm 11.27.0.
+Requires Node.js 24 (see `.nvmrc`) and pnpm 11.27.0. On Windows, see [Windows development](CONTRIBUTING.md#windows-development) for the extra prerequisites.
 
 ```bash
 pnpm install
@@ -79,11 +89,11 @@ See [`apps/desktop/README.md`](apps/desktop/README.md) for architecture and on-d
 
 Assistant lives in the right column. It searches this library with a key you paste in Settings, or a local host you run such as Ollama or LM Studio. Pond never stores those keys on a Pond server.
 
-You can also use a subscription through a local Codex or Claude Code installation. In Terminal, run `codex login` and sign in with ChatGPT, or run `claude auth login` and sign in with your Claude plan. In Settings → Providers → Subscriptions, add the provider and click Connect. Select its default model in the Assistant composer. No API key is needed. Removing a connection from Pond does not sign you out of the CLI.
+You can also use a subscription through a local Codex or Claude Code installation. In a terminal, run `codex login` and sign in with ChatGPT, or run `claude auth login` and sign in with your Claude plan. In Settings → Providers → Subscriptions, add the provider and click Connect. Select its default model in the Assistant composer. No API key is needed. Removing a connection from Pond does not sign you out of the CLI.
 
-These connections run the official CLIs on your Mac; inference still goes to OpenAI or Anthropic and counts against your plan's limits. Pond does not read or copy CLI tokens: Codex receives a narrow link to its existing file-backed ChatGPT sign-in. Keyring-backed Codex sign-ins are rejected with instructions to create the isolated file-backed connection that Pond requires. API-key sign-ins are rejected and inherited provider credentials and routing overrides are removed from these processes. The CLI returns structured requests to Pond's existing tool loop, so Library access, citations, and review before Apply retain the same behavior. CLI tools, MCP, and user or project customizations are disabled. Organization-managed Claude Code policy hooks can still run because Claude Code applies administrator policy in safe mode; its hook-free bare mode also disables the subscription OAuth credentials this connection needs. This integration supports text and Library tools; use a vision provider for image or file attachments. The default model is selected by the CLI; custom model IDs must be available to your plan. Fast and Reasoning controls are not exposed for these connections.
+These connections run the official CLIs on your computer; inference still goes to OpenAI or Anthropic and counts against your plan's limits. Pond does not read or copy CLI tokens: Codex receives a narrow link to its existing file-backed ChatGPT sign-in (Windows needs Developer Mode for the symlink; without it Codex is unavailable rather than copied). Keyring-backed Codex sign-ins are rejected with instructions to create the isolated file-backed connection that Pond requires. API-key sign-ins are rejected and inherited provider credentials and routing overrides are removed from these processes. The CLI returns structured requests to Pond's existing tool loop, so Library access, citations, and review before Apply retain the same behavior. CLI tools, MCP, and user or project customizations are disabled. Organization-managed Claude Code policy hooks can still run because Claude Code applies administrator policy in safe mode; its hook-free bare mode also disables the subscription OAuth credentials this connection needs. This integration supports text and Library tools; use a vision provider for image or file attachments. The default model is selected by the CLI; custom model IDs must be available to your plan. Fast and Reasoning controls are not exposed for these connections.
 
-Cursor, Claude, and other MCP hosts can search the same library. Pond speaks MCP over stdio. This block belongs in Cursor `mcp.json`. It launches Pond as a local stdio server (`--mcp`) against the library on this Mac:
+Cursor, Claude, and other MCP hosts can search the same library. Pond speaks MCP over stdio. This block belongs in Cursor `mcp.json`. It launches Pond as a local stdio server (`--mcp`) against the library on this computer:
 
 ```json
 {
@@ -96,7 +106,7 @@ Cursor, Claude, and other MCP hosts can search the same library. Pond speaks MCP
 }
 ```
 
-Copy the exact command from Settings → Model Context Protocol → Advanced. Pond does not host a public MCP URL.
+On Windows the command is the installed `Pond.exe`, by default `C:\Users\<you>\AppData\Local\Programs\Pond\Pond.exe`. Copy the exact command from Settings → Model Context Protocol → Advanced. Pond does not host a public MCP URL.
 
 ## Library
 

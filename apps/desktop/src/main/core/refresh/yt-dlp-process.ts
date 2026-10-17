@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { killProcessTree, trackChildProcess } from "../../lib/process-tree";
 
 export interface ProcOutcome {
   code: number;
@@ -22,7 +23,11 @@ export function runWithTimeout(
     });
   }
   return new Promise((resolve) => {
-    const child = spawn(bin, argv, { stdio: ["ignore", "pipe", "pipe"] });
+    const child = spawn(bin, argv, {
+      stdio: ["ignore", "pipe", "pipe"],
+      windowsHide: true,
+    });
+    trackChildProcess(child);
     let stderr = "";
     let stdout = "";
     let settled = false;
@@ -47,7 +52,7 @@ export function runWithTimeout(
 
     function killWith(code: number, extra: string) {
       try {
-        child.kill("SIGKILL");
+        killProcessTree(child, "SIGKILL");
       } catch {}
       finish(code, extra);
     }

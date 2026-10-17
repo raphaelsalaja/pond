@@ -1,7 +1,9 @@
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   cosineSimilarity,
   embeddingQueryText,
+  modelCacheDir,
   queryEmbeddingChannels,
   reciprocalRankFusion,
 } from "./query-embeddings";
@@ -72,5 +74,13 @@ describe("hybrid retrieval ranking", () => {
         enableClip: true,
       }),
     ).toEqual({ text: false, media: false });
+  });
+});
+
+describe("modelCacheDir", () => {
+  it("keeps downloaded models in user data on Windows only", () => {
+    expect(modelCacheDir("win32", "/data")).toBe(join("/data", "models"));
+    expect(modelCacheDir("darwin", "/data")).toBeUndefined();
+    expect(modelCacheDir("linux", "/data")).toBeUndefined();
   });
 });

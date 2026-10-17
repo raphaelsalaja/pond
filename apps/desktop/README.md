@@ -15,13 +15,14 @@ Run these commands from `apps/desktop`, or prefix them at the repository root wi
 | `pnpm test` | Run offline desktop tests |
 | `pnpm build` | Build main/preload/renderer into `out/` |
 | `pnpm dist:mac` | Build + package macOS DMG (arm64 + x64) |
+| `pnpm dist:win` | Build + package the Windows x64 NSIS installer (run on Windows) |
 | `pnpm rebuild` | Rebuild `better-sqlite3` for the current Electron ABI |
 | `pnpm db:generate` | Generate Drizzle SQLite migrations |
 
 ## On disk
 
-- **App state**: Electron’s `userData` directory holds `global.db`, `config.json`, and encrypted secrets. Per-library indexes live at `indexes/<libraryId>.db`; thumbnail derivatives live at `pond-cache/thumbs/<libraryId>/`. See [`src/main/paths.ts`](src/main/paths.ts) for the platform-resolved paths.
-- **Library** (source of truth): `~/Pond/My Pond.pond/` (per-item `.info` folders, trash, library metadata).
+- **App state**: Electron’s `userData` directory (`~/Library/Application Support/Pond` on macOS, `%APPDATA%\Pond` on Windows) holds `global.db`, `config.json`, and encrypted secrets. Per-library indexes live at `indexes/<libraryId>.db`; thumbnail derivatives live at `pond-cache/thumbs/<libraryId>/`. See [`src/main/paths.ts`](src/main/paths.ts) for the platform-resolved paths.
+- **Library** (source of truth): `~/Pond/My Pond.pond/` on macOS and `%USERPROFILE%\Pond\My Pond.pond` on Windows (per-item `.info` folders, trash, library metadata). On macOS the `.pond` folder is registered as a package, so Finder shows it as one file; on Windows it is an ordinary folder.
 - **Secrets**: ingest token encrypted via Electron's `safeStorage`
   (macOS Keychain, Windows DPAPI, libsecret on Linux) and persisted to
   `secrets.json` in the app data directory.

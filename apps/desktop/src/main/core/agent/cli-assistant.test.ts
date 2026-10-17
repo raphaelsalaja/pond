@@ -1,6 +1,7 @@
+import { mkdtempSync, rmSync, symlinkSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { delimiter, join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { checkCliConnection } from "./cli-runtime";
@@ -100,7 +101,7 @@ const codexDisabledFeatures = [
 const fixture = `#!/usr/bin/env node
 const fs = require('node:fs');
 const args = process.argv.slice(2);
-const codex = process.argv[1].endsWith('/codex');
+const codex = /[\\\\/]codex(\\.js)?$/.test(process.argv[1]);
 const forbiddenEnv = ${JSON.stringify(inheritedProviderEnv)};
 const codexDisabledFeatures = ${JSON.stringify(codexDisabledFeatures)};
 const productionArgs = ['--print', '--output-format', '--json-schema', '--no-session-persistence', '--safe-mode', '--restricted', '--tools', '', '--strict-mcp-config', '--permission-mode', 'dontAsk', '--system-prompt'];
@@ -136,7 +137,7 @@ process.stdin.on('end', () => {
     console.log(JSON.stringify({models: [{slug: 'fixture-model', display_name: 'Fixture model', priority: 1, shell_type: 'unified_exec', apply_patch_tool_type: 'freeform', experimental_supported_tools: ['clock'], supports_search_tool: true}]})); return;
   }
   if (codex && args[0] === 'debug' && args[1] === 'prompt-input') {
-    if (!process.env.CODEX_HOME?.endsWith('/codex-home'))
+    if (!/[\\\\/]codex-home$/.test(process.env.CODEX_HOME ?? ''))
       throw new Error('Codex prompt probe did not use an isolated home');
     if (process.env.POND_CLI_LEAK_SKILL) {
       const tick = String.fromCharCode(96);
@@ -186,12 +187,14 @@ process.stdin.on('end', () => {
       model.include_skills_usage_instructions !== false ||
       model.tool_mode !== null
     )) throw new Error('Codex model catalog exposes a native capability');
-    if (!process.env.CODEX_HOME?.endsWith('/codex-home'))
+    if (!/[\\\\/]codex-home$/.test(process.env.CODEX_HOME ?? ''))
       throw new Error('Codex production request did not use an isolated home');
     const credentialStore = JSON.parse(config.get('cli_auth_credentials_store') ?? 'null');
     if (credentialStore !== 'file')
       throw new Error('Codex production request did not select file-backed credentials');
-    if (!fs.lstatSync(process.env.CODEX_HOME + '/auth.json').isSymbolicLink())
+    const auth = process.env.CODEX_HOME + '/auth.json';
+    // Credentials are linked, never copied.
+    if (!fs.lstatSync(auth).isSymbolicLink() && (process.platform !== 'win32' || fs.readFileSync(auth, 'utf8') !== 'fixture-auth'))
       throw new Error('Codex authentication was copied instead of linked');
     if (!stdin && args.includes('--output-schema')) {
       if (process.env.POND_CLI_LEGACY_CODEX)
@@ -218,6 +221,20 @@ process.stdin.on('end', () => {
 });
 `;
 
+/** Codex credentials are linked, never copied, so Windows without Developer Mode cannot run these. */
+const canLinkCredentials = (() => {
+  const probe = mkdtempSync(join(tmpdir(), "pond-symlink-probe-"));
+  try {
+    symlinkSync(join(probe, "target"), join(probe, "link"));
+    return true;
+  } catch {
+    return false;
+  } finally {
+    rmSync(probe, { recursive: true, force: true });
+  }
+})();
+const itWithCodex = it.skipIf(!canLinkCredentials);
+
 let directory = "";
 const originalPath = process.env.PATH;
 const originalCodexHome = process.env.CODEX_HOME;
@@ -227,9 +244,17 @@ const originalKeys = Object.fromEntries(
 
 beforeAll(async () => {
   directory = await mkdtemp(join(tmpdir(), "pond-cli-assistant-"));
-  for (const name of ["codex", "claude"])
-    await writeFile(join(directory, name), fixture, { mode: 0o755 });
-  process.env.PATH = `${directory}:${originalPath}`;
+  for (const name of ["codex", "claude"]) {
+    if (process.platform === "win32") {
+      // Windows cannot execute a shebang file; npm installs CLIs as .cmd shims.
+      await writeFile(join(directory, `${name}.js`), fixture);
+      await writeFile(
+        join(directory, `${name}.cmd`),
+        `@"${process.execPath}" "%~dp0${name}.js" %*\r\n`,
+      );
+    } else await writeFile(join(directory, name), fixture, { mode: 0o755 });
+  }
+  process.env.PATH = `${directory}${delimiter}${originalPath}`;
   process.env.CODEX_HOME = join(directory, "source-codex-home");
   await mkdir(process.env.CODEX_HOME, { recursive: true });
   await writeFile(join(process.env.CODEX_HOME, "auth.json"), "fixture-auth", {
@@ -319,7 +344,18 @@ describe("subscription assistant through real CLI processes", () => {
     }
   });
 
-  it("retries a transient Codex model catalog failure", async () => {
+  it.skipIf(canLinkCredentials)(
+    "gates Codex with an actionable error when symlinks are refused",
+    async () => {
+      const result = await checkCliConnection("codex");
+      expect(result).toMatchObject({
+        ok: false,
+        error: expect.stringMatching(/Developer Mode/),
+      });
+    },
+  );
+
+  itWithCodex("retries a transient Codex model catalog failure", async () => {
     const marker = join(directory, "catalog-failed-once");
     process.env.POND_CLI_CATALOG_FAIL_ONCE = marker;
     try {
@@ -333,19 +369,22 @@ describe("subscription assistant through real CLI processes", () => {
     }
   });
 
-  it("asks for a Codex update when strict isolation config is unavailable", async () => {
-    process.env.POND_CLI_LEGACY_CODEX = "1";
-    try {
-      await expect(checkCliConnection("codex")).resolves.toEqual({
-        ok: false,
-        error:
-          "This Codex version cannot provide Pond's isolated runtime. Update Codex and try again.",
-      });
-    } finally {
-      delete process.env.POND_CLI_LEGACY_CODEX;
-    }
-  });
-  it.each(["POND_CLI_LEAK_SKILL", "POND_CLI_UNSAFE_CATALOG"] as const)(
+  itWithCodex(
+    "asks for a Codex update when strict isolation config is unavailable",
+    async () => {
+      process.env.POND_CLI_LEGACY_CODEX = "1";
+      try {
+        await expect(checkCliConnection("codex")).resolves.toEqual({
+          ok: false,
+          error:
+            "This Codex version cannot provide Pond's isolated runtime. Update Codex and try again.",
+        });
+      } finally {
+        delete process.env.POND_CLI_LEGACY_CODEX;
+      }
+    },
+  );
+  itWithCodex.each(["POND_CLI_LEAK_SKILL", "POND_CLI_UNSAFE_CATALOG"] as const)(
     "rejects Codex when the isolation probe detects %s",
     async (name) => {
       process.env[name] = "1";
@@ -360,15 +399,16 @@ describe("subscription assistant through real CLI processes", () => {
       }
     },
   );
-  it.each(["codex", "claude-code"] as const)(
-    "runs Pond tools and returns a reply with %s",
-    async (provider) => {
-      const reply = run(provider);
-      await expect(reply.result).resolves.toBe("Found a saved article.");
-      expect(reply.calls).toEqual(["design"]);
-      expect(reply.text()).toBe("Found a saved article.");
-    },
-  );
+  it.each(
+    canLinkCredentials
+      ? (["codex", "claude-code"] as const)
+      : (["claude-code"] as const),
+  )("runs Pond tools and returns a reply with %s", async (provider) => {
+    const reply = run(provider);
+    await expect(reply.result).resolves.toBe("Found a saved article.");
+    expect(reply.calls).toEqual(["design"]);
+    expect(reply.text()).toBe("Found a saved article.");
+  });
 
   it("rejects keyring-backed Codex before reporting a connection", async () => {
     process.env.POND_CLI_AUTH_STORE = "keyring";
@@ -382,7 +422,7 @@ describe("subscription assistant through real CLI processes", () => {
     }
   });
 
-  it.each(["fail-fixture", "malformed-fixture"])(
+  itWithCodex.each(["fail-fixture", "malformed-fixture"])(
     "reports %s without inventing a reply",
     async (content) => {
       const reply = run("codex", content);
@@ -394,34 +434,38 @@ describe("subscription assistant through real CLI processes", () => {
     },
   );
 
-  it("stops the actual CLI process when a reply is cancelled", async () => {
-    const controller = new AbortController();
-    const reply = run("codex", "hang-fixture", controller);
-    const rejected = expect(reply.result).rejects.toThrow();
-    let pid = 0;
-    for (let attempt = 0; attempt < 100; attempt++) {
-      const stored = await readFile(join(directory, "child.pid"), "utf8").catch(
-        () => "",
-      );
-      if (stored) {
-        pid = Number(stored);
-        break;
-      }
-      await new Promise((resolve) => setTimeout(resolve, 20));
-    }
-    controller.abort();
-    await rejected;
-    expect(pid).toBeGreaterThan(0);
-    await expect
-      .poll(() => {
-        try {
-          process.kill(pid, 0);
-          return false;
-        } catch {
-          return true;
+  itWithCodex(
+    "stops the actual CLI process when a reply is cancelled",
+    async () => {
+      const controller = new AbortController();
+      const reply = run("codex", "hang-fixture", controller);
+      const rejected = expect(reply.result).rejects.toThrow();
+      let pid = 0;
+      for (let attempt = 0; attempt < 100; attempt++) {
+        const stored = await readFile(
+          join(directory, "child.pid"),
+          "utf8",
+        ).catch(() => "");
+        if (stored) {
+          pid = Number(stored);
+          break;
         }
-      })
-      .toBe(true);
-    expect(reply.text()).toBe("");
-  });
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      }
+      controller.abort();
+      await rejected;
+      expect(pid).toBeGreaterThan(0);
+      await expect
+        .poll(() => {
+          try {
+            process.kill(pid, 0);
+            return false;
+          } catch {
+            return true;
+          }
+        })
+        .toBe(true);
+      expect(reply.text()).toBe("");
+    },
+  );
 });

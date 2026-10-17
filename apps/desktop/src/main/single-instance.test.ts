@@ -7,6 +7,7 @@ import {
   isProcessAlive,
   singletonLockHolder,
 } from "./single-instance";
+import { isWindowsSymlinkPrivilegeError } from "./test/symlink";
 
 function fakeClock() {
   let time = 0;
@@ -75,14 +76,22 @@ it("does not wait on its own stale lock", async () => {
   expect(lock.polls()).toBe(0);
 });
 
-it("reads the holder pid from Chromium's lock link", async () => {
+it("reads the holder pid from Chromium's lock link", async (ctx) => {
   const dir = await mkdtemp(join(tmpdir(), "pond-lock-"));
   try {
     expect(singletonLockHolder(dir)).toBeNull();
-    await symlink(
-      "Raphaels-MacBook-Pro.local-44592",
-      join(dir, "SingletonLock"),
-    );
+    try {
+      await symlink(
+        "Raphaels-MacBook-Pro.local-44592",
+        join(dir, "SingletonLock"),
+      );
+    } catch (error) {
+      if (error instanceof Error && isWindowsSymlinkPrivilegeError(error)) {
+        ctx.skip("Windows symlink privilege is unavailable");
+        return;
+      }
+      throw error;
+    }
     expect(singletonLockHolder(dir)).toBe(44592);
   } finally {
     await rm(dir, { recursive: true, force: true });

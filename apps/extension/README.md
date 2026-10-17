@@ -23,7 +23,7 @@ Load unpacked from `apps/extension/.output/chrome-mv3` while developing.
 
 ## Capture
 
-Open Pond once so it can register the native host. Then:
+Open Pond once so it can register the native host. On macOS this writes a manifest into each installed browser's native messaging folder. On Windows it registers the host under per-user `HKEY_CURRENT_USER` registry keys for Chrome, Edge, Brave, and other supported browsers. Then:
 
 1. Click the Pond icon in the toolbar to save the current tab, or right-click a page, link, or image → **Save to Pond**.
 2. On supported sites, the usual save/bookmark control still sends the item into your library.

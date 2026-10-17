@@ -1,7 +1,12 @@
 import type { ReactNode } from "react";
 import { z } from "zod";
-import type { GroupConfig, Item } from "@/features/settings/lib/engine-types";
+import type {
+  GroupConfig,
+  Item,
+  SettingsValues,
+} from "@/features/settings/lib/engine-types";
 import { SECTIONS, type SectionDef } from "@/features/settings/lib/registry";
+import { IS_MAC, REVEAL_LABEL, THIS_DEVICE } from "@/shared/lib/platform";
 
 export interface SettingsSearchEntry {
   id: string;
@@ -21,6 +26,31 @@ function asText(node: ReactNode): string | undefined {
   return TextNodeSchema.parse(node);
 }
 
+/**
+ * True when a `visible` predicate hides its row regardless of settings values
+ * (e.g. macOS-only rows on Windows). Predicates that read a value can become
+ * true later, so they stay searchable.
+ */
+function isStaticallyHidden(
+  visible: ((values: SettingsValues) => boolean) | undefined,
+): boolean {
+  if (!visible) return false;
+  let readsValues = false;
+  /** SAFETY: the probe only answers property reads, and every read marks the predicate as value-dependent. */
+  const probe = new Proxy({} as SettingsValues, {
+    get: () => {
+      readsValues = true;
+      return undefined;
+    },
+  });
+  try {
+    return !visible(probe) && !readsValues;
+  } catch {
+    /** A predicate that cannot run on an empty probe depends on values. */
+    return false;
+  }
+}
+
 function itemTitle(item: Item): string | undefined {
   if (item.control === "custom") return asText(item.title);
   return item.title;
@@ -32,7 +62,9 @@ function itemEntries(
 ): SettingsSearchEntry[] {
   const groupTitle = asText(group.title);
   const entries: SettingsSearchEntry[] = [];
+  if (isStaticallyHidden(group.visible)) return entries;
   for (const item of group.items ?? []) {
+    if (isStaticallyHidden(item.visible)) continue;
     const title = itemTitle(item);
     if (!title) continue;
     const description =
@@ -77,7 +109,7 @@ export const SETTINGS_SEARCH_INDEX: SettingsSearchEntry[] = SECTIONS.filter(
 ).flatMap(sectionEntries);
 
 const MANUAL_ENTRIES = [
-  ["library", "Library", "logo", "Logo", "Choose an image from this Mac"],
+  ["library", "Library", "logo", "Logo", `Choose an image from ${THIS_DEVICE}`],
   ["library", "Library", "name", "Name", "Rename the open library"],
   [
     "library",
@@ -91,7 +123,9 @@ const MANUAL_ENTRIES = [
     "Storage",
     "location",
     "Library Location",
-    "Reveal your library in Finder",
+    IS_MAC
+      ? "Reveal your library in Finder"
+      : `${REVEAL_LABEL} for your library`,
   ],
   [
     "storage",

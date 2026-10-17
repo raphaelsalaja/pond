@@ -1,4 +1,4 @@
-import { lstat, rename } from "node:fs/promises";
+import { lstat } from "node:fs/promises";
 import { join } from "node:path";
 import type { NewSave, Save, SyncAction, Tag } from "@pond/schema/db";
 import {
@@ -25,7 +25,9 @@ import {
   setSaveDeleted,
   writeSaveFiles,
 } from "../lib/library";
+import { isSamePath } from "../lib/path-identity";
 import { withRawSlim } from "../lib/raw-slim";
+import { renameWithRetry } from "../lib/rename-retry";
 import { libraryRoot, saveDir } from "../paths";
 import { BatchRecoveryError, runRecoverableBatch } from "./batch-journal";
 import {
@@ -252,9 +254,11 @@ async function applyToDisk(tx: Transaction): Promise<void> {
             throw error;
           },
         );
-        if (destinationExists)
+        const caseOnlyRename =
+          process.platform === "win32" && isSamePath(source, destination);
+        if (destinationExists && !caseOnlyRename)
           throw new Error(`A file named ${file.to} already exists.`);
-        await rename(source, destination);
+        await renameWithRetry(source, destination);
       }
       /** SAFETY: `Partial<NewSave>` and `Partial<Save>` differ only in timestamp nullability, which `patchSaveFiles` writes back unchanged. */
       const patched = await patchSaveFiles(

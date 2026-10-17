@@ -1,12 +1,5 @@
 import { existsSync } from "node:fs";
-import {
-  mkdir,
-  readdir,
-  readFile,
-  rename,
-  rm,
-  writeFile,
-} from "node:fs/promises";
+import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import {
   type CaptureDraft,
@@ -17,6 +10,7 @@ import {
 } from "@pond/schema/capture";
 import log from "electron-log/main.js";
 import { z } from "zod";
+import { renameWithRetry } from "../lib/rename-retry";
 
 const JobSchema = z.object({
   draft: CaptureDraftSchema.extend({
@@ -70,7 +64,7 @@ export function createCaptureQueue(ports: CaptureQueuePorts) {
       throw new Error("This capture exceeds the capture queue limit.");
     if (ports.writeStored) await ports.writeStored(tmp, value);
     else await writeFile(tmp, value);
-    await rename(tmp, target);
+    await renameWithRetry(tmp, target);
   }
   async function read(root: string, id: string): Promise<Job> {
     if (!/^[a-zA-Z0-9_-]{1,100}$/.test(id))

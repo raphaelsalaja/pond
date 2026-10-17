@@ -3,7 +3,7 @@ import log from "electron-log/main.js";
 import { isSyncScheduleDue } from "../shared/sync-schedule";
 import { emptyTrashOlderThan } from "./core/library-ops";
 import { getPrefs } from "./core/prefs";
-import { maybeUpdateYtDlp } from "./core/refresh/yt-dlp-updater";
+import { maybeUpdateYtDlp, recoverYtDlp } from "./core/refresh/yt-dlp-updater";
 import { isSyncBlockedByStorageGuard } from "./core/storage-watcher";
 import { syncAllSources } from "./core/sync";
 import { schedule } from "./lib/scheduler";
@@ -28,6 +28,9 @@ export function registerTrashCron() {
 }
 
 export function registerYtDlpUpdateCron() {
+  // Restoring a binary left broken by an interrupted update must not wait for
+  // the first scheduled check.
+  void recoverYtDlp();
   schedule({
     name: "yt-dlp-update",
     every: 24 * 60 * 60 * 1000,

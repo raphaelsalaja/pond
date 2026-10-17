@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveShortcuts } from "../../shared/shortcuts";
+import { resolveShortcuts, SHORTCUT_PLATFORM } from "../../shared/shortcuts";
 import { menuAccelerator } from "./menu-accelerator";
 
 describe("native menu shortcut presentation", () => {
@@ -15,14 +15,20 @@ describe("native menu shortcut presentation", () => {
       },
     });
     expect(menuAccelerator(bindings["view.layout-cycle"])).toBe(
-      "Control+Shift+J",
+      SHORTCUT_PLATFORM === "mac"
+        ? "Control+Shift+J"
+        : "CommandOrControl+Shift+J",
     );
     expect(menuAccelerator(bindings["view.inspector"])).toBe("Alt+I");
     expect(menuAccelerator(bindings["view.zoom-in"])).toBe(
       "CommandOrControl+Up",
     );
     expect(menuAccelerator(bindings["nav.back"])).toBe("Alt+Left");
-    expect(menuAccelerator(bindings["app.summon"])).toBe("Control+Alt+F12");
+    expect(menuAccelerator(bindings["app.summon"])).toBe(
+      SHORTCUT_PLATFORM === "mac"
+        ? "Control+Alt+F12"
+        : "CommandOrControl+Alt+F12",
+    );
   });
   it("tracks Eagle profile changes and restores defaults after resetting overrides", () => {
     const eagle = resolveShortcuts({ profile: "eagle", overrides: {} });
