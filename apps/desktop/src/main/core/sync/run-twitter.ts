@@ -2,16 +2,25 @@ import { type ConnectedAccount, type Source, saves } from "@pond/schema/db";
 import type { SyncRunEvent } from "@pond/schema/events";
 import { and, eq } from "drizzle-orm";
 import log from "electron-log/main.js";
+import { accountImportScope } from "../../../shared/import-scope";
 import { getDb } from "../../db";
 import { type EnqueueItem, enqueue } from "../pipeline/enqueue";
 import { mergeListKindsOntoExisting } from "../pipeline/list-kinds";
 import { createQueueGeneration } from "../pipeline/queue-generations";
+import { addCollectionEntry } from "../refresh/harvest/collection-entries";
+import type {
+  BookmarksHarvestArgs,
+  BookmarksHarvestResult,
+} from "../refresh/harvest/twitter";
 import {
+  harvestTwitterBookmarkFolder,
   harvestTwitterBookmarks,
   harvestTwitterLikes,
 } from "../refresh/harvest-window";
 import { partitionForAccount } from "./accounts";
+import { fileIntoFolders } from "./collection-folders";
 import { mergeEntryListKinds, stampListKind, unionById } from "./harvest-union";
+import { listHarvestPlan } from "./import-scope";
 import {
   loadSyncBaseline,
   patchAccountSync,
@@ -49,24 +58,27 @@ export async function syncTwitter(
     message: "Reading",
   });
 
-  const harvest = await harvestTwitterBookmarks(
-    {
-      knownIds: baseline.full ? [] : Array.from(knownIds),
-    },
-    {
-      partition: partitionForAccount(accountId),
-      onProgress: (p) => {
-        if (signal.aborted) return;
-        const message =
-          p.phase === "hydrate"
-            ? "Loading"
-            : p.fresh > 0
-              ? "Found"
-              : "Scanning";
-        emit({ accountId, source, state: "running", message });
-      },
-    },
+  const plan = listHarvestPlan(
+    source,
+    accountImportScope(source, account.sync),
   );
+  const bookmarkArgs = {
+    knownIds: baseline.full ? [] : Array.from(knownIds),
+  };
+  const harvestOpts = {
+    partition: partitionForAccount(accountId),
+    onProgress: (p: { phase: "hydrate" | "scroll"; fresh: number }) => {
+      if (signal.aborted) return;
+      const message =
+        p.phase === "hydrate" ? "Loading" : p.fresh > 0 ? "Found" : "Scanning";
+      emit({ accountId, source, state: "running", message });
+    },
+  };
+  const harvest: BookmarksHarvestResult = plan.collections
+    ? await harvestFolders(plan.collections, bookmarkArgs, harvestOpts)
+    : plan.primary
+      ? await harvestTwitterBookmarks(bookmarkArgs, harvestOpts)
+      : { ok: true, entries: [], captures: [], reachedEnd: true };
   if (signal.aborted) {
     ev.outcome = "aborted";
     return;
@@ -162,7 +174,12 @@ export async function syncTwitter(
     fresh: fresh.length,
     recovery: recovery.length,
   };
+  const filing = entries.map((e) => ({
+    sourceId: e.tweetId,
+    collectionIds: e.collectionIds,
+  }));
   if (total === 0) {
+    await fileIntoFolders(account, filing);
     const lastSyncedAt = await persistWatermark(accountId, {
       full: baseline.full,
       newestId: null,
@@ -214,6 +231,7 @@ export async function syncTwitter(
     ev.outcome = "aborted";
     return;
   }
+  await fileIntoFolders(account, filing);
 
   const lastSyncedAt = await persistWatermark(accountId, {
     full: baseline.full,
@@ -234,4 +252,44 @@ export async function syncTwitter(
     lastSyncedAt,
     lastError: null,
   });
+}
+
+/** Walks folders one at a time; a missing folder is skipped, while a sign-out or rate limit stops the run. */
+async function harvestFolders(
+  folders: readonly { id: string }[],
+  args: BookmarksHarvestArgs,
+  opts: Parameters<typeof harvestTwitterBookmarkFolder>[2],
+): Promise<BookmarksHarvestResult> {
+  const entries = new Map<
+    string,
+    Extract<BookmarksHarvestResult, { ok: true }>["entries"][number]
+  >();
+  const captures: Extract<BookmarksHarvestResult, { ok: true }>["captures"] =
+    [];
+  let reachedEnd = true;
+  let failed: Extract<BookmarksHarvestResult, { ok: false }> | null = null;
+  for (const folder of folders) {
+    const result = await harvestTwitterBookmarkFolder(folder.id, args, opts);
+    if (!result.ok) {
+      if (
+        result.reason === "auth_required" ||
+        result.reason === "rate_limited"
+      ) {
+        return result;
+      }
+      log.warn(
+        `[pond sync:twitter] bookmark folder ${folder.id} failed: ${result.reason}`,
+      );
+      failed = result;
+      reachedEnd = false;
+      continue;
+    }
+    for (const entry of result.entries) {
+      addCollectionEntry(entries, entry.tweetId, entry, folder.id);
+    }
+    captures.push(...result.captures);
+    reachedEnd &&= result.reachedEnd;
+  }
+  if (failed && entries.size === 0) return failed;
+  return { ok: true, entries: [...entries.values()], captures, reachedEnd };
 }

@@ -1,4 +1,4 @@
-import type { Source } from "@pond/schema/db";
+import type { ImportScope, Source } from "@pond/schema/db";
 import type { SessionImportFailureReason } from "@shared/wire";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
@@ -6,9 +6,11 @@ import { playUiSuccess } from "@/shared/lib/sounds";
 
 export interface ConnectedAccount {
   id: string;
+  source: Source;
   handle: string | null;
   label: string | null;
   avatarUrl?: string | null;
+  sync: { importScope?: ImportScope; importPending?: boolean };
 }
 
 /** `signed_out` keeps waiting: another browser profile with the extension may still send a signed-in session. */

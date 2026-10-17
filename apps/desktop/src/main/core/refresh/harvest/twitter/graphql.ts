@@ -210,6 +210,7 @@ const BookmarksResponseSchema = z
     data: z
       .object({
         bookmark_timeline_v2: TimelineSchema,
+        bookmark_collection_timeline: TimelineSchema,
         user: z
           .object({
             result: z
@@ -297,6 +298,7 @@ export function parseBookmarksResponses(
     const user = data?.user?.result;
     const instructions =
       data?.bookmark_timeline_v2?.timeline?.instructions ??
+      data?.bookmark_collection_timeline?.timeline?.instructions ??
       user?.timeline_v2?.timeline?.instructions ??
       user?.timeline?.timeline?.instructions;
     if (!instructions) continue;

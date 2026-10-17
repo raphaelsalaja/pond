@@ -39,6 +39,7 @@
     "typecheck": "tsr generate && tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "test": "pnpm test:setup && vitest run",
     "test:setup": "node --test ./scripts/postinstall.test.mjs ./scripts/verify-binaries.test.mjs",
+    "sandbox:import-scope": "pnpm run build && electron ./scripts/sandbox-import-scope/index.cjs",
     "smoke:desktop": "electron ./scripts/smoke-desktop.cjs",
     "smoke:folder-tags": "electron ./scripts/smoke-folder-tags.cjs",
     "smoke:library-trust": "electron ./scripts/smoke-library-trust.cjs",

@@ -6,6 +6,10 @@ import {
   ConnectWaitSection,
 } from "@/features/sources/components/flow/connect/wait";
 import {
+  ImportScopeConfirm,
+  ImportScopeSection,
+} from "@/features/sources/components/flow/import-scope";
+import {
   WatchTargetRoot,
   WatchTargetSection,
   WatchTargetSubmit,
@@ -25,6 +29,7 @@ import { useWatchSource, watchFlow } from "@/features/sources/state/watch-flow";
 
 const PAGES = {
   "connect-wait": ConnectWaitSection,
+  "import-scope": ImportScopeSection,
   "watch-target": WatchTargetSection,
 } satisfies Record<SourceFlowPage, () => JSX.Element | null>;
 
@@ -47,6 +52,8 @@ function usePageTitle(page: SourceFlowPage): string {
   switch (page) {
     case "connect-wait":
       return connectingSource ? "Connection Request" : "Add Connection";
+    case "import-scope":
+      return "Choose What to Import";
     case "watch-target":
       return watchSource
         ? `Watch on ${getSourceDef(watchSource).label}`
@@ -99,6 +106,11 @@ export function SourceFlowHost() {
               <Dialog.Footer>
                 {page === "connect-wait" ? (
                   <ConnectActions />
+                ) : page === "import-scope" ? (
+                  <>
+                    <Dialog.Cancel />
+                    <ImportScopeConfirm />
+                  </>
                 ) : (
                   <>
                     <Dialog.Cancel />

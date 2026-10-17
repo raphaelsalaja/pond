@@ -13,6 +13,7 @@ import {
   listAccountsForSource,
   patchAccountSync,
 } from "./accounts";
+import { isImportPending } from "./import-scope";
 import { LIST_HARVEST_SOURCES, syncListSource } from "./run-list";
 import { syncThreads } from "./run-threads";
 import { syncTwitter } from "./run-twitter";
@@ -26,6 +27,8 @@ export {
   type SyncStatusUpdate,
   subscribeToSyncStatus,
 } from "./sync-status";
+
+const IMPORT_PENDING_MESSAGE = "Choose what to import to start syncing.";
 
 interface SyncOptions {
   trigger?: "manual" | "cron";
@@ -136,6 +139,18 @@ export async function syncAccount(
     log.info(
       `[pond sync] already running (${ageSec}s), ignoring ${source}/${accountId} (${opts.trigger ?? "manual"})`,
     );
+    return;
+  }
+  if (isImportPending(account.sync)) {
+    log.info(
+      `[pond sync] waiting for import choice, skipping ${source}/${accountId} (${opts.trigger ?? "manual"})`,
+    );
+    emit({
+      accountId,
+      source,
+      state: "idle",
+      message: IMPORT_PENDING_MESSAGE,
+    });
     return;
   }
   if (isSyncBlockedByStorageGuard()) {

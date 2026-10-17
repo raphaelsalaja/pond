@@ -10,13 +10,16 @@ import { leaseWindow } from "./pool";
 import { sleep } from "./util";
 
 export {
+  harvestTwitterBookmarkFolder,
   harvestTwitterBookmarks,
   harvestTwitterLikes,
 } from "./harvest-bookmarks";
 export {
   harvestInstagramLikedList,
+  harvestSourceCollections,
   harvestSourceList,
   harvestYoutubeLikedList,
+  listSourceCollections,
 } from "./harvest-list";
 export { harvestThreadsLikes, harvestThreadsSaved } from "./harvest-saved";
 

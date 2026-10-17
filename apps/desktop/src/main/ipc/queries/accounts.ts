@@ -1,15 +1,31 @@
+import { IMPORT_MEDIA_KINDS } from "@pond/schema/db";
+import { LIST_KINDS } from "@pond/schema/list-kinds";
+import { sourceLabel } from "@pond/schema/sources";
 import { z } from "zod";
+import {
+  type ImportCollectionKind,
+  type ImportScopeProblem,
+  importScopeOptions,
+  normalizeImportScope,
+} from "../../../shared/import-scope";
 import type { OkFailure } from "../../../shared/query-contracts-shared";
-import { isAccountConnected } from "../../core/refresh/harvest-window";
+import { releaseFilteredSaves } from "../../core/pipeline/import-filter";
+import {
+  isAccountConnected,
+  listSourceCollections,
+} from "../../core/refresh/harvest-window";
 import { isSyncing } from "../../core/sync";
+import { resolveAccountHandle } from "../../core/sync/account-key";
 import {
   getAccount,
   listAccounts,
+  partitionForAccount,
   patchAccount,
   patchAccountSync,
   removeAccount,
 } from "../../core/sync/accounts";
 import { fillMissingAvatars } from "../../core/sync/avatars";
+import { importScopePatch } from "../../core/sync/import-scope";
 import { countSavesForAccount } from "../../core/sync/sync-baseline";
 import {
   type QueryHandlerMap,
@@ -19,32 +35,139 @@ import {
 } from "./params";
 
 const ACCOUNT_NOT_FOUND: OkFailure = { ok: false, error: "Account not found." };
-const SYNC_LIKES_UNSUPPORTED: OkFailure = {
-  ok: false,
-  error: "Syncing Likes is only available for X accounts.",
-};
+/** Plural nouns for the collections each Source names differently. */
+const COLLECTION_NOUNS = {
+  board: "boards",
+  collection: "collections",
+  folder: "folders",
+  playlist: "playlists",
+} satisfies Record<ImportCollectionKind, string>;
 
-interface SetSyncLikesDependencies {
-  getAccount: typeof getAccount;
-  patchAccountSync: typeof patchAccountSync;
+function importScopeProblem(
+  problem: ImportScopeProblem,
+  kind: ImportCollectionKind | null,
+): string {
+  switch (problem) {
+    case "no_lists":
+      return "Choose at least one list to import.";
+    case "no_collections":
+      return `Choose at least one of your ${COLLECTION_NOUNS[kind ?? "collection"]} to import.`;
+    case "no_media":
+      return "Choose at least one kind of post to import.";
+    case "bad_since":
+      return "Enter a real date to import from.";
+  }
 }
 
-export function createSetSyncLikesQuery(
-  dependencies: SetSyncLikesDependencies = { getAccount, patchAccountSync },
+const ImportScopeParam = z.strictObject({
+  listKinds: z.array(z.enum(LIST_KINDS)).max(LIST_KINDS.length).optional(),
+  collections: z
+    .array(
+      z.strictObject({
+        id: z.string().trim().min(1).max(64),
+        name: z.string().trim().max(200),
+      }),
+    )
+    .max(500)
+    .optional(),
+  mediaKinds: z
+    .array(z.enum(IMPORT_MEDIA_KINDS))
+    .max(IMPORT_MEDIA_KINDS.length)
+    .optional(),
+  since: z.string().trim().max(10).optional(),
+  addToFolders: z.boolean().optional(),
+});
+
+interface SetImportScopeDependencies {
+  getAccount: typeof getAccount;
+  patchAccountSync: typeof patchAccountSync;
+  releaseFilteredSaves: (accountId: string) => Promise<number>;
+}
+
+export function createSetImportScopeQuery(
+  dependencies: SetImportScopeDependencies = {
+    getAccount,
+    patchAccountSync,
+    releaseFilteredSaves,
+  },
 ) {
   return query(
     z.strictObject({
       accountId: z.string().trim().min(1),
-      syncLikes: z.boolean(),
+      scope: ImportScopeParam,
     }),
     async (params) => {
       const account = await dependencies.getAccount(params.accountId);
       if (!account) return ACCOUNT_NOT_FOUND;
-      if (account.source !== "twitter") return SYNC_LIKES_UNSUPPORTED;
-      await dependencies.patchAccountSync(params.accountId, {
-        syncLikes: params.syncLikes,
-      });
+      const normalized = normalizeImportScope(account.source, params.scope);
+      if (!normalized.ok) {
+        return {
+          ok: false as const,
+          error: importScopeProblem(
+            normalized.problem,
+            importScopeOptions(account.source).collections,
+          ),
+        };
+      }
+      const patch = importScopePatch(
+        account.source,
+        account.sync,
+        normalized.scope,
+      );
+      await dependencies.patchAccountSync(params.accountId, patch);
+      if (patch.lastFullSyncAt === null) {
+        await dependencies.releaseFilteredSaves(params.accountId);
+      }
       return { ok: true as const };
+    },
+  );
+}
+
+interface ImportOptionsDependencies {
+  getAccount: typeof getAccount;
+  resolveAccountHandle: typeof resolveAccountHandle;
+  listSourceCollections: typeof listSourceCollections;
+}
+
+export function createImportOptionsQuery(
+  dependencies: ImportOptionsDependencies = {
+    getAccount,
+    resolveAccountHandle,
+    listSourceCollections,
+  },
+) {
+  return query(
+    z.strictObject({ accountId: z.string().trim().min(1) }),
+    async (params) => {
+      const account = await dependencies.getAccount(params.accountId);
+      if (!account) return ACCOUNT_NOT_FOUND;
+      const kind = importScopeOptions(account.source).collections;
+      if (!kind) return { ok: true as const, collections: null };
+      const label = sourceLabel(account.source);
+      const nouns = COLLECTION_NOUNS[kind];
+      const handle = await dependencies.resolveAccountHandle(account);
+      if (!handle && kind === "board") {
+        return {
+          ok: false as const,
+          error: `Pond couldn't find your ${label} username. Reconnect the Account and try again.`,
+        };
+      }
+      const result = await dependencies.listSourceCollections(account.source, {
+        partition: partitionForAccount(account.id),
+        accountKey: handle ?? undefined,
+      });
+      if (!result.ok) {
+        return {
+          ok: false as const,
+          error:
+            result.reason === "auth_required"
+              ? `${label} signed you out. Reconnect the Account to load your ${nouns}.`
+              : result.reason === "rate_limited"
+                ? `${label} asked Pond to slow down. Try again in a few minutes.`
+                : `Pond couldn't load your ${nouns}. Try again.`,
+        };
+      }
+      return { ok: true as const, collections: result.collections };
     },
   );
 }
@@ -93,7 +216,9 @@ export const accountsQueries = {
     },
   ),
 
-  "accounts.setSyncLikes": createSetSyncLikesQuery(),
+  "accounts.importOptions": createImportOptionsQuery(),
+
+  "accounts.setImportScope": createSetImportScopeQuery(),
 
   "accounts.disconnect": query(
     z.object({ accountId: StringParam }),

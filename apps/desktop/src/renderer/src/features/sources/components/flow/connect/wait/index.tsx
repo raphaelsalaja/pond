@@ -3,6 +3,10 @@ import { Button, Dialog } from "@pond/ui";
 import { useEffect, useState } from "react";
 import { ConnectionVisual } from "@/features/sources/components/flow/connection-visual";
 import {
+  ImportScopeChoices,
+  ImportScopeConfirm,
+} from "@/features/sources/components/flow/import-scope";
+import {
   type AccountRow,
   useAccounts,
 } from "@/features/sources/hooks/use-accounts";
@@ -16,6 +20,7 @@ import {
   useConnectSource,
   useConnectWaiting,
 } from "@/features/sources/state/connect-flow";
+import { importScopeFlow } from "@/features/sources/state/import-scope-flow";
 import { sourceDetail } from "@/features/sources/state/source-detail";
 import { sourceFlow } from "@/features/sources/state/source-flow";
 import { syncMonitor } from "@/features/sources/state/sync-monitor";
@@ -27,10 +32,12 @@ export function ConnectWaitSection() {
   const source = useConnectSource();
   const completed = useConnectCompleted();
   const problem = useConnectProblem();
+  const account = useConnectedAccount();
   useConnectArrival();
   if (!source) return null;
   const label = getSourceDef(source).label;
   const step = completed ? "connected" : (problem ?? "waiting");
+  const choosing = completed && account?.sync.importPending === true;
 
   return (
     <div className={styles.body}>
@@ -60,7 +67,9 @@ export function ConnectWaitSection() {
                 : `Connect ${label} to Pond`}
         </h2>
         <p className={styles.description}>
-          {step === "connected" ? (
+          {choosing ? (
+            "Choose what Pond imports, then start the first sync."
+          ) : step === "connected" ? (
             <>
               Pond is syncing your saved posts now.
               <br />
@@ -83,7 +92,13 @@ export function ConnectWaitSection() {
           )}
         </p>
       </div>
-      <ConnectPromises completed={completed} label={label} />
+      {choosing ? (
+        <div className={styles.scope}>
+          <ImportScopeChoices />
+        </div>
+      ) : (
+        <ConnectPromises completed={completed} label={label} />
+      )}
     </div>
   );
 }
@@ -155,6 +170,13 @@ export function ConnectActions() {
   const completed = useConnectCompleted();
   const problem = useConnectProblem();
   const account = useConnectedAccount();
+  if (completed && account?.sync.importPending)
+    return (
+      <>
+        <Dialog.Cancel>Not Now</Dialog.Cancel>
+        <ImportScopeConfirm />
+      </>
+    );
   if (completed && account)
     return (
       <>
@@ -212,7 +234,8 @@ function useConnectArrival(): void {
       if (cancelled || arrivedOnce) return;
       arrivedOnce = true;
       syncMonitor.seed(account.id, source, { connected: true });
-      void window.pond.syncRunNow(account.id);
+      if (account.sync.importPending) importScopeFlow.open(account);
+      else void window.pond.syncRunNow(account.id);
       connectFlow.complete(account);
     };
 

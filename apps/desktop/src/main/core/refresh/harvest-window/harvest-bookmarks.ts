@@ -7,10 +7,12 @@ import {
   type BookmarksEntry,
   type BookmarksHarvestArgs,
   type BookmarksHarvestResult,
+  buildBookmarkFolderApiExpression,
   buildBookmarksApiExpression,
   buildBookmarksExpression,
   buildLikesApiExpression,
   parseBookmarksResponses,
+  twitterBookmarkFolderUrl,
 } from "../harvest/twitter";
 import { NAV_TIMEOUT_MS } from "./constants";
 import {
@@ -138,6 +140,23 @@ export async function harvestTwitterBookmarks(
     "https://x.com/i/bookmarks",
     "bookmarks",
     buildBookmarksApiExpression(args),
+    args,
+    opts,
+  );
+}
+
+export async function harvestTwitterBookmarkFolder(
+  folderId: string,
+  args: BookmarksHarvestArgs,
+  opts: {
+    onProgress?: (p: BookmarksHarvestProgress) => void;
+    partition?: string;
+  } = {},
+): Promise<BookmarksHarvestResult> {
+  return harvestTwitterTimeline(
+    twitterBookmarkFolderUrl(folderId),
+    "bookmarks",
+    buildBookmarkFolderApiExpression(args),
     args,
     opts,
   );

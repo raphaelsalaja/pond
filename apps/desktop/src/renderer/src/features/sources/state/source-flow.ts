@@ -1,7 +1,7 @@
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 
-export type SourceFlowPage = "connect-wait" | "watch-target";
+export type SourceFlowPage = "connect-wait" | "import-scope" | "watch-target";
 
 interface SourceFlowState {
   stack: SourceFlowPage[];

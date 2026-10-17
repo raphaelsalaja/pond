@@ -97,6 +97,7 @@ describe("buildSourceMenu", () => {
       "Copy Username",
       "Copy Connection ID",
       "Fetch New Saves",
+      "Choose What to Import",
       "Fetch Older Saves",
       "Fetch Save Details",
       "Fetch Original Media",

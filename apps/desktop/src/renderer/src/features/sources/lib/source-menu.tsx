@@ -4,22 +4,25 @@ import {
   IconArrowUpRight,
   IconCopy,
   IconCopyId,
+  IconDownload,
   IconGrid,
-  IconHeart,
   IconLink2,
   IconNotepad,
+  IconSliders,
   IconTableDownload,
   IconTrash,
 } from "@pond/icons";
-import type { Source, WatchKind } from "@pond/schema/db";
+import type { ImportScope, Source, WatchKind } from "@pond/schema/db";
 import { Dialog, type MenuItemSpec } from "@pond/ui";
 import { viewAccountItems } from "@/features/library";
 import type { CardModel } from "@/features/sources/components/sync-monitor/lib/helpers";
 import type { AccountRow } from "@/features/sources/hooks/use-accounts";
 import type { WatchRow } from "@/features/sources/hooks/use-watches";
+import { hasImportChoices } from "@/features/sources/lib/import-scope";
 import { getSourceDef } from "@/features/sources/lib/registry";
 import { sourceTargetUrl } from "@/features/sources/lib/source-target-url";
 import { connectFlow } from "@/features/sources/state/connect-flow";
+import { importScopeFlow } from "@/features/sources/state/import-scope-flow";
 import { sourceDetail } from "@/features/sources/state/source-detail";
 import { sourceFlow } from "@/features/sources/state/source-flow";
 import { formatNumber } from "@/shared/lib/format";
@@ -36,6 +39,8 @@ export interface SourceMenuTarget {
   knownCount: number;
   lastError: string | null;
   syncLikes?: boolean;
+  importScope?: ImportScope;
+  importPending?: boolean;
 }
 
 export interface SourceMenuOptions {
@@ -57,6 +62,8 @@ export function accountMenuTarget(
     knownCount: account.sync.knownCount,
     lastError: account.sync.lastError,
     syncLikes: account.sync.syncLikes,
+    importScope: account.sync.importScope,
+    importPending: account.sync.importPending,
   };
 }
 
@@ -229,17 +236,51 @@ function primaryFetchItem(target: SourceMenuTarget): MenuItemSpec {
   };
 }
 
-function fetchItems(
-  target: SourceMenuTarget,
-  options: SourceMenuOptions,
-): MenuItemSpec[] {
-  const items: MenuItemSpec[] = [primaryFetchItem(target)];
+function openImportScope(target: SourceMenuTarget): void {
+  importScopeFlow.open({
+    id: target.id,
+    source: target.source,
+    sync: {
+      importScope: target.importScope,
+      importPending: target.importPending,
+      syncLikes: target.syncLikes,
+    },
+  });
+  sourceFlow.open("import-scope");
+}
+
+function importScopeItem(target: SourceMenuTarget): MenuItemSpec | null {
+  if (target.type !== "account") return null;
+  if (target.importPending) {
+    return {
+      label: "Start Import",
+      icon: <IconDownload />,
+      onClick: () => openImportScope(target),
+    };
+  }
+  if (!hasImportChoices(target.source)) return null;
+  return {
+    label: "Choose What to Import",
+    icon: <IconSliders />,
+    onClick: () => openImportScope(target),
+  };
+}
+
+function fetchItems(target: SourceMenuTarget): MenuItemSpec[] {
+  const scopeItem = importScopeItem(target);
+  const items: MenuItemSpec[] = target.importPending
+    ? []
+    : [primaryFetchItem(target)];
+  if (scopeItem) items.push(scopeItem);
   if (target.type === "account") {
     items.push(
       {
         label: "Fetch Older Saves",
         icon: <IconArchive />,
-        disabled: !target.model.connected || target.model.tone === "run",
+        disabled:
+          !target.model.connected ||
+          target.model.tone === "run" ||
+          target.importPending === true,
         onClick: () =>
           void window.pond.syncRunNow(target.id, { forceFull: true }),
       },
@@ -261,40 +302,6 @@ function fetchItems(
           }),
       },
     );
-  }
-  if (target.type === "account" && target.source === "twitter") {
-    items.push({
-      type: "checkbox",
-      label: "Sync Likes",
-      icon: <IconHeart />,
-      checked: target.syncLikes !== false,
-      onCheckedChange: (checked) => {
-        void (async () => {
-          try {
-            const result = await window.pond.query("accounts.setSyncLikes", {
-              accountId: target.id,
-              syncLikes: checked,
-            });
-            if (!result.ok) {
-              notify({
-                id: "source-sync-likes",
-                title: "Couldn't update Likes syncing",
-                description: result.error,
-              });
-              return;
-            }
-            (options.onChanged ?? sourceDetail.changed)();
-          } catch (error) {
-            notify({
-              id: "source-sync-likes",
-              title: "Couldn't update Likes syncing",
-              description:
-                error instanceof Error ? error.message : "Please try again.",
-            });
-          }
-        })();
-      },
-    });
   }
   if (target.model.tone === "err" && target.lastError) {
     items.push({
@@ -386,7 +393,7 @@ function singleSourceMenu(
     { type: "separator" },
     { type: "group", items: copyItems(target) },
     { type: "separator" },
-    { type: "group", items: fetchItems(target, options) },
+    { type: "group", items: fetchItems(target) },
     { type: "separator" },
     {
       type: "group",

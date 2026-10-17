@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'"
+    />
+    <title>Import Scope Sandbox</title>
+    <style>
+      :root {
+        --fg: light-dark(#1a1a1a, #ededed);
+        --muted: light-dark(#6f6f6f, #a0a0a0);
+        --line: light-dark(#e4e4e4, #2e2e2e);
+        --panel: light-dark(#f7f7f7, #1c1c1c);
+        --ok: light-dark(#1a7f37, #3fb950);
+        --bad: light-dark(#cf222e, #f85149);
+        font: 13px/1.45 -apple-system, BlinkMacSystemFont, sans-serif;
+        color: var(--fg);
+        color-scheme: light dark;
+      }
+      body {
+        display: grid;
+        grid-template-rows: auto 1fr;
+        height: 100vh;
+        margin: 0;
+      }
+      nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--line);
+      }
+      nav button {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        padding: 3px 8px;
+        font: inherit;
+        font-size: 12px;
+        color: var(--muted);
+        background: none;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+      }
+      nav button[data-current] {
+        color: var(--fg);
+        border-color: var(--fg);
+      }
+      .dot {
+        width: 7px;
+        height: 7px;
+        background: var(--line);
+        border-radius: 50%;
+      }
+      .dot[data-verdict="pass"] {
+        background: var(--ok);
+      }
+      .dot[data-verdict="fail"] {
+        background: var(--bad);
+      }
+      .dot[data-verdict="skip"] {
+        background: var(--muted);
+      }
+      main {
+        padding: 16px;
+        overflow-y: auto;
+      }
+      h1 {
+        margin: 0 0 12px;
+        font-size: 16px;
+      }
+      ol {
+        padding-left: 20px;
+        margin: 0 0 16px;
+      }
+      li + li {
+        margin-top: 6px;
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 12px;
+      }
+      .actions button {
+        padding: 5px 10px;
+        font: inherit;
+        color: var(--fg);
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 6px;
+      }
+      .status {
+        min-height: 18px;
+        margin: 0 0 12px;
+        color: var(--muted);
+      }
+      .checks {
+        padding: 0;
+        margin: 0 0 12px;
+        list-style: none;
+      }
+      .checks li::before {
+        display: inline-block;
+        width: 18px;
+        color: var(--muted);
+        content: "–";
+      }
+      .checks li[data-ok="true"]::before {
+        color: var(--ok);
+        content: "✓";
+      }
+      .checks li[data-ok="false"]::before {
+        color: var(--bad);
+        content: "✗";
+      }
+      details {
+        margin-bottom: 12px;
+      }
+      pre {
+        max-height: 220px;
+        padding: 8px;
+        overflow: auto;
+        font-size: 11px;
+        background: var(--panel);
+        border-radius: 6px;
+      }
+      textarea {
+        box-sizing: border-box;
+        width: 100%;
+        min-height: 60px;
+        padding: 6px;
+        margin-bottom: 8px;
+        font: inherit;
+        color: var(--fg);
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 6px;
+      }
+      .footer {
+        margin-top: 16px;
+        font-size: 11px;
+        color: var(--muted);
+        word-break: break-all;
+      }
+    </style>
+  </head>
+  <body>
+    <nav id="nav"></nav>
+    <main id="main"></main>
+    <script>
+      let state;
+      let current = 0;
+
+      const el = (tag, props = {}, children = []) => {
+        const node = document.createElement(tag);
+        for (const [key, value] of Object.entries(props)) {
+          if (key === "dataset") Object.assign(node.dataset, value);
+          else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
+          else node[key] = value;
+        }
+        node.append(...children);
+        return node;
+      };
+
+      function firstOpenStep() {
+        const index = state.steps.findIndex((step) => !state.results[step.id]?.verdict);
+        return index === -1 ? state.steps.length - 1 : index;
+      }
+
+      function renderNav() {
+        const nav = document.getElementById("nav");
+        nav.replaceChildren(
+          ...state.steps.map((step, index) =>
+            el(
+              "button",
+              {
+                dataset: { step: step.id, ...(index === current ? { current: "" } : {}) },
+                onclick: () => {
+                  current = index;
+                  render();
+                },
+              },
+              [
+                el("span", {
+                  className: "dot",
+                  dataset: { verdict: state.results[step.id]?.verdict ?? "" },
+                }),
+                String(index + 1),
+              ],
+            ),
+          ),
+        );
+      }
+
+      function renderChecks(container, checks) {
+        container.replaceChildren(
+          ...checks.map((check) =>
+            el("li", { textContent: check.label, dataset: { ok: String(check.ok) } }),
+          ),
+        );
+      }
+
+      function renderStep() {
+        const step = state.steps[current];
+        const saved = state.results[step.id] ?? {};
+        const status = el("p", { className: "status", role: "status" });
+        const say = (message) => {
+          status.textContent = message;
+        };
+        const run = (action) => async () => {
+          try {
+            const result = await action();
+            if (result?.message) say(result.message);
+          } catch (error) {
+            say(error.message ?? String(error));
+          }
+        };
+        const checks = el("ul", { className: "checks" });
+        const evidence = el("pre");
+        renderChecks(checks, saved.checks ?? []);
+        evidence.textContent = saved.evidence ? JSON.stringify(saved.evidence, null, 2) : "";
+        const note = el("textarea", {
+          placeholder: "Notes for this step",
+          value: saved.note ?? "",
+        });
+
+        const actions = [];
+        if (step.source) {
+          actions.push(
+            el("button", {
+              textContent: `Sign In to ${step.sourceLabel}`,
+              onclick: run(async () => {
+                await window.guide.signIn(step.source);
+                return { message: "Log in in the new window, then press Import Session." };
+              }),
+            }),
+            el("button", {
+              textContent: "Import Session",
+              onclick: run(() => window.guide.importSession(step.source)),
+            }),
+            el("button", {
+              textContent: "Sync Now",
+              onclick: run(() => window.guide.syncNow(step.source)),
+            }),
+            el("button", {
+              textContent: "Run Checks",
+              onclick: run(async () => {
+                const result = await window.guide.check(step.id);
+                state.results[step.id] = { ...state.results[step.id], ...result };
+                renderChecks(checks, result.checks);
+                evidence.textContent = JSON.stringify(result.evidence, null, 2);
+                return {
+                  message: result.evidence.account?.syncing
+                    ? "Still syncing. Run Checks again when it finishes."
+                    : "Checks updated.",
+                };
+              }),
+            }),
+          );
+        }
+
+        const record = (verdict) =>
+          run(async () => {
+            state.results[step.id] = await window.guide.record(step.id, verdict, note.value);
+            current = Math.min(current + 1, state.steps.length - 1);
+            render();
+          });
+
+        const children = [
+          el("h1", { textContent: step.title }),
+          el("ol", {}, step.steps.map((text) => el("li", { textContent: text }))),
+        ];
+        if (actions.length > 0) {
+          children.push(
+            el("div", { className: "actions" }, actions),
+            status,
+            checks,
+            el("details", {}, [el("summary", { textContent: "Evidence" }), evidence]),
+            note,
+            el("div", { className: "actions" }, [
+              el("button", { textContent: "Pass", onclick: record("pass") }),
+              el("button", { textContent: "Fail", onclick: record("fail") }),
+              el("button", { textContent: "Skip", onclick: record("skip") }),
+            ]),
+          );
+        } else if (current < state.steps.length - 1) {
+          children.push(
+            el("div", { className: "actions" }, [
+              el("button", { textContent: "Start", onclick: record("pass") }),
+            ]),
+          );
+        }
+        children.push(
+          el("p", { className: "footer", textContent: `Sandbox: ${state.sandbox}` }),
+          el("p", { className: "footer", textContent: `Results: ${state.resultsFile}` }),
+        );
+        document.getElementById("main").replaceChildren(...children);
+      }
+
+      function render() {
+        renderNav();
+        renderStep();
+      }
+
+      window.guide.state().then((initial) => {
+        state = initial;
+        current = firstOpenStep();
+        render();
+      });
+    </script>
+  </body>
+</html>

@@ -163,11 +163,21 @@ export async function harvestRedditLists(
   args: ListHarvestArgs & { accountKey?: string },
   partition?: string,
 ): Promise<ListHarvestResult> {
-  const saved = await harvestRedditListingJson(args, "saved", partition);
-  if (!saved.ok) return saved;
-  const savedEntries = stampListKind(saved.entries, "saved");
+  const kinds = args.listKinds ?? ["saved", "liked"];
+  const saved = kinds.includes("saved")
+    ? await harvestRedditListingJson(args, "saved", partition)
+    : null;
+  if (saved && !saved.ok) return saved;
+  const savedEntries = saved ? stampListKind(saved.entries, "saved") : [];
+  if (!kinds.includes("liked")) {
+    return saved
+      ? { ...saved, entries: savedEntries }
+      : { ok: true, entries: [], reachedEnd: true };
+  }
   const upvoted = await harvestRedditListingJson(args, "upvoted", partition);
-  if (!upvoted.ok) return { ...saved, entries: savedEntries };
+  if (!upvoted.ok) {
+    return saved ? { ...saved, entries: savedEntries } : upvoted;
+  }
   const entries = unionById(
     savedEntries,
     stampListKind(upvoted.entries, "liked"),
@@ -177,8 +187,8 @@ export async function harvestRedditLists(
   return {
     ok: true,
     entries,
-    reachedEnd: saved.reachedEnd && upvoted.reachedEnd,
-    seen: Math.max(saved.seen ?? 0, upvoted.seen ?? 0, entries.length),
+    reachedEnd: (saved?.reachedEnd ?? true) && upvoted.reachedEnd,
+    seen: Math.max(saved?.seen ?? 0, upvoted.seen ?? 0, entries.length),
   };
 }
 

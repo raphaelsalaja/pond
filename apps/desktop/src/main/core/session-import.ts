@@ -1,4 +1,9 @@
-import type { ConnectedAccount, Source } from "@pond/schema/db";
+import {
+  type ConnectedAccount,
+  DEFAULT_SOURCE_SYNC_PREFS,
+  type Source,
+  type SourceSyncPrefs,
+} from "@pond/schema/db";
 import type {
   ExtensionCookie,
   SessionImportResponse,
@@ -209,12 +214,16 @@ async function resolveTargetAccount(
       source,
       handle: probedHandle,
       identityKey,
+      sync: awaitingImportChoice(),
     });
     return { account, kind: "created", probedHandle };
   }
 
   if (accounts.length === 0) {
-    const account = await createAccount({ source });
+    const account = await createAccount({
+      source,
+      sync: awaitingImportChoice(),
+    });
     return { account, kind: "created", probedHandle };
   }
   const first = accounts[0];
@@ -226,6 +235,11 @@ async function resolveTargetAccount(
     return { account: first, kind: "ambiguous", probedHandle };
   }
   return { account: first, kind: "reauth", probedHandle };
+}
+
+/** A new Account waits for you to choose what to import, so connecting never starts a full sync on its own. */
+function awaitingImportChoice(): SourceSyncPrefs {
+  return { ...DEFAULT_SOURCE_SYNC_PREFS, importPending: true };
 }
 
 async function probeStagedHandle(

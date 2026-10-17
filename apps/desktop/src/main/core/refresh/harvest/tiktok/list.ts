@@ -113,19 +113,8 @@ async function inPageTiktokList(
     return out;
   }
 
-  await clickTab('[data-e2e="favorites-tab"], [data-e2e="favorite-tab"]', [
-    "favorites",
-    "favourites",
-  ]);
-  const favorites = await scroll({
-    collectFn,
-    knownIds: args.knownIds,
-    hydrateSelector: 'a[href*="/video/"]',
-  });
-  if (!favorites.ok) return favorites;
-
   type Kind = "liked" | "saved";
-  type Entry = (typeof favorites.entries)[number];
+  type Entry = ReturnType<typeof collectFn>[number];
 
   function withListKind(entries: Entry[], kind: Kind): Entry[] {
     return entries.map((e) => ({
@@ -152,14 +141,35 @@ async function inPageTiktokList(
     return Array.from(map.values());
   }
 
-  const favoriteEntries = withListKind(favorites.entries, "saved");
+  const kinds = args.listKinds ?? ["saved", "liked"];
+  let favoriteEntries: Entry[] = [];
+  let favoritesEnd = true;
+  if (kinds.includes("saved")) {
+    await clickTab('[data-e2e="favorites-tab"], [data-e2e="favorite-tab"]', [
+      "favorites",
+      "favourites",
+    ]);
+    const favorites = await scroll({
+      collectFn,
+      knownIds: args.knownIds,
+      hydrateSelector: 'a[href*="/video/"]',
+    });
+    if (!favorites.ok) return favorites;
+    favoriteEntries = withListKind(favorites.entries, "saved");
+    favoritesEnd = favorites.reachedEnd;
+  }
+  if (!kinds.includes("liked")) {
+    return { ok: true, entries: favoriteEntries, reachedEnd: favoritesEnd };
+  }
 
   const likedClicked = await clickTab(
     '[data-e2e="liked-tab"], [data-e2e="likes-tab"]',
     ["liked"],
   );
   if (!likedClicked) {
-    return { ...favorites, entries: favoriteEntries };
+    return kinds.includes("saved")
+      ? { ok: true, entries: favoriteEntries, reachedEnd: favoritesEnd }
+      : { ok: false, reason: "no_match" };
   }
 
   const liked = await scroll({
@@ -168,7 +178,9 @@ async function inPageTiktokList(
     hydrateSelector: 'a[href*="/video/"]',
   });
   if (!liked.ok) {
-    return { ...favorites, entries: favoriteEntries };
+    return kinds.includes("saved")
+      ? { ok: true, entries: favoriteEntries, reachedEnd: favoritesEnd }
+      : liked;
   }
 
   const entries = unionList(
@@ -178,7 +190,7 @@ async function inPageTiktokList(
   return {
     ok: true,
     entries,
-    reachedEnd: favorites.reachedEnd && liked.reachedEnd,
+    reachedEnd: favoritesEnd && liked.reachedEnd,
     seen: entries.length,
   };
 }

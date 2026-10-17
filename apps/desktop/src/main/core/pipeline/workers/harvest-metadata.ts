@@ -9,6 +9,7 @@ import { captureFromSource } from "../../refresh/harvest/capture";
 import { extractorFor, resolveExtractor } from "../extractors";
 import type { Capture, RawJson } from "../extractors/types";
 import { isFreshHarvest } from "../harvest-freshness";
+import { applyImportFilter } from "../import-filter";
 import { readSave } from "./apply";
 
 interface HarvestPayload {
@@ -28,6 +29,7 @@ export async function runHarvestMetadata(
       "[pond pipeline:harvest] fresh capture present, skipping",
       saveId,
     );
+    await applyImportFilter(save);
     return;
   }
 
@@ -51,7 +53,7 @@ export async function runHarvestMetadata(
   if (save.rawJson?.ytdlp) rawJson.ytdlp = save.rawJson.ytdlp;
 
   const patch = buildSavePatch(capture, rawJson, save.url, save.source);
-  await persistSave(saveId, patch, {
+  const updated = await persistSave(saveId, patch, {
     actorReason: `harvest:${extractor.id}`,
   });
   log.info("[pond pipeline:harvest] captured", {
@@ -59,6 +61,7 @@ export async function runHarvestMetadata(
     extractor: extractor.id,
     media: walkCaptureMedia(capture).length,
   });
+  if (updated) await applyImportFilter(updated);
 }
 
 function buildSavePatch(

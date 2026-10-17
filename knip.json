@@ -6,6 +6,7 @@
       "entry": [
         "src/renderer/src/routes/**/*.{ts,tsx}",
         "scripts/*.{mjs,cjs,ts}",
+        "scripts/sandbox-import-scope/{index,preload}.cjs",
         "src/main/core/media-warm/service.ts",
         "src/main/core/enrichment-sidecar.ts"
       ],

@@ -26,6 +26,8 @@ export interface BookmarksHarvestArgs {
 
 export interface BookmarksEntry {
   tweetId: string;
+  /** Bookmark folders the post was found in. */
+  collectionIds?: string[];
   url: string;
   bookmarkedAt?: string;
   title?: string;

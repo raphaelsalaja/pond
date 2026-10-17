@@ -24,6 +24,15 @@ describe("shouldHarvestTwitterLikes", () => {
     ).toBe(false);
   });
 
+  it("skips likes when the import scope leaves them out", () => {
+    expect(
+      shouldHarvestTwitterLikes(
+        { ...account, sync: { importScope: { listKinds: ["saved"] } } },
+        false,
+      ),
+    ).toBe(false);
+  });
+
   it("skips likes without a handle or after cancel", () => {
     expect(shouldHarvestTwitterLikes({ ...account, handle: null }, false)).toBe(
       false,

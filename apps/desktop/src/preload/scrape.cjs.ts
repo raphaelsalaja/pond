@@ -8,14 +8,16 @@ const TWITTER_HOOK = `
     globalThis.__pondBookmarksHookInstalled = true;
     globalThis.__pondBookmarksCaptures = [];
     globalThis.__pondLikesCaptures = [];
+    globalThis.__pondBookmarkFoldersCaptures = [];
     /** Capture the page's first Bookmarks/Likes request verbatim; X validates auth via bearer + csrf + per-request transaction id, so cloning its headers beats rebuilding them. */
     globalThis.__pondBookmarksRequest = null;
     globalThis.__pondLikesRequest = null;
+    globalThis.__pondBookmarkFolderRequest = null;
 
     const twitterListOp = (u) => {
       try {
         if (typeof u !== "string") return null;
-        const m = u.match(/\\/i\\/api\\/graphql\\/[^\\/]+\\/(Bookmarks|Likes)(?:\\?|$)/);
+        const m = u.match(/\\/i\\/api\\/graphql\\/[^\\/]+\\/(Bookmarks|Likes|BookmarkFolderTimeline|BookmarkFoldersSlice)(?:\\?|$)/);
         return m ? m[1] : null;
       } catch (e) {
         return null;
@@ -23,9 +25,19 @@ const TWITTER_HOOK = `
     };
 
     const requestKey = (op) =>
-      op === "Likes" ? "__pondLikesRequest" : "__pondBookmarksRequest";
+      op === "Likes"
+        ? "__pondLikesRequest"
+        : op === "BookmarkFolderTimeline"
+          ? "__pondBookmarkFolderRequest"
+          : op === "BookmarkFoldersSlice"
+            ? "__pondBookmarkFoldersRequest"
+            : "__pondBookmarksRequest";
     const capturesKey = (op) =>
-      op === "Likes" ? "__pondLikesCaptures" : "__pondBookmarksCaptures";
+      op === "Likes"
+        ? "__pondLikesCaptures"
+        : op === "BookmarkFoldersSlice"
+          ? "__pondBookmarkFoldersCaptures"
+          : "__pondBookmarksCaptures";
 
     const captureRequest = (op, url, method, headers) => {
       try {

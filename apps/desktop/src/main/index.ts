@@ -308,10 +308,9 @@ async function postLaunchInit(): Promise<void> {
   }
 
   try {
-    if (!process.env.POND_SANDBOX) {
-      nativeServer = await startNativeServer();
-      writeNativeHostManifests();
-    }
+    nativeServer = await startNativeServer();
+    /** A sandbox socket lives in the sandbox folder; browser manifests must keep pointing at the real app. */
+    if (!process.env.POND_SANDBOX) writeNativeHostManifests();
   } catch (err) {
     log.error("[pond] native host failed to start", err);
   }

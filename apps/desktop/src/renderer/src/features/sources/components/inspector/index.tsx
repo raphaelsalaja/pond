@@ -1,5 +1,6 @@
 import type { Source } from "@pond/schema/db";
 import { Dialog, Field, Input, type MenuItemSpec } from "@pond/ui";
+import { accountImportScope } from "@shared/import-scope";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import type { SourceDetailsKind } from "@/features/library";
@@ -22,6 +23,7 @@ import {
   type WatchRow,
   watchKindLabel,
 } from "@/features/sources/hooks/use-watches";
+import { importScopeSummary } from "@/features/sources/lib/import-scope";
 import { getSourceDef } from "@/features/sources/lib/registry";
 import {
   accountMenuTarget,
@@ -136,6 +138,15 @@ function AccountInspector({ id }: { id: string }) {
         {
           label: "Saved Items",
           value: formatNumber(account.sync.knownCount),
+        },
+        {
+          label: "Imports",
+          value: account.sync.importPending
+            ? "Not started"
+            : importScopeSummary(
+                account.source,
+                accountImportScope(account.source, account.sync),
+              ),
         },
         { label: "Added", value: addedLabel(account.addedAt) },
       ]}

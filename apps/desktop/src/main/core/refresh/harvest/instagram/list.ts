@@ -50,7 +50,14 @@ type ListProgressExtra = Omit<
   "phase" | "collected" | "fresh" | "path"
 > & { path?: string };
 
-export function buildInstagramListExpression(args: ListHarvestArgs): string {
+export const INSTAGRAM_HOME_URL = "https://www.instagram.com/";
+
+export interface InstagramListArgs extends ListHarvestArgs {
+  /** Walks one saved collection instead of every saved post. */
+  collectionId?: string;
+}
+
+export function buildInstagramListExpression(args: InstagramListArgs): string {
   const normSrc = `(${inPageInstagramNormalize.toString()})(validators)`;
   const fnSrc = `(${inPageInstagramList.toString()})`;
   return `(async () => {
@@ -64,7 +71,7 @@ export function buildInstagramListExpression(args: ListHarvestArgs): string {
 }
 
 async function inPageInstagramList(
-  args: ListHarvestArgs,
+  args: InstagramListArgs,
   norm: ReturnType<typeof inPageInstagramNormalize>,
 ): Promise<ListHarvestResult> {
   if (
@@ -76,10 +83,16 @@ async function inPageInstagramList(
 
   const apiResult = await fetchSavedViaApi();
   if (apiResult) return apiResult;
+  if (args.collectionId) return { ok: false, reason: "no_match" };
   return await fallbackDomScroll();
 
   async function fetchSavedViaApi(): Promise<ListHarvestResult | null> {
-    const path = "/api/v1/feed/saved/posts/";
+    const collection = args.collectionId
+      ? `/api/v1/feed/collection/${encodeURIComponent(args.collectionId)}`
+      : null;
+    let path = collection
+      ? `${collection}/posts/`
+      : "/api/v1/feed/saved/posts/";
     const entries: InstagramEntry[] = [];
     let cursor = args.resumeCursor;
     let resuming = cursor !== undefined;
@@ -172,6 +185,11 @@ async function inPageInstagramList(
         }
         if (!res.ok) {
           reportProgress("api_not_ok", { page, status: res.status, path });
+          /** Older web builds serve a collection's posts without the `/posts/` suffix. */
+          if (collection && pagesRead === 0 && path !== `${collection}/`) {
+            path = `${collection}/`;
+            continue;
+          }
           if (restartFromTop()) continue;
           return null;
         }

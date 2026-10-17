@@ -1,15 +1,29 @@
-import type { ConnectedAccount } from "@pond/schema/db";
+import type { ConnectedAccount, ImportScope } from "@pond/schema/db";
+import {
+  accountImportScope,
+  importsListKind,
+} from "../../../shared/import-scope";
 import type {
   BookmarksHarvestArgs,
   BookmarksHarvestResult,
 } from "../refresh/harvest/twitter";
 
 export function shouldHarvestTwitterLikes(
-  account: { handle: string | null; sync: { syncLikes?: boolean } },
+  account: {
+    handle: string | null;
+    sync: { syncLikes?: boolean; importScope?: ImportScope };
+  },
   aborted: boolean,
 ): boolean {
   const handle = account.handle?.replace(/^@/, "").trim();
-  return account.sync.syncLikes !== false && !aborted && Boolean(handle);
+  return importsLikes(account.sync) && !aborted && Boolean(handle);
+}
+
+function importsLikes(sync: {
+  syncLikes?: boolean;
+  importScope?: ImportScope;
+}): boolean {
+  return importsListKind(accountImportScope("twitter", sync), "liked");
 }
 
 interface TwitterLikesDependencies {
@@ -28,7 +42,7 @@ export async function harvestConfiguredTwitterLikes(
   },
   dependencies: TwitterLikesDependencies,
 ): Promise<BookmarksHarvestResult | null> {
-  if (account.sync.syncLikes === false) return null;
+  if (!importsLikes(account.sync)) return null;
   if (!shouldHarvestTwitterLikes(account, input.aborted)) {
     return { ok: false, reason: "no_match" };
   }

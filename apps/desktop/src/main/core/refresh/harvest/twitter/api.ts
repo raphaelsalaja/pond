@@ -16,6 +16,7 @@ interface BookmarksRequestTemplate {
 declare global {
   var __pondBookmarksRequest: BookmarksRequestTemplate | null | undefined;
   var __pondLikesRequest: BookmarksRequestTemplate | null | undefined;
+  var __pondBookmarkFolderRequest: BookmarksRequestTemplate | null | undefined;
 }
 
 interface BookmarksVariables {
@@ -39,6 +40,7 @@ interface Timeline {
 interface BookmarksResponse {
   data?: {
     bookmark_timeline_v2?: Timeline;
+    bookmark_collection_timeline?: Timeline;
     user?: { result?: { timeline_v2?: Timeline; timeline?: Timeline } };
   };
 }
@@ -79,9 +81,17 @@ export function buildLikesApiExpression(args: BookmarksHarvestArgs): string {
   return buildTwitterListApiExpression(args, "likes");
 }
 
+export function buildBookmarkFolderApiExpression(
+  args: BookmarksHarvestArgs,
+): string {
+  return buildTwitterListApiExpression(args, "folder");
+}
+
+type TwitterListKind = "bookmarks" | "likes" | "folder";
+
 function buildTwitterListApiExpression(
   args: BookmarksHarvestArgs,
-  kind: "bookmarks" | "likes",
+  kind: TwitterListKind,
 ): string {
   const fnSrc = `(${inPageBookmarksApi.toString()})`;
   const enriched = {
@@ -100,7 +110,7 @@ function buildTwitterListApiExpression(
 
 async function inPageBookmarksApi(
   args: BookmarksHarvestArgs & {
-    kind?: "bookmarks" | "likes";
+    kind?: TwitterListKind;
     deadlineMs: number;
     throttleMs: number;
     maxPages: number;
@@ -142,7 +152,9 @@ async function inPageBookmarksApi(
     const req =
       args.kind === "likes"
         ? globalThis.__pondLikesRequest
-        : globalThis.__pondBookmarksRequest;
+        : args.kind === "folder"
+          ? globalThis.__pondBookmarkFolderRequest
+          : globalThis.__pondBookmarksRequest;
     return req?.url ? req : null;
   };
 
@@ -195,6 +207,7 @@ async function inPageBookmarksApi(
     const user = json.data?.user?.result;
     const ins =
       json.data?.bookmark_timeline_v2?.timeline?.instructions ??
+      json.data?.bookmark_collection_timeline?.timeline?.instructions ??
       user?.timeline_v2?.timeline?.instructions ??
       user?.timeline?.timeline?.instructions;
     if (!Array.isArray(ins)) return [];

@@ -1,4 +1,5 @@
 import type { Source } from "./db";
+import type { ListKind } from "./list-kinds";
 
 export type VideoCodec = "h264" | "hevc" | "av1" | "vp9" | "any";
 export type AudioCodec = "aac" | "opus" | "any";
@@ -59,6 +60,28 @@ export const DEFAULT_IMAGE_DOWNLOAD: ImageDownloadSettings = {
   maxFileSizeMb: 10,
 };
 
+/** A named list on a Source that an Account can import on its own, such as a Pinterest board. */
+export interface ImportCollection {
+  id: string;
+  name: string;
+}
+
+/** What a save holds once captured; `text` is a post with no image or video. */
+export const IMPORT_MEDIA_KINDS = ["image", "video", "text"] as const;
+export type ImportMediaKind = (typeof IMPORT_MEDIA_KINDS)[number];
+
+/** What an Account sync imports. An omitted part imports everything it covers. */
+export interface ImportScope {
+  listKinds?: ListKind[];
+  /** Narrows the saved list to these collections. */
+  collections?: ImportCollection[];
+  mediaKinds?: ImportMediaKind[];
+  /** Local calendar day (`YYYY-MM-DD`); posts published before it are skipped. */
+  since?: string;
+  /** False keeps collection saves out of Folders; omitted files each collection under its Source. */
+  addToFolders?: boolean;
+}
+
 export interface SourceSyncPrefs {
   lastSyncedAt: string | null;
   lastError: string | null;
@@ -70,10 +93,16 @@ export interface SourceSyncPrefs {
    * @see recoverInterruptedSyncs
    */
   runningSince: string | null;
-  /** X only. Omitted means likes still sync. */
+  /** @deprecated Read only for X Accounts saved before `importScope`; use `importScope.listKinds`. */
   syncLikes?: boolean;
   /** Where an unfinished list backfill continues, so a list too long for one run still reaches its end. */
   resumeCursor?: string | null;
+  /** Omitted means everything, which is how Accounts connected before scoped imports keep syncing. */
+  importScope?: ImportScope;
+  /** True on a newly connected Account until you confirm what to import. Sync waits while it is set. */
+  importPending?: boolean;
+  /** Pond Folder id per collection id, so renaming a Folder doesn't make sync create another. */
+  collectionFolders?: Record<string, string>;
 }
 
 export const DEFAULT_SOURCE_SYNC_PREFS: SourceSyncPrefs = {

@@ -11,6 +11,10 @@ export const YOUTUBE_LIST_URLS = [
   "https://www.youtube.com/playlist?list=LL",
 ] as const;
 
+export function youtubePlaylistUrl(listId: string): string {
+  return `https://www.youtube.com/playlist?list=${encodeURIComponent(listId)}`;
+}
+
 export function buildYoutubeListExpression(args: ListHarvestArgs): string {
   return buildScrollListExpression(
     inPageYoutubeNormalize,

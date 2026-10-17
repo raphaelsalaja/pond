@@ -41,6 +41,13 @@
   border-bottom: 1px solid var(--ds-gray-4);
 }
 
+.scope {
+  padding: 18px 0 4px;
+  margin-top: 20px;
+  border-top: 1px solid var(--ds-gray-4);
+  animation: reveal 420ms var(--ds-easing-standard) both;
+}
+
 .details-title {
   margin: 0 0 10px;
   font-size: var(--ds-text-sm);
@@ -102,7 +109,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .copy[data-state] {
+  .copy[data-state],
+  .scope {
     animation: none;
   }
 }
