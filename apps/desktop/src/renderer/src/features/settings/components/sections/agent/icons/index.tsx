@@ -16,6 +16,7 @@ import openai from "@/assets/logos/providers/openai.webp";
 import opencodeGo from "@/assets/logos/providers/opencode-go.webp";
 import openrouter from "@/assets/logos/providers/openrouter.webp";
 import perplexity from "@/assets/logos/providers/perplexity.webp";
+import sapient from "@/assets/logos/providers/sapient.webp";
 import together from "@/assets/logos/providers/together.webp";
 import xai from "@/assets/logos/providers/xai.webp";
 import styles from "./styles.module.css";
@@ -42,6 +43,7 @@ const logos = {
   openrouter,
   ollama,
   lmstudio,
+  sapient,
 } satisfies Record<AssistantProvider, string>;
 
 export function ProviderLogo({

@@ -1,6 +1,12 @@
 import type { LanguageModel } from "ai";
 
-export type LocalLanguageModelProvider = "ollama" | "lmstudio";
+export type LocalLanguageModelProvider = "ollama" | "lmstudio" | "sapient";
+
+const DEFAULT_BASE_URL = {
+  ollama: "http://127.0.0.1:11434/v1",
+  lmstudio: "http://127.0.0.1:1234/v1",
+  sapient: "http://127.0.0.1:11435/v1",
+} satisfies Record<LocalLanguageModelProvider, string>;
 
 export async function createLocalLanguageModel(input: {
   provider: LocalLanguageModelProvider;
@@ -9,15 +15,11 @@ export async function createLocalLanguageModel(input: {
   baseUrl?: string;
 }): Promise<LanguageModel> {
   const { createOpenAICompatible } = await import("@ai-sdk/openai-compatible");
+  const configured = input.baseUrl?.trim() || DEFAULT_BASE_URL[input.provider];
   const baseURL =
     input.provider === "ollama"
-      ? `${(input.baseUrl ?? "http://127.0.0.1:11434")
-          .replace(/\/v1\/?$/i, "")
-          .replace(/\/$/, "")}/v1`
-      : (input.baseUrl?.trim() || "http://127.0.0.1:1234/v1").replace(
-          /\/$/,
-          "",
-        );
+      ? `${configured.replace(/\/v1\/?$/i, "").replace(/\/$/, "")}/v1`
+      : configured.replace(/\/$/, "");
   return createOpenAICompatible({
     name: input.provider,
     apiKey: input.apiKey || "local",

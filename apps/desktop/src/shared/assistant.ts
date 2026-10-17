@@ -265,6 +265,17 @@ export const ASSISTANT_MODELS = [
     quality: "custom",
     capabilities: host,
   },
+  {
+    id: "sapient",
+    name: "Qwen 2.5 3B",
+    provider: "Sapient",
+    model: "openhorizon/qwen2.5-3b-q4",
+    local: true,
+    needsKey: false,
+    setupUrl: "https://sapient.openhorizon.so",
+    quality: "custom",
+    capabilities: host,
+  },
 ] as const;
 
 export type AssistantProvider = (typeof ASSISTANT_MODELS)[number]["id"];

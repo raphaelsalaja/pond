@@ -7,6 +7,7 @@ export function isLocalProviderConnected(
   return (
     (provider === "ollama" ||
       provider === "lmstudio" ||
+      provider === "sapient" ||
       provider === "codex" ||
       provider === "claude-code") &&
     (agent.connectedLocalProviders?.[provider] ??

@@ -1,5 +1,5 @@
 export type LocalRuntime = {
-  provider: "ollama" | "lmstudio";
+  provider: "ollama" | "lmstudio" | "sapient";
   baseUrl?: string;
 };
 

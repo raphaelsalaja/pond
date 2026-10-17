@@ -4,6 +4,7 @@ import { checkProviderKey, fetchProviderModels } from "./keys";
 const bases = {
   ollamaBaseUrl: "http://127.0.0.1:11434/v1",
   lmstudioBaseUrl: "http://127.0.0.1:1234/v1",
+  sapientBaseUrl: "http://127.0.0.1:11435/v1",
   azureResourceName: "pond-openai",
 };
 
@@ -36,6 +37,23 @@ describe("checkProviderKey", () => {
       },
     );
     expect(result.ok).toBe(true);
+  });
+
+  it("accepts a fresh Sapient server that lists no cached models yet", async () => {
+    const result = await checkProviderKey(
+      { provider: "sapient", key: "", ...bases },
+      async (url, options) => {
+        expect(url).toBe("http://127.0.0.1:11435/v1/models");
+        expect(options?.headers).toEqual({});
+        return Response.json({
+          object: "list",
+          data: [],
+          active_model: null,
+          resident_models: [],
+        });
+      },
+    );
+    expect(result).toEqual({ ok: true });
   });
 
   it.each([429, 500, 503])(

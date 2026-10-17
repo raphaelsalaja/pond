@@ -33,6 +33,21 @@ describe("loadModel", () => {
     },
   );
 
+  it("uses the compatible API for Sapient models", async () => {
+    const model = loadedModel.safeParse(
+      await loadModel({
+        provider: "sapient",
+        model: "openhorizon/qwen2.5-3b-q4",
+        apiKey: null,
+        baseUrl: "http://127.0.0.1:11435/v1",
+      }),
+    );
+    expect(model.success && model.data.provider).toContain("sapient");
+    expect(model.success && model.data.modelId).toBe(
+      "openhorizon/qwen2.5-3b-q4",
+    );
+  });
+
   it("uses the compatible API for LM Studio models", async () => {
     const model = loadedModel.safeParse(
       await loadModel({

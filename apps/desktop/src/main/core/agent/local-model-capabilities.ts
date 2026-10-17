@@ -4,7 +4,7 @@ import {
   type ProviderModel,
 } from "../../../shared/provider-models";
 
-type LocalProvider = "ollama" | "lmstudio";
+type LocalProvider = "ollama" | "lmstudio" | "sapient";
 
 export type DeclaredLocalModelCapabilities =
   | string[]

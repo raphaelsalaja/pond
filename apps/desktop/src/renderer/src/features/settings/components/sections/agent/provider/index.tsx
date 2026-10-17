@@ -29,6 +29,7 @@ function endpointPatch(
 ): Partial<AgentPrefs> {
   if (id === "ollama") return { ollamaBaseUrl: value };
   if (id === "lmstudio") return { lmstudioBaseUrl: value };
+  if (id === "sapient") return { sapientBaseUrl: value };
   if (id === "azure") return { azureResourceName: value };
   return {};
 }
@@ -62,9 +63,11 @@ export function ProviderConnection({
       ? agent.ollamaBaseUrl
       : catalog.id === "lmstudio"
         ? agent.lmstudioBaseUrl
-        : catalog.id === "azure"
-          ? agent.azureResourceName
-          : undefined;
+        : catalog.id === "sapient"
+          ? agent.sapientBaseUrl
+          : catalog.id === "azure"
+            ? agent.azureResourceName
+            : undefined;
   const [editing, setEditing] = useState(!connected);
   const [keyDraft, setKeyDraft] = useState("");
   const [endpointDraft, setEndpointDraft] = useState(endpoint ?? "");
