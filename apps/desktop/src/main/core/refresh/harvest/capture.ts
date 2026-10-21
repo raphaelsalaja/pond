@@ -1,5 +1,6 @@
 import type { Source } from "@pond/schema/db";
 import type { Capture } from "@pond/schema/raw";
+import { sourceLabel } from "@pond/schema/sources";
 import type { ReportDownloadActivity } from "@shared/download-activity";
 import {
   AuthRequiredError,
@@ -14,6 +15,7 @@ interface CaptureArgs {
   sourceId?: string;
   accountId?: string | null;
   reportActivity?: ReportDownloadActivity;
+  isSignedIn?: (source: Source, partition: string) => Promise<boolean>;
 }
 
 export async function captureFromSource(args: CaptureArgs): Promise<Capture> {
@@ -46,7 +48,7 @@ export async function captureFromSource(args: CaptureArgs): Promise<Capture> {
   switch (result.reason) {
     case "auth_required":
       throw new AuthRequiredError(
-        `${args.source} session required`,
+        `Connect ${sourceLabel(args.source)} to Pond in Sources, then retry`,
         args.source,
       );
     case "navigate_failed":

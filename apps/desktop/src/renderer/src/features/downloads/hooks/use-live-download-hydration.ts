@@ -11,6 +11,7 @@ let stopHydration: (() => void) | null = null;
 
 function startHydration(): () => void {
   let stopped = false;
+  let inflight = new Set<string>();
   const hydrate = async (
     name: "downloads.ingestingOrFailed" | "pipeline.inflight",
   ) => {
@@ -21,7 +22,9 @@ function startHydration(): () => void {
         await hydrateLiveDownloadSaves(ids, () => stopped);
         return;
       }
-      await reloadSaves(ids);
+      const settled = [...inflight].filter((id) => !ids.includes(id));
+      inflight = new Set(ids);
+      await reloadSaves([...ids, ...settled]);
     } catch (err) {
       console.warn(`[pond downloads] ${name} refresh failed`, err);
     }

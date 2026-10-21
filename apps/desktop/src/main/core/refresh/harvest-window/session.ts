@@ -30,14 +30,18 @@ export async function signInToSource(
   }
 }
 
+export async function isPartitionSignedIn(
+  source: Source,
+  partition: string,
+): Promise<boolean> {
+  const cookies = await listCookiesForSource(source, partition);
+  return cookies.some((c) => isAuthCookie(source, c));
+}
+
 export async function isAccountConnected(
   account: ConnectedAccount,
 ): Promise<boolean> {
-  const cookies = await listCookiesForSource(
-    account.source,
-    partitionForAccount(account.id),
-  );
-  return cookies.some((c) => isAuthCookie(account.source, c));
+  return isPartitionSignedIn(account.source, partitionForAccount(account.id));
 }
 
 export async function isSourceConnected(source: Source): Promise<boolean> {
@@ -45,8 +49,7 @@ export async function isSourceConnected(source: Source): Promise<boolean> {
   for (const account of accounts) {
     if (await isAccountConnected(account)) return true;
   }
-  const shared = await listCookiesForSource(source, PARTITION);
-  return shared.some((c) => isAuthCookie(source, c));
+  return isPartitionSignedIn(source, PARTITION);
 }
 
 export interface ImportableCookie {

@@ -29,6 +29,7 @@ interface HarvestArgs {
   sourceId?: string;
   accountId?: string | null;
   reportActivity?: ReportDownloadActivity;
+  isSignedIn?: (source: Source, partition: string) => Promise<boolean>;
 }
 
 interface HarvestResult {
@@ -92,6 +93,13 @@ export async function harvestUrl(args: HarvestArgs): Promise<HarvestResult> {
       sourceId,
     });
     if (!capture) {
+      if (args.isSignedIn && !(await args.isSignedIn(args.source, partition))) {
+        log.info("[pond refresh:window] empty harvest while signed out", {
+          source: args.source,
+          url: args.url,
+        });
+        return { ok: false, reason: "auth_required", sourceId };
+      }
       return { ok: false, reason: "harvest_failed", sourceId };
     }
     return { ok: true, capture, sourceId };

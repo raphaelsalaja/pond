@@ -607,6 +607,100 @@ it("keeps status out of the name and shows the normalized source", async () => {
   expect(youtubeRow?.textContent).toContain("YouTube");
 });
 
+it("explains why a download failed from its status", async () => {
+  setSaves([
+    save("Running video", "ingesting", "running"),
+    save("Instagram reel", "ingesting", undefined, {
+      source: "instagram",
+      tasks: [
+        {
+          op: "harvest_metadata",
+          status: "blocked",
+          attempts: 0,
+          maxAttempts: 5,
+          lastError:
+            "AuthRequiredError: Connect Instagram to Pond in Sources, then retry",
+          nextRunAt: 0,
+          updatedAt: 1,
+        },
+      ],
+    }),
+  ]);
+  await render();
+
+  const failedRow = host
+    .querySelector('[title="Instagram reel"]')
+    ?.closest('[role="row"]');
+  const status = failedRow?.querySelector(
+    '[data-status="failed"]',
+  )?.parentElement;
+  expect(failedRow?.textContent).toContain("Failed");
+  expect(document.body.textContent).not.toContain(
+    "Connect Instagram to Pond in Sources, then retry",
+  );
+
+  await act(async () => {
+    for (const type of ["pointerenter", "mouseenter", "mousemove"]) {
+      status?.dispatchEvent(new MouseEvent(type, { bubbles: true }));
+    }
+    await new Promise((resolve) => setTimeout(resolve, 800));
+  });
+  expect(document.body.textContent).toContain(
+    "Connect Instagram to Pond in Sources, then retry",
+  );
+});
+
+it("refreshes a download once its last running task settles", async () => {
+  vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+  const running = save("Instagram reel", "ingesting", "running");
+  const blocked = save("Instagram reel", "ingesting", undefined, {
+    tasks: [
+      {
+        op: "harvest_metadata",
+        status: "blocked",
+        attempts: 0,
+        maxAttempts: 5,
+        lastError:
+          "AuthRequiredError: Connect Instagram to Pond in Sources, then retry",
+        nextRunAt: 0,
+        updatedAt: 2,
+      },
+    ],
+  });
+  let inflight = ["Instagram reel"];
+  let current = running;
+  setSaves([running]);
+  query.mockImplementation(async (name: string) => {
+    if (name === "pipeline.inflight") return inflight;
+    if (name === "saves.getMany") return [current];
+    return defaultQuery(name);
+  });
+
+  try {
+    await render();
+    const row = () =>
+      host.querySelector('[title="Instagram reel"]')?.closest('[role="row"]');
+    expect(row()?.textContent).toContain("In Progress");
+
+    inflight = [];
+    current = blocked;
+    await act(async () => {
+      vi.advanceTimersByTime(2_000);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    expect(query).toHaveBeenCalledWith("saves.getMany", {
+      ids: ["Instagram reel"],
+    });
+    expect(row()?.textContent).toContain("Failed");
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
 it("keeps media previews out of the name column", async () => {
   setSaves([
     save("Image file", "failed", undefined, { mediaType: "image" }),

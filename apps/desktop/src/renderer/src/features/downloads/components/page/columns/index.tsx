@@ -1,5 +1,5 @@
 import { sourceLabel } from "@pond/schema/sources";
-import type { RenderRowArgs, TableColumn } from "@pond/ui";
+import { type RenderRowArgs, type TableColumn, Tooltip } from "@pond/ui";
 import type { DownloadActivity } from "@shared/download-activity";
 import { useDownloadClock } from "@/features/downloads/hooks/use-download-activity";
 import type { DownloadRow } from "@/features/downloads/lib/status-feed";
@@ -126,13 +126,20 @@ function SourceCell({ row }: { row: DownloadViewRow }) {
 function StatusCell({ row }: { row: DownloadViewRow }) {
   const status = downloadTableStatus(row, row.paused);
   const label = downloadStatusLabel(row, row.paused);
-  return (
+  const reason = status === "failed" ? row.error?.trim() : undefined;
+  const content = (
     <span className={styles.status}>
       <span className={styles.mark} data-status={status}>
         <StatusGlyph status={status} />
       </span>
       <span className={styles["status-label"]}>{label}</span>
     </span>
+  );
+  if (!reason) return content;
+  return (
+    <Tooltip label={reason} side="top">
+      {content}
+    </Tooltip>
   );
 }
 
