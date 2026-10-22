@@ -1,20 +1,70 @@
 .search {
-  display: grid;
-  grid-template-columns: 20px minmax(0, 1fr) auto;
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  padding: 0 14px;
+}
+
+.crumbs {
+  display: flex;
+  padding-top: 12px;
+  margin-left: -4px;
+}
+
+.crumb {
+  min-width: 0;
+  max-width: 60%;
+}
+
+.context {
+  flex: none;
+  color: var(--ds-gray-9);
+}
+
+.title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.field {
+  display: flex;
   gap: 8px;
   align-items: center;
   min-height: 48px;
-  padding: 0 14px;
-  border-bottom: 1px solid var(--ds-gray-a4);
 }
 
 .magnifier {
-  width: 18px;
-  height: 18px;
+  flex: none;
+  width: 16px;
+  height: 16px;
   color: var(--ds-gray-9);
 }
 
 .input {
+  flex: 1;
   min-width: 0;
   height: 46px;
+}
+
+/* Hold the spinner back so fast lookups resolve before it shows. */
+.spinner {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  color: var(--ds-gray-9);
+  animation: reveal var(--ds-duration-fast) var(--ds-easing-standard) 200ms both;
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
 }

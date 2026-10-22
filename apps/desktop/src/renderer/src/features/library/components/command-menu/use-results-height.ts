@@ -1,47 +1,43 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useState } from "react";
+import type { MenuRow } from "./types";
 
-export function useResultsHeight<LayoutKey>(
-  open: boolean,
-  layoutKey: LayoutKey,
-) {
-  const viewportRef = useRef<HTMLDivElement>(null);
-  const [content, setContent] = useState<HTMLDivElement | null>(null);
-  const [height, setHeight] = useState<number | null>(null);
-  const [sized, setSized] = useState(false);
+/** Keep in sync with results-list/styles.module.css. */
+const RESULTS_LAYOUT = {
+  row: 32,
+  tallRow: 48,
+  group: 30,
+  divider: 12,
+  padding: 6,
+  cap: 370,
+} as const;
 
-  useLayoutEffect(() => {
-    if (!open) {
-      setHeight(null);
-      setSized(false);
-      return;
-    }
+function rowHeight(row: MenuRow): number {
+  if (row.kind === "group")
+    return RESULTS_LAYOUT.group + (row.divided ? RESULTS_LAYOUT.divider : 0);
+  if (row.kind === "entry" && row.item.entry.tall)
+    return RESULTS_LAYOUT.tallRow;
+  return RESULTS_LAYOUT.row;
+}
 
-    void layoutKey;
-    if (!content) return;
-    const viewport = viewportRef.current;
-    if (!viewport) return;
+function contentHeight(rows: readonly MenuRow[]): number {
+  if (rows.length === 0) return 0;
+  return rows.reduce(
+    (height, row) => height + rowHeight(row),
+    RESULTS_LAYOUT.padding * 2,
+  );
+}
 
-    const measure = () => {
-      const cap = Number.parseFloat(getComputedStyle(viewport).maxHeight);
-      const next = Math.min(
-        content.offsetHeight,
-        Number.isFinite(cap) ? cap : content.offsetHeight,
-      );
-      if (next <= 0) return;
-      setHeight((current) => (current === next ? current : next));
-    };
-
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(content);
-    return () => observer.disconnect();
-  }, [content, layoutKey, open]);
-
-  useEffect(() => {
-    if (!open || height == null) return;
-    const id = requestAnimationFrame(() => setSized(true));
-    return () => cancelAnimationFrame(id);
-  }, [open, height]);
-
-  return { viewportRef, contentRef: setContent, height, sized };
+/** Results height from row sizes; it only grows until `resetKey` changes, so typing never collapses the panel. */
+export function useResultsHeight(
+  rows: readonly MenuRow[],
+  resetKey: string,
+): number {
+  const natural = Math.min(contentHeight(rows), RESULTS_LAYOUT.cap);
+  const [peak, setPeak] = useState({ key: resetKey, height: natural });
+  if (peak.key !== resetKey) {
+    setPeak({ key: resetKey, height: natural });
+    return natural;
+  }
+  if (natural > peak.height) setPeak({ key: resetKey, height: natural });
+  return Math.max(peak.height, natural);
 }

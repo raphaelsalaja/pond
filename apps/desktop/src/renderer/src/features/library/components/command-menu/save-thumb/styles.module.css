@@ -1,0 +1,39 @@
+.slot {
+  --thumb-size: 32px;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--thumb-size);
+  height: var(--thumb-size);
+}
+
+.thumb {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: calc(var(--thumb-size) * var(--thumb-width, 1));
+  height: calc(var(--thumb-size) * var(--thumb-height, 1));
+  overflow: hidden;
+  color: var(--ds-gray-9);
+  background: var(--ds-gray-a2);
+  border-radius: var(--ds-radius-xs);
+
+  &::after {
+    position: absolute;
+    inset: 0;
+    content: "";
+    border-radius: inherit;
+    box-shadow: inset 0 0 0 1px var(--ds-gray-a3);
+  }
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  &[data-blur] img {
+    filter: blur(4px);
+    transform: scale(1.2);
+  }
+}

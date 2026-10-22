@@ -1,5 +1,5 @@
 import { Keyboard } from "@pond/ui";
-import { Fragment } from "react";
+import { type ComponentProps, Fragment } from "react";
 import {
   chordGlyphs,
   type ShortcutId,
@@ -9,7 +9,15 @@ import {
 } from "@/shared/lib/shortcuts";
 import styles from "./styles.module.css";
 
-export function ShortcutKeys({ id }: { id: ShortcutId }) {
+type Density = ComponentProps<typeof Keyboard.Cluster>["density"];
+
+export function ShortcutKeys({
+  id,
+  density,
+}: {
+  id: ShortcutId;
+  density?: Density;
+}) {
   useShortcutBindings();
   const sequence = shortcutSequence(id);
   if (sequence) {
@@ -18,7 +26,7 @@ export function ShortcutKeys({ id }: { id: ShortcutId }) {
         {sequence.map((step, i) => (
           <Fragment key={step}>
             {i > 0 ? <span className={styles.then}>then</span> : null}
-            <Keyboard.Cluster keys={chordGlyphs(step)} />
+            <Keyboard.Cluster keys={chordGlyphs(step)} density={density} />
           </Fragment>
         ))}
       </span>
@@ -26,7 +34,7 @@ export function ShortcutKeys({ id }: { id: ShortcutId }) {
   }
   const keys = shortcutChord(id);
   if (keys) {
-    return <Keyboard.Cluster keys={chordGlyphs(keys)} />;
+    return <Keyboard.Cluster keys={chordGlyphs(keys)} density={density} />;
   }
   return null;
 }
