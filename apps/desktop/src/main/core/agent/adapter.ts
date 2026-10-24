@@ -91,7 +91,11 @@ export async function loadModel(input: {
   if (input.provider === "openrouter") {
     return createOpenRouterModel(key, modelId);
   }
-  if (input.provider === "ollama" || input.provider === "lmstudio")
+  if (
+    input.provider === "ollama" ||
+    input.provider === "lmstudio" ||
+    input.provider === "sapient"
+  )
     return createLocalLanguageModel({
       provider: input.provider,
       model: modelId,

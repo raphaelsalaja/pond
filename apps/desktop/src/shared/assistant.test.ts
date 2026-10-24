@@ -103,6 +103,7 @@ describe("Assistant model policy", () => {
     expect(offeredProviders("local").map((model) => model.id)).toEqual([
       "ollama",
       "lmstudio",
+      "sapient",
     ]);
     expect(gatewayCreator("groq")).toBe("groq");
     expect(offeredProviders("subscription").map((model) => model.id)).toEqual([

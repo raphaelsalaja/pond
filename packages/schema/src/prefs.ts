@@ -376,6 +376,7 @@ const agent = z.object({
   azureResourceName: z.string().catch(""),
   ollamaBaseUrl: z.string().catch("http://127.0.0.1:11434/v1"),
   lmstudioBaseUrl: z.string().catch("http://127.0.0.1:1234/v1"),
+  sapientBaseUrl: z.string().catch("http://127.0.0.1:11435/v1"),
   ollamaModelId: z.string().catch("llama3.2"),
   lmstudioModelId: z.string().catch("local"),
   modelIds: z.record(z.string(), z.string()).catch({}),

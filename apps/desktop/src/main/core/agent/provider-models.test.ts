@@ -30,6 +30,37 @@ describe("modelsFromProviderResponse", () => {
     ]);
   });
 
+  it("keeps Sapient chat and vision models and drops speech and robot models", () => {
+    const models = modelsFromProviderResponse("sapient", {
+      data: [
+        {
+          id: "openhorizon/qwen2.5-3b-q4",
+          object: "model",
+          owned_by: "sapient",
+        },
+        {
+          id: "openhorizon/smolvlm2-500m",
+          object: "model",
+          owned_by: "sapient",
+        },
+        {
+          id: "openhorizon/whisper-base",
+          object: "model",
+          owned_by: "sapient",
+        },
+        { id: "openhorizon/kokoro-82m", object: "model", owned_by: "sapient" },
+        { id: "openhorizon/orpheus-3b", object: "model", owned_by: "sapient" },
+        { id: "lerobot/smolvla_base", object: "model", owned_by: "sapient" },
+      ],
+      active_model: null,
+      resident_models: [],
+    });
+    expect(models.map((model) => model.id)).toEqual([
+      "openhorizon/qwen2.5-3b-q4",
+      "openhorizon/smolvlm2-500m",
+    ]);
+  });
+
   it("uses Anthropic display names when the API sends them", () => {
     const models = modelsFromProviderResponse("anthropic", {
       data: [

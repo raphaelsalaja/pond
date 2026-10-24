@@ -1,7 +1,7 @@
 import { expect, it } from "vitest";
 import { isLocalProviderConnected } from "./local-provider-state";
 
-it.each(["ollama", "lmstudio"])(
+it.each(["ollama", "lmstudio", "sapient"])(
   "keeps %s connected when disabled and drops it only when removed",
   (provider) => {
     const legacy = { enabledKeys: { [provider]: true } };

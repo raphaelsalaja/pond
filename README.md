@@ -88,7 +88,7 @@ See [`apps/desktop/README.md`](apps/desktop/README.md) for architecture and on-d
 
 ## Assistant and MCP
 
-Assistant lives in the right column. It searches this library with a key you paste in Settings, or a local host you run such as Ollama or LM Studio. Pond never stores those keys on a Pond server.
+Assistant lives in the right column. It searches this library with a key you paste in Settings, or a local host you run such as Ollama, LM Studio, or Sapient. Pond never stores those keys on a Pond server.
 
 You can also use a subscription through a local Codex or Claude Code installation. In a terminal, run `codex login` and sign in with ChatGPT, or run `claude auth login` and sign in with your Claude plan. In Settings → Providers → Subscriptions, add the provider and click Connect. Select its default model in the Assistant composer. No API key is needed. Removing a connection from Pond does not sign you out of the CLI.
 

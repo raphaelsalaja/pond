@@ -181,6 +181,7 @@ export async function verifyKey(
     key,
     ollamaBaseUrl: prefs.agent.ollamaBaseUrl,
     lmstudioBaseUrl: prefs.agent.lmstudioBaseUrl,
+    sapientBaseUrl: prefs.agent.sapientBaseUrl,
     azureResourceName: prefs.agent.azureResourceName,
   });
 }
@@ -224,6 +225,7 @@ export async function listProviderModels(
     key,
     ollamaBaseUrl: prefs.agent.ollamaBaseUrl,
     lmstudioBaseUrl: prefs.agent.lmstudioBaseUrl,
+    sapientBaseUrl: prefs.agent.sapientBaseUrl,
     azureResourceName: prefs.agent.azureResourceName,
   });
   if (!fetched.ok)
@@ -280,6 +282,7 @@ type ProviderConnection = {
   key: string;
   ollamaBaseUrl: string;
   lmstudioBaseUrl: string;
+  sapientBaseUrl: string;
   azureResourceName: string;
 };
 
@@ -405,7 +408,9 @@ export async function fetchProviderModels(
         ? input.ollamaBaseUrl
         : provider === "lmstudio"
           ? input.lmstudioBaseUrl
-          : undefined;
+          : provider === "sapient"
+            ? input.sapientBaseUrl
+            : undefined;
     if (!base) return { ok: false, error: "Enter an API base URL first." };
     url = `${base.replace(/\/$/, "")}/models`;
     if (key) headers.Authorization = `Bearer ${key}`;

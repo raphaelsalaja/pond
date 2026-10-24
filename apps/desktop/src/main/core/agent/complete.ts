@@ -438,7 +438,11 @@ export async function completeWithTools(
     }
   };
   try {
-    if (input.provider === "ollama" || input.provider === "lmstudio") {
+    if (
+      input.provider === "ollama" ||
+      input.provider === "lmstudio" ||
+      input.provider === "sapient"
+    ) {
       await dependencies.coordinator.run(
         {
           runtime: { provider: input.provider, baseUrl: input.baseUrl },

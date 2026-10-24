@@ -24,7 +24,7 @@ export function modelsFromProviderResponse(
   const ids = idsFromResponse(provider, json);
   const seen = new Set<string>();
   const models: ProviderModel[] = [];
-  const local = provider === "ollama" || provider === "lmstudio";
+  const local = isLocalProvider(provider);
   for (const raw of ids) {
     const id = raw.id.trim();
     if (!id || seen.has(id) || !isChatModel(provider, id, raw.outputModalities))
@@ -154,12 +154,23 @@ function idsFromResponse(
     : [];
 }
 
+function isLocalProvider(
+  provider: AgentProviderId,
+): provider is "ollama" | "lmstudio" | "sapient" {
+  return (
+    provider === "ollama" || provider === "lmstudio" || provider === "sapient"
+  );
+}
+
+const SAPIENT_NON_CHAT = /kokoro|orpheus|smolvla/i;
+
 function isChatModel(
   provider: AgentProviderId,
   id: string,
   outputModalities?: string[],
 ): boolean {
   if (SKIP.test(id)) return false;
+  if (provider === "sapient") return !SAPIENT_NON_CHAT.test(id);
   if (provider === "ollama" || provider === "lmstudio") return true;
   const n = id.toLowerCase();
   if (provider === "openai") return /^(gpt-|o[1-9]|chatgpt-)/.test(n);
@@ -194,6 +205,7 @@ export function connectionFor(
     lmstudioModelId?: string;
     ollamaBaseUrl?: string;
     lmstudioBaseUrl?: string;
+    sapientBaseUrl?: string;
     azureResourceName?: string;
   },
   catalogFallback: string,
@@ -203,6 +215,8 @@ export function connectionFor(
     return { modelId, baseUrl: prefs.ollamaBaseUrl || undefined };
   if (provider === "lmstudio")
     return { modelId, baseUrl: prefs.lmstudioBaseUrl || undefined };
+  if (provider === "sapient")
+    return { modelId, baseUrl: prefs.sapientBaseUrl || undefined };
   if (provider === "azure") {
     const resource = prefs.azureResourceName?.trim();
     return {
