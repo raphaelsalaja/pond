@@ -6,9 +6,14 @@ import { ViewMenu } from "@/features/library/components/view-menu";
 import { SearchComposer } from "@/features/search";
 import { SearchChrome } from "@/shared/components/search-chrome";
 
-export function LibraryChrome() {
+interface LibraryChromeProps {
+  className?: string;
+}
+
+export function LibraryChrome({ className }: LibraryChromeProps) {
   return (
     <SearchChrome.Root
+      className={className}
       actions={
         <>
           <FilterToggle />

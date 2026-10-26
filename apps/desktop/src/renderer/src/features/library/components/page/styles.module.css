@@ -1,6 +1,7 @@
 .body {
   flex-direction: column;
   min-height: 0;
+  timeline-scope: --library-grid;
 }
 
 .stage {
@@ -45,62 +46,34 @@
   background: var(--ds-gray-1);
 }
 
-@property --fade-top {
-  syntax: "<length>";
-  inherits: false;
-  initial-value: 0px;
-}
-
-@property --fade-bottom {
-  syntax: "<length>";
-  inherits: false;
-  initial-value: 80px;
-}
-
-/* Each edge fades only while content scrolls past it, so the first and last rows rest unmasked. */
 .main {
-  --fade-size: 80px;
   min-height: 0;
   padding-block: 16px 20px;
   padding-inline: 20px;
-  mask-image: linear-gradient(
-    to bottom,
-    transparent 0,
-    rgb(0 0 0 / 0.03) calc(var(--fade-top) * 0.125),
-    rgb(0 0 0 / 0.1) calc(var(--fade-top) * 0.25),
-    rgb(0 0 0 / 0.22) calc(var(--fade-top) * 0.375),
-    rgb(0 0 0 / 0.38) calc(var(--fade-top) * 0.5),
-    rgb(0 0 0 / 0.56) calc(var(--fade-top) * 0.625),
-    rgb(0 0 0 / 0.74) calc(var(--fade-top) * 0.75),
-    rgb(0 0 0 / 0.9) calc(var(--fade-top) * 0.875),
-    #000 var(--fade-top),
-    #000 calc(100% - var(--fade-bottom)),
-    rgb(0 0 0 / 0.9) calc(100% - var(--fade-bottom) * 0.875),
-    rgb(0 0 0 / 0.74) calc(100% - var(--fade-bottom) * 0.75),
-    rgb(0 0 0 / 0.56) calc(100% - var(--fade-bottom) * 0.625),
-    rgb(0 0 0 / 0.38) calc(100% - var(--fade-bottom) * 0.5),
-    rgb(0 0 0 / 0.22) calc(100% - var(--fade-bottom) * 0.375),
-    rgb(0 0 0 / 0.1) calc(100% - var(--fade-bottom) * 0.25),
-    rgb(0 0 0 / 0.03) calc(100% - var(--fade-bottom) * 0.125),
-    transparent 100%
-  );
-  animation:
-    grid-fade-top linear both,
-    grid-fade-bottom linear both;
-  animation-timeline: scroll(self), scroll(self);
-  animation-range:
-    0 var(--fade-size),
-    calc(100% - var(--fade-size)) 100%;
+  scroll-timeline: --library-grid block;
 }
 
-@keyframes grid-fade-top {
-  to {
-    --fade-top: var(--fade-size);
+/* The divider shows only once rows scroll under the chrome, so the resting grid has no edge. */
+.chrome {
+  position: relative;
+
+  &::after {
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    height: 1px;
+    pointer-events: none;
+    content: "";
+    background: var(--ds-gray-a4);
+    opacity: 0;
+    animation: divider-show linear both;
+    animation-timeline: --library-grid;
+    animation-range: 0 24px;
   }
 }
 
-@keyframes grid-fade-bottom {
+@keyframes divider-show {
   to {
-    --fade-bottom: 0px;
+    opacity: 1;
   }
 }

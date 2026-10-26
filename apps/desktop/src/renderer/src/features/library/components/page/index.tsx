@@ -58,7 +58,7 @@ export function Library() {
         >
           <AppShell.Content>
             <Shell.Body className={styles.body}>
-              {isSave ? null : <LibraryChrome />}
+              {isSave ? null : <LibraryChrome className={styles.chrome} />}
               <ScrollRestorationContext.Provider value={restoration}>
                 <Shell.Main
                   ref={restoration.ref}
