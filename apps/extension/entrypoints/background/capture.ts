@@ -1,6 +1,7 @@
 import type { CaptureMetadata, CaptureWebDraft } from "@pond/schema/capture";
 import type { ExtensionCookie } from "@pond/schema/session";
 import { hostToSource, sourceLabel } from "@pond/schema/source-ids";
+import { allowsSiteCapture } from "@/utils/hook-capture";
 import type { DetailsDraft, DetailsPreview } from "@/utils/messaging";
 import { nativeCall } from "@/utils/native";
 import {
@@ -14,6 +15,7 @@ import { getSettings } from "@/utils/settings";
 import { libraryTargets } from "./library";
 import { announce, flashBadge, showOverlay } from "./overlay";
 import { cookiesForUrl } from "./session";
+import { syncSettings } from "./settings";
 
 const POLL_INTERVAL_MS = 750;
 const POLL_ATTEMPTS = 20;
@@ -224,6 +226,11 @@ export async function saveFromSite(
   trigger: string | undefined,
   tabId: number | undefined,
 ): Promise<CaptureOutcome> {
+  await syncSettings(true);
+  if (!allowsSiteCapture(url, trigger, await getSettings())) {
+    /** The page hook ignores this result, so a like that is turned off stays quiet. */
+    return { status: "sending", id: crypto.randomUUID() };
+  }
   return submitCapture({
     items: [{ kind: "url", url }],
     title: siteTitle(url, trigger),

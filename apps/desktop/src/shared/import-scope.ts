@@ -165,8 +165,8 @@ export function normalizeImportScope(
   if (scope.listKinds && options.listKinds.length > 0) {
     const chosen = new Set(scope.listKinds);
     const listKinds = options.listKinds.filter((kind) => chosen.has(kind));
-    if (listKinds.length === 0) return { ok: false, problem: "no_lists" };
-    if (listKinds.length < options.listKinds.length) {
+    if (listKinds.length === 0) next.listKinds = [];
+    else if (listKinds.length < options.listKinds.length) {
       next.listKinds = listKinds;
     }
   }
@@ -247,6 +247,14 @@ export function importsListKind(
   kind: ListKind,
 ): boolean {
   return !scope?.listKinds || scope.listKinds.includes(kind);
+}
+
+/** An empty `listKinds` imports nothing. Omitting the field still imports every list. */
+export function importsAnyList(source: Source, scope: ImportScope): boolean {
+  const options = importScopeOptions(source);
+  if (options.listKinds.length === 0) return true;
+  if (!scope.listKinds) return true;
+  return scope.listKinds.length > 0;
 }
 
 export function importsEverything(scope: ImportScope | undefined): boolean {

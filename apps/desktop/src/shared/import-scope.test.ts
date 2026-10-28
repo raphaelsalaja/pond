@@ -3,6 +3,7 @@ import {
   accountImportScope,
   collectionFiling,
   importFilterReason,
+  importsAnyList,
   importsEverything,
   importsListKind,
   listFilterReason,
@@ -24,11 +25,18 @@ describe("normalizeImportScope", () => {
     ).toEqual({ ok: true, scope: { listKinds: ["liked"] } });
   });
 
-  it("rejects a selection that would import nothing", () => {
-    expect(normalizeImportScope("instagram", { listKinds: [] })).toEqual({
-      ok: false,
-      problem: "no_lists",
+  it("keeps an empty list selection so every switch can stay off", () => {
+    expect(normalizeImportScope("twitter", { listKinds: [] })).toEqual({
+      ok: true,
+      scope: { listKinds: [] },
     });
+    expect(importsAnyList("twitter", { listKinds: [] })).toBe(false);
+    expect(importsAnyList("twitter", {})).toBe(true);
+    expect(importsListKind({ listKinds: [] }, "liked")).toBe(false);
+    expect(importsListKind({ listKinds: [] }, "saved")).toBe(false);
+  });
+
+  it("rejects a selection that would import nothing", () => {
     expect(
       normalizeImportScope("pinterest", {
         collections: [{ id: "  ", name: "Blank" }],

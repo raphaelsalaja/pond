@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { acceptHookCapture, createRateLimit } from "./hook-capture";
+import {
+  acceptHookCapture,
+  allowsSiteCapture,
+  createRateLimit,
+} from "./hook-capture";
 import { DEFAULT_SETTINGS, type PondSettings } from "./types";
 
 const POST = "https://x.com/pond/status/1";
@@ -79,6 +83,16 @@ describe("acceptHookCapture", () => {
         noLikes,
       ),
     ).not.toBeNull();
+  });
+});
+
+describe("allowsSiteCapture", () => {
+  it("drops a like after the setting turns off and still saves a bookmark", () => {
+    const noLikes = settings({
+      likes: { ...DEFAULT_SETTINGS.likes, twitter: false },
+    });
+    expect(allowsSiteCapture(POST, "twitter:like", noLikes)).toBe(false);
+    expect(allowsSiteCapture(POST, "twitter:bookmark", noLikes)).toBe(true);
   });
 });
 

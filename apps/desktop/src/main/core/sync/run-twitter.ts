@@ -18,7 +18,7 @@ import {
   harvestTwitterLikes,
   listSourceCollections,
 } from "../refresh/harvest-window";
-import { partitionForAccount } from "./accounts";
+import { getAccount, partitionForAccount } from "./accounts";
 import { fileIntoFolders } from "./collection-folders";
 import { NO_COLLECTION_PASS, walkEveryCollection } from "./every-collection";
 import { mergeEntryListKinds, stampListKind, unionById } from "./harvest-union";
@@ -143,8 +143,10 @@ export async function syncTwitter(
     return;
   }
 
+  /** Bookmarks can take long enough for Likes to be turned off before this list starts. */
+  const latest = await getAccount(accountId);
   const likes = await harvestConfiguredTwitterLikes(
-    account,
+    latest ?? account,
     {
       aborted: signal.aborted,
       knownIds: baseline.full ? [] : Array.from(knownIds),

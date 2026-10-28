@@ -10,6 +10,7 @@ import {
 import {
   type ImportCollectionKind,
   importScopeOptions,
+  importsAnyList,
 } from "@shared/import-scope";
 import type { OkResult } from "@shared/query-contracts-shared";
 import { useQuery } from "@tanstack/react-query";
@@ -127,10 +128,14 @@ export function ImportScopeStatus() {
   const flow = useImportScopeFlowActions();
   const draft = useImportScopeFlow();
   if (!draft.source) return null;
-  const ready = draftImportScope(draft) !== null;
+  const scope = draftImportScope(draft);
+  const empty = scope !== null && !importsAnyList(draft.source, scope);
+  const ready = scope !== null && !empty;
   const problem =
     draft.error ??
-    (ready ? null : "Turn on at least one list to import from this Account.");
+    (scope === null || (empty && draft.starts)
+      ? "Turn on at least one list to import from this Account."
+      : null);
   const alert = problem ? (
     <p className={styles.error} role="alert">
       {problem}

@@ -197,20 +197,31 @@ it("saves an active Account's choices as you change them", async () => {
   expect(syncRunNow).not.toHaveBeenCalled();
 });
 
-it("won't save an active Account that would import nothing", async () => {
+it("saves an active Account with every list turned off", async () => {
   await renderFor({
     id: "acc-instagram",
     source: "instagram",
     sync: { importScope: { listKinds: ["saved"] } },
   });
   await act(async () => toggle("Saved Posts").click());
-  expect(host.querySelector('[role="alert"]')?.textContent).toBe(
-    "Turn on at least one list to import from this Account.",
+  await vi.waitFor(() =>
+    expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
+      accountId: "acc-instagram",
+      scope: { listKinds: [] },
+      start: false,
+    }),
   );
-  expect(query).not.toHaveBeenCalledWith(
-    "accounts.setImportScope",
-    expect.anything(),
-  );
+  expect(host.querySelector('[role="alert"]')).toBeNull();
+});
+
+it("reopens with Bookmarks and Likes still off", async () => {
+  await renderFor({
+    id: "acc-twitter",
+    source: "twitter",
+    sync: { importScope: { listKinds: [] } },
+  });
+  expect(toggle("Bookmarks").getAttribute("aria-checked")).toBe("false");
+  expect(toggle("Likes").getAttribute("aria-checked")).toBe("false");
 });
 
 it("starts the first import with only the lists you keep", async () => {

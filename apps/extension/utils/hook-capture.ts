@@ -18,6 +18,19 @@ export function acceptHookCapture(
   return { url: payload.url, trigger };
 }
 
+/** A like is saved only while that source's likes setting is on. Other captures still go through. */
+export function allowsSiteCapture(
+  url: string,
+  trigger: string | undefined,
+  settings: PondSettings,
+): boolean {
+  const source = hostToSource(url);
+  if (!source || source === "web" || source === "local" || !trigger) {
+    return true;
+  }
+  return !isLikeTrigger(source, trigger) || settings.likes[source];
+}
+
 export function createRateLimit(
   limit: number,
   windowMs: number,
