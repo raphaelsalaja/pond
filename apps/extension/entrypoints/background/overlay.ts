@@ -51,6 +51,7 @@ const BADGES = {
   Exclude<CaptureStatus, "sending">,
   { text: string; color: string }
 >;
+const BADGE_TEXT = "#ffffff";
 
 export function flashBadge(tabId: number | undefined, status: CaptureStatus) {
   if (!browser.action || status === "sending") return;
@@ -58,6 +59,14 @@ export function flashBadge(tabId: number | undefined, status: CaptureStatus) {
   void browser.action
     .setBadgeBackgroundColor(tabId === undefined ? { color } : { color, tabId })
     .catch(() => {});
+  /** Without a text color the browser picks one by contrast and draws the check black on green. */
+  void browser.action
+    .setBadgeTextColor?.(
+      tabId === undefined
+        ? { color: BADGE_TEXT }
+        : { color: BADGE_TEXT, tabId },
+    )
+    ?.catch(() => {});
   void browser.action
     .setBadgeText(tabId === undefined ? { text } : { text, tabId })
     .catch(() => {});
