@@ -1,0 +1,56 @@
+.frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1280 / 800;
+  overflow: hidden;
+  background: var(--ds-gray-1);
+  border-radius: calc(12px * var(--replica-scale));
+  box-shadow:
+    0 0 0 1px var(--ds-gray-a4),
+    var(--ds-shadow-lg);
+  opacity: 0;
+  transition: opacity var(--ds-duration-medium) var(--ds-easing-standard);
+
+  &[data-ready] {
+    opacity: 1;
+  }
+}
+
+.stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--replica-width);
+  height: var(--replica-height);
+  pointer-events: none;
+  user-select: none;
+  transform: scale(var(--replica-scale));
+  transform-origin: 0 0;
+}
+
+.window {
+  --window-header-height: 56px;
+  --window-inset: 8px;
+  --window-left-min: 0px;
+  --window-chrome-start: 96px;
+
+  & [data-slot="handle"] {
+    display: none;
+  }
+
+  & [data-slot="left"] > div {
+    opacity: 1;
+    transform: translateX(
+      calc(var(--window-left-width) - var(--window-left-track))
+    );
+    transition: none;
+  }
+
+  & [data-slot="right"] > div {
+    opacity: 1;
+    transform: translateX(
+      calc(var(--window-right-track) - var(--window-right-width))
+    );
+    transition: none;
+  }
+}

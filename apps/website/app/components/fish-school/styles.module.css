@@ -1,0 +1,38 @@
+.root {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+
+  @media (max-width: 640px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.cell {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  padding: 28px 12px 20px;
+  background: var(--card);
+  border-radius: var(--surface-radius);
+  box-shadow: var(--card-shadow);
+}
+
+.tile {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  background: var(--ds-gray-1);
+  border-radius: var(--ds-radius-full);
+  box-shadow: var(--ds-shadow-sm);
+}
+
+.name {
+  font-size: var(--ds-text-md);
+  color: var(--ds-gray-11);
+}

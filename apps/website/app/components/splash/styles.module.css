@@ -43,7 +43,7 @@
   }
 }
 
-/* Lands on the intro logo: 24px glyph at the page inset, 40px from the top. */
+/* Lands on the Nav wordmark glyph: 20px, at the frame inset, centered in the bar. */
 .mark {
   width: 48px;
   height: 48px;
@@ -64,8 +64,15 @@
 
 @keyframes land {
   to {
-    translate: calc(var(--page-inset) + 12px - 50cqw) calc(52px - 50cqh);
-    scale: 0.5;
+    translate: calc(
+        (100cqw - min(var(--frame-width), 100cqw - 2 * var(--frame-margin))) /
+        2 +
+        var(--frame-inset) +
+        10px -
+        50cqw
+      )
+      calc(var(--nav-height) / 2 - 50cqh);
+    scale: calc(20 / 48);
   }
 }
 

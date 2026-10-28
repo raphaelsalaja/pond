@@ -10,7 +10,37 @@
 }
 
 :root {
-  --page-inset: 36px;
+  --frame-width: 1088px;
+  --frame-margin: 32px;
+  --frame-inset: 32px;
+  --frame-column: min(var(--frame-width), 100% - 2 * var(--frame-margin));
+  --hairline: var(--ds-gray-a4);
+  --surface: color-mix(in srgb, var(--ds-gray-2) 60%, var(--ds-gray-1));
+  --surface-radius: var(--ds-radius-2xl);
+  --surface-radius-lg: 24px;
+  --card: var(--ds-gray-1);
+  --card-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.06), 0 1px 1px -0.5px rgb(0 0 0 / 0.03),
+    0 2px 4px -1px rgb(0 0 0 / 0.03), 0 4px 8px -2px rgb(0 0 0 / 0.03);
+  --card-shadow-hover:
+    0 0 0 1px rgb(0 0 0 / 0.07), 0 2px 4px rgb(0 0 0 / 0.03),
+    0 8px 16px -4px rgb(0 0 0 / 0.06), 0 16px 32px -8px rgb(0 0 0 / 0.06);
+  --lift-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.04), 0 3px 6px rgb(0 0 0 / 0.01),
+    0 6px 12px rgb(0 0 0 / 0.01), 0 32px 56px -12px rgb(0 0 0 / 0.08);
+  --nav-height: 76px;
+
+  --headline-xl: 60px;
+  --headline-xl-leading: 62px;
+  --headline-lg: 40px;
+  --headline-lg-leading: 44px;
+  --headline-md: 28px;
+  --headline-md-leading: 34px;
+  --headline-sm: 20px;
+  --headline-sm-leading: 26px;
+  --headline-weight: 450;
+  --headline-tracking: -0.035em;
+
   --splash-delay: 200ms;
   --splash-hold: 1.4s;
   --splash-fly: 0.7s;
@@ -25,7 +55,6 @@
   --splash-land: 0s;
 }
 
-/* The page uses one text size; hierarchy comes from weight and color. */
 html {
   font-family:
     inter-variable, ui-sans-serif, system-ui, -apple-system, "SF Pro Text",
@@ -34,6 +63,7 @@ html {
   line-height: 22px;
   color: var(--ds-gray-12);
   color-scheme: light;
+  scroll-padding-top: calc(var(--nav-height) + 16px);
   background: var(--ds-gray-1);
 }
 
@@ -41,19 +71,30 @@ body {
   overflow-x: clip;
 }
 
-main {
-  display: flex;
-  flex-direction: column;
-  height: 100dvh;
-}
-
 ::selection {
   background: var(--ds-gray-a4);
 }
 
+@media (max-width: 900px) {
+  :root {
+    --frame-inset: 24px;
+    --headline-xl: 44px;
+    --headline-xl-leading: 48px;
+    --headline-lg: 32px;
+    --headline-lg-leading: 38px;
+  }
+}
+
 @media (max-width: 640px) {
   :root {
-    --page-inset: 20px;
+    --frame-margin: 12px;
+    --frame-inset: 20px;
+    --headline-xl: 36px;
+    --headline-xl-leading: 40px;
+    --headline-lg: 28px;
+    --headline-lg-leading: 34px;
+    --headline-md: 24px;
+    --headline-md-leading: 30px;
   }
 }
 

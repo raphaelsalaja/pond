@@ -1,3 +1,4 @@
+import createMDX from "@next/mdx";
 import type { NextConfig } from "next";
 
 const FAVICONS = {
@@ -16,7 +17,8 @@ const favicon = isFaviconEnv(env) ? FAVICONS[env] : null;
 
 const config: NextConfig = {
   reactStrictMode: true,
-  transpilePackages: ["@pond/ui"],
+  pageExtensions: ["ts", "tsx", "mdx"],
+  transpilePackages: ["@pond/ui", "@pond/icons", "@pond/schema"],
   poweredByHeader: false,
   /** TypeScript 7 drops the JS compiler API; next build must shell out to tsc. */
   experimental: {
@@ -30,4 +32,11 @@ const config: NextConfig = {
   },
 };
 
-export default config;
+/** Turbopack takes remark plugins by package name, not by function reference. */
+const withMDX = createMDX({
+  options: {
+    remarkPlugins: ["remark-gfm"],
+  },
+});
+
+export default withMDX(config);

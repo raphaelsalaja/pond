@@ -24,14 +24,3 @@ export function usePlatform(): Platform {
     () => FALLBACK,
   );
 }
-
-export type Browser = "firefox" | "chromium";
-
-export function useBrowser(): Browser {
-  return useSyncExternalStore(
-    subscribe,
-    () =>
-      /firefox\//i.test(window.navigator.userAgent) ? "firefox" : "chromium",
-    () => "chromium",
-  );
-}

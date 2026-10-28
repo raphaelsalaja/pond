@@ -23,7 +23,10 @@
   "exports": {
     ".": "./src/index.ts",
     "./accordion": "./src/accordion/index.tsx",
+    "./brand-tile": "./src/brand-tile/index.tsx",
     "./button": "./src/button/index.tsx",
+    "./changelog": "./src/changelog/index.tsx",
+    "./css-vars": "./src/css-vars.ts",
     "./input": "./src/input/index.tsx",
     "./logo": "./src/logo/index.tsx",
     "./pane-header": "./src/pane-header/index.tsx",

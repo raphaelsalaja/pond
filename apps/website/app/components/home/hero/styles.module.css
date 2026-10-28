@@ -1,0 +1,112 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+
+  @media (max-width: 640px) {
+    gap: 40px;
+  }
+}
+
+.header {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 32px;
+  align-items: center;
+  padding-top: 124px;
+
+  & > * {
+    animation: enter 700ms var(--ds-easing-decelerate) backwards;
+    animation-delay: var(--splash-land);
+  }
+
+  & > :nth-child(2) {
+    animation-delay: calc(var(--splash-land) + 80ms);
+  }
+
+  @media (max-width: 900px) {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+
+  @media (max-width: 640px) {
+    padding-top: 56px;
+  }
+}
+
+.title {
+  margin: 0;
+  font-size: clamp(36px, 5vw, 48px);
+  font-weight: var(--ds-weight-xl);
+  line-height: 1.2;
+  color: var(--ds-gray-12);
+  letter-spacing: -0.022em;
+  text-wrap: balance;
+}
+
+.aside {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: flex-end;
+  text-align: right;
+
+  @media (max-width: 900px) {
+    align-items: flex-start;
+    text-align: left;
+  }
+}
+
+.lede {
+  max-width: 440px;
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--ds-gray-10);
+  letter-spacing: -0.011em;
+  text-wrap: pretty;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding-top: 16px;
+
+  @media (max-width: 900px) {
+    padding-top: 8px;
+  }
+}
+
+/* Only the bottom edge clips, so the window shadow still shows on the other three sides. */
+.window {
+  position: relative;
+  min-height: 0;
+  aspect-ratio: 1024 / 532;
+  clip-path: inset(-64px -64px 0 -64px);
+
+  &::after {
+    position: absolute;
+    inset: auto -64px 0;
+    z-index: 1;
+    height: 48%;
+    pointer-events: none;
+    content: "";
+    background: linear-gradient(to bottom, transparent, var(--ds-gray-1) 85%);
+  }
+}
+
+.window .replica {
+  box-shadow:
+    0 12px 32px rgb(0 0 0 / 0.08),
+    0 0 0 1px rgb(0 0 0 / 0.08);
+  animation: enter 900ms var(--ds-easing-decelerate) backwards;
+  animation-delay: calc(var(--splash-land) + 240ms);
+}
+
+@keyframes enter {
+  from {
+    opacity: 0;
+    translate: 0 8px;
+  }
+}

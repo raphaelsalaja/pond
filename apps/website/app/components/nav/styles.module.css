@@ -1,0 +1,95 @@
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: color-mix(in oklab, var(--ds-gray-1) 82%, transparent);
+  backdrop-filter: blur(12px) saturate(1.4);
+}
+
+.bar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 24px;
+  align-items: center;
+  width: var(--frame-column);
+  height: var(--nav-height);
+  padding-inline: var(--frame-inset);
+  margin-inline: auto;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr auto;
+  }
+}
+
+/* Hidden until the splash mark lands on the wordmark glyph. */
+.home {
+  --ds-focus-offset: 4px;
+
+  display: flex;
+  justify-self: start;
+  color: var(--ds-gray-12);
+  text-decoration: none;
+  border-radius: var(--ds-radius-sm);
+  animation: reveal 1ms var(--splash-land) backwards;
+}
+
+.links {
+  display: flex;
+  align-items: center;
+
+  @media (max-width: 900px) {
+    display: none;
+  }
+}
+
+.link {
+  --ds-focus-offset: 2px;
+
+  padding: 4px 8px;
+  font-weight: var(--ds-weight-xl);
+  line-height: 24px;
+  color: var(--ds-gray-9);
+  letter-spacing: -0.02em;
+  text-decoration: none;
+  border-radius: var(--ds-radius-sm);
+  transition: color var(--ds-duration-fast) var(--ds-easing-standard);
+
+  &:hover,
+  &[aria-current="page"] {
+    color: var(--ds-gray-12);
+  }
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-self: end;
+}
+
+.divider {
+  align-self: stretch;
+  width: 1px;
+  background: var(--ds-gray-a3);
+}
+
+/* Nested under .actions so it outranks the Button's own display rule. */
+.actions .menu {
+  display: none;
+
+  @media (max-width: 900px) {
+    display: inline-flex;
+  }
+}
+
+.actions .get {
+  @media (max-width: 480px) {
+    display: none;
+  }
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+  }
+}

@@ -1,15 +1,23 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
+import { SITE_URL } from "@/lib/links";
+import { Footer } from "./components/footer";
+import { Frame } from "./components/frame";
+import { Nav } from "./components/nav";
+import { Sounds } from "./components/sounds";
+import { Splash } from "./components/splash";
 import "./globals.css";
 
-const SITE_URL = "https://pond.raphaelsalaja.com";
 const TITLE = "Pond";
 const DESCRIPTION =
-  "Keep what you save on X, Instagram, Pinterest, and more in a folder on your Mac or Windows PC. Free and open source.";
+  "Pond 2.0 keeps what you save on X, Instagram, Pinterest, and 15 more sources in a folder on your Mac or Windows PC. Search it, sort it, and ask your fish about it. Free and open source.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: TITLE,
+  title: {
+    default: TITLE,
+    template: "%s · Pond",
+  },
   description: DESCRIPTION,
   openGraph: {
     type: "website",
@@ -38,7 +46,15 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <Splash />
+        <Sounds />
+        <Nav />
+        <Frame.Root>
+          {children}
+          <Footer />
+        </Frame.Root>
+      </body>
     </html>
   );
 }

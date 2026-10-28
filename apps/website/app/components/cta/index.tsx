@@ -1,16 +1,28 @@
-import type { ReactNode } from "react";
+import { clsx as cn } from "clsx";
 import styles from "./styles.module.css";
 
-interface CtaProps {
+interface CtaProps extends React.ComponentPropsWithoutRef<"a"> {
   href: string;
-  children: ReactNode;
-  variant?: "solid" | "soft";
+  variant?: "solid" | "soft" | "ghost";
+  size?: "md" | "lg";
+  external?: boolean;
 }
 
-export function Cta({ href, children, variant = "solid" }: CtaProps) {
+export function Cta({
+  className,
+  variant = "solid",
+  size = "md",
+  external,
+  ...props
+}: CtaProps) {
   return (
-    <a className={styles.root} data-variant={variant} href={href}>
-      {children}
-    </a>
+    <a
+      className={cn(styles.root, className)}
+      data-variant={variant}
+      data-size={size}
+      target={external ? "_blank" : undefined}
+      rel={external ? "noreferrer" : undefined}
+      {...props}
+    />
   );
 }

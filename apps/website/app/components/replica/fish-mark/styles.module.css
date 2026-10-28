@@ -1,0 +1,1022 @@
+/* Travel is a share of the mark's own box; small marks sit in tight rows, so they move less. */
+.mark {
+  --travel: 1;
+
+  display: inline-grid;
+  flex: none;
+  width: var(--fish-size);
+  height: var(--fish-size);
+  color: var(--fish-color);
+  perspective: calc(var(--fish-size) * 3);
+
+  &[data-compact] {
+    --travel: 0.6;
+  }
+}
+
+/* Yaw lives on the svg root because SVG children only take flat transforms. */
+.stage {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  transform-origin: 50% 55%;
+  animation: wander 10s infinite var(--fish-drift-delay);
+}
+
+.fish {
+  transform-origin: 12px 12px;
+  transition: rotate var(--ds-duration-spring) var(--ds-easing-spring);
+  animation: roll 10s infinite var(--fish-drift-delay);
+}
+
+.squash {
+  transform-origin: 12px 19px;
+  animation: breathe 3.6s ease-in-out infinite var(--fish-drift-delay);
+}
+
+.body {
+  transform-origin: 12.8px 12.2px;
+  transition: scale var(--ds-duration-bounce) var(--ds-easing-bounce);
+}
+
+.lobe {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: wobble 1.8s ease-in-out infinite alternate;
+  animation-delay: calc(var(--lobe) * -0.53s + var(--fish-drift-delay));
+}
+
+/* Narrowing the eye pair while it slides reads as the head turning on a sphere. */
+.face {
+  transform-origin: center;
+  transform-box: fill-box;
+  transition:
+    translate var(--ds-duration-spring) var(--ds-easing-spring),
+    scale var(--ds-duration-spring) var(--ds-easing-spring);
+  animation: glance 7s infinite var(--fish-drift-delay);
+}
+
+.lid {
+  animation: blink 9.6s infinite var(--fish-blink-delay);
+}
+
+.eye {
+  d: var(--fish-eye);
+  transition:
+    d var(--ds-duration-spring) var(--ds-easing-spring),
+    rotate var(--ds-duration-spring) var(--ds-easing-spring);
+}
+
+.bulb {
+  opacity: 0.85;
+}
+
+.bubble {
+  opacity: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 0.8;
+
+  & + .bubble {
+    --bubble-delay: 0.6s;
+  }
+}
+
+.heart {
+  opacity: 0;
+  fill: var(--ds-pink-9);
+}
+
+.mark[data-activity] {
+  & .squash {
+    animation: kick 0.6s ease-in-out infinite alternate;
+  }
+
+  & .lobe {
+    animation-duration: 0.7s;
+  }
+}
+
+.mark[data-activity="thinking"] {
+  & .stage {
+    animation: sway 4s infinite;
+  }
+
+  & .fish {
+    animation: muse 2.6s ease-in-out infinite;
+  }
+
+  & .squash {
+    animation: breathe 2.6s ease-in-out infinite;
+  }
+
+  & .face {
+    animation: ponder 5.2s infinite;
+  }
+
+  & .bubble {
+    animation: rise 1.8s ease-out var(--bubble-delay, 0s) infinite;
+  }
+
+  & .bulb {
+    animation: glow 1.2s ease-in-out infinite alternate;
+  }
+}
+
+.mark:is([data-activity="searching"], [data-activity="reading"]) {
+  & .stage {
+    animation: dart 2.6s infinite;
+  }
+
+  & .fish {
+    animation: nod 2.6s infinite;
+  }
+
+  & .face {
+    animation: read 1.6s infinite;
+  }
+}
+
+.mark[data-activity="preparing"] {
+  & .stage {
+    animation: leap 4s infinite;
+  }
+
+  & .fish {
+    animation: flip 4s infinite;
+  }
+
+  & .squash {
+    animation: spring 4s infinite;
+  }
+
+  & .face {
+    animation: read 1.6s infinite;
+  }
+}
+
+.mark[data-activity="writing"] {
+  & .stage {
+    animation: scribble 1.6s infinite;
+  }
+
+  & .fish {
+    animation: jot 1.6s infinite;
+  }
+
+  & .face {
+    animation: write 1s ease-in-out infinite alternate;
+  }
+}
+
+.mark[data-face="happy"] .lid {
+  animation: none;
+}
+
+.mark[data-mood="pleased"] {
+  & .stage {
+    animation:
+      celebrate 2.2s 1,
+      twirl 7s 2.2s infinite;
+  }
+
+  & .fish {
+    animation: bob 3.6s ease-in-out infinite;
+  }
+
+  & .squash {
+    animation:
+      jubilate 2.2s 1,
+      breathe 3.6s ease-in-out 2.2s infinite;
+  }
+
+  & .heart {
+    animation: flutter 2.4s ease-out infinite;
+  }
+
+  & .heart[data-trailing] {
+    animation-delay: 0.8s;
+  }
+}
+
+.mark[data-face="sad"] {
+  & .stage {
+    animation: fret 5s infinite var(--fish-drift-delay);
+  }
+
+  & .fish {
+    rotate: 12deg;
+    animation: bob 5s ease-in-out infinite var(--fish-drift-delay);
+  }
+
+  & .squash {
+    animation: sigh 5s ease-in-out infinite var(--fish-drift-delay);
+  }
+
+  & .face {
+    translate: -0.2px 0.5px;
+    animation: none;
+  }
+
+  & .eye[data-side="back"] {
+    rotate: 18deg;
+  }
+
+  & .eye[data-side="front"] {
+    rotate: -18deg;
+  }
+}
+
+.mark[data-species="puffer"][data-face="sad"] .body {
+  scale: 1.12;
+}
+
+/* Turning to face left means swimming left; it turns back to face right on the way home. */
+@keyframes wander {
+  0%,
+  5% {
+    translate: 0 0;
+    rotate: y 0deg;
+    animation-timing-function: var(--ds-easing-bounce);
+  }
+
+  14%,
+  19% {
+    translate: calc(-14% * var(--travel)) calc(3% * var(--travel));
+    rotate: y -32deg;
+    animation-timing-function: var(--ds-easing-standard);
+  }
+
+  28%,
+  31% {
+    translate: calc(-7% * var(--travel)) calc(-14% * var(--travel));
+    rotate: y 14deg;
+    animation-timing-function: var(--ds-easing-standard);
+  }
+
+  41%,
+  52% {
+    translate: 0 0;
+    rotate: y 30deg;
+    animation-timing-function: var(--ds-easing-standard);
+  }
+
+  60% {
+    translate: calc(-8% * var(--travel)) calc(-6% * var(--travel));
+    rotate: y 180deg;
+    animation-timing-function: var(--ds-easing-standard);
+  }
+
+  68%,
+  72% {
+    translate: calc(-14% * var(--travel)) calc(-3% * var(--travel));
+    rotate: y 190deg;
+    animation-timing-function: var(--ds-easing-standard);
+  }
+
+  84%,
+  100% {
+    translate: 0 0;
+    rotate: y 360deg;
+  }
+}
+
+@keyframes roll {
+  0%,
+  5% {
+    translate: 0 0;
+    rotate: 0deg;
+    animation-timing-function: var(--ds-easing-bounce);
+  }
+
+  14%,
+  19% {
+    rotate: -10deg;
+    animation-timing-function: var(--ds-easing-standard);
+  }
+
+  28%,
+  31% {
+    translate: 0 -0.4px;
+    rotate: 8deg;
+    animation-timing-function: var(--ds-easing-standard);
+  }
+
+  41%,
+  52% {
+    translate: 0 0;
+    rotate: 0deg;
+    animation-timing-function: var(--ds-easing-standard);
+  }
+
+  60% {
+    rotate: -6deg;
+    animation-timing-function: var(--ds-easing-standard);
+  }
+
+  68%,
+  72% {
+    rotate: 4deg;
+    animation-timing-function: var(--ds-easing-standard);
+  }
+
+  84%,
+  100% {
+    translate: 0 0;
+    rotate: 0deg;
+  }
+}
+
+@keyframes bob {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+
+  50% {
+    translate: 0 -0.6px;
+  }
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    scale: 1.02 0.98;
+  }
+
+  50% {
+    scale: 0.98 1.03;
+  }
+}
+
+@keyframes kick {
+  from {
+    scale: 1 1;
+  }
+
+  to {
+    scale: 1.06 0.95;
+  }
+}
+
+@keyframes wobble {
+  from {
+    scale: 0.94;
+  }
+
+  to {
+    scale: 1.05;
+  }
+}
+
+@keyframes sway {
+  0%,
+  22% {
+    rotate: y 0deg;
+    scale: 1;
+    animation-timing-function: var(--ds-easing-standard);
+  }
+
+  40% {
+    rotate: y -16deg;
+    scale: 1.06;
+    animation-timing-function: var(--ds-easing-standard);
+  }
+
+  62% {
+    rotate: y 12deg;
+    animation-timing-function: var(--ds-easing-standard);
+  }
+
+  86%,
+  100% {
+    rotate: y 0deg;
+    scale: 1;
+  }
+}
+
+@keyframes muse {
+  0%,
+  100% {
+    translate: 0 0;
+    rotate: -6deg;
+  }
+
+  50% {
+    translate: 0 -0.6px;
+    rotate: -2deg;
+  }
+}
+
+@keyframes dart {
+  0% {
+    translate: 0 0;
+    rotate: y 0deg;
+    animation-timing-function: var(--ds-easing-standard);
+  }
+
+  13% {
+    translate: 0 calc(-10% * var(--travel));
+    animation-timing-function: var(--ds-easing-standard);
+  }
+
+  22% {
+    translate: 0 calc(5% * var(--travel));
+    animation-timing-function: var(--ds-easing-standard);
+  }
+
+  32%,
+  47% {
+    translate: 0 0;
+    rotate: y 0deg;
+    animation-timing-function: var(--ds-easing-bounce);
+  }
+
+  62% {
+    translate: calc(13% * var(--travel)) 0;
+    rotate: y 26deg;
+    animation-timing-function: var(--ds-easing-bounce);
+  }
+
+  79% {
+    translate: calc(-13% * var(--travel)) 0;
+    rotate: y -26deg;
+    animation-timing-function: var(--ds-easing-standard);
+  }
+
+  100% {
+    translate: 0 0;
+    rotate: y 0deg;
+  }
+}
+
+@keyframes nod {
+  0%,
+  100% {
+    rotate: -4deg;
+    animation-timing-function: var(--ds-easing-standard);
+  }
+
+  13% {
+    rotate: 8deg;
+    animation-timing-function: var(--ds-easing-standard);
+  }
+
+  22% {
+    rotate: -8deg;
+    animation-timing-function: var(--ds-easing-standard);
+  }
+
+  32%,
+  47% {
+    rotate: 0deg;
+    animation-timing-function: var(--ds-easing-bounce);
+  }
+
+  62% {
+    rotate: 8deg;
+    animation-timing-function: var(--ds-easing-bounce);
+  }
+
+  79% {
+    rotate: -10deg;
+    animation-timing-function: var(--ds-easing-standard);
+  }
+}
+
+@keyframes leap {
+  0%,
+  26% {
+    translate: 0 0;
+    rotate: y 0deg;
+    animation-timing-function: ease-out;
+  }
+
+  44% {
+    translate: 0 calc(-20% * var(--travel));
+    animation-timing-function: ease-in;
+  }
+
+  60% {
+    translate: 0 0;
+    rotate: y 0deg;
+    animation-timing-function: var(--ds-easing-bounce);
+  }
+
+  74% {
+    translate: calc(-12% * var(--travel)) 0;
+    rotate: y -22deg;
+    animation-timing-function: var(--ds-easing-bounce);
+  }
+
+  88% {
+    translate: calc(8% * var(--travel)) 0;
+    rotate: y 16deg;
+    animation-timing-function: var(--ds-easing-standard);
+  }
+
+  100% {
+    translate: 0 0;
+    rotate: y 0deg;
+  }
+}
+
+/* The loop ends at -360deg, which looks the same as the 0deg it restarts from. */
+@keyframes flip {
+  0%,
+  30% {
+    rotate: 0deg;
+    animation-timing-function: var(--ds-easing-standard);
+  }
+
+  58%,
+  100% {
+    rotate: -360deg;
+  }
+}
+
+@keyframes spring {
+  0%,
+  18%,
+  44%,
+  76%,
+  100% {
+    scale: 1 1;
+  }
+
+  26% {
+    scale: 1.12 0.88;
+  }
+
+  32% {
+    scale: 0.92 1.1;
+  }
+
+  60% {
+    scale: 1.12 0.88;
+  }
+
+  68% {
+    scale: 0.97 1.03;
+  }
+}
+
+@keyframes scribble {
+  0%,
+  100% {
+    translate: 0 0;
+    rotate: y 0deg;
+  }
+
+  25% {
+    translate: calc(2% * var(--travel)) calc(-5% * var(--travel));
+    rotate: y 8deg;
+  }
+
+  50% {
+    translate: 0 calc(2% * var(--travel));
+  }
+
+  75% {
+    translate: calc(-2% * var(--travel)) calc(-4% * var(--travel));
+    rotate: y -8deg;
+  }
+}
+
+@keyframes jot {
+  0%,
+  100% {
+    rotate: 0deg;
+  }
+
+  25% {
+    rotate: 6deg;
+  }
+
+  50% {
+    rotate: -3deg;
+  }
+
+  75% {
+    rotate: 5deg;
+  }
+}
+
+@keyframes glance {
+  0%,
+  14% {
+    translate: 0 0;
+    scale: 1;
+    animation-timing-function: var(--ds-easing-snap);
+  }
+
+  18%,
+  40% {
+    translate: 0.7px -0.25px;
+    scale: 0.88 1;
+    animation-timing-function: var(--ds-easing-snap);
+  }
+
+  44%,
+  60% {
+    translate: 0 0;
+    scale: 1;
+    animation-timing-function: var(--ds-easing-snap);
+  }
+
+  64%,
+  70% {
+    translate: -0.8px 0.2px;
+    scale: 0.9 1;
+    animation-timing-function: var(--ds-easing-snap);
+  }
+
+  73%,
+  82% {
+    translate: -0.5px -0.3px;
+    scale: 0.94 1;
+    animation-timing-function: var(--ds-easing-snap);
+  }
+
+  86%,
+  100% {
+    translate: 0 0;
+    scale: 1;
+  }
+}
+
+@keyframes read {
+  0%,
+  22% {
+    translate: -0.8px 0.2px;
+    scale: 0.92 1;
+    animation-timing-function: var(--ds-easing-snap);
+  }
+
+  30%,
+  52% {
+    translate: 0 0.2px;
+    scale: 1;
+    animation-timing-function: var(--ds-easing-snap);
+  }
+
+  60%,
+  80% {
+    translate: 0.8px 0.2px;
+    scale: 0.92 1;
+    animation-timing-function: var(--ds-easing-standard);
+  }
+
+  92%,
+  100% {
+    translate: -0.8px 0.2px;
+    scale: 0.92 1;
+  }
+}
+
+@keyframes write {
+  from {
+    translate: 0.2px 0.5px;
+  }
+
+  to {
+    translate: 0.8px 0.5px;
+  }
+}
+
+@keyframes ponder {
+  0%,
+  40% {
+    translate: -0.6px -1px;
+    scale: 0.92 1;
+    animation-timing-function: var(--ds-easing-snap);
+  }
+
+  48%,
+  88% {
+    translate: 0.4px -1.1px;
+    scale: 0.94 1;
+    animation-timing-function: var(--ds-easing-snap);
+  }
+
+  96%,
+  100% {
+    translate: -0.6px -1px;
+    scale: 0.92 1;
+  }
+}
+
+/* Closing is faster than opening; the second pair near the end is a double blink. */
+@keyframes blink {
+  0%,
+  44%,
+  46.7%,
+  90%,
+  92.7%,
+  93.6%,
+  96.3%,
+  100% {
+    scale: 1 1;
+  }
+
+  45.2%,
+  91.2%,
+  94.8% {
+    scale: 1.15 0.1;
+  }
+}
+
+@keyframes glow {
+  from {
+    opacity: 0.5;
+    scale: 0.9;
+  }
+
+  to {
+    opacity: 1;
+    scale: 1.15;
+  }
+}
+
+@keyframes rise {
+  0% {
+    opacity: 0;
+    translate: 0 2px;
+  }
+
+  30% {
+    opacity: 0.8;
+  }
+
+  100% {
+    opacity: 0;
+    translate: 0 -3px;
+  }
+}
+
+@keyframes celebrate {
+  0% {
+    translate: 0 0;
+    rotate: y 0deg;
+    animation-timing-function: ease-out;
+  }
+
+  12% {
+    translate: 0 calc(-26% * var(--travel));
+    animation-timing-function: ease-in;
+  }
+
+  28% {
+    translate: 0 0;
+    rotate: y 0deg;
+    animation-timing-function: ease-out;
+  }
+
+  40% {
+    translate: 0 calc(-26% * var(--travel));
+    rotate: y 180deg;
+    animation-timing-function: ease-in;
+  }
+
+  54% {
+    translate: 0 0;
+    rotate: y 360deg;
+    animation-timing-function: ease-out;
+  }
+
+  63% {
+    translate: 0 calc(-16% * var(--travel));
+    animation-timing-function: ease-in;
+  }
+
+  72% {
+    translate: 0 0;
+    animation-timing-function: ease-out;
+  }
+
+  78% {
+    translate: 0 calc(-9% * var(--travel));
+    animation-timing-function: ease-in;
+  }
+
+  84% {
+    translate: 0 0;
+    animation-timing-function: ease-out;
+  }
+
+  88% {
+    translate: 0 calc(-4% * var(--travel));
+    animation-timing-function: ease-in;
+  }
+
+  92%,
+  100% {
+    translate: 0 0;
+    rotate: y 360deg;
+  }
+}
+
+@keyframes jubilate {
+  0%,
+  12%,
+  40%,
+  63%,
+  76%,
+  100% {
+    scale: 1 1;
+  }
+
+  4% {
+    scale: 0.9 1.1;
+  }
+
+  26% {
+    scale: 0.94 1.06;
+  }
+
+  29% {
+    scale: 1.14 0.86;
+  }
+
+  33% {
+    scale: 0.9 1.1;
+  }
+
+  52% {
+    scale: 0.95 1.05;
+  }
+
+  55% {
+    scale: 1.12 0.88;
+  }
+
+  59% {
+    scale: 0.94 1.06;
+  }
+
+  72.5% {
+    scale: 1.08 0.92;
+  }
+
+  84.5% {
+    scale: 1.05 0.95;
+  }
+
+  92.5% {
+    scale: 1.03 0.97;
+  }
+}
+
+@keyframes twirl {
+  0%,
+  78% {
+    translate: 0 0;
+    rotate: y 0deg;
+    animation-timing-function: ease-out;
+  }
+
+  86% {
+    translate: 0 calc(-14% * var(--travel));
+    rotate: y 180deg;
+    animation-timing-function: ease-in;
+  }
+
+  94%,
+  100% {
+    translate: 0 0;
+    rotate: y 360deg;
+  }
+}
+
+@keyframes flutter {
+  0% {
+    opacity: 0;
+    translate: 0 1px;
+    scale: 0.6;
+  }
+
+  20% {
+    opacity: 1;
+    scale: 1;
+  }
+
+  70% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    translate: 0.6px -3.5px;
+    scale: 0.9;
+  }
+}
+
+@keyframes fret {
+  0%,
+  8% {
+    translate: 0 calc(6% * var(--travel));
+    rotate: y 0deg;
+    scale: 0.94;
+    animation-timing-function: var(--ds-easing-standard);
+  }
+
+  16% {
+    translate: calc(2% * var(--travel)) calc(6% * var(--travel));
+    rotate: y 26deg;
+    animation-timing-function: var(--ds-easing-standard);
+  }
+
+  24% {
+    translate: calc(-12% * var(--travel)) calc(7% * var(--travel));
+    rotate: y -14deg;
+    animation-timing-function: var(--ds-easing-standard);
+  }
+
+  28% {
+    translate: 0 calc(7% * var(--travel));
+    rotate: y 14deg;
+    animation-timing-function: var(--ds-easing-standard);
+  }
+
+  33% {
+    translate: calc(-10% * var(--travel)) calc(6% * var(--travel));
+    rotate: y -9deg;
+    animation-timing-function: var(--ds-easing-standard);
+  }
+
+  38% {
+    translate: 0 calc(7% * var(--travel));
+    rotate: y 12deg;
+    animation-timing-function: var(--ds-easing-standard);
+  }
+
+  46% {
+    translate: 0 calc(6% * var(--travel));
+    rotate: y 0deg;
+    scale: 0.94;
+    animation-timing-function: var(--ds-easing-standard);
+  }
+
+  64% {
+    translate: 0 calc(10% * var(--travel));
+    scale: 0.86;
+    animation-timing-function: var(--ds-easing-standard);
+  }
+
+  86%,
+  100% {
+    translate: 0 calc(6% * var(--travel));
+    rotate: y 0deg;
+    scale: 0.94;
+  }
+}
+
+@keyframes sigh {
+  0%,
+  100% {
+    scale: 1 1;
+  }
+
+  64% {
+    scale: 1.05 0.94;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mark[data-face][data-mood]
+    :is(
+      .stage,
+      .fish,
+      .squash,
+      .body,
+      .lobe,
+      .face,
+      .lid,
+      .eye,
+      .bulb,
+      .bubble,
+      .heart
+    ) {
+    transition: none;
+    animation: none;
+  }
+}
+
+:global(html[data-reduce-motion="true"])
+  .mark[data-face][data-mood]
+  :is(
+    .stage,
+    .fish,
+    .squash,
+    .body,
+    .lobe,
+    .face,
+    .lid,
+    .eye,
+    .bulb,
+    .bubble,
+    .heart
+  ) {
+  transition: none;
+  animation: none;
+}

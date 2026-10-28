@@ -1,0 +1,134 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+
+  @media (max-width: 640px) {
+    gap: 32px;
+  }
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 32px;
+
+  @media (max-width: 900px) {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+  }
+}
+
+.card {
+  display: grid;
+  place-items: center;
+  height: 588px;
+  padding: 24px;
+  margin: 0;
+  overflow: hidden;
+  background: var(--ds-gray-2);
+  border-radius: 16px;
+
+  @media (max-width: 900px) {
+    height: auto;
+    padding: 40px 24px;
+  }
+}
+
+.tree {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 280px;
+  padding: 8px;
+  margin: 0;
+  list-style: none;
+  background: var(--card);
+  border-radius: 12px;
+  box-shadow: var(--card-shadow);
+
+  & li {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    height: 30px;
+    padding-right: 8px;
+    overflow: hidden;
+    font-size: var(--ds-text-md);
+    color: var(--ds-gray-11);
+    white-space: nowrap;
+    border-radius: 6px;
+
+    &[data-open] {
+      color: var(--ds-gray-12);
+      background: var(--ds-gray-a3);
+    }
+
+    & > svg {
+      flex: none;
+      color: var(--ds-gray-9);
+    }
+  }
+}
+
+.file {
+  flex: none;
+  width: 10px;
+  height: 12px;
+  margin-inline: 2px;
+  border: 1.25px solid var(--ds-gray-9);
+  border-radius: 2px;
+}
+
+.code {
+  width: 100%;
+  max-width: 300px;
+  overflow: hidden;
+  background: var(--card);
+  border-radius: 12px;
+  box-shadow: var(--card-shadow);
+
+  & pre {
+    padding: 14px 16px 16px;
+    margin: 0;
+    overflow: hidden;
+    font-family: var(--ds-font-mono);
+    font-size: 12px;
+    line-height: 20px;
+    color: var(--ds-gray-10);
+    white-space: pre;
+  }
+}
+
+.key {
+  color: var(--ds-gray-12);
+}
+
+.filename {
+  padding: 10px 16px;
+  margin: 0;
+  font-size: var(--ds-text-md);
+  font-weight: var(--ds-weight-xl);
+  color: var(--ds-gray-12);
+  border-bottom: 1px solid var(--ds-gray-a3);
+}
+
+.original {
+  width: 100%;
+  max-width: 240px;
+  overflow: hidden;
+  background: var(--card);
+  border-radius: 12px;
+  box-shadow: var(--card-shadow);
+
+  & img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  & .filename {
+    border-top: 1px solid var(--ds-gray-a3);
+    border-bottom: 0;
+  }
+}

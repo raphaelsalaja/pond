@@ -25,14 +25,22 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@mdx-js/loader": "^3.1.1",
+    "@mdx-js/react": "^3.1.1",
+    "@next/mdx": "^16.4.3",
+    "@pond/icons": "workspace:*",
+    "@pond/schema": "workspace:*",
     "@pond/theme": "workspace:*",
     "@pond/ui": "workspace:*",
     "@web-kits/audio": "^0.2.0",
+    "clsx": "catalog:",
     "next": "^16.3.5",
     "react": "catalog:",
-    "react-dom": "catalog:"
+    "react-dom": "catalog:",
+    "remark-gfm": "catalog:"
   },
   "devDependencies": {
+    "@types/mdx": "^2.0.14",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",

@@ -1,0 +1,220 @@
+.chat {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* The app keeps a thread on its newest message, so overflow clips the oldest end. */
+.viewport {
+  justify-content: flex-end;
+  padding: 24px 24px 12px;
+  overflow: hidden;
+}
+
+.time {
+  display: block;
+  margin-block: 16px 6px;
+  font-size: var(--ds-text-sm);
+  color: var(--ds-gray-9);
+  text-align: center;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0;
+  margin: 0 -6px;
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 6px;
+}
+
+.thumb {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: var(--ds-radius-sm);
+  box-shadow: var(--ds-shadow-save);
+}
+
+.text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 18px;
+  color: var(--ds-gray-12);
+  white-space: nowrap;
+}
+
+.detail {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  font-size: var(--ds-text-sm);
+  line-height: 16px;
+  color: var(--ds-gray-10);
+}
+
+.profile {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  width: calc(100% - 2 * var(--window-inset));
+  min-width: 0;
+  height: calc(100% - 2 * var(--window-inset));
+  min-height: 0;
+  margin: var(--window-inset);
+  overflow: hidden;
+  background: var(--ds-gray-1);
+  border-radius: var(--ds-radius-xl);
+  box-shadow: var(--ds-shadow-float);
+}
+
+.header {
+  justify-content: flex-end;
+  height: calc(var(--window-header-height) - 2 * var(--window-inset));
+  min-height: 0;
+  padding: 4px 6px;
+  border-bottom: none;
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  padding: 0 20px 12px;
+}
+
+.tile {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 88px;
+  height: 88px;
+  background: var(--ds-gray-1);
+  border-radius: var(--ds-radius-full);
+  box-shadow: var(--ds-shadow-sm);
+}
+
+.edit {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+}
+
+.name {
+  margin: 0;
+  font-size: var(--ds-text-lg);
+  font-weight: var(--ds-weight-xl);
+  line-height: 32px;
+  color: var(--ds-gray-12);
+}
+
+.tabs {
+  justify-content: center;
+  padding-bottom: 8px;
+}
+
+.scroll {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 18px;
+  min-height: 0;
+  padding-block: 8px 20px;
+  overflow: hidden;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.section-title {
+  margin: 0;
+  font-size: var(--ds-text-sm);
+  font-weight: var(--ds-weight-lg);
+  color: var(--ds-gray-10);
+}
+
+.instructions {
+  margin: 0;
+  font-size: var(--ds-text-md);
+  line-height: 20px;
+  color: var(--ds-gray-12);
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 32px;
+  padding-inline: 10px;
+  font-size: var(--ds-text-md);
+  color: var(--ds-gray-12);
+  background: var(--ds-gray-a2);
+  border-radius: var(--ds-radius-md);
+
+  & svg {
+    color: var(--ds-gray-9);
+  }
+}
+
+.routines {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0;
+  margin: 0 -6px;
+  list-style: none;
+
+  & li {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    height: 32px;
+    padding-inline: 6px;
+    color: var(--ds-gray-10);
+  }
+}
+
+.routine-name {
+  flex: 1;
+  font-size: var(--ds-text-md);
+  color: var(--ds-gray-12);
+}
+
+.routine-time {
+  font-size: var(--ds-text-sm);
+  font-variant-numeric: tabular-nums;
+}

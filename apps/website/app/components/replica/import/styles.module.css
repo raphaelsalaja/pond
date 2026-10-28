@@ -1,0 +1,5 @@
+/* The stage is transformed, so fixed positioning anchors to it instead of the page. */
+.viewport {
+  right: 20px;
+  bottom: 20px;
+}

@@ -1,0 +1,132 @@
+.bar {
+  display: grid;
+  grid-template-columns:
+    minmax(max-content, var(--window-left-width))
+    minmax(0, 1fr)
+    auto;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+}
+
+.chrome {
+  position: relative;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+  padding-right: 12px;
+  padding-left: 96px;
+}
+
+/* macOS draws these; the replica paints them at the hidden-inset position. */
+.lights {
+  position: absolute;
+  top: 50%;
+  left: 18px;
+  display: flex;
+  gap: 8px;
+  translate: 0 -50%;
+
+  & > span {
+    width: 12px;
+    height: 12px;
+    border-radius: var(--ds-radius-full);
+    box-shadow: inset 0 0 0 0.5px rgb(0 0 0 / 0.12);
+  }
+
+  & > [data-light="close"] {
+    background: #ff5f57;
+  }
+
+  & > [data-light="minimize"] {
+    background: #febc2e;
+  }
+
+  & > [data-light="zoom"] {
+    background: #28c840;
+  }
+}
+
+.nav {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+
+.main {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  height: 100%;
+  margin-inline: var(--window-inset);
+}
+
+.trail {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.segment {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  min-width: 0;
+}
+
+.separator {
+  font-size: var(--ds-text-md);
+  color: var(--ds-gray-8);
+}
+
+.crumb {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  height: 28px;
+  padding: 0 6px;
+  font-size: var(--ds-text-md);
+  font-weight: var(--ds-weight-lg);
+  line-height: 20px;
+  color: var(--ds-gray-10);
+
+  &[data-current] {
+    color: var(--ds-gray-12);
+  }
+
+  & svg {
+    flex: none;
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.position {
+  margin-left: 2px;
+  font-weight: var(--ds-weight-md);
+  color: var(--ds-gray-9);
+  white-space: nowrap;
+}
+
+.actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  padding-right: 12px;
+}
