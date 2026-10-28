@@ -28,8 +28,8 @@ function quoteScreenshotKind(depth: number, scheme: "light" | "dark"): string {
 }
 
 const CAPTURE_TWEET_VERSION = 12;
-/** Reply images now lead with the parent post; only replies need the extra pass. */
-const REPLY_CAPTURE_TWEET_VERSION = 13;
+/** A reply image is the reply itself, so a crop that leads with the parent post is stale. */
+const REPLY_CAPTURE_TWEET_VERSION = 14;
 
 export interface CaptureTweetResult {
   captured: number;
@@ -188,25 +188,20 @@ async function runCaptureTweetWithPorts<SaveRow extends CaptureTweetSave>(
   let authWall = false;
   const harvested: CaptureMedia[] = [];
 
-  const replyParentUrl = rawJson?.capture?.replyTo?.url;
-  const replyParentId = !replyParentUrl
-    ? null
-    : save.source === "threads"
-      ? parsePostCode(replyParentUrl)
-      : parseTweetId(replyParentUrl);
-
-  const mainArgs: CaptureVariantsArgs = {
-    url: save.url,
-    sourceId: save.sourceId,
-    source: save.source,
-    lightKind: TWEET_SCREENSHOT_LIGHT_KIND,
-    darkKind: TWEET_SCREENSHOT_DARK_KIND,
-    lightFilename: "tweet-light.png",
-    darkFilename: "tweet-dark.png",
-    harvestMedia: false,
-  };
-  if (replyParentId) mainArgs.parentId = replyParentId;
-  const main = await captureVariants(saveId, mainArgs, ports);
+  const main = await captureVariants(
+    saveId,
+    {
+      url: save.url,
+      sourceId: save.sourceId,
+      source: save.source,
+      lightKind: TWEET_SCREENSHOT_LIGHT_KIND,
+      darkKind: TWEET_SCREENSHOT_DARK_KIND,
+      lightFilename: "tweet-light.png",
+      darkFilename: "tweet-dark.png",
+      harvestMedia: false,
+    },
+    ports,
+  );
   captured += main.captured;
   if (main.authWall) authWall = true;
 

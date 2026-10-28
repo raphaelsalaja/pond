@@ -106,11 +106,14 @@ function makePorts(
 }
 
 describe("isCaptureTweetStale", () => {
-  it("asks only replies for the parent-aware pass", () => {
+  it("recaptures a reply whose image still leads with the parent post", () => {
     const reply = { ...replyRaw(), captureTweetVersion: 12 };
     const { replyTo: _, ...post } = reply.capture;
     expect(isCaptureTweetStale(reply)).toBe(true);
     expect(isCaptureTweetStale({ ...reply, captureTweetVersion: 13 })).toBe(
+      true,
+    );
+    expect(isCaptureTweetStale({ ...reply, captureTweetVersion: 14 })).toBe(
       false,
     );
     expect(isCaptureTweetStale({ ...reply, capture: post })).toBe(false);
@@ -149,7 +152,7 @@ describe("runCaptureTweet reply parent enrichment", () => {
     );
   });
 
-  it("crops the reply screenshot from its parent when the native card misses", async () => {
+  it("screenshots a reply without the parent post when the native card misses", async () => {
     const harness = makePorts(save(replyRaw()), {
       light: { ok: true, png: rendered },
       dark: { ok: true, png: rendered },
@@ -159,15 +162,12 @@ describe("runCaptureTweet reply parent enrichment", () => {
     await harness.runCaptureTweet("save-1");
 
     const calls = harness.screenshotTweetDual.mock.calls.map(([args]) => args);
-    expect(calls).toContainEqual(
-      expect.objectContaining({ sourceId: "2", parentId: "1" }),
-    );
-    expect(calls.find((args) => args.sourceId === "1")).not.toHaveProperty(
-      "parentId",
-    );
+    const reply = calls.find((args) => args.sourceId === "2");
+    expect(reply).toBeDefined();
+    expect(reply).not.toHaveProperty("parentId");
   });
 
-  it("crops a Threads reply screenshot from its parent post", async () => {
+  it("screenshots a Threads reply without its parent post", async () => {
     const raw = replyRaw();
     raw.capture.source = "threads";
     raw.capture.url = "https://www.threads.com/@alice/post/ReplyCode";
@@ -191,12 +191,11 @@ describe("runCaptureTweet reply parent enrichment", () => {
 
     await harness.runCaptureTweet("save-1");
 
-    expect(harness.screenshotThreadsDual).toHaveBeenCalledWith(
-      expect.objectContaining({
-        sourceId: "ReplyCode",
-        parentId: "ParentCode",
-      }),
-    );
+    const reply = harness.screenshotThreadsDual.mock.calls
+      .map(([args]) => args)
+      .find((args) => args.sourceId === "ReplyCode");
+    expect(reply).toBeDefined();
+    expect(reply).not.toHaveProperty("parentId");
   });
 
   it("reports a transiently missing parent and retries on the next run", async () => {
@@ -215,7 +214,7 @@ describe("runCaptureTweet reply parent enrichment", () => {
       "capture_tweet: reply parent still pending",
     );
     expect(harness.screenshotTweetDual).toHaveBeenCalledTimes(2);
-    expect(harness.getStored().rawJson?.captureTweetVersion).toBe(13);
+    expect(harness.getStored().rawJson?.captureTweetVersion).toBe(14);
     expect(isCaptureTweetStale(harness.getStored().rawJson)).toBe(false);
   });
 
