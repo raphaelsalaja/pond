@@ -120,10 +120,9 @@ export function createCaptureTweetTask(
   ) => Promise<CaptureTweetResult>,
 ) {
   return async (saveId: string, signal?: AbortSignal): Promise<void> => {
-    const result = await captureTweet(saveId, {
-      retryPendingParent: true,
-      ...(signal ? { signal } : {}),
-    });
+    const opts: CaptureTweetOptions = { retryPendingParent: true };
+    if (signal) opts.signal = signal;
+    const result = await captureTweet(saveId, opts);
     if (signal?.aborted) return;
     if (result.authWall && result.captured === 0) {
       throw new TransientError(
