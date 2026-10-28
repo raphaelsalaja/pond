@@ -17,7 +17,11 @@ import {
   reasoningLabel,
   supportsNativeFast,
 } from "@shared/agent-model-options";
-import { ASSISTANT_MODELS, type AssistantProvider } from "@shared/assistant";
+import {
+  ASSISTANT_MODELS,
+  type AssistantProvider,
+  gatewayCreator,
+} from "@shared/assistant";
 import { displayName, type ProviderModel } from "@shared/provider-models";
 import type { QueryResult } from "@shared/query-contracts";
 import { useQuery } from "@tanstack/react-query";
@@ -42,10 +46,12 @@ function liveItems(
   for (const row of providers) {
     const catalog = ASSISTANT_MODELS.find((model) => model.id === row.provider);
     if (!catalog || !row.ok || !row.models.length) continue;
+    /** Only gateway-cataloged providers get descriptions, so a missing one marks a legacy model there. */
+    const hideUndescribed = Boolean(gatewayCreator(row.provider));
     for (const model of [...row.models].sort((a, b) =>
       a.name.localeCompare(b.name),
     )) {
-      if (!catalog.local && !model.description?.trim()) continue;
+      if (hideUndescribed && !model.description?.trim()) continue;
       items.push({
         ...model,
         key: `${row.provider}:${model.id}`,

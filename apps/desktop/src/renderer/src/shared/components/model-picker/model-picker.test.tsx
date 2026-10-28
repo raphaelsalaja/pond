@@ -57,6 +57,11 @@ beforeEach(() => {
               ok: true,
               models: [{ id: "gemma4:26b", name: "gemma4:26b" }],
             },
+            {
+              provider: "opencode-go",
+              ok: true,
+              models: [{ id: "kimi-k2.6", name: "Kimi K2.6" }],
+            },
           ],
         };
       }
@@ -139,11 +144,20 @@ it("splits provider and model choices into separate submenus", async () => {
   expect(document.body.textContent).toContain("OpenAI");
   expect(document.body.textContent).toContain("Anthropic");
   expect(document.body.textContent).toContain("Ollama");
+  expect(document.body.textContent).toContain("OpenCode Go");
   expect(document.body.textContent).not.toContain("Claude Test");
   await act(async () => menuItem("Anthropic")?.click());
   expect(onChange).toHaveBeenCalledWith({
     provider: "anthropic",
     modelId: "claude-test",
+  });
+
+  await openPicker();
+  await act(async () => menuItem("Provider")?.click());
+  await act(async () => menuItem("OpenCode Go")?.click());
+  expect(onChange).toHaveBeenCalledWith({
+    provider: "opencode-go",
+    modelId: "kimi-k2.6",
   });
 
   await openPicker();
