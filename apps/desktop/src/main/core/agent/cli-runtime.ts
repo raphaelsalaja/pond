@@ -525,6 +525,64 @@ async function loadBundledCodexCatalog(
   return bundledCodexCatalog;
 }
 
+/** `claude --model` resolves these aliases to the newest model your plan includes. */
+const CLAUDE_CODE_MODELS: CliModel[] = [
+  {
+    id: "opus",
+    name: "Opus",
+    description: "The most capable Claude model on your plan.",
+  },
+  {
+    id: "sonnet",
+    name: "Sonnet",
+    description: "Balanced Claude model for everyday work.",
+  },
+  {
+    id: "haiku",
+    name: "Haiku",
+    description: "The fastest Claude model on your plan.",
+  },
+];
+
+export type CliModel = {
+  id: string;
+  name: string;
+  description?: string;
+  contextWindow?: number;
+};
+
+export async function listCliModels(
+  provider: CliProvider,
+  signal?: AbortSignal,
+): Promise<CliModel[]> {
+  if (provider === "claude-code") return CLAUDE_CODE_MODELS;
+  const directory = await mkdtemp(join(tmpdir(), "pond-codex-models-"));
+  try {
+    const codexHome = join(directory, "codex-home");
+    await mkdir(codexHome, { recursive: true, mode: 0o700 });
+    const catalog = await loadBundledCodexCatalog(directory, codexHome, signal);
+    return listedCodexModels(catalog.models);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+}
+
+/** Hidden catalog entries are internal review and research models. */
+export function listedCodexModels(
+  models: z.infer<typeof codexCatalogModelSchema>[],
+): CliModel[] {
+  return models.flatMap((model) => {
+    if (model.visibility !== "list") return [];
+    const entry: CliModel = {
+      id: model.slug,
+      name: model.display_name || model.slug,
+    };
+    if (model.description) entry.description = model.description;
+    if (model.context_window) entry.contextWindow = model.context_window;
+    return [entry];
+  });
+}
+
 export class CodexSymlinkUnavailableError extends Error {
   constructor() {
     super(

@@ -7,6 +7,8 @@ import { describe, expect, it } from "vitest";
 import {
   CodexSymlinkUnavailableError,
   cmdShimInvocation,
+  listCliModels,
+  listedCodexModels,
   pathEnvKey,
   posixCliDirectories,
   prepareCodexRuntime,
@@ -59,6 +61,41 @@ describe("prepareCodexRuntime credential isolation", () => {
     expect(failure).toMatchObject({ code: "EACCES" });
     const posix = await run("linux", "EPERM");
     expect(posix.failure).not.toBeInstanceOf(CodexSymlinkUnavailableError);
+  });
+});
+
+describe("subscription models", () => {
+  it("offers only the Codex models its picker lists", () => {
+    expect(
+      listedCodexModels([
+        {
+          slug: "gpt-6.1-sol",
+          display_name: "GPT-6.1-Sol",
+          description: "Latest workhorse model.",
+          visibility: "list",
+          context_window: 272_000,
+        },
+        { slug: "codex-auto-review", visibility: "hide" },
+        { slug: "gpt-5.5", visibility: "list" },
+      ]),
+    ).toEqual([
+      {
+        id: "gpt-6.1-sol",
+        name: "GPT-6.1-Sol",
+        description: "Latest workhorse model.",
+        contextWindow: 272_000,
+      },
+      { id: "gpt-5.5", name: "gpt-5.5" },
+    ]);
+  });
+
+  it("offers the Claude Code model aliases without running the CLI", async () => {
+    const models = await listCliModels("claude-code");
+    expect(models.map((model) => model.id)).toEqual([
+      "opus",
+      "sonnet",
+      "haiku",
+    ]);
   });
 });
 

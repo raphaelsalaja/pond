@@ -17,7 +17,11 @@ import type {
 import { deleteSecret, getSecret, getSecrets, setSecret } from "../../keychain";
 import { getPrefs, setPrefs } from "../prefs";
 import { appleStatus } from "./apple-runtime";
-import { checkCliConnection, isCliProvider } from "./cli-runtime";
+import {
+  checkCliConnection,
+  isCliProvider,
+  listCliModels,
+} from "./cli-runtime";
 import { isLocalProviderConnected } from "./local-provider-state";
 import { catalogModelsForProvider, loadModelCatalog } from "./model-catalog";
 import { OPENCODE_GO_MODELS_BASE_URL } from "./opencode-go";
@@ -216,6 +220,13 @@ export async function listProviderModels(
   if (isCliProvider(provider)) {
     const check = await checkCliConnection(provider);
     if (!check.ok) return { ...check, models: [] };
+    const modelCapabilities = {
+      text: true,
+      vision: false,
+      audio: false,
+      tools: true,
+    };
+    const listed = await listCliModels(provider).catch(() => []);
     return {
       ok: true,
       models: [
@@ -223,13 +234,9 @@ export async function listProviderModels(
           id: "default",
           name: assistantCatalog(provider)?.name ?? provider,
           description: "Uses your local CLI sign-in and subscription limits.",
-          modelCapabilities: {
-            text: true,
-            vision: false,
-            audio: false,
-            tools: true,
-          },
+          modelCapabilities,
         },
+        ...listed.map((model) => ({ ...model, modelCapabilities })),
       ],
     };
   }
