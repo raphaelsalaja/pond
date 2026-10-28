@@ -6,6 +6,7 @@ import {
   type ImportCollectionKind,
   type ImportScopeProblem,
   importScopeOptions,
+  importsAnyList,
   normalizeImportScope,
 } from "../../../shared/import-scope";
 import type { OkFailure } from "../../../shared/query-contracts-shared";
@@ -110,6 +111,13 @@ export function createSetImportScopeQuery(
             normalized.problem,
             importScopeOptions(account.source).collections,
           ),
+        };
+      }
+      /** A saved Account may keep every list off, but a first import needs one. */
+      if (params.start && !importsAnyList(account.source, normalized.scope)) {
+        return {
+          ok: false as const,
+          error: importScopeProblem("no_lists", null),
         };
       }
       const patch = importScopePatch(

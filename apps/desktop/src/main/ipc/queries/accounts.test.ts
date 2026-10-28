@@ -136,7 +136,21 @@ describe("accounts.setImportScope", () => {
     expect(patchAccountSync).not.toHaveBeenCalled();
   });
 
-  it("rejects a scope that would import nothing without writing", async () => {
+  it("saves every list off on an Account that already imported", async () => {
+    const patchAccountSync = vi.fn(async () => account("instagram").sync);
+    const operation = createSetImportScopeQuery({
+      getAccount: vi.fn(async () => account("instagram")),
+      patchAccountSync,
+      releaseFilteredSaves: vi.fn(async () => 0),
+    });
+
+    await expect(
+      operation({ accountId: "instagram:123", scope: { listKinds: [] } }),
+    ).resolves.toEqual({ ok: true });
+    expect(patchAccountSync).toHaveBeenCalledOnce();
+  });
+
+  it("rejects starting a first import with every list off without writing", async () => {
     const patchAccountSync = vi.fn(async () => account("instagram").sync);
     const operation = createSetImportScopeQuery({
       getAccount: vi.fn(async () => account("instagram")),
@@ -145,7 +159,11 @@ describe("accounts.setImportScope", () => {
     });
 
     await expect(
-      operation({ accountId: "instagram:123", scope: { listKinds: [] } }),
+      operation({
+        accountId: "instagram:123",
+        scope: { listKinds: [] },
+        start: true,
+      }),
     ).resolves.toEqual({
       ok: false,
       error: "Choose at least one list to import.",
