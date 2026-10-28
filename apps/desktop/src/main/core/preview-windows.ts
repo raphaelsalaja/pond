@@ -458,6 +458,10 @@ function closePreviewWindow(windowId: PreviewWindowState["windowId"]): void {
   entries.get(windowId)?.window.close();
 }
 
+export function openPreviewWindowCount(): number {
+  return entries.size;
+}
+
 export function closePreviewWindows(): void {
   libraryGeneration++;
   for (const entry of entries.values()) {

@@ -57,6 +57,7 @@ import {
   shouldOpenInitialWindow,
 } from "./deep-link";
 import { markSaveLinksReady } from "./deep-link-save";
+import { settleDockAfterClose } from "./dock";
 import { registerIpc } from "./ipc";
 import { waitForLibraryLocationChanges } from "./ipc/queries/library-locations";
 import { ensureIngestToken } from "./keychain";
@@ -302,6 +303,8 @@ app.whenReady().then(async () => {
   });
   if (shouldOpenInitialWindow(launchedHidden, initialDestination)) {
     await createWindow();
+  } else {
+    void settleDockAfterClose();
   }
   launched = true;
   flushDroppedFiles();
@@ -516,7 +519,7 @@ async function registerSummonHotkey() {
 
 app.on("window-all-closed", () => {
   if (process.platform === "darwin") {
-    app.dock?.hide();
+    void settleDockAfterClose();
     return;
   }
   if (

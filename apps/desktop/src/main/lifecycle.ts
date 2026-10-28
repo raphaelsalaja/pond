@@ -15,6 +15,14 @@ export function shouldStayResident(input: {
   return input.hasTray;
 }
 
+/** Automatic keeps the macOS Dock icon only while a Pond window is open. */
+export function shouldShowDock(input: {
+  visibility: "automatic" | "always";
+  openWindows: number;
+}): boolean {
+  return input.visibility === "always" || input.openWindows > 0;
+}
+
 /** A development Electron must not take over `pond://` from an installed Pond on Windows. */
 export function protocolRegistration(input: {
   platform: NodeJS.Platform;

@@ -3,6 +3,7 @@ import {
   consoleLoggingEnabled,
   protocolRegistration,
   resolveLaunchHidden,
+  shouldShowDock,
   shouldStayResident,
 } from "./lifecycle";
 
@@ -53,6 +54,21 @@ describe("shouldStayResident", () => {
         hasTray: false,
       }),
     ).toBe(false);
+  });
+});
+
+describe("shouldShowDock", () => {
+  it("hides on Automatic once no window is open", () => {
+    expect(shouldShowDock({ visibility: "automatic", openWindows: 0 })).toBe(
+      false,
+    );
+    expect(shouldShowDock({ visibility: "automatic", openWindows: 1 })).toBe(
+      true,
+    );
+  });
+
+  it("keeps the icon on Always Visible with no windows", () => {
+    expect(shouldShowDock({ visibility: "always", openWindows: 0 })).toBe(true);
   });
 });
 

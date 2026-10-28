@@ -1,5 +1,5 @@
 import type { BrowserWindowConstructorOptions } from "electron";
-import { app, BrowserWindow, nativeTheme, shell } from "electron";
+import { BrowserWindow, nativeTheme, shell } from "electron";
 import log from "electron-log/main.js";
 import { DEFAULT_APP_ICON } from "../shared/app-icons";
 import { IPC } from "../shared/constants";
@@ -8,6 +8,7 @@ import { attachEditableContextMenu } from "./context-menu";
 import { hardenArchiveWebviews } from "./core/archive-viewer";
 import { getPrefs, setPrefs, subscribePrefs } from "./core/prefs";
 import { consumePendingDeepLink } from "./deep-link";
+import { settleDockAfterClose, showDock } from "./dock";
 import { followInterfaceZoom } from "./lib/follow-interface-zoom";
 import { lockRendererZoom } from "./lib/lock-renderer-zoom";
 import { resolveMainOut, resolvePreload } from "./lib/resolve-preload";
@@ -152,7 +153,9 @@ async function buildLibraryWindow(): Promise<BrowserWindow> {
   mainWindowState.current = win;
   win.once("closed", () => {
     if (mainWindowState.current === win) mainWindowState.current = null;
+    if (!isQuitting) void settleDockAfterClose();
   });
+  win.on("show", () => void showDock());
   lockRendererZoom(win.webContents);
   followInterfaceZoom(win.webContents, { getPrefs, subscribePrefs });
 
@@ -191,7 +194,7 @@ async function buildLibraryWindow(): Promise<BrowserWindow> {
     if (mainWindowState.current !== win) return;
     event.preventDefault();
     win.hide();
-    if (process.platform === "darwin") app.dock?.hide();
+    void settleDockAfterClose();
   });
 
   win.webContents.on("did-finish-load", () => {
@@ -300,7 +303,7 @@ export async function openLibraryWindow(): Promise<void> {
 }
 
 export async function handleActivate(): Promise<void> {
-  if (process.platform === "darwin") app.dock?.show();
+  await showDock();
   await openLibraryWindow();
 }
 
