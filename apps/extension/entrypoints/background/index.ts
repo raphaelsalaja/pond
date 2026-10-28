@@ -7,7 +7,7 @@ import { createMenus, handleCommand, handleMenuClick } from "./menus";
 import { clearBadge, flashBadge } from "./overlay";
 import { startSessionConnect } from "./session";
 import { syncSettings } from "./settings";
-import { applyToolbarAction } from "./toolbar";
+import { applyToolbarAction, createToolbarApply } from "./toolbar";
 import { handleGesture, handleOverlayResult, runTool } from "./tools";
 
 const pondPathSchema = z
@@ -23,9 +23,12 @@ export default defineBackground(() => {
   });
   browser.runtime.onStartup.addListener(clearBadge);
 
-  void syncSettings();
-  void getSettings().then((settings) => applyToolbarAction(settings.toolbar));
-  watchSettings((settings) => void applyToolbarAction(settings.toolbar));
+  const applyCurrentToolbar = createToolbarApply({
+    read: async () => (await getSettings()).toolbar,
+    apply: applyToolbarAction,
+  });
+  void syncSettings().finally(() => void applyCurrentToolbar());
+  watchSettings(() => void applyCurrentToolbar());
 
   browser.action?.onClicked.addListener((tab) => {
     void runTool(tab, "page");

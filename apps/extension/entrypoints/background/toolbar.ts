@@ -12,3 +12,22 @@ export async function applyToolbarAction(action: ToolbarAction): Promise<void> {
     })
     .catch(() => {});
 }
+
+/** Save Page is one click. Ask Where to Save still covers the panel, menus, and gestures. */
+export function toolbarSkipsDetails(action: ToolbarAction): boolean {
+  return action === "save";
+}
+
+/** Ignores a settings read that finished after a newer one, so wake cannot put the popup back. */
+export function createToolbarApply(input: {
+  read: () => Promise<ToolbarAction>;
+  apply: (action: ToolbarAction) => Promise<void>;
+}): () => Promise<void> {
+  let generation = 0;
+  return async () => {
+    const ticket = ++generation;
+    const action = await input.read();
+    if (ticket !== generation) return;
+    await input.apply(action);
+  };
+}

@@ -31,6 +31,7 @@ import {
 } from "./screenshot";
 import { cookiesForUrl } from "./session";
 import { syncSettings } from "./settings";
+import { toolbarSkipsDetails } from "./toolbar";
 
 const BLOCKED = "Pond can't capture this page. Try a regular web page.";
 
@@ -75,7 +76,9 @@ export async function runTool(
   if (tool === "page") {
     const draft = pageDraft(tab);
     if (!draft) return { ok: false, message: "Pond can only save web pages." };
-    void offerDraft(draft, tabId);
+    const { toolbar } = await getSettings();
+    if (toolbarSkipsDetails(toolbar)) void saveDraft(draft, tabId);
+    else void offerDraft(draft, tabId);
     return { ok: true };
   }
   if (tool === "region") {
