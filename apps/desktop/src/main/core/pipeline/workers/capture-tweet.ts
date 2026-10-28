@@ -41,6 +41,7 @@ export interface CaptureTweetResult {
 interface CaptureTweetOptions {
   nativeOnly?: boolean;
   retryPendingParent?: boolean;
+  signal?: AbortSignal;
 }
 
 export interface CaptureTweetSave {
@@ -118,8 +119,12 @@ export function createCaptureTweetTask(
     opts?: CaptureTweetOptions,
   ) => Promise<CaptureTweetResult>,
 ) {
-  return async (saveId: string): Promise<void> => {
-    const result = await captureTweet(saveId, { retryPendingParent: true });
+  return async (saveId: string, signal?: AbortSignal): Promise<void> => {
+    const result = await captureTweet(saveId, {
+      retryPendingParent: true,
+      ...(signal ? { signal } : {}),
+    });
+    if (signal?.aborted) return;
     if (result.authWall && result.captured === 0) {
       throw new TransientError(
         "capture_tweet: X auth wall (session may be expired)",
@@ -143,7 +148,7 @@ async function runCaptureTweetWithPorts<SaveRow extends CaptureTweetSave>(
     replyParentPending: false,
   };
   const save = await ports.readSave(saveId);
-  if (!save) return idle;
+  if (!save || opts?.signal?.aborted) return idle;
   if (save.source !== "twitter" && save.source !== "threads") return idle;
   if (!save.sourceId) return idle;
 
@@ -157,14 +162,17 @@ async function runCaptureTweetWithPorts<SaveRow extends CaptureTweetSave>(
 
   let rawJson = save.rawJson;
   if (!opts?.nativeOnly) {
-    const enrichment = await fillReplyParent(saveId, save, ports);
+    const enrichment = await fillReplyParent(saveId, save, ports, opts?.signal);
+    if (opts?.signal?.aborted) return idle;
     if (enrichment === "enriched" || enrichment === "unavailable") {
       const refreshed = await ports.readSave(saveId);
       if (refreshed?.rawJson) rawJson = refreshed.rawJson;
     }
   }
 
+  if (opts?.signal?.aborted) return idle;
   const rendered = await tryNativeRender(saveId, { ...save, rawJson }, ports);
+  if (opts?.signal?.aborted) return idle;
   if (rendered) {
     await finalizeRawJson(saveId, rawJson, [], { stampVersion: true }, ports);
     log.info("[pond pipeline:capture-tweet] native card done", { saveId });
@@ -188,20 +196,20 @@ async function runCaptureTweetWithPorts<SaveRow extends CaptureTweetSave>(
   let authWall = false;
   const harvested: CaptureMedia[] = [];
 
-  const main = await captureVariants(
-    saveId,
-    {
-      url: save.url,
-      sourceId: save.sourceId,
-      source: save.source,
-      lightKind: TWEET_SCREENSHOT_LIGHT_KIND,
-      darkKind: TWEET_SCREENSHOT_DARK_KIND,
-      lightFilename: "tweet-light.png",
-      darkFilename: "tweet-dark.png",
-      harvestMedia: false,
-    },
-    ports,
-  );
+  const mainArgs: CaptureVariantsArgs = {
+    url: save.url,
+    sourceId: save.sourceId,
+    source: save.source,
+    lightKind: TWEET_SCREENSHOT_LIGHT_KIND,
+    darkKind: TWEET_SCREENSHOT_DARK_KIND,
+    lightFilename: "tweet-light.png",
+    darkFilename: "tweet-dark.png",
+    harvestMedia: false,
+  };
+  if (opts?.signal) mainArgs.signal = opts.signal;
+  if (opts?.signal?.aborted) return idle;
+  const main = await captureVariants(saveId, mainArgs, ports);
+  if (opts?.signal?.aborted) return idle;
   captured += main.captured;
   if (main.authWall) authWall = true;
 
@@ -217,6 +225,7 @@ async function runCaptureTweetWithPorts<SaveRow extends CaptureTweetSave>(
   let completed = main.complete;
   let nextUrl = main.quotedUrl ?? quotedUrlFromCapture(rawJson);
   for (let depth = 1; nextUrl && depth <= QUOTE_DEPTH_CAP; depth += 1) {
+    if (opts?.signal?.aborted) return idle;
     const quotedId =
       save.source === "threads"
         ? parsePostCode(nextUrl)
@@ -233,9 +242,11 @@ async function runCaptureTweetWithPorts<SaveRow extends CaptureTweetSave>(
         lightFilename: `tweet-quote${depth}-light.png`,
         darkFilename: `tweet-quote${depth}-dark.png`,
         harvestMedia: true,
+        signal: opts?.signal,
       },
       ports,
     );
+    if (opts?.signal?.aborted) return idle;
     captured += quote.captured;
     if (quote.media) harvested.push(...quote.media);
     if (quote.authWall) {
@@ -380,6 +391,7 @@ interface CaptureVariantsArgs {
   darkFilename: string;
   harvestMedia: boolean;
   persistScreenshots?: boolean;
+  signal?: AbortSignal;
 }
 
 interface CaptureVariantsResult {
@@ -402,12 +414,16 @@ async function captureVariants<SaveRow extends CaptureTweetSave>(
   let lightOk = false;
   let darkOk = false;
 
+  if (args.signal?.aborted) {
+    return { captured: 0, complete: false, authWall: false };
+  }
   const shotArgs: Parameters<typeof screenshotTweetDual>[0] = {
     url: args.url,
     sourceId: args.sourceId,
     harvestMedia: args.harvestMedia,
   };
   if (args.parentId) shotArgs.parentId = args.parentId;
+  if (args.signal) shotArgs.signal = args.signal;
   const dual =
     args.source === "threads"
       ? await ports.screenshotThreadsDual(shotArgs)
@@ -575,6 +591,7 @@ async function fillReplyParent<SaveRow extends CaptureTweetSave>(
   saveId: string,
   save: SaveRow,
   ports: CaptureTweetPorts<SaveRow>,
+  signal?: AbortSignal,
 ): Promise<"enriched" | "transient" | "unavailable" | "unchanged"> {
   if (save.source !== "twitter" && save.source !== "threads") {
     return "unchanged";
@@ -599,9 +616,11 @@ async function fillReplyParent<SaveRow extends CaptureTweetSave>(
       darkFilename: "tweet-reply-parent-dark.png",
       harvestMedia: true,
       persistScreenshots: false,
+      signal,
     },
     ports,
   );
+  if (signal?.aborted) return "unchanged";
   if (!parent.page) {
     if (
       parent.failureReason === "timeout" ||

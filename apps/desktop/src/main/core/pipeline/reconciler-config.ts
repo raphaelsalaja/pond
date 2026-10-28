@@ -60,9 +60,9 @@ export const WORKERS = {
     const { runHarvestMetadata } = await import("./workers/harvest-metadata");
     await runHarvestMetadata(saveId, HarvestPayloadSchema.parse(payload), ctx);
   },
-  capture_tweet: async (saveId) => {
+  capture_tweet: async (saveId, _payload, ctx) => {
     const { runCaptureTweetTask } = await import("./workers/capture-tweet");
-    await runCaptureTweetTask(saveId);
+    await runCaptureTweetTask(saveId, ctx.signal);
   },
   render_text_cover: async (saveId) => {
     const { runRenderTextCover } = await import("./workers/render-text-cover");

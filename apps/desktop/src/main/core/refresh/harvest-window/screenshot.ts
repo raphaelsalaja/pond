@@ -50,6 +50,7 @@ interface TweetDualScreenshotArgs {
   parentId?: string;
   harvestMedia?: boolean;
   accountId?: string | null;
+  signal?: AbortSignal;
 }
 
 interface TweetDualScreenshotResult {
@@ -63,13 +64,40 @@ interface TweetDualScreenshotResult {
 
 class ScreenshotTimeoutError extends Error {}
 
+function abortedDual(): TweetDualScreenshotResult {
+  const fail: TweetScreenshotResult = { ok: false, reason: "capture_failed" };
+  return { light: fail, dark: fail };
+}
+
+/** Cancel has to drop the page, or the article script keeps the window until it finishes. */
+function watchAbort(
+  win: BrowserWindow,
+  signal: AbortSignal | undefined,
+): () => void {
+  if (!signal) return () => {};
+  const onAbort = () => {
+    if (win.isDestroyed()) return;
+    win.webContents.stop();
+    void win.loadURL("about:blank").catch(() => {});
+  };
+  if (signal.aborted) onAbort();
+  else signal.addEventListener("abort", onAbort, { once: true });
+  return () => signal.removeEventListener("abort", onAbort);
+}
+
 export async function screenshotTweetDual(
   args: TweetDualScreenshotArgs,
 ): Promise<TweetDualScreenshotResult> {
+  if (args.signal?.aborted) return abortedDual();
   const partition = await partitionForIngest("twitter", args.accountId);
-  const lease = await leaseWindow("twitter", { partition });
+  const lease = await leaseWindow("twitter", {
+    partition,
+    signal: args.signal,
+  });
+  const detachAbort = watchAbort(lease.win, args.signal);
   let restoreEmulation: (() => Promise<void>) | null = null;
   try {
+    if (args.signal?.aborted) return abortedDual();
     restoreEmulation = await emulateColorScheme(lease.win, "light");
     const navOk = await navigateWithTimeout(
       lease.win,
@@ -77,6 +105,7 @@ export async function screenshotTweetDual(
       NAV_TIMEOUT_MS,
     );
     if (!navOk) {
+      if (args.signal?.aborted) return abortedDual();
       log.warn("[pond screenshot:tweet] navigate failed", args.url);
       const fail: TweetScreenshotResult = {
         ok: false,
@@ -141,6 +170,7 @@ export async function screenshotTweetDual(
       if (page && page.media.length > 0) media = page.media;
     }
 
+    if (args.signal?.aborted) return abortedDual();
     const quotedUrl = light.quotedUrl ?? dark.quotedUrl;
     const dual: TweetDualScreenshotResult = { light, dark };
     if (quotedUrl) dual.quotedUrl = quotedUrl;
@@ -149,6 +179,7 @@ export async function screenshotTweetDual(
     if (pageFailureReason) dual.pageFailureReason = pageFailureReason;
     return dual;
   } catch (err) {
+    if (args.signal?.aborted) return abortedDual();
     log.warn("[pond screenshot:tweet] unexpected dual error", args.url, err);
     const fail: TweetScreenshotResult = {
       ok: false,
@@ -157,6 +188,7 @@ export async function screenshotTweetDual(
     };
     return { light: fail, dark: fail };
   } finally {
+    detachAbort();
     if (restoreEmulation) await restoreEmulation().catch(() => {});
     lease.release();
   }
@@ -165,10 +197,16 @@ export async function screenshotTweetDual(
 export async function screenshotThreadsDual(
   args: TweetDualScreenshotArgs,
 ): Promise<TweetDualScreenshotResult> {
+  if (args.signal?.aborted) return abortedDual();
   const partition = await partitionForIngest("threads", args.accountId);
-  const lease = await leaseWindow("threads", { partition });
+  const lease = await leaseWindow("threads", {
+    partition,
+    signal: args.signal,
+  });
+  const detachAbort = watchAbort(lease.win, args.signal);
   let restoreEmulation: (() => Promise<void>) | null = null;
   try {
+    if (args.signal?.aborted) return abortedDual();
     restoreEmulation = await emulateColorScheme(lease.win, "light");
     const navOk = await navigateWithTimeout(
       lease.win,
@@ -176,6 +214,7 @@ export async function screenshotThreadsDual(
       NAV_TIMEOUT_MS,
     );
     if (!navOk) {
+      if (args.signal?.aborted) return abortedDual();
       log.warn("[pond screenshot:threads] navigate failed", args.url);
       const fail: TweetScreenshotResult = {
         ok: false,
@@ -243,6 +282,7 @@ export async function screenshotThreadsDual(
       if (page && page.media.length > 0) media = page.media;
     }
 
+    if (args.signal?.aborted) return abortedDual();
     const quotedUrl = light.quotedUrl ?? dark.quotedUrl;
     const dual: TweetDualScreenshotResult = { light, dark };
     if (quotedUrl) dual.quotedUrl = quotedUrl;
@@ -251,6 +291,7 @@ export async function screenshotThreadsDual(
     if (pageFailureReason) dual.pageFailureReason = pageFailureReason;
     return dual;
   } catch (err) {
+    if (args.signal?.aborted) return abortedDual();
     log.warn("[pond screenshot:threads] unexpected dual error", args.url, err);
     const fail: TweetScreenshotResult = {
       ok: false,
@@ -259,6 +300,7 @@ export async function screenshotThreadsDual(
     };
     return { light: fail, dark: fail };
   } finally {
+    detachAbort();
     if (restoreEmulation) await restoreEmulation().catch(() => {});
     lease.release();
   }

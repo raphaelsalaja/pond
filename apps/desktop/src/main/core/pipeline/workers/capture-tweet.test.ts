@@ -248,4 +248,16 @@ describe("runCaptureTweet reply parent enrichment", () => {
       harness.getStored().rawJson?.capture?.extras?.replyParentUnavailable,
     ).toBeUndefined();
   });
+
+  it("stops before a screenshot when capture is already cancelled", async () => {
+    const harness = makePorts(save(replyRaw()), {
+      light: { ok: true, png: rendered },
+      dark: { ok: true, png: rendered },
+    });
+    const signal = AbortSignal.abort();
+    const runTask = createCaptureTweetTask(harness.runCaptureTweet);
+
+    await expect(runTask("save-1", signal)).resolves.toBeUndefined();
+    expect(harness.screenshotTweetDual).not.toHaveBeenCalled();
+  });
 });
