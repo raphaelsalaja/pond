@@ -73,7 +73,6 @@ export function configureSessionDefaults(): void {
         requestingUrl: details.requestingUrl ?? "",
         rendererUrl: process.env.ELECTRON_RENDERER_URL,
       });
-    if (granted) window.setFullScreenable(true);
     callback(granted);
   };
   session.defaultSession.setPermissionRequestHandler(grantAppFullscreen);

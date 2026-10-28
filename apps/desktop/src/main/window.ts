@@ -131,7 +131,6 @@ async function buildLibraryWindow(): Promise<BrowserWindow> {
     minWidth: MIN_WINDOW_WIDTH,
     minHeight: MIN_WINDOW_HEIGHT,
     show: false,
-    fullscreenable: false,
     backgroundColor: themedBackground,
     autoHideMenuBar: true,
     titleBarStyle: isMac ? "hiddenInset" : "default",
@@ -183,8 +182,13 @@ async function buildLibraryWindow(): Promise<BrowserWindow> {
   };
   win.on("resize", saveBounds);
   win.on("move", saveBounds);
-  /** The zoom button keeps zooming; a granted video full-screen request enables full screen until it ends. */
-  win.on("leave-full-screen", () => win.setFullScreenable(false));
+  /** macOS hides the traffic lights in full screen, so the renderer drops their inset. */
+  const sendFullScreen = () => {
+    if (!win.isDestroyed())
+      win.webContents.send(IPC.windowFullScreen, win.isFullScreen());
+  };
+  win.on("enter-full-screen", sendFullScreen);
+  win.on("leave-full-screen", sendFullScreen);
 
   win.on("close", (event) => {
     if (isQuitting) return;
@@ -199,6 +203,7 @@ async function buildLibraryWindow(): Promise<BrowserWindow> {
 
   win.webContents.on("did-finish-load", () => {
     if (win.isDestroyed()) return;
+    if (win.isFullScreen()) sendFullScreen();
     const route = consumePendingDeepLink();
     if (route) {
       win.webContents.send(IPC.nav, route);

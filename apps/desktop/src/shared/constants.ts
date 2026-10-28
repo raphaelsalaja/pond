@@ -26,6 +26,7 @@ export const IPC = {
   appInfo: "pond:app-info",
   rendererReady: "pond:renderer-ready",
   nav: "pond:nav",
+  windowFullScreen: "pond:window-full-screen",
   prefsChanged: "pond:prefs-changed",
   openExternal: "pond:open-external",
   revealSave: "pond:reveal-save",

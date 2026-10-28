@@ -5,7 +5,7 @@
   --window-left-min: 0px;
 }
 
-:global(html[data-platform="mac"]) .shell {
+:global(html[data-platform="mac"]:not([data-full-screen])) .shell {
   --window-chrome-start: 96px;
 }
 

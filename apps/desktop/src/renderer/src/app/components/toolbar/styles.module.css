@@ -27,7 +27,7 @@
   -webkit-app-region: drag;
 }
 
-:global(html[data-platform="mac"]) .chrome {
+:global(html[data-platform="mac"]:not([data-full-screen])) .chrome {
   padding-left: 96px;
 }
 

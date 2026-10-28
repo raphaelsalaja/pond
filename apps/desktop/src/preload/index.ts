@@ -64,6 +64,11 @@ const openFiles = createNavigationMailbox<string[]>();
 ipcRenderer.on(IPC.openFiles, (_: IpcRendererEvent, paths: string[]) =>
   openFiles.receive(paths),
 );
+/** A reload in full screen reports the state before React subscribes. */
+const fullScreen = createNavigationMailbox<boolean>();
+ipcRenderer.on(IPC.windowFullScreen, (_: IpcRendererEvent, on: boolean) =>
+  fullScreen.receive(on),
+);
 /** A browser capture for a fish can open the window before the renderer subscribes. */
 const fishOpen = createNavigationMailbox<FishOpen>();
 ipcRenderer.on(IPC.fishOpen, (_: IpcRendererEvent, open: FishOpen) =>
@@ -103,6 +108,9 @@ let cachedLibraryId: string | null = null;
 const api = {
   openCombineImagesWindow(input: CombineImagesWindowOpen): Promise<void> {
     return ipcRenderer.invoke(COMBINE_IMAGES_WINDOW_IPC.open, input);
+  },
+  onFullScreenChange(callback: (fullScreen: boolean) => void): () => void {
+    return fullScreen.subscribe(callback);
   },
   onPrefsChanged(callback: (prefs: Prefs) => void): () => void {
     const listener = (_event: IpcRendererEvent, prefs: Prefs) =>
