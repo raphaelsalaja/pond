@@ -100,12 +100,14 @@ describe("importMymindExport", () => {
 
     const link = fixture.links.get("https://example.com/article");
     expect(link?.metadata).toMatchObject({
+      importedFrom: "mymind",
       notes: "Line one\nLine two",
       tags: ["research", "reference"],
       savedAt: new Date("2024-03-01T12:00:00.000Z"),
       createdAt: new Date("2024-03-01T12:00:00.000Z"),
     });
     expect(fixture.saves.get("mymind:note-1")).toMatchObject({
+      importedFrom: "mymind",
       note: "Note body",
       tags: ["personal"],
       savedAt: new Date("2024-03-02T12:00:00.000Z"),
@@ -177,6 +179,7 @@ describe("importMymindExport", () => {
     expect(fixture.saves.get("mymind:Img1")).toEqual({
       source: "local",
       sourceId: "mymind:Img1",
+      importedFrom: "mymind",
       filePaths: [join(directory, "Img1.jpeg")],
       title: "Red book cover",
       url: "https://example.com/post",
@@ -250,7 +253,7 @@ describe("importMymindExport", () => {
     ).resolves.toEqual({
       ok: false,
       error:
-        "Couldn't import An article, with a comma: its notes or dates couldn't be saved",
+        "Couldn't import An article, with a comma: its details couldn't be saved",
     });
   });
 });

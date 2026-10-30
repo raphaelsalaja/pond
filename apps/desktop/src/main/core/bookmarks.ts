@@ -1,4 +1,5 @@
 import type { NewSave } from "@pond/schema/db";
+import type { ImportOrigin } from "@pond/schema/import-origin";
 import type { ListKind } from "@pond/schema/list-kinds";
 import type { OkSuccess } from "@shared/query-contracts-shared";
 import type { SavesImportCounts } from "@shared/saves-contracts-shared";
@@ -218,7 +219,7 @@ export interface BookmarkImportDependencies {
     url: string,
     listKinds: ListKind[] | undefined,
   ) => Promise<EnqueueOneResult>;
-  persistDates: (id: string, patch: Partial<NewSave>) => Promise<void>;
+  persistImported: (id: string, patch: Partial<NewSave>) => Promise<void>;
   importFolders: (folders: BookmarkFolder[]) => Promise<Map<string, string>>;
   addToFolder: (folderId: string, saveIds: string[]) => Promise<OkSuccess>;
 }
@@ -226,17 +227,18 @@ export interface BookmarkImportDependencies {
 const defaultDependencies: BookmarkImportDependencies = {
   enqueueLink: (url, listKinds) =>
     enqueue(url, { trigger: "user:importBookmarks", listKinds }),
-  persistDates: async (id, patch) => {
+  persistImported: async (id, patch) => {
     await persistSave(id, patch, { actorReason: "bookmarks:import" });
   },
   importFolders: (folders) => importFolderTree(folders, true),
   addToFolder: addSavesToFolder,
 };
 
-/** Dates and folders apply only to Saves this import creates, so existing Saves keep their own. */
+/** Origin, dates and folders apply only to Saves this import creates, so existing Saves keep their own. */
 export async function importBookmarkFile(
   file: BookmarkFile,
   dependencies: BookmarkImportDependencies = defaultDependencies,
+  origin: ImportOrigin = "bookmarks",
 ): Promise<OkSuccess<SavesImportCounts>> {
   let imported = 0;
   let skipped = 0;
@@ -255,11 +257,13 @@ export async function importBookmarkFile(
     }
     imported += 1;
     created.push({ id: result.id, bookmark });
-    if (bookmark.addedAt)
-      await dependencies.persistDates(result.id, {
+    await dependencies.persistImported(result.id, {
+      importedFrom: origin,
+      ...(bookmark.addedAt && {
         savedAt: bookmark.addedAt,
         createdAt: bookmark.addedAt,
-      });
+      }),
+    });
   }
   const used = new Set(created.flatMap(({ bookmark }) => bookmark.folderIds));
   if (used.size > 0) {

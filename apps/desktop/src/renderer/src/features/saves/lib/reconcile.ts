@@ -5,6 +5,7 @@ import {
   SOURCES,
   TASK_STATUSES,
 } from "@pond/schema/db";
+import { IMPORT_ORIGINS } from "@pond/schema/import-origin";
 import { LIST_KINDS } from "@pond/schema/list-kinds";
 import { StoredRawJsonSchema, storedAsRawJson } from "@pond/schema/raw-schema";
 import { toMs } from "@shared/to-ms";
@@ -45,6 +46,7 @@ export const SavePatchSchema = z.object({
   source: z.enum(SOURCES).nullish().catch(null),
   sourceId: Text,
   accountId: Text,
+  importedFrom: z.enum(IMPORT_ORIGINS).nullish().catch(null),
   url: Text,
   title: Text,
   description: Text,
@@ -167,6 +169,7 @@ export function normalise(
     source: raw.source ?? "twitter",
     sourceId: raw.sourceId ?? "",
     accountId: raw.accountId ?? null,
+    importedFrom: raw.importedFrom ?? null,
     url: raw.url ?? "",
     title: raw.title ?? null,
     description: raw.description ?? null,

@@ -251,6 +251,7 @@ const runtime: EaglePackageImportRuntime = {
       thumbnailPath:
         item.mediaPaths.length > 0 ? item.thumbnailPath : undefined,
       sourceId: sourceId(metadata.id),
+      importedFrom: "eagle",
       savedAt: timestampDate(metadata.modificationTime ?? metadata.mtime),
       createdAt: timestampDate(metadata.btime),
       rating: metadata.star,

@@ -17,6 +17,11 @@ import {
   SOURCES,
   type Source,
 } from "@pond/schema/db";
+import {
+  type ImportOrigin,
+  legacyImportOrigin,
+  toImportOrigin,
+} from "@pond/schema/import-origin";
 import type { RawJson } from "@pond/schema/raw";
 import { StoredRawJsonSchema, storedAsRawJson } from "@pond/schema/raw-schema";
 import type { TxSaveFile } from "@pond/schema/tx";
@@ -41,6 +46,7 @@ interface SaveMetadata {
   id: string;
   source: Source;
   sourceId: string;
+  importedFrom: ImportOrigin | null;
   url: string;
   name: string | null;
   annotation: string;
@@ -248,6 +254,7 @@ function metadataFromInfo(
     id,
     source: toSource(info.source),
     sourceId: info.sourceId,
+    importedFrom: toImportOrigin(info.importedFrom) ?? legacyImportOrigin(info),
     url: info.url,
     name: info.title ?? null,
     annotation: info.notes ?? "",

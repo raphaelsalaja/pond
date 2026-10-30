@@ -8,6 +8,7 @@ import {
   type Source,
   saves,
 } from "@pond/schema/db";
+import type { ImportOrigin } from "@pond/schema/import-origin";
 import {
   classifyLibraryFileFromHeader,
   type LibraryFileFormat,
@@ -49,6 +50,7 @@ export interface ManualSaveInput {
   thumbnailPath?: string | null;
   sourceId?: string | null;
   source?: Source;
+  importedFrom?: ImportOrigin;
   savedAt?: Date;
   createdAt?: Date;
   publishedAt?: Date;
@@ -299,6 +301,7 @@ async function importManualSave(
     id,
     source,
     sourceId,
+    importedFrom: input.importedFrom ?? null,
     url: input.url?.trim() || `pond:local/${id}`,
     title,
     description: isTextSave ? textBody : null,

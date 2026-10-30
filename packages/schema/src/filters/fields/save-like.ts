@@ -6,6 +6,7 @@ export interface SaveLike {
   source: string | null;
   siteName?: string | null;
   accountId?: string | null;
+  importedFrom?: string | null;
   url: string;
   title?: string | null;
   description?: string | null;

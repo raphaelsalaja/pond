@@ -1,5 +1,6 @@
 import { readdir, stat } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
+import type { ImportOrigin } from "@pond/schema/import-origin";
 import type {
   ManualSaveResult,
   SavesImportFilesResult,
@@ -16,6 +17,7 @@ interface FileImportRuntime {
   importFile(input: {
     filePaths: string[];
     tags: string[];
+    importedFrom: ImportOrigin;
   }): Promise<ManualSaveResult>;
   assignFolders(id: string, folderIds: string[]): Promise<{ ok: boolean }>;
 }
@@ -32,6 +34,7 @@ async function importPaths(
     tags?: string[];
     folderIds?: string[];
     useExisting?: Readonly<Record<string, string>>;
+    origin?: ImportOrigin;
   },
   dependencies: FileImportRuntime = runtime,
 ): Promise<SavesImportFilesResult> {
@@ -77,6 +80,7 @@ async function importPaths(
         const imported = await dependencies.importFile({
           filePaths: [path],
           tags,
+          importedFrom: input.origin ?? "files",
         });
         if (!imported.ok) throw new Error(imported.error);
         if (assigned.length > 0) {
@@ -105,6 +109,7 @@ export function importFiles(
     tags?: string[];
     folderIds?: string[];
     useExisting?: Readonly<Record<string, string>>;
+    origin?: ImportOrigin;
   },
   dependencies: FileImportRuntime = runtime,
 ) {

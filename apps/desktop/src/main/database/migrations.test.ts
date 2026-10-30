@@ -83,6 +83,44 @@ describe.skipIf(!nativeSqliteAvailable())("pond database migrations", () => {
     }
   });
 
+  it("adds imported_from to an existing index and fills it from legacy source ids", () => {
+    const db = new Database(":memory:");
+    try {
+      migratePond(db);
+      db.exec("ALTER TABLE saves DROP COLUMN imported_from");
+      const insert = db.prepare(
+        "INSERT INTO saves (id, source, source_id, url) VALUES (?, ?, ?, ?)",
+      );
+      insert.run("eagle", "local", "eagle:ABC", "pond:local/eagle");
+      insert.run("file", "local", "mymind-file:hash", "pond:local/file");
+      insert.run("auto", "local", "auto:hash", "pond:local/auto");
+      insert.run("own", "local", "own", "pond:local/own");
+      insert.run("tweet", "twitter", "eagle:1", "https://x.com/a/status/1");
+
+      migratePond(db);
+      const origins = Object.fromEntries(
+        db
+          .prepare("SELECT id, imported_from FROM saves ORDER BY id")
+          .all()
+          .map((row) => {
+            const parsed = z
+              .object({ id: z.string(), imported_from: z.string().nullable() })
+              .parse(row);
+            return [parsed.id, parsed.imported_from];
+          }),
+      );
+      expect(origins).toEqual({
+        auto: "watched-folder",
+        eagle: "eagle",
+        file: "mymind",
+        own: null,
+        tweet: null,
+      });
+    } finally {
+      db.close();
+    }
+  });
+
   it("creates scheduler indexes and reruns without changes", () => {
     const root = mkdtempSync(join(tmpdir(), "pond-migration-"));
     try {

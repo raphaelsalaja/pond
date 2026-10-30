@@ -78,6 +78,19 @@ function showMatching(row: DetailRow, save: Save): RowAction | null {
             value: save.source,
           }),
       };
+    case "importedFrom": {
+      const origin = save.importedFrom;
+      if (!origin) return null;
+      return {
+        label: `Show Saves Imported from ${row.value}`,
+        run: () =>
+          saveLibraryBridge.showMatching({
+            field: "importedFrom",
+            operator: "eq",
+            value: origin,
+          }),
+      };
+    }
     case "list": {
       const kinds = normalizeListKinds(save.listKinds);
       if (kinds.length === 0) return null;

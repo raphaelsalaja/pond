@@ -80,6 +80,7 @@ export async function startAutoImport(): Promise<void> {
       return createManualSave({
         filePaths: [input.path],
         sourceId: input.sourceId,
+        importedFrom: "watched-folder",
       });
     },
     async report(entry) {

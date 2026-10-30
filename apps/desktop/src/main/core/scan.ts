@@ -91,6 +91,7 @@ export async function reconcileLibraryIndex(
             : "failed",
           source: metadata.source,
           sourceId: metadata.sourceId,
+          importedFrom: metadata.importedFrom,
           url: metadata.url,
           title: metadata.name,
           description: metadata.pond.description ?? null,
@@ -117,6 +118,7 @@ export async function reconcileLibraryIndex(
         const updateSet = {
           ...enrichment,
           ...metadata.pond.userData,
+          importedFrom: metadata.importedFrom,
           title: metadata.name,
           description: metadata.pond.description ?? null,
           author: metadata.pond.author ?? null,

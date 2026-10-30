@@ -249,6 +249,7 @@ export async function importMymindExport(
     const result = await dependencies.createSave({
       source: "local",
       sourceId: card.id ? `mymind:${card.id}` : undefined,
+      importedFrom: "mymind",
       title: card.title || null,
       url: card.url || null,
       note: note || null,
@@ -275,6 +276,7 @@ export async function importMymindExport(
     const result = await dependencies.createSave({
       source: "local",
       sourceId,
+      importedFrom: "mymind",
       filePaths: [path],
       ...(card && {
         title: card.title || null,
@@ -313,23 +315,18 @@ async function importMymindLink(
           tagged.error ?? "its tags couldn't be saved",
         );
     }
-    const patch: Partial<NewSave> = {};
+    const patch: Partial<NewSave> = { importedFrom: "mymind" };
     if (note) patch.notes = note;
     if (card.created) {
       patch.savedAt = card.created;
       patch.createdAt = card.created;
     }
-    if (Object.keys(patch).length > 0) {
-      const persisted = await dependencies.persistLinkMetadata(
-        result.id,
-        patch,
+    const persisted = await dependencies.persistLinkMetadata(result.id, patch);
+    if (!persisted)
+      return failedImport(
+        card.title || card.url,
+        "its details couldn't be saved",
       );
-      if (!persisted)
-        return failedImport(
-          card.title || card.url,
-          "its notes or dates couldn't be saved",
-        );
-    }
   } catch {
     return failedImport(
       card.title || card.url,

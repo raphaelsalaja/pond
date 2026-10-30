@@ -24,6 +24,7 @@ async function fixture() {
     id: string;
     filePaths: string[];
     tags: string[];
+    importedFrom?: string;
     folderIds: string[];
   }> = [];
   const runtime: NonNullable<Parameters<typeof importFiles>[1]> = {
@@ -70,6 +71,16 @@ describe("hierarchy-preserving file import", () => {
         ?.folderIds,
     ).toEqual(["destination", "folder-0"]);
     expect(files.every((file) => file.tags.includes("inspiration"))).toBe(true);
+    expect(files.every((file) => file.importedFrom === "files")).toBe(true);
+  });
+
+  it("records the origin the caller names", async () => {
+    const { tree, files, runtime } = await fixture();
+    await importFiles(
+      { paths: [join(tree, "reference.png")], origin: "clipboard" },
+      runtime,
+    );
+    expect(files.map((file) => file.importedFrom)).toEqual(["clipboard"]);
   });
 
   it("imports standalone files without manufacturing a parent folder", async () => {

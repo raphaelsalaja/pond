@@ -45,6 +45,7 @@
     "./filters/match": "./src/filters/match.ts",
     "./filters/fields": "./src/filters/fields/index.ts",
     "./filters/color": "./src/filters/color.ts",
+    "./import-origin": "./src/import-origin.ts",
     "./label-name": "./src/label-name.ts",
     "./list-kinds": "./src/list-kinds.ts",
     "./native": "./src/native.ts",

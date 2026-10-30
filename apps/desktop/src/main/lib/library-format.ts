@@ -33,6 +33,7 @@ export interface InfoDoc {
   id: string;
   source: string;
   sourceId: string;
+  importedFrom?: string;
   url: string;
   title: string | null;
   description: string | null;
@@ -77,6 +78,7 @@ export const StoredInfoDocSchema = z.object({
   id: z.string().catch(""),
   source: z.string().catch(""),
   sourceId: z.string().catch(""),
+  importedFrom: z.string().optional().catch(undefined),
   url: z.string().catch(""),
   title: nullableText,
   description: nullableText,
@@ -148,6 +150,7 @@ export function infoDocFromSave(
     id: save.id,
     source: save.source,
     sourceId: save.sourceId,
+    ...(save.importedFrom && { importedFrom: save.importedFrom }),
     url: save.url,
     title: save.title ?? null,
     description: save.description ?? null,
@@ -178,6 +181,7 @@ const EXPORTED_SAVE_FIELDS = [
   "flipX",
   "flipY",
   "crop",
+  "importedFrom",
   "url",
   "title",
   "description",
@@ -242,6 +246,8 @@ export function applyPatchToInfo(
   }
 
   if (patch.files !== undefined) next.files = infoFilesFromSave(patch.files);
+  if (patch.importedFrom !== undefined)
+    next.importedFrom = patch.importedFrom ?? undefined;
   if (patch.url !== undefined) next.url = patch.url;
   if (patch.title !== undefined) next.title = patch.title ?? null;
   if (patch.description !== undefined)

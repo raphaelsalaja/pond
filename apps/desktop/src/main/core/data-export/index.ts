@@ -41,15 +41,19 @@ export interface DataExportDependencies {
 const defaultDependencies: DataExportDependencies = {
   open: openExportReader,
   importFile: (file) =>
-    importBookmarkFile(file, {
-      enqueueLink: (url, listKinds) =>
-        enqueue(url, { trigger: "user:importDataExport", listKinds }),
-      persistDates: async (id, patch) => {
-        await persistSave(id, patch, { actorReason: "data-export:import" });
+    importBookmarkFile(
+      file,
+      {
+        enqueueLink: (url, listKinds) =>
+          enqueue(url, { trigger: "user:importDataExport", listKinds }),
+        persistImported: async (id, patch) => {
+          await persistSave(id, patch, { actorReason: "data-export:import" });
+        },
+        importFolders: (folders) => importFolderTree(folders, true),
+        addToFolder: addSavesToFolder,
       },
-      importFolders: (folders) => importFolderTree(folders, true),
-      addToFolder: addSavesToFolder,
-    }),
+      "data-export",
+    ),
   connectedSources: async () =>
     new Set((await listAccounts()).map((account) => account.source)),
 };

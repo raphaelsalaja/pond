@@ -158,7 +158,7 @@ describe("importBookmarkFile", () => {
         id: `save-${next++}`,
         created: !existing.includes(url),
       })),
-      persistDates: vi.fn(async () => {}),
+      persistImported: vi.fn(async () => {}),
       importFolders: vi.fn(
         async (folders: BookmarkFile["folders"]) =>
           new Map(folders.map((folder) => [folder.id, `pond-${folder.id}`])),
@@ -188,17 +188,24 @@ describe("importBookmarkFile", () => {
     ],
   };
 
-  it("dates and files only the Saves it creates", async () => {
+  it("marks, dates and files only the Saves it creates", async () => {
     const deps = dependencies(["https://example.com/old"]);
     await expect(importBookmarkFile(file, deps)).resolves.toEqual({
       ok: true,
       imported: 2,
       skipped: 1,
     });
-    expect(deps.persistDates).toHaveBeenCalledExactlyOnceWith("save-0", {
-      savedAt: new Date(1_700_000_000_000),
-      createdAt: new Date(1_700_000_000_000),
-    });
+    expect(deps.persistImported.mock.calls).toEqual([
+      [
+        "save-0",
+        {
+          importedFrom: "bookmarks",
+          savedAt: new Date(1_700_000_000_000),
+          createdAt: new Date(1_700_000_000_000),
+        },
+      ],
+      ["save-2", { importedFrom: "bookmarks" }],
+    ]);
     expect(deps.importFolders).toHaveBeenCalledExactlyOnceWith([
       file.folders[0],
       file.folders[1],
@@ -206,6 +213,23 @@ describe("importBookmarkFile", () => {
     expect(deps.addToFolder).toHaveBeenCalledExactlyOnceWith("pond-type", [
       "save-0",
     ]);
+  });
+
+  it("records the origin the caller names", async () => {
+    const deps = dependencies();
+    await importBookmarkFile(
+      {
+        bookmarks: [
+          { url: "https://example.com/a", addedAt: null, folderIds: [] },
+        ],
+        folders: [],
+      },
+      deps,
+      "data-export",
+    );
+    expect(deps.persistImported).toHaveBeenCalledExactlyOnceWith("save-0", {
+      importedFrom: "data-export",
+    });
   });
 
   it("passes each bookmark's list kinds to the enqueue", async () => {

@@ -22,6 +22,7 @@ import { folder } from "./folder";
 import { fontActivated } from "./font-activated";
 import { fontFamily } from "./font-family";
 import { format } from "./format";
+import { importedFrom } from "./imported-from";
 import { list } from "./list";
 import { modifiedAt } from "./modified-at";
 import { note } from "./note";
@@ -59,6 +60,7 @@ export const FIELD_DESCRIPTORS = {
   folder,
   list,
   source,
+  importedFrom,
   type: typeField,
   format,
   fileCount,

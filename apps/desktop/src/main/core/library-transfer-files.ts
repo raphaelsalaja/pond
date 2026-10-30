@@ -10,6 +10,7 @@ import {
 import { hostname } from "node:os";
 import { join, resolve } from "node:path";
 import { MEDIA_TYPES, SOURCES } from "@pond/schema/db";
+import { legacyImportOrigin, toImportOrigin } from "@pond/schema/import-origin";
 import { StoredRawJsonSchema, storedAsRawJson } from "@pond/schema/raw-schema";
 import { ulid } from "ulid";
 import { z } from "zod";
@@ -364,6 +365,8 @@ export function packageLibrary(libraryPath: string, destination: string) {
           ...enrichment,
           notes: info.notes ?? null,
           source: z.enum(SOURCES).parse(info.source),
+          importedFrom:
+            toImportOrigin(info.importedFrom) ?? legacyImportOrigin(info),
           mediaType: z.enum(MEDIA_TYPES).nullable().parse(info.mediaType),
           rawJson: raw
             ? storedAsRawJson(StoredRawJsonSchema.parse(JSON.parse(raw)))

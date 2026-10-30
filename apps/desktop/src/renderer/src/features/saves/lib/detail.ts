@@ -1,3 +1,4 @@
+import { IMPORT_ORIGIN_LABELS } from "@pond/schema/import-origin";
 import { collectInfoRows } from "@/features/saves/lib/info-rows";
 import { getSourceLabel } from "@/features/saves/lib/source-labels";
 import type { Save } from "@/features/saves/types";
@@ -21,7 +22,10 @@ export interface DetailRow {
 }
 
 const DETAIL_GROUPS = [
-  { title: "Properties", ids: ["author", "from", "platform", "type", "list"] },
+  {
+    title: "Properties",
+    ids: ["author", "from", "platform", "importedFrom", "type", "list"],
+  },
   {
     title: "Activity",
     ids: [
@@ -166,6 +170,14 @@ export function collectIdentityRows(
     value: getSourceLabel(save.source),
     kind: "platform",
   });
+  if (save.importedFrom) {
+    rows.push({
+      id: "importedFrom",
+      label: "Imported From",
+      value: IMPORT_ORIGIN_LABELS[save.importedFrom],
+      kind: "text",
+    });
+  }
   for (const row of collectInfoRows(save)) {
     rows.push({ ...row, kind: "text" });
   }

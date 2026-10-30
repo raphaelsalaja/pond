@@ -190,6 +190,23 @@ describe("collectIdentityRows", () => {
     });
   });
 
+  it("names where an imported save came from", () => {
+    const rows = collectIdentityRows(
+      save({ id: "s1", source: "local", importedFrom: "eagle" }),
+    );
+    expect(rows.find((r) => r.id === "importedFrom")).toEqual({
+      id: "importedFrom",
+      label: "Imported From",
+      value: "Eagle",
+      kind: "text",
+    });
+    expect(
+      collectIdentityRows(save({ id: "s2" })).find(
+        (r) => r.id === "importedFrom",
+      ),
+    ).toBeUndefined();
+  });
+
   it("omits Account when the account is unknown", () => {
     const rows = collectIdentityRows(
       save({ id: "s1", accountId: cosmosAccount.id }),

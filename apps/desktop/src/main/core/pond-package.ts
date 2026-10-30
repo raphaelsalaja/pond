@@ -17,6 +17,7 @@ import {
   sep,
 } from "node:path";
 import { MEDIA_TYPES, type NewSave, SOURCES, saves } from "@pond/schema/db";
+import { IMPORT_ORIGINS } from "@pond/schema/import-origin";
 import { StoredRawJsonSchema, storedAsRawJson } from "@pond/schema/raw-schema";
 import { and, eq } from "drizzle-orm";
 import { ulid } from "ulid";
@@ -55,6 +56,7 @@ const PackageSaveSchema = z.object({
   url: z.string(),
   source: z.enum(SOURCES).optional(),
   sourceId: z.string().optional(),
+  importedFrom: z.enum(IMPORT_ORIGINS).optional().catch(undefined),
   tags: z.array(z.string()),
   notes: z.string().nullable(),
   rawJson: StoredRawJsonSchema.nullable().optional(),
@@ -152,6 +154,7 @@ const runtime: PackageImportRuntime = {
         id,
         source: save.source ?? "local",
         sourceId: save.sourceId || `pondpack:${save.id}`,
+        importedFrom: save.importedFrom ?? "pond-package",
         url: save.url,
         title: save.title,
         notes: save.notes,

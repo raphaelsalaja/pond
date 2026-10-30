@@ -25,6 +25,7 @@ type ExportSave = Pick<
       Save,
       | "source"
       | "sourceId"
+      | "importedFrom"
       | "width"
       | "height"
       | "dominantColors"
@@ -294,6 +295,7 @@ export async function exportFiles(input: {
             notes: save.notes,
             source: save.source,
             sourceId: save.sourceId,
+            importedFrom: save.importedFrom ?? undefined,
             width: save.width,
             height: save.height,
             dominantColors: save.dominantColors,

@@ -1,7 +1,9 @@
+import { LEGACY_IMPORT_PREFIXES } from "@pond/schema/import-origin";
 import type Database from "better-sqlite3";
 import { z } from "zod";
 
 const CountRowSchema = z.object({ n: z.number() });
+const ColumnRowSchema = z.object({ name: z.string() });
 
 export function migrateGlobal(sqlite: Database.Database): void {
   sqlite.exec(`
@@ -24,6 +26,7 @@ export function migratePond(sqlite: Database.Database): void {
 					source TEXT NOT NULL,
 					source_id TEXT NOT NULL,
 					account_id TEXT,
+					imported_from TEXT,
 					url TEXT NOT NULL,
 					title TEXT,
 					description TEXT,
@@ -336,7 +339,28 @@ export function migratePond(sqlite: Database.Database): void {
 					ON saves(id) WHERE clip_embedding IS NOT NULL;
 			`);
 
+  ensureImportedFrom(sqlite);
   ensureSavesFts(sqlite);
+}
+
+/** `CREATE TABLE IF NOT EXISTS` leaves existing indexes without the column, so add it and fill it from legacy source id prefixes. */
+function ensureImportedFrom(sqlite: Database.Database): void {
+  const columns = sqlite
+    .prepare("PRAGMA table_info(saves)")
+    .all()
+    .map((row) => ColumnRowSchema.parse(row).name);
+  if (columns.includes("imported_from")) return;
+  sqlite.transaction(() => {
+    sqlite.exec("ALTER TABLE saves ADD COLUMN imported_from TEXT");
+    const backfill = sqlite.prepare(`
+			UPDATE saves SET imported_from = ?
+			WHERE source = 'local'
+				AND imported_from IS NULL
+				AND substr(source_id, 1, length(?)) = ?
+		`);
+    for (const [prefix, origin] of LEGACY_IMPORT_PREFIXES)
+      backfill.run(origin, prefix, prefix);
+  })();
 }
 
 function ensureSavesFts(sqlite: Database.Database): void {

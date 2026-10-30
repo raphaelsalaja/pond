@@ -50,7 +50,12 @@ export const savesImportClipboardQueries = {
   async "saves.importClipboard"() {
     const filePaths = await clipboardFilePaths();
     if (filePaths.length > 0) {
-      return importFiles({ paths: filePaths, tags: [], folderIds: [] });
+      return importFiles({
+        paths: filePaths,
+        tags: [],
+        folderIds: [],
+        origin: "clipboard",
+      });
     }
 
     const image = await readClipboardImage();
@@ -62,7 +67,12 @@ export const savesImportClipboardQueries = {
       const directory = await mkdtemp(join(tmpdir(), "pond-clip-"));
       const path = join(directory, "clipboard.png");
       await writeFile(path, image.toPNG());
-      return importFiles({ paths: [path], tags: [], folderIds: [] });
+      return importFiles({
+        paths: [path],
+        tags: [],
+        folderIds: [],
+        origin: "clipboard",
+      });
     } catch (error) {
       log.warn("[pond ipc] importClipboard failed", error);
       return { ok: false, error: "clipboard_write_failed", ids: [] };

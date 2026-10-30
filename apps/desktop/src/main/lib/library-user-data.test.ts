@@ -33,4 +33,15 @@ describe("portable save metadata", () => {
     });
     expect(patchTouchesInfo({ rating: 1 })).toBe(true);
   });
+
+  it("keeps where an imported save came from across later edits", () => {
+    const info = StoredInfoDocSchema.parse({ id: "save", source: "web" });
+    expect(info.importedFrom).toBeUndefined();
+    expect(patchTouchesInfo({ importedFrom: "bookmarks" })).toBe(true);
+    const imported = applyPatchToInfo(info, { importedFrom: "bookmarks" });
+    const edited = applyPatchToInfo(StoredInfoDocSchema.parse(imported), {
+      title: "Renamed",
+    });
+    expect(StoredInfoDocSchema.parse(edited).importedFrom).toBe("bookmarks");
+  });
 });

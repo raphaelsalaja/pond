@@ -8,6 +8,7 @@ import {
   unique,
 } from "drizzle-orm/sqlite-core";
 import type { Query } from "./filters/types";
+import type { ImportOrigin } from "./import-origin";
 import type { JsonObject } from "./json";
 import type { ListKind } from "./list-kinds";
 import {
@@ -143,6 +144,7 @@ export const saves = sqliteTable(
     source: text("source").$type<Source>().notNull(),
     sourceId: text("source_id").notNull(),
     accountId: text("account_id"),
+    importedFrom: text("imported_from").$type<ImportOrigin>(),
     url: text("url").notNull(),
     title: text("title"),
     description: text("description"),
