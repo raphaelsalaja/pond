@@ -155,6 +155,13 @@ async function buildLibraryWindow(): Promise<BrowserWindow> {
     if (!isQuitting) void settleDockAfterClose();
   });
   win.on("show", () => void showDock());
+  // Mouse utilities such as Logi Options+ send back and forward buttons as
+  // swipes on macOS, as do three-finger trackpad swipes.
+  win.on("swipe", (_event, direction) => {
+    if (direction === "left") win.webContents.send(IPC.navigationSwipe, "back");
+    if (direction === "right")
+      win.webContents.send(IPC.navigationSwipe, "forward");
+  });
   lockRendererZoom(win.webContents);
   followInterfaceZoom(win.webContents, { getPrefs, subscribePrefs });
 

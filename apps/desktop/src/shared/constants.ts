@@ -58,6 +58,7 @@ export const IPC = {
   editRedoRequested: "pond:edit-redo-requested",
   shortcutAction: "pond:shortcut-action",
   menuAction: "pond:menu-action",
+  navigationSwipe: "pond:navigation-swipe",
   libraryId: "pond:library-id",
   menuRecents: "pond:menu-recents",
   menuOpenSave: "pond:menu-open-save",
@@ -220,6 +221,8 @@ export type MenuActionId =
   | "help.export-debug-report";
 
 export type MenuActionSource = "accelerator" | "menu" | "automation";
+
+export type NavigationDirection = "back" | "forward";
 
 export interface MenuActionEvent {
   id: MenuActionId;

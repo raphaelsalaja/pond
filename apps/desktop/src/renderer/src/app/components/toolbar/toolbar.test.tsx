@@ -1,4 +1,5 @@
 import { PrefsSchema } from "@pond/schema";
+import type { NavigationDirection } from "@shared/constants";
 import {
   createMemoryHistory,
   createRootRoute,
@@ -29,6 +30,7 @@ import { Toolbar } from "./";
 describe("breadcrumb toolbar", () => {
   let host: HTMLDivElement;
   let root: Root;
+  const swipeListeners = new Set<(direction: NavigationDirection) => void>();
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -57,6 +59,10 @@ describe("breadcrumb toolbar", () => {
         return [];
       },
       onAgentChunk: () => () => {},
+      onNavigationSwipe: (cb: (direction: NavigationDirection) => void) => {
+        swipeListeners.add(cb);
+        return () => swipeListeners.delete(cb);
+      },
     });
     resetFilters();
     await folders.refresh();
@@ -283,6 +289,51 @@ describe("breadcrumb toolbar", () => {
     expect(host.querySelector('[aria-current="page"]')?.textContent).toBe(
       "Sources",
     );
+  });
+
+  it("follows the mouse back and forward side buttons", async () => {
+    const sideButton = (button: number) =>
+      act(async () => {
+        window.dispatchEvent(
+          new MouseEvent("mouseup", {
+            bubbles: true,
+            cancelable: true,
+            button,
+          }),
+        );
+      });
+    libraryChrome.setNav({ kind: "folder", id: "parent" });
+    const router = await mount("/");
+    await act(async () => router.history.push("/save/demo"));
+    await sideButton(3);
+    expect(router.state.location.pathname).toBe("/");
+    await sideButton(3);
+    expect(libraryChrome.getState().nav).toEqual({ kind: "all" });
+    await sideButton(3);
+    expect(libraryChrome.getState().nav).toEqual({ kind: "all" });
+    await sideButton(4);
+    expect(libraryChrome.getState().nav).toEqual({
+      kind: "folder",
+      id: "parent",
+    });
+    await sideButton(4);
+    expect(router.state.location.pathname).toBe("/save/demo");
+  });
+
+  it("follows back and forward swipes from the main process", async () => {
+    const swipe = (direction: NavigationDirection) =>
+      act(async () => {
+        for (const listener of swipeListeners) listener(direction);
+      });
+    const router = await mount("/");
+    await act(async () => router.history.push("/sources"));
+    await swipe("back");
+    expect(router.state.location.pathname).toBe("/");
+    await swipe("forward");
+    expect(router.state.location.pathname).toBe("/sources");
+    await act(() => root.unmount());
+    expect(swipeListeners.size).toBe(0);
+    root = createRoot(host);
   });
 
   it("leaves an open save before walking folder history", async () => {

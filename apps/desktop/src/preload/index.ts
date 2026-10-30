@@ -16,6 +16,7 @@ import {
 import {
   IPC,
   type MenuActionEvent,
+  type NavigationDirection,
   type RecentMenuEntry,
 } from "../shared/constants";
 import { FilterQuery } from "../shared/filter-query";
@@ -215,6 +216,13 @@ const api = {
       cb(action);
     ipcRenderer.on(IPC.menuAction, listener);
     return () => ipcRenderer.off(IPC.menuAction, listener);
+  },
+
+  onNavigationSwipe(cb: (direction: NavigationDirection) => void): () => void {
+    const listener = (_: IpcRendererEvent, direction: NavigationDirection) =>
+      cb(direction);
+    ipcRenderer.on(IPC.navigationSwipe, listener);
+    return () => ipcRenderer.off(IPC.navigationSwipe, listener);
   },
 
   onShortcutAction(cb: (id: ShortcutId) => void): () => void {
