@@ -113,6 +113,48 @@ const unsplashBookmarks = z.object({
   results: z.catch(z.array(z.catch(z.nullable(unsplashAsset), null)), []),
 });
 
+const nullableText = optional(z.nullable(z.string()));
+
+const markedRef = z.object({
+  id: z.string(),
+  sourceUrl: nullableText,
+  title: nullableText,
+  description: nullableText,
+  aiDescription: nullableText,
+  text: nullableText,
+  author: optional(
+    z.object({
+      name: nullableText,
+      handle: nullableText,
+      avatarUrl: nullableText,
+      profileUrl: nullableText,
+      verified: optional(z.nullable(z.boolean())),
+    }),
+  ),
+  media: z.catch(
+    z.array(
+      z.catch(
+        z.nullable(
+          z.object({
+            kind: text,
+            url: z.string(),
+            posterUrl: nullableText,
+            width: number,
+            height: number,
+          }),
+        ),
+        null,
+      ),
+    ),
+    [],
+  ),
+  createdAt: text,
+  publishedAt: nullableText,
+  save: optional(z.nullable(z.object({ createdAt: text }))),
+});
+
+export type MarkedRef = z.infer<typeof markedRef>;
+
 export const browserValidators = {
   text: z.string(),
   number: z.number(),
@@ -121,5 +163,7 @@ export const browserValidators = {
   tiktokItem,
   unsplashAsset,
   unsplashBookmarks,
+  markedRef,
+  markedRefs: z.array(z.catch(z.nullable(markedRef), null)),
 };
 export type BrowserValidators = typeof browserValidators;

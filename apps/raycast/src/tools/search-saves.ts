@@ -8,7 +8,7 @@ type Input = {
   keywords?: string;
   /** Set true to rank by meaning instead of matching words. Needs keywords. Ignores tag, savedSince, untagged, inTrash and cursor. */
   byMeaning?: boolean;
-  /** Source ID such as twitter, instagram, pinterest, arena, cosmos, tiktok, youtube, reddit, threads, github, substack, tumblr, savee, behance, vimeo, dribbble, unsplash, bluesky, web or local. Use twitter for X and arena for Are.na. */
+  /** Source ID such as twitter, instagram, pinterest, arena, cosmos, tiktok, youtube, reddit, threads, github, substack, tumblr, savee, behance, vimeo, dribbble, unsplash, bluesky, marked, web or local. Use twitter for X and arena for Are.na. */
   source?: string;
   /** Exact tag name, from List Tags. */
   tag?: string;

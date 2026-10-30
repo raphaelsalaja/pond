@@ -8,6 +8,7 @@ import { CosmosTileExtractor } from "./sources/cosmos";
 import { DribbbleShotExtractor } from "./sources/dribbble";
 import { GitHubRepoExtractor } from "./sources/github";
 import { InstagramPostExtractor } from "./sources/instagram";
+import { MarkedRefExtractor } from "./sources/marked";
 import { PinterestPinExtractor } from "./sources/pinterest";
 import { RedditPostExtractor } from "./sources/reddit";
 import { SaveeItemExtractor } from "./sources/savee";
@@ -40,6 +41,7 @@ const EXTRACTORS = {
   dribbble: new DribbbleShotExtractor(),
   unsplash: new UnsplashAssetExtractor(),
   bluesky: new BlueskyPostExtractor(),
+  marked: new MarkedRefExtractor(),
 } as const satisfies Record<ExternalSource, Extractor>;
 
 const WEB_EXTRACTOR: Extractor = {

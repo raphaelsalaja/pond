@@ -12,6 +12,7 @@ export { IconGoogleChrome } from "./custom/google-chrome";
 export { IconBrandInstagram as IconInstagram } from "./custom/instagram";
 export { IconLmStudio } from "./custom/lmstudio";
 export { IconSourceLocal } from "./custom/local";
+export { IconBrandMarked } from "./custom/marked";
 export { IconOllama } from "./custom/ollama";
 export { IconOpenAI } from "./custom/openai";
 export { IconBrandPinterest as IconPinterest } from "./custom/pinterest";

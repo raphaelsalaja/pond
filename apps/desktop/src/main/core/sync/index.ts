@@ -66,6 +66,7 @@ const SYNC_WATCHDOG_MS = {
   dribbble: 30 * 60_000,
   unsplash: 20 * 60_000,
   bluesky: 20 * 60_000,
+  marked: 20 * 60_000,
   web: 20 * 60_000,
   local: 20 * 60_000,
 } satisfies Record<Source, number>;
@@ -89,6 +90,7 @@ const SYNCABLE_SOURCES: readonly Source[] = [
   "dribbble",
   "unsplash",
   "bluesky",
+  "marked",
 ];
 
 function isSyncableSource(source: Source): boolean {

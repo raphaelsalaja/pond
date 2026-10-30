@@ -8,6 +8,7 @@ import { matches as cosmos } from "./cosmos/matches";
 import { matches as dribbble } from "./dribbble/matches";
 import { matches as github } from "./github/matches";
 import { matches as instagram } from "./instagram/matches";
+import { matches as marked } from "./marked/matches";
 import { matches as pinterest } from "./pinterest/matches";
 import { matches as reddit } from "./reddit/matches";
 import { matches as savee } from "./savee/matches";
@@ -46,6 +47,7 @@ export const HOOK_SOURCES = {
   dribbble: { matches: dribbble, likes: [], item: "Shot" },
   unsplash: { matches: unsplash, likes: [], item: "Photo" },
   bluesky: { matches: bluesky, likes: [], item: "Post" },
+  marked: { matches: marked, likes: [], item: "Ref" },
 } as const satisfies Record<ExternalSource, HookSource>;
 
 export const HOOK_SOURCE_IDS: readonly ExternalSource[] = SOURCES.filter(

@@ -38,6 +38,10 @@ import type {
   ListHarvestResult,
 } from "../harvest/list-types";
 import {
+  buildMarkedListExpression,
+  MARKED_LIST_URL,
+} from "../harvest/marked/list";
+import {
   buildPinterestListExpression,
   pinterestProfileUrl,
 } from "../harvest/pinterest";
@@ -454,6 +458,8 @@ function listUrlForSource(
       return UNSPLASH_LIST_URL;
     case "bluesky":
       return null;
+    case "marked":
+      return MARKED_LIST_URL;
     case "web":
       return null;
     case "local":
@@ -502,6 +508,8 @@ function buildListExpressionFor(
       return buildUnsplashListExpression(args);
     case "bluesky":
       return null;
+    case "marked":
+      return buildMarkedListExpression(args);
     case "web":
       return null;
     case "local":

@@ -31,4 +31,5 @@ export const INJECTORS = {
   dribbble: null,
   unsplash: null,
   bluesky: null,
+  marked: null,
 } satisfies Record<ExternalSource, (() => void) | null>;

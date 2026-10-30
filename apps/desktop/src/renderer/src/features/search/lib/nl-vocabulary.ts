@@ -188,6 +188,7 @@ export const SOURCE_SYNONYMS = new Map<string, string>([
   ["unsplash", "unsplash.com"],
   ["bluesky", "bsky.app"],
   ["bsky", "bsky.app"],
+  ["marked", "marked.dev"],
   ["local", "local"],
 ]);
 

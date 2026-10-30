@@ -74,6 +74,7 @@ const ALL_SOURCES_ON = {
   dribbble: true,
   unsplash: true,
   bluesky: true,
+  marked: true,
   web: false,
   local: false,
 } satisfies SourceFlags;

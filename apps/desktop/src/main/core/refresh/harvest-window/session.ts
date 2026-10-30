@@ -201,6 +201,7 @@ function probeUrlForSource(source: Source): string {
   if (source === "vimeo") return "https://vimeo.com/";
   if (source === "dribbble") return "https://dribbble.com/";
   if (source === "unsplash") return "https://unsplash.com/";
+  if (source === "marked") return "https://marked.dev/explore";
   return homeUrlForSource(source);
 }
 

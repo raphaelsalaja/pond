@@ -32,6 +32,7 @@ no sign-in.
 | Dribbble | `dribbble` | `dribbble.com`, `drbl.in` | `^https?:\/\/(?:www\.)?dribbble\.com\/shots\/(\d+)(?=[-/?#]|$)` | `cursor` | `session` |
 | Unsplash | `unsplash` | `unsplash.com` | `^https?:\/\/(?:www\.)?unsplash\.com\/(?:photos|illustrations)\/(?:[^/?#]*-)?([A-Za-z0-9_-]{11})(?=[/?#]|$)` | `cursor` | `session` |
 | Bluesky | `bluesky` | `bsky.app` | `^https?:\/\/(?:www\.)?bsky\.app\/profile\/[^/?#]+\/post\/([2-7a-z]{13})(?=[/?#]|$)` | `cursor` | `handle` |
+| Marked | `marked` | `marked.dev` | `^https?:\/\/(?:www\.)?marked\.dev\/ref\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?=[/?#]|$)` | `full` | `session` |
 
 `local` is a built-in pseudo-source for files imported directly into the
 library; it has no network extractor.

@@ -196,6 +196,10 @@ export const CAPTURE_EXPECTATIONS = {
       "capture.author.avatarUrl",
     ],
   },
+  marked: {
+    required: ["mediaUrl"],
+    recommended: ["title", "author", "capture.upstream.url"],
+  },
   web: {
     required: ["title"],
     recommended: ["description", "mediaUrl"],

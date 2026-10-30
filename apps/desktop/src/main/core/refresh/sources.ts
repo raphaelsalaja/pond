@@ -37,6 +37,8 @@ export function homeUrlForSource(source: Source): string {
       return "https://unsplash.com/login";
     case "bluesky":
       return "";
+    case "marked":
+      return "https://marked.dev/explore";
     case "web":
       return "";
     case "local":

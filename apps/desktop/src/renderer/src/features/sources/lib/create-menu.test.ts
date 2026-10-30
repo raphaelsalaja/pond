@@ -32,6 +32,7 @@ describe("source create menu", () => {
       "Dribbble",
       "Unsplash",
       "Bluesky",
+      "Marked",
       "New Watch",
       "Twitter",
       "Instagram",

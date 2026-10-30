@@ -18,6 +18,7 @@ export const VIMEO_PATTERNS = descriptorFor("vimeo").urlPatterns;
 export const DRIBBBLE_PATTERNS = descriptorFor("dribbble").urlPatterns;
 export const UNSPLASH_PATTERNS = descriptorFor("unsplash").urlPatterns;
 export const BLUESKY_PATTERNS = descriptorFor("bluesky").urlPatterns;
+export const MARKED_PATTERNS = descriptorFor("marked").urlPatterns;
 
 export function firstMatch(
   url: URL,

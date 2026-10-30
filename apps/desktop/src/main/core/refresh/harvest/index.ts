@@ -10,6 +10,7 @@ import * as dribbble from "./dribbble/item";
 import type { HarvestAdaptCtx } from "./from-page";
 import * as github from "./github/item";
 import * as instagram from "./instagram";
+import * as marked from "./marked/item";
 import * as pinterest from "./pinterest";
 import * as reddit from "./reddit";
 import * as savee from "./savee/item";
@@ -119,6 +120,11 @@ const REGISTRY = {
     buildExpression: bluesky.buildExpression,
     adapt: bluesky.adapt,
     sourceIdFromUrl: (url) => sourceIdFromUrl("bluesky", url),
+  },
+  marked: {
+    buildExpression: marked.buildExpression,
+    adapt: marked.adapt,
+    sourceIdFromUrl: (url) => sourceIdFromUrl("marked", url),
   },
   web: {
     buildExpression: () => {

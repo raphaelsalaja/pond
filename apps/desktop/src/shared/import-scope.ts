@@ -134,6 +134,12 @@ const IMPORT_SCOPE_OPTIONS = {
     since: true,
     sinceDate: "saved",
   },
+  marked: {
+    ...EVERYTHING_ONLY,
+    mediaKinds: ["image", "video"],
+    since: true,
+    sinceDate: "saved",
+  },
   web: EVERYTHING_ONLY,
   local: EVERYTHING_ONLY,
 } satisfies Record<Source, ImportScopeOptions>;

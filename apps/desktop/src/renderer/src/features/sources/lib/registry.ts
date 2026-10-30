@@ -5,6 +5,7 @@ import {
   IconBrandCosmos,
   IconBrandDribbble,
   IconBrandGithub,
+  IconBrandMarked,
   IconBrandSavee,
   IconBrandSubstack,
   IconBrandThreads,
@@ -54,6 +55,7 @@ const SOURCE_LOGOS = {
   dribbble: null,
   unsplash: null,
   bluesky: null,
+  marked: null,
   web: null,
   local: null,
 } satisfies Record<Source, string | null>;
@@ -77,6 +79,7 @@ const SOURCE_ICONS = {
   dribbble: IconBrandDribbble,
   unsplash: IconBrandUnsplash,
   bluesky: IconBrandBluesky,
+  marked: IconBrandMarked,
   web: IconSourceWeb,
   local: IconSourceLocal,
 } satisfies Record<Source, IconComponent | null>;

@@ -66,6 +66,7 @@ export const LIST_HARVEST_SOURCES = new Set<Source>([
   "dribbble",
   "unsplash",
   "bluesky",
+  "marked",
 ]);
 
 export async function syncListSource(

@@ -222,6 +222,16 @@ export const SOURCE_DESCRIPTORS = [
     connect: "handle",
     sync: { strategy: "cursor" },
   },
+  {
+    id: "marked",
+    label: "Marked",
+    hosts: ["marked.dev"],
+    urlPatterns: [
+      /^https?:\/\/(?:www\.)?marked\.dev\/ref\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?=[/?#]|$)/i,
+    ],
+    /** One `listLibraryRefs` call returns the whole library, so there is no page order to stop early on. */
+    sync: { strategy: "full" },
+  },
 ] as const satisfies readonly SourceDescriptor[];
 
 export type ExternalSource = (typeof SOURCE_DESCRIPTORS)[number]["id"];

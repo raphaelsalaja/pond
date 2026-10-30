@@ -38,6 +38,8 @@ export function cookieDomainsForSource(source: Source): string[] {
       return ["unsplash.com"];
     case "bluesky":
       return [];
+    case "marked":
+      return ["marked.dev"];
     case "web":
     case "local":
       return [];
