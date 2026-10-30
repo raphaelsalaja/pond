@@ -3,6 +3,7 @@ import { IconXmark } from "@pond/icons";
 import { clsx as cn } from "clsx";
 import type { ComponentPropsWithoutRef } from "react";
 import { Button } from "../button";
+import { Spotlight } from "./spotlight";
 import styles from "./styles.module.css";
 
 function Provider(props: Base.Provider.Props) {
@@ -23,20 +24,46 @@ function Viewport({ className, ...props }: Base.Viewport.Props) {
   );
 }
 
-function Root({ className, toast, ...props }: Base.Root.Props) {
+interface RootProps extends Base.Root.Props {
+  variant?: "default" | "spotlight";
+}
+
+function Root({ className, toast, variant = "default", ...props }: RootProps) {
   const updateKey = toast.updateKey ?? 0;
   const hasProgress = Boolean(toast.data?.progress);
   const pulse = updateKey > 0 && !hasProgress;
+  const spotlight = variant === "spotlight";
   return (
     <Base.Root
       toast={toast}
       swipeDirection={["down", "left", "right"]}
       className={cn(styles.root, className)}
+      data-variant={spotlight ? variant : undefined}
+      data-theme={spotlight ? "dark" : undefined}
       data-pulse={pulse ? (updateKey % 2 === 0 ? "a" : "b") : undefined}
       data-progress={hasProgress || undefined}
       {...props}
     />
   );
+}
+
+interface IconProps extends ComponentPropsWithoutRef<"span"> {
+  tone?: "neutral" | "accent" | "gold";
+}
+
+function Icon({ className, tone = "neutral", ...props }: IconProps) {
+  return (
+    <span
+      className={cn(styles.icon, className)}
+      data-tone={tone}
+      aria-hidden="true"
+      {...props}
+    />
+  );
+}
+
+function Actions({ className, ...props }: ComponentPropsWithoutRef<"div">) {
+  return <div className={cn(styles.actions, className)} {...props} />;
 }
 
 function Content({ className, ...props }: Base.Content.Props) {
@@ -100,13 +127,16 @@ export const Toast = {
   Portal,
   Viewport,
   Root,
+  Spotlight,
   Content,
+  Icon,
   Header,
   Title,
   Description,
   Progress,
   Meta,
   Action,
+  Actions,
   Close,
   createToastManager: Base.createToastManager,
   useToastManager: Base.useToastManager,

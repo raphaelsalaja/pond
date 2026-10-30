@@ -1,7 +1,12 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { notify, toastManager, updateNotification } from "@/shared/lib/toast";
+import {
+  ask,
+  notify,
+  toastManager,
+  updateNotification,
+} from "@/shared/lib/toast";
 import { ToastHost } from ".";
 
 let root: Root;
@@ -119,4 +124,59 @@ it("renders and invokes a toast action", async () => {
   expect(action).toBeInstanceOf(HTMLButtonElement);
   await act(async () => action?.click());
   expect(onClick).toHaveBeenCalledOnce();
+});
+
+function button(label: string) {
+  return [...document.body.querySelectorAll("button")].find(
+    (element) => element.textContent === label,
+  );
+}
+
+it("renders an ask that stays until you answer it", async () => {
+  const onConfirm = vi.fn();
+  const onClose = vi.fn();
+  await act(async () => root.render(<ToastHost />));
+
+  await act(async () => {
+    ask({
+      title: "Follow Along on X",
+      description: "Follow Raphael for new features and fixes.",
+      note: "Posts stay on X.",
+      cancel: "Not Now",
+      confirm: "Follow on X",
+      onConfirm,
+      onClose,
+    });
+  });
+
+  const viewport = document.body.querySelector("[data-slot='toasts']");
+  expect(viewport?.textContent).toContain("Follow Along on X");
+  expect(viewport?.textContent).toContain("Posts stay on X.");
+  expect(button("Not Now")).toBeInstanceOf(HTMLButtonElement);
+  expect(viewport?.querySelector("[aria-label='Dismiss']")).toBeNull();
+
+  await act(async () => button("Follow on X")?.click());
+  expect(onConfirm).toHaveBeenCalledOnce();
+  expect(onClose).toHaveBeenCalledOnce();
+});
+
+it("closes an ask from Not Now without confirming", async () => {
+  const onConfirm = vi.fn();
+  const onClose = vi.fn();
+  await act(async () => root.render(<ToastHost />));
+
+  await act(async () => {
+    ask({
+      title: "Star Pond on GitHub",
+      description: "A star helps more people find Pond.",
+      cancel: "Not Now",
+      confirm: "Star on GitHub",
+      onConfirm,
+      onClose,
+    });
+  });
+
+  await act(async () => button("Not Now")?.click());
+  expect(onConfirm).not.toHaveBeenCalled();
+  expect(onClose).toHaveBeenCalledOnce();
 });

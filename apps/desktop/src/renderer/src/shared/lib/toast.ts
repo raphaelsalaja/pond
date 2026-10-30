@@ -1,6 +1,17 @@
 import { Toast } from "@pond/ui";
+import type { ReactNode } from "react";
 
 export const TOAST_TIMEOUT_MS = 2500;
+
+export const ASK_TOAST_ID = "ask";
+
+export type ToastTone = "neutral" | "accent" | "gold";
+
+export interface ToastAsk {
+  cancel: string;
+  confirm: string;
+  onConfirm: () => void | Promise<void>;
+}
 
 export interface ToastProgress {
   label: string;
@@ -15,6 +26,11 @@ export interface ToastData {
     label: string;
     onClick: () => void;
   };
+  icon?: ReactNode;
+  tone?: ToastTone;
+  note?: string;
+  variant?: "default" | "spotlight";
+  ask?: ToastAsk;
 }
 
 export const toastManager = Toast.createToastManager<ToastData>();
@@ -63,4 +79,44 @@ export function notify(options: NotifyOptions): string {
 
 export function updateNotification(options: NotifyOptions): void {
   toastManager.update(options.id, toastOptions(options));
+}
+
+export interface AskOptions extends ToastAsk {
+  title: string;
+  description: string;
+  icon?: ReactNode;
+  tone?: ToastTone;
+  note?: string;
+  variant?: ToastData["variant"];
+  onClose: () => void;
+}
+
+/** One ask at a time: a new ask replaces the one on screen, and it stays until you answer or dismiss it. */
+export function ask(options: AskOptions): void {
+  toastManager.add(askToast(ASK_TOAST_ID, options));
+}
+
+export function askToast(
+  id: string,
+  options: AskOptions,
+): Parameters<typeof toastManager.add>[0] {
+  const { title, description, onClose, ...data } = options;
+  return {
+    id,
+    title,
+    description,
+    timeout: 0,
+    onClose,
+    data: {
+      icon: data.icon,
+      tone: data.tone,
+      note: data.note,
+      variant: data.variant,
+      ask: {
+        cancel: data.cancel,
+        confirm: data.confirm,
+        onConfirm: data.onConfirm,
+      },
+    },
+  };
 }

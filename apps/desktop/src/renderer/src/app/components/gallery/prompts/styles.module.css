@@ -1,0 +1,65 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px 0;
+  border-bottom: var(--ds-border-width) solid var(--ds-border-subtle);
+}
+
+.header {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.heading {
+  margin: 0 auto 0 0;
+  font-size: var(--ds-text-lg);
+  font-weight: var(--ds-weight-xxl);
+  color: var(--ds-gray-12);
+}
+
+.frames {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.frame {
+  padding: 20px;
+  color: var(--ds-gray-12);
+  background: var(--ds-gray-2);
+  border: var(--ds-border-width) solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-xl);
+}
+
+.grid {
+  --toast-width: 280px;
+
+  display: grid;
+  grid-template-columns: repeat(auto-fill, var(--toast-width));
+  gap: 24px 20px;
+  align-items: start;
+}
+
+.cell {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label {
+  font-family: var(--ds-font-mono);
+  font-size: var(--ds-text-xs);
+  color: var(--ds-gray-10);
+}
+
+.dismissed {
+  display: grid;
+  place-items: center;
+  height: 64px;
+  font-size: var(--ds-text-sm);
+  color: var(--ds-gray-9);
+  border: var(--ds-border-width) dashed var(--ds-border-subtle);
+  border-radius: var(--ds-radius-xl);
+}

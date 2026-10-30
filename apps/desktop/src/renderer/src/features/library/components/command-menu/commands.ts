@@ -40,7 +40,7 @@ import { fishIntroDialog } from "@/shared/state/fish-intro";
 import {
   isCosignVotingOpen,
   PROMPT_IDS,
-  promptDialog,
+  promptToast,
 } from "@/shared/state/prompts";
 import { setupFlow } from "@/shared/state/setup";
 import { supportDialog } from "@/shared/state/support";
@@ -265,7 +265,7 @@ export const COMMANDS: readonly CommandSpec[] = [
               label: `Preview Prompt: ${id}`,
               icon: IconSparkle,
               keywords: "dev prompt dialog ask",
-              run: () => promptDialog.open(id),
+              run: () => promptToast.open(id),
             }) satisfies CommandSpec,
         ),
       ]
@@ -306,7 +306,7 @@ export const COMMANDS: readonly CommandSpec[] = [
           detail: "Raphael is up for People Design",
           icon: IconTrophy,
           keywords: "cosign award nomination vote raphael design",
-          run: () => promptDialog.open("cosign"),
+          run: () => promptToast.open("cosign"),
         } satisfies CommandSpec,
       ]
     : []),

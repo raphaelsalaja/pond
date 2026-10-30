@@ -30,6 +30,7 @@ import {
   reviewFixtures,
   type SampleSave,
 } from "./fixtures";
+import { PromptGallery } from "./prompts";
 import styles from "./styles.module.css";
 
 type Theme = "light" | "dark";
@@ -350,6 +351,7 @@ export function Gallery() {
       <Frames value={{ themes, width: WIDTHS[width] }}>
         <div className={styles.scroll}>
           <FishGallery themes={themes} />
+          <PromptGallery themes={themes} />
           <EmptyStates />
 
           <section className={styles.section}>

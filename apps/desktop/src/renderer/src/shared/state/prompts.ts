@@ -29,7 +29,7 @@ export function isCosignVotingOpen(now: number): boolean {
 
 const store = new Store<{ active: PromptId | null }>({ active: null });
 
-export const promptDialog = {
+export const promptToast = {
   open(id: PromptId): void {
     store.setState(() => ({ active: id }));
   },
