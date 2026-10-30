@@ -114,12 +114,25 @@ function queryOrder(
   const orderKey =
     request.sortKey === "manual" ? prepareManualOrder(manualOrder) : "";
   const pinKey = JSON.stringify(pinnedIds);
+  const column = librarySortColumn(request.sortKey, {
+    randomSeed: request.randomSeed,
+    orderKey,
+  });
+  // savedAt is non-null; leave nullable, manual, random and pinned sorts general.
+  const unpinnedRecency =
+    pinnedIds.length === 0 &&
+    (request.sortKey === undefined || request.sortKey === "savedAt");
+  const pinRank = unpinnedRecency
+    ? sql`${UNPINNED_RANK}`
+    : sql`coalesce((select cast(key as integer) from json_each(${pinKey}) where value = ${saves.id} limit 1), ${UNPINNED_RANK})`;
+  const direction = request.sortDir === "asc" ? asc(column) : desc(column);
   return {
-    column: librarySortColumn(request.sortKey, {
-      randomSeed: request.randomSeed,
-      orderKey,
-    }),
-    pinRank: sql`coalesce((select cast(key as integer) from json_each(${pinKey}) where value = ${saves.id} limit 1), ${UNPINNED_RANK})`,
+    column,
+    pinRank,
+    unpinnedRecency,
+    orderBy: unpinnedRecency
+      ? [direction, desc(saves.id)]
+      : [asc(pinRank), asc(sql`${column} is null`), direction, desc(saves.id)],
     signature: `${request.sortKey}:${request.sortDir}:${request.randomSeed ?? "pond"}:${orderKey}:${pinKey}`,
   };
 }
@@ -154,7 +167,7 @@ export async function queryLibraryPage(
   hiddenFolderIds: readonly string[] = [],
 ): Promise<LibraryQueryPage> {
   assertLibrary(request, libraryId);
-  const { column, pinRank, signature } = queryOrder(
+  const { column, pinRank, signature, orderBy, unpinnedRecency } = queryOrder(
     request,
     manualOrder,
     pinnedIds,
@@ -174,14 +187,22 @@ export async function queryLibraryPage(
   const ascending = request.sortDir === "asc";
   const where = libraryQueryWhere(request, hiddenFolderIds);
   const rank = cursor?.rank ?? UNPINNED_RANK;
+  const fastCursor =
+    unpinnedRecency && rank === UNPINNED_RANK && cursor?.value != null;
   const within = !cursor
     ? undefined
-    : cursor.value === null
-      ? and(isNull(column), sql`${saves.id} < ${cursor.id}`)
-      : sql`(${column} is null or ${ascending ? sql`${column} > ${cursor.value}` : sql`${column} < ${cursor.value}`} or (${column} = ${cursor.value} and ${saves.id} < ${cursor.id}))`;
-  const after = within
-    ? sql`(${pinRank} > ${rank} or (${pinRank} = ${rank} and ${within}))`
-    : undefined;
+    : fastCursor
+      ? ascending
+        ? sql`(${column} > ${cursor.value} or (${column} = ${cursor.value} and ${saves.id} < ${cursor.id}))`
+        : sql`(${column}, ${saves.id}) < (${cursor.value}, ${cursor.id})`
+      : cursor.value === null
+        ? and(isNull(column), sql`${saves.id} < ${cursor.id}`)
+        : sql`(${column} is null or ${ascending ? sql`${column} > ${cursor.value}` : sql`${column} < ${cursor.value}`} or (${column} = ${cursor.value} and ${saves.id} < ${cursor.id}))`;
+  const after = fastCursor
+    ? within
+    : within
+      ? sql`(${pinRank} > ${rank} or (${pinRank} = ${rank} and ${within}))`
+      : undefined;
   const limit = Math.min(500, Math.max(1, request.limit ?? 250));
   const result: { total: number; rows: LibraryPageRow[] } = db.$raw.transaction(
     () => {
@@ -196,12 +217,7 @@ export async function queryLibraryPage(
         })
         .from(saves)
         .where(and(where, after))
-        .orderBy(
-          asc(pinRank),
-          asc(sql`${column} is null`),
-          ascending ? asc(column) : desc(column),
-          desc(saves.id),
-        )
+        .orderBy(...orderBy)
         .limit(limit + 1)
         .all();
       return { total, rows };
@@ -236,17 +252,12 @@ export async function queryLibraryIds(
   hiddenFolderIds: readonly string[] = [],
 ) {
   assertLibrary(request, libraryId);
-  const { column, pinRank } = queryOrder(request, manualOrder, pinnedIds);
+  const { orderBy } = queryOrder(request, manualOrder, pinnedIds);
   const rows = await db
     .select({ id: saves.id })
     .from(saves)
     .where(libraryQueryWhere(request, hiddenFolderIds))
-    .orderBy(
-      asc(pinRank),
-      asc(sql`${column} is null`),
-      request.sortDir === "asc" ? asc(column) : desc(column),
-      desc(saves.id),
-    );
+    .orderBy(...orderBy);
   return {
     ids: rows.map((row) => row.id),
     libraryId,

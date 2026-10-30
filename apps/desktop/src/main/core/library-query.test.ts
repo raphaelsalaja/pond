@@ -4,6 +4,7 @@ import { EMPTY_QUERY } from "@pond/schema/filters";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { afterEach, describe, expect, it } from "vitest";
+import type { LibraryQueryRequest } from "../../shared/library-query";
 import { recentlyAddedSince } from "../../shared/recently-added";
 import { initializePondSchema } from "../db";
 import { queryFolderSummaries } from "./folder-summaries";
@@ -49,6 +50,116 @@ function setup() {
 }
 
 describe.skipIf(!nativeAvailable())("authoritative library query", () => {
+  for (const sortKey of ["savedAt", "title", "rating"]) {
+    for (const sortDir of ["asc", "desc"] as const) {
+      for (const pins of [[], ["0000", "0003", "0004", "1199", "missing"]]) {
+        for (const scope of ["all", "folder", "empty"]) {
+          it(`differential paging ${sortKey}/${sortDir}/${pins.length}/${scope}`, async () => {
+            const { db, sqlite } = setup();
+            sqlite.exec(`
+              update saves set saved_at = cast(cast(id as integer) / 7 as integer),
+                title = 'Title ' || (cast(id as integer) % 9),
+                rating = case when cast(id as integer)%3=0 then null else 2 end;
+              update saves set deleted_at=1 where id='0003';
+              update saves set status='ingesting' where id='0004';
+              insert into folders(id,name) values ('subset','Subset');
+              insert into save_folders(save_id,folder_id) select id,'subset' from saves where cast(id as integer)%2=0;
+            `);
+            const request: LibraryQueryRequest = {
+              query: EMPTY_QUERY,
+              sortKey,
+              sortDir,
+              limit: 43,
+            };
+            if (scope !== "all")
+              request.scope = {
+                folderIds: [scope === "empty" ? "empty" : "subset"],
+              };
+            const expected = await queryLibraryIds(
+              db,
+              "library",
+              request,
+              [],
+              pins,
+            );
+            expect(expected.ids).toHaveLength(
+              scope === "all" ? 1198 : scope === "empty" ? 0 : 599,
+            );
+            let page = await queryLibraryPage(db, "library", request, [], pins);
+            const ids = [...page.ids];
+            expect(page.total).toBe(expected.ids.length);
+            for (let pages = 0; page.nextCursor; pages++) {
+              expect(pages).toBeLessThan(30);
+              page = await queryLibraryPage(
+                db,
+                "library",
+                { ...request, cursor: page.nextCursor },
+                [],
+                pins,
+              );
+              expect(page.total).toBe(expected.ids.length);
+              ids.push(...page.ids);
+            }
+            expect(ids).toEqual(expected.ids);
+            expect(new Set(ids).size).toBe(ids.length);
+          });
+        }
+      }
+    }
+  }
+
+  for (const sortDir of ["asc", "desc"] as const) {
+    it(`keeps legacy recency cursors and exact totals after writes: ${sortDir}`, async () => {
+      const { db, sqlite } = setup();
+      sqlite.exec(
+        "update saves set saved_at=cast(cast(id as integer)/10 as integer)",
+      );
+      const request: LibraryQueryRequest = {
+        query: EMPTY_QUERY,
+        sortKey: "savedAt",
+        sortDir,
+        limit: 7,
+      };
+      const first = await queryLibraryPage(db, "library", request);
+      const cursor = {
+        value: sortDir === "desc" ? 119 : 0,
+        id: sortDir === "desc" ? "1193" : "0003",
+        libraryId: "library",
+        sortSignature: `savedAt:${sortDir}:pond::[]`,
+      };
+      expect(first.nextCursor).toEqual(cursor);
+      const remainingId = sortDir === "desc" ? "1192" : "0002";
+      sqlite
+        .prepare("update saves set deleted_at=1 where id=?")
+        .run(remainingId);
+      sqlite.exec(
+        "insert into saves(id,source,source_id,url,saved_at,status) values ('new','local','new','pond:new',50,'complete')",
+      );
+      const all = await queryLibraryIds(db, "library", request);
+      let page = await queryLibraryPage(db, "library", { ...request, cursor });
+      const rest = [...page.ids];
+      expect(page.total).toBe(1200);
+      while (page.nextCursor) {
+        page = await queryLibraryPage(db, "library", {
+          ...request,
+          limit: 127,
+          cursor: page.nextCursor,
+        });
+        expect(page.total).toBe(1200);
+        rest.push(...page.ids);
+      }
+      expect(rest).toEqual(all.ids.slice(all.ids.indexOf(cursor.id) + 1));
+      expect(new Set(rest).size).toBe(rest.length);
+      await expect(
+        queryLibraryPage(db, "library", {
+          ...request,
+          sortDir: sortDir === "asc" ? "desc" : "asc",
+          cursor,
+        }),
+      ).rejects.toMatchObject({ code: "stale_cursor" });
+    });
+  }
+
   it("counts the full library and folder membership beyond the renderer page", () => {
     const { db, sqlite } = setup();
     sqlite.exec(

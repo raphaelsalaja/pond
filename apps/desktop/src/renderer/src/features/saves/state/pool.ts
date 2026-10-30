@@ -36,7 +36,8 @@ function canSkipFullSort(
     const prev = byId.get(save.id);
     if (prev) {
       if (savedAtMs(prev) !== savedAtMs(save)) return false;
-    } else if (savedAtMs(save) < headMs) {
+    } else if (savedAtMs(save) <= headMs) {
+      // New ties must follow existing Saves, as in single-upsert's stable sort.
       return false;
     }
   }
@@ -103,6 +104,19 @@ export const pool = {
   },
   delete(id: string): void {
     deleteSave(id);
+  },
+  bulkDelete(ids: readonly string[]): void {
+    const present = new Set(ids.filter((id) => savesStore.state.byId.has(id)));
+    if (present.size === 0) return;
+    savesStore.setState((s) => {
+      for (const id of present) s.byId.delete(id);
+      return {
+        byId: s.byId,
+        sorted: s.sorted.filter((save) => !present.has(save.id)),
+        revision: s.revision + 1,
+      };
+    });
+    emitDirty([...present]);
   },
   clear(): void {
     clearSaves();

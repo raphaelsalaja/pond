@@ -145,18 +145,23 @@ export async function bulkMutation(
     const save = pool.get(id);
     return save ? [save] : [];
   });
-  for (const save of before) {
-    if (operation.kind === "purge") pool.delete(save.id);
-    else if (operation.kind === "trash")
-      pool.upsert({ ...save, deletedAt: Date.now() });
-    else if (operation.kind === "untrash")
-      pool.upsert({ ...save, deletedAt: null });
-    else if (operation.kind === "rating" && !save.deletedAt)
-      pool.upsert({ ...save, rating: operation.rating || null });
-    else if (operation.kind === "notes")
-      pool.upsert({ ...save, notes: operation.notes });
-    else if (operation.kind === "tags" && operation.mode === "replace")
-      pool.upsert({ ...save, tags: operation.tags });
+  if (operation.kind === "purge") {
+    pool.bulkDelete(before.map((save) => save.id));
+  } else {
+    const updates: Save[] = [];
+    for (const save of before) {
+      if (operation.kind === "trash")
+        updates.push({ ...save, deletedAt: Date.now() });
+      else if (operation.kind === "untrash")
+        updates.push({ ...save, deletedAt: null });
+      else if (operation.kind === "rating" && !save.deletedAt)
+        updates.push({ ...save, rating: operation.rating || null });
+      else if (operation.kind === "notes")
+        updates.push({ ...save, notes: operation.notes });
+      else if (operation.kind === "tags" && operation.mode === "replace")
+        updates.push({ ...save, tags: operation.tags });
+    }
+    pool.bulkUpsert(updates);
   }
   try {
     const result = await window.pond.query("saves.bulkEdit", {
@@ -172,7 +177,9 @@ export async function bulkMutation(
     }
     return result.changed;
   } catch (error) {
-    for (const save of before) pool.upsert(save);
+    // Match single-upsert's reference no-op without changing rollback policy:
+    // all changed pre-operation Saves are restored, including intervening edits.
+    pool.bulkUpsert(before.filter((save) => pool.get(save.id) !== save));
     throw error;
   }
 }

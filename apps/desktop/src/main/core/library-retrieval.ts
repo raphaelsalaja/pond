@@ -302,7 +302,7 @@ async function resolveMediaProbe(
   return { model: row.clipModel, vector };
 }
 
-async function retrieveLibraryWithDb(
+export async function retrieveLibraryWithDb(
   db: Db,
   input: LibraryRetrievalInput,
   scope: LibraryRetrievalScope = {},
