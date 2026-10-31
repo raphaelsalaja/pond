@@ -32,25 +32,6 @@ describe("sensitive-content processing settings", () => {
     expect(keys).not.toContain("whisperModelId");
   });
 
-  it("offers explicit Florence fallback only for primary Gemma processing", () => {
-    const fallback = processingItems().find(
-      (item) => item?.key === "mediaUnderstandingFallbackToFlorence",
-    );
-
-    expect(fallback).toMatchObject({
-      control: "switch",
-      title: "Image Processing Fallback",
-      description: "Uses the built-in model if this one fails.",
-    });
-    expect(fallback?.visible?.(DEFAULT_PREFS.ai)).toBe(false);
-    expect(
-      fallback?.visible?.({
-        ...DEFAULT_PREFS.ai,
-        mediaUnderstandingMode: "gemma4",
-      }),
-    ).toBe(true);
-  });
-
   it("lets users choose the image model, runtime, and exact installed model ID", () => {
     const items = processingItems();
     const mode = items.find((item) => item?.key === "mediaUnderstandingMode");

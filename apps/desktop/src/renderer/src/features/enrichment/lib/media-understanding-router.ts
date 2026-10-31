@@ -1,7 +1,6 @@
 import type { Prefs } from "@pond/schema/db";
 import type {
   MediaUnderstandInput,
-  MediaUnderstandOperationalMetric,
   MediaUnderstandResult,
 } from "@shared/query-contracts-system";
 import { florenceModelVersion, runFlorence } from "./florence";
@@ -19,9 +18,6 @@ type MediaUnderstandingRouterDependencies = {
     saveId: string,
     task: MediaUnderstandingTask,
   ) => Promise<MediaUnderstandResult>;
-  operationalSink: {
-    record(metric: MediaUnderstandOperationalMetric): void;
-  };
 };
 
 type MediaUnderstandingRunInput = {
@@ -35,13 +31,11 @@ type MediaUnderstandingText = { text: string; model: string };
 
 class GemmaMediaUnderstandingError extends Error {
   readonly reason: Extract<MediaUnderstandResult, { ok: false }>["reason"];
-  readonly operation?: MediaUnderstandOperationalMetric;
 
   constructor(result: Extract<MediaUnderstandResult, { ok: false }>) {
     super(`Local media understanding failed: ${result.reason}`);
     this.name = "GemmaMediaUnderstandingError";
     this.reason = result.reason;
-    this.operation = result.operation;
   }
 }
 
@@ -59,11 +53,6 @@ const defaultDependencies: MediaUnderstandingRouterDependencies = {
   understandMedia(saveId, task) {
     return window.pond.query("saves.understandMedia", { saveId, task });
   },
-  operationalSink: {
-    record(metric) {
-      console.info("[pond media] local understanding fallback", metric);
-    },
-  },
 };
 
 function gemmaModelVersion(
@@ -76,21 +65,6 @@ function gemmaModelVersion(
 function gemmaFailure(result: Extract<MediaUnderstandResult, { ok: false }>) {
   return new GemmaMediaUnderstandingError(result);
 }
-
-const FALLBACK_FAILURES = new Set<
-  Extract<MediaUnderstandResult, { ok: false }>["reason"]
->([
-  "model_unavailable",
-  "model_not_vision",
-  "timeout",
-  "generation_failed",
-  "empty_output",
-  "model_chatter",
-  "output_too_long",
-  "internal_error",
-  "unsupported_media",
-  "too_large",
-]);
 
 /** These files cannot be sent to the local model, so a failed attempt must not stay eligible. */
 const UNREADABLE_MEDIA = new Set<
@@ -134,27 +108,6 @@ export function createMediaUnderstandingRouter(
           return await runGemma(input.saveId, input.task);
         } catch (error) {
           if (!(error instanceof GemmaMediaUnderstandingError)) throw error;
-          if (
-            input.prefs.mediaUnderstandingFallbackToFlorence &&
-            FALLBACK_FAILURES.has(error.reason)
-          ) {
-            const fallback = await runFlorencePrimary(input);
-            if (error.operation) {
-              try {
-                resolved.operationalSink.record({
-                  ...error.operation,
-                  fallbackUsed: true,
-                });
-              } catch {
-                /** Operational metrics must never affect enrichment. */
-              }
-            }
-            /** The sweep compares this stamp with the selected model, so a fallback must not stay eligible. */
-            return {
-              text: fallback.text,
-              model: gemmaModelVersion(input.task, input.prefs),
-            };
-          }
           if (UNREADABLE_MEDIA.has(error.reason)) {
             return {
               text: "",

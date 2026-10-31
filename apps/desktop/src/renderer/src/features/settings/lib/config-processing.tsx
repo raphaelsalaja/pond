@@ -109,14 +109,6 @@ export const processingSection = defineSection("ai", {
           visible: (v) => v.mediaUnderstandingMode !== "florence",
           render: (binding) => <MediaModelIdControl binding={binding} />,
         },
-        {
-          control: "switch",
-          key: "mediaUnderstandingFallbackToFlorence",
-          title: "Image Processing Fallback",
-          description: "Uses the built-in model if this one fails.",
-          keywords: ["gemma", "florence", "fallback", "vision"],
-          visible: (v) => v.mediaUnderstandingMode === "gemma4",
-        },
       ],
     },
     {

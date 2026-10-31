@@ -59,7 +59,7 @@ describe("enrichment sweep preferences", () => {
     expect(run).toHaveBeenCalledExactlyOnceWith(target, current.ai);
   });
 
-  it("rescans when processing features, media routing or fallback changes", () => {
+  it("rescans when processing features or media routing change", () => {
     let current = prefs();
     const listeners = new Set<() => void>();
     const refresh = vi.fn();
@@ -94,13 +94,8 @@ describe("enrichment sweep preferences", () => {
       ai: { ...current.ai, mediaUnderstandingModelId: "gemma4:e4b" },
     };
     publish();
-    current = {
-      ...current,
-      ai: { ...current.ai, mediaUnderstandingFallbackToFlorence: true },
-    };
-    publish();
 
-    expect(refresh).toHaveBeenCalledTimes(5);
+    expect(refresh).toHaveBeenCalledTimes(4);
     unsubscribe();
     expect(listeners.size).toBe(0);
   });
