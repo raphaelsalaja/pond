@@ -5,6 +5,10 @@
     "apps/desktop": {
       "entry": [
         "src/renderer/src/routes/**/*.{ts,tsx}",
+        "src/renderer/src/main.tsx",
+        "src/renderer/src/capture.tsx",
+        "src/renderer/src/combine-images.tsx",
+        "src/renderer/src/preview.ts",
         "scripts/*.{mjs,cjs,ts}",
         "scripts/sandbox-import-scope/{index,preload}.cjs",
         "src/main/core/media-warm/service.ts",
@@ -52,7 +56,8 @@
       "ignoreDependencies": ["tsx"]
     },
     "packages/api": {
-      "project": ["src/**/*.ts"]
+      "project": ["src/**/*.ts"],
+      "ignoreDependencies": ["zod"]
     },
     ".": {
       "entry": ["scripts/*.{mjs,cjs,ts}", "tools/**/*.{ts,mjs}"]
