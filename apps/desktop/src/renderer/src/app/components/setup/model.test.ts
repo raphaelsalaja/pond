@@ -13,7 +13,7 @@ describe("choicesFrom", () => {
   it("starts an existing install from its current preferences", () => {
     const prefs = PrefsSchema.parse({
       ai: { semanticSearch: false, enableOcr: false, enableClip: true },
-      preferences: { appearance: "dark", pointerCursors: true },
+      preferences: { appearance: "dark", soundsEnabled: false },
       quickCapture: { launchAtLogin: true },
     });
     const choices = choicesFrom(prefs, library, "existing");
@@ -21,7 +21,7 @@ describe("choicesFrom", () => {
       semanticSearch: false,
       enableOcr: false,
       enableClip: true,
-      pointerCursors: true,
+      soundsEnabled: false,
       launchAtLogin: true,
     });
     expect(choices.appearance).toBe("dark");

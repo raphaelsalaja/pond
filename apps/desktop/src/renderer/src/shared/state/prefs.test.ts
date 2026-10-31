@@ -36,13 +36,13 @@ it("receives another window's preferences and keeps the main process's committed
     expect(listeners.size).toBe(1);
     saved = {
       ...saved,
-      preferences: { ...saved.preferences, pointerCursors: true },
+      preferences: { ...saved.preferences, soundsEnabled: false },
     };
     for (const listener of listeners) listener(saved);
-    expect(getPrefsSnapshot()?.preferences.pointerCursors).toBe(true);
+    expect(getPrefsSnapshot()?.preferences.soundsEnabled).toBe(false);
     await savePrefsSection("window", { interfaceZoom: 125 });
     expect(getPrefsSnapshot()?.window.interfaceZoom).toBe(125);
-    expect(getPrefsSnapshot()?.preferences.pointerCursors).toBe(true);
+    expect(getPrefsSnapshot()?.preferences.soundsEnabled).toBe(false);
     expect(prefsChanged).toHaveBeenCalled();
   } finally {
     unsubscribe();

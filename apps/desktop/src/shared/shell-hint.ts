@@ -7,7 +7,6 @@ export const ShellHintSchema = z.object({
   foreground: z.string().optional(),
   accent: z.string().optional(),
   contrast: z.number().optional(),
-  pointerCursors: z.boolean().optional(),
 });
 
 export type ShellHint = z.infer<typeof ShellHintSchema>;

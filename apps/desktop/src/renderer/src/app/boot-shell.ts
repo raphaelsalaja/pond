@@ -36,7 +36,6 @@ function paintShell(): void {
   if (background && foreground && accent) {
     paintTheme({ background, foreground, accent, contrast }, displayGamut());
   }
-  if (shell.pointerCursors) doc.setAttribute("data-pointer-cursors", "true");
   doc.setAttribute(
     "data-platform",
     /Mac|iPhone|iPad/i.test(navigator.userAgent) ? "mac" : "other",

@@ -29,8 +29,7 @@ export type OptionId =
   | AiOptionId
   | "launchAtLogin"
   | "menuBarIcon"
-  | "soundsEnabled"
-  | "pointerCursors";
+  | "soundsEnabled";
 
 export const AI_OPTION_IDS = [
   "semanticSearch",
@@ -105,7 +104,6 @@ export function choicesFrom(
       launchAtLogin: quickCapture.launchAtLogin,
       menuBarIcon: quickCapture.menuBarIcon,
       soundsEnabled: preferences.soundsEnabled,
-      pointerCursors: preferences.pointerCursors,
     },
     assistant: "later",
     provider: "anthropic",

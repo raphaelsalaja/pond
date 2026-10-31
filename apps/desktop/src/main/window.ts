@@ -85,12 +85,7 @@ async function resolveShellHint(): Promise<ShellHint> {
   const resolved = await resolveTheme();
   if (!resolved) return {};
   const { mode, ...vars } = resolved;
-  const prefs = await getPrefs().catch(() => null);
-  return {
-    theme: mode,
-    ...vars,
-    pointerCursors: prefs?.preferences.pointerCursors === true,
-  };
+  return { theme: mode, ...vars };
 }
 
 let openingLibraryWindow: Promise<BrowserWindow> | null = null;

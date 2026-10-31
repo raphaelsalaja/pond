@@ -4,7 +4,7 @@ import {
   getPreset,
   lightPresets,
 } from "@pond/schema/db";
-import { Settings, Switch, Toggle, ToggleGroup } from "@pond/ui";
+import { Settings, Toggle, ToggleGroup } from "@pond/ui";
 import { useId } from "react";
 import { ThemePresetSelect } from "@/features/settings";
 import { useResolvedTheme } from "@/shared/hooks/use-resolved-theme";
@@ -23,7 +23,6 @@ const DARK_PRESETS = darkPresets();
 
 export function ThemeOptions({ choices, update }: StepProps) {
   const modeId = useId();
-  const pointerId = useId();
   return (
     <Settings.List className={styles.list}>
       <Settings.Item>
@@ -94,25 +93,6 @@ export function ThemeOptions({ choices, update }: StepProps) {
               const preset = getPreset(darkPreset);
               if (preset) update({ darkPreset, darkTheme: preset.def });
             }}
-          />
-        </Settings.ItemControl>
-      </Settings.Item>
-      <Settings.Item>
-        <Settings.ItemDetails>
-          <Settings.ItemTitle id={pointerId}>
-            Pointer Cursors
-          </Settings.ItemTitle>
-          <Settings.ItemDescription>
-            Use a hand cursor on hover.
-          </Settings.ItemDescription>
-        </Settings.ItemDetails>
-        <Settings.ItemControl>
-          <Switch.Root
-            aria-labelledby={pointerId}
-            checked={choices.options.pointerCursors}
-            onCheckedChange={(pointerCursors) =>
-              update({ options: { ...choices.options, pointerCursors } })
-            }
           />
         </Settings.ItemControl>
       </Settings.Item>

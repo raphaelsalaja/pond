@@ -48,7 +48,6 @@ const preferences = z.object({
   darkPresetId: z.string().catch(DEFAULT_DARK_PRESET_ID),
   light: lightThemeDefSchema.catch(DEFAULT_LIGHT_THEME),
   dark: darkThemeDefSchema.catch(DEFAULT_DARK_THEME),
-  pointerCursors: z.boolean().catch(false),
   reduceMotion: z.enum(["system", "always", "never"]).catch("system"),
   tweetCover: z.enum(["media", "screenshot"]).catch("media"),
   soundsEnabled: z.boolean().catch(true),

@@ -105,12 +105,6 @@ export const appearanceSection = defineCustomSection({
             v.appearance !== "light" && customColorsVisible("dark")(v),
           render: (b) => <ThemeContrastRow binding={b} side="dark" />,
         },
-        {
-          control: "switch",
-          key: "pointerCursors",
-          title: "Pointer Cursors",
-          description: "Use a hand cursor on hover.",
-        },
       ],
     }),
     group.prefs("window", {

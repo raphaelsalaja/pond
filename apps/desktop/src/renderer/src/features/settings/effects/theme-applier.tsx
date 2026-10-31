@@ -50,16 +50,6 @@ export function ThemeApplier() {
 
   useEffect(() => {
     const root = document.documentElement;
-    if (prefs.pointerCursors) {
-      root.setAttribute("data-pointer-cursors", "true");
-    } else {
-      root.removeAttribute("data-pointer-cursors");
-    }
-    persistShell({ pointerCursors: prefs.pointerCursors });
-  }, [prefs.pointerCursors]);
-
-  useEffect(() => {
-    const root = document.documentElement;
     const setReduce = (reduce: boolean) => {
       if (reduce) root.setAttribute("data-reduce-motion", "true");
       else root.removeAttribute("data-reduce-motion");

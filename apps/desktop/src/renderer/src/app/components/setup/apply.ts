@@ -69,7 +69,6 @@ async function savePreferences(
   const preferences: Partial<Prefs["preferences"]> = {
     appearance: choices.appearance,
     soundsEnabled: options.soundsEnabled,
-    pointerCursors: options.pointerCursors,
   };
   if (choices.lightPreset !== initial.lightPreset) {
     preferences.lightPresetId = choices.lightPreset;

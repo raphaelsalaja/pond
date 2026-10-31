@@ -105,10 +105,6 @@ html[data-theme="dark"] {
   --ds-cursor-interactive: default;
 }
 
-html[data-pointer-cursors="true"] {
-  --ds-cursor-interactive: pointer;
-}
-
 button,
 a,
 label[for],
