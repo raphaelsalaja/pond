@@ -1,7 +1,7 @@
 import { Combobox as Base } from "@base-ui/react/combobox";
 import {
   IconCheck as Check,
-  IconChevronExpandY as Expand,
+  IconChevronDown as Expand,
   IconXmark,
 } from "@pond/icons";
 import { clsx as cn } from "clsx";

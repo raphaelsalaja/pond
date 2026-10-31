@@ -1,5 +1,5 @@
 import { Select as Base } from "@base-ui/react/select";
-import { IconCheck as Check, IconChevronExpandY as Expand } from "@pond/icons";
+import { IconCheck as Check, IconChevronDown as Expand } from "@pond/icons";
 import { clsx as cn } from "clsx";
 import { Button, type ButtonProps } from "../button";
 import { renderSelectSpec, type SelectItemSpec } from "./items";
