@@ -21,7 +21,7 @@ const SKELETON_ROWS = ["first", "second", "third", "fourth"] as const;
 const MERGED_INTO_PROPERTIES = new Set(["Properties", "File", "Dates"]);
 
 function layoutFor(title: string): "list" | "tiles" | "grid" {
-  if (title === "Properties") return "grid";
+  if (title === "Properties" || title === "Activity") return "grid";
   return title === "Source" ? "list" : "tiles";
 }
 
