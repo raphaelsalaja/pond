@@ -224,7 +224,6 @@ const windowSlice = z.object({
 const system = z.object({
   proxyMode: z.enum(["system", "direct", "manual"]).catch("system"),
   proxyUrl: z.string().catch(""),
-  displayColorSpace: z.enum(["auto", "srgb", "display-p3"]).catch("auto"),
   hardwareAcceleration: z.boolean().catch(true),
   dockVisibility: z.enum(["automatic", "always"]).catch("automatic"),
 });

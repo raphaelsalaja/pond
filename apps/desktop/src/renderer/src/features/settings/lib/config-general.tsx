@@ -95,17 +95,6 @@ export const generalSection = defineCustomSection({
           render: () => <SystemPreferences />,
         },
         {
-          control: "select",
-          key: "displayColorSpace",
-          title: "Display Color Space",
-          description: "Color space for the viewer.",
-          options: [
-            { value: "auto", label: "Automatic" },
-            { value: "srgb", label: "sRGB" },
-            { value: "display-p3", label: "Display P3" },
-          ],
-        },
-        {
           control: "switch",
           key: "hardwareAcceleration",
           title: "Hardware Acceleration",

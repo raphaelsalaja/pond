@@ -140,7 +140,6 @@ function LibraryApp() {
   useHydrateFolders();
 
   const [windowPrefs] = usePrefs("window");
-  const [systemPrefs] = usePrefs("system");
   const startupPage = windowPrefs?.startupPage;
   useEffect(() => {
     if (!startupPage) return;
@@ -148,9 +147,6 @@ function LibraryApp() {
       localStorage.setItem(STARTUP_PAGE_KEY, startupPage);
     } catch {}
   }, [startupPage]);
-  useEffect(() => {
-    document.documentElement.dataset.colorSpace = systemPrefs.displayColorSpace;
-  }, [systemPrefs.displayColorSpace]);
   useEffect(
     () =>
       window.pond.onFullScreenChange((fullScreen) =>
