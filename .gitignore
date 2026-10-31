@@ -101,3 +101,4 @@ __pycache__/
 .tmp/
 brag-output/
 brag-output-*/
+.gather/
