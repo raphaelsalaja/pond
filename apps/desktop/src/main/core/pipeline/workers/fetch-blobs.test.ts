@@ -50,3 +50,18 @@ it("includes direct videos when auto-download is on", () => {
     2,
   );
 });
+
+it("skips the author's avatar stored as tweet media", () => {
+  const withAvatar = storedAsRawJson({
+    capture: {
+      media: [
+        {
+          type: "image",
+          url: "https://pbs.twimg.com/profile_images/1/a_normal.jpg?name=orig",
+        },
+      ],
+    },
+  });
+
+  expect(collectMediaUrls(withAvatar, { includeVideo: false })).toEqual([]);
+});

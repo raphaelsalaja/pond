@@ -92,7 +92,7 @@ function handleFromUrl(url: string): string | undefined {
   }
 }
 
-function isAvatarUrl(url: string): boolean {
+export function isAvatarUrl(url: string): boolean {
   try {
     const u = new URL(url);
     return (
