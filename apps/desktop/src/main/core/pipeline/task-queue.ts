@@ -1,6 +1,6 @@
 import { type NewTask, OPS, SOURCES, saves, tasks } from "@pond/schema/db";
 import type Database from "better-sqlite3";
-import { and, eq, inArray, ne, notExists } from "drizzle-orm";
+import { and, eq, inArray, isNull, ne, notExists } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { ulid } from "ulid";
 import { z } from "zod";
@@ -60,6 +60,7 @@ export async function claimDueTasks(
               tasks.status IN ('pending', 'deferred')
               AND tasks.next_run_at <= ?
               AND saves.status = 'ingesting'
+              AND saves.deleted_at IS NULL
               AND (
                 tasks.generation_id IS NULL
                 OR queue_generations.status = 'active'
@@ -372,6 +373,40 @@ export async function heartbeatTaskLease(task: DueTask): Promise<boolean> {
   return result.changes === 1;
 }
 
+const LeaseRowSchema = z.object({
+  status: z.string(),
+  cancellationFence: z.number(),
+  leaseToken: z.string().nullable(),
+  deletedAt: z.number().nullable(),
+});
+
+export async function ingestLeaseStillRunnable(
+  task: DueTask,
+): Promise<boolean> {
+  if (!task.leaseToken) return false;
+  const db = await getDb();
+  const row = LeaseRowSchema.nullable().parse(
+    db.$raw
+      .prepare(
+        `SELECT
+          tasks.status AS status,
+          tasks.cancellation_fence AS cancellationFence,
+          tasks.lease_token AS leaseToken,
+          saves.deleted_at AS deletedAt
+        FROM tasks
+        INNER JOIN saves ON saves.id = tasks.save_id
+        WHERE tasks.id = ?`,
+      )
+      .get(task.id) ?? null,
+  );
+  return (
+    row?.status === "running" &&
+    row.leaseToken === task.leaseToken &&
+    row.cancellationFence === task.cancellationFence &&
+    row.deletedAt == null
+  );
+}
+
 export function isDueTaskRunnable(row: DueTask, sourceUntil: number): boolean {
   return !isBlockedBySourceCooldown(row, sourceUntil);
 }
@@ -461,6 +496,7 @@ export async function sweepTasklessIngestingSaves(): Promise<void> {
     .where(
       and(
         eq(saves.status, "ingesting"),
+        isNull(saves.deletedAt),
         notExists(
           db
             .select({ id: tasks.id })
