@@ -102,6 +102,39 @@ let writesSinceTrim = 0;
 
 const mutationQueue = createMutationQueue();
 const blockedLibraries = new Map<string, Error>();
+
+export interface TrashIngestChange {
+  trashedIds: readonly string[];
+  restoredIds: readonly string[];
+}
+
+type TrashIngestHandler = (change: TrashIngestChange) => Promise<void>;
+
+let onTrashIngest: TrashIngestHandler | null = null;
+
+export function registerTrashIngestHandler(handler: TrashIngestHandler): void {
+  onTrashIngest = handler;
+}
+
+function trashIngestChange(
+  transactions: readonly Transaction[],
+): TrashIngestChange | null {
+  const kindById = new Map<string, "trash" | "untrash">();
+  for (const tx of transactions) {
+    if (tx.model !== "save") continue;
+    if (tx.kind === "trash" || tx.kind === "untrash")
+      kindById.set(tx.id, tx.kind);
+  }
+  if (kindById.size === 0) return null;
+  const trashedIds: string[] = [];
+  const restoredIds: string[] = [];
+  for (const [id, kind] of kindById) {
+    if (kind === "trash") trashedIds.push(id);
+    else restoredIds.push(id);
+  }
+  return { trashedIds, restoredIds };
+}
+
 export function withMutationScope<T>(operation: () => Promise<T>): Promise<T> {
   return mutationQueue.run(async () => {
     const blocked = blockedLibraries.get(libraryRoot());
@@ -228,6 +261,8 @@ async function executeSerializedBatch(
       if (action && !withBatch[i]?.meta?.silent) broadcastSyncAction(action);
     }
   }
+  const ingestChange = trashIngestChange(withBatch);
+  if (ingestChange && onTrashIngest) await onTrashIngest(ingestChange);
   return actions;
 }
 
