@@ -61,6 +61,10 @@ describe("settings search index", () => {
     );
     expect(entry("videos:autoDownload").groupTitle).toBe("Downloads");
     expect(entry("images:maxLongEdge").sectionLabel).toBe("Images");
+    expect(entry("storage:autoArchive").title).toBe(
+      "Archive Web Pages Automatically",
+    );
+    expect(entry("storage:autoArchive").groupTitle).toBe("Web Pages");
   });
 
   it("indexes the Harvesting pages under their own labels", () => {

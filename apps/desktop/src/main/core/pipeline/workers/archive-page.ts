@@ -2,12 +2,14 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
+import type { Save } from "@pond/schema/db";
 import type { WebContents } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
 import type { TransferOptions } from "../../../lib/download-transfer";
 import { saveFile } from "../../../paths";
 import { persistSave } from "../../persist-save";
+import { getPrefs } from "../../prefs";
 import {
   looksLikeAuthWall,
   navigateWithTimeout,
@@ -80,6 +82,52 @@ export function hasWarcArchive(
   );
 }
 
+type ArchivePageSave = Pick<Save, "source" | "url" | "files">;
+
+interface ArchivePageRuntime {
+  readSave: (saveId: string) => Promise<ArchivePageSave | null>;
+  autoArchive: () => Promise<boolean>;
+  crawlSite: (
+    rootUrl: URL,
+    scope: ArchiveScope,
+    signal: AbortSignal,
+    opts?: {
+      partition?: string;
+      cookies?: ImportableCookie[] | null;
+      reportActivity?: TransferOptions["reportActivity"];
+    },
+  ) => Promise<CrawlResult>;
+  persistArchive: (saveId: string, files: WriteFileArgs[]) => Promise<void>;
+}
+
+async function autoArchiveFromPrefs(): Promise<boolean> {
+  return (await getPrefs()).storage.autoArchive;
+}
+
+async function persistArchive(
+  saveId: string,
+  newFiles: WriteFileArgs[],
+): Promise<void> {
+  await persistSave(
+    saveId,
+    {},
+    {
+      actorReason: "pipeline:archive-page",
+      newFiles,
+      replaceFilesWithKind: [ARCHIVE_KIND, ARCHIVE_MANIFEST_KIND],
+    },
+  );
+}
+
+function defaultArchiveRuntime(): ArchivePageRuntime {
+  return {
+    readSave,
+    autoArchive: autoArchiveFromPrefs,
+    crawlSite,
+    persistArchive,
+  };
+}
+
 export async function readArchivedMeta(
   saveId: string,
 ): Promise<{ scope: ArchiveScope; version: number }> {
@@ -101,10 +149,19 @@ export async function runArchivePage(
   saveId: string,
   payload: { scope?: ArchiveScope },
   ctx: TransferOptions & { signal: AbortSignal },
+  runtime: ArchivePageRuntime = defaultArchiveRuntime(),
 ): Promise<void> {
   const scope: ArchiveScope = payload.scope === "site" ? "site" : "page";
-  const save = await readSave(saveId);
+  const save = await runtime.readSave(saveId);
   if (save?.source !== "web") {
+    dropPageCookies(saveId);
+    return;
+  }
+
+  if (scope !== "site" && !(await runtime.autoArchive())) {
+    log.debug("[pond pipeline:archive-page] automatic archive off, skipping", {
+      saveId,
+    });
     dropPageCookies(saveId);
     return;
   }
@@ -138,7 +195,7 @@ export async function runArchivePage(
     return;
   }
 
-  const result = await crawlSite(rootUrl, scope, ctx.signal, {
+  const result = await runtime.crawlSite(rootUrl, scope, ctx.signal, {
     partition: hasCookies ? pageCookiePartition(saveId) : undefined,
     cookies,
     reportActivity: ctx.reportActivity,
@@ -176,15 +233,7 @@ export async function runArchivePage(
     },
   ];
 
-  await persistSave(
-    saveId,
-    {},
-    {
-      actorReason: "pipeline:archive-page",
-      newFiles,
-      replaceFilesWithKind: [ARCHIVE_KIND, ARCHIVE_MANIFEST_KIND],
-    },
-  );
+  await runtime.persistArchive(saveId, newFiles);
   log.info("[pond pipeline:archive-page] archived site", {
     saveId,
     pages: result.pages.length,
