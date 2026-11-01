@@ -1,3 +1,13 @@
+/* Zoom stays the centered in-flow control in this bar. Share the bar,
+   one gap above that pill, so the notice stays clear at every width. */
+.notice {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  max-width: calc(100% - 8px);
+  transform: translateX(-50%);
+}
+
 .root {
   gap: 4px;
 }

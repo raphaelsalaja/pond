@@ -201,4 +201,32 @@ describe("SaveViewer", () => {
     expect(buttonByText(host, "Downloading")).toBeNull();
     expect(buttonByText(host, "Download Video")).toBeNull();
   });
+
+  it("keeps zoom controls from covering the undownloaded video notice", async () => {
+    vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
+    vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => {});
+    const poster = file("poster.jpg", "poster", "image/jpeg");
+    const save: Save = {
+      ...mixedSave([poster]),
+      id: "poster-only",
+      source: "twitter",
+      mediaType: "video",
+    };
+    pool.upsert(save);
+
+    await act(async () => root.render(<SaveViewer save={save} />));
+
+    const notice = host.querySelector('[aria-label="Video download"]');
+    const zoom = host.querySelector('[aria-label="Zoom In"]');
+    const bottom = host.querySelector('[data-slot="bottom"]');
+    expect(notice).not.toBeNull();
+    expect(zoom).not.toBeNull();
+    expect(bottom?.contains(zoom)).toBe(true);
+    expect(bottom?.contains(notice)).toBe(true);
+    expect(notice?.closest('[data-anchor="bottom-center"]')).toBeNull();
+    expect(zoom?.closest('[data-placement="above-chrome"]')).toBeNull();
+    expect(notice?.closest('[data-placement="above-chrome"]')).toBe(
+      notice?.parentElement,
+    );
+  });
 });
