@@ -6,11 +6,16 @@ import { getDb } from "../../db";
 import { persistSave } from "../persist-save";
 import { kickReconciler } from "../pipeline/reconciler-client";
 import { maxAttemptsFor } from "../pipeline/specs";
+import { getPrefs } from "../prefs";
 
-export async function startArchiveBackfill(): Promise<{
+export async function startArchiveBackfill(
+  autoArchive: () => Promise<boolean> = async () =>
+    (await getPrefs()).storage.autoArchive,
+): Promise<{
   ok: true;
   queued: number;
 }> {
+  if (!(await autoArchive())) return { ok: true, queued: 0 };
   /** archive-page pulls in the WARC stack; IPC handlers import this module at launch. */
   const { ARCHIVE_VERSION, hasWarcArchive, readArchivedMeta } = await import(
     "../pipeline/workers/archive-page"

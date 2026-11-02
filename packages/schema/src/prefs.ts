@@ -367,6 +367,8 @@ const storage = z.object({
   warnAtPercent: z.number().catch(80),
   action: z.enum(["warn", "pauseSync", "pauseVideo"]).catch("warn"),
   watchIntervalMinutes: z.number().catch(5),
+  /** Missing means on, so libraries saved before this setting still archive web pages. */
+  autoArchive: z.boolean().catch(true),
 });
 
 export const AgentReasoningSchema = z.enum([
