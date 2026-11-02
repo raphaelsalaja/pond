@@ -392,6 +392,7 @@ function FolderData({
       path: status.path,
       imported: imported.length,
       watching: status.enabled,
+      mode: status.mode,
     },
     () => void client.invalidateQueries({ queryKey: ["watched-folder"] }),
   );
@@ -408,7 +409,6 @@ function FolderData({
         { label: "Source", value: "Local" },
         { label: "Type", value: "Folder" },
         { label: "Imported Items", value: formatNumber(imported.length) },
-        { label: "Mode", value: status.mode === "move" ? "Move" : "Copy" },
         { label: "Status", value: status.enabled ? "Watching" : "Paused" },
       ],
     }),

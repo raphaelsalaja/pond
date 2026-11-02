@@ -35,6 +35,30 @@ async function setWatching(
   onChanged();
 }
 
+function setDeleteAfterImport(
+  target: FolderMenuTarget,
+  enabled: boolean,
+  onChanged: () => void,
+): void {
+  const apply = async () => {
+    await window.pond.query("autoImport.set", {
+      mode: enabled ? "move" : "copy",
+    });
+    onChanged();
+  };
+  if (!enabled) {
+    void apply();
+    return;
+  }
+  Dialog.confirm({
+    title: "Delete After Import",
+    description: `Pond deletes each file from ${target.name} once it's in your library, including files it already imported. Deleted files don't go to the Trash.`,
+    confirmLabel: "Turn On",
+    confirmVariant: "destructive",
+    onConfirm: apply,
+  });
+}
+
 function confirmStop(target: FolderMenuTarget, onChanged: () => void): void {
   const count = target.imported;
   const fileCount = formatPlural(count, { one: "file", other: "files" });
@@ -51,7 +75,7 @@ function confirmStop(target: FolderMenuTarget, onChanged: () => void): void {
 
 /** The folder menu as Settings rows, for the details dialog. */
 export function buildFolderRows(
-  target: FolderMenuTarget & { path: string },
+  target: FolderMenuTarget & { path: string; mode: "copy" | "move" },
   onChanged: () => void,
 ): SourceActionSections {
   return {
@@ -70,6 +94,25 @@ export function buildFolderRows(
             label: "Change",
             name: "Change Folder",
             onClick: () => void pickWatchedFolder(),
+          },
+        ],
+      },
+      {
+        id: "delete-after-import",
+        title: "Delete After Import",
+        description:
+          target.mode === "move"
+            ? "Pond deletes each file from the folder once it's in your library."
+            : "Files stay in the folder after Pond imports them.",
+        actions: [
+          {
+            label: target.mode === "move" ? "Turn Off" : "Turn On",
+            name:
+              target.mode === "move"
+                ? "Turn Off Delete After Import"
+                : "Turn On Delete After Import",
+            onClick: () =>
+              setDeleteAfterImport(target, target.mode !== "move", onChanged),
           },
         ],
       },
