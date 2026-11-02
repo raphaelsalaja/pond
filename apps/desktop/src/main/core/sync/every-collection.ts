@@ -35,7 +35,14 @@ export async function walkEveryCollection(
   if (!listed.ok) {
     return { ...NO_COLLECTION_PASS, gap: listGapNote(label, listed.reason) };
   }
-  const collections = listed.collections.map(({ id, name }) => ({ id, name }));
+  const collections = listed.collections.map(
+    ({ id, name, slug, ownerUsername }) => ({
+      id,
+      name,
+      ...(slug ? { slug } : {}),
+      ...(ownerUsername ? { ownerUsername } : {}),
+    }),
+  );
   if (collections.length === 0) return NO_COLLECTION_PASS;
   const walked = await walk(collections);
   if (!walked.ok) {

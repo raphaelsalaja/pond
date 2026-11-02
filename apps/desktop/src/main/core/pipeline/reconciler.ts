@@ -56,6 +56,7 @@ let pausedBeforeSuspend = false;
 let suspended = false;
 let pollTimer: NodeJS.Timeout | null = null;
 let kickPending = false;
+let tickRunning = false;
 let nextOrphanSweepAt = 0;
 const inflightByOp = {
   harvest_metadata: 0,
@@ -314,7 +315,7 @@ export function startReconciler(): void {
 }
 
 export function kickReconciler(): void {
-  if (!started) return;
+  if (!started) startReconciler();
   if (kickPending) return;
   kickPending = true;
   setImmediate(() => {
@@ -342,67 +343,76 @@ function schedulePoll(ms: number): void {
 
 async function tick(): Promise<void> {
   if (!started || paused) return;
-  if (Date.now() >= nextOrphanSweepAt) {
-    nextOrphanSweepAt = Date.now() + ORPHAN_SWEEP_INTERVAL_MS;
-    void track(sweepOrphanTasks()).catch((err) =>
-      log.warn("[pond pipeline:reconciler] periodic orphan sweep failed", err),
-    );
-    void track(recoverExpiredLeases()).catch((err) =>
-      log.warn(
-        "[pond pipeline:reconciler] periodic lease recovery failed",
-        err,
-      ),
-    );
-    void track(sweepTasklessIngestingSaves()).catch((err) =>
-      log.warn(
-        "[pond pipeline:reconciler] periodic taskless sweep failed",
-        err,
-      ),
-    );
-  }
-  const globalRoom = MAX_GLOBAL_INFLIGHT - inflightGlobal;
-  if (globalRoom <= 0) return;
-  const availableByOp = z
-    .record(z.enum(OPS), z.number())
-    .parse(
-      Object.fromEntries(
-        OPS.map((op) => [
-          op,
-          Math.max(0, PER_OP_CONCURRENCY[op] - inflightByOp[op]),
-        ]),
-      ),
-    );
-  const due = await claimDueTasks({
-    owner: LEASE_OWNER,
-    limit: globalRoom,
-    availableInteractive: Math.max(
-      0,
-      MAX_INTERACTIVE_INFLIGHT - inflightInteractive,
-    ),
-    availableBackground: Math.max(
-      0,
-      MAX_BACKGROUND_INFLIGHT - (inflightGlobal - inflightInteractive),
-    ),
-    availableByOp,
-  });
-  if (due.length === 0) return;
-  for (const task of due) {
-    if (runningTaskIds.has(task.id)) continue;
-    if (
-      !canDispatchTask({
-        interactive: isInteractiveTask(task),
-        paused,
-        inflightGlobal,
-        inflightInteractive,
-        inflightForOp: inflightByOp[task.op],
-        opCap: PER_OP_CONCURRENCY[task.op],
-        backgroundCap: MAX_BACKGROUND_INFLIGHT,
-        interactiveCap: MAX_INTERACTIVE_INFLIGHT,
-      })
-    ) {
-      continue;
+  if (tickRunning) return;
+  tickRunning = true;
+  try {
+    if (Date.now() >= nextOrphanSweepAt) {
+      nextOrphanSweepAt = Date.now() + ORPHAN_SWEEP_INTERVAL_MS;
+      void track(sweepOrphanTasks()).catch((err) =>
+        log.warn(
+          "[pond pipeline:reconciler] periodic orphan sweep failed",
+          err,
+        ),
+      );
+      void track(recoverExpiredLeases()).catch((err) =>
+        log.warn(
+          "[pond pipeline:reconciler] periodic lease recovery failed",
+          err,
+        ),
+      );
+      void track(sweepTasklessIngestingSaves()).catch((err) =>
+        log.warn(
+          "[pond pipeline:reconciler] periodic taskless sweep failed",
+          err,
+        ),
+      );
     }
-    void track(dispatchTask(task));
+    const globalRoom = MAX_GLOBAL_INFLIGHT - inflightGlobal;
+    if (globalRoom <= 0) return;
+    const availableByOp = z
+      .record(z.enum(OPS), z.number())
+      .parse(
+        Object.fromEntries(
+          OPS.map((op) => [
+            op,
+            Math.max(0, PER_OP_CONCURRENCY[op] - inflightByOp[op]),
+          ]),
+        ),
+      );
+    const due = await claimDueTasks({
+      owner: LEASE_OWNER,
+      limit: globalRoom,
+      availableInteractive: Math.max(
+        0,
+        MAX_INTERACTIVE_INFLIGHT - inflightInteractive,
+      ),
+      availableBackground: Math.max(
+        0,
+        MAX_BACKGROUND_INFLIGHT - (inflightGlobal - inflightInteractive),
+      ),
+      availableByOp,
+    });
+    if (due.length === 0) return;
+    for (const task of due) {
+      if (runningTaskIds.has(task.id)) continue;
+      if (
+        !canDispatchTask({
+          interactive: isInteractiveTask(task),
+          paused,
+          inflightGlobal,
+          inflightInteractive,
+          inflightForOp: inflightByOp[task.op],
+          opCap: PER_OP_CONCURRENCY[task.op],
+          backgroundCap: MAX_BACKGROUND_INFLIGHT,
+          interactiveCap: MAX_INTERACTIVE_INFLIGHT,
+        })
+      ) {
+        continue;
+      }
+      void track(dispatchTask(task));
+    }
+  } finally {
+    tickRunning = false;
   }
 }
 

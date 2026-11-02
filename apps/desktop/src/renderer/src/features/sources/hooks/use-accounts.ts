@@ -41,7 +41,14 @@ const ImportScopeSchema = z
   .object({
     listKinds: z.array(z.enum(LIST_KINDS)).optional().catch(undefined),
     collections: z
-      .array(z.object({ id: z.string(), name: z.string() }))
+      .array(
+        z.object({
+          id: z.string(),
+          name: z.string(),
+          slug: z.string().optional(),
+          ownerUsername: z.string().optional(),
+        }),
+      )
       .optional()
       .catch(undefined),
     mediaKinds: z.array(z.enum(IMPORT_MEDIA_KINDS)).optional().catch(undefined),

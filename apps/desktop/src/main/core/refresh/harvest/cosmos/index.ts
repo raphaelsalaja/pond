@@ -1,3 +1,4 @@
+export { harvestCosmosLibrary, listCosmosCollections } from "./api";
 export { adapt, buildExpression } from "./item";
 export {
   buildCosmosListExpression,

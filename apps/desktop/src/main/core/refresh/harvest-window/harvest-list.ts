@@ -12,7 +12,12 @@ import { z } from "zod";
 import { markAtRisk, report } from "../../pipeline/rate-governor";
 import { arenaProfileUrl, buildArenaListExpression } from "../harvest/arena";
 import { addCollectionEntry } from "../harvest/collection-entries";
-import { buildCosmosListExpression, COSMOS_LIST_URL } from "../harvest/cosmos";
+import {
+  buildCosmosListExpression,
+  COSMOS_LIST_URL,
+  harvestCosmosLibrary,
+  listCosmosCollections,
+} from "../harvest/cosmos";
 import {
   buildDribbbleListExpression,
   dribbbleLikesUrl,
@@ -617,6 +622,13 @@ async function readSourceCollections(
       if (!run.ok) return pageRunFailure(run.reason);
       return readCollectionsReply(run.value);
     }
+    case "cosmos": {
+      const result = await listCosmosCollections(opts.partition);
+      if (result.ok) return result;
+      return result.status === 401 || result.status === 403
+        ? { ok: false, reason: "auth_required" }
+        : { ok: false, reason: "unknown", detail: `api ${result.status}` };
+    }
     case "tiktok": {
       if (!opts.accountKey) return { ok: false, reason: "unknown" };
       const run = await runOnSourcePage(
@@ -683,6 +695,29 @@ export async function harvestSourceCollections(
           { partition: opts.partition },
         ),
       );
+    case "cosmos": {
+      const listed = await listCosmosCollections(opts.partition);
+      if (!listed.ok) {
+        return listed.status === 401 || listed.status === 403
+          ? { ok: false, reason: "auth_required" }
+          : { ok: false, reason: "unknown" };
+      }
+      const byId = new Map(
+        listed.collections.map((collection) => [collection.id, collection]),
+      );
+      return harvestEachCollection(source, collections, (collection) => {
+        const listedCollection = byId.get(collection.id);
+        return harvestCosmosLibrary(
+          args,
+          opts.partition,
+          collection.id,
+          collection.slug ?? listedCollection?.slug ?? undefined,
+          collection.ownerUsername ??
+            listedCollection?.ownerUsername ??
+            undefined,
+        );
+      });
+    }
     case "tiktok":
       return harvestEachCollection(source, collections, (collection) =>
         harvestSourceList(

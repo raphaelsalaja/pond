@@ -1,4 +1,5 @@
 import { setTimeout as sleep } from "node:timers/promises";
+import type { ImportCollectionOption } from "@shared/import-scope";
 import { session } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
@@ -6,9 +7,15 @@ import { partitionForIngest } from "../../../sync/accounts";
 import { PARTITION } from "../../harvest-window/constants";
 import type { ListHarvestArgs, ListHarvestResult } from "../list-types";
 import {
+  type CosmosClusterConnectionsData,
+  CosmosClusterConnectionsDataSchema,
+  CosmosClustersDataSchema,
+  type CosmosLibraryData,
   CosmosLibraryDataSchema,
   CosmosMeDataSchema,
   type CosmosViewer,
+  pageFromClusterConnections,
+  pageFromClusters,
   pageFromLibrary,
   viewerFromMeData,
 } from "./listing";
@@ -30,9 +37,22 @@ const LIBRARY_QUERY = `query PondLibrary($userId: UserId!, $pageSize: Int, $page
     meta { nextPageCursor count }
   }
 }`;
+const COLLECTION_QUERY = `query PondCollection($input: ClusterGetInput!, $pageSize: Int, $pageCursor: String) {
+  clusterConnections(clusterInput: $input, meta: { pageSize: $pageSize, pageCursor: $pageCursor }) {
+    items { element { id shareUrl createdAt } }
+    meta { nextPageCursor count }
+  }
+}`;
+const CLUSTERS_QUERY = `query PondClusters($userId: UserId!, $pageSize: Int, $pageCursor: String) {
+  userClusters(userId: $userId, meta: { pageSize: $pageSize, pageCursor: $pageCursor }) {
+    items { id name slug owner { username } numberOfElements isPrivate }
+    meta { nextPageCursor }
+  }
+}`;
 
 const GraphqlErrorSchema = z
   .object({
+    message: z.string().optional().catch(undefined),
     extensions: z
       .object({ code: z.string().optional().catch(undefined) })
       .optional()
@@ -75,6 +95,9 @@ export async function fetchCosmosViewer(
 export async function harvestCosmosLibrary(
   args: ListHarvestArgs,
   partition?: string,
+  collectionId?: string,
+  collectionSlug?: string,
+  collectionOwner?: string,
 ): Promise<ListHarvestResult> {
   const jar = partition ?? (await partitionForIngest("cosmos"));
   const viewer = await fetchCosmosViewer(jar);
@@ -91,17 +114,28 @@ export async function harvestCosmosLibrary(
   let knownPageStreak = 0;
 
   for (let page = 0; page < MAX_PAGES; page++) {
-    const result = await cosmosGraphql(
-      jar,
-      "PondLibrary",
-      LIBRARY_QUERY,
-      {
-        userId,
-        pageSize: PAGE_SIZE,
-        pageCursor,
-      },
-      CosmosLibraryDataSchema,
-    );
+    const result = collectionId
+      ? await cosmosGraphql(
+          jar,
+          "PondCollection",
+          COLLECTION_QUERY,
+          {
+            pageSize: PAGE_SIZE,
+            pageCursor,
+            input: {
+              slug: collectionSlug ?? collectionId,
+              ownerUsername: collectionOwner ?? viewer.handle,
+            },
+          },
+          CosmosClusterConnectionsDataSchema,
+        )
+      : await cosmosGraphql(
+          jar,
+          "PondLibrary",
+          LIBRARY_QUERY,
+          { userId, pageSize: PAGE_SIZE, pageCursor },
+          CosmosLibraryDataSchema,
+        );
     if (!result.ok) {
       if (result.status === 401 || result.status === 403) {
         return { ok: false, reason: "auth_required" };
@@ -112,7 +146,9 @@ export async function harvestCosmosLibrary(
       if (page === 0) return { ok: false, reason: "no_match" };
       break;
     }
-    const pageData = pageFromLibrary(result.json);
+    const pageData = isClusterConnectionsData(result.json)
+      ? pageFromClusterConnections(result.json)
+      : pageFromLibrary(result.json);
     if (
       page === 0 &&
       pageData.entries.length === 0 &&
@@ -149,6 +185,45 @@ export async function harvestCosmosLibrary(
   return { ok: true, entries, reachedEnd: false, seen: entries.length };
 }
 
+function isClusterConnectionsData(
+  data: CosmosClusterConnectionsData | CosmosLibraryData,
+): data is CosmosClusterConnectionsData {
+  return "clusterConnections" in data;
+}
+
+export async function listCosmosCollections(
+  partition: string = PARTITION,
+): Promise<
+  | { ok: true; collections: ImportCollectionOption[] }
+  | { ok: false; status: number }
+> {
+  const viewer = await fetchCosmosViewer(partition);
+  if (!viewer) return { ok: false, status: 401 };
+  const userId = Number(viewer.userId);
+  if (!Number.isInteger(userId) || userId <= 0) {
+    return { ok: false, status: 401 };
+  }
+
+  const collections: ImportCollectionOption[] = [];
+  let pageCursor: string | undefined;
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const result = await cosmosGraphql(
+      partition,
+      "PondClusters",
+      CLUSTERS_QUERY,
+      { userId, pageSize: PAGE_SIZE, pageCursor },
+      CosmosClustersDataSchema,
+    );
+    if (!result.ok) return result;
+    const pageData = pageFromClusters(result.json);
+    collections.push(...pageData.collections);
+    if (!pageData.nextPageCursor) return { ok: true, collections };
+    pageCursor = pageData.nextPageCursor;
+    await sleep(250);
+  }
+  return { ok: true, collections };
+}
+
 async function cosmosGraphql<T>(
   partition: string,
   operationName: string,
@@ -157,6 +232,7 @@ async function cosmosGraphql<T>(
     userId?: number;
     pageSize?: number;
     pageCursor?: string;
+    input?: { slug: string; ownerUsername: string };
   },
   schema: z.ZodType<T>,
 ): Promise<JsonResult<T>> {
@@ -203,7 +279,10 @@ async function cosmosGraphql<T>(
     log.warn(
       "[pond cosmos-api] graphql errors",
       operationName,
-      envelope.errors,
+      envelope.errors?.map((error) => ({
+        message: error.message,
+        code: error.extensions?.code,
+      })),
     );
     return { ok: false, status: res.status || 400 };
   }

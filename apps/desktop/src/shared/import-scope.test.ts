@@ -55,7 +55,10 @@ describe("normalizeImportScope", () => {
         collections: [{ id: "1", name: "Folder" }],
         since: "2024-01-01",
       }),
-    ).toEqual({ ok: true, scope: {} });
+    ).toEqual({
+      ok: true,
+      scope: { collections: [{ id: "1", name: "Folder" }] },
+    });
     expect(normalizeImportScope("pinterest", { listKinds: ["liked"] })).toEqual(
       { ok: true, scope: {} },
     );
