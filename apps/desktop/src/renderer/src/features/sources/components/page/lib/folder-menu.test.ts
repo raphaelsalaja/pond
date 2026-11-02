@@ -15,11 +15,17 @@ describe("buildFolderMenu", () => {
   });
 
   it("offers pause while watching and resume when off", () => {
-    const target = { name: "PNG", imported: 200, watching: true };
+    const target = {
+      name: "PNG",
+      imported: 200,
+      watching: true,
+      mode: "copy" as const,
+    };
     expect(menuLabels(buildFolderMenu(target, () => {}))).toEqual([
       "Reveal in Finder",
       "Change Folder",
       "Pause Watching",
+      "Delete After Import",
       "Stop Watching",
     ]);
     expect(
@@ -32,7 +38,7 @@ describe("buildFolderMenu", () => {
     vi.stubGlobal("pond", { query });
     const onChanged = vi.fn();
     const pause = buildFolderMenu(
-      { name: "PNG", imported: 200, watching: true },
+      { name: "PNG", imported: 200, watching: true, mode: "copy" },
       onChanged,
     )
       .flatMap((item) => (item.type === "group" ? item.items : []))
@@ -41,6 +47,26 @@ describe("buildFolderMenu", () => {
     pause.onClick?.();
     await vi.waitFor(() => expect(onChanged).toHaveBeenCalled());
     expect(query).toHaveBeenCalledWith("autoImport.set", { enabled: false });
+  });
+
+  it("checks delete after import in move mode and confirms turning it on", () => {
+    const confirm = vi.spyOn(Dialog, "confirm").mockImplementation(() => {});
+    const find = (mode: "copy" | "move") =>
+      buildFolderMenu(
+        { name: "PNG", imported: 200, watching: true, mode },
+        () => {},
+      )
+        .flatMap((item) => (item.type === "group" ? item.items : []))
+        .find((item) => item.type === "checkbox");
+    expect(find("move")).toMatchObject({ checked: true });
+    const item = find("copy");
+    if (item?.type !== "checkbox") throw new Error("Missing checkbox");
+    expect(item.checked).toBe(false);
+    item.onCheckedChange?.(true);
+    expect(confirm).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "Delete After Import" }),
+    );
+    confirm.mockRestore();
   });
 });
 

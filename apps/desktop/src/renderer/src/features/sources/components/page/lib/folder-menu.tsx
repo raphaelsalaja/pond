@@ -16,6 +16,7 @@ interface FolderMenuTarget {
   name: string;
   imported: number;
   watching: boolean;
+  mode: "copy" | "move";
 }
 
 async function revealFolder(name: string): Promise<void> {
@@ -75,7 +76,7 @@ function confirmStop(target: FolderMenuTarget, onChanged: () => void): void {
 
 /** The folder menu as Settings rows, for the details dialog. */
 export function buildFolderRows(
-  target: FolderMenuTarget & { path: string; mode: "copy" | "move" },
+  target: FolderMenuTarget & { path: string },
   onChanged: () => void,
 ): SourceActionSections {
   return {
@@ -177,6 +178,13 @@ export function buildFolderMenu(
           label: target.watching ? "Pause Watching" : "Resume Watching",
           icon: target.watching ? <IconMediaPause /> : <IconMediaPlay />,
           onClick: () => void setWatching(!target.watching, onChanged),
+        },
+        {
+          type: "checkbox",
+          label: "Delete After Import",
+          checked: target.mode === "move",
+          onCheckedChange: (checked) =>
+            setDeleteAfterImport(target, checked, onChanged),
         },
         {
           label: "Stop Watching",
