@@ -9,7 +9,6 @@ import {
   rename,
   rm,
   stat,
-  unlink,
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -35,6 +34,8 @@ export interface AutoImportWorkerOptions {
     path: string;
     sourceId: string;
   }): Promise<{ ok: boolean; id?: string }>;
+  /** Moves a source file to the Trash after its import is durable. */
+  trash(path: string): Promise<void>;
   report?(entry: { name: string; ok: boolean; id?: string }): Promise<void>;
   stableMs?: number;
   now?: () => number;
@@ -123,7 +124,7 @@ export async function createAutoImportWorker(options: AutoImportWorkerOptions) {
               current.size === details.size &&
               current.mtimeMs === details.mtimeMs
             )
-              await unlink(path);
+              await options.trash(path);
           }
           previous.completed = true;
           continue;
@@ -158,7 +159,7 @@ export async function createAutoImportWorker(options: AutoImportWorkerOptions) {
             current.mtimeMs === details.mtimeMs &&
             (await digest(path)) === hash
           )
-            await unlink(path);
+            await options.trash(path);
         }
         previous.failures = 0;
         previous.completed = true;

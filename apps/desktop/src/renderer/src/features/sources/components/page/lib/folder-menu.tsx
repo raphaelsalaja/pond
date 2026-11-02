@@ -52,7 +52,7 @@ function setDeleteAfterImport(
   }
   Dialog.confirm({
     title: "Delete After Import",
-    description: `Pond deletes each file from ${target.name} once it's in your library, including files it already imported. Deleted files don't go to the Trash.`,
+    description: `Pond moves each file in ${target.name} to the Trash once it's in your library, including files it already imported.`,
     confirmLabel: "Turn On",
     confirmVariant: "destructive",
     onConfirm: apply,
@@ -102,7 +102,7 @@ export function buildFolderRows(
         title: "Delete After Import",
         description:
           target.mode === "move"
-            ? "Pond deletes each file from the folder once it's in your library."
+            ? "Pond moves each file to the Trash once it's in your library."
             : "Files stay in the folder after Pond imports them.",
         actions: [
           {
