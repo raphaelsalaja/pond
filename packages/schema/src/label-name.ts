@@ -1,9 +1,6 @@
 /**
  * Casing is preserved for display; dedup happens through `labelKey`.
- * Letters and combining marks from any script stay. NFC makes a decomposed
- * accent the same name as its composed letter. A leading `#` is removed,
- * whitespace collapses, and characters other than digits, space, `/`, `:`,
- * `.`, and `-` are still removed.
+ * @remarks NFC makes a decomposed accent the same name as its composed letter.
  */
 export function normalizeLabelName(raw: string): string {
   return raw
