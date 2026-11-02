@@ -161,6 +161,35 @@ it("composes one top video toolbar and one bottom playback toolbar", async () =>
   expect(host.querySelector("[data-anchor]")).toBeNull();
 });
 
+it("keeps Space toggling playback after the seek bar is clicked", async () => {
+  const play = vi.fn(() => Promise.resolve());
+  Object.defineProperty(HTMLMediaElement.prototype, "play", {
+    configurable: true,
+    value: play,
+  });
+  await act(async () => {
+    root.render(<TestVideoPlayer />);
+  });
+  const seek = host.querySelector('[aria-label="Seek"]');
+  const thumb = seek?.querySelector("input");
+  if (!seek || !thumb) throw new Error("Missing seek bar");
+
+  thumb.focus();
+  await act(async () => {
+    seek.dispatchEvent(new MouseEvent("pointerup", { bubbles: true }));
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+  });
+  expect(seek.contains(document.activeElement)).toBe(false);
+
+  play.mockClear();
+  await act(async () => {
+    (document.activeElement ?? document.body).dispatchEvent(
+      new KeyboardEvent("keydown", { key: " ", code: "Space", bubbles: true }),
+    );
+  });
+  expect(play).toHaveBeenCalledTimes(1);
+});
+
 it("always fits video inside the viewer", async () => {
   await act(async () => {
     root.render(<TestVideoPlayer />);
