@@ -12,11 +12,5 @@ export function untrackRunningIngest(taskId: string): void {
 }
 
 export function abortRunningIngest(taskId: string): void {
-  const controller = runningIngest.get(taskId);
-  if (!controller) return;
-  try {
-    controller.abort();
-  } catch {
-    // The controller is already unusable. The task row still has to be cancelled.
-  }
+  runningIngest.get(taskId)?.abort();
 }

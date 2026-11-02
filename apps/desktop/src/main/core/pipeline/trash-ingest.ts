@@ -47,9 +47,6 @@ export function releaseTrashedIngestSync(
       )
       .all(scoped, ids),
   );
-  for (const task of open) {
-    if (task.status === "running") abortRunningIngest(task.id);
-  }
   const cancelled = sqlite
     .prepare(
       `UPDATE tasks
