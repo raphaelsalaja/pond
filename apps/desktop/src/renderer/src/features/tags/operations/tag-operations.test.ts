@@ -64,6 +64,15 @@ describe("tag operations", () => {
     expect(groups.has("New Group")).toBe(true);
   });
 
+  it("keeps accented and non-Latin letters when a tag is created", async () => {
+    const { operations, tags } = setup();
+    await operations.create("tag", " Données ");
+    await operations.create("tag", "数据");
+    await operations.create("tag", "!!!");
+    await operations.rename("tag", "Données", "Données!");
+    expect([...tags]).toEqual(["Animation", "Typography", "Données", "数据"]);
+  });
+
   it("preserves tag case-only rename and group case rename behavior", async () => {
     const { operations, tags, groups } = setup();
     await operations.rename("tag", "Animation", " animation ");
