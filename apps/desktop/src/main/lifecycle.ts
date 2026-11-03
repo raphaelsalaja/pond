@@ -39,16 +39,16 @@ export function protocolRegistration(input: {
 }
 
 /**
- * A hidden Windows start with no notification-area icon would leave nothing to
- * click, so the window opens instead.
+ * A hidden Windows or Linux start with no notification-area icon would leave
+ * nothing to click, so the window opens instead.
  */
 export function resolveLaunchHidden(input: {
   platform: NodeJS.Platform;
   requested: boolean;
   trayEnabled: boolean;
 }): boolean {
-  if (input.platform === "win32") return input.requested && input.trayEnabled;
-  return input.requested;
+  if (input.platform === "darwin") return input.requested;
+  return input.requested && input.trayEnabled;
 }
 
 /**

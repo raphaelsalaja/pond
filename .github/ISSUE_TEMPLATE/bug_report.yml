@@ -64,6 +64,7 @@ body:
       options:
         - macOS
         - Windows
+        - Linux
         - Other
     validations:
       required: true
@@ -71,8 +72,8 @@ body:
     id: os-version
     attributes:
       label: OS version
-      description: "macOS: Apple menu > About This Mac. Windows: Settings > System > About, or run `winver`."
-      placeholder: macOS 15.4 / Windows 11 24H2 (build 26100)
+      description: "macOS: Apple menu > About This Mac. Windows: Settings > System > About, or run `winver`. Linux: `cat /etc/os-release` (for example Ubuntu 24.04)."
+      placeholder: macOS 15.4 / Windows 11 24H2 (build 26100) / Ubuntu 24.04
     validations:
       required: true
   - type: dropdown

@@ -15,8 +15,9 @@ async function verify(context, { runFfmpeg = runFfmpegVersion } = {}) {
   pruneBetterSqlitePrebuilds(resourcesDir, platform, arch);
   await verifyRuntimePackages(resourcesDir);
   if (platform === "darwin") verifySharpRuntime(resourcesDir, arch);
-  if (platform === "win32") {
-    verifySharpWindowsRuntime(resourcesDir, arch);
+  if (platform === "linux") verifySharpLinuxRuntime(resourcesDir, arch);
+  if (platform === "win32") verifySharpWindowsRuntime(resourcesDir, arch);
+  if (platform === "win32" || platform === "linux") {
     verifyOnnxRuntime(resourcesDir, platform, arch);
     assertAppIcon(context);
   }
@@ -25,7 +26,7 @@ async function verify(context, { runFfmpeg = runFfmpegVersion } = {}) {
 
   assertPresent(ffmpegPath, "ffmpeg");
   // A binary built for another OS cannot be executed on the packaging host.
-  if (platform === "win32" && process.platform === platform) {
+  if (process.platform === platform) {
     const result = runFfmpeg(ffmpegPath);
     if (result.error || result.status !== 0) {
       throw new Error(
@@ -34,7 +35,7 @@ async function verify(context, { runFfmpeg = runFfmpegVersion } = {}) {
       );
     }
   }
-  if (platform === "darwin" || platform === "win32") {
+  if (platform === "darwin" || platform === "win32" || platform === "linux") {
     assertPresent(
       betterSqlitePath(resourcesDir, platform, arch),
       "better-sqlite3 native module",
@@ -204,6 +205,28 @@ function verifySharpRuntime(resourcesDir, arch) {
   }
 }
 
+function verifySharpLinuxRuntime(resourcesDir, arch) {
+  if (arch !== "arm64" && arch !== "x64") return;
+  const unpacked = join(resourcesDir, "app.asar.unpacked");
+  const files = listFiles(unpacked);
+  const runtime = files.find(
+    (file) =>
+      file.includes(`${sep}@img${sep}sharp-linux-${arch}${sep}`) &&
+      file.endsWith(".node"),
+  );
+  const libvips = files.find(
+    (file) =>
+      file.includes(`${sep}@img${sep}sharp-libvips-linux-${arch}${sep}`) &&
+      file.includes(`${sep}libvips-cpp.so`),
+  );
+  if (!runtime || !libvips) {
+    throw new Error(
+      `[pond verify] missing sharp linux-${arch} runtime under ${unpacked}. ` +
+        "A Linux install cannot generate thumbnails without it.",
+    );
+  }
+}
+
 function verifySharpWindowsRuntime(resourcesDir, arch) {
   if (arch !== "arm64" && arch !== "x64") return;
   const lib = join(
@@ -238,7 +261,9 @@ function verifyOnnxRuntime(resourcesDir, platform, arch) {
     platform,
     arch,
   );
-  for (const file of ["onnxruntime_binding.node", "onnxruntime.dll"]) {
+  const library =
+    platform === "win32" ? "onnxruntime.dll" : "libonnxruntime.so.1";
+  for (const file of ["onnxruntime_binding.node", library]) {
     assertPresent(join(directory, file), `onnxruntime ${file}`);
   }
 }

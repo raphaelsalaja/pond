@@ -6,7 +6,7 @@ Browser extension that saves pages, screenshots, and images into your local Pond
 
 Install the extension from the [Chrome Web Store](https://chromewebstore.google.com/detail/ghigndnldiagchoaifgndleogpkendbc) or [Firefox Add-ons](https://addons.mozilla.org/firefox/addon/desktop%40pond.so/). In Pond, **Browser Extension** in the library menu links to both.
 
-Open Pond once so it can register the native host. On macOS this writes a manifest into each installed browser's native messaging folder. On Windows it registers the host under per-user `HKEY_CURRENT_USER` registry keys for Chrome, Edge, Brave, and other supported browsers.
+Open Pond once so it can register the native host. On macOS this writes a manifest into each installed browser's native messaging folder. On Windows it registers the host under per-user `HKEY_CURRENT_USER` registry keys for Chrome, Edge, Brave, and other supported browsers. On Linux it writes to the XDG native messaging folders of Chrome, Chromium, Brave, Edge, Vivaldi, Firefox, and Zen, including their Snap and Flatpak locations.
 
 ## Use
 

@@ -214,9 +214,32 @@ nsis:
   # Removes the HKCU registrations Pond writes at runtime; keeps the Library.
   include: packaging/installer.nsh
 
-# Linux remains disabled until that build ships.
-# linux:
-#   target:
-#     - target: AppImage
-#     - target: deb
-#   category: Utility
+# Linux ships x64 AppImage and deb packages. electron-builder writes
+# latest-linux.yml for the AppImage updater; the deb is installed and upgraded
+# by the system package manager. `pond.desktop` also registers the `pond://`
+# handler and the tray/window class used by the menu and the CLI.
+linux:
+  artifactName: ${productName}-${version}.${ext}
+  category: Utility
+  executableName: pond
+  icon: icon.png
+  maintainer: Raphael Salaja <raphaelsalaja@users.noreply.github.com>
+  synopsis: A local-first archive for everything you save
+  description: >-
+    Pond keeps everything you save across social sources and the web in one
+    local-first library on your computer.
+  target:
+    - target: AppImage
+      arch:
+        - x64
+    - target: deb
+      arch:
+        - x64
+  extraResources:
+    - from: node_modules/ffmpeg-static/ffmpeg
+      to: bin/ffmpeg
+  desktop:
+    entry:
+      Keywords: archive;saves;library;inspiration;
+      MimeType: x-scheme-handler/pond;
+      StartupWMClass: Pond

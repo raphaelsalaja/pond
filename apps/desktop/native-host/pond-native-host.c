@@ -130,6 +130,39 @@ static HANDLE connect_to_pond(void) {
 }
 #endif
 
+#ifndef _WIN32
+/**
+ * Mirrors `linuxNativeSocketPath` in src/main/native/paths.ts. The browser,
+ * not Pond, starts this host, so both sides resolve the location themselves.
+ */
+static int default_socket_path(char *path, size_t capacity) {
+#if defined(__APPLE__)
+  const char *home = getenv("HOME");
+  if (!home || !home[0]) return -1;
+  int n = snprintf(
+      path,
+      capacity,
+      "%s/Library/Application Support/Pond/native.sock",
+      home);
+#else
+  const char *runtime = getenv("XDG_RUNTIME_DIR");
+  const char *config = getenv("XDG_CONFIG_HOME");
+  const char *home = getenv("HOME");
+  int n;
+  if (runtime && runtime[0] == '/') {
+    n = snprintf(path, capacity, "%s/pond/native.sock", runtime);
+  } else if (config && config[0] == '/') {
+    n = snprintf(path, capacity, "%s/pond/native.sock", config);
+  } else if (home && home[0]) {
+    n = snprintf(path, capacity, "%s/.config/pond/native.sock", home);
+  } else {
+    return -1;
+  }
+#endif
+  return n >= 0 && (size_t)n < capacity ? 0 : -1;
+}
+#endif
+
 static int write_reply(const void *body, uint32_t len) {
   if (fwrite(&len, 4, 1, stdout) != 1) return -1;
   if (fwrite(body, 1, len, stdout) != len) return -1;
@@ -160,20 +193,9 @@ int main(void) {
   (void)_setmode(_fileno(stdin), _O_BINARY);
   (void)_setmode(_fileno(stdout), _O_BINARY);
 #else
-  const char *home = getenv("HOME");
-  if (!home || !home[0]) {
-    fprintf(stderr, "pond-native-host: HOME is unset\n");
-    reply_offline();
-    return 0;
-  }
-
   char sock_path[512];
-  int n = snprintf(
-      sock_path,
-      sizeof sock_path,
-      "%s/Library/Application Support/Pond/native.sock",
-      home);
-  if (n < 0 || (size_t)n >= sizeof sock_path) {
+  if (default_socket_path(sock_path, sizeof sock_path) != 0) {
+    fprintf(stderr, "pond-native-host: cannot resolve the socket path\n");
     reply_offline();
     return 0;
   }
@@ -214,6 +236,13 @@ int main(void) {
   }
 
 #ifndef _WIN32
+  if (strlen(sock_path) >= sizeof(((struct sockaddr_un *)0)->sun_path)) {
+    close(fd);
+    free(req);
+    reply_offline();
+    return 0;
+  }
+
   struct sockaddr_un addr;
   memset(&addr, 0, sizeof addr);
   addr.sun_family = AF_UNIX;

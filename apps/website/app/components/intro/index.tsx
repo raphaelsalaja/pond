@@ -22,7 +22,7 @@ export function Intro() {
       </h1>
       <p className={styles.text}>
         Keep what you save on X, Instagram, Pinterest, and more in a folder on
-        your Mac or Windows PC. Free and open source.
+        your Mac, Windows PC, or Linux desktop. Free and open source.
       </p>
       <nav className={styles.actions} aria-label="Downloads and links">
         <div className={styles.buttons}>
