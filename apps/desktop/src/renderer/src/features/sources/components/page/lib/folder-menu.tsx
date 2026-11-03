@@ -1,6 +1,7 @@
 import {
   IconFolderOpen,
   IconFolderPen,
+  IconFolderXmark,
   IconMediaPause,
   IconMediaPlay,
   IconTrash,
@@ -182,13 +183,14 @@ export function buildFolderMenu(
         {
           type: "checkbox",
           label: "Delete After Import",
+          icon: <IconTrash />,
           checked: target.mode === "move",
           onCheckedChange: (checked) =>
             setDeleteAfterImport(target, checked, onChanged),
         },
         {
           label: "Stop Watching",
-          icon: <IconTrash />,
+          icon: <IconFolderXmark />,
           variant: "destructive",
           onClick: () => confirmStop(target, onChanged),
         },
