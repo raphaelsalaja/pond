@@ -14,6 +14,10 @@ function windowsInstallerUrl(): string {
   return `${RELEASES_BASE}/Pond-${POND_VERSION}-x64.exe`;
 }
 
+function debUrl(): string {
+  return `${RELEASES_BASE}/Pond-${POND_VERSION}.deb`;
+}
+
 /** Hardcoded because importing `CHROME_WEB_STORE_ID` from `@pond/schema/native` would pull zod into this client bundle. */
 const CHROME_WEB_STORE_URL =
   "https://chromewebstore.google.com/detail/ghigndnldiagchoaifgndleogpkendbc";
@@ -31,20 +35,34 @@ interface Download {
 
 /** The download offered first, matched to the visitor's system. */
 export function primaryDownload(platform: Platform): Download {
-  return platform === "windows"
-    ? { label: "Download for Windows", href: windowsInstallerUrl() }
-    : { label: "Download for Mac", href: dmgUrl("arm64") };
+  if (platform === "windows") {
+    return { label: "Download for Windows", href: windowsInstallerUrl() };
+  }
+  if (platform === "linux") {
+    return { label: "Download for Linux", href: debUrl() };
+  }
+  return { label: "Download for Mac", href: dmgUrl("arm64") };
 }
 
 /** Every other build, listed as secondary links. */
 export function otherDownloads(platform: Platform): Download[] {
-  return platform === "windows"
-    ? [
-        { label: "Mac", href: dmgUrl("arm64") },
-        { label: "Intel Mac", href: dmgUrl("x64") },
-      ]
-    : [
-        { label: "Intel Mac", href: dmgUrl("x64") },
-        { label: "Windows", href: windowsInstallerUrl() },
-      ];
+  if (platform === "windows") {
+    return [
+      { label: "Mac", href: dmgUrl("arm64") },
+      { label: "Intel Mac", href: dmgUrl("x64") },
+      { label: "Linux", href: debUrl() },
+    ];
+  }
+  if (platform === "linux") {
+    return [
+      { label: "Mac", href: dmgUrl("arm64") },
+      { label: "Intel Mac", href: dmgUrl("x64") },
+      { label: "Windows", href: windowsInstallerUrl() },
+    ];
+  }
+  return [
+    { label: "Intel Mac", href: dmgUrl("x64") },
+    { label: "Windows", href: windowsInstallerUrl() },
+    { label: "Linux", href: debUrl() },
+  ];
 }

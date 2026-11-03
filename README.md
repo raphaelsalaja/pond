@@ -19,7 +19,24 @@ Download `Pond-X.Y.Z-x64.exe` from [GitHub Releases](https://github.com/raphaels
 
 The installer is not code-signed yet, so Windows SmartScreen may show "Windows protected your PC" on first run. Choose **More info**, then **Run anyway**. Windows on Arm is not built yet.
 
-Linux is on the [roadmap](ROADMAP.md).
+### Linux
+
+Download `Pond-X.Y.Z.deb` from [GitHub Releases](https://github.com/raphaelsalaja/pond/releases) and install it with your package manager:
+
+```bash
+sudo apt install ./Pond-X.Y.Z.deb
+```
+
+The deb registers the desktop entry, the `pond://` handler, and the browser native host. Pond needs a 64-bit Linux desktop with GLIBC 2.31 or later (Ubuntu 22.04, Debian 12, and newer), and it updates itself from GitHub Releases.
+
+A portable `Pond-X.Y.Z.AppImage` is also published. Make it executable and run it:
+
+```bash
+chmod +x Pond-X.Y.Z.AppImage
+./Pond-X.Y.Z.AppImage
+```
+
+On distributions that restrict unprivileged user namespaces (Ubuntu 23.10 and later), the AppImage needs `--no-sandbox` or an AppArmor profile. Prefer the deb there. AppImage builds do not add themselves to your application menu; to install desktop integration, use [AppImageLauncher](https://github.com/TheAssassin/AppImageLauncher) or create the entry by hand. Linux on Arm is not built yet.
 
 ### Browser extension
 

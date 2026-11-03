@@ -90,9 +90,48 @@ describe("nativeSocketPath", () => {
   });
 
   it("keeps the macOS Application Support socket", async () => {
-    await expect(nativeSocketPath("darwin")).resolves.toMatch(
-      /Library[\\/]Application Support[\\/]Pond[\\/]native\.sock$/,
-    );
+    await expect(
+      nativeSocketPath("darwin", undefined, undefined, {}, "/Users/test"),
+    ).resolves.toBe("/Users/test/Library/Application Support/Pond/native.sock");
+  });
+
+  it("prefers the XDG runtime directory on Linux", async () => {
+    await expect(
+      nativeSocketPath(
+        "linux",
+        undefined,
+        undefined,
+        { XDG_RUNTIME_DIR: "/run/user/1000", XDG_CONFIG_HOME: "/mnt/config" },
+        "/home/test",
+      ),
+    ).resolves.toBe("/run/user/1000/pond/native.sock");
+  });
+
+  it("falls back to the XDG config root and then the home directory on Linux", async () => {
+    await expect(
+      nativeSocketPath(
+        "linux",
+        undefined,
+        undefined,
+        { XDG_CONFIG_HOME: "/mnt/config" },
+        "/home/test",
+      ),
+    ).resolves.toBe("/mnt/config/pond/native.sock");
+    await expect(
+      nativeSocketPath("linux", undefined, undefined, {}, "/home/test"),
+    ).resolves.toBe("/home/test/.config/pond/native.sock");
+  });
+
+  it("keeps a Linux sandbox off the installed app's socket", async () => {
+    await expect(
+      nativeSocketPath(
+        "linux",
+        undefined,
+        "/tmp/pond-sandbox",
+        { XDG_RUNTIME_DIR: "/run/user/1000" },
+        "/home/test",
+      ),
+    ).resolves.toBe("/tmp/pond-sandbox/native.sock");
   });
 });
 

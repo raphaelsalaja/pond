@@ -1,7 +1,7 @@
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
 import { homedir } from "node:os";
-import { join, posix } from "node:path";
+import { isAbsolute, join, posix } from "node:path";
 import { promisify } from "node:util";
 import { SAFARI_APP_GROUP, SHARE_INBOX_DIR } from "@pond/schema/native";
 
@@ -93,11 +93,27 @@ export function shareInboxPath(home: string = homedir()): string {
   );
 }
 
+/**
+ * Linux has no fixed per-user socket directory. Prefer the session runtime
+ * directory, then the XDG config root; `pond-native-host.c` repeats this order.
+ */
+function linuxNativeSocketPath(
+  env: NodeJS.ProcessEnv = process.env,
+  home: string = homedir(),
+): string {
+  for (const root of [env.XDG_RUNTIME_DIR, env.XDG_CONFIG_HOME]) {
+    if (root && isAbsolute(root)) return join(root, "pond", "native.sock");
+  }
+  return join(home, ".config", "pond", "native.sock");
+}
+
 /** Chrome native-host connect path; keep in lockstep with `pond-native-host.c`. */
 export async function nativeSocketPath(
   platform: NodeJS.Platform = process.platform,
   sidResolver: WindowsSidLoader = resolveWindowsUserSid,
   sandbox: string | undefined = process.env.POND_SANDBOX,
+  env: NodeJS.ProcessEnv = process.env,
+  home: string = homedir(),
 ): Promise<string> {
   if (platform === "win32") {
     const pipe = windowsNativePipePath(await sidResolver());
@@ -109,5 +125,6 @@ export async function nativeSocketPath(
   if (sandbox) {
     return join(sandbox, "native.sock");
   }
-  return join(homedir(), "Library/Application Support/Pond", "native.sock");
+  if (platform === "linux") return linuxNativeSocketPath(env, home);
+  return join(home, "Library/Application Support/Pond", "native.sock");
 }

@@ -16,17 +16,19 @@ Run these commands from `apps/desktop`, or prefix them at the repository root wi
 | `pnpm build` | Build main/preload/renderer into `out/` |
 | `pnpm dist:mac` | Build + package macOS DMG (arm64 + x64) |
 | `pnpm dist:win` | Build + package the Windows x64 NSIS installer (run on Windows) |
+| `pnpm dist:linux` | Build + package the Linux x64 AppImage and deb (run on Linux) |
 | `pnpm rebuild` | Rebuild `better-sqlite3` for the current Electron ABI |
 | `pnpm db:generate` | Generate Drizzle SQLite migrations |
 
 ## On disk
 
-- **App state**: Electron’s `userData` directory (`~/Library/Application Support/Pond` on macOS, `%APPDATA%\Pond` on Windows) holds `global.db`, `config.json`, and encrypted secrets. Per-library indexes live at `indexes/<libraryId>.db`; thumbnail derivatives live at `pond-cache/thumbs/<libraryId>/`. See [`src/main/paths.ts`](src/main/paths.ts) for the platform-resolved paths.
-- **Library** (source of truth): `~/Pond/My Pond.pond/` on macOS and `%USERPROFILE%\Pond\My Pond.pond` on Windows (per-item `.info` folders, trash, library metadata). On macOS the `.pond` folder is registered as a package, so Finder shows it as one file; on Windows it is an ordinary folder.
+- **App state**: Electron’s `userData` directory (`~/Library/Application Support/Pond` on macOS, `%APPDATA%\Pond` on Windows, `$XDG_CONFIG_HOME/Pond` on Linux) holds `global.db`, `config.json`, and encrypted secrets. Per-library indexes live at `indexes/<libraryId>.db`; thumbnail derivatives live at `pond-cache/thumbs/<libraryId>/`. See [`src/main/paths.ts`](src/main/paths.ts) for the platform-resolved paths.
+- **Library** (source of truth): `~/Pond/My Pond.pond/` on macOS and Linux and `%USERPROFILE%\Pond\My Pond.pond` on Windows (per-item `.info` folders, trash, library metadata). On macOS the `.pond` folder is registered as a package, so Finder shows it as one file; on Windows and Linux it is an ordinary folder.
 - **Secrets**: ingest token encrypted via Electron's `safeStorage`
   (macOS Keychain, Windows DPAPI, libsecret on Linux) and persisted to
   `secrets.json` in the app data directory.
-- **Logs**: `main.log` uses Electron's logs directory (`~/Library/Logs/Pond` on macOS). If that directory or file is not writable, Pond tries `logs/` inside its app data directory. If both locations fail, file logging is disabled so it does not prevent the app from opening. **Show Logs in Finder** (macOS) or **Show Logs in File Explorer** (Windows) opens the selected directory when file logging is available.
+- **Logs**: `main.log` uses Electron's logs directory (`~/Library/Logs/Pond` on macOS, `~/.config/Pond/logs` on Linux). If that directory or file is not writable, Pond tries `logs/` inside its app data directory. If both locations fail, file logging is disabled so it does not prevent the app from opening. **Show Logs in Finder** (macOS) or **Show Logs in File Explorer** (Windows) opens the selected directory when file logging is available.
+- **Autostart**: Linux has no Electron login item, so Pond writes an XDG autostart entry at `$XDG_CONFIG_HOME/autostart/pond.desktop` when **Launch at login** is on. The native-host socket lives at `$XDG_RUNTIME_DIR/pond/native.sock`, falling back to `$XDG_CONFIG_HOME/pond/native.sock`.
 
 The per-library index is rebuildable from the library. Global app state and encrypted secrets have separate lifecycles; do not treat the whole app data directory as a disposable index.
 

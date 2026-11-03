@@ -40,9 +40,10 @@ export const SETUP_STEPS = Object.freeze([
   {
     name: "browser native host",
     script: "build-native-host.mjs",
-    // Compiling the Windows host needs MSVC. `dist:win` runs the same script
-    // and fails there, so install only warns.
-    required: process.platform !== "win32",
+    // Every release platform except macOS needs an extra toolchain (MSVC on
+    // Windows, a C compiler on Linux), so install only warns. `dist:*` runs
+    // the same script and fails there when the host cannot be built.
+    required: process.platform === "darwin",
   },
 ]);
 

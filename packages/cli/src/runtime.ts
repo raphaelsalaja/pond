@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { existsSync } from "node:fs";
 import { setTimeout as delay } from "node:timers/promises";
 import { findPondExecutable } from "./windows-install";
 
@@ -19,6 +20,7 @@ export function pondLaunchCommand(
   findExecutable: (
     env: NodeJS.ProcessEnv,
   ) => string | null = findPondExecutable,
+  exists: (path: string) => boolean = existsSync,
 ) {
   if (platform === "darwin")
     return { file: "open", args: ["-gj", "-a", "Pond"] };
@@ -30,7 +32,10 @@ export function pondLaunchCommand(
       ? { file: executable, args: [] }
       : { file: "explorer.exe", args: ["pond://library"] };
   }
-  return { file: "gtk-launch", args: ["pond"] };
+  // The deb keeps its executable at a fixed path; an AppImage is launched
+  // through the desktop entry its integration installs.
+  if (exists("/opt/Pond/pond")) return { file: "/opt/Pond/pond", args: [] };
+  return { file: "xdg-open", args: ["pond://library"] };
 }
 
 function launchPond() {

@@ -23,20 +23,18 @@ async function glyphBrightness(file: string): Promise<number> {
 }
 
 describe("trayIconNames", () => {
-  it("keeps the template glyph on macOS and Linux", () => {
+  it("keeps the template glyph on macOS", () => {
     expect(trayIconNames("darwin", true)).toEqual([
-      "trayTemplate.png",
-      "tray.png",
-    ]);
-    expect(trayIconNames("linux", false)).toEqual([
       "trayTemplate.png",
       "tray.png",
     ]);
   });
 
-  it("picks the light glyph for dark Windows themes and the dark glyph otherwise", () => {
-    expect(trayIconNames("win32", true)).toEqual(["trayWinLight.png"]);
-    expect(trayIconNames("win32", false)).toEqual(["trayWinDark.png"]);
+  it("picks the light glyph for dark Windows and Linux themes and the dark glyph otherwise", () => {
+    for (const platform of ["win32", "linux"] as const) {
+      expect(trayIconNames(platform, true)).toEqual(["trayWinLight.png"]);
+      expect(trayIconNames(platform, false)).toEqual(["trayWinDark.png"]);
+    }
   });
 });
 
