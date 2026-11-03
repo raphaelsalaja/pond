@@ -1,4 +1,5 @@
 import { extname } from "node:path";
+import pLimit from "p-limit";
 import type { ProviderModel } from "../../../shared/provider-models";
 import { resolveSaveFilePath } from "../../ipc/helpers";
 import { readLibraryMedia } from "../storage/library-media-storage";
@@ -22,16 +23,20 @@ export function visionEnabled(
 export async function imagesForSaves(
   ids: string[],
 ): Promise<Array<{ mimeType: string; data: string }>> {
-  const images: Array<{ mimeType: string; data: string }> = [];
-  for (const id of ids.slice(0, 24)) {
-    const target = await resolveSaveFilePath(id, 0);
-    if (!target.ok) continue;
-    const mime = MIME.get(extname(target.path).toLowerCase());
-    if (!mime) continue;
-    images.push({
-      mimeType: mime,
-      data: (await readLibraryMedia(target.path)).toString("base64"),
-    });
-  }
-  return images;
+  const limit = pLimit(4);
+  const images = await Promise.all(
+    ids.slice(0, 24).map((id) =>
+      limit(async () => {
+        const target = await resolveSaveFilePath(id, 0);
+        if (!target.ok) return null;
+        const mime = MIME.get(extname(target.path).toLowerCase());
+        if (!mime) return null;
+        return {
+          mimeType: mime,
+          data: (await readLibraryMedia(target.path)).toString("base64"),
+        };
+      }),
+    ),
+  );
+  return images.filter((image) => image !== null);
 }

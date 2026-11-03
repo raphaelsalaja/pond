@@ -23,34 +23,42 @@ export async function inlineCaptureAvatars(
   save: Save,
 ): Promise<InlinedAvatars> {
   const next = structuredClone(capture);
-  let avatarFile: TxSaveFile | undefined;
   const sourceUrl = next.author?.avatarUrl;
 
-  if (next.author?.avatarUrl) {
-    const fromDisk = await readDiskAvatar(save);
-    if (fromDisk) {
-      next.author.avatarUrl = fromDisk;
-    } else {
-      const fetched = await urlToDataUrl(next.author.avatarUrl);
-      if (fetched) {
-        next.author.avatarUrl = fetched.dataUrl;
-        avatarFile = fetched.file;
-      }
-    }
-  }
-
-  const quoted = quotedAuthor(next);
-  if (quoted?.avatarUrl && !quoted.avatarUrl.startsWith("data:")) {
-    const fetched = await urlToDataUrl(quoted.avatarUrl);
-    if (fetched) quoted.avatarUrl = fetched.dataUrl;
-  }
-
-  await inlineCardMedia(next, save);
+  const [avatarFile] = await Promise.all([
+    inlineAuthorAvatar(next, save),
+    inlineQuotedAvatar(next),
+    inlineCardMedia(next, save),
+  ]);
 
   const inlined: InlinedAvatars = { capture: next };
   if (avatarFile) inlined.avatarFile = avatarFile;
   if (sourceUrl && avatarFile) inlined.avatarSourceUrl = sourceUrl;
   return inlined;
+}
+
+async function inlineAuthorAvatar(
+  capture: Capture,
+  save: Save,
+): Promise<TxSaveFile | undefined> {
+  const author = capture.author;
+  if (!author?.avatarUrl) return undefined;
+  const fromDisk = await readDiskAvatar(save);
+  if (fromDisk) {
+    author.avatarUrl = fromDisk;
+    return undefined;
+  }
+  const fetched = await urlToDataUrl(author.avatarUrl);
+  if (!fetched) return undefined;
+  author.avatarUrl = fetched.dataUrl;
+  return fetched.file;
+}
+
+async function inlineQuotedAvatar(capture: Capture): Promise<void> {
+  const quoted = quotedAuthor(capture);
+  if (!quoted?.avatarUrl || quoted.avatarUrl.startsWith("data:")) return;
+  const fetched = await urlToDataUrl(quoted.avatarUrl);
+  if (fetched) quoted.avatarUrl = fetched.dataUrl;
 }
 
 function quotedAuthor(capture: Capture): { avatarUrl?: string } | undefined {
