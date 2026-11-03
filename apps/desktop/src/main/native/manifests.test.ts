@@ -264,9 +264,9 @@ describe("native host manifests", () => {
       environment: { XDG_CONFIG_HOME: configHome },
       exists: (path) =>
         path === hostPath ||
-        path === join(configHome, "google-chrome") ||
-        path === join(configHome, "BraveSoftware/Brave-Browser") ||
-        path === join(configHome, "BraveSoftware/Brave-Origin") ||
+        path === `${configHome}/google-chrome` ||
+        path === `${configHome}/BraveSoftware/Brave-Browser` ||
+        path === `${configHome}/BraveSoftware/Brave-Origin` ||
         path === "/home/test/.var/app/com.google.Chrome/config/google-chrome" ||
         path === "/home/test/.mozilla" ||
         path === "/home/test/.var/app/org.mozilla.firefox/.mozilla",

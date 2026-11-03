@@ -1,7 +1,9 @@
 import { existsSync } from "node:fs";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
-import { dirname, isAbsolute, join } from "node:path";
+import { posix } from "node:path";
+
+const { dirname, isAbsolute, join } = posix;
 
 const AUTOSTART_FILENAME = "pond.desktop";
 
