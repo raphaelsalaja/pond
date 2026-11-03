@@ -237,9 +237,10 @@ export async function safariExtensionStatus(
   if (!appex) {
     return { state: "not_bundled", bundleId: null, signature: "unknown" };
   }
-  const signature = await signatureKind(appex.path, run);
-
-  const registered = await registeredExtensions(run);
+  const [signature, registered] = await Promise.all([
+    signatureKind(appex.path, run),
+    registeredExtensions(run),
+  ]);
   const match = appex.bundleId
     ? registered.find((extension) => extension.id === appex.bundleId)
     : registered.find((extension) => extension.path === appex.path);

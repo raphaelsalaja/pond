@@ -86,10 +86,10 @@ export async function runTool(
     return shown ? { ok: true } : { ok: false, message: BLOCKED };
   }
   if (tool === "images") {
-    const shown = await showOverlay(tabId, {
-      view: "images",
-      library: await libraryTargets(),
-    });
+    const shown = await showOverlay(
+      tabId,
+      libraryTargets().then((library) => ({ view: "images", library })),
+    );
     return shown ? { ok: true } : { ok: false, message: BLOCKED };
   }
   void (async () => {
