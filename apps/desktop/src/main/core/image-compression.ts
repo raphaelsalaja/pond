@@ -4,6 +4,7 @@ import { type Save, type SaveFile, saves } from "@pond/schema/db";
 import type { Transaction, TxSaveFile } from "@pond/schema/tx";
 import { THUMBNAIL_KIND, webpThumbnailFilename } from "@shared/save-file-names";
 import { inArray } from "drizzle-orm";
+import pLimit from "p-limit";
 import sharp from "sharp";
 import type { ImageCompressionRequest } from "../../shared/conversion-contracts";
 import { getDb } from "../db";
@@ -54,34 +55,40 @@ const runtime: CompressionRuntime = {
       .where(inArray(saves.id, [...ids]))
       .all();
     const byId = new Map(rows.map((row) => [row.id, row]));
-    const candidates: CompressionCandidate[] = [];
-    for (const id of ids) {
-      signal.throwIfAborted();
-      if (resolvePaths().libraryRoot !== root)
-        throw new Error(
-          "The active library changed. Start the compression again.",
-        );
-      const save = byId.get(id);
-      const file = save?.files?.[fileIndex];
-      if (!save || !file) continue;
-      const thumbnail = save.files?.find(
-        (entry) => entry.kind === THUMBNAIL_KIND,
-      );
-      candidates.push({
-        save,
-        file,
-        source: await readLibraryMedia(join(saveDirIn(root, id), file.path)),
-        thumbnail: thumbnail
-          ? {
-              file: thumbnail,
-              source: await readLibraryMedia(
-                join(saveDirIn(root, id), thumbnail.path),
-              ),
-            }
-          : null,
-      });
-    }
-    return candidates;
+    const limit = pLimit(4);
+    const candidates = await Promise.all(
+      ids.map((id) =>
+        limit(async (): Promise<CompressionCandidate | null> => {
+          signal.throwIfAborted();
+          if (resolvePaths().libraryRoot !== root)
+            throw new Error(
+              "The active library changed. Start the compression again.",
+            );
+          const save = byId.get(id);
+          const file = save?.files?.[fileIndex];
+          if (!save || !file) return null;
+          const thumbnail = save.files?.find(
+            (entry) => entry.kind === THUMBNAIL_KIND,
+          );
+          const [source, thumbnailSource] = await Promise.all([
+            readLibraryMedia(join(saveDirIn(root, id), file.path)),
+            thumbnail
+              ? readLibraryMedia(join(saveDirIn(root, id), thumbnail.path))
+              : null,
+          ]);
+          return {
+            save,
+            file,
+            source,
+            thumbnail:
+              thumbnail && thumbnailSource
+                ? { file: thumbnail, source: thumbnailSource }
+                : null,
+          };
+        }),
+      ),
+    );
+    return candidates.filter((candidate) => candidate !== null);
   },
   async commit(transactions) {
     await executeBatch(transactions);
@@ -286,6 +293,7 @@ async function compressionTransaction(
   ];
   let thumbnailBytes: Buffer | null = null;
   let thumbnailRename: { from: string; to: string } | null = null;
+  const palettePending = extractPalette(compressed);
   if (candidate.thumbnail) {
     thumbnailBytes = await renderThumbnail(compressed);
     if (thumbnailBytes) {
@@ -318,7 +326,7 @@ async function compressionTransaction(
       }
     }
   }
-  const palette = await extractPalette(compressed);
+  const palette = await palettePending;
   const blurhash = thumbnailBytes
     ? await encodeBlurhash(thumbnailBytes)
     : await encodeBlurhash(compressed);

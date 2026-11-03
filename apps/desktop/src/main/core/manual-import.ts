@@ -21,6 +21,7 @@ import type {
 } from "@shared/saves-import-contracts";
 import { and, eq } from "drizzle-orm";
 import mime from "mime-types";
+import pLimit from "p-limit";
 import { ulid } from "ulid";
 import { getDb } from "../db";
 import { writeSaveInfo } from "../lib/library";
@@ -452,44 +453,65 @@ async function inspectImportPaths(paths: readonly string[]): Promise<{
   items: ReadableImport[];
   failures: ImportFileFailure[];
 }> {
-  const out: ReadableImport[] = [];
-  const failures: ImportFileFailure[] = [];
-  for (const path of paths) {
-    try {
-      const info = await stat(path);
-      if (!info.isFile() || info.size === 0) continue;
-      const detectedMime = mime.lookup(path) || null;
-      const format = classifyLibraryFileFromHeader(
-        path,
-        detectedMime,
-        await readFilePrefix(path, Math.min(info.size, FORMAT_HEADER_BYTES)),
-      );
-      const item: ReadableImport = {
-        filename: libraryFilename(path),
-        size: info.size,
-        format,
-        source: { path },
-      };
-      if (format.mediaType === "text") {
-        item.body = await readTextBody(path, info.size);
-      }
-      if (format.mediaType === "image") {
-        item.metadata = await extractImageMetadata(path);
-        if (item.metadata.width) item.width = item.metadata.width;
-        if (item.metadata.height) item.height = item.metadata.height;
-        item.keywords = await readIptcKeywords(path, info.size);
-      }
-      if (format.mediaType === "video" || format.mediaType === "audio")
-        item.metadata = await extractMediaMetadata(path);
-      out.push(item);
-    } catch (err) {
-      failures.push({
-        path,
-        error: err instanceof Error ? err.message : String(err),
-      });
-    }
+  const limit = pLimit(4);
+  const results = await Promise.all(
+    paths.map((path) =>
+      limit(
+        async (): Promise<{
+          item?: ReadableImport;
+          failure?: ImportFileFailure;
+        }> => {
+          try {
+            return { item: await inspectImportPath(path) };
+          } catch (err) {
+            const error = err instanceof Error ? err.message : String(err);
+            return { failure: { path, error } };
+          }
+        },
+      ),
+    ),
+  );
+  return {
+    items: results.flatMap((result) => (result.item ? [result.item] : [])),
+    failures: results.flatMap((result) =>
+      result.failure ? [result.failure] : [],
+    ),
+  };
+}
+
+async function inspectImportPath(
+  path: string,
+): Promise<ReadableImport | undefined> {
+  const info = await stat(path);
+  if (!info.isFile() || info.size === 0) return undefined;
+  const detectedMime = mime.lookup(path) || null;
+  const format = classifyLibraryFileFromHeader(
+    path,
+    detectedMime,
+    await readFilePrefix(path, Math.min(info.size, FORMAT_HEADER_BYTES)),
+  );
+  const item: ReadableImport = {
+    filename: libraryFilename(path),
+    size: info.size,
+    format,
+    source: { path },
+  };
+  if (format.mediaType === "text") {
+    item.body = await readTextBody(path, info.size);
   }
-  return { items: out, failures };
+  if (format.mediaType === "image") {
+    const [metadata, keywords] = await Promise.all([
+      extractImageMetadata(path),
+      readIptcKeywords(path, info.size),
+    ]);
+    item.metadata = metadata;
+    if (metadata.width) item.width = metadata.width;
+    if (metadata.height) item.height = metadata.height;
+    item.keywords = keywords;
+  }
+  if (format.mediaType === "video" || format.mediaType === "audio")
+    item.metadata = await extractMediaMetadata(path);
+  return item;
 }
 
 async function inspectMemoryFiles(
