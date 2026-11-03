@@ -9,8 +9,44 @@ import {
   type UpdaterPort,
 } from "./core/updater-coordinator";
 import { broadcast } from "./lib/broadcast";
+import {
+  prepareApplicationForUpdateInstall,
+  runUpdateRestart,
+  UPDATE_RESTART_EXIT_MS,
+} from "./update-restart";
 
 let wired = false;
+let installHandoff: Promise<void> | null = null;
+
+function handoffDownloadedUpdate(install: () => void): Promise<void> {
+  if (installHandoff) return installHandoff;
+  const handoff = runUpdateRestart({
+    armWatchdog: () => {
+      setTimeout(() => {
+        log.warn("[pond updater] install quit stalled; exiting");
+        app.exit(0);
+      }, UPDATE_RESTART_EXIT_MS).unref();
+    },
+    prepare: prepareApplicationForUpdateInstall,
+    schedule: (task) => {
+      setImmediate(task);
+    },
+    quitAndInstall: () => {
+      try {
+        install();
+      } catch (error) {
+        log.warn("[pond updater] quitAndInstall failed", error);
+      }
+    },
+  }).catch((error) => {
+    installHandoff = null;
+    throw error instanceof Error
+      ? error
+      : new Error("Couldn't install the update.");
+  });
+  installHandoff = handoff;
+  return handoff;
+}
 
 async function loadUpdater(): Promise<UpdaterPort> {
   const { default: electronUpdaterPkg } = await import("electron-updater");
@@ -48,9 +84,7 @@ async function loadUpdater(): Promise<UpdaterPort> {
     download: async () => {
       await autoUpdater.downloadUpdate();
     },
-    install: () => {
-      autoUpdater.quitAndInstall();
-    },
+    install: () => handoffDownloadedUpdate(() => autoUpdater.quitAndInstall()),
   };
 }
 
