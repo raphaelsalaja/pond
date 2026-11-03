@@ -3,6 +3,7 @@ import type { ListKind } from "@pond/schema/db";
 import type { Capture } from "@pond/schema/raw";
 import { session } from "electron";
 import log from "electron-log/main.js";
+import pLimit from "p-limit";
 import { mergeEntryListKinds, unionById } from "../../../sync/harvest-union";
 import {
   browserUserAgent,
@@ -31,6 +32,7 @@ import { captureFromPost, postEntry } from "./normalize";
 const MAX_PAGES = 50;
 const PAGE_SIZE = 100;
 const HYDRATE_BATCH = 25;
+const HYDRATE_CONCURRENCY = 2;
 const PAGE_GAP_MS = 300;
 
 /** Likes and posts are public, so reads use a jar no signed-in Source shares. */
@@ -54,24 +56,31 @@ async function hydrate(
   uris: readonly string[],
 ): Promise<Map<string, BlueskyPost>> {
   const posts = new Map<string, BlueskyPost>();
+  const limit = pLimit(HYDRATE_CONCURRENCY);
+  const batches: string[][] = [];
   for (let i = 0; i < uris.length; i += HYDRATE_BATCH) {
-    const query = new URLSearchParams();
-    for (const uri of uris.slice(i, i + HYDRATE_BATCH)) {
-      query.append("uris", uri);
-    }
-    const res = await readJson(
-      get,
-      `${APPVIEW}/app.bsky.feed.getPosts?${query}`,
-    );
-    const parsed = PostsSchema.safeParse(res?.body);
-    if (!parsed.success) {
-      log.warn("[pond bluesky] hydration failed", res?.status ?? 0);
-      continue;
-    }
-    for (const post of parsed.data.posts) {
-      if (post) posts.set(post.uri, post);
-    }
+    batches.push(uris.slice(i, i + HYDRATE_BATCH));
   }
+  await Promise.all(
+    batches.map((batch) =>
+      limit(async () => {
+        const query = new URLSearchParams();
+        for (const uri of batch) query.append("uris", uri);
+        const res = await readJson(
+          get,
+          `${APPVIEW}/app.bsky.feed.getPosts?${query}`,
+        );
+        const parsed = PostsSchema.safeParse(res?.body);
+        if (!parsed.success) {
+          log.warn("[pond bluesky] hydration failed", res?.status ?? 0);
+          return;
+        }
+        for (const post of parsed.data.posts) {
+          if (post) posts.set(post.uri, post);
+        }
+      }),
+    ),
+  );
   return posts;
 }
 

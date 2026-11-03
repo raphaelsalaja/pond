@@ -13,6 +13,7 @@ import {
 } from "@shared/combine-images-layout";
 import type { OkResult } from "@shared/query-contracts-shared";
 import { inArray } from "drizzle-orm";
+import pLimit from "p-limit";
 import sharp, { type OverlayOptions } from "sharp";
 import { getDb } from "../db";
 import { resolveSaveFilePath } from "../ipc/helpers";
@@ -111,24 +112,26 @@ export async function combineImages(input: {
   const db = await getDb();
   const rows = db.select().from(saves).where(inArray(saves.id, unique)).all();
   const byId = new Map(rows.map((row) => [row.id, row]));
-  const imageInputs: Array<string | Buffer> = [];
-  const combinedIds: string[] = [];
-  let skipped = 0;
-  for (const id of unique) {
-    const row = byId.get(id);
-    const file = row?.files?.[0];
-    if (!row || !isCombinableImage(file?.mimeType, file?.path ?? "")) {
-      skipped += 1;
-      continue;
-    }
-    const target = await resolveSaveFilePath(id, 0);
-    if (!target.ok) {
-      skipped += 1;
-      continue;
-    }
-    imageInputs.push(await readLibraryMedia(target.path));
-    combinedIds.push(id);
-  }
+  const limit = pLimit(4);
+  const loaded = await Promise.all(
+    unique.map((id) =>
+      limit(async () => {
+        const row = byId.get(id);
+        const file = row?.files?.[0];
+        if (!row || !isCombinableImage(file?.mimeType, file?.path ?? ""))
+          return null;
+        const target = await resolveSaveFilePath(id, 0);
+        if (!target.ok) return null;
+        return { id, bytes: await readLibraryMedia(target.path) };
+      }),
+    ),
+  );
+  const combinable = loaded.filter((entry) => entry !== null);
+  const imageInputs: Array<string | Buffer> = combinable.map(
+    (entry) => entry.bytes,
+  );
+  const combinedIds = combinable.map((entry) => entry.id);
+  const skipped = unique.length - combinable.length;
   if (imageInputs.length < 2) {
     return { ok: false, error: "Select at least two images." };
   }
