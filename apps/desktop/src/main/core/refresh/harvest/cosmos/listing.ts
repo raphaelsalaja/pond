@@ -31,6 +31,8 @@ const CosmosTileSchema = z
   })
   .catch({});
 
+type CosmosTile = z.infer<typeof CosmosTileSchema>;
+
 const CosmosClusterSchema = z
   .object({
     id: OptionalId,
@@ -43,7 +45,6 @@ const CosmosClusterSchema = z
       .nonnegative()
       .optional()
       .catch(undefined),
-    isPrivate: z.boolean().optional().catch(undefined),
   })
   .catch({});
 
@@ -148,7 +149,7 @@ export interface LibraryPage {
 export interface CosmosCollection {
   id: string;
   name: string;
-  slug?: string;
+  slug: string;
   ownerUsername?: string;
   itemCount: number | null;
 }
@@ -158,62 +159,62 @@ export interface ClustersPage {
   nextPageCursor: string | null;
 }
 
+function entryFromTile(tile: CosmosTile | null | undefined): ListEntry | null {
+  if (tile?.id === undefined) return null;
+  const sourceId = String(tile.id);
+  const entry: ListEntry = {
+    sourceId,
+    url: tile.shareUrl ?? `https://www.cosmos.so/e/${sourceId}`,
+  };
+  if (tile.createdAt !== undefined) entry.savedAt = tile.createdAt;
+  return entry;
+}
+
+function libraryPage(
+  tiles: readonly (CosmosTile | null | undefined)[],
+  nextPageCursor: string | undefined,
+): LibraryPage {
+  return {
+    entries: tiles.flatMap((tile) => entryFromTile(tile) ?? []),
+    nextPageCursor: nextPageCursor ?? null,
+  };
+}
+
 export function pageFromLibrary(data: CosmosLibraryData): LibraryPage {
   const list = data.allElementsV2;
-  const entries: ListEntry[] = [];
-  for (const tile of list?.items ?? []) {
-    if (tile.id === undefined) continue;
-    const sourceId = String(tile.id);
-    const entry: ListEntry = {
-      sourceId,
-      url: tile.shareUrl ?? `https://www.cosmos.so/e/${sourceId}`,
-    };
-    if (tile.createdAt !== undefined) entry.savedAt = tile.createdAt;
-    entries.push(entry);
-  }
-
-  return {
-    entries,
-    nextPageCursor: list?.meta?.nextPageCursor ?? null,
-  };
+  return libraryPage(list?.items ?? [], list?.meta?.nextPageCursor);
 }
 
 export function pageFromClusterConnections(
   data: CosmosClusterConnectionsData,
 ): LibraryPage {
   const list = data.clusterConnections;
-  const entries: ListEntry[] = [];
-  for (const item of list?.items ?? []) {
-    const tile = item.element;
-    if (!tile?.id) continue;
-    const sourceId = String(tile.id);
-    const entry: ListEntry = {
-      sourceId,
-      url: tile.shareUrl ?? `https://www.cosmos.so/e/${sourceId}`,
-    };
-    if (tile.createdAt !== undefined) entry.savedAt = tile.createdAt;
-    entries.push(entry);
-  }
-  return {
-    entries,
-    nextPageCursor: list?.meta?.nextPageCursor ?? null,
-  };
+  return libraryPage(
+    (list?.items ?? []).map((item) => item.element),
+    list?.meta?.nextPageCursor,
+  );
 }
 
 export function pageFromClusters(data: CosmosClustersData): ClustersPage {
   const list = data.userClusters;
   const collections: CosmosCollection[] = [];
   for (const cluster of list?.items ?? []) {
-    if (cluster.id === undefined || cluster.name === undefined) continue;
-    collections.push({
+    /** Cosmos addresses a collection by slug, so one without a slug cannot be read. */
+    if (
+      cluster.id === undefined ||
+      cluster.name === undefined ||
+      cluster.slug === undefined
+    )
+      continue;
+    const collection: CosmosCollection = {
       id: String(cluster.id),
       name: cluster.name,
-      ...(cluster.slug ? { slug: cluster.slug } : {}),
-      ...(cluster.owner?.username
-        ? { ownerUsername: cluster.owner.username }
-        : {}),
+      slug: cluster.slug,
       itemCount: cluster.numberOfElements ?? null,
-    });
+    };
+    const owner = cluster.owner?.username;
+    if (owner) collection.ownerUsername = owner;
+    collections.push(collection);
   }
   return {
     collections,

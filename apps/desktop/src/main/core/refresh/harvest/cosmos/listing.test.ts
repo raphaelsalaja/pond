@@ -88,9 +88,8 @@ describe("pageFromClusters", () => {
               slug: "recipes",
               owner: { username: "spratch" },
               numberOfElements: 12,
-              isPrivate: true,
             },
-            { id: "8", name: "Design", numberOfElements: 0 },
+            { id: "8", name: "Design", slug: "design", numberOfElements: 0 },
           ],
           meta: { nextPageCursor: "next" },
         },
@@ -104,7 +103,7 @@ describe("pageFromClusters", () => {
           ownerUsername: "spratch",
           itemCount: 12,
         },
-        { id: "8", name: "Design", itemCount: 0 },
+        { id: "8", name: "Design", slug: "design", itemCount: 0 },
       ],
       nextPageCursor: "next",
     });
@@ -114,7 +113,11 @@ describe("pageFromClusters", () => {
     expect(
       pageFromClusters({
         userClusters: {
-          items: [{ id: 1 }, { name: "Missing id" }],
+          items: [
+            { id: 1 },
+            { name: "Missing id", slug: "missing-id" },
+            { id: 2, name: "Missing slug" },
+          ],
         },
       }),
     ).toEqual({ collections: [], nextPageCursor: null });

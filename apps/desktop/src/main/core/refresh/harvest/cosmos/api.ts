@@ -1,5 +1,4 @@
 import { setTimeout as sleep } from "node:timers/promises";
-import type { ImportCollectionOption } from "@shared/import-scope";
 import { session } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
@@ -7,13 +6,13 @@ import { partitionForIngest } from "../../../sync/accounts";
 import { PARTITION } from "../../harvest-window/constants";
 import type { ListHarvestArgs, ListHarvestResult } from "../list-types";
 import {
-  type CosmosClusterConnectionsData,
   CosmosClusterConnectionsDataSchema,
   CosmosClustersDataSchema,
-  type CosmosLibraryData,
+  type CosmosCollection,
   CosmosLibraryDataSchema,
   CosmosMeDataSchema,
   type CosmosViewer,
+  type LibraryPage,
   pageFromClusterConnections,
   pageFromClusters,
   pageFromLibrary,
@@ -45,7 +44,7 @@ const COLLECTION_QUERY = `query PondCollection($input: ClusterGetInput!, $pageSi
 }`;
 const CLUSTERS_QUERY = `query PondClusters($userId: UserId!, $pageSize: Int, $pageCursor: String) {
   userClusters(userId: $userId, meta: { pageSize: $pageSize, pageCursor: $pageCursor }) {
-    items { id name slug owner { username } numberOfElements isPrivate }
+    items { id name slug owner { username } numberOfElements }
     meta { nextPageCursor }
   }
 }`;
@@ -92,12 +91,65 @@ export async function fetchCosmosViewer(
   return viewerFromMeData(result.json);
 }
 
-export async function harvestCosmosLibrary(
+interface CosmosSession {
+  jar: string;
+  userId: number;
+  handle: string;
+}
+
+type FetchPage = (
+  auth: CosmosSession,
+  pageCursor: string | undefined,
+) => Promise<JsonResult<LibraryPage>>;
+
+export function harvestCosmosLibrary(
   args: ListHarvestArgs,
   partition?: string,
-  collectionId?: string,
-  collectionSlug?: string,
-  collectionOwner?: string,
+): Promise<ListHarvestResult> {
+  return harvestCosmosPages(args, partition, async (auth, pageCursor) => {
+    const result = await cosmosGraphql(
+      auth.jar,
+      "PondLibrary",
+      LIBRARY_QUERY,
+      { userId: auth.userId, pageSize: PAGE_SIZE, pageCursor },
+      CosmosLibraryDataSchema,
+    );
+    return result.ok
+      ? { ok: true, json: pageFromLibrary(result.json) }
+      : result;
+  });
+}
+
+export function harvestCosmosCollection(
+  args: ListHarvestArgs,
+  partition: string | undefined,
+  collection: CosmosCollection,
+): Promise<ListHarvestResult> {
+  return harvestCosmosPages(args, partition, async (auth, pageCursor) => {
+    const result = await cosmosGraphql(
+      auth.jar,
+      "PondCollection",
+      COLLECTION_QUERY,
+      {
+        pageSize: PAGE_SIZE,
+        pageCursor,
+        input: {
+          slug: collection.slug,
+          ownerUsername: collection.ownerUsername ?? auth.handle,
+        },
+      },
+      CosmosClusterConnectionsDataSchema,
+    );
+    return result.ok
+      ? { ok: true, json: pageFromClusterConnections(result.json) }
+      : result;
+  });
+}
+
+async function harvestCosmosPages(
+  args: ListHarvestArgs,
+  partition: string | undefined,
+  fetchPage: FetchPage,
 ): Promise<ListHarvestResult> {
   const jar = partition ?? (await partitionForIngest("cosmos"));
   const viewer = await fetchCosmosViewer(jar);
@@ -106,6 +158,7 @@ export async function harvestCosmosLibrary(
   if (!Number.isInteger(userId) || userId <= 0) {
     return { ok: false, reason: "auth_required" };
   }
+  const auth: CosmosSession = { jar, userId, handle: viewer.handle };
 
   const known = new Set(args.knownIds.map(String));
   const earlyStopEnabled = args.earlyStop !== false && known.size > 0;
@@ -114,28 +167,7 @@ export async function harvestCosmosLibrary(
   let knownPageStreak = 0;
 
   for (let page = 0; page < MAX_PAGES; page++) {
-    const result = collectionId
-      ? await cosmosGraphql(
-          jar,
-          "PondCollection",
-          COLLECTION_QUERY,
-          {
-            pageSize: PAGE_SIZE,
-            pageCursor,
-            input: {
-              slug: collectionSlug ?? collectionId,
-              ownerUsername: collectionOwner ?? viewer.handle,
-            },
-          },
-          CosmosClusterConnectionsDataSchema,
-        )
-      : await cosmosGraphql(
-          jar,
-          "PondLibrary",
-          LIBRARY_QUERY,
-          { userId, pageSize: PAGE_SIZE, pageCursor },
-          CosmosLibraryDataSchema,
-        );
+    const result = await fetchPage(auth, pageCursor);
     if (!result.ok) {
       if (result.status === 401 || result.status === 403) {
         return { ok: false, reason: "auth_required" };
@@ -146,9 +178,7 @@ export async function harvestCosmosLibrary(
       if (page === 0) return { ok: false, reason: "no_match" };
       break;
     }
-    const pageData = isClusterConnectionsData(result.json)
-      ? pageFromClusterConnections(result.json)
-      : pageFromLibrary(result.json);
+    const pageData = result.json;
     if (
       page === 0 &&
       pageData.entries.length === 0 &&
@@ -185,17 +215,10 @@ export async function harvestCosmosLibrary(
   return { ok: true, entries, reachedEnd: false, seen: entries.length };
 }
 
-function isClusterConnectionsData(
-  data: CosmosClusterConnectionsData | CosmosLibraryData,
-): data is CosmosClusterConnectionsData {
-  return "clusterConnections" in data;
-}
-
 export async function listCosmosCollections(
   partition: string = PARTITION,
 ): Promise<
-  | { ok: true; collections: ImportCollectionOption[] }
-  | { ok: false; status: number }
+  { ok: true; collections: CosmosCollection[] } | { ok: false; status: number }
 > {
   const viewer = await fetchCosmosViewer(partition);
   if (!viewer) return { ok: false, status: 401 };
@@ -204,7 +227,7 @@ export async function listCosmosCollections(
     return { ok: false, status: 401 };
   }
 
-  const collections: ImportCollectionOption[] = [];
+  const collections: CosmosCollection[] = [];
   let pageCursor: string | undefined;
   for (let page = 0; page < MAX_PAGES; page++) {
     const result = await cosmosGraphql(

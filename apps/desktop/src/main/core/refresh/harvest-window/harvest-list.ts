@@ -12,12 +12,7 @@ import { z } from "zod";
 import { markAtRisk, report } from "../../pipeline/rate-governor";
 import { arenaProfileUrl, buildArenaListExpression } from "../harvest/arena";
 import { addCollectionEntry } from "../harvest/collection-entries";
-import {
-  buildCosmosListExpression,
-  COSMOS_LIST_URL,
-  harvestCosmosLibrary,
-  listCosmosCollections,
-} from "../harvest/cosmos";
+import { buildCosmosListExpression, COSMOS_LIST_URL } from "../harvest/cosmos";
 import {
   buildDribbbleListExpression,
   dribbbleLikesUrl,
@@ -623,8 +618,18 @@ async function readSourceCollections(
       return readCollectionsReply(run.value);
     }
     case "cosmos": {
+      const { listCosmosCollections } = await import("../harvest/cosmos/api");
       const result = await listCosmosCollections(opts.partition);
-      if (result.ok) return result;
+      if (result.ok) {
+        return {
+          ok: true,
+          collections: result.collections.map(({ id, name, itemCount }) => ({
+            id,
+            name,
+            itemCount,
+          })),
+        };
+      }
       return result.status === 401 || result.status === 403
         ? { ok: false, reason: "auth_required" }
         : { ok: false, reason: "unknown", detail: `api ${result.status}` };
@@ -696,6 +701,9 @@ export async function harvestSourceCollections(
         ),
       );
     case "cosmos": {
+      const { harvestCosmosCollection, listCosmosCollections } = await import(
+        "../harvest/cosmos/api"
+      );
       const listed = await listCosmosCollections(opts.partition);
       if (!listed.ok) {
         return listed.status === 401 || listed.status === 403
@@ -705,17 +713,10 @@ export async function harvestSourceCollections(
       const byId = new Map(
         listed.collections.map((collection) => [collection.id, collection]),
       );
-      return harvestEachCollection(source, collections, (collection) => {
-        const listedCollection = byId.get(collection.id);
-        return harvestCosmosLibrary(
-          args,
-          opts.partition,
-          collection.id,
-          collection.slug ?? listedCollection?.slug ?? undefined,
-          collection.ownerUsername ??
-            listedCollection?.ownerUsername ??
-            undefined,
-        );
+      return harvestEachCollection(source, collections, async (collection) => {
+        const cosmos = byId.get(collection.id);
+        if (!cosmos) return { ok: false, reason: "no_match" };
+        return harvestCosmosCollection(args, opts.partition, cosmos);
       });
     }
     case "tiktok":
