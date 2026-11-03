@@ -1,6 +1,6 @@
 {
   "name": "@pond/extension",
-  "version": "2.2.1",
+  "version": "2.2.2",
   "private": true,
   "type": "module",
   "description": "Pond browser extension: save pages, screenshots, images, and your bookmarks from supported sites into the local Pond library.",
