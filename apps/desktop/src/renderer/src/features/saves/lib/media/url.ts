@@ -1,8 +1,14 @@
 import { THUMBNAIL_CACHE_VERSION } from "@shared/media-index";
 import type { Save, SaveFile } from "@/features/saves/types";
 
+/** Encodes each path segment so spaces, `#`, `?`, and `%` survive the pond:// URL. */
+export function pondFileUrl(saveId: string, filePath: string): string {
+  const path = filePath.split("/").map(encodeURIComponent).join("/");
+  return `pond://${saveId}/${path}`;
+}
+
 export function buildPondUrl(saveId: string, file: SaveFile): string {
-  const base = `pond://${saveId}/${file.path}`;
+  const base = pondFileUrl(saveId, file.path);
   const bust = cacheBuster(file);
   return bust ? `${base}?v=${bust}` : base;
 }
