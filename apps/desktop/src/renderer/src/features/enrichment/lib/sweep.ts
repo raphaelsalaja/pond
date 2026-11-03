@@ -1,3 +1,4 @@
+import { isManualSensitiveDecision } from "@pond/schema/content-safety";
 import {
   enrichmentCooldownFactor,
   enrichmentRestMs,
@@ -141,8 +142,15 @@ async function persist(enricher: Enricher, save: Save): Promise<void> {
     failed.add(keyFor(enricher, save));
     return;
   }
+  const current = pool.get(save.id);
+  /** Classification may still be running when the user corrects the Save. */
+  if (
+    enricher.id === "sensitive-content" &&
+    isManualSensitiveDecision(current?.sensitiveModel)
+  ) {
+    return;
+  }
   if (result.optimistic) {
-    const current = pool.get(save.id);
     if (current) upsertSave({ ...current, ...result.optimistic });
   }
   if (result.derived && Object.keys(result.derived).length > 0) {

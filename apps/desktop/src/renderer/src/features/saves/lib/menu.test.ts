@@ -1,3 +1,4 @@
+import { MANUAL_NOT_SENSITIVE_MODEL } from "@pond/schema/content-safety";
 import type { MenuItemSpec } from "@pond/ui";
 import { isValidElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -40,6 +41,13 @@ function sectionItems(
     }
   }
   return null;
+}
+
+function checkboxLabeled(items: MenuItemSpec[], label: string) {
+  for (const item of items) {
+    if (item.type === "checkbox" && item.label === label) return item;
+  }
+  throw new Error(`Missing ${label}`);
 }
 
 function containsSubmenu(items: MenuItemSpec[]): boolean {
@@ -189,6 +197,58 @@ describe("buildSaveMenu", () => {
         "Navigator",
       ]),
     );
+  });
+
+  it("corrects a sensitive result from the save menu and can mark it again", async () => {
+    const query = vi.fn(async () => ({ ok: true }));
+    vi.stubGlobal("pond", { query });
+    const save = fileSave({
+      mediaType: "image",
+      sensitiveScore: 0.99,
+      sensitiveModel: "model@revision",
+      files: [
+        {
+          kind: "image",
+          path: "image.jpg",
+          mimeType: "image/jpeg",
+          sha256: "abc",
+          size: 1,
+        },
+      ],
+    });
+    pool.upsert(save);
+    const items = buildSaveMenu(save, { clipboardEmpty: true });
+    const action = checkboxLabeled(items, "Sensitive Content");
+    expect(action.checked).toBe(true);
+    expect(
+      visibleLabels(buildSaveDetailMenu(save, { clipboardEmpty: true })),
+    ).toContain("Sensitive Content");
+    action.onCheckedChange?.(false);
+    expect(pool.get(save.id)?.sensitiveScore).toBe(0);
+    expect(pool.get(save.id)?.sensitiveModel).toBe(MANUAL_NOT_SENSITIVE_MODEL);
+    expect(query).toHaveBeenCalledWith("saves.patchDerived", {
+      id: save.id,
+      patch: {
+        sensitiveScore: 0,
+        sensitiveModel: MANUAL_NOT_SENSITIVE_MODEL,
+      },
+    });
+
+    const corrected = pool.get(save.id);
+    if (!corrected) throw new Error("Missing corrected Save");
+    const again = buildSaveMenu(corrected, { clipboardEmpty: true });
+    const restore = checkboxLabeled(again, "Sensitive Content");
+    expect(restore.checked).toBe(false);
+    restore.onCheckedChange?.(true);
+    expect(pool.get(save.id)?.sensitiveScore).toBe(1);
+    expect(
+      visibleLabels(
+        buildSaveMenu({ ...corrected, deletedAt: 5 }, { clipboardEmpty: true }),
+      ),
+    ).not.toContain("Sensitive Content");
+    expect(
+      visibleLabels(buildSaveMenu(fileSave(), { clipboardEmpty: true })),
+    ).not.toContain("Sensitive Content");
   });
 
   it("offers to create a folder from the current selection", () => {

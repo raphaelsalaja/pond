@@ -20,6 +20,7 @@ import { buildDetailItems, buildViewerDisplayItems } from "./menu/details";
 import { buildExportItems, buildExportPopupItems } from "./menu/export";
 import { buildOpenItems } from "./menu/open";
 import { buildOrganizeItems } from "./menu/organize";
+import { sensitiveContentMenuItem } from "./menu/sensitive";
 import { buildShareItem } from "./menu/share";
 import { glyph, submenuHidden } from "./menu/shared";
 import { buildTrashItems } from "./menu/trash";
@@ -77,6 +78,7 @@ export function buildSaveMenu(
       items: supplementalItems.details.thumbnail,
     },
     ...supplementalItems.details.media,
+    sensitiveContentMenuItem(context),
     ...viewerDisplayItems,
     ...supplementalItems.details.source,
     {
@@ -202,6 +204,7 @@ export function buildSaveDetailMenu(
       hidden: submenuHidden(copyItems),
       items: replaceSubmenusWithGroups(copyItems),
     },
+    sensitiveContentMenuItem(context),
     { type: "separator" },
     ...buildTrashItems(context),
   ].filter((item): item is MenuItemSpec => item !== null);
