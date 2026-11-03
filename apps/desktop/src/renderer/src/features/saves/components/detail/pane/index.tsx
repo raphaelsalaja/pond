@@ -12,6 +12,7 @@ import { RelatedSaves } from "@/features/saves/components/detail/related-saves";
 import { useSaves } from "@/features/saves/hooks/use-saves";
 import { ensureSaves, reloadSaves } from "@/features/saves/lib/ensure-saves";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
+import { sensitiveContentMenuItem } from "@/features/saves/lib/menu/sensitive";
 import { bulkMutation } from "@/features/saves/lib/mutate";
 import { pool } from "@/features/saves/state/pool";
 import { useSaveViewerFileIndex } from "@/features/saves/state/save-viewer";
@@ -270,14 +271,25 @@ export function SaveInspector({
               ))}
             </div>
           ) : null}
-          {sensitivity === "likely-sensitive" ||
-          sensitivity === "possible-sensitive" ? (
-            <p className={styles.flag} data-band={sensitivity}>
-              <IconTriangleWarning size={14} aria-hidden />
-              {sensitivity === "likely-sensitive"
-                ? "Likely sensitive content"
-                : "Possibly sensitive content"}
-            </p>
+          {single &&
+          (sensitivity === "likely-sensitive" ||
+            sensitivity === "possible-sensitive") ? (
+            <SpecContextMenu
+              buildItems={() => [
+                sensitiveContentMenuItem({
+                  ids: [single.id],
+                  saves: [single],
+                  allTrashed: single.deletedAt != null,
+                }),
+              ]}
+            >
+              <p className={styles.flag} data-band={sensitivity}>
+                <IconTriangleWarning size={14} aria-hidden />
+                {sensitivity === "likely-sensitive"
+                  ? "Likely sensitive content"
+                  : "Possibly sensitive content"}
+              </p>
+            </SpecContextMenu>
           ) : null}
           {!single ? (
             <p className={styles.count}>

@@ -1,4 +1,8 @@
 import { DEFAULT_PREFS } from "@pond/schema";
+import {
+  MANUAL_LIKELY_SENSITIVE_MODEL,
+  MANUAL_NOT_SENSITIVE_MODEL,
+} from "@pond/schema/content-safety";
 import { describe, expect, it } from "vitest";
 import type { Save } from "@/features/saves/types";
 import { SENSITIVE_CONTENT_MODEL_VERSION } from "../sensitive-content";
@@ -37,11 +41,23 @@ function imageSave(sensitiveModel: string | null = null): Save {
 describe("sensitive content enricher", () => {
   it("is eligible until the current policy version is stamped", () => {
     expect(sensitiveContentEnricher.eligible(imageSave())).toBe(true);
+    expect(sensitiveContentEnricher.eligible(imageSave("retired-model"))).toBe(
+      true,
+    );
     expect(
       sensitiveContentEnricher.eligible(
         imageSave(SENSITIVE_CONTENT_MODEL_VERSION),
       ),
     ).toBe(false);
+  });
+
+  it("does not reclassify a Save the user corrected", () => {
+    const cleared = imageSave(MANUAL_NOT_SENSITIVE_MODEL);
+    cleared.sensitiveScore = 0;
+    const marked = imageSave(MANUAL_LIKELY_SENSITIVE_MODEL);
+    marked.sensitiveScore = 1;
+    expect(sensitiveContentEnricher.eligible(cleared)).toBe(false);
+    expect(sensitiveContentEnricher.eligible(marked)).toBe(false);
   });
 
   it("never scores the rendered card of a text-only post", async () => {
@@ -59,6 +75,13 @@ describe("sensitive content enricher", () => {
       ],
     };
     expect(sensitiveContentEnricher.eligible(textOnly)).toBe(false);
+    expect(
+      sensitiveContentEnricher.eligible({
+        ...textOnly,
+        sensitiveScore: 0,
+        sensitiveModel: MANUAL_NOT_SENSITIVE_MODEL,
+      }),
+    ).toBe(false);
 
     const scored = {
       ...textOnly,
