@@ -8,6 +8,7 @@ import log from "electron-log/main.js";
 import { z } from "zod";
 import { getDb } from "../../db";
 import { commitEvent, startTaskEvent, toErrorInfo } from "../../lib/wide-event";
+import { registerTrashIngestHandler } from "../executor";
 import { persistSave } from "../persist-save";
 import { downloadActivity } from "./download-activity";
 import { canDispatchTask, isInteractiveTask } from "./priority";
@@ -31,9 +32,15 @@ import {
   WorkerWatchdogError,
 } from "./reconciler-config";
 import {
+  abortRunningIngest,
+  trackRunningIngest,
+  untrackRunningIngest,
+} from "./running-ingest";
+import {
   claimDueTasks,
   extendOwnedLeasesSync,
   heartbeatTaskLease,
+  ingestLeaseStillRunnable,
   recoverExpiredLeases,
   sweepOrphanTasks,
   sweepTasklessIngestingSaves,
@@ -46,6 +53,10 @@ import {
   markDone,
   maybeFinalizeSave,
 } from "./task-settlement";
+import {
+  releaseTrashedIngestSync,
+  resumeTrashedIngestSync,
+} from "./trash-ingest";
 
 const TaskPayloadSchema = z.json().catch(null);
 const LEASE_OWNER = `main:${process.pid}`;
@@ -56,7 +67,6 @@ let pausedBeforeSuspend = false;
 let suspended = false;
 let pollTimer: NodeJS.Timeout | null = null;
 let kickPending = false;
-let tickRunning = false;
 let nextOrphanSweepAt = 0;
 const inflightByOp = {
   harvest_metadata: 0,
@@ -72,7 +82,6 @@ const inflightByOp = {
 let inflightGlobal = 0;
 let inflightInteractive = 0;
 const runningTaskIds = new Set<string>();
-const runningTasks = new Map<string, AbortController>();
 const pendingWork = new Set<Promise<unknown>>();
 function track<T>(work: Promise<T>): Promise<T> {
   const settled = work.then(
@@ -174,14 +183,7 @@ export async function cancelSaveIngest(saveId: string): Promise<boolean> {
     .from(tasks)
     .where(and(eq(tasks.saveId, saveId), eq(tasks.status, "running")))
     .all();
-  for (const { id } of running) {
-    const controller = runningTasks.get(id);
-    if (controller) {
-      try {
-        controller.abort();
-      } catch {}
-    }
-  }
+  for (const { id } of running) abortRunningIngest(id);
 
   db.update(tasks)
     .set({
@@ -239,9 +241,7 @@ export async function cancelAllIngest(): Promise<number> {
 
 export async function cancelGeneration(generationId: string): Promise<number> {
   const runningIds = await cancelQueueGeneration(generationId);
-  for (const id of runningIds) {
-    runningTasks.get(id)?.abort();
-  }
+  for (const id of runningIds) abortRunningIngest(id);
   log.info("[pond pipeline:reconciler] cancelled generation", {
     generationId,
     running: runningIds.length,
@@ -266,14 +266,7 @@ export async function skipSaves(ids: readonly string[]): Promise<number> {
       .from(tasks)
       .where(and(eq(tasks.saveId, saveId), eq(tasks.status, "running")))
       .all();
-    for (const { id } of running) {
-      const controller = runningTasks.get(id);
-      if (controller) {
-        try {
-          controller.abort();
-        } catch {}
-      }
-    }
+    for (const { id } of running) abortRunningIngest(id);
 
     await persistSave(
       saveId,
@@ -315,7 +308,7 @@ export function startReconciler(): void {
 }
 
 export function kickReconciler(): void {
-  if (!started) startReconciler();
+  if (!started) return;
   if (kickPending) return;
   kickPending = true;
   setImmediate(() => {
@@ -326,6 +319,7 @@ export function kickReconciler(): void {
 
 async function initializeReconciler(): Promise<void> {
   await recoverExpiredLeases();
+  await releaseIngestForTrashedSaves(null);
   await sweepOrphanTasks();
   await sweepTasklessIngestingSaves();
   nextOrphanSweepAt = Date.now() + ORPHAN_SWEEP_INTERVAL_MS;
@@ -343,76 +337,70 @@ function schedulePoll(ms: number): void {
 
 async function tick(): Promise<void> {
   if (!started || paused) return;
-  if (tickRunning) return;
-  tickRunning = true;
-  try {
-    if (Date.now() >= nextOrphanSweepAt) {
-      nextOrphanSweepAt = Date.now() + ORPHAN_SWEEP_INTERVAL_MS;
-      void track(sweepOrphanTasks()).catch((err) =>
-        log.warn(
-          "[pond pipeline:reconciler] periodic orphan sweep failed",
-          err,
-        ),
-      );
-      void track(recoverExpiredLeases()).catch((err) =>
-        log.warn(
-          "[pond pipeline:reconciler] periodic lease recovery failed",
-          err,
-        ),
-      );
-      void track(sweepTasklessIngestingSaves()).catch((err) =>
-        log.warn(
-          "[pond pipeline:reconciler] periodic taskless sweep failed",
-          err,
-        ),
-      );
-    }
-    const globalRoom = MAX_GLOBAL_INFLIGHT - inflightGlobal;
-    if (globalRoom <= 0) return;
-    const availableByOp = z
-      .record(z.enum(OPS), z.number())
-      .parse(
-        Object.fromEntries(
-          OPS.map((op) => [
-            op,
-            Math.max(0, PER_OP_CONCURRENCY[op] - inflightByOp[op]),
-          ]),
-        ),
-      );
-    const due = await claimDueTasks({
-      owner: LEASE_OWNER,
-      limit: globalRoom,
-      availableInteractive: Math.max(
-        0,
-        MAX_INTERACTIVE_INFLIGHT - inflightInteractive,
+  if (Date.now() >= nextOrphanSweepAt) {
+    nextOrphanSweepAt = Date.now() + ORPHAN_SWEEP_INTERVAL_MS;
+    void track(sweepOrphanTasks()).catch((err) =>
+      log.warn("[pond pipeline:reconciler] periodic orphan sweep failed", err),
+    );
+    void track(recoverExpiredLeases()).catch((err) =>
+      log.warn(
+        "[pond pipeline:reconciler] periodic lease recovery failed",
+        err,
       ),
-      availableBackground: Math.max(
-        0,
-        MAX_BACKGROUND_INFLIGHT - (inflightGlobal - inflightInteractive),
+    );
+    void track(sweepTasklessIngestingSaves()).catch((err) =>
+      log.warn(
+        "[pond pipeline:reconciler] periodic taskless sweep failed",
+        err,
       ),
-      availableByOp,
-    });
-    if (due.length === 0) return;
-    for (const task of due) {
-      if (runningTaskIds.has(task.id)) continue;
-      if (
-        !canDispatchTask({
-          interactive: isInteractiveTask(task),
-          paused,
-          inflightGlobal,
-          inflightInteractive,
-          inflightForOp: inflightByOp[task.op],
-          opCap: PER_OP_CONCURRENCY[task.op],
-          backgroundCap: MAX_BACKGROUND_INFLIGHT,
-          interactiveCap: MAX_INTERACTIVE_INFLIGHT,
-        })
-      ) {
-        continue;
-      }
-      void track(dispatchTask(task));
+    );
+    void track(releaseIngestForTrashedSaves(null)).catch((err) =>
+      log.warn("[pond pipeline:reconciler] periodic trash sweep failed", err),
+    );
+  }
+  const globalRoom = MAX_GLOBAL_INFLIGHT - inflightGlobal;
+  if (globalRoom <= 0) return;
+  const availableByOp = z
+    .record(z.enum(OPS), z.number())
+    .parse(
+      Object.fromEntries(
+        OPS.map((op) => [
+          op,
+          Math.max(0, PER_OP_CONCURRENCY[op] - inflightByOp[op]),
+        ]),
+      ),
+    );
+  const due = await claimDueTasks({
+    owner: LEASE_OWNER,
+    limit: globalRoom,
+    availableInteractive: Math.max(
+      0,
+      MAX_INTERACTIVE_INFLIGHT - inflightInteractive,
+    ),
+    availableBackground: Math.max(
+      0,
+      MAX_BACKGROUND_INFLIGHT - (inflightGlobal - inflightInteractive),
+    ),
+    availableByOp,
+  });
+  if (due.length === 0) return;
+  for (const task of due) {
+    if (runningTaskIds.has(task.id)) continue;
+    if (
+      !canDispatchTask({
+        interactive: isInteractiveTask(task),
+        paused,
+        inflightGlobal,
+        inflightInteractive,
+        inflightForOp: inflightByOp[task.op],
+        opCap: PER_OP_CONCURRENCY[task.op],
+        backgroundCap: MAX_BACKGROUND_INFLIGHT,
+        interactiveCap: MAX_INTERACTIVE_INFLIGHT,
+      })
+    ) {
+      continue;
     }
-  } finally {
-    tickRunning = false;
+    void track(dispatchTask(task));
   }
 }
 
@@ -425,7 +413,7 @@ async function dispatchTask(task: DueTask): Promise<void> {
   if (interactive) inflightInteractive++;
   metrics.tasksDispatched++;
   const controller = new AbortController();
-  runningTasks.set(task.id, controller);
+  trackRunningIngest(task.id, controller);
   const ev: PipelineTaskEvent = startTaskEvent({
     saveId: task.saveId,
     source: task.source,
@@ -471,6 +459,11 @@ async function dispatchTask(task: DueTask): Promise<void> {
     Math.max(1_000, Math.floor(TASK_LEASE_MS / 3)),
   );
   try {
+    if (!(await ingestLeaseStillRunnable(task))) {
+      controller.abort();
+      ev.outcome = "skipped";
+      return;
+    }
     const payload = TaskPayloadSchema.parse(task.payload);
     const budget = TASK_WATCHDOG_MS[task.op];
     let watchdogHandle: NodeJS.Timeout | null = null;
@@ -525,7 +518,7 @@ async function dispatchTask(task: DueTask): Promise<void> {
     clearInterval(heartbeat);
     controller.signal.removeEventListener("abort", stopActivity);
     runningTaskIds.delete(task.id);
-    runningTasks.delete(task.id);
+    untrackRunningIngest(task.id);
     inflightByOp[task.op]--;
     inflightGlobal--;
     if (interactive) inflightInteractive--;
@@ -560,3 +553,35 @@ async function dispatchTask(task: DueTask): Promise<void> {
     kickReconciler();
   }
 }
+
+async function releaseIngestForTrashedSaves(
+  saveIds: readonly string[] | null,
+): Promise<void> {
+  const db = await getDb();
+  const released = releaseTrashedIngestSync(db.$raw, saveIds, Date.now());
+  for (const generationId of released.generationIds) {
+    await completeQueueGenerationIfSettled(generationId);
+  }
+  if (released.cancelled > 0) {
+    log.info("[pond pipeline:reconciler] stopped trashed ingest", {
+      cancelled: released.cancelled,
+    });
+  }
+}
+
+async function resumeIngestForRestoredSaves(
+  saveIds: readonly string[],
+): Promise<void> {
+  if (saveIds.length === 0) return;
+  const db = await getDb();
+  const resumed = resumeTrashedIngestSync(db.$raw, saveIds, Date.now());
+  if (resumed > 0) {
+    log.info("[pond pipeline:reconciler] resumed trashed ingest", { resumed });
+    kickReconciler();
+  }
+}
+
+registerTrashIngestHandler(async ({ trashedIds, restoredIds }) => {
+  if (trashedIds.length > 0) await releaseIngestForTrashedSaves(trashedIds);
+  if (restoredIds.length > 0) await resumeIngestForRestoredSaves(restoredIds);
+});

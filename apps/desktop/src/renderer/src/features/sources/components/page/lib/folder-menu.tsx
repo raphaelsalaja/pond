@@ -16,6 +16,7 @@ interface FolderMenuTarget {
   name: string;
   imported: number;
   watching: boolean;
+  mode: "copy" | "move";
 }
 
 async function revealFolder(name: string): Promise<void> {
@@ -33,6 +34,30 @@ async function setWatching(
 ): Promise<void> {
   await window.pond.query("autoImport.set", { enabled });
   onChanged();
+}
+
+function setDeleteAfterImport(
+  target: FolderMenuTarget,
+  enabled: boolean,
+  onChanged: () => void,
+): void {
+  const apply = async () => {
+    await window.pond.query("autoImport.set", {
+      mode: enabled ? "move" : "copy",
+    });
+    onChanged();
+  };
+  if (!enabled) {
+    void apply();
+    return;
+  }
+  Dialog.confirm({
+    title: "Delete After Import",
+    description: `Pond moves each file in ${target.name} to the Trash once it's in your library, including files it already imported.`,
+    confirmLabel: "Turn On",
+    confirmVariant: "destructive",
+    onConfirm: apply,
+  });
 }
 
 function confirmStop(target: FolderMenuTarget, onChanged: () => void): void {
@@ -70,6 +95,25 @@ export function buildFolderRows(
             label: "Change",
             name: "Change Folder",
             onClick: () => void pickWatchedFolder(),
+          },
+        ],
+      },
+      {
+        id: "delete-after-import",
+        title: "Delete After Import",
+        description:
+          target.mode === "move"
+            ? "Pond moves each file to the Trash once it's in your library."
+            : "Files stay in the folder after Pond imports them.",
+        actions: [
+          {
+            label: target.mode === "move" ? "Turn Off" : "Turn On",
+            name:
+              target.mode === "move"
+                ? "Turn Off Delete After Import"
+                : "Turn On Delete After Import",
+            onClick: () =>
+              setDeleteAfterImport(target, target.mode !== "move", onChanged),
           },
         ],
       },
@@ -134,6 +178,13 @@ export function buildFolderMenu(
           label: target.watching ? "Pause Watching" : "Resume Watching",
           icon: target.watching ? <IconMediaPause /> : <IconMediaPlay />,
           onClick: () => void setWatching(!target.watching, onChanged),
+        },
+        {
+          type: "checkbox",
+          label: "Delete After Import",
+          checked: target.mode === "move",
+          onCheckedChange: (checked) =>
+            setDeleteAfterImport(target, checked, onChanged),
         },
         {
           label: "Stop Watching",

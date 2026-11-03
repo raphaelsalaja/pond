@@ -28,6 +28,8 @@ export function inPageTwitterNormalize() {
 
   function httpMediaUrl(url: string | undefined): string | undefined {
     if (url === undefined || !/^https?:\/\//i.test(url)) return undefined;
+    /* Avatars can sit inside media containers; they are never tweet media. */
+    if (/\/profile_images\//i.test(url)) return undefined;
     return upgradeTwimgUrl(url);
   }
 

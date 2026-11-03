@@ -1,5 +1,6 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join, resolve, sep } from "node:path";
+import { shell } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
 import { libraryRoot } from "../paths";
@@ -83,6 +84,7 @@ export async function startAutoImport(): Promise<void> {
         importedFrom: "watched-folder",
       });
     },
+    trash: (path) => shell.trashItem(path),
     async report(entry) {
       try {
         const history = await readLogFile(root);

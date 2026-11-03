@@ -19,6 +19,17 @@ export const storageSection = defineSection("storage", {
       render: () => <StorageLocationSettings />,
     },
     {
+      title: "Web Pages",
+      items: [
+        {
+          control: "switch",
+          key: "autoArchive",
+          title: "Archive Web Pages Automatically",
+          description: "Off keeps the title, description, and preview image.",
+        },
+      ],
+    },
+    {
       title: "Storage Limits",
       items: [
         {

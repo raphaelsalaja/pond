@@ -4,11 +4,12 @@ import {
   mkdtemp,
   readdir,
   readFile,
+  rename,
   rm,
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   type AutoImportWorkerOptions,
@@ -27,8 +28,10 @@ async function fixture(mode: "copy" | "move" = "copy") {
   roots.push(root);
   const directory = join(root, "watched");
   const library = join(root, "library");
+  const trash = join(root, "trash");
   await mkdir(join(directory, "nested"), { recursive: true });
   await mkdir(library);
+  await mkdir(trash);
   let time = 0;
   const imported = new Map<string, string>();
   const options: AutoImportWorkerOptions = {
@@ -45,10 +48,14 @@ async function fixture(mode: "copy" | "move" = "copy") {
       imported.set(sourceId, id);
       return { ok: true, id };
     },
+    async trash(path) {
+      await rename(path, join(trash, basename(path)));
+    },
   };
   return {
     directory,
     library,
+    trash,
     imported,
     options,
     advance: (ms: number) => {
@@ -116,6 +123,18 @@ describe("auto-import reconciliation", () => {
     await worker.scan();
     expect(imported.size).toBe(1);
     expect(await readdir(directory)).not.toContain("image.png");
+    await worker.stop();
+  });
+
+  it("moves an imported source to the trash instead of deleting it", async () => {
+    const { directory, trash, options, advance } = await fixture("move");
+    await writeFile(join(directory, "image.png"), "original");
+    const worker = await createAutoImportWorker(options);
+    await worker.scan();
+    advance(1000);
+    await worker.scan();
+    expect(await readdir(directory)).not.toContain("image.png");
+    expect(await readFile(join(trash, "image.png"), "utf8")).toBe("original");
     await worker.stop();
   });
 

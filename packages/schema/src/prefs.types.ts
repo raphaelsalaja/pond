@@ -78,10 +78,6 @@ export type StoredImageDownload = ImageDownloadSettings & {
 export interface ImportCollection {
   id: string;
   name: string;
-  /** Provider-specific route key when the stable collection id is not addressable directly. */
-  slug?: string;
-  /** Provider owner used when resolving a collection route. */
-  ownerUsername?: string;
 }
 
 /** What a save holds once captured; `text` is a post with no image or video. */

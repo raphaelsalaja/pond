@@ -1,10 +1,14 @@
-/** Casing is preserved for display; dedup happens through `labelKey`. */
+/**
+ * Casing is preserved for display; dedup happens through `labelKey`.
+ * @remarks NFC makes a decomposed accent the same name as its composed letter.
+ */
 export function normalizeLabelName(raw: string): string {
   return raw
+    .normalize("NFC")
     .trim()
     .replace(/^#+/, "")
     .replace(/\s+/g, " ")
-    .replace(/[^a-z0-9 /:.-]/gi, "")
+    .replace(/[^\p{L}\p{M}0-9 /:.-]/gu, "")
     .trim();
 }
 

@@ -30,6 +30,7 @@ export function SourcesContextMenu({ row, children }: SourcesContextMenuProps) {
                 name: row.name,
                 imported: row.items,
                 watching: row.entry.row.enabled,
+                mode: row.entry.row.mode,
               },
               () =>
                 void client.invalidateQueries({ queryKey: ["watched-folder"] }),

@@ -7,6 +7,7 @@ import {
   isOriginalImageKind,
   VIDEO_KIND,
 } from "@shared/save-file-names";
+import { isAvatarUrl } from "@shared/tweet-card";
 import log from "electron-log/main.js";
 import { fetchMediaBatch } from "../../../lib/blob";
 import type { TransferOptions } from "../../../lib/download-transfer";
@@ -229,6 +230,8 @@ export function collectMediaUrls(
       (!opts.includeVideo || !hasDirectVideoExtension(m.url))
     )
       continue;
+    /* A harvest can store the author's avatar as tweet media; it is not part of the post, and a failed avatar fetch must not fail the save. */
+    if (isAvatarUrl(m.url)) continue;
     if (seen.has(m.url)) continue;
     seen.add(m.url);
     out.push(m.url);

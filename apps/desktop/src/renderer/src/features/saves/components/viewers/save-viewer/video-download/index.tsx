@@ -1,6 +1,7 @@
 import { Button } from "@pond/ui";
 import { useState } from "react";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
+import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome";
 import { isHttpUrl } from "@/features/saves/lib/url-list";
 import type { Save } from "@/features/saves/types";
 import { notify } from "@/shared/lib/toast";
@@ -27,8 +28,8 @@ export function VideoDownload({ save }: { save: Save }) {
   };
 
   return (
-    <ViewerHud.Root>
-      <ViewerHud.Cluster anchor="bottom-center">
+    <ChromePortal slot="bottom">
+      <div className={styles.notice} data-placement="above-chrome">
         <ViewerHud.Pill className={styles.root} aria-label="Video download">
           <span className={styles.label}>Video not downloaded</span>
           <Button
@@ -51,7 +52,7 @@ export function VideoDownload({ save }: { save: Save }) {
             </Button>
           ) : null}
         </ViewerHud.Pill>
-      </ViewerHud.Cluster>
-    </ViewerHud.Root>
+      </div>
+    </ChromePortal>
   );
 }

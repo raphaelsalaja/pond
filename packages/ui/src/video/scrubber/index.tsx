@@ -23,6 +23,16 @@ export function Scrubber({ className, renderPreview }: ScrubberProps) {
     setHover(clamp((event.clientX - rect.left) / rect.width, 0, 1));
   };
 
+  const onPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+    const root = event.currentTarget;
+    requestAnimationFrame(() => {
+      const focused = root.ownerDocument.activeElement;
+      if (focused instanceof HTMLElement && root.contains(focused)) {
+        focused.blur();
+      }
+    });
+  };
+
   return (
     <SliderBase.Root
       className={cn(styles.root, className)}
@@ -33,6 +43,7 @@ export function Scrubber({ className, renderPreview }: ScrubberProps) {
       step={0.01}
       onValueChange={(v) => actions.seek(Array.isArray(v) ? (v[0] ?? 0) : v)}
       onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
       onPointerLeave={() => setHover(null)}
       aria-label="Seek"
     >
