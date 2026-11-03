@@ -106,17 +106,12 @@ export function buildFolderRows(
           target.mode === "move"
             ? "Pond moves each file to the Trash once it's in your library."
             : "Files stay in the folder after Pond imports them.",
-        actions: [
-          {
-            label: target.mode === "move" ? "Turn Off" : "Turn On",
-            name:
-              target.mode === "move"
-                ? "Turn Off Delete After Import"
-                : "Turn On Delete After Import",
-            onClick: () =>
-              setDeleteAfterImport(target, target.mode !== "move", onChanged),
-          },
-        ],
+        actions: [],
+        toggle: {
+          checked: target.mode === "move",
+          onCheckedChange: (checked) =>
+            setDeleteAfterImport(target, checked, onChanged),
+        },
       },
     ],
     fetch: [],
