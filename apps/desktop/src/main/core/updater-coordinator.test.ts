@@ -115,6 +115,27 @@ describe("updater coordinator", () => {
     expect(coordinator.currentNotice()).toBeNull();
   });
 
+  it("reports install success only after the handoff releases the caller", async () => {
+    const { coordinator, updater } = setup();
+    let release = (): void => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    vi.mocked(updater.install).mockImplementationOnce(() => gate);
+
+    let settled = false;
+    const pending = coordinator.install().then((result) => {
+      settled = true;
+      return result;
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(settled).toBe(false);
+
+    release();
+    await expect(pending).resolves.toEqual({ ok: true });
+  });
+
   it("returns download and install failures to callers", async () => {
     const { coordinator, updater } = setup();
     vi.mocked(updater.download).mockRejectedValueOnce(
