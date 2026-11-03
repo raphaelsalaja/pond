@@ -223,6 +223,27 @@ describe("accounts.importOptions", () => {
     });
   });
 
+  it("lists Cosmos collections through the Account's session", async () => {
+    const listSourceCollections = vi.fn(async () => ({
+      ok: true as const,
+      collections: [{ id: "7", name: "Recipes", itemCount: 12 }],
+    }));
+    const operation = createImportOptionsQuery({
+      getAccount: vi.fn(async () => account("cosmos")),
+      resolveAccountHandle: vi.fn(async () => "raphael"),
+      listSourceCollections,
+    });
+
+    await expect(operation({ accountId: "cosmos:123" })).resolves.toEqual({
+      ok: true,
+      collections: [{ id: "7", name: "Recipes", itemCount: 12 }],
+    });
+    expect(listSourceCollections).toHaveBeenCalledWith("cosmos", {
+      partition: "persist:pond-acct-cosmos:123",
+      accountKey: undefined,
+    });
+  });
+
   it("explains a signed-out session", async () => {
     const operation = createImportOptionsQuery({
       getAccount: vi.fn(async () => account("pinterest")),

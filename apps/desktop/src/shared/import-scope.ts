@@ -60,7 +60,12 @@ const IMPORT_SCOPE_OPTIONS = {
     mediaKinds: [],
     since: true,
   },
-  cosmos: { ...EVERYTHING_ONLY, mediaKinds: ["image", "video"] },
+  cosmos: {
+    ...EVERYTHING_ONLY,
+    collections: "collection",
+    fileEveryCollection: true,
+    mediaKinds: ["image", "video"],
+  },
   arena: { ...EVERYTHING_ONLY, mediaKinds: ALL_MEDIA, since: true },
   pinterest: {
     listKinds: [],

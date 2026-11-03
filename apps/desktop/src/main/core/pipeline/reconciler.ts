@@ -67,6 +67,9 @@ let pausedBeforeSuspend = false;
 let suspended = false;
 let pollTimer: NodeJS.Timeout | null = null;
 let kickPending = false;
+/** Overlapping ticks would claim against stale in-flight counts and leave the extra leases undispatched. */
+let tickRunning = false;
+let tickRequested = false;
 let nextOrphanSweepAt = 0;
 const inflightByOp = {
   harvest_metadata: 0,
@@ -336,6 +339,22 @@ function schedulePoll(ms: number): void {
 }
 
 async function tick(): Promise<void> {
+  if (tickRunning) {
+    tickRequested = true;
+    return;
+  }
+  tickRunning = true;
+  try {
+    do {
+      tickRequested = false;
+      await claimAndDispatch();
+    } while (tickRequested);
+  } finally {
+    tickRunning = false;
+  }
+}
+
+async function claimAndDispatch(): Promise<void> {
   if (!started || paused) return;
   if (Date.now() >= nextOrphanSweepAt) {
     nextOrphanSweepAt = Date.now() + ORPHAN_SWEEP_INTERVAL_MS;

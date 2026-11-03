@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { handleFromMeData, pageFromLibrary, viewerFromMeData } from "./listing";
+import {
+  handleFromMeData,
+  pageFromClusterConnections,
+  pageFromClusters,
+  pageFromLibrary,
+  viewerFromMeData,
+} from "./listing";
 
 describe("viewerFromMeData", () => {
   it("reads the signed-in username and numeric id", () => {
@@ -67,5 +73,79 @@ describe("pageFromLibrary", () => {
     });
     expect(page.entries).toEqual([]);
     expect(page.nextPageCursor).toBeNull();
+  });
+});
+
+describe("pageFromClusters", () => {
+  it("maps Cosmos clusters to import collection options", () => {
+    expect(
+      pageFromClusters({
+        userClusters: {
+          items: [
+            {
+              id: 7,
+              name: "Recipes",
+              slug: "recipes",
+              owner: { username: "spratch" },
+              numberOfElements: 12,
+            },
+            { id: "8", name: "Design", slug: "design", numberOfElements: 0 },
+          ],
+          meta: { nextPageCursor: "next" },
+        },
+      }),
+    ).toEqual({
+      collections: [
+        {
+          id: "7",
+          name: "Recipes",
+          slug: "recipes",
+          ownerUsername: "spratch",
+          itemCount: 12,
+        },
+        { id: "8", name: "Design", slug: "design", itemCount: 0 },
+      ],
+      nextPageCursor: "next",
+    });
+  });
+
+  it("skips incomplete cluster records", () => {
+    expect(
+      pageFromClusters({
+        userClusters: {
+          items: [
+            { id: 1 },
+            { name: "Missing id", slug: "missing-id" },
+            { id: 2, name: "Missing slug" },
+          ],
+        },
+      }),
+    ).toEqual({ collections: [], nextPageCursor: null });
+  });
+
+  it("maps collection connections to library entries", () => {
+    expect(
+      pageFromClusterConnections({
+        clusterConnections: {
+          items: [
+            {
+              element: {
+                id: 11,
+                shareUrl: "https://www.cosmos.so/e/11",
+              },
+            },
+          ],
+          meta: { nextPageCursor: "next" },
+        },
+      }),
+    ).toEqual({
+      entries: [
+        {
+          sourceId: "11",
+          url: "https://www.cosmos.so/e/11",
+        },
+      ],
+      nextPageCursor: "next",
+    });
   });
 });

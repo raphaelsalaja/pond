@@ -617,6 +617,23 @@ async function readSourceCollections(
       if (!run.ok) return pageRunFailure(run.reason);
       return readCollectionsReply(run.value);
     }
+    case "cosmos": {
+      const { listCosmosCollections } = await import("../harvest/cosmos/api");
+      const result = await listCosmosCollections(opts.partition);
+      if (result.ok) {
+        return {
+          ok: true,
+          collections: result.collections.map(({ id, name, itemCount }) => ({
+            id,
+            name,
+            itemCount,
+          })),
+        };
+      }
+      return result.status === 401 || result.status === 403
+        ? { ok: false, reason: "auth_required" }
+        : { ok: false, reason: "unknown", detail: `api ${result.status}` };
+    }
     case "tiktok": {
       if (!opts.accountKey) return { ok: false, reason: "unknown" };
       const run = await runOnSourcePage(
@@ -683,6 +700,25 @@ export async function harvestSourceCollections(
           { partition: opts.partition },
         ),
       );
+    case "cosmos": {
+      const { harvestCosmosCollection, listCosmosCollections } = await import(
+        "../harvest/cosmos/api"
+      );
+      const listed = await listCosmosCollections(opts.partition);
+      if (!listed.ok) {
+        return listed.status === 401 || listed.status === 403
+          ? { ok: false, reason: "auth_required" }
+          : { ok: false, reason: "unknown" };
+      }
+      const byId = new Map(
+        listed.collections.map((collection) => [collection.id, collection]),
+      );
+      return harvestEachCollection(source, collections, async (collection) => {
+        const cosmos = byId.get(collection.id);
+        if (!cosmos) return { ok: false, reason: "no_match" };
+        return harvestCosmosCollection(args, opts.partition, cosmos);
+      });
+    }
     case "tiktok":
       return harvestEachCollection(source, collections, (collection) =>
         harvestSourceList(

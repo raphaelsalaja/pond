@@ -6,9 +6,15 @@ import { partitionForIngest } from "../../../sync/accounts";
 import { PARTITION } from "../../harvest-window/constants";
 import type { ListHarvestArgs, ListHarvestResult } from "../list-types";
 import {
+  CosmosClusterConnectionsDataSchema,
+  CosmosClustersDataSchema,
+  type CosmosCollection,
   CosmosLibraryDataSchema,
   CosmosMeDataSchema,
   type CosmosViewer,
+  type LibraryPage,
+  pageFromClusterConnections,
+  pageFromClusters,
   pageFromLibrary,
   viewerFromMeData,
 } from "./listing";
@@ -30,9 +36,22 @@ const LIBRARY_QUERY = `query PondLibrary($userId: UserId!, $pageSize: Int, $page
     meta { nextPageCursor count }
   }
 }`;
+const COLLECTION_QUERY = `query PondCollection($input: ClusterGetInput!, $pageSize: Int, $pageCursor: String) {
+  clusterConnections(clusterInput: $input, meta: { pageSize: $pageSize, pageCursor: $pageCursor }) {
+    items { element { id shareUrl createdAt } }
+    meta { nextPageCursor count }
+  }
+}`;
+const CLUSTERS_QUERY = `query PondClusters($userId: UserId!, $pageSize: Int, $pageCursor: String) {
+  userClusters(userId: $userId, meta: { pageSize: $pageSize, pageCursor: $pageCursor }) {
+    items { id name slug owner { username } numberOfElements }
+    meta { nextPageCursor }
+  }
+}`;
 
 const GraphqlErrorSchema = z
   .object({
+    message: z.string().optional().catch(undefined),
     extensions: z
       .object({ code: z.string().optional().catch(undefined) })
       .optional()
@@ -72,9 +91,65 @@ export async function fetchCosmosViewer(
   return viewerFromMeData(result.json);
 }
 
-export async function harvestCosmosLibrary(
+interface CosmosSession {
+  jar: string;
+  userId: number;
+  handle: string;
+}
+
+type FetchPage = (
+  auth: CosmosSession,
+  pageCursor: string | undefined,
+) => Promise<JsonResult<LibraryPage>>;
+
+export function harvestCosmosLibrary(
   args: ListHarvestArgs,
   partition?: string,
+): Promise<ListHarvestResult> {
+  return harvestCosmosPages(args, partition, async (auth, pageCursor) => {
+    const result = await cosmosGraphql(
+      auth.jar,
+      "PondLibrary",
+      LIBRARY_QUERY,
+      { userId: auth.userId, pageSize: PAGE_SIZE, pageCursor },
+      CosmosLibraryDataSchema,
+    );
+    return result.ok
+      ? { ok: true, json: pageFromLibrary(result.json) }
+      : result;
+  });
+}
+
+export function harvestCosmosCollection(
+  args: ListHarvestArgs,
+  partition: string | undefined,
+  collection: CosmosCollection,
+): Promise<ListHarvestResult> {
+  return harvestCosmosPages(args, partition, async (auth, pageCursor) => {
+    const result = await cosmosGraphql(
+      auth.jar,
+      "PondCollection",
+      COLLECTION_QUERY,
+      {
+        pageSize: PAGE_SIZE,
+        pageCursor,
+        input: {
+          slug: collection.slug,
+          ownerUsername: collection.ownerUsername ?? auth.handle,
+        },
+      },
+      CosmosClusterConnectionsDataSchema,
+    );
+    return result.ok
+      ? { ok: true, json: pageFromClusterConnections(result.json) }
+      : result;
+  });
+}
+
+async function harvestCosmosPages(
+  args: ListHarvestArgs,
+  partition: string | undefined,
+  fetchPage: FetchPage,
 ): Promise<ListHarvestResult> {
   const jar = partition ?? (await partitionForIngest("cosmos"));
   const viewer = await fetchCosmosViewer(jar);
@@ -83,6 +158,7 @@ export async function harvestCosmosLibrary(
   if (!Number.isInteger(userId) || userId <= 0) {
     return { ok: false, reason: "auth_required" };
   }
+  const auth: CosmosSession = { jar, userId, handle: viewer.handle };
 
   const known = new Set(args.knownIds.map(String));
   const earlyStopEnabled = args.earlyStop !== false && known.size > 0;
@@ -91,17 +167,7 @@ export async function harvestCosmosLibrary(
   let knownPageStreak = 0;
 
   for (let page = 0; page < MAX_PAGES; page++) {
-    const result = await cosmosGraphql(
-      jar,
-      "PondLibrary",
-      LIBRARY_QUERY,
-      {
-        userId,
-        pageSize: PAGE_SIZE,
-        pageCursor,
-      },
-      CosmosLibraryDataSchema,
-    );
+    const result = await fetchPage(auth, pageCursor);
     if (!result.ok) {
       if (result.status === 401 || result.status === 403) {
         return { ok: false, reason: "auth_required" };
@@ -112,7 +178,7 @@ export async function harvestCosmosLibrary(
       if (page === 0) return { ok: false, reason: "no_match" };
       break;
     }
-    const pageData = pageFromLibrary(result.json);
+    const pageData = result.json;
     if (
       page === 0 &&
       pageData.entries.length === 0 &&
@@ -149,6 +215,38 @@ export async function harvestCosmosLibrary(
   return { ok: true, entries, reachedEnd: false, seen: entries.length };
 }
 
+export async function listCosmosCollections(
+  partition: string = PARTITION,
+): Promise<
+  { ok: true; collections: CosmosCollection[] } | { ok: false; status: number }
+> {
+  const viewer = await fetchCosmosViewer(partition);
+  if (!viewer) return { ok: false, status: 401 };
+  const userId = Number(viewer.userId);
+  if (!Number.isInteger(userId) || userId <= 0) {
+    return { ok: false, status: 401 };
+  }
+
+  const collections: CosmosCollection[] = [];
+  let pageCursor: string | undefined;
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const result = await cosmosGraphql(
+      partition,
+      "PondClusters",
+      CLUSTERS_QUERY,
+      { userId, pageSize: PAGE_SIZE, pageCursor },
+      CosmosClustersDataSchema,
+    );
+    if (!result.ok) return result;
+    const pageData = pageFromClusters(result.json);
+    collections.push(...pageData.collections);
+    if (!pageData.nextPageCursor) return { ok: true, collections };
+    pageCursor = pageData.nextPageCursor;
+    await sleep(250);
+  }
+  return { ok: true, collections };
+}
+
 async function cosmosGraphql<T>(
   partition: string,
   operationName: string,
@@ -157,6 +255,7 @@ async function cosmosGraphql<T>(
     userId?: number;
     pageSize?: number;
     pageCursor?: string;
+    input?: { slug: string; ownerUsername: string };
   },
   schema: z.ZodType<T>,
 ): Promise<JsonResult<T>> {
@@ -203,7 +302,10 @@ async function cosmosGraphql<T>(
     log.warn(
       "[pond cosmos-api] graphql errors",
       operationName,
-      envelope.errors,
+      envelope.errors?.map((error) => ({
+        message: error.message,
+        code: error.extensions?.code,
+      })),
     );
     return { ok: false, status: res.status || 400 };
   }

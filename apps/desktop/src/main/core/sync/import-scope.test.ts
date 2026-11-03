@@ -27,6 +27,14 @@ describe("listHarvestPlan", () => {
       collections: null,
       fileEveryCollection: false,
     });
+    expect(listHarvestPlan("cosmos", undefined)).toEqual({
+      primary: true,
+      liked: false,
+      subscriptions: false,
+      listKinds: [],
+      collections: null,
+      fileEveryCollection: false,
+    });
   });
 
   it("skips the saved list when you import only Likes", () => {
@@ -61,6 +69,14 @@ describe("listHarvestPlan", () => {
       liked: true,
       collections: [BOARD],
     });
+    expect(listHarvestPlan("cosmos", { collections: [BOARD] })).toEqual({
+      primary: false,
+      liked: false,
+      subscriptions: false,
+      listKinds: [],
+      collections: [BOARD],
+      fileEveryCollection: false,
+    });
   });
 
   it("ignores collections when the saved list is left out", () => {
@@ -87,6 +103,11 @@ describe("listHarvestPlan", () => {
         addToFolders: true,
       }).fileEveryCollection,
     ).toBe(false);
+    expect(listHarvestPlan("cosmos", { addToFolders: true })).toMatchObject({
+      primary: true,
+      collections: null,
+      fileEveryCollection: true,
+    });
   });
 
   it("treats an empty board list as everything rather than nothing", () => {
