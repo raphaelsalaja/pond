@@ -190,6 +190,47 @@ it("keeps Space toggling playback after the seek bar is clicked", async () => {
   expect(play).toHaveBeenCalledTimes(1);
 });
 
+it("seeks to the pressed point on the seek track", async () => {
+  await act(async () => {
+    root.render(<TestVideoPlayer />);
+  });
+  const video = host.querySelector("video");
+  const control = host.querySelector('[aria-label="Seek"]')?.firstElementChild;
+  if (!video || !(control instanceof HTMLElement)) {
+    throw new Error("Missing seek track");
+  }
+  Object.defineProperty(video, "duration", { configurable: true, value: 60 });
+  await act(async () => video.dispatchEvent(new Event("durationchange")));
+  control.getBoundingClientRect = () => new DOMRect(0, 0, 200, 24);
+  control.setPointerCapture = () => {};
+  control.hasPointerCapture = () => false;
+
+  await act(async () => {
+    control.dispatchEvent(
+      new PointerEvent("pointerdown", {
+        bubbles: true,
+        cancelable: true,
+        button: 0,
+        clientX: 100,
+        clientY: 12,
+        pointerId: 1,
+        pointerType: "mouse",
+      }),
+    );
+    document.dispatchEvent(
+      new PointerEvent("pointerup", {
+        bubbles: true,
+        clientX: 100,
+        clientY: 12,
+        pointerId: 1,
+        pointerType: "mouse",
+      }),
+    );
+  });
+
+  expect(video.currentTime).toBe(30);
+});
+
 it("always fits video inside the viewer", async () => {
   await act(async () => {
     root.render(<TestVideoPlayer />);
