@@ -266,6 +266,7 @@ describe("native host manifests", () => {
         path === hostPath ||
         path === join(configHome, "google-chrome") ||
         path === join(configHome, "BraveSoftware/Brave-Browser") ||
+        path === join(configHome, "BraveSoftware/Brave-Origin") ||
         path === "/home/test/.var/app/com.google.Chrome/config/google-chrome" ||
         path === "/home/test/.mozilla" ||
         path === "/home/test/.var/app/org.mozilla.firefox/.mozilla",
@@ -280,6 +281,7 @@ describe("native host manifests", () => {
     expect([...writes.keys()]).toEqual([
       `${configHome}/google-chrome/NativeMessagingHosts/so.pond.host.json`,
       `${configHome}/BraveSoftware/Brave-Browser/NativeMessagingHosts/so.pond.host.json`,
+      `${configHome}/BraveSoftware/Brave-Origin/NativeMessagingHosts/so.pond.host.json`,
       "/home/test/.var/app/com.google.Chrome/config/google-chrome/NativeMessagingHosts/so.pond.host.json",
       "/home/test/.mozilla/native-messaging-hosts/so.pond.host.json",
       "/home/test/.var/app/org.mozilla.firefox/.mozilla/native-messaging-hosts/so.pond.host.json",
