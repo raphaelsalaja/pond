@@ -15,15 +15,20 @@ it("installs a font into the Pond fonts directory and removes it", async () => {
   const source = join(root, "SourceSerif.ttf");
   await writeFile(source, Buffer.from("font"));
   const fontsDir = join(root, "Fonts");
+  let cacheRefreshes = 0;
   const activated = await activateFont({
     sourcePath: source,
     saveId: "save-1",
     platform: "linux",
     fontsDir,
+    runFontCache: async () => {
+      cacheRefreshes += 1;
+    },
   });
   if (!activated.ok) throw new Error(activated.error);
   expect(activated.path.startsWith(join(fontsDir, "Pond"))).toBe(true);
   expect(await readFile(activated.path, "utf8")).toBe("font");
+  expect(cacheRefreshes).toBe(1);
   const deactivated = await deactivateFont({
     installedPath: activated.path,
     platform: "linux",

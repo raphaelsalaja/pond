@@ -53,8 +53,12 @@ export async function ensureTray(opts: TrayOptions): Promise<TrayHandle> {
   log.info("[pond tray] created");
 
   const onThemeUpdated = () => tray.setImage(loadTrayIcon());
-  /** Windows shows the context menu only on right-click, so a plain click opens Pond. */
-  if (process.platform === "win32") {
+  /**
+   * Windows and most Linux trays show the context menu on right-click, so a
+   * plain click opens Pond. AppIndicator desktops may not emit `click`; the
+   * menu's first item is the fallback there.
+   */
+  if (process.platform !== "darwin") {
     tray.on("click", () => void opts.onOpenLibrary());
     nativeTheme.on("updated", onThemeUpdated);
   }

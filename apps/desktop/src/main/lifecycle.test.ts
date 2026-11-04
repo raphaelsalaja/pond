@@ -102,21 +102,23 @@ describe("protocolRegistration", () => {
 });
 
 describe("resolveLaunchHidden", () => {
-  it("opens the window on Windows when there is no tray icon to reopen it", () => {
-    expect(
-      resolveLaunchHidden({
-        platform: "win32",
-        requested: true,
-        trayEnabled: false,
-      }),
-    ).toBe(false);
-    expect(
-      resolveLaunchHidden({
-        platform: "win32",
-        requested: true,
-        trayEnabled: true,
-      }),
-    ).toBe(true);
+  it("opens the window on Windows and Linux when there is no tray icon to reopen it", () => {
+    for (const platform of ["win32", "linux"] as const) {
+      expect(
+        resolveLaunchHidden({
+          platform,
+          requested: true,
+          trayEnabled: false,
+        }),
+      ).toBe(false);
+      expect(
+        resolveLaunchHidden({
+          platform,
+          requested: true,
+          trayEnabled: true,
+        }),
+      ).toBe(true);
+    }
     expect(
       resolveLaunchHidden({
         platform: "darwin",

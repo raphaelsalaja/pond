@@ -10,6 +10,7 @@ import type { ReasonResult } from "../../shared/query-contracts-shared";
 import { isAuxiliaryKind } from "../../shared/save-file-names";
 import type { SaveFileFailure } from "../../shared/saves-contracts-shared";
 import { getDb } from "../db";
+import { canonicalPondSaveId } from "../lib/pond-url";
 import { saveFile, savesRoot } from "../paths";
 import { toWireSave } from "./wire";
 
@@ -142,7 +143,7 @@ export function resolvePondSavePath(
     return null;
   }
   if (url.protocol !== `${POND_PROTOCOL}:`) return null;
-  const saveId = url.hostname;
+  const saveId = canonicalPondSaveId(url.hostname);
   const file = decodeURIComponent(url.pathname.replace(/^\//, ""));
   if (!saveId || !file) return null;
   const absolute = resolvePath(saveFile(saveId, file));

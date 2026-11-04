@@ -1,7 +1,7 @@
 import { execFile } from "node:child_process";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { join, posix } from "node:path";
 import { promisify } from "node:util";
 import {
   CHROMIUM_EXTENSION_IDS,
@@ -10,6 +10,7 @@ import {
 } from "@pond/schema/native";
 import { app } from "electron";
 import log from "electron-log/main.js";
+import { prepareNativeHostBinary } from "./host-binary";
 
 const HOST_FILENAME = `${NATIVE_HOST_NAME}.json`;
 const FIREFOX_HOST_FILENAME = `${NATIVE_HOST_NAME}.firefox.json`;
@@ -53,6 +54,92 @@ const FIREFOX_NMH_TARGETS = [
     apps: ["Floorp.app"],
   },
 ] as const;
+
+/**
+ * Chromium browsers read per-user manifests from their config directory on
+ * Linux. Snap and Flatpak builds keep their own config roots, so each one is
+ * listed separately; a target is only written when its browser directory
+ * exists.
+ */
+const LINUX_CHROMIUM_CONFIG_DIRS = [
+  "google-chrome",
+  "google-chrome-beta",
+  "google-chrome-unstable",
+  "chromium",
+  "ungoogled-chromium",
+  "BraveSoftware/Brave-Browser",
+  "BraveSoftware/Brave-Browser-Beta",
+  "BraveSoftware/Brave-Browser-Nightly",
+  "BraveSoftware/Brave-Origin",
+  "microsoft-edge",
+  "microsoft-edge-beta",
+  "microsoft-edge-dev",
+  "vivaldi",
+] as const;
+
+function linuxConfigHome(
+  env: NodeJS.ProcessEnv = process.env,
+  home: string = homedir(),
+): string {
+  const config = env.XDG_CONFIG_HOME;
+  return config && posix.isAbsolute(config)
+    ? config
+    : posix.join(home, ".config");
+}
+
+/** Flatpak browsers read from their sandbox's own config root. */
+const LINUX_CHROMIUM_FLATPAK_DIRS = [
+  "org.chromium.Chromium/config/chromium",
+  "com.google.Chrome/config/google-chrome",
+  "com.brave.Browser/config/BraveSoftware/Brave-Browser",
+  "com.microsoft.Edge/config/microsoft-edge",
+  "com.vivaldi.Vivaldi/config/vivaldi",
+] as const;
+
+function linuxChromiumNativeHostDirs(input: {
+  home: string;
+  configHome: string;
+}): string[] {
+  return [
+    ...LINUX_CHROMIUM_CONFIG_DIRS.map((browser) =>
+      posix.join(input.configHome, browser, "NativeMessagingHosts"),
+    ),
+    ...LINUX_CHROMIUM_FLATPAK_DIRS.map((dir) =>
+      posix.join(input.home, ".var/app", dir, "NativeMessagingHosts"),
+    ),
+    posix.join(
+      input.home,
+      "snap/chromium/common/chromium/NativeMessagingHosts",
+    ),
+  ];
+}
+
+/** Firefox reads a single per-user directory; forks and packaged builds each have their own. */
+function linuxFirefoxNativeHostDirs(input: { home: string }): string[] {
+  return [
+    posix.join(input.home, ".mozilla/native-messaging-hosts"),
+    posix.join(input.home, ".zen/native-messaging-hosts"),
+    posix.join(input.home, ".librewolf/native-messaging-hosts"),
+    posix.join(input.home, ".floorp/native-messaging-hosts"),
+    posix.join(
+      input.home,
+      "snap/firefox/common/.mozilla/native-messaging-hosts",
+    ),
+    posix.join(
+      input.home,
+      ".var/app/org.mozilla.firefox/.mozilla/native-messaging-hosts",
+    ),
+    posix.join(input.home, "snap/zen/common/.zen/native-messaging-hosts"),
+    posix.join(
+      input.home,
+      ".var/app/app.zen_browser.zen/.zen/native-messaging-hosts",
+    ),
+    posix.join(
+      input.home,
+      ".var/app/io.github.zen_browser.zen/.zen/native-messaging-hosts",
+    ),
+  ];
+}
 
 export const WINDOWS_NATIVE_MESSAGING_REGISTRY_KEYS = [
   `HKCU\\Software\\Google\\Chrome\\NativeMessagingHosts\\${NATIVE_HOST_NAME}`,
@@ -130,8 +217,9 @@ function firefoxNativeHostManifest(hostPath: string): string {
 
 interface NativeHostManifestDependencies {
   platform: NodeJS.Platform;
-  hostPath: () => string;
+  hostPath: () => string | Promise<string>;
   home: () => string;
+  environment: NodeJS.ProcessEnv;
   exists: (path: string) => boolean;
   makeDirectory: (path: string) => void;
   writeFile: (path: string, body: string) => void;
@@ -144,8 +232,14 @@ interface NativeHostManifestDependencies {
 
 const defaultDependencies: NativeHostManifestDependencies = {
   platform: process.platform,
-  hostPath: nativeHostBinaryPath,
+  hostPath: () =>
+    prepareNativeHostBinary({
+      source: nativeHostBinaryPath(),
+      packaged: app.isPackaged,
+      appImage: process.env.APPIMAGE,
+    }),
   home: homedir,
+  environment: process.env,
   exists: existsSync,
   makeDirectory: (path) => mkdirSync(path, { recursive: true }),
   writeFile: (path, body) => writeFileSync(path, body, { encoding: "utf8" }),
@@ -165,11 +259,15 @@ export async function writeNativeHostManifests(
   overrides: Partial<NativeHostManifestDependencies> = {},
 ): Promise<void> {
   const dependencies = { ...defaultDependencies, ...overrides };
-  if (dependencies.platform !== "darwin" && dependencies.platform !== "win32") {
+  if (
+    dependencies.platform !== "darwin" &&
+    dependencies.platform !== "win32" &&
+    dependencies.platform !== "linux"
+  ) {
     return;
   }
 
-  const hostPath = dependencies.hostPath();
+  const hostPath = await dependencies.hostPath();
   if (!dependencies.exists(hostPath)) {
     dependencies.warn("[pond native] host binary missing", hostPath);
     return;
@@ -177,6 +275,11 @@ export async function writeNativeHostManifests(
 
   if (dependencies.platform === "win32") {
     await writeWindowsNativeHostManifest(hostPath, dependencies);
+    return;
+  }
+
+  if (dependencies.platform === "linux") {
+    writeLinuxNativeHostManifests(hostPath, dependencies);
     return;
   }
 
@@ -204,6 +307,40 @@ export async function writeNativeHostManifests(
     try {
       dependencies.makeDirectory(dir);
       dependencies.writeFile(join(dir, HOST_FILENAME), body);
+    } catch (err) {
+      dependencies.warn(
+        "[pond native] failed to write host manifest",
+        dir,
+        err,
+      );
+    }
+  }
+}
+
+function writeLinuxNativeHostManifests(
+  hostPath: string,
+  dependencies: NativeHostManifestDependencies,
+): void {
+  const home = dependencies.home();
+  const targets = [
+    ...linuxChromiumNativeHostDirs({
+      home,
+      configHome: linuxConfigHome(dependencies.environment, home),
+    }).map((dir) => ({
+      dir,
+      body: chromiumNativeHostManifest(hostPath),
+    })),
+    ...linuxFirefoxNativeHostDirs({ home }).map((dir) => ({
+      dir,
+      body: firefoxNativeHostManifest(hostPath),
+    })),
+  ];
+  for (const { dir, body } of targets) {
+    /** The browser creates its own config root on first launch, so that directory is the install signal. */
+    if (!dependencies.exists(posix.dirname(dir))) continue;
+    try {
+      dependencies.makeDirectory(dir);
+      dependencies.writeFile(posix.join(dir, HOST_FILENAME), body);
     } catch (err) {
       dependencies.warn(
         "[pond native] failed to write host manifest",

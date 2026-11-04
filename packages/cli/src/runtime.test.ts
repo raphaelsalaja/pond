@@ -18,8 +18,29 @@ describe("pondLaunchCommand", () => {
     });
   });
 
-  it("keeps the macOS and Linux launchers", () => {
+  it("keeps the macOS launcher", () => {
     expect(pondLaunchCommand("darwin").file).toBe("open");
-    expect(pondLaunchCommand("linux").file).toBe("gtk-launch");
+  });
+
+  it("launches the fixed deb executable on Linux", () => {
+    expect(
+      pondLaunchCommand(
+        "linux",
+        {},
+        () => null,
+        (path) => path === "/opt/Pond/pond",
+      ),
+    ).toEqual({ file: "/opt/Pond/pond", args: [] });
+  });
+
+  it("opens the pond:// handler when no deb is installed", () => {
+    expect(
+      pondLaunchCommand(
+        "linux",
+        {},
+        () => null,
+        () => false,
+      ),
+    ).toEqual({ file: "xdg-open", args: ["pond://library"] });
   });
 });

@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from "react";
 
-export type Platform = "mac" | "windows";
+export type Platform = "mac" | "windows" | "linux";
 
 /** The server render and every system without a build get the Mac download. */
 const FALLBACK: Platform = "mac";
@@ -12,7 +12,9 @@ type NavigatorWithHints = Navigator & {
 
 function detectPlatform(navigator: NavigatorWithHints): Platform {
   const name = navigator.userAgentData?.platform || navigator.userAgent;
-  return /windows|win32|win64/i.test(name) ? "windows" : FALLBACK;
+  if (/windows|win32|win64/i.test(name)) return "windows";
+  if (/linux|x11/i.test(name)) return "linux";
+  return FALLBACK;
 }
 
 const subscribe = () => () => {};

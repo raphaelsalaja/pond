@@ -16,7 +16,7 @@ interface RuntimeDependencies {
   ): Promise<RuntimeServer>;
   setTrayVisible(visible: boolean): Promise<void>;
   isPackaged: boolean;
-  setLoginItemSettings(settings: { openAtLogin: boolean }): void;
+  setLoginItemSettings(settings: { openAtLogin: boolean }): Promise<void>;
   setCloseToTray(enabled: boolean): void;
   applyAppIcon(icon: Prefs["window"]["appIcon"]): Promise<void>;
   warn(message: string, error: Error): void;
@@ -67,7 +67,7 @@ export function createRuntimeControls(deps: RuntimeDependencies) {
       const prefs = await deps.getPrefs();
       await deps.setTrayVisible(prefs.quickCapture.menuBarIcon);
       if (deps.isPackaged) {
-        deps.setLoginItemSettings({
+        await deps.setLoginItemSettings({
           openAtLogin: prefs.quickCapture.launchAtLogin,
         });
       }

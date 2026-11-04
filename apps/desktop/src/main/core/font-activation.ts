@@ -17,6 +17,8 @@ type FontPlatformDeps = {
   platform?: NodeJS.Platform;
   /** Runs reg.exe; injected so tests never touch the real registry. */
   runRegistry?: (args: string[]) => Promise<void>;
+  /** Refreshes fontconfig's cache on Linux; injected so tests never spawn fc-cache. */
+  runFontCache?: () => Promise<void>;
 };
 
 /** An absolute path keeps a planted reg.exe earlier on PATH from running. */
@@ -29,6 +31,13 @@ async function runRegistry(args: string[]): Promise<void> {
     windowsHide: true,
     timeout: 10_000,
   });
+}
+
+async function refreshLinuxFontCache(): Promise<void> {
+  await execFileAsync("fc-cache", ["-f"], {
+    timeout: 10_000,
+    windowsHide: true,
+  }).catch(() => {});
 }
 
 /** Windows lists per-user fonts by registry value; the name only has to be unique. */
@@ -45,7 +54,11 @@ export async function activateFont(
     fontsDir: string;
   } & FontPlatformDeps,
 ): Promise<OkResult<{ path: string; requiresSignIn?: boolean }>> {
-  const { platform = process.platform, runRegistry: reg = runRegistry } = input;
+  const {
+    platform = process.platform,
+    runRegistry: reg = runRegistry,
+    runFontCache = refreshLinuxFontCache,
+  } = input;
   /** Windows only enumerates per-user fonts in the Fonts root, not in subfolders. */
   const pondDir =
     platform === "win32" ? input.fontsDir : join(input.fontsDir, "Pond");
@@ -73,9 +86,10 @@ export async function activateFont(
       }
     }
     /** Windows loads per-user fonts at sign-in, so other apps see the font after that. */
-    return platform === "win32"
-      ? { ok: true, path: dest, requiresSignIn: true }
-      : { ok: true, path: dest };
+    if (platform === "win32")
+      return { ok: true, path: dest, requiresSignIn: true };
+    if (platform === "linux") await runFontCache();
+    return { ok: true, path: dest };
   } catch (error) {
     return {
       ok: false,

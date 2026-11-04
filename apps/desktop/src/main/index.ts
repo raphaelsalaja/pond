@@ -292,7 +292,9 @@ app.whenReady().then(async () => {
     setMenuRecents(Array.isArray(entries) ? entries : []);
   });
 
-  const loginItem = app.getLoginItemSettings();
+  /** Electron reports login items on macOS and Windows only; Linux uses the XDG entry's flag. */
+  const loginItem =
+    process.platform === "linux" ? null : app.getLoginItemSettings();
   const launchPrefs = await getPrefs().catch(() => null);
   const wantsLaunchHidden = launchPrefs?.window.launchHidden === true;
   setCloseToTray(launchPrefs?.window.closeToTray === true);
@@ -300,8 +302,9 @@ app.whenReady().then(async () => {
     platform: process.platform,
     requested:
       wantsLaunchHidden ||
-      loginItem.wasOpenedAtLogin === true ||
-      (process.platform === "win32" && process.argv.includes(LOGIN_LAUNCH_ARG)),
+      loginItem?.wasOpenedAtLogin === true ||
+      ((process.platform === "win32" || process.platform === "linux") &&
+        process.argv.includes(LOGIN_LAUNCH_ARG)),
     trayEnabled: launchPrefs?.quickCapture.menuBarIcon !== false,
   });
   if (shouldOpenInitialWindow(launchedHidden, initialDestination)) {

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { buildPondUrl } from "@/features/saves/lib/media/url";
+import { buildPondUrl, pondFileUrl } from "@/features/saves/lib/media/url";
 import type { Save, SaveFile } from "@/features/saves/types";
 
 const ARCHIVE_KIND = "archive";
@@ -80,7 +80,7 @@ export function buildArchiveViewerUrl(
 ): string | null {
   const warc = archiveWarcFile(save);
   if (!warc) return null;
-  const source = `pond://${save.id}/${warc.path}`;
+  const source = pondFileUrl(save.id, warc.path);
   const coll = `${save.id}-${manifest.archivedAt.replace(/[^0-9]/g, "")}`;
   const params = new URLSearchParams({ source, url: pageUrl, coll });
   return `pond://_replay/index.html?${params.toString()}`;

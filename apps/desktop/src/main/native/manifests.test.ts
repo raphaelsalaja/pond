@@ -101,6 +101,7 @@ describe("native host manifests", () => {
   it("uses an executable host on Windows", () => {
     expect(nativeHostFilename("win32")).toBe("pond-native-host.exe");
     expect(nativeHostFilename("darwin")).toBe("pond-native-host");
+    expect(nativeHostFilename("linux")).toBe("pond-native-host");
   });
 
   it("registers the Chromium browsers supported on Windows", () => {
@@ -250,15 +251,81 @@ describe("native host manifests", () => {
     );
   });
 
-  it("does not touch the registry on linux", async () => {
+  it("writes browser manifests on Linux without touching the registry", async () => {
+    const writes = new Map<string, string>();
     const registry: string[][] = [];
+    const hostPath = "/home/test/.local/share/Pond/bin/pond-native-host";
+    const configHome = "/home/test/.config";
+
     await writeNativeHostManifests({
       platform: "linux",
+      hostPath: () => hostPath,
+      home: () => "/home/test",
+      environment: { XDG_CONFIG_HOME: configHome },
+      exists: (path) =>
+        path === hostPath ||
+        path === `${configHome}/google-chrome` ||
+        path === `${configHome}/BraveSoftware/Brave-Browser` ||
+        path === `${configHome}/BraveSoftware/Brave-Origin` ||
+        path === "/home/test/.var/app/com.google.Chrome/config/google-chrome" ||
+        path === "/home/test/.mozilla" ||
+        path === "/home/test/.var/app/org.mozilla.firefox/.mozilla",
+      makeDirectory: () => {},
+      writeFile: (path, body) => writes.set(posix(path), body),
       runRegistry: async (args) => {
         registry.push(args);
       },
     });
+
     expect(registry).toEqual([]);
+    expect([...writes.keys()]).toEqual([
+      `${configHome}/google-chrome/NativeMessagingHosts/so.pond.host.json`,
+      `${configHome}/BraveSoftware/Brave-Browser/NativeMessagingHosts/so.pond.host.json`,
+      `${configHome}/BraveSoftware/Brave-Origin/NativeMessagingHosts/so.pond.host.json`,
+      "/home/test/.var/app/com.google.Chrome/config/google-chrome/NativeMessagingHosts/so.pond.host.json",
+      "/home/test/.mozilla/native-messaging-hosts/so.pond.host.json",
+      "/home/test/.var/app/org.mozilla.firefox/.mozilla/native-messaging-hosts/so.pond.host.json",
+    ]);
+    expect(
+      JSON.parse(
+        writes.get(
+          `${configHome}/google-chrome/NativeMessagingHosts/so.pond.host.json`,
+        ) ?? "",
+      ),
+    ).toMatchObject({
+      name: "so.pond.host",
+      path: hostPath,
+      allowed_origins: CHROMIUM_EXTENSION_IDS.map(
+        (id) => `chrome-extension://${id}/`,
+      ),
+    });
+    expect(
+      JSON.parse(
+        writes.get(
+          "/home/test/.mozilla/native-messaging-hosts/so.pond.host.json",
+        ) ?? "",
+      ),
+    ).toMatchObject({ allowed_extensions: ["desktop@pond.so"] });
+  });
+
+  it("uses the XDG config root on Linux", async () => {
+    const writes: string[] = [];
+
+    await writeNativeHostManifests({
+      platform: "linux",
+      hostPath: () => "/home/test/.local/share/Pond/bin/pond-native-host",
+      home: () => "/home/test",
+      environment: { XDG_CONFIG_HOME: "/mnt/config" },
+      exists: (path) =>
+        path === "/home/test/.local/share/Pond/bin/pond-native-host" ||
+        path === "/mnt/config/chromium",
+      makeDirectory: () => {},
+      writeFile: (path) => writes.push(posix(path)),
+    });
+
+    expect(writes).toEqual([
+      "/mnt/config/chromium/NativeMessagingHosts/so.pond.host.json",
+    ]);
   });
 
   it("allows the extension ID that the pinned manifest key derives", () => {

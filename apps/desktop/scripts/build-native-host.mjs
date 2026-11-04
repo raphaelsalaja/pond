@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -14,11 +14,6 @@ const out = resolve(
   process.platform === "win32" ? "pond-native-host.exe" : "pond-native-host",
 );
 
-if (process.platform !== "darwin" && process.platform !== "win32") {
-  console.log("[pond] native host skipped (unsupported platform)");
-  process.exit(0);
-}
-
 mkdirSync(outDir, { recursive: true });
 
 const result =
@@ -29,6 +24,7 @@ if (result.error || result.status !== 0) {
   );
   process.exit(1);
 }
+if (process.platform !== "win32") chmodSync(out, 0o755);
 
 console.log(`[pond] native host ok (${out})`);
 

@@ -39,7 +39,7 @@ Pond builds and runs on Windows 10 and 11 (x64). In addition to Node 24 and pnpm
 - Enable long paths before cloning, because the repository has paths deeper than the 260-character Windows limit: `git config --global core.longpaths true` (or `git clone -c core.longpaths=true`). Also turn on long path support in Windows if installs fail with path-length errors.
 - Some tests create symbolic links. Without Developer Mode or the symlink privilege they skip those cases instead of failing.
 
-`pnpm dev`, `pnpm check`, and `pnpm build` work as on macOS. To produce the installer:
+`pnpm dev`, `pnpm check`, and `pnpm build` work as on macOS and Linux. To produce the installer:
 
 ```bash
 pnpm dist:win
@@ -53,9 +53,29 @@ After `pnpm build`, run the end-to-end smoke test from a normal desktop session 
 pnpm --filter @pond/desktop smoke:desktop
 ```
 
-Pull requests that touch the desktop app, extension, or packages also run [`package.yml`](.github/workflows/package.yml), which builds unsigned test installers. Reviewers can download `Pond-windows-x64` (the installer and `latest.yml`) and `Pond-macos` (Apple Silicon and Intel disk images) from the workflow run's artifacts; they are kept for 7 days and cannot auto-update. The same workflow can be started manually with `workflow_dispatch`.
+Pull requests that touch the desktop app, extension, or packages also run [`package.yml`](.github/workflows/package.yml), which builds unsigned test installers. Reviewers can download `Pond-windows-x64` (the installer and `latest.yml`), `Pond-linux-x64` (the AppImage, deb, and `latest-linux.yml`), and `Pond-macos` (Apple Silicon and Intel disk images) from the workflow run's artifacts; they are kept for 7 days and cannot auto-update. The same workflow can be started manually with `workflow_dispatch`.
 
-Keep platform-specific code behind `process.platform` checks and add tests that pass the platform in as a parameter, so Windows and macOS behavior is covered on every CI runner.
+Keep platform-specific code behind `process.platform` checks and add tests that pass the platform in as a parameter, so every platform's behavior is covered on every CI runner.
+
+## Linux development
+
+Pond builds and runs on Linux x64 with a desktop session. In addition to Node 24 and pnpm 11.27.0:
+
+- Install a C compiler and `make` (`build-essential` on Debian and Ubuntu, `base-devel` on Arch). `pnpm dist:linux` compiles the native messaging host, `pond-native-host`, with `cc`; set `CC` to use a different compiler. Without a compiler, install still succeeds but the browser extension cannot reach Pond.
+- Install [`fc-cache`](https://wiki.archlinux.org/title/font_configuration) (part of `fontconfig`) so activated fonts appear in other apps without a sign-out.
+- Packaging needs `fakeroot` and the Debian tools (`dpkg`, `fakeroot` on Debian and Ubuntu).
+- A headless machine can run the smoke test under `xvfb-run -a pnpm --filter @pond/desktop smoke:desktop`.
+
+`pnpm dev`, `pnpm check`, and `pnpm build` work as on macOS. To produce the AppImage and deb:
+
+```bash
+pnpm dist:linux
+```
+
+This builds the desktop app and extension, compiles the native host, and writes `Pond-X.Y.Z.AppImage`, `Pond-X.Y.Z.deb`, and `latest-linux.yml` to `apps/desktop/dist/`. Linux on Arm is not supported yet; the native dependencies install for the host architecture.
+
+Pond keeps per-user files in the XDG directories: configuration in `$XDG_CONFIG_HOME/pond`, the native-host socket in `$XDG_RUNTIME_DIR/pond` when the session sets it (otherwise `$XDG_CONFIG_HOME/pond`), the copied native host in `$XDG_DATA_HOME/Pond/bin`, logs in Electron's logs directory, and the autostart entry at `$XDG_CONFIG_HOME/autostart/pond.desktop`.
+
 
 ## Add a source
 

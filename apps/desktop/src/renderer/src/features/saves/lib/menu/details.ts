@@ -19,6 +19,7 @@ import type { MenuItemSpec } from "@pond/ui";
 import { createElement } from "react";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
 import { deriveTypeKind } from "@/features/saves/lib/media/units";
+import { pondFileUrl } from "@/features/saves/lib/media/url";
 import {
   archiveSitesForSelection,
   refreshDetailsForSelection,
@@ -171,7 +172,7 @@ export function buildDetailItems({
         onClick: () => {
           const file = save.files[fileIndex ?? 0] ?? save.files[0];
           if (!file) return;
-          const src = `pond://${save.id}/${file.path}`;
+          const src = pondFileUrl(save.id, file.path);
           viewerMemory.setLoop(src, null);
         },
       },
@@ -182,7 +183,7 @@ export function buildDetailItems({
         onClick: () => {
           const file = save.files[fileIndex ?? 0] ?? save.files[0];
           if (!file) return;
-          const src = `pond://${save.id}/${file.path}`;
+          const src = pondFileUrl(save.id, file.path);
           const canvas = document.querySelector<HTMLCanvasElement>(
             `[data-gif-player] canvas[data-frame]`,
           );
