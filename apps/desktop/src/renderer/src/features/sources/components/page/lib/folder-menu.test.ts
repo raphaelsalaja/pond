@@ -25,8 +25,8 @@ describe("buildFolderMenu", () => {
       "Reveal in Finder",
       "Change Folder",
       "Pause Watching",
-      "Delete After Import",
       "Stop Watching",
+      "Delete After Import",
     ]);
     expect(
       menuLabels(buildFolderMenu({ ...target, watching: false }, () => {})),
@@ -91,9 +91,12 @@ describe("buildFolderRows", () => {
     vi.unstubAllGlobals();
   });
 
-  it("offers to turn on delete after import while copying", () => {
-    expect(deleteAfterImport("copy").actions[0]?.label).toBe("Turn On");
-    expect(deleteAfterImport("move").actions[0]?.label).toBe("Turn Off");
+  it("shows delete after import as a switch that follows the mode", () => {
+    expect(deleteAfterImport("copy")).toMatchObject({
+      actions: [],
+      toggle: { checked: false },
+    });
+    expect(deleteAfterImport("move").toggle?.checked).toBe(true);
   });
 
   it("confirms before deleting imported files from the folder", async () => {
@@ -101,7 +104,7 @@ describe("buildFolderRows", () => {
     vi.stubGlobal("pond", { query });
     const confirm = vi.spyOn(Dialog, "confirm").mockImplementation(() => {});
     const onChanged = vi.fn();
-    deleteAfterImport("copy", onChanged).actions[0]?.onClick();
+    deleteAfterImport("copy", onChanged).toggle?.onCheckedChange(true);
     expect(query).not.toHaveBeenCalled();
     const options = confirm.mock.calls[0]?.[0];
     if (!options) throw new Error("Missing confirmation");
@@ -115,7 +118,7 @@ describe("buildFolderRows", () => {
     vi.stubGlobal("pond", { query });
     const confirm = vi.spyOn(Dialog, "confirm");
     const onChanged = vi.fn();
-    deleteAfterImport("move", onChanged).actions[0]?.onClick();
+    deleteAfterImport("move", onChanged).toggle?.onCheckedChange(false);
     await vi.waitFor(() => expect(onChanged).toHaveBeenCalled());
     expect(confirm).not.toHaveBeenCalled();
     expect(query).toHaveBeenCalledWith("autoImport.set", { mode: "copy" });
