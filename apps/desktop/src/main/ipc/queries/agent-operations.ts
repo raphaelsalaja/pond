@@ -28,6 +28,8 @@ const descriptions = new Map<string, string>(
       "Crop a selected image or video frame into a new Save. Preserve the original.",
     "saves.emptyTrash":
       "Permanently delete every Save in Trash. Cannot be undone.",
+    "saves.split":
+      "Split explicitly selected multi-image or multi-video Saves so each image or video becomes its own Save with the same source, tags, notes, and Folders.",
     "folders.rules.set":
       "Set inherited tags for a Folder and optionally apply them to existing Saves.",
     "canvases.list":

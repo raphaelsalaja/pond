@@ -8,6 +8,7 @@ import { classifyLibraryFile } from "@shared/file-format";
 import { SavesDerivedPatchSchema } from "@shared/saves-contracts-shared";
 import { decodeTextBytes } from "@shared/text-encoding";
 import { eq, isNotNull, isNull } from "drizzle-orm";
+import log from "electron-log/main.js";
 import { z } from "zod";
 import { mediaEmbeddingVersion } from "../../../shared/embeddings";
 import type { QueryResult } from "../../../shared/query-contracts";
@@ -28,7 +29,9 @@ import {
   removeVideos,
 } from "../../core/refresh/video-downloads";
 import { replaceSaveFile } from "../../core/replace-file";
+import { analyzeSaveColors } from "../../core/save-colors";
 import { findSemanticDuplicateGroups } from "../../core/semantic-duplicates";
+import { splitSave } from "../../core/split-save";
 import { readLibraryMedia } from "../../core/storage/library-media-storage";
 import { recordForUndo } from "../../core/undo";
 import { knnVec, parseJsonVector, upsertVec } from "../../core/vec-index";
@@ -42,46 +45,6 @@ import {
   StringListParam,
   StringParam,
 } from "./params";
-
-async function analyzeSaveColors(
-  row: typeof saves.$inferSelect,
-  force: boolean,
-): Promise<boolean> {
-  const { extractPalette } = await import("../../lib/palette");
-  const { encodeBlurhash, pickBlurhashStill } = await import(
-    "../../lib/blurhash"
-  );
-  const { encodePhash } = await import("../../lib/phash");
-  const { saveFile } = await import("../../paths");
-  const still = pickBlurhashStill(row);
-  if (!still) return false;
-  const needsColors =
-    row.mediaType === "image" &&
-    (force || (row.dominantColors ?? []).length === 0);
-  const needsHash = force || !row.blurhash;
-  const needsPerceptualHash =
-    row.mediaType === "image" && (force || !row.phash);
-  if (!needsColors && !needsHash && !needsPerceptualHash) return false;
-  const path = saveFile(row.id, still.path);
-  const patch: Parameters<typeof persistSave>[1] = {};
-  if (needsColors) {
-    const colors = await extractPalette(path);
-    if (colors.length > 0) patch.dominantColors = colors;
-  }
-  if (needsHash) {
-    const hash = await encodeBlurhash(path);
-    if (hash) patch.blurhash = hash;
-  }
-  if (needsPerceptualHash) {
-    const hash = await encodePhash(path);
-    if (hash) patch.phash = hash;
-  }
-  if (Object.keys(patch).length === 0) return false;
-  await persistSave(row.id, patch, {
-    actorReason: force ? "color:reanalyze" : "color:backfill",
-  });
-  return true;
-}
 
 async function analyzeSaveMetadata(
   row: typeof saves.$inferSelect,
@@ -433,5 +396,31 @@ export const savesMutationQueries = {
   "saves.mergeDuplicates": query(
     z.object({ keepId: StringParam, ids: StringListParam }),
     async (params) => mergeDuplicateSaves(params),
+  ),
+
+  "saves.split": query(
+    z.object({ ids: z.array(StringParam).min(1).max(1_000) }),
+    async ({ ids }): Promise<QueryResult<"saves.split">> => {
+      let split = 0;
+      let created = 0;
+      let failed = false;
+      for (const id of ids) {
+        const result = await splitSave(id, "user").catch((err) => {
+          log.warn("[pond split] split failed", id, err);
+          failed = true;
+          return null;
+        });
+        if (!result?.ok) continue;
+        split += 1;
+        created += result.created.length;
+      }
+      if (split > 0) return { ok: true, split, created };
+      return {
+        ok: false,
+        error: failed
+          ? "Couldn't copy the files out of this Save. It's unchanged, so try again."
+          : "These Saves have one image or video each.",
+      };
+    },
   ),
 } satisfies QueryHandlerMap;

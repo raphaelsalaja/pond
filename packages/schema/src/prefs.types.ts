@@ -52,6 +52,7 @@ export interface ImageDownloadSettings {
   progressive: boolean;
   preserveMetadata: boolean;
   maxFileSizeMb: number | null;
+  splitPosts: boolean;
 }
 
 export const DEFAULT_IMAGE_DOWNLOAD: ImageDownloadSettings = {
@@ -62,6 +63,7 @@ export const DEFAULT_IMAGE_DOWNLOAD: ImageDownloadSettings = {
   progressive: false,
   preserveMetadata: false,
   maxFileSizeMb: 10,
+  splitPosts: false,
 };
 
 export type SourceOverrides<T> = Partial<Record<ExternalSource, Partial<T>>>;

@@ -170,6 +170,14 @@ export interface Capture {
   article?: CaptureArticle;
 }
 
+/** Where a save split from a multi-media post came from. */
+export interface RawSplit {
+  /** The post's own Source ID, which sync and harvest use in place of the save's. */
+  sourceId: string;
+  /** Positions in `walkCaptureMedia` order that this save keeps when the post is harvested again. */
+  media: number[];
+}
+
 export interface RawJson {
   capture: Capture;
   extractorId: string;
@@ -179,6 +187,7 @@ export interface RawJson {
   renderTextCoverVersion?: number;
   /** Set when the Account's import filters skipped this save, so a scope change can release it. */
   importFilter?: "list" | "media" | "since";
+  split?: RawSplit;
 }
 
 export function walkCaptureMedia(

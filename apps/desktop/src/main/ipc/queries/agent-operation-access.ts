@@ -207,6 +207,7 @@ export const queryOperationAccess = {
   "saves.loadSubtitles": "read",
   "saves.mediaTiming": "read",
   "saves.mergeDuplicates": "review",
+  "saves.split": "review",
   "saves.openWith": "review",
   "saves.quickLook": "review",
   "saves.patchDerived": "hidden",

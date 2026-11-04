@@ -22,6 +22,7 @@ export interface SavesMutationQueryInputs {
   "saves.patchDerived": { id: string; patch: SavesDerivedPatch };
   "saves.ensureTextCover": { id: string; force?: boolean };
   "saves.mergeDuplicates": { keepId: string; ids: string[] };
+  "saves.split": { ids: string[] };
   "saves.batchRename": BatchRenameInput;
   "saves.batchEditExtension": { ids: string[]; extension: string };
   "saves.activateFont": SavesIdInput;
@@ -78,6 +79,7 @@ export interface SavesMutationQueryResults {
   "saves.patchDerived": OkResult;
   "saves.ensureTextCover": OkResult<{ captured: number }>;
   "saves.mergeDuplicates": OkResult<{ trashed: number }>;
+  "saves.split": OkResult<{ split: number; created: number }>;
   "saves.batchRename": OkResult<{ renamed: number }>;
   "saves.batchEditExtension": OkSuccess<{
     changed: number;

@@ -3,6 +3,8 @@ import type { ImageDownloadSettings, ImageFormat } from "@pond/schema/db";
 import log from "electron-log/main.js";
 import sharp, { type Sharp } from "sharp";
 
+type ImageEncodeSettings = Omit<ImageDownloadSettings, "splitPosts">;
+
 interface ProcessedImage {
   bytes: Buffer;
   mimeType: string;
@@ -29,7 +31,7 @@ export async function processImage(
   bytes: Buffer,
   filename: string,
   mimeType: string | undefined,
-  prefs: ImageDownloadSettings,
+  prefs: ImageEncodeSettings,
 ): Promise<ProcessedImage | null> {
   if (mimeType && !mimeType.startsWith("image/")) return null;
 
@@ -134,7 +136,7 @@ function dimsFromMeta(meta: ImageDims): ImageDims {
   return { width, height };
 }
 
-function applyFormat(pipeline: Sharp, prefs: ImageDownloadSettings): void {
+function applyFormat(pipeline: Sharp, prefs: ImageEncodeSettings): void {
   switch (prefs.format) {
     case "jpeg":
       pipeline.jpeg({ quality: prefs.quality, progressive: prefs.progressive });

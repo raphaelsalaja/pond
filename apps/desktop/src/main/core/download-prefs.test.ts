@@ -5,6 +5,7 @@ import {
 import { describe, expect, it } from "vitest";
 import {
   imageSourceOverrides,
+  normalizeImage,
   normalizeVideo,
   resolveImage,
   resolveVideo,
@@ -72,5 +73,16 @@ describe("image source overrides", () => {
     );
     expect(resolved.format).toBe("webp");
     expect(resolved.maxLongEdge).toBe(DEFAULT_IMAGE_DOWNLOAD.maxLongEdge);
+  });
+
+  it("splits carousels only where it's turned on", () => {
+    expect(normalizeImage({}).splitPosts).toBe(false);
+    const overrides = imageSourceOverrides({
+      ...DEFAULT_IMAGE_DOWNLOAD,
+      sources: { instagram: { splitPosts: true } },
+    });
+    const global = normalizeImage({});
+    expect(resolveImage(global, overrides, "instagram").splitPosts).toBe(true);
+    expect(resolveImage(global, overrides, "twitter").splitPosts).toBe(false);
   });
 });

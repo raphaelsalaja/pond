@@ -43,5 +43,6 @@ export interface SaveMenuContext {
   archivable: boolean;
   canResetThumbnail: boolean;
   canRename: boolean;
+  canSplit: boolean;
   fontActivated: boolean;
 }

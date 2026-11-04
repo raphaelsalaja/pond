@@ -99,12 +99,33 @@ export function imageDownloadGroups(source?: ExternalSource): GroupConfig[] {
         },
       ],
     }),
+    group.with(useBinding, {
+      title: "Carousels",
+      items: [
+        {
+          control: "switch",
+          key: "splitPosts",
+          disabled: followsGlobal,
+          title: "Split Into Saves",
+          description:
+            "New posts with several images or videos save each one on its own.",
+        },
+      ],
+    }),
   ];
 }
 
 export const imagesSection: SectionConfig = {
   title: "Images",
-  description: "Resize, format, and encoding for saved images.",
-  keywords: ["downloads", "resolution", "format", "quality", "metadata"],
+  description: "Resize, format, encoding, and carousels for saved images.",
+  keywords: [
+    "downloads",
+    "resolution",
+    "format",
+    "quality",
+    "metadata",
+    "carousel",
+    "split",
+  ],
   groups: imageDownloadGroups(),
 };
