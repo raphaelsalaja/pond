@@ -140,6 +140,11 @@ export const RawYtdlpSchema = z.object({
   n_entries: count,
 });
 
+const RawSplitSchema = z.object({
+  sourceId: z.string().min(1),
+  media: z.array(z.number().int().min(0)),
+});
+
 export const RawJsonSchema = z.object({
   capture: CaptureSchema,
   extractorId: z.string(),
@@ -148,6 +153,7 @@ export const RawJsonSchema = z.object({
   captureTweetVersion: z.number().optional(),
   renderTextCoverVersion: z.number().optional(),
   importFilter: z.enum(["list", "media", "since"]).optional().catch(undefined),
+  split: RawSplitSchema.optional().catch(undefined),
 });
 
 /**
@@ -162,6 +168,7 @@ export const StoredRawJsonSchema = z.object({
   captureTweetVersion: z.number().optional(),
   renderTextCoverVersion: z.number().optional(),
   importFilter: z.enum(["list", "media", "since"]).optional().catch(undefined),
+  split: RawSplitSchema.optional().catch(undefined),
 });
 
 export type StoredRawJson = z.infer<typeof StoredRawJsonSchema>;

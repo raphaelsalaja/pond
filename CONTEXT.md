@@ -14,6 +14,10 @@ _Avoid_: pond (as a store), vault, collection, database
 One item in the Library: a URL, its Capture, files, tags, and ingest state.
 _Avoid_: item, bookmark, document, entry, post (as the Library row)
 
+**Split**:
+Turning one Save from a multi-image or multi-video post into one Save per image or video. Each keeps the post's Source, author, URL, tags, notes, and Folders, and records which media of the post it holds.
+_Avoid_: unbundle, explode, slide (as the Library row)
+
 **List kinds**:
 Whether you liked or saved that item, or both. Stored on the Save as `liked` and `saved`. Public like and bookmark counts on the Capture are metrics, not this.
 _Avoid_: origin, bookmark (as the Library row)

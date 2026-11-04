@@ -45,6 +45,7 @@ const StoredImageSettingsSchema = z.object({
   progressive: z.boolean().optional().catch(undefined),
   preserveMetadata: z.boolean().optional().catch(undefined),
   maxFileSizeMb: z.number().nullish().catch(undefined),
+  splitPosts: z.boolean().optional().catch(undefined),
 });
 
 function snapToSet(
@@ -101,6 +102,7 @@ export function normalizeImage(
     progressive: stored.progressive ?? false,
     preserveMetadata: stored.preserveMetadata ?? false,
     maxFileSizeMb: clampFilesize(stored.maxFileSizeMb, 1_000),
+    splitPosts: stored.splitPosts ?? false,
   };
 }
 

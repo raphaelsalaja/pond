@@ -28,6 +28,7 @@ export function slimRawJson(raw: RawJson | null | undefined): RawJson | null {
   };
   if (raw.ytdlp?.duration != null)
     slim.ytdlp = { duration: raw.ytdlp.duration };
+  if (raw.split) slim.split = raw.split;
   return slim;
 }
 

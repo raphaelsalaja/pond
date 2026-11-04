@@ -14,6 +14,7 @@ import {
   IconMerge,
   IconRefresh,
   IconTrash,
+  IconUngroup,
 } from "@pond/icons";
 import type { MenuItemSpec } from "@pond/ui";
 import { createElement } from "react";
@@ -105,6 +106,12 @@ function downloadVideoTitle(queued: number): string {
   return `Downloading ${queued} videos`;
 }
 
+function splitTitle(split: number, created: number): string {
+  const total = split + created;
+  if (split === 1) return `Split into ${total} saves`;
+  return `Split ${split} saves into ${total}`;
+}
+
 function removeVideoTitle(removed: number): string {
   if (removed === 0) return "No videos to remove";
   if (removed === 1) return "Video removed";
@@ -133,6 +140,7 @@ export function buildDetailItems({
   canResetThumbnail,
   hasUrl,
   archivable,
+  canSplit,
 }: SaveMenuContext): DetailMenuItems {
   return {
     organization: [
@@ -147,6 +155,22 @@ export function buildDetailItems({
         icon: glyph(IconMerge),
         hidden: batch,
         onClick: () => saveLibraryBridge.openDuplicateReview(save.id),
+      },
+      {
+        label: "Split Into Saves",
+        icon: glyph(IconUngroup),
+        hidden: !canSplit,
+        onClick: () => {
+          void window.pond.query("saves.split", { ids }).then((result) =>
+            notify({
+              id: "split-saves",
+              title: result.ok
+                ? splitTitle(result.split, result.created)
+                : "Couldn't split",
+              description: result.ok ? undefined : result.error,
+            }),
+          );
+        },
       },
     ],
     media: [

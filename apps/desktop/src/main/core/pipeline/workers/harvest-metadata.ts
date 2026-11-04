@@ -11,6 +11,7 @@ import { persistSave } from "../../persist-save";
 import { withLinkedPageCapture } from "../../refresh/harvest/arena/api";
 import { captureFromSource } from "../../refresh/harvest/capture";
 import { isPartitionSignedIn } from "../../refresh/harvest-window/session";
+import { narrowToSplit, postSourceId } from "../../split-save-plan";
 import { extractorFor, resolveExtractor } from "../extractors";
 import type { Capture, RawJson } from "../extractors/types";
 import { isFreshHarvest } from "../harvest-freshness";
@@ -57,7 +58,7 @@ export async function runHarvestMetadata(
         : await captureFromSource({
             url: save.url,
             source: save.source,
-            sourceId: save.sourceId ?? undefined,
+            sourceId: postSourceId(save),
             accountId: save.accountId,
             reportActivity: ctx.reportActivity,
             isSignedIn: isPartitionSignedIn,
@@ -67,15 +68,16 @@ export async function runHarvestMetadata(
     withYtdlpAuthor(harvested, save.rawJson?.ytdlp),
   );
 
-  const rawJson: RawJson = {
+  const harvestedRaw: RawJson = {
     capture,
     extractorId: extractor.id,
     extractedAt: new Date().toISOString(),
   };
-  if (save.rawJson?.ytdlp) rawJson.ytdlp = save.rawJson.ytdlp;
+  if (save.rawJson?.ytdlp) harvestedRaw.ytdlp = save.rawJson.ytdlp;
+  const rawJson = narrowToSplit(harvestedRaw, save.rawJson?.split);
 
-  const pageUrl = arenaLinkUrl(capture) ?? save.url;
-  const patch = buildSavePatch(capture, rawJson, pageUrl, save.source);
+  const pageUrl = arenaLinkUrl(rawJson.capture) ?? save.url;
+  const patch = buildSavePatch(rawJson.capture, rawJson, pageUrl, save.source);
   if (pageUrl !== save.url) patch.url = pageUrl;
   const updated = await persistSave(saveId, patch, {
     actorReason: `harvest:${extractor.id}`,
@@ -87,7 +89,7 @@ export async function runHarvestMetadata(
   log.info("[pond pipeline:harvest] captured", {
     saveId,
     extractor: extractor.id,
-    media: walkCaptureMedia(capture).length,
+    media: walkCaptureMedia(rawJson.capture).length,
   });
   if (updated) await applyImportFilter(updated);
 }
