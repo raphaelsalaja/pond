@@ -34,6 +34,7 @@ import { BootScreen } from "./components/boot-screen";
 import { ErrorBoundary } from "./components/error-boundary";
 import { ErrorScreen } from "./components/error-screen";
 import { FishIntroDialog } from "./components/fish-intro-dialog";
+import { InstagramCollectionsDialog } from "./components/instagram-collections-dialog";
 import { PromptHost } from "./components/prompts";
 import { SetupHost } from "./components/setup";
 import { SupportDialog } from "./components/support-dialog";
@@ -213,6 +214,7 @@ function LibraryApp() {
               <PromptHost />
               <FishIntroDialog />
               <ArenaLinksDialog />
+              <InstagramCollectionsDialog />
               <CommandMenuHost />
               <ToastHost />
             </Dialog.PortalProvider>

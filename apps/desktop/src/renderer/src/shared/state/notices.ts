@@ -1,4 +1,5 @@
 import { fishIntroDialog } from "./fish-intro";
+import { instagramCollectionsDialog } from "./instagram-collections";
 import { loadPrefs, savePrefsSection } from "./prefs";
 import { promptToast } from "./prompts";
 import { setupFlow } from "./setup";
@@ -20,7 +21,8 @@ export function anotherDialogOpen(): boolean {
     whatsNewDialog.isOpen() ||
     supportDialog.isOpen() ||
     promptToast.isOpen() ||
-    fishIntroDialog.isOpen()
+    fishIntroDialog.isOpen() ||
+    instagramCollectionsDialog.isOpen()
   );
 }
 
