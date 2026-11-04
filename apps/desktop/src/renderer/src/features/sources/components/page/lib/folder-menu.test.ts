@@ -25,8 +25,8 @@ describe("buildFolderMenu", () => {
       "Reveal in Finder",
       "Change Folder",
       "Pause Watching",
-      "Delete After Import",
       "Stop Watching",
+      "Delete After Import",
     ]);
     expect(
       menuLabels(buildFolderMenu({ ...target, watching: false }, () => {})),

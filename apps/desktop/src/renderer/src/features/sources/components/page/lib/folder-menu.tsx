@@ -176,18 +176,24 @@ export function buildFolderMenu(
           onClick: () => void setWatching(!target.watching, onChanged),
         },
         {
+          label: "Stop Watching",
+          icon: <IconFolderXmark />,
+          variant: "destructive",
+          onClick: () => confirmStop(target, onChanged),
+        },
+      ],
+    },
+    { type: "separator" },
+    {
+      type: "group",
+      items: [
+        {
           type: "checkbox",
           label: "Delete After Import",
           icon: <IconTrash />,
           checked: target.mode === "move",
           onCheckedChange: (checked) =>
             setDeleteAfterImport(target, checked, onChanged),
-        },
-        {
-          label: "Stop Watching",
-          icon: <IconFolderXmark />,
-          variant: "destructive",
-          onClick: () => confirmStop(target, onChanged),
         },
       ],
     },
