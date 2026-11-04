@@ -388,6 +388,59 @@ it("saves a change for an active Account without starting a sync", async () => {
   expect(syncRunNow).not.toHaveBeenCalled();
 });
 
+it("syncs once you leave after picking collections, so older saves get filed", async () => {
+  await renderFor({
+    id: "acc-instagram",
+    source: "instagram",
+    sync: { importScope: { listKinds: ["saved"] } },
+  });
+  await pick("Collections", "Design References");
+  await vi.waitFor(() =>
+    expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
+      accountId: "acc-instagram",
+      scope: {
+        listKinds: ["saved"],
+        collections: [{ id: "915", name: "Design References" }],
+      },
+      start: false,
+    }),
+  );
+  await act(async () => {});
+  expect(syncRunNow).not.toHaveBeenCalled();
+
+  await act(async () => root.unmount());
+  expect(syncRunNow).toHaveBeenCalledTimes(1);
+  expect(syncRunNow).toHaveBeenCalledWith("acc-instagram");
+  root = createRoot(host);
+});
+
+it("doesn't sync when you leave without changing collections", async () => {
+  await renderFor({
+    id: "acc-instagram",
+    source: "instagram",
+    sync: { importScope: { listKinds: ["saved"] } },
+  });
+  await act(async () => toggle("Liked Posts").click());
+  await act(async () => {});
+  await act(async () => root.unmount());
+  expect(syncRunNow).not.toHaveBeenCalled();
+  root = createRoot(host);
+});
+
+it("leaves the first sync to Start Import", async () => {
+  await renderFor({
+    id: "acc-instagram",
+    source: "instagram",
+    sync: { importPending: true },
+  });
+  await pick("Collections", "Design References");
+  await act(async () => {});
+  await act(async () => button("Start Import").click());
+  await act(async () => root.unmount());
+  expect(syncRunNow).toHaveBeenCalledTimes(1);
+  root = createRoot(host);
+});
+
 it("starts a TikTok import from Liked Videos alone", async () => {
   await renderFor({
     id: "acc-tiktok",

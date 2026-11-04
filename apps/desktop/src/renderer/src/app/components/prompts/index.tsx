@@ -1,11 +1,9 @@
 import { useEffect, useState } from "react";
 import { BrowserExtensionDialog } from "@/shared/components/browser-extension-dialog";
 import { ASK_TOAST_ID, ask, toastManager } from "@/shared/lib/toast";
-import { fishIntroDialog } from "@/shared/state/fish-intro";
+import { anotherDialogOpen } from "@/shared/state/notices";
 import { promptToast, useActivePrompt } from "@/shared/state/prompts";
-import { setupFlow } from "@/shared/state/setup";
 import { supportDialog } from "@/shared/state/support";
-import { whatsNewDialog } from "@/shared/state/whats-new";
 import {
   hasAskedForSupport,
   markAskedForSupport,
@@ -16,16 +14,6 @@ import { hasAsked, markAsked, readPromptSignals } from "./signals";
 
 const CHECK_DELAY_MS = 20_000;
 
-function anotherAskOpen(): boolean {
-  return (
-    setupFlow.isOpen() ||
-    whatsNewDialog.isOpen() ||
-    supportDialog.isOpen() ||
-    fishIntroDialog.isOpen() ||
-    promptToast.isOpen()
-  );
-}
-
 /** One automatic ask per launch at most, and never while a dialog or another ask is up. */
 function useAskOncePerLaunch(): void {
   useEffect(() => {
@@ -33,7 +21,7 @@ function useAskOncePerLaunch(): void {
     const timer = setTimeout(async () => {
       try {
         const signals = await readPromptSignals(Date.now());
-        if (!active || anotherAskOpen()) return;
+        if (!active || anotherDialogOpen()) return;
         const choice = pickPrompt(signals, (id) =>
           id === "support" ? hasAskedForSupport() : hasAsked(id),
         );
