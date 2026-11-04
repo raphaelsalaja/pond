@@ -93,6 +93,18 @@ describe("splitPrefsPatch", () => {
     expect(pond).toEqual({});
     expect(mergeAppSlice({}, app).setup.version).toBe(1);
   });
+
+  it("keeps seen notices with the library, since each library has its own saves to announce", () => {
+    expect(PrefsSchema.parse({}).notices.seen).toEqual([]);
+    const { app, pond } = splitPrefsPatch({
+      notices: { seen: ["arena-links-web-pages"] },
+    });
+    expect(app).toEqual({});
+    expect(pond).toEqual({ notices: { seen: ["arena-links-web-pages"] } });
+    expect(mergePondSlice({}, pond).notices.seen).toEqual([
+      "arena-links-web-pages",
+    ]);
+  });
 });
 
 describe("normalizeStoredPrefs", () => {

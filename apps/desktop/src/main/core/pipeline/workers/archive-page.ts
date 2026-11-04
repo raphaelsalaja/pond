@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import type { Save } from "@pond/schema/db";
+import { isWebPageSave } from "@shared/web-page-save";
 import type { WebContents } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
@@ -153,7 +154,7 @@ export async function runArchivePage(
 ): Promise<void> {
   const scope: ArchiveScope = payload.scope === "site" ? "site" : "page";
   const save = await runtime.readSave(saveId);
-  if (save?.source !== "web") {
+  if (!save || !isWebPageSave(save)) {
     dropPageCookies(saveId);
     return;
   }

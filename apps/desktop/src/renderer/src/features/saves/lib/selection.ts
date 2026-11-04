@@ -1,3 +1,4 @@
+import { isWebPageSave } from "@shared/web-page-save";
 import { z } from "zod";
 import { statusFeed } from "@/features/downloads/status-feed";
 import { resolveFileIndex } from "@/features/saves/lib/actions";
@@ -405,7 +406,7 @@ export async function archiveSitesForSelection(
   ids: readonly string[],
 ): Promise<void> {
   for (const save of await resolve(ids)) {
-    if (!save.url || save.source !== "web" || save.deletedAt) continue;
+    if (!save.url || !isWebPageSave(save) || save.deletedAt) continue;
     await window.pond.archiveSite(save.id);
   }
 }

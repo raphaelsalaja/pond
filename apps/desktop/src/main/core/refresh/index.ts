@@ -1,5 +1,5 @@
 import { rm } from "node:fs/promises";
-import { saves, tasks } from "@pond/schema/db";
+import { type Source, saves, tasks } from "@pond/schema/db";
 import { and, eq, inArray, ne, or } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../../db";
@@ -7,7 +7,10 @@ import { saveFile } from "../../paths";
 import { persistSave } from "../persist-save";
 import { resetTasksForSave } from "../pipeline/enqueue";
 import { createPendingTasks } from "../pipeline/enqueue-scheduling";
-import { withInteractivePriority } from "../pipeline/priority";
+import {
+  type TaskPayload,
+  withInteractivePriority,
+} from "../pipeline/priority";
 import { createQueueGeneration } from "../pipeline/queue-generations";
 import { kickReconciler } from "../pipeline/reconciler-client";
 
@@ -20,6 +23,10 @@ export type RefreshOutcome =
 
 interface RefreshSaveOptions {
   overwrite?: boolean;
+  /** Replaces the interactive harvest payload, so a background job queues behind your own refreshes. */
+  harvestPayload?: TaskPayload;
+  /** The budget the harvest is charged to; defaults to the save's own Source. */
+  harvestSource?: Source;
 }
 
 export async function refreshSave(
@@ -52,6 +59,7 @@ export async function refreshSave(
       db.update(tasks)
         .set({
           payload: withInteractivePriority({ force: true }),
+          source: current.source,
           updatedAt: new Date(),
         })
         .where(and(eq(tasks.saveId, saveId), eq(tasks.op, "harvest_metadata")))
@@ -75,10 +83,14 @@ export async function refreshSave(
     }
 
     const now = new Date();
+    const harvestPayload =
+      opts.harvestPayload ?? withInteractivePriority({ force: true });
+    const harvestSource = opts.harvestSource ?? current.source;
     const harvest = db
       .update(tasks)
       .set({
-        payload: withInteractivePriority({ force: true }),
+        payload: harvestPayload,
+        source: harvestSource,
         status: "pending",
         attempts: 0,
         generationId,
@@ -134,7 +146,7 @@ export async function refreshSave(
       .filter((row) => !existingOps.has(row.op))
       .map((row) =>
         row.op === "harvest_metadata"
-          ? { ...row, payload: withInteractivePriority({ force: true }) }
+          ? { ...row, payload: harvestPayload, source: harvestSource }
           : row,
       );
     if (

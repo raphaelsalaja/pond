@@ -36,6 +36,8 @@ export const queryOperationAccess = {
   "apiTokens.create": "hidden",
   "apiTokens.list": "hidden",
   "apiTokens.revoke": "hidden",
+  "arenaLinks.convert": "hidden",
+  "arenaLinks.status": "hidden",
   "autoImport.pickFolder": "read",
   "autoImport.reveal": "hidden",
   "autoImport.set": "review",

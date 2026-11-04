@@ -8,6 +8,7 @@ import {
   webUtils,
 } from "electron";
 import type { AgentStreamEvent } from "../shared/agent-stream";
+import type { ArenaLinkProgressEvent } from "../shared/arena-link-contracts";
 import type { AssistantChunk } from "../shared/assistant";
 import {
   COMBINE_IMAGES_WINDOW_IPC,
@@ -248,6 +249,15 @@ const api = {
       cb(progress);
     ipcRenderer.on(IPC.eagleImportProgress, listener);
     return () => ipcRenderer.off(IPC.eagleImportProgress, listener);
+  },
+
+  onArenaLinkProgress(
+    cb: (progress: ArenaLinkProgressEvent) => void,
+  ): () => void {
+    const listener = (_: IpcRendererEvent, progress: ArenaLinkProgressEvent) =>
+      cb(progress);
+    ipcRenderer.on(IPC.arenaLinkProgress, listener);
+    return () => ipcRenderer.off(IPC.arenaLinkProgress, listener);
   },
 
   appInfo(): Promise<{
