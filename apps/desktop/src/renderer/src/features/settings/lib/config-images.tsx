@@ -1,6 +1,7 @@
 import type { ExternalSource } from "@pond/schema/sources";
 import type { SectionConfig } from "@/features/settings/components/engine";
 import { useImageDownloadBinding } from "@/features/settings/components/sections/downloads";
+import { SplitExistingSaves } from "@/features/settings/components/sections/split-existing";
 import {
   type GroupConfig,
   group,
@@ -109,6 +110,14 @@ export function imageDownloadGroups(source?: ExternalSource): GroupConfig[] {
           title: "Split Into Saves",
           description:
             "New posts with several images or videos save each one on its own.",
+        },
+        {
+          control: "custom",
+          key: "split-existing",
+          title: "Split Existing Saves",
+          keywords: ["backfill", "existing"],
+          visible: () => source === undefined,
+          render: () => <SplitExistingSaves />,
         },
       ],
     }),

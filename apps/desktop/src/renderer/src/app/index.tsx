@@ -31,6 +31,7 @@ import { setAppRouter } from "../shared/lib/app-router";
 import { libraryScopedKey } from "../shared/lib/library-scope";
 import { ArenaLinksDialog } from "./components/arena-links-dialog";
 import { BootScreen } from "./components/boot-screen";
+import { CarouselsDialog } from "./components/carousels-dialog";
 import { ErrorBoundary } from "./components/error-boundary";
 import { ErrorScreen } from "./components/error-screen";
 import { FishIntroDialog } from "./components/fish-intro-dialog";
@@ -213,6 +214,7 @@ function LibraryApp() {
               <PromptHost />
               <FishIntroDialog />
               <ArenaLinksDialog />
+              <CarouselsDialog />
               <CommandMenuHost />
               <ToastHost />
             </Dialog.PortalProvider>

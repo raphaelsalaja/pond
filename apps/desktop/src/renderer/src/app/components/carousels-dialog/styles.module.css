@@ -1,0 +1,43 @@
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.count {
+  margin: 0;
+  font-size: var(--ds-text-sm);
+  font-weight: var(--ds-weight-lg);
+  line-height: 20px;
+  color: var(--ds-gray-12);
+}
+
+.option {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  cursor: var(--ds-cursor-interactive, pointer);
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.label {
+  font-size: var(--ds-text-sm);
+  color: var(--ds-gray-12);
+}
+
+.hint {
+  font-size: var(--ds-text-xs);
+  color: var(--ds-gray-11);
+}
+
+.note {
+  margin: 0;
+  font-size: var(--ds-text-xs);
+  line-height: 18px;
+  color: var(--ds-gray-11);
+}

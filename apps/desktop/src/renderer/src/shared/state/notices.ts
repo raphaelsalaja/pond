@@ -1,3 +1,4 @@
+import { carouselsIntroDialog } from "./carousels-intro";
 import { fishIntroDialog } from "./fish-intro";
 import { loadPrefs, savePrefsSection } from "./prefs";
 import { promptToast } from "./prompts";
@@ -20,7 +21,8 @@ export function anotherDialogOpen(): boolean {
     whatsNewDialog.isOpen() ||
     supportDialog.isOpen() ||
     promptToast.isOpen() ||
-    fishIntroDialog.isOpen()
+    fishIntroDialog.isOpen() ||
+    carouselsIntroDialog.isOpen()
   );
 }
 

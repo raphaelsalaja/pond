@@ -423,4 +423,16 @@ export const savesMutationQueries = {
       };
     },
   ),
+  "saves.splittableCount": query(z.object({}), async () => {
+    const { countSplittableSaves } = await import("../../core/split-all");
+    return { count: await countSplittableSaves() };
+  }),
+  "saves.splitAll": query(z.object({}), async () => {
+    const { startSplitAll } = await import("../../core/split-all");
+    return startSplitAll();
+  }),
+  "saves.splitAllStatus": query(z.object({}), async () => {
+    const { splitAllStatus } = await import("../../core/split-all");
+    return splitAllStatus();
+  }),
 } satisfies QueryHandlerMap;

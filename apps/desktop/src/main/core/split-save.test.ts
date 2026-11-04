@@ -1,8 +1,8 @@
 import { MANUAL_LIKELY_SENSITIVE_MODEL } from "@pond/schema/content-safety";
 import type { NewSave, Save, SaveFile } from "@pond/schema/db";
-import type { Capture } from "@pond/schema/raw";
 import { describe, expect, it } from "vitest";
 import { runSplitSave, type SplitSaveRuntime } from "./split-save";
+import { capture, carousel, file } from "./split-save.fixtures";
 import {
   buildOriginalPatch,
   buildSlideRows,
@@ -13,125 +13,6 @@ import {
   slideSourceIds,
   splitsOnImport,
 } from "./split-save-plan";
-
-function file(
-  kind: string,
-  path: string,
-  extra: Partial<SaveFile> = {},
-): SaveFile {
-  return { kind, path, sha256: `${path}-sha256-digest`, size: 10, ...extra };
-}
-
-function capture(overrides: Partial<Capture> = {}): Capture {
-  return {
-    id: "post-1",
-    source: "instagram",
-    url: "https://www.instagram.com/p/post-1/",
-    media: [
-      { url: "https://cdn.example/a.jpg", type: "image" },
-      { url: "https://cdn.example/b.jpg", type: "image" },
-      {
-        url: "https://cdn.example/c.mp4",
-        type: "video",
-        posterUrl: "https://cdn.example/c.jpg",
-      },
-    ],
-    ...overrides,
-  };
-}
-
-function carousel(overrides: Partial<Save> = {}): Save {
-  const savedAt = new Date("2026-10-01T12:00:00.000Z");
-  return {
-    id: "original",
-    source: "instagram",
-    sourceId: "post-1",
-    accountId: "account-1",
-    importedFrom: null,
-    url: "https://www.instagram.com/p/post-1/",
-    title: "Studio visit",
-    description: "Three looks",
-    author: "studio",
-    lang: "en",
-    siteName: "instagram.com",
-    publishedAt: savedAt,
-    notes: "Reference for the deck",
-    mediaUrl: "https://cdn.example/a.jpg",
-    mediaType: "image",
-    rawJson: {
-      capture: capture(),
-      extractorId: "instagram",
-      extractedAt: savedAt.toISOString(),
-    },
-    rawSlim: null,
-    tags: ["Fashion", "Studio"],
-    listKinds: ["saved"],
-    files: [
-      file("image", "media-1.jpg", {
-        sourceUrl: "https://cdn.example/a.jpg",
-        width: 1080,
-        height: 1350,
-      }),
-      file("image", "media-2.jpg", { sourceUrl: "https://cdn.example/b.jpg" }),
-      file("video", "video-1.mp4", { mimeType: "video/mp4" }),
-      file("poster", "poster-1.jpg"),
-      file("thumbnail", "media-1.jpg_thumbnail.webp"),
-      file("avatar", "avatar.jpg"),
-    ],
-    coverIndex: 0,
-    width: 1080,
-    height: 1350,
-    fileSize: 60,
-    container: null,
-    videoCodec: null,
-    audioCodec: null,
-    bitrate: null,
-    colorSpace: null,
-    cameraMake: null,
-    cameraModel: null,
-    lensModel: null,
-    focalLength: null,
-    aperture: null,
-    exposureTime: null,
-    iso: null,
-    takenAt: null,
-    metadataVersion: 1,
-    phash: "phash",
-    blurhash: "blurhash",
-    fontActivated: false,
-    embedding: [0.1],
-    embeddingModel: "text-1",
-    caption: "A coat",
-    captionModel: "caption-1",
-    ocrText: null,
-    ocrModel: "ocr-1",
-    transcript: null,
-    transcriptModel: "transcript-1",
-    clipEmbedding: [0.2],
-    clipModel: "clip-1",
-    aesthetic: ["warm"],
-    aestheticModel: "aesthetic-1",
-    sensitiveScore: 0.9,
-    sensitiveModel: "sensitive-1",
-    autoTitleModel: null,
-    suggestedTags: ["coat"],
-    suggestedTagsModel: "tags-1",
-    rating: 4,
-    rotate: 0,
-    flipX: false,
-    flipY: false,
-    crop: null,
-    dominantColors: ["#112233"],
-    primaryColor: "#112233",
-    status: "complete",
-    ingestStartedAt: savedAt,
-    ingestCompletedAt: savedAt,
-    deletedAt: null,
-    savedAt,
-    createdAt: savedAt,
-    ...overrides,
-  };
-}
 
 function imageCarousel(): Save {
   const save = carousel();
