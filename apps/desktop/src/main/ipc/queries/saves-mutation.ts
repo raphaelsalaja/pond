@@ -31,7 +31,6 @@ import {
 import { replaceSaveFile } from "../../core/replace-file";
 import { analyzeSaveColors } from "../../core/save-colors";
 import { findSemanticDuplicateGroups } from "../../core/semantic-duplicates";
-import { splitSave } from "../../core/split-save";
 import { readLibraryMedia } from "../../core/storage/library-media-storage";
 import { recordForUndo } from "../../core/undo";
 import { knnVec, parseJsonVector, upsertVec } from "../../core/vec-index";
@@ -401,6 +400,7 @@ export const savesMutationQueries = {
   "saves.split": query(
     z.object({ ids: z.array(StringParam).min(1).max(1_000) }),
     async ({ ids }): Promise<QueryResult<"saves.split">> => {
+      const { splitSave } = await import("../../core/split-save");
       let split = 0;
       let created = 0;
       let failed = false;

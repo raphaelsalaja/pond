@@ -5,7 +5,6 @@ import { broadcastSyncAction } from "../executor";
 import { persistSave } from "../persist-save";
 import type { ImportableCookie } from "../refresh/harvest-window/session";
 import { restoreSave } from "../restore-save";
-import { narrowToSplit } from "../split-save-plan";
 import { listAccounts } from "../sync/accounts";
 import {
   type EnqueueCandidate,
@@ -184,6 +183,7 @@ async function enqueueOne(
         opts.trigger ?? "enqueue:reseed-failed",
         opts.generationId,
       );
+      const { narrowToSplit } = await import("../split-save-plan");
       await applySeedToExistingSave(current.id, {
         ...opts.seed,
         rawJson: narrowToSplit(opts.seed.rawJson, current.rawJson?.split),
