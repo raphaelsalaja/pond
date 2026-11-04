@@ -14,7 +14,7 @@ import {
   watchKindLabel,
   watchSourceLabel,
 } from "@pond/schema/watches";
-import { Button, Input, Settings, Sidebar } from "@pond/ui";
+import { Button, Input, Settings, Sidebar, Switch } from "@pond/ui";
 import type { SourceTargetInput } from "@shared/account-contracts";
 import { useQueryClient } from "@tanstack/react-query";
 import Fuse from "fuse.js";
@@ -727,6 +727,14 @@ function ActionRows({ rows }: { rows: SourceActionRow[] }) {
                 {action.label}
               </Button>
             ))}
+            {row.toggle ? (
+              <Switch.Root
+                aria-label={row.title}
+                checked={row.toggle.checked}
+                disabled={row.disabled}
+                onCheckedChange={row.toggle.onCheckedChange}
+              />
+            ) : null}
           </Settings.ItemControl>
         </Settings.Item>
       ))}

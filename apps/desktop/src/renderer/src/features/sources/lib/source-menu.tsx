@@ -402,6 +402,11 @@ export interface SourceActionRow {
   value?: string;
   disabled?: boolean;
   actions: SourceActionButton[];
+  /** An on/off setting, shown as a switch after any actions. */
+  toggle?: {
+    checked: boolean;
+    onCheckedChange: (checked: boolean) => void;
+  };
 }
 
 export interface SourceActionSections {
