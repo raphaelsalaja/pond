@@ -1,8 +1,11 @@
-import type { NewSave, Source } from "@pond/schema/db";
+import { type NewSave, type Source, tasks } from "@pond/schema/db";
 import { domainFromUrl } from "@pond/schema/domain";
 import { majorityMediaType } from "@pond/schema/media-type";
 import { walkCaptureMedia } from "@pond/schema/raw";
+import { arenaLinkUrl, isWebPageSave } from "@shared/web-page-save";
 import log from "electron-log/main.js";
+import { ulid } from "ulid";
+import { getDb } from "../../../db";
 import type { TransferOptions } from "../../../lib/download-transfer";
 import { persistSave } from "../../persist-save";
 import { captureFromSource } from "../../refresh/harvest/capture";
@@ -11,6 +14,7 @@ import { extractorFor, resolveExtractor } from "../extractors";
 import type { Capture, RawJson } from "../extractors/types";
 import { isFreshHarvest } from "../harvest-freshness";
 import { applyImportFilter, applyListFilter } from "../import-filter";
+import { maxAttemptsFor } from "../specs";
 import { saveAuthorFrom, withYtdlpAuthor } from "../ytdlp-author";
 import { readSave } from "./apply";
 import { splitArticle } from "./article-document";
@@ -48,6 +52,7 @@ export async function runHarvestMetadata(
           accountId: save.accountId,
           reportActivity: ctx.reportActivity,
           isSignedIn: isPartitionSignedIn,
+          signal: ctx.signal,
         });
   const { capture, files } = splitArticle(
     withYtdlpAuthor(harvested, save.rawJson?.ytdlp),
@@ -60,17 +65,43 @@ export async function runHarvestMetadata(
   };
   if (save.rawJson?.ytdlp) rawJson.ytdlp = save.rawJson.ytdlp;
 
-  const patch = buildSavePatch(capture, rawJson, save.url, save.source);
+  const pageUrl = arenaLinkUrl(capture) ?? save.url;
+  const patch = buildSavePatch(capture, rawJson, pageUrl, save.source);
+  if (pageUrl !== save.url) patch.url = pageUrl;
   const updated = await persistSave(saveId, patch, {
     actorReason: `harvest:${extractor.id}`,
     ...files,
   });
+  if (save.source !== "web" && isWebPageSave({ ...save, url: pageUrl })) {
+    await addArchiveTask(saveId);
+  }
   log.info("[pond pipeline:harvest] captured", {
     saveId,
     extractor: extractor.id,
     media: walkCaptureMedia(capture).length,
   });
   if (updated) await applyImportFilter(updated);
+}
+
+/** Charged to the web budget: the archive loads the linked site, so its failures must not trip the harvesting Source's breaker. */
+async function addArchiveTask(saveId: string): Promise<void> {
+  const db = await getDb();
+  const now = new Date();
+  db.insert(tasks)
+    .values({
+      id: ulid(),
+      saveId,
+      source: "web",
+      op: "archive_page",
+      status: "pending",
+      attempts: 0,
+      maxAttempts: maxAttemptsFor("archive_page"),
+      nextRunAt: now,
+      createdAt: now,
+      updatedAt: now,
+    })
+    .onConflictDoNothing()
+    .run();
 }
 
 function buildSavePatch(
@@ -81,12 +112,11 @@ function buildSavePatch(
 ): Partial<NewSave> {
   const media = walkCaptureMedia(capture);
   const mediaUrl = capture.media[0]?.url ?? media[0]?.url ?? null;
-  const mediaType =
-    source === "web"
-      ? "link"
-      : majorityMediaType(
-          capture.media.map((m) => (m.type === "video" ? "video" : "image")),
-        );
+  const mediaType = isWebPageSave({ source, url: pageUrl })
+    ? "link"
+    : majorityMediaType(
+        capture.media.map((m) => (m.type === "video" ? "video" : "image")),
+      );
 
   const patch: Partial<NewSave> = {
     rawJson,

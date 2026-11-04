@@ -1,4 +1,5 @@
 import { type NewTask, saves, tasks } from "@pond/schema/db";
+import { isWebPageSave } from "@shared/web-page-save";
 import { and, eq, inArray, isNull, notInArray } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { ulid } from "ulid";
@@ -23,16 +24,23 @@ export async function startArchiveBackfill(
   const db = await getDb();
   /** Settled saves only: ingesting saves already have live tasks, and pending archive_page behind non-done peers would deadlock the sequential gate. */
   const rows = db
-    .select({ id: saves.id, files: saves.files, status: saves.status })
+    .select({
+      id: saves.id,
+      source: saves.source,
+      url: saves.url,
+      files: saves.files,
+      status: saves.status,
+    })
     .from(saves)
     .where(
       and(
-        eq(saves.source, "web"),
+        inArray(saves.source, ["web", "arena"]),
         inArray(saves.status, ["complete", "failed"]),
         isNull(saves.deletedAt),
       ),
     )
-    .all();
+    .all()
+    .filter((row) => isWebPageSave(row));
 
   const candidates: { id: string; status: string }[] = [];
   for (const r of rows) {
@@ -138,11 +146,16 @@ export async function archiveSiteForSave(
 ): Promise<{ ok: boolean }> {
   const db = await getDb();
   const row = db
-    .select({ id: saves.id, source: saves.source, status: saves.status })
+    .select({
+      id: saves.id,
+      source: saves.source,
+      url: saves.url,
+      status: saves.status,
+    })
     .from(saves)
     .where(and(eq(saves.id, saveId), isNull(saves.deletedAt)))
     .get();
-  if (row?.source !== "web" || row.status !== "complete") {
+  if (!row || !isWebPageSave(row) || row.status !== "complete") {
     return { ok: false };
   }
 

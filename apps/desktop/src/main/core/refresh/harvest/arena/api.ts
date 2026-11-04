@@ -1,6 +1,7 @@
 import { setTimeout as delay } from "node:timers/promises";
 import type { MediaType } from "@pond/schema/db";
 import type { Capture, CaptureMedia, CaptureMetrics } from "@pond/schema/raw";
+import { arenaLinkUrl } from "@shared/web-page-save";
 import log from "electron-log/main.js";
 import { z } from "zod";
 
@@ -159,7 +160,7 @@ const ArenaBlockSchema = z
   })
   .catch({});
 
-type ArenaBlock = z.infer<typeof ArenaBlockSchema>;
+export type ArenaBlock = z.infer<typeof ArenaBlockSchema>;
 
 function fetchArenaBlock(blockId: string): Promise<ArenaApiResult<ArenaBlock>> {
   const url = `${API_BASE}/blocks/${encodeURIComponent(blockId)}`;
@@ -265,15 +266,80 @@ type ArenaCaptureResult =
   | { ok: true; capture: Capture }
   | { ok: false; reason: string };
 
-export async function fetchArenaCapture(args: {
-  sourceId: string;
-}): Promise<ArenaCaptureResult> {
-  const fetched = await fetchArenaBlock(args.sourceId);
+interface ArenaCaptureDeps {
+  fetchBlock: (blockId: string) => Promise<ArenaApiResult<ArenaBlock>>;
+  extractPage: (url: URL, signal?: AbortSignal) => Promise<Capture>;
+}
+
+async function extractWebPage(
+  url: URL,
+  signal?: AbortSignal,
+): Promise<Capture> {
+  const { WebPageExtractor } = await import(
+    "../../../pipeline/extractors/sources/web"
+  );
+  return new WebPageExtractor().extract({ url, signal });
+}
+
+const defaultDeps: ArenaCaptureDeps = {
+  fetchBlock: fetchArenaBlock,
+  extractPage: extractWebPage,
+};
+
+export async function fetchArenaCapture(
+  args: { sourceId: string; signal?: AbortSignal },
+  deps: ArenaCaptureDeps = defaultDeps,
+): Promise<ArenaCaptureResult> {
+  const fetched = await deps.fetchBlock(args.sourceId);
   if (!fetched.ok) return { ok: false, reason: fetched.reason };
 
-  const block = fetched.value;
+  const capture = captureFromBlock(fetched.value);
+  if (!capture) return { ok: false, reason: "no_match" };
+
+  const linkUrl = arenaLinkUrl(capture);
+  if (!linkUrl) return { ok: true, capture };
+  try {
+    const page = await deps.extractPage(new URL(linkUrl), args.signal);
+    return { ok: true, capture: withLinkedPage(capture, page) };
+  } catch (err) {
+    args.signal?.throwIfAborted();
+    log.info(
+      "[pond arena:api] linked page unavailable, keeping block preview",
+      linkUrl,
+      err instanceof Error ? err.message : String(err),
+    );
+    return { ok: true, capture };
+  }
+}
+
+/** Block fields win because you may have edited them on Are.na; the page fills what the block lacks. */
+function withLinkedPage(block: Capture, page: Capture): Capture {
+  const merged: Capture = {
+    ...block,
+    media: linkedPageMedia(block, page),
+    extras: { ...page.extras, ...block.extras },
+  };
+  const title = block.title ?? page.title;
+  if (title) merged.title = title;
+  const description = block.description ?? page.description;
+  if (description) merged.description = clampDescription(description);
+  const author = block.author ?? page.author;
+  if (author) merged.author = author;
+  const publishedAt = block.publishedAt ?? page.publishedAt;
+  if (publishedAt) merged.publishedAt = publishedAt;
+  return merged;
+}
+
+/** A page without a cover image falls back to its favicon; Are.na's screenshot of the page shows more. */
+function linkedPageMedia(block: Capture, page: Capture): CaptureMedia[] {
+  const cover = page.media[0];
+  if (cover && cover.url !== page.extras?.faviconUrl) return page.media;
+  return block.media.length > 0 ? block.media : page.media;
+}
+
+function captureFromBlock(block: ArenaBlock): Capture | null {
   const id = block.id != null ? String(block.id) : null;
-  if (!id) return { ok: false, reason: "no_match" };
+  if (!id) return null;
 
   const arenaUrl = `https://www.are.na/block/${id}`;
 
@@ -364,7 +430,7 @@ export async function fetchArenaCapture(args: {
   if (upstream) capture.upstream = upstream;
   if (extras) capture.extras = extras;
 
-  return { ok: true, capture };
+  return capture;
 }
 
 function pickNonEmpty(value: string | undefined): string | undefined {

@@ -112,6 +112,8 @@ Controlled flows must retain their last popup content while `open` becomes false
 
 RSS and Atom Watches use Source `web` and Watch kind `feed`. The Watch handle stores the feed URL, including its path and query. The main process checks the XML before it creates the Watch. Feed links use the normal enqueue rules, so each Save keeps the Source of its URL. Watch checks compare both Source and Source ID to find new Saves. Feed Watches use the existing schedule and incoming Save controls.
 
+Are.na Link blocks are saved as the page they link to. Harvest reads that page with the web extractor, moves the Save URL to it, and queues `archive_page` on the `web` budget. The Save keeps Source `arena` and the block's Source ID, so Watches and sync still recognize the block. `shared/web-page-save.ts` holds the rule that decides which Saves count as web pages for archiving.
+
 The schema package owns Watch kinds, supported Sources, session requirements, labels, and feed URL rules in `watches.ts`. Main and renderer code use these shared rules. The Watch feed reader also reads Pinterest RSS feeds. The Pinterest adapter owns its feed address and request header. The response size limit helper belongs to `main/lib`; the feed reader and WARC recorder use it.
 
 Queue V2 is a main-owned durable scheduler backed by the active Library's
