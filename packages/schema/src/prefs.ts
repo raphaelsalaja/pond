@@ -454,6 +454,11 @@ const saveRecents = z.object({
   entries: z.array(recentSaveVisit).catch([]),
 });
 
+const notices = z.object({
+  /** One-time notices this library has already shown or skipped. */
+  seen: z.array(z.string()).catch([]),
+});
+
 const shortcuts = z.object({
   profile: z.enum(["pond", "eagle"]).catch("pond"),
   overrides: z.record(z.string(), z.string()).catch({}),
@@ -485,6 +490,7 @@ const PrefsObject = z.object({
   ai: ai.catch(ai.parse({})),
   agent: agent.catch(agent.parse({})),
   saveRecents: saveRecents.catch(saveRecents.parse({})),
+  notices: notices.catch(notices.parse({})),
   extension: ExtensionSettingsSchema.catch(ExtensionSettingsSchema.parse({})),
 });
 

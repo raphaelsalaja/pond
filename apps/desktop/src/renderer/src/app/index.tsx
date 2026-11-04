@@ -29,6 +29,7 @@ import { routeTree } from "../routeTree.gen";
 import { ToastHost } from "../shared/components/toast-host";
 import { setAppRouter } from "../shared/lib/app-router";
 import { libraryScopedKey } from "../shared/lib/library-scope";
+import { ArenaLinksDialog } from "./components/arena-links-dialog";
 import { BootScreen } from "./components/boot-screen";
 import { ErrorBoundary } from "./components/error-boundary";
 import { ErrorScreen } from "./components/error-screen";
@@ -211,6 +212,7 @@ function LibraryApp() {
               <SupportDialog />
               <PromptHost />
               <FishIntroDialog />
+              <ArenaLinksDialog />
               <CommandMenuHost />
               <ToastHost />
             </Dialog.PortalProvider>

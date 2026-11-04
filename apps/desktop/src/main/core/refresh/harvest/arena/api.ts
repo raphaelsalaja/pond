@@ -295,20 +295,34 @@ export async function fetchArenaCapture(
 
   const capture = captureFromBlock(fetched.value);
   if (!capture) return { ok: false, reason: "no_match" };
+  return {
+    ok: true,
+    capture: await withLinkedPageCapture(
+      capture,
+      args.signal,
+      deps.extractPage,
+    ),
+  };
+}
 
+export async function withLinkedPageCapture(
+  capture: Capture,
+  signal?: AbortSignal,
+  extractPage: ArenaCaptureDeps["extractPage"] = extractWebPage,
+): Promise<Capture> {
   const linkUrl = arenaLinkUrl(capture);
-  if (!linkUrl) return { ok: true, capture };
+  if (!linkUrl) return capture;
   try {
-    const page = await deps.extractPage(new URL(linkUrl), args.signal);
-    return { ok: true, capture: withLinkedPage(capture, page) };
+    const page = await extractPage(new URL(linkUrl), signal);
+    return withLinkedPage(capture, page);
   } catch (err) {
-    args.signal?.throwIfAborted();
+    signal?.throwIfAborted();
     log.info(
       "[pond arena:api] linked page unavailable, keeping block preview",
       linkUrl,
       err instanceof Error ? err.message : String(err),
     );
-    return { ok: true, capture };
+    return capture;
   }
 }
 

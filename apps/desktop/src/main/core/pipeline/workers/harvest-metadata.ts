@@ -8,6 +8,7 @@ import { ulid } from "ulid";
 import { getDb } from "../../../db";
 import type { TransferOptions } from "../../../lib/download-transfer";
 import { persistSave } from "../../persist-save";
+import { withLinkedPageCapture } from "../../refresh/harvest/arena/api";
 import { captureFromSource } from "../../refresh/harvest/capture";
 import { isPartitionSignedIn } from "../../refresh/harvest-window/session";
 import { extractorFor, resolveExtractor } from "../extractors";
@@ -21,6 +22,8 @@ import { splitArticle } from "./article-document";
 
 interface HarvestPayload {
   force?: boolean;
+  /** Reuses the stored Are.na block and reads only the page it links to, so the harvest costs no Are.na request. */
+  linkedPage?: boolean;
 }
 
 export async function runHarvestMetadata(
@@ -42,18 +45,24 @@ export async function runHarvestMetadata(
   if (await applyListFilter(save)) return;
 
   const extractor = extractorFor(save.source) ?? resolveExtractor(save.url);
+  const stored = save.rawJson?.capture;
   const harvested =
-    save.source === "web" || save.source === "local"
-      ? await extractor.extract({ url: new URL(save.url), signal: ctx.signal })
-      : await captureFromSource({
-          url: save.url,
-          source: save.source,
-          sourceId: save.sourceId ?? undefined,
-          accountId: save.accountId,
-          reportActivity: ctx.reportActivity,
-          isSignedIn: isPartitionSignedIn,
-          signal: ctx.signal,
-        });
+    payload.linkedPage && save.source === "arena" && stored
+      ? await withLinkedPageCapture(stored, ctx.signal)
+      : save.source === "web" || save.source === "local"
+        ? await extractor.extract({
+            url: new URL(save.url),
+            signal: ctx.signal,
+          })
+        : await captureFromSource({
+            url: save.url,
+            source: save.source,
+            sourceId: save.sourceId ?? undefined,
+            accountId: save.accountId,
+            reportActivity: ctx.reportActivity,
+            isSignedIn: isPartitionSignedIn,
+            signal: ctx.signal,
+          });
   const { capture, files } = splitArticle(
     withYtdlpAuthor(harvested, save.rawJson?.ytdlp),
   );

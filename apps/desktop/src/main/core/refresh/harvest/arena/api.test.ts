@@ -1,7 +1,11 @@
 import type { Capture } from "@pond/schema/raw";
 import { describe, expect, it, vi } from "vitest";
 import { TerminalError } from "../../../pipeline/extractors/errors";
-import { type ArenaBlock, fetchArenaCapture } from "./api";
+import {
+  type ArenaBlock,
+  fetchArenaCapture,
+  withLinkedPageCapture,
+} from "./api";
 
 const LINKED = "https://en.wikipedia.org/wiki/Community_Memory";
 const ARENA_SHOT =
@@ -197,6 +201,29 @@ describe("other Are.na blocks", () => {
         media: [],
         extras: { blockClass: "Text" },
       },
+    });
+  });
+
+  it("converts a stored Link capture by reading only its page", async () => {
+    const stored: Capture = {
+      id: "2824521",
+      source: "arena",
+      url: LINKED,
+      title: "Community Memory",
+      media: [{ url: ARENA_SHOT, type: "image" }],
+      extras: { blockClass: "Link" },
+    };
+    const extractPage = vi.fn(async () => page());
+
+    const capture = await withLinkedPageCapture(stored, undefined, extractPage);
+
+    expect(extractPage).toHaveBeenCalledOnce();
+    expect(capture).toMatchObject({
+      source: "arena",
+      url: LINKED,
+      title: "Community Memory",
+      media: [{ url: PAGE_COVER }],
+      extras: { blockClass: "Link", publisher: "Wikipedia" },
     });
   });
 });

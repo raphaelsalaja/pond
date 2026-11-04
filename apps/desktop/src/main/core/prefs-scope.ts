@@ -25,6 +25,7 @@ const POND_PREF_KEYS = [
   "tagPicker",
   "allTags",
   "saveRecents",
+  "notices",
 ] as const satisfies readonly (keyof Prefs)[];
 
 type PondPrefKey = (typeof POND_PREF_KEYS)[number];
@@ -147,6 +148,7 @@ function mergeAll(base: Prefs, patch: DeepPartial<Prefs>): Prefs {
     ai: { ...base.ai, ...patch.ai },
     agent: { ...base.agent, ...patch.agent },
     saveRecents: { ...base.saveRecents, ...patch.saveRecents },
+    notices: { ...base.notices, ...patch.notices },
     extension: {
       ...base.extension,
       ...patch.extension,

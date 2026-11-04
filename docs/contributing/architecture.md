@@ -112,7 +112,9 @@ Controlled flows must retain their last popup content while `open` becomes false
 
 RSS and Atom Watches use Source `web` and Watch kind `feed`. The Watch handle stores the feed URL, including its path and query. The main process checks the XML before it creates the Watch. Feed links use the normal enqueue rules, so each Save keeps the Source of its URL. Watch checks compare both Source and Source ID to find new Saves. Feed Watches use the existing schedule and incoming Save controls.
 
-Are.na Link blocks are saved as the page they link to. Harvest reads that page with the web extractor, moves the Save URL to it, and queues `archive_page` on the `web` budget. The Save keeps Source `arena` and the block's Source ID, so Watches and sync still recognize the block. `shared/web-page-save.ts` holds the rule that decides which Saves count as web pages for archiving.
+Are.na Link blocks are saved as the page they link to. Harvest reads that page with the web extractor, moves the Save URL to it, and queues `archive_page` on the `web` budget. The Save keeps Source `arena` and the block's Source ID, so Watches and sync still recognize the block. `shared/web-page-save.ts` holds the rule that decides which Saves count as web pages for archiving. Link Saves harvested before this rule keep the block URL until they refresh. `core/refresh/arena-links.ts` converts them in batches through `refreshSave`, with a `linkedPage` harvest that reuses the stored block and charges only the linked page to the `web` budget.
+
+One-time first-open notices share `renderer/src/shared/state/notices.ts`. It records seen notices per Library in the `notices` prefs slice and lets one notice claim each launch, so two announcements never stack.
 
 The schema package owns Watch kinds, supported Sources, session requirements, labels, and feed URL rules in `watches.ts`. Main and renderer code use these shared rules. The Watch feed reader also reads Pinterest RSS feeds. The Pinterest adapter owns its feed address and request header. The response size limit helper belongs to `main/lib`; the feed reader and WARC recorder use it.
 
