@@ -1,5 +1,6 @@
 import { carouselsIntroDialog } from "./carousels-intro";
 import { fishIntroDialog } from "./fish-intro";
+import { instagramCollectionsDialog } from "./instagram-collections";
 import { loadPrefs, savePrefsSection } from "./prefs";
 import { promptToast } from "./prompts";
 import { setupFlow } from "./setup";
@@ -22,6 +23,7 @@ export function anotherDialogOpen(): boolean {
     supportDialog.isOpen() ||
     promptToast.isOpen() ||
     fishIntroDialog.isOpen() ||
+    instagramCollectionsDialog.isOpen() ||
     carouselsIntroDialog.isOpen()
   );
 }

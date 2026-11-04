@@ -13,6 +13,7 @@ interface CollectionsPage {
   next_max_id?: string | number;
   require_login?: boolean;
   message?: string;
+  status?: string;
 }
 
 export function buildInstagramCollectionsExpression(): string {
@@ -27,13 +28,10 @@ async function inPageInstagramCollections(): Promise<CollectionsReply> {
   const collections: Array<{ id: string; name: string; count: number | null }> =
     [];
   let cursor: string | null = null;
-  for (let page = 0; page < 20; page++) {
-    const params = new URLSearchParams({
-      collection_types: JSON.stringify(["MEDIA"]),
-      include_public_only: "0",
-    });
-    if (cursor) params.set("max_id", cursor);
-    const res = await fetch(`/api/v1/collections/list/?${params}`, {
+  /** www answers this endpoint with its HTML not-found page for some accounts; the API host still serves it to the web session. */
+  let origin = "";
+  const list = (params: URLSearchParams) =>
+    fetch(`${origin}/api/v1/collections/list/?${params}`, {
       credentials: "include",
       headers: {
         "x-ig-app-id": "936619743392459",
@@ -42,6 +40,17 @@ async function inPageInstagramCollections(): Promise<CollectionsReply> {
         accept: "*/*",
       },
     });
+  for (let page = 0; page < 20; page++) {
+    const params = new URLSearchParams({
+      collection_types: JSON.stringify(["MEDIA"]),
+      include_public_only: "0",
+    });
+    if (cursor) params.set("max_id", cursor);
+    let res = await list(params);
+    if (res.status === 404 && origin === "") {
+      origin = "https://i.instagram.com";
+      res = await list(params);
+    }
     const json: CollectionsPage | null = await res.json().catch(() => null);
     const message = json?.message ?? "";
     /** Instagram answers 400 with one of these until you clear the prompt on instagram.com. */
@@ -57,7 +66,7 @@ async function inPageInstagramCollections(): Promise<CollectionsReply> {
       return { ok: false, reason: "auth_required" };
     }
     if (res.status === 429) return { ok: false, reason: "rate_limited" };
-    if (!res.ok || !json) {
+    if (!res.ok || !json || json.status === "fail") {
       const type = res.headers.get("content-type") ?? "";
       return {
         ok: false,

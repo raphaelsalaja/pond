@@ -7,6 +7,7 @@ import type {
 } from "@pond/schema/db";
 import {
   accountImportScope,
+  collectionFiling,
   importScopeOptions,
   normalizeImportScope,
 } from "@shared/import-scope";
@@ -44,6 +45,9 @@ interface ImportScopeFlowState {
   sincePreset: SincePreset;
   /** The saved scope in normalized form, so the draft can tell when it differs. */
   saved: string;
+  /** Which collections filed into Folders when the draft opened, and as last saved. */
+  filingOnOpen: string;
+  filingSaved: string;
   saving: boolean;
   error: string | null;
 }
@@ -59,9 +63,18 @@ const EMPTY: ImportScopeFlowState = {
   since: "",
   sincePreset: "any",
   saved: "",
+  filingOnOpen: "",
+  filingSaved: "",
   saving: false,
   error: null,
 };
+
+function filingKey(source: Source, scope: ImportScope | undefined): string {
+  const filing = collectionFiling(source, scope);
+  if (filing !== "picked") return filing === "every" ? "every" : "";
+  const ids = (scope?.collections ?? []).map((c) => c.id).sort();
+  return `picked:${ids.join(",")}`;
+}
 
 function createImportScopeFlow() {
   const store = new Store<ImportScopeFlowState>(EMPTY);
@@ -73,6 +86,7 @@ function createImportScopeFlow() {
       const options = importScopeOptions(account.source);
       const normalized = normalizeImportScope(account.source, scope ?? {});
       const saved = normalized.ok ? JSON.stringify(normalized.scope) : "";
+      const filing = filingKey(account.source, scope);
       const starts = account.sync.importPending === true;
       const prev = store.state;
       /** An autosave refetches the Account; keep the draft so its Since preset and in-flight edits survive. */
@@ -95,6 +109,8 @@ function createImportScopeFlow() {
         since: scope?.since ?? "",
         sincePreset: scope?.since ? "custom" : "any",
         saved,
+        filingOnOpen: filing,
+        filingSaved: filing,
       }));
     },
     setListKind(kind: ListKind, included: boolean): void {
@@ -130,12 +146,18 @@ function createImportScopeFlow() {
       store.setState((s) => ({ ...s, saving, error: saving ? null : s.error }));
     },
     markSaved(scope: ImportScope, { started }: { started: boolean }): void {
-      store.setState((s) => ({
-        ...s,
-        saving: false,
-        starts: started ? false : s.starts,
-        saved: JSON.stringify(scope),
-      }));
+      store.setState((s) => {
+        const filing = s.source ? filingKey(s.source, scope) : "";
+        return {
+          ...s,
+          saving: false,
+          starts: started ? false : s.starts,
+          saved: JSON.stringify(scope),
+          /** Start Import already syncs, so it settles the filing change. */
+          filingOnOpen: started ? filing : s.filingOnOpen,
+          filingSaved: filing,
+        };
+      });
     },
     fail(error: string): void {
       store.setState((s) => ({ ...s, saving: false, error }));
@@ -191,6 +213,17 @@ export function draftImportScope(
   if (options.since && state.since) scope.since = state.since;
   const normalized = normalizeImportScope(state.source, scope);
   return normalized.ok ? normalized.scope : null;
+}
+
+/** A saved change to which collections file into Folders, on an Account that already imports. */
+export function filingChanged(
+  state: Pick<ImportScopeFlowState, "starts" | "filingOnOpen" | "filingSaved">,
+): boolean {
+  return (
+    !state.starts &&
+    state.filingSaved !== "" &&
+    state.filingSaved !== state.filingOnOpen
+  );
 }
 
 export function draftChanged(
