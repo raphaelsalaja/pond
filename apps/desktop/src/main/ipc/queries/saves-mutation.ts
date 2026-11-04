@@ -8,7 +8,6 @@ import { classifyLibraryFile } from "@shared/file-format";
 import { SavesDerivedPatchSchema } from "@shared/saves-contracts-shared";
 import { decodeTextBytes } from "@shared/text-encoding";
 import { eq, isNotNull, isNull } from "drizzle-orm";
-import log from "electron-log/main.js";
 import { z } from "zod";
 import { mediaEmbeddingVersion } from "../../../shared/embeddings";
 import type { QueryResult } from "../../../shared/query-contracts";
@@ -29,7 +28,6 @@ import {
   removeVideos,
 } from "../../core/refresh/video-downloads";
 import { replaceSaveFile } from "../../core/replace-file";
-import { analyzeSaveColors } from "../../core/save-colors";
 import { findSemanticDuplicateGroups } from "../../core/semantic-duplicates";
 import { readLibraryMedia } from "../../core/storage/library-media-storage";
 import { recordForUndo } from "../../core/undo";
@@ -212,7 +210,7 @@ export const savesMutationQueries = {
   async "saves.backfillColors"() {
     const db = await getDb();
     const rows = await db.select().from(saves);
-
+    const { analyzeSaveColors } = await import("../../core/save-colors");
     let updated = 0;
     for (const row of rows) if (await analyzeSaveColors(row, false)) updated++;
     return { ok: true as const, updated };
@@ -233,6 +231,7 @@ export const savesMutationQueries = {
       const db = await getDb();
       const row = db.select().from(saves).where(eq(saves.id, id)).get();
       if (!row) return SAVE_NOT_FOUND;
+      const { analyzeSaveColors } = await import("../../core/save-colors");
       const updated = await analyzeSaveColors(row, true);
       return updated
         ? { ok: true, updated }
@@ -399,28 +398,9 @@ export const savesMutationQueries = {
 
   "saves.split": query(
     z.object({ ids: z.array(StringParam).min(1).max(1_000) }),
-    async ({ ids }): Promise<QueryResult<"saves.split">> => {
-      const { splitSave } = await import("../../core/split-save");
-      let split = 0;
-      let created = 0;
-      let failed = false;
-      for (const id of ids) {
-        const result = await splitSave(id, "user").catch((err) => {
-          log.warn("[pond split] split failed", id, err);
-          failed = true;
-          return null;
-        });
-        if (!result?.ok) continue;
-        split += 1;
-        created += result.created.length;
-      }
-      if (split > 0) return { ok: true, split, created };
-      return {
-        ok: false,
-        error: failed
-          ? "Couldn't copy the files out of this Save. It's unchanged, so try again."
-          : "These Saves have one image or video each.",
-      };
+    async ({ ids }) => {
+      const { splitSaves } = await import("../../core/split-save");
+      return splitSaves(ids);
     },
   ),
   "saves.splittableCount": query(z.object({}), async () => {

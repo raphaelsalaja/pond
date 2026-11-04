@@ -66,6 +66,7 @@ export async function runFinalize(saveId: string): Promise<void> {
     });
   }
 
+  const { splitNewPost } = await import("../../split-on-import");
   const current = await splitNewPost(save);
   if (!current) return;
   const { writeSaveBlurhash } = await import("../../save-blurhash");
@@ -83,24 +84,6 @@ export async function runFinalize(saveId: string): Promise<void> {
     },
   );
   void commitSaveIngestEvent(saveId, { outcome: "complete" });
-}
-
-/** Splits before the save turns complete, so enrichment never scores the whole post first. */
-async function splitNewPost(save: Save): Promise<Save | null> {
-  const { getImageDownloadPrefs } = await import("../../prefs");
-  const { splitsOnImport } = await import("../../split-save-plan");
-  const prefs = await getImageDownloadPrefs(save.source);
-  if (!splitsOnImport(save, prefs.splitPosts)) return save;
-  const { splitSave } = await import("../../split-save");
-  try {
-    await splitSave(save.id, "system");
-  } catch (err) {
-    log.warn("[pond pipeline:finalize] split failed, keeping one save", {
-      saveId: save.id,
-      err,
-    });
-  }
-  return readSave(save.id);
 }
 
 async function writeDominantColors(save: Save): Promise<void> {

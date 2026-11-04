@@ -5,6 +5,7 @@ import type { ActorKind, Transaction } from "@pond/schema/tx";
 import { and, eq } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { ulid } from "ulid";
+import type { OkResult } from "../../shared/query-contracts-shared";
 import { getDb } from "../db";
 import { writeSaveInfo } from "../lib/library";
 import { saveDir } from "../paths";
@@ -220,4 +221,29 @@ async function refreshAll(
     await dependencies.refresh(saveId).catch((err) => {
       log.warn("[pond split] failed to refresh split save", saveId, err);
     });
+}
+
+export async function splitSaves(
+  ids: readonly string[],
+): Promise<OkResult<{ split: number; created: number }>> {
+  let split = 0;
+  let created = 0;
+  let failed = false;
+  for (const id of ids) {
+    const result = await splitSave(id, "user").catch((err) => {
+      log.warn("[pond split] split failed", id, err);
+      failed = true;
+      return null;
+    });
+    if (!result?.ok) continue;
+    split += 1;
+    created += result.created.length;
+  }
+  if (split > 0) return { ok: true, split, created };
+  return {
+    ok: false,
+    error: failed
+      ? "Couldn't copy the files out of this Save. It's unchanged, so try again."
+      : "These Saves have one image or video each.",
+  };
 }
