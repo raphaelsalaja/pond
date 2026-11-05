@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { appRelaunchOptions } from "./relaunch";
+import { appRelaunchOptions, RELAUNCH_ARG } from "./relaunch";
 
 describe("appRelaunchOptions", () => {
   it("relaunches Linux AppImages from the stable AppImage path", () => {
@@ -10,7 +10,7 @@ describe("appRelaunchOptions", () => {
       ]),
     ).toEqual({
       execPath: "/home/user/Pond.AppImage",
-      args: ["--hidden"],
+      args: ["--hidden", RELAUNCH_ARG],
     });
   });
 
@@ -23,5 +23,17 @@ describe("appRelaunchOptions", () => {
         "/Applications/Pond.app/Contents/MacOS/Pond",
       ]),
     ).toBeUndefined();
+  });
+
+  it("does not duplicate the relaunch marker", () => {
+    expect(
+      appRelaunchOptions("linux", "/home/user/Pond.AppImage", [
+        "/tmp/.mount-Pond/pond",
+        RELAUNCH_ARG,
+      ]),
+    ).toEqual({
+      execPath: "/home/user/Pond.AppImage",
+      args: [RELAUNCH_ARG],
+    });
   });
 });
