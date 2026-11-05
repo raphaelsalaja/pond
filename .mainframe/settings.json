@@ -1,0 +1,9 @@
+{
+  "setup": "pnpm install --frozen-lockfile",
+  "run": {
+    "website": {
+      "command": "pnpm dev --port $MAINFRAME_PORT",
+      "cwd": "apps/website"
+    }
+  }
+}
