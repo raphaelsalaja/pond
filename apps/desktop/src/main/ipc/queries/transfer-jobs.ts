@@ -7,6 +7,9 @@ export const transferJobsQueries = {
   "transferJobs.cancel": query(z.object({ id: StringParam }), ({ id }) =>
     transferJobStore().cancel(id),
   ),
+  "transferJobs.dismiss": query(z.object({ id: StringParam }), ({ id }) =>
+    transferJobStore().dismiss(id),
+  ),
   "transferJobs.retry": query(z.object({ id: StringParam }), ({ id }) =>
     retryTransferJob(id),
   ),

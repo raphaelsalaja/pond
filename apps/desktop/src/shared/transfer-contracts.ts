@@ -42,10 +42,12 @@ export type TransferJob = z.infer<typeof TransferJobSchema>;
 export interface TransferQueryInputs {
   "transferJobs.list": Record<string, never>;
   "transferJobs.cancel": { id: string };
+  "transferJobs.dismiss": { id: string };
   "transferJobs.retry": { id: string };
 }
 export interface TransferQueryResults {
   "transferJobs.list": TransferJob[];
   "transferJobs.cancel": OkResult;
+  "transferJobs.dismiss": OkResult;
   "transferJobs.retry": OkResult;
 }

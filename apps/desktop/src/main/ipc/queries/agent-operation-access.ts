@@ -289,6 +289,7 @@ export const queryOperationAccess = {
   "tags.setForSave": "review",
   "tags.update": "review",
   "transferJobs.cancel": "review",
+  "transferJobs.dismiss": "hidden",
   "transferJobs.list": "read",
   "transferJobs.retry": "review",
   "updates.applyPrefs": "review",

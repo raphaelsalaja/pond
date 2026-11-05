@@ -4,6 +4,7 @@ import {
   mkdir,
   readFile,
   realpath,
+  rm,
   writeFile,
 } from "node:fs/promises";
 import { join } from "node:path";
@@ -184,6 +185,21 @@ export function createTransferJobStore(directory: string) {
       context.job.status = "cancelling";
       context.job.updatedAt = Date.now();
       await write();
+      return { ok: true };
+    },
+    async dismiss(id: string): Promise<OkResult> {
+      await load();
+      const job = entries.get(id);
+      if (!job) return { ok: false, error: "This transfer is already gone." };
+      if (
+        running.has(job.id) ||
+        job.status === "running" ||
+        job.status === "cancelling"
+      )
+        return { ok: false, error: "This transfer is still running." };
+      entries.delete(job.id);
+      await write();
+      await rm(join(directory, `${job.id}.jsonl`), { force: true });
       return { ok: true };
     },
   };
