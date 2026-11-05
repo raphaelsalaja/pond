@@ -78,7 +78,7 @@ export async function relaunchSoon(): Promise<void> {
     const options = appRelaunchOptions();
     if (options) app.relaunch(options);
     else app.relaunch();
-    app.exit(0);
+    app.quit();
   }, 150);
 }
 

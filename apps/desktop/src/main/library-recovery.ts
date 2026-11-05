@@ -69,7 +69,7 @@ export async function recoverUnreadableLibrary(
     const options = appRelaunchOptions();
     if (options) app.relaunch(options);
     else app.relaunch();
-    app.exit(0);
+    app.quit();
     return;
   }
 }
