@@ -61,7 +61,7 @@ export async function reconcileLibraryIndex(
       if (existing[0] && existing[0].mtimeMs === mtimeMs) return;
       const read = await readSaveMetadata(id, root);
       if (read.status !== "ok") {
-        await stampScan(db, id, mtimeMs);
+        if (await markMissingOriginalsFailed(runtime, id, mtimeMs)) updated++;
         return;
       }
       const { metadata } = read;
@@ -184,6 +184,43 @@ export async function reconcileLibraryIndex(
 
   log.info(`[pond scan] updated=${updated} total=${total}`);
   return { updated, total };
+}
+
+/**
+ * A row whose item record is unreadable can only be checked against the files it
+ * still expects. When none of them are on disk the save is gone, so it must stop
+ * being `complete`; otherwise enrichment keeps scheduling work that always fails.
+ */
+async function markMissingOriginalsFailed(
+  runtime: LibraryScanRuntime,
+  id: string,
+  mtimeMs: number,
+): Promise<boolean> {
+  const { db, root } = runtime;
+  const row = await db.select().from(saves).where(eq(saves.id, id)).get();
+  if (!row || row.deletedAt != null || row.status === "failed") return false;
+  if (await originalsPresent(root, id, row.files)) return false;
+
+  const updateSet = { status: "failed" as const };
+  const action = db.transaction((tx) => {
+    tx.update(saves).set(updateSet).where(eq(saves.id, id)).run();
+    const inserted = tx
+      .insert(syncActions)
+      .values({
+        modelName: "save",
+        modelId: id,
+        action: "U",
+        data: updateSet,
+        actor: "system",
+        actorReason: "library-scan",
+      })
+      .returning()
+      .all()[0];
+    stampScan(tx, id, mtimeMs);
+    return inserted;
+  });
+  if (action) runtime.changed(action);
+  return true;
 }
 
 function stampScan(

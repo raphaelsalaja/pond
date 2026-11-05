@@ -327,9 +327,27 @@ export async function* scanLibrary(root?: string): AsyncGenerator<{
       const info = await stat(join(dir, INFO_FILE));
       yield { id, mtimeMs: info.mtimeMs };
     } catch (err) {
-      log.warn("[pond library] scan stat failed", id, err);
+      if (!isMissing(err)) {
+        log.warn("[pond library] scan stat failed", id, err);
+        continue;
+      }
+      /** An item that lost its record still reconciles, so a row can't stay "complete" after its files are gone. */
+      try {
+        const directory = await stat(dir);
+        yield { id, mtimeMs: directory.mtimeMs };
+      } catch (dirErr) {
+        log.warn("[pond library] scan stat failed", id, dirErr);
+      }
     }
   }
+}
+
+function isMissing(err: unknown): boolean {
+  return (
+    err instanceof Error &&
+    "code" in err &&
+    (err.code === "ENOENT" || err.code === "ENOTDIR")
+  );
 }
 
 function toSource(value: string): Source {
