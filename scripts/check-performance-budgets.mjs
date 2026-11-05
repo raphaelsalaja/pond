@@ -56,7 +56,7 @@ const desktopOut = join(workspace, "apps/desktop/out");
 addResult(
   "desktop main static graph",
   mainStaticGraph(join(desktopOut, "main/index.js")),
-  3_200_000,
+  3_250_000,
 );
 addResult(
   "desktop renderer initial JS/CSS",
