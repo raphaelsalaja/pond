@@ -186,11 +186,7 @@ export async function reconcileLibraryIndex(
   return { updated, total };
 }
 
-/**
- * A row whose item record is unreadable can only be checked against the files it
- * still expects. When none of them are on disk the save is gone, so it must stop
- * being `complete`; otherwise enrichment keeps scheduling work that always fails.
- */
+/** A record-less save with none of its originals on disk stops being `complete`, so enrichment stops scheduling work that always fails. */
 async function markMissingOriginalsFailed(
   runtime: LibraryScanRuntime,
   id: string,

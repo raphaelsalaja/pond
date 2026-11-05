@@ -342,11 +342,11 @@ export async function* scanLibrary(root?: string): AsyncGenerator<{
   }
 }
 
-function isMissing(err: unknown): boolean {
+function isMissing(cause: unknown): boolean {
   return (
-    err instanceof Error &&
-    "code" in err &&
-    (err.code === "ENOENT" || err.code === "ENOTDIR")
+    cause instanceof Error &&
+    "code" in cause &&
+    (cause.code === "ENOENT" || cause.code === "ENOTDIR")
   );
 }
 
