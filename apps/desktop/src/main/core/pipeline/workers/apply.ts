@@ -12,9 +12,11 @@ import {
 import { eq } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { ulid } from "ulid";
+import { userError } from "../../../../shared/user-error";
 import { getDb } from "../../../db";
+import { libraryWriteBlock } from "../../../lib/library-placement";
 import { withRawSlim } from "../../../lib/raw-slim";
-import { saveDir } from "../../../paths";
+import { libraryRoot, saveDir } from "../../../paths";
 import { broadcastSyncAction, withMutationScope } from "../../executor";
 import {
   copyLibraryMediaFile,
@@ -82,6 +84,8 @@ export async function applySavePatch(
           );
     const written: SaveFile[] = [];
     if (opts.newFiles && opts.newFiles.length > 0) {
+      const blocked = libraryWriteBlock(libraryRoot());
+      if (blocked) throw userError(blocked);
       const dir = saveDir(saveId);
       if (!existsSync(dir)) await mkdir(dir, { recursive: true });
       const existingForNames = replaceKinds

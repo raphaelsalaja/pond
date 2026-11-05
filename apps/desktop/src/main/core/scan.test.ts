@@ -86,7 +86,7 @@ async function fixture() {
 describe.skipIf(!nativeAvailable())("portable index reconciliation", () => {
   it("rebuilds attachment metadata, organization, notes and readiness into a fresh index", async () => {
     const f = await fixture();
-    expect(await f.scan()).toEqual({ updated: 1, total: 1 });
+    expect(await f.scan()).toMatchObject({ updated: 1, total: 1 });
     const save = f.db.select().from(schema.saves).get();
     expect(save).toMatchObject({
       status: "complete",
@@ -99,7 +99,7 @@ describe.skipIf(!nativeAvailable())("portable index reconciliation", () => {
     expect(f.db.select().from(schema.saveFolders).all()).toEqual([
       { saveId: "image", folderId: "folder" },
     ]);
-    expect(await f.scan()).toEqual({ updated: 0, total: 1 });
+    expect(await f.scan()).toMatchObject({ updated: 0, total: 1 });
   });
   it("detects in-place metadata edits even when the item directory timestamp does not change", async () => {
     const f = await fixture();
@@ -139,6 +139,25 @@ describe.skipIf(!nativeAvailable())("portable index reconciliation", () => {
     expect((await f.scan()).updated).toBe(1);
     expect(f.db.select().from(schema.saves).get()?.status).toBe("failed");
     expect((await f.scan()).updated).toBe(0);
+  });
+  it("marks a save failed when its folder disappears so enrichment will not run", async () => {
+    const f = await fixture();
+    await f.scan();
+    expect(f.db.select().from(schema.saves).get()?.status).toBe("complete");
+    await rm(f.directory, { recursive: true });
+    const missing = await f.scan();
+    expect(missing.missingFiles).toEqual([{ id: "image", title: "Original" }]);
+    expect(f.db.select().from(schema.saves).get()?.status).toBe("failed");
+    expect((await f.scan()).missingFiles).toEqual([
+      { id: "image", title: "Original" },
+    ]);
+
+    await mkdir(f.directory, { recursive: true });
+    await writeFile(f.path, JSON.stringify(f.metadata));
+    await writeFile(join(f.directory, "photo.png"), "data");
+    const restored = await f.scan();
+    expect(f.db.select().from(schema.saves).get()?.status).toBe("complete");
+    expect(restored.missingFiles).toEqual([]);
   });
   it("keeps a row complete when only its record is gone but its originals remain", async () => {
     const f = await fixture();
