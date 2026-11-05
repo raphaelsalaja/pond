@@ -128,4 +128,25 @@ describe.skipIf(!nativeAvailable())("portable index reconciliation", () => {
     expect((await f.scan()).updated).toBe(1);
     expect(f.db.select().from(schema.saves).get()?.status).toBe("failed");
   });
+  it("marks a row failed when its record and originals are both gone", async () => {
+    const f = await fixture();
+    await f.scan();
+    expect(f.db.select().from(schema.saves).get()?.status).toBe("complete");
+    await rm(f.path);
+    await rm(join(f.directory, "photo.png"));
+    const future = new Date(Date.now() + 5000);
+    await utimes(f.directory, future, future);
+    expect((await f.scan()).updated).toBe(1);
+    expect(f.db.select().from(schema.saves).get()?.status).toBe("failed");
+    expect((await f.scan()).updated).toBe(0);
+  });
+  it("keeps a row complete when only its record is gone but its originals remain", async () => {
+    const f = await fixture();
+    await f.scan();
+    await rm(f.path);
+    const future = new Date(Date.now() + 5000);
+    await utimes(f.directory, future, future);
+    expect((await f.scan()).updated).toBe(0);
+    expect(f.db.select().from(schema.saves).get()?.status).toBe("complete");
+  });
 });
