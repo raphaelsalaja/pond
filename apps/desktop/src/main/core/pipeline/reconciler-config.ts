@@ -44,7 +44,10 @@ type Worker = (
 ) => Promise<void>;
 
 const HarvestPayloadSchema = z
-  .object({ force: z.coerce.boolean().optional() })
+  .object({
+    force: z.coerce.boolean().optional(),
+    linkedPage: z.coerce.boolean().optional(),
+  })
   .catch({});
 
 const ArchivePayloadSchema = z

@@ -24,13 +24,14 @@
   overflow: visible;
 }
 
+/* Room for the chip clear badge, which overhangs the chip top by 5px and would be clipped by the scroller. */
 .filters {
   display: flex;
   gap: 6px;
   align-items: center;
   width: 100%;
-  height: 34px;
-  margin-block: -3px;
+  height: 38px;
+  margin-block: -5px;
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;

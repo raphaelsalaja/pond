@@ -266,10 +266,12 @@ export async function saveImportScope(input: {
     start: input.start,
   });
   if (!result.ok) return result;
-  if (input.start) {
-    syncMonitor.seed(input.accountId, input.source, { connected: true });
-    void window.pond.syncRunNow(input.accountId);
-  }
+  if (input.start) startImportSync(input.accountId, input.source);
   await refetchAccounts();
   return { ok: true };
+}
+
+export function startImportSync(accountId: string, source: Source): void {
+  syncMonitor.seed(accountId, source, { connected: true });
+  void window.pond.syncRunNow(accountId);
 }

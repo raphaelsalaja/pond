@@ -27,6 +27,7 @@ interface CaptureArgs {
   accountId?: string | null;
   reportActivity?: ReportDownloadActivity;
   isSignedIn?: (source: Source, partition: string) => Promise<boolean>;
+  signal?: AbortSignal;
 }
 
 interface CaptureDeps {
@@ -60,8 +61,16 @@ export async function captureFromSource(
 
   if (args.source === "arena" && args.sourceId) {
     const { fetchArenaCapture } = await import("./arena/api");
-    const result = await fetchArenaCapture({ sourceId: args.sourceId });
+    const result = await fetchArenaCapture({
+      sourceId: args.sourceId,
+      signal: args.signal,
+    });
     if (result.ok) return result.capture;
+    /** A Link block's Save URL is the page it links to; the page harvest reads the block. */
+    const blockUrl = `https://www.are.na/block/${args.sourceId}`;
+    const fallback = await harvest({ ...args, url: blockUrl });
+    if (fallback.ok && fallback.capture) return fallback.capture;
+    throw harvestFailure(args.source, fallback.reason);
   }
 
   if (args.source === "substack" && args.sourceId) {

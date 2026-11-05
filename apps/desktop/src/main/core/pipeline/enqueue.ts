@@ -183,7 +183,11 @@ async function enqueueOne(
         opts.trigger ?? "enqueue:reseed-failed",
         opts.generationId,
       );
-      await applySeedToExistingSave(current.id, opts.seed);
+      const { narrowToSplit } = await import("../split-save-plan");
+      await applySeedToExistingSave(current.id, {
+        ...opts.seed,
+        rawJson: narrowToSplit(opts.seed.rawJson, current.rawJson?.split),
+      });
       stashWebCookiesThenKick(current.id, source, opts.cookies);
       log.info("[pond pipeline:enqueue] reseeded failed save", {
         id: current.id,

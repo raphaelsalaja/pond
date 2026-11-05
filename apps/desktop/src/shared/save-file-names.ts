@@ -19,7 +19,7 @@ const THUMBNAIL_KINDS: ReadonlySet<string> = new Set([
   THUMBNAIL_DARK_KIND,
 ]);
 
-const AUXILIARY_KINDS: ReadonlySet<string> = new Set([
+export const AUXILIARY_KINDS: ReadonlySet<string> = new Set([
   ...THUMBNAIL_KINDS,
   AVATAR_KIND,
   SOURCE_ICON_KIND,

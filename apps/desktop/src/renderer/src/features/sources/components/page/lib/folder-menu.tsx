@@ -1,6 +1,7 @@
 import {
   IconFolderOpen,
   IconFolderPen,
+  IconFolderXmark,
   IconMediaPause,
   IconMediaPlay,
   IconTrash,
@@ -105,17 +106,12 @@ export function buildFolderRows(
           target.mode === "move"
             ? "Pond moves each file to the Trash once it's in your library."
             : "Files stay in the folder after Pond imports them.",
-        actions: [
-          {
-            label: target.mode === "move" ? "Turn Off" : "Turn On",
-            name:
-              target.mode === "move"
-                ? "Turn Off Delete After Import"
-                : "Turn On Delete After Import",
-            onClick: () =>
-              setDeleteAfterImport(target, target.mode !== "move", onChanged),
-          },
-        ],
+        actions: [],
+        toggle: {
+          checked: target.mode === "move",
+          onCheckedChange: (checked) =>
+            setDeleteAfterImport(target, checked, onChanged),
+        },
       },
     ],
     fetch: [],
@@ -180,17 +176,24 @@ export function buildFolderMenu(
           onClick: () => void setWatching(!target.watching, onChanged),
         },
         {
+          label: "Stop Watching",
+          icon: <IconFolderXmark />,
+          variant: "destructive",
+          onClick: () => confirmStop(target, onChanged),
+        },
+      ],
+    },
+    { type: "separator" },
+    {
+      type: "group",
+      items: [
+        {
           type: "checkbox",
           label: "Delete After Import",
+          icon: <IconTrash />,
           checked: target.mode === "move",
           onCheckedChange: (checked) =>
             setDeleteAfterImport(target, checked, onChanged),
-        },
-        {
-          label: "Stop Watching",
-          icon: <IconTrash />,
-          variant: "destructive",
-          onClick: () => confirmStop(target, onChanged),
         },
       ],
     },

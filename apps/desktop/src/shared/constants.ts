@@ -44,6 +44,7 @@ export const IPC = {
   sessionImported: "pond:session-imported",
   sessionImportFailed: "pond:session-import-failed",
   eagleImportProgress: "pond:eagle-import-progress",
+  arenaLinkProgress: "pond:arena-link-progress",
   syncRunNow: "pond:sync-run-now",
   syncStatus: "pond:sync-status",
   machinePace: "pond:machine-pace",

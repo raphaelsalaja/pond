@@ -24,12 +24,14 @@ import {
   mediaKindLabel,
   saveImportScope,
   sinceCopy,
+  startImportSync,
 } from "@/features/sources/lib/import-scope";
 import { getSourceDef } from "@/features/sources/lib/registry";
 import {
   draftChanged,
   draftFiles,
   draftImportScope,
+  filingChanged,
   type ImportScopeAccount,
   type ImportScopeFlow,
   useImportScopeFlow,
@@ -52,7 +54,17 @@ export function useImportScopeDraft(account: ImportScopeAccount): void {
       syncLikes: account.sync.syncLikes,
     },
   } satisfies ImportScopeAccount);
-  useEffect(() => () => flow.clear(), [flow]);
+  useEffect(
+    () => () => {
+      const left = flow.snapshot();
+      /** A new collection pick needs one full walk to file saves already in the library. */
+      if (left.accountId && left.source && filingChanged(left)) {
+        startImportSync(left.accountId, left.source);
+      }
+      flow.clear();
+    },
+    [flow],
+  );
   useEffect(() => {
     flow.open(JSON.parse(key));
   }, [flow, key]);

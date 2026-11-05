@@ -95,6 +95,7 @@ import {
   markStartup,
   watchMainThreadStalls,
 } from "./startup-timing";
+import { setUpdateInstallPreparation } from "./update-restart";
 import { registerAutoUpdater } from "./updater";
 import {
   beginQuit,
@@ -574,16 +575,17 @@ if (process.platform === "win32") {
   });
 }
 
-app.on("before-quit", async (event) => {
-  if (quitPrepared) return;
-  if (!started) {
-    quitPreparing = true;
-    return;
-  }
-  event.preventDefault();
-  if (quitPreparing) return;
-  quitPreparing = true;
-  beginQuit();
+let quitPreparation: Promise<void> | null = null;
+
+function armQuitStall(): void {
+  /** Everything is flushed by now; a window that refuses to close must not keep Pond running. */
+  setTimeout(() => {
+    log.warn("[pond] quit stalled; exiting");
+    app.exit(0);
+  }, QUIT_STALL_MS).unref();
+}
+
+async function shutdownForQuit(): Promise<void> {
   stopMediaWarmer?.();
   globalShortcut.unregisterAll();
   try {
@@ -645,12 +647,38 @@ app.on("before-quit", async (event) => {
   } catch (err) {
     log.warn("[pond] fish MCP close failed", err);
   }
-  log.info("[pond] quit prepared");
-  quitPrepared = true;
-  /** Everything is flushed by now; a window that refuses to close must not keep Pond running. */
-  setTimeout(() => {
-    log.warn("[pond] quit stalled; exiting");
-    app.exit(0);
-  }, QUIT_STALL_MS).unref();
+}
+
+/** Marks the app quitting first, so a later `quitAndInstall` close is not cancelled. */
+function prepareQuit(): Promise<void> {
+  if (quitPrepared) return Promise.resolve();
+  if (quitPreparation) return quitPreparation;
+  quitPreparing = true;
+  beginQuit();
+  quitPreparation = shutdownForQuit().then(
+    () => {
+      log.info("[pond] quit prepared");
+      quitPrepared = true;
+    },
+    (error) => {
+      log.warn("[pond] quit preparation failed", error);
+      quitPrepared = true;
+    },
+  );
+  return quitPreparation;
+}
+
+setUpdateInstallPreparation(prepareQuit);
+
+app.on("before-quit", async (event) => {
+  if (quitPrepared) return;
+  if (!started) {
+    quitPreparing = true;
+    return;
+  }
+  event.preventDefault();
+  if (quitPreparing) return;
+  await prepareQuit();
+  armQuitStall();
   app.quit();
 });

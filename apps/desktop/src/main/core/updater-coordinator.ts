@@ -20,7 +20,8 @@ export interface UpdaterPort {
   onDownloaded(listener: (version: string) => void): void;
   check(): Promise<{ version?: string } | null>;
   download(): Promise<void>;
-  install(): void;
+  /** May resolve before `quitAndInstall` runs, so the caller can reply first. */
+  install(): void | Promise<void>;
 }
 
 export interface UpdaterDependencies {
@@ -127,7 +128,7 @@ export function createUpdaterCoordinator(dependencies: UpdaterDependencies) {
     if (!dependencies.isPackaged()) return { ok: false, reason: "dev_build" };
     try {
       const updater = await dependencies.loadUpdater();
-      updater.install();
+      await updater.install();
       return { ok: true };
     } catch (error) {
       return {

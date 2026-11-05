@@ -1,7 +1,9 @@
 import { chmod, copyFile, mkdir } from "node:fs/promises";
 import { homedir } from "node:os";
-import { basename, dirname, isAbsolute, join } from "node:path";
+import { posix } from "node:path";
 import log from "electron-log/main.js";
+
+const { basename, dirname, isAbsolute, join } = posix;
 
 function linuxDataHome(
   env: NodeJS.ProcessEnv = process.env,

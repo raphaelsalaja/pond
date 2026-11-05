@@ -1,4 +1,4 @@
-import { PrefsSchema, type SaveFile } from "@pond/schema/db";
+import { PrefsSchema, type SaveFile, type Source } from "@pond/schema/db";
 import { describe, expect, it, vi } from "vitest";
 import type { WriteFileArgs } from "./apply";
 import { hasWarcArchive, runArchivePage } from "./archive-page";
@@ -10,10 +10,15 @@ const preview: SaveFile = {
   size: 4,
 };
 
-function setup(autoArchive: boolean) {
-  const save = {
-    source: "web" as const,
+function setup(
+  autoArchive: boolean,
+  origin: { source: Source; url: string } = {
+    source: "web",
     url: "https://example.com/notes",
+  },
+) {
+  const save = {
+    ...origin,
     title: "Notes",
     description: "A short page",
     mediaUrl: "https://example.com/preview.jpg",
@@ -21,7 +26,7 @@ function setup(autoArchive: boolean) {
   };
   const readSave = vi.fn(async () => save);
   const autoArchivePages = vi.fn(async () => autoArchive);
-  const crawlSite = vi.fn(async () => ({
+  const crawlSite = vi.fn(async (_rootUrl: URL, _scope: string) => ({
     pages: [{ url: save.url, title: save.title }],
     warcBytes: Buffer.from("warc"),
   }));
@@ -120,5 +125,42 @@ describe("archive_page automatic archive", () => {
       description: "A short page",
       mediaUrl: "https://example.com/preview.jpg",
     });
+  });
+});
+
+describe("archive_page for Are.na saves", () => {
+  it("archives the page an Are.na Link block points at", async () => {
+    const { save, readSave, autoArchivePages, crawlSite, persistArchive } =
+      setup(true, {
+        source: "arena",
+        url: "https://en.wikipedia.org/wiki/Community_Memory",
+      });
+
+    await runArchivePage("save-1", {}, ctx, {
+      readSave,
+      autoArchive: autoArchivePages,
+      crawlSite,
+      persistArchive,
+    });
+
+    expect(
+      crawlSite.mock.calls.map(([rootUrl, scope]) => [rootUrl.href, scope]),
+    ).toEqual([["https://en.wikipedia.org/wiki/Community_Memory", "page"]]);
+    expect(hasWarcArchive(save.files)).toBe(true);
+  });
+
+  it("leaves Are.na blocks that still point at are.na alone", async () => {
+    const { save, readSave, autoArchivePages, crawlSite, persistArchive } =
+      setup(true, { source: "arena", url: "https://www.are.na/block/9613792" });
+
+    await runArchivePage("save-1", { scope: "site" }, ctx, {
+      readSave,
+      autoArchive: autoArchivePages,
+      crawlSite,
+      persistArchive,
+    });
+
+    expect(crawlSite).not.toHaveBeenCalled();
+    expect(hasWarcArchive(save.files)).toBe(false);
   });
 });

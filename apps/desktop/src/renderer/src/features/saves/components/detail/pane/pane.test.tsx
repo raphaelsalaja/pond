@@ -382,6 +382,50 @@ it("shows enrichment output and applies suggested tags", async () => {
   });
 });
 
+it("clears a sensitive flag from the warning", async () => {
+  const current = pool.get("a");
+  if (!current) throw new Error("Missing Save fixture");
+  pool.upsert({
+    ...current,
+    sensitiveScore: 0.99,
+    sensitiveModel: "model@revision",
+  });
+  await act(async () => root.render(<SaveInspector saveId="a" />));
+  const flag = host.querySelector<HTMLElement>(
+    '[data-band="likely-sensitive"]',
+  );
+  if (!flag) throw new Error("Missing sensitive flag");
+  await act(async () => {
+    flag.dispatchEvent(
+      new MouseEvent("contextmenu", {
+        bubbles: true,
+        cancelable: true,
+        button: 2,
+        clientX: 12,
+        clientY: 12,
+      }),
+    );
+  });
+  const action = [
+    ...document.querySelectorAll<HTMLElement>('[role="menuitemcheckbox"]'),
+  ].find((item) => item.textContent?.includes("Sensitive Content"));
+  if (!action) throw new Error("Missing Sensitive Content action");
+  expect(action.getAttribute("aria-checked")).toBe("true");
+  await act(async () => action.click());
+  expect(pool.get("a")?.sensitiveScore).toBe(0);
+  expect(pool.get("a")?.sensitiveModel).toBe("manual:not-sensitive");
+  expect(requests).toContainEqual({
+    name: "saves.patchDerived",
+    input: {
+      id: "a",
+      patch: {
+        sensitiveScore: 0,
+        sensitiveModel: "manual:not-sensitive",
+      },
+    },
+  });
+});
+
 it("assigns a mixed folder immediately from the inspector menu", async () => {
   await act(async () =>
     root.render(

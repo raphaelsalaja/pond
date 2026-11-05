@@ -439,6 +439,10 @@ it("shows watched folder details with its folder actions", async () => {
   expect(host.textContent).toContain("Watching");
   expect(nicknameField()).toBeNull();
   expect(actionButton("Change Folder")).toBeTruthy();
+  const deleteSwitch = host.querySelector(
+    '[role="switch"][aria-label="Delete After Import"]',
+  );
+  expect(deleteSwitch?.getAttribute("aria-checked")).toBe("false");
 
   await act(async () => {
     root.render(

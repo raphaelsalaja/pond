@@ -12,10 +12,8 @@ import {
   fishIntroDialog,
   useFishIntroDialogOpen,
 } from "@/shared/state/fish-intro";
-import { promptToast } from "@/shared/state/prompts";
-import { setupFlow } from "@/shared/state/setup";
-import { supportDialog } from "@/shared/state/support";
-import { readWhatsNewSeen, whatsNewDialog } from "@/shared/state/whats-new";
+import { anotherDialogOpen, claimNoticeSlot } from "@/shared/state/notices";
+import { readWhatsNewSeen } from "@/shared/state/whats-new";
 import {
   isFishIntroDue,
   readFishIntroState,
@@ -25,6 +23,7 @@ import { School } from "./school";
 import styles from "./styles.module.css";
 
 const CHECK_INTERVAL_MS = 3000;
+const FISH_INTRO_NOTICE = "fish-intro";
 
 const FACTS = [
   {
@@ -49,15 +48,6 @@ const FACTS = [
   },
 ] as const;
 
-function anotherDialogOpen(): boolean {
-  return (
-    setupFlow.isOpen() ||
-    whatsNewDialog.isOpen() ||
-    supportDialog.isOpen() ||
-    promptToast.isOpen()
-  );
-}
-
 /** Reads the last What's New version before that dialog overwrites it, then waits for a clear screen. */
 function useIntroduceOnce(): void {
   useEffect(() => {
@@ -67,6 +57,7 @@ function useIntroduceOnce(): void {
     const timer = setInterval(() => {
       if (anotherDialogOpen()) return;
       clearInterval(timer);
+      if (!claimNoticeSlot(FISH_INTRO_NOTICE)) return;
       writeFishIntroState("shown");
       fishIntroDialog.open();
     }, CHECK_INTERVAL_MS);

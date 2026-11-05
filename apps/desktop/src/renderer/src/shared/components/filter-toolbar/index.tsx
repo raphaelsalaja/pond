@@ -80,7 +80,10 @@ function Bar({
         >
           <div className={styles.bar} data-wrap={wrap || undefined}>
             <div className={styles.viewport}>
-              <div className={styles.filters} data-scroll-fade="horizontal">
+              <div
+                className={styles.filters}
+                data-scroll-fade={wrap ? undefined : "horizontal"}
+              >
                 {children}
               </div>
             </div>

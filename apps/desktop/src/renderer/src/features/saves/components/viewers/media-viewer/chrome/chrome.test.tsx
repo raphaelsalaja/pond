@@ -104,18 +104,23 @@ it("places image inspector controls in the integrated top toolbar", async () => 
 });
 
 it("mounts toolbars in the chrome bar before stage layout effects measure", async () => {
-  const bars: (Element | null | undefined)[] = [];
+  const bars: Record<string, Element | null | undefined> = {};
   function Stage() {
     useLayoutEffect(() => {
-      bars.push(
-        host.querySelector("[data-probe]")?.closest("[data-slot]")
-          ?.parentElement,
-      );
+      for (const probe of host.querySelectorAll("[data-probe]")) {
+        bars[probe.getAttribute("data-probe") ?? ""] =
+          probe.closest("[data-slot]")?.parentElement;
+      }
     }, []);
     return (
-      <ChromePortal slot="top">
-        <span data-probe="" />
-      </ChromePortal>
+      <>
+        <ChromePortal slot="top">
+          <span data-probe="top" />
+        </ChromePortal>
+        <ChromePortal slot="bottom">
+          <span data-probe="bottom" />
+        </ChromePortal>
+      </>
     );
   }
 
@@ -127,8 +132,9 @@ it("mounts toolbars in the chrome bar before stage layout effects measure", asyn
     );
   });
 
-  expect(bars).toHaveLength(1);
-  expect(bars[0]?.parentElement).toBe(host.querySelector("[data-viewer-root]"));
+  const viewerRoot = host.querySelector("[data-viewer-root]");
+  expect(bars.top?.parentElement).toBe(viewerRoot);
+  expect(bars.bottom?.parentElement).toBe(viewerRoot);
 });
 
 it("shows only media when controls are disabled", async () => {

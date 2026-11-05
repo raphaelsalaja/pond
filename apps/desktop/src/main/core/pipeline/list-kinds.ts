@@ -35,6 +35,9 @@ export function listKindsFromTrigger(trigger: string | undefined): ListKind[] {
   return [];
 }
 
+/** A slide split from a post answers to the post's Source ID, which is what a list walk reports. */
+const postSourceId = sql<string>`coalesce(json_extract(${saves.rawSlim}, '$.split.sourceId'), ${saves.sourceId})`;
+
 function chunk<T>(rows: T[], size: number): T[][] {
   const out: T[][] = [];
   for (let i = 0; i < rows.length; i += size) out.push(rows.slice(i, size + i));
@@ -64,7 +67,7 @@ export async function mergeListKindsOntoExisting(
     const rows = db
       .select({
         id: saves.id,
-        sourceId: saves.sourceId,
+        postId: postSourceId,
         listKinds: saves.listKinds,
         status: saves.status,
         importFilter: sql<
@@ -72,16 +75,27 @@ export async function mergeListKindsOntoExisting(
         >`json_extract(${saves.rawJson}, '$.importFilter')`,
       })
       .from(saves)
-      .where(and(eq(saves.source, source), inArray(saves.sourceId, idChunk)))
+      .where(
+        and(
+          eq(saves.source, source),
+          or(
+            inArray(saves.sourceId, idChunk),
+            inArray(
+              sql`json_extract(${saves.rawSlim}, '$.split.sourceId')`,
+              idChunk,
+            ),
+          ),
+        ),
+      )
       .all();
     for (const row of rows) {
-      const extra = incoming.get(row.sourceId);
+      const extra = incoming.get(row.postId);
       if (!extra) continue;
       const merged = mergeListKinds(row.listKinds, extra);
       if (listKindsEqual(row.listKinds, merged)) continue;
       if (row.status === "skipped" && row.importFilter === "list") {
         released.push(row.id);
-        relisted.add(row.sourceId);
+        relisted.add(row.postId);
         continue;
       }
       await persistSave(
@@ -105,7 +119,7 @@ export async function dropMissingListKind(
   const rows = db
     .select({
       id: saves.id,
-      sourceId: saves.sourceId,
+      postId: postSourceId,
       listKinds: saves.listKinds,
     })
     .from(saves)
@@ -118,7 +132,7 @@ export async function dropMissingListKind(
     .all();
   let dropped = 0;
   for (const row of rows) {
-    if (presentIds.has(row.sourceId) || !row.listKinds.includes(kind)) continue;
+    if (presentIds.has(row.postId) || !row.listKinds.includes(kind)) continue;
     await persistSave(
       row.id,
       { listKinds: row.listKinds.filter((k) => k !== kind) },

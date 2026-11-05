@@ -1,7 +1,7 @@
 import { execFile } from "node:child_process";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { dirname, isAbsolute, join } from "node:path";
+import { join, posix } from "node:path";
 import { promisify } from "node:util";
 import {
   CHROMIUM_EXTENSION_IDS,
@@ -68,6 +68,9 @@ const LINUX_CHROMIUM_CONFIG_DIRS = [
   "chromium",
   "ungoogled-chromium",
   "BraveSoftware/Brave-Browser",
+  "BraveSoftware/Brave-Browser-Beta",
+  "BraveSoftware/Brave-Browser-Nightly",
+  "BraveSoftware/Brave-Origin",
   "microsoft-edge",
   "microsoft-edge-beta",
   "microsoft-edge-dev",
@@ -79,7 +82,9 @@ function linuxConfigHome(
   home: string = homedir(),
 ): string {
   const config = env.XDG_CONFIG_HOME;
-  return config && isAbsolute(config) ? config : join(home, ".config");
+  return config && posix.isAbsolute(config)
+    ? config
+    : posix.join(home, ".config");
 }
 
 /** Flatpak browsers read from their sandbox's own config root. */
@@ -97,33 +102,39 @@ function linuxChromiumNativeHostDirs(input: {
 }): string[] {
   return [
     ...LINUX_CHROMIUM_CONFIG_DIRS.map((browser) =>
-      join(input.configHome, browser, "NativeMessagingHosts"),
+      posix.join(input.configHome, browser, "NativeMessagingHosts"),
     ),
     ...LINUX_CHROMIUM_FLATPAK_DIRS.map((dir) =>
-      join(input.home, ".var/app", dir, "NativeMessagingHosts"),
+      posix.join(input.home, ".var/app", dir, "NativeMessagingHosts"),
     ),
-    join(input.home, "snap/chromium/common/chromium/NativeMessagingHosts"),
+    posix.join(
+      input.home,
+      "snap/chromium/common/chromium/NativeMessagingHosts",
+    ),
   ];
 }
 
 /** Firefox reads a single per-user directory; forks and packaged builds each have their own. */
 function linuxFirefoxNativeHostDirs(input: { home: string }): string[] {
   return [
-    join(input.home, ".mozilla/native-messaging-hosts"),
-    join(input.home, ".zen/native-messaging-hosts"),
-    join(input.home, ".librewolf/native-messaging-hosts"),
-    join(input.home, ".floorp/native-messaging-hosts"),
-    join(input.home, "snap/firefox/common/.mozilla/native-messaging-hosts"),
-    join(
+    posix.join(input.home, ".mozilla/native-messaging-hosts"),
+    posix.join(input.home, ".zen/native-messaging-hosts"),
+    posix.join(input.home, ".librewolf/native-messaging-hosts"),
+    posix.join(input.home, ".floorp/native-messaging-hosts"),
+    posix.join(
+      input.home,
+      "snap/firefox/common/.mozilla/native-messaging-hosts",
+    ),
+    posix.join(
       input.home,
       ".var/app/org.mozilla.firefox/.mozilla/native-messaging-hosts",
     ),
-    join(input.home, "snap/zen/common/.zen/native-messaging-hosts"),
-    join(
+    posix.join(input.home, "snap/zen/common/.zen/native-messaging-hosts"),
+    posix.join(
       input.home,
       ".var/app/app.zen_browser.zen/.zen/native-messaging-hosts",
     ),
-    join(
+    posix.join(
       input.home,
       ".var/app/io.github.zen_browser.zen/.zen/native-messaging-hosts",
     ),
@@ -326,10 +337,10 @@ function writeLinuxNativeHostManifests(
   ];
   for (const { dir, body } of targets) {
     /** The browser creates its own config root on first launch, so that directory is the install signal. */
-    if (!dependencies.exists(dirname(dir))) continue;
+    if (!dependencies.exists(posix.dirname(dir))) continue;
     try {
       dependencies.makeDirectory(dir);
-      dependencies.writeFile(join(dir, HOST_FILENAME), body);
+      dependencies.writeFile(posix.join(dir, HOST_FILENAME), body);
     } catch (err) {
       dependencies.warn(
         "[pond native] failed to write host manifest",

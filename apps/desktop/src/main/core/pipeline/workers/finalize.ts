@@ -66,8 +66,11 @@ export async function runFinalize(saveId: string): Promise<void> {
     });
   }
 
+  const { splitNewPost } = await import("../../split-on-import");
+  const current = await splitNewPost(save);
+  if (!current) return;
   const { writeSaveBlurhash } = await import("../../save-blurhash");
-  await Promise.all([writeDominantColors(save), writeSaveBlurhash(save)]);
+  await Promise.all([writeDominantColors(current), writeSaveBlurhash(current)]);
 
   await persistSave(
     saveId,

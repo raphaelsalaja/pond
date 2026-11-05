@@ -32,4 +32,12 @@ describe("slimRawJson", () => {
     const slim = slimRawJson(rawWith({ publisher: "Blog" }));
     expect(slim?.capture.extras).toBeUndefined();
   });
+
+  it("keeps split provenance so sync can match a slide to its post", () => {
+    const slim = slimRawJson({
+      ...rawWith(undefined),
+      split: { sourceId: "post-1", media: [2] },
+    });
+    expect(slim?.split).toEqual({ sourceId: "post-1", media: [2] });
+  });
 });

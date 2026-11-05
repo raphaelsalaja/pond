@@ -1,4 +1,6 @@
 import { isAuxiliaryKind } from "@shared/save-file-names";
+import { canSplitFiles } from "@shared/save-slides";
+import { isWebPageSave } from "@shared/web-page-save";
 import { resolveFileIndex } from "@/features/saves/lib/actions";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
 import { deriveTypeKind } from "@/features/saves/lib/media/units";
@@ -108,10 +110,16 @@ export function createSaveMenuContext(
     archivable:
       incomplete ||
       saves.some(
-        (item) => Boolean(item.url) && item.source === "web" && !item.deletedAt,
+        (item) => Boolean(item.url) && isWebPageSave(item) && !item.deletedAt,
       ),
     canResetThumbnail,
     canRename: !batch && save.source === "local",
+    canSplit: saves.some(
+      (item) =>
+        !item.deletedAt &&
+        item.status === "complete" &&
+        canSplitFiles(item.files),
+    ),
     fontActivated,
   };
 }

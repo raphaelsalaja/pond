@@ -1,7 +1,7 @@
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
 import { homedir } from "node:os";
-import { isAbsolute, join, posix } from "node:path";
+import { join, posix } from "node:path";
 import { promisify } from "node:util";
 import { SAFARI_APP_GROUP, SHARE_INBOX_DIR } from "@pond/schema/native";
 
@@ -102,9 +102,11 @@ function linuxNativeSocketPath(
   home: string = homedir(),
 ): string {
   for (const root of [env.XDG_RUNTIME_DIR, env.XDG_CONFIG_HOME]) {
-    if (root && isAbsolute(root)) return join(root, "pond", "native.sock");
+    if (root && posix.isAbsolute(root)) {
+      return posix.join(root, "pond", "native.sock");
+    }
   }
-  return join(home, ".config", "pond", "native.sock");
+  return posix.join(home, ".config", "pond", "native.sock");
 }
 
 /** Chrome native-host connect path; keep in lockstep with `pond-native-host.c`. */
@@ -123,8 +125,8 @@ export async function nativeSocketPath(
     return `${pipe}-sandbox-${id}`;
   }
   if (sandbox) {
-    return join(sandbox, "native.sock");
+    return posix.join(sandbox, "native.sock");
   }
   if (platform === "linux") return linuxNativeSocketPath(env, home);
-  return join(home, "Library/Application Support/Pond", "native.sock");
+  return posix.join(home, "Library/Application Support/Pond", "native.sock");
 }

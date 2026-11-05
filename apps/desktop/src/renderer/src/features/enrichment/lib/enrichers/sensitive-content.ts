@@ -1,4 +1,5 @@
 import type { RawImage } from "@huggingface/transformers";
+import { isManualSensitiveDecision } from "@pond/schema/content-safety";
 import {
   buildOriginalMediaUnits,
   type MediaUnit,
@@ -71,6 +72,7 @@ export const sensitiveContentEnricher: Enricher = {
   enabled: (prefs) => prefs?.ai?.enableSensitiveContent === true,
   eligible(save: Save) {
     if (save.status !== "complete" || save.deletedAt != null) return false;
+    if (isManualSensitiveDecision(save.sensitiveModel)) return false;
     /** A rendered post card is not the Save's media, so text-only posts carry no result. */
     if (buildOriginalMediaUnits(save).length === 0) {
       return save.sensitiveModel != null;

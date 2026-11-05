@@ -17,6 +17,7 @@ import {
 } from "./core/thumbnail";
 import { VIDEO_CACHE_HOST } from "./core/video-preview-proxy";
 import { isPathInside } from "./lib/path-identity";
+import { canonicalPondSaveId } from "./lib/pond-url";
 import { clampThumbWidth } from "./lib/thumbnail";
 import { libraryRoot, resolvePaths, saveFile } from "./paths";
 
@@ -85,8 +86,9 @@ export function registerProtocol() {
       if (host !== META_HOST && widthParam) {
         const width = clampThumbWidth(Number(widthParam));
         if (width !== null) {
+          const saveId = canonicalPondSaveId(host);
           const request = {
-            saveId: host,
+            saveId,
             sourcePath: resolved,
             width,
             version,
@@ -99,7 +101,7 @@ export function registerProtocol() {
             immutable = true;
           } else if (!previewParam) {
             ensureThumbnailInBackground({
-              saveId: host,
+              saveId,
               sourcePath: resolved,
               width,
               version,
@@ -228,7 +230,7 @@ function resolveTarget(host: string, file: string): ProtocolTarget {
     return { resolved: resolve(join(base, file)), root: base };
   }
   return {
-    resolved: resolve(saveFile(host, file)),
+    resolved: resolve(saveFile(canonicalPondSaveId(host), file)),
     root: resolvePaths().savesDir,
   };
 }

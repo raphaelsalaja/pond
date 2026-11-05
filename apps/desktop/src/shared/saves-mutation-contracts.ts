@@ -8,6 +8,15 @@ import type {
 } from "./query-contracts-shared";
 import type { SavesDerivedPatch, SavesIdInput } from "./saves-contracts-shared";
 
+export interface SplitAllProgress {
+  running: boolean;
+  total: number;
+  processed: number;
+  split: number;
+  created: number;
+  failed: number;
+}
+
 export interface SavesMutationQueryInputs {
   "saves.emptyTrash": EmptyInput;
   "saves.restoreAll": EmptyInput;
@@ -22,6 +31,10 @@ export interface SavesMutationQueryInputs {
   "saves.patchDerived": { id: string; patch: SavesDerivedPatch };
   "saves.ensureTextCover": { id: string; force?: boolean };
   "saves.mergeDuplicates": { keepId: string; ids: string[] };
+  "saves.split": { ids: string[] };
+  "saves.splittableCount": EmptyInput;
+  "saves.splitAll": EmptyInput;
+  "saves.splitAllStatus": EmptyInput;
   "saves.batchRename": BatchRenameInput;
   "saves.batchEditExtension": { ids: string[]; extension: string };
   "saves.activateFont": SavesIdInput;
@@ -78,6 +91,10 @@ export interface SavesMutationQueryResults {
   "saves.patchDerived": OkResult;
   "saves.ensureTextCover": OkResult<{ captured: number }>;
   "saves.mergeDuplicates": OkResult<{ trashed: number }>;
+  "saves.split": OkResult<{ split: number; created: number }>;
+  "saves.splittableCount": { count: number };
+  "saves.splitAll": SplitAllProgress;
+  "saves.splitAllStatus": SplitAllProgress;
   "saves.batchRename": OkResult<{ renamed: number }>;
   "saves.batchEditExtension": OkSuccess<{
     changed: number;

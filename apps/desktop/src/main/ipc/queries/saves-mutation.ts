@@ -43,46 +43,6 @@ import {
   StringParam,
 } from "./params";
 
-async function analyzeSaveColors(
-  row: typeof saves.$inferSelect,
-  force: boolean,
-): Promise<boolean> {
-  const { extractPalette } = await import("../../lib/palette");
-  const { encodeBlurhash, pickBlurhashStill } = await import(
-    "../../lib/blurhash"
-  );
-  const { encodePhash } = await import("../../lib/phash");
-  const { saveFile } = await import("../../paths");
-  const still = pickBlurhashStill(row);
-  if (!still) return false;
-  const needsColors =
-    row.mediaType === "image" &&
-    (force || (row.dominantColors ?? []).length === 0);
-  const needsHash = force || !row.blurhash;
-  const needsPerceptualHash =
-    row.mediaType === "image" && (force || !row.phash);
-  if (!needsColors && !needsHash && !needsPerceptualHash) return false;
-  const path = saveFile(row.id, still.path);
-  const patch: Parameters<typeof persistSave>[1] = {};
-  if (needsColors) {
-    const colors = await extractPalette(path);
-    if (colors.length > 0) patch.dominantColors = colors;
-  }
-  if (needsHash) {
-    const hash = await encodeBlurhash(path);
-    if (hash) patch.blurhash = hash;
-  }
-  if (needsPerceptualHash) {
-    const hash = await encodePhash(path);
-    if (hash) patch.phash = hash;
-  }
-  if (Object.keys(patch).length === 0) return false;
-  await persistSave(row.id, patch, {
-    actorReason: force ? "color:reanalyze" : "color:backfill",
-  });
-  return true;
-}
-
 async function analyzeSaveMetadata(
   row: typeof saves.$inferSelect,
   force: boolean,
@@ -250,7 +210,7 @@ export const savesMutationQueries = {
   async "saves.backfillColors"() {
     const db = await getDb();
     const rows = await db.select().from(saves);
-
+    const { analyzeSaveColors } = await import("../../core/save-colors");
     let updated = 0;
     for (const row of rows) if (await analyzeSaveColors(row, false)) updated++;
     return { ok: true as const, updated };
@@ -271,6 +231,7 @@ export const savesMutationQueries = {
       const db = await getDb();
       const row = db.select().from(saves).where(eq(saves.id, id)).get();
       if (!row) return SAVE_NOT_FOUND;
+      const { analyzeSaveColors } = await import("../../core/save-colors");
       const updated = await analyzeSaveColors(row, true);
       return updated
         ? { ok: true, updated }
@@ -434,4 +395,24 @@ export const savesMutationQueries = {
     z.object({ keepId: StringParam, ids: StringListParam }),
     async (params) => mergeDuplicateSaves(params),
   ),
+
+  "saves.split": query(
+    z.object({ ids: z.array(StringParam).min(1).max(1_000) }),
+    async ({ ids }) => {
+      const { splitSaves } = await import("../../core/split-save");
+      return splitSaves(ids);
+    },
+  ),
+  "saves.splittableCount": query(z.object({}), async () => {
+    const { countSplittableSaves } = await import("../../core/split-all");
+    return { count: await countSplittableSaves() };
+  }),
+  "saves.splitAll": query(z.object({}), async () => {
+    const { startSplitAll } = await import("../../core/split-all");
+    return startSplitAll();
+  }),
+  "saves.splitAllStatus": query(z.object({}), async () => {
+    const { splitAllStatus } = await import("../../core/split-all");
+    return splitAllStatus();
+  }),
 } satisfies QueryHandlerMap;
