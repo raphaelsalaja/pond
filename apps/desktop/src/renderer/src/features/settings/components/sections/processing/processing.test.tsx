@@ -28,6 +28,7 @@ it("groups running tasks into one count with the breakdown on hover", async () =
               failedKeys: new Set(["sensitive-content:save-2"]),
             }}
             onCheck={async () => {}}
+            onRepair={() => {}}
           />
         </MotionConfig>,
       );
@@ -62,15 +63,63 @@ it("offers a retry once processing stops with failures", async () => {
           onCheck={async () => {
             calls += 1;
           }}
+          onRepair={() => {}}
         />,
       );
     });
     expect(host.textContent).toContain("Processing needs attention");
     expect(host.textContent).toContain("2 tasks couldn't finish");
+    expect(host.textContent).toContain("save-1: Text in Images");
+    expect(host.textContent).toContain("save-2: Image Captions");
     expect(button(host, "Check Library")).toBeUndefined();
     expect(button(host, "Task Details")).toBeDefined();
     await act(async () => button(host, "Retry")?.click());
     expect(calls).toBe(1);
+  } finally {
+    await act(async () => root.unmount());
+    host.remove();
+  }
+});
+
+it("names a save whose files are missing and opens repair", async () => {
+  const host = document.createElement("div");
+  document.body.append(host);
+  const root = createRoot(host);
+  let repaired = 0;
+  try {
+    await act(async () => {
+      root.render(
+        <MotionConfig reducedMotion="always">
+          <ProcessingStatusCard
+            enabled
+            status={{
+              inflight: 0,
+              activeKeys: new Set(),
+              failedKeys: new Set([
+                "caption:01M6G9W0KWQJNCXVE71HCTPDDS",
+                "clip:01M6G9W0KWQJNCXVE71HCTPDDS",
+              ]),
+              missingOriginals: [
+                {
+                  id: "01M6G9W0KWQJNCXVE71HCTPDDS",
+                  title: "Screenshot From 2026-10-30 08-21-58.png",
+                },
+              ],
+            }}
+            onCheck={async () => {}}
+            onRepair={() => {
+              repaired += 1;
+            }}
+          />
+        </MotionConfig>,
+      );
+    });
+    expect(host.textContent).toContain(
+      "Files missing for Screenshot From 2026-10-30 08-21-58.png.",
+    );
+    expect(host.textContent).not.toContain("couldn't finish");
+    await act(async () => button(host, "Repair Invalid Content")?.click());
+    expect(repaired).toBe(1);
   } finally {
     await act(async () => root.unmount());
     host.remove();
@@ -96,6 +145,7 @@ it("prevents duplicate checks and recovers when starting a check fails", async (
             calls += 1;
             return calls === 1 ? pending : Promise.resolve();
           }}
+          onRepair={() => {}}
         />,
       );
     });
@@ -133,6 +183,7 @@ it("keeps the check unavailable until preferences load and processing is enabled
               failedKeys: new Set(),
             }}
             onCheck={async () => {}}
+            onRepair={() => {}}
           />,
         );
       });

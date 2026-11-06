@@ -2,7 +2,13 @@ import { existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { app } from "electron";
 import { resolveLibraryId } from "./lib/library-id";
+import {
+  classifyLibraryPlacement,
+  currentLibraryAnchor,
+  observeLibrarySync,
+} from "./lib/library-placement";
 import { readLibraryPointer } from "./lib/library-pointer";
+import { isSamePath } from "./lib/path-identity";
 
 export interface PondPaths {
   appData: string;
@@ -47,11 +53,18 @@ export function resolvePaths(libraryRootOverride?: string): PondPaths {
 
   const pointer = readLibraryPointer();
   const root = libraryRootOverride ?? pointer ?? defaultLibraryRoot();
+  const open = currentLibraryAnchor();
+  /** The open folder was moved or replaced. Keep its index id and do not recreate items/. */
+  const displaced =
+    open != null &&
+    isSamePath(open.root, root) &&
+    classifyLibraryPlacement(open, observeLibrarySync(root)) !== "present";
   const committed =
     libraryRootOverride != null || pointer != null || existsSync(root);
-  if (committed) ensureLibraryDirs(root);
+  if (committed && !displaced) ensureLibraryDirs(root);
 
-  const libraryId = resolveLibraryId(root, committed);
+  const libraryId =
+    displaced && open ? open.libraryId : resolveLibraryId(root, committed);
 
   const paths: PondPaths = {
     appData,

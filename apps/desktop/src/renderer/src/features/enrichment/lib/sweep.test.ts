@@ -3,6 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 import type { Save } from "@/features/saves/types";
 import {
   createEnrichmentPreferenceAccess,
+  isMissingMediaFailure,
+  saveNeedsEnrichment,
   subscribeMediaUnderstandingRefresh,
 } from "./sweep";
 import type { Enricher } from "./types";
@@ -34,6 +36,31 @@ function prefs(patch: Partial<Prefs["ai"]> = {}): Prefs {
     ai: { ...DEFAULT_PREFS.ai, ...patch },
   };
 }
+
+describe("missing originals", () => {
+  it("does not schedule a complete save whose files are already missing", () => {
+    const target = save();
+    expect(saveNeedsEnrichment(target, new Set())).toBe(true);
+    expect(saveNeedsEnrichment(target, new Set([target.id]))).toBe(false);
+    expect(
+      saveNeedsEnrichment({ ...target, status: "failed" }, new Set()),
+    ).toBe(false);
+  });
+
+  it("treats a missing media fetch as files missing rather than another enrichment pass", () => {
+    expect(
+      isMissingMediaFailure(
+        new Error(
+          "fetch failed (404) for pond://01M6G9W0KWQJNCXVE71HCTPDDS/Screenshot.png",
+        ),
+      ),
+    ).toBe(true);
+    const gemma = new Error("Local media understanding failed: missing");
+    gemma.name = "GemmaMediaUnderstandingError";
+    expect(isMissingMediaFailure(gemma)).toBe(true);
+    expect(isMissingMediaFailure(new Error("model crashed"))).toBe(false);
+  });
+});
 
 describe("enrichment sweep preferences", () => {
   it("passes current non-default media preferences to eligibility and runs", async () => {

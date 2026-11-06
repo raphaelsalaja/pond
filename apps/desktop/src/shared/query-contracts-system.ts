@@ -272,7 +272,11 @@ export interface SystemQueryResults {
     mark: LibraryMarkSource | null;
     accent: string | null;
   };
-  "library.rescan": { updated: number; total: number };
+  "library.rescan": {
+    updated: number;
+    total: number;
+    missingFiles: Array<{ id: string; title: string | null }>;
+  };
   "library.openInFinder": OkResult;
   "library.exportDebugReport": CancellableResult<{ path: string }>;
   "library.verifyIntegrity": OkResult<{

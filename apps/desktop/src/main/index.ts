@@ -160,6 +160,7 @@ const initialDeepLink = deepLinkArg(process.argv);
 let nativeServer: NetServer | null = null;
 let safariServer: NetServer | null = null;
 let stopMediaWarmer: (() => void) | null = null;
+let stopLibraryDisplacementWatch: (() => void) | null = null;
 
 let signalRendererReady: (() => void) | null = null;
 const rendererReady = new Promise<void>((resolve) => {
@@ -355,6 +356,14 @@ async function postLaunchInit(): Promise<void> {
   if (!process.env.POND_SANDBOX) {
     await registerSummonHotkey();
   }
+
+  void import("./core/library-displacement")
+    .then((module) => {
+      stopLibraryDisplacementWatch = module.startLibraryDisplacementWatch();
+    })
+    .catch((err) =>
+      log.warn("[pond] library displacement watch failed to start", err),
+    );
 
   try {
     await syncLibraryRootMetadata();
@@ -604,6 +613,8 @@ async function shutdownForQuit(): Promise<void> {
   }
   try {
     stopStorageWatcher();
+    stopLibraryDisplacementWatch?.();
+    stopLibraryDisplacementWatch = null;
   } catch (err) {
     log.warn("[pond] storage watcher stop failed", err);
   }

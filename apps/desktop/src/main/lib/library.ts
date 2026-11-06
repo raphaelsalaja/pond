@@ -27,6 +27,7 @@ import { StoredRawJsonSchema, storedAsRawJson } from "@pond/schema/raw-schema";
 import type { TxSaveFile } from "@pond/schema/tx";
 import { inferKindFromFilename } from "@shared/save-file-names";
 import log from "electron-log/main.js";
+import { userError } from "../../shared/user-error";
 import { writeLibraryMedia } from "../core/storage/library-media-storage";
 import { resolvePaths, saveDir, saveDirIn, saveFile } from "../paths";
 import type { SaveUserData } from "./library-format";
@@ -41,6 +42,7 @@ import {
   type StoredInfoDoc,
   StoredInfoDocSchema,
 } from "./library-format";
+import { libraryWriteBlock } from "./library-placement";
 
 interface SaveMetadata {
   id: string;
@@ -86,13 +88,20 @@ function decodeFile(file: TxSaveFile) {
   return { filename: file.filename, buf };
 }
 
+async function createSaveDirectory(id: string): Promise<string> {
+  const blocked = libraryWriteBlock(resolvePaths().libraryRoot);
+  if (blocked) throw userError(blocked);
+  const dir = saveDir(id);
+  await mkdir(dir, { recursive: true });
+  return dir;
+}
+
 async function writeInfoFiles(
   id: string,
   info: InfoDoc,
   rawSource: RawJson | null | undefined,
 ): Promise<void> {
-  const dir = saveDir(id);
-  await mkdir(dir, { recursive: true });
+  const dir = await createSaveDirectory(id);
   const infoPath = join(dir, INFO_FILE);
   await writeFile(infoPath, JSON.stringify(info, null, 2));
   const sourcePath = join(dir, SOURCE_FILE);
@@ -135,8 +144,7 @@ export async function writeSaveFiles(
   save: Save,
   files: TxSaveFile[] = [],
 ): Promise<{ written: Array<{ filename: string; buf: Buffer }> }> {
-  const dir = saveDir(id);
-  await mkdir(dir, { recursive: true });
+  const dir = await createSaveDirectory(id);
 
   const decoded = files.map(decodeFile);
   for (const { filename, buf } of decoded) {
