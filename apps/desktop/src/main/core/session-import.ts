@@ -16,12 +16,15 @@ import { broadcast } from "../lib/broadcast";
 import { clearPendingSessionSource } from "../pending-session";
 import { extractorFor } from "./pipeline/extractors";
 import {
+  isAccountConnected,
   isAuthCookieName,
   primaryDomainForSource,
   probeUserHandle,
+  readPartitionCookie,
   writePartitionCookies,
 } from "./refresh/harvest-window";
 import { identityKeyFromCookies } from "./session-identity";
+import { createSessionRefresh } from "./session-refresh";
 import { syncAccount } from "./sync";
 import {
   createAccount,
@@ -168,6 +171,37 @@ export async function importSessionCookies(
     accountId: account.id,
   };
 }
+
+export const refreshSessionCookies = createSessionRefresh({
+  listAccounts: listAccountsForSource,
+  heldCookie: (account, name) =>
+    readPartitionCookie(account.source, partitionForAccount(account.id), name),
+  isConnected: isAccountConnected,
+  isAuthCookie: isAuthCookieName,
+  probeHandle: probeStagedHandle,
+  writeCookies: async (account, cookies) => {
+    await writePartitionCookies({
+      cookies,
+      partition: partitionForAccount(account.id),
+    });
+  },
+  signedBackIn: (account) => {
+    log.info(
+      `[pond session-import] ${account.source} → @${account.handle ?? "?"} (${account.id}): signed back in from a rotated browser session`,
+    );
+    void syncAccount(account.id, { trigger: "manual" }).catch((err) =>
+      log.warn(
+        "[pond session-import] follow-up sync threw",
+        account.source,
+        err,
+      ),
+    );
+    broadcast(IPC.sessionImported, {
+      source: account.source,
+      accountId: account.id,
+    });
+  },
+});
 
 interface AccountResolution {
   account: ConnectedAccount;

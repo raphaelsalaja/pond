@@ -1,5 +1,25 @@
 import { z } from "zod";
-import { SOURCES } from "./source-ids";
+import { SOURCES, type Source } from "./source-ids";
+
+interface RotatingSession {
+  domain: string;
+  /** Cookies the browser reissues each time it rotates the session. */
+  rotates: readonly string[];
+  /** Stays the same across rotations, so Pond can tell which Account holds the session. */
+  sessionId: string;
+}
+
+/** Copies of these sessions stop working once the browser rotates them, so the extension forwards every rotation. */
+export const ROTATING_SESSIONS: ReadonlyMap<Source, RotatingSession> = new Map([
+  [
+    "youtube",
+    {
+      domain: "youtube.com",
+      rotates: ["__Secure-1PSIDTS", "__Secure-3PSIDTS"],
+      sessionId: "SID",
+    },
+  ],
+]);
 
 export const extensionCookieSchema = z.object({
   name: z.string().min(1),
@@ -31,3 +51,12 @@ export const sessionImportResponseSchema = z.object({
   reason: z.string().optional(),
 });
 export type SessionImportResponse = z.infer<typeof sessionImportResponseSchema>;
+
+export const sessionRefreshResponseSchema = z.object({
+  /** False when no Account uses the Source, so the extension can stop forwarding it. */
+  tracked: z.boolean(),
+  refreshed: z.boolean(),
+});
+export type SessionRefreshResponse = z.infer<
+  typeof sessionRefreshResponseSchema
+>;

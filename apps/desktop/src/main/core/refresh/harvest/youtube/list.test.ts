@@ -16,21 +16,32 @@ const lockup = `<yt-lockup-view-model>
   </div>
 </yt-lockup-view-model>`;
 
-it("reads playlist items rendered as lockups", async () => {
+function runList(body: string, loggedIn: boolean) {
   const { window } = new JSDOM(
-    `<!doctype html><html><body>${lockup}</body></html>`,
+    `<!doctype html><html><body>${body}</body></html>`,
     { url: "https://www.youtube.com/playlist?list=WL" },
   );
-  const result = await runInNewContext(
-    buildYoutubeListExpression({ knownIds: [] }),
-    {
-      document: window.document,
-      location: window.location,
-      window: { scrollBy: () => {}, innerHeight: 800 },
-      URL,
-      setTimeout: (fn: () => void) => setTimeout(fn, 0),
-    },
-  );
+  return runInNewContext(buildYoutubeListExpression({ knownIds: [] }), {
+    document: window.document,
+    location: window.location,
+    window: { scrollBy: () => {}, innerHeight: 800 },
+    ytcfg: { get: (key: string) => (key === "LOGGED_IN" ? loggedIn : null) },
+    URL,
+    setTimeout: (fn: () => void) => setTimeout(fn, 0),
+  });
+}
+
+it("reports a signed-out session instead of an empty list", async () => {
+  await expect(
+    runList(
+      "<yt-alert-renderer>The playlist does not exist.</yt-alert-renderer>",
+      false,
+    ),
+  ).resolves.toEqual({ ok: false, reason: "auth_required" });
+});
+
+it("reads playlist items rendered as lockups", async () => {
+  const result = await runList(lockup, true);
   expect(result.entries).toEqual([
     {
       sourceId: "fOT0BUpITw8",

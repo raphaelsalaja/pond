@@ -23,6 +23,7 @@ export {
   isSourceConnected,
   primaryDomainForSource,
   probeUserHandle,
+  readPartitionCookie,
   signInToSource,
   writePartitionCookies,
 } from "./session";

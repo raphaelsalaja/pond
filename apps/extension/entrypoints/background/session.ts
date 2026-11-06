@@ -1,19 +1,37 @@
 import {
   type ExtensionCookie,
+  ROTATING_SESSIONS,
   sessionImportResponseSchema,
+  sessionRefreshResponseSchema,
 } from "@pond/schema/session";
 import { SOURCES, type Source } from "@pond/schema/source-ids";
 import { z } from "zod";
-import { nativeCall } from "@/utils/native";
+import { isUnreachable, nativeCall } from "@/utils/native";
 import { createSingleFlightTrigger } from "@/utils/single-flight";
 import type { PushSessionResult } from "@/utils/types";
-import { cookieDomainsForSource, isCookieSourceUrl } from "@/utils/url";
+import {
+  cookieDomainsForSource,
+  isCookieSourceUrl,
+  rotatedSessionSource,
+} from "@/utils/url";
 
 const AUTO_PUSH_COOLDOWN_MS = 60_000;
 const ACTIVE_PROBE_MS = 30_000;
 const IDLE_PROBE_MS = 5 * 60_000;
 const SESSION_ALARM = "pond-session";
 const SCHEDULER_STORAGE_KEY = "sessionPushScheduler";
+/** A rotation reissues several cookies at once; forward them together. */
+const ROTATION_SETTLE_MS = 5_000;
+const FOLLOW_STORAGE_KEY = "sessionFollow";
+
+const followStateSchema = z.object({
+  /** Rotations Pond missed while it was closed, retried on the session alarm. */
+  missed: z.array(z.enum(SOURCES)).catch([]),
+  /** Sources with no Account in Pond, skipped until you connect one. */
+  untracked: z.array(z.enum(SOURCES)).catch([]),
+});
+
+type FollowState = z.infer<typeof followStateSchema>;
 
 const pendingSessionSchema = z.object({ source: z.enum(SOURCES) });
 const schedulerStateSchema = z.object({
@@ -122,7 +140,76 @@ async function pushSession(source: Source): Promise<PushSessionResult> {
   if (!imported.success) {
     return { ok: false, reason: "network", detail: "bad response shape" };
   }
+  if (imported.data.connected) {
+    const follow = await readFollowState();
+    await writeFollowState({
+      ...follow,
+      untracked: follow.untracked.filter((s) => s !== source),
+    });
+  }
   return { ok: true, data: imported.data };
+}
+
+async function readFollowState(): Promise<FollowState> {
+  const stored = await browser.storage.session.get(FOLLOW_STORAGE_KEY);
+  return followStateSchema
+    .catch({ missed: [], untracked: [] })
+    .parse(stored[FOLLOW_STORAGE_KEY]);
+}
+
+async function writeFollowState(state: FollowState): Promise<void> {
+  await browser.storage.session.set({ [FOLLOW_STORAGE_KEY]: state });
+}
+
+async function forwardRotation(source: Source): Promise<void> {
+  const session = ROTATING_SESSIONS.get(source);
+  const state = await readFollowState();
+  if (!session || state.untracked.includes(source)) return;
+
+  const cookies = await browser.cookies.getAll({ domain: session.domain });
+  const result = await nativeCall({
+    type: "session.refresh",
+    source,
+    cookies: cookies.slice(0, 500).map(cookieFromBrowser),
+  });
+  const missed = state.missed.filter((s) => s !== source);
+  const next: FollowState = { ...state, missed };
+  if (!result.ok) {
+    if (isUnreachable(result.error)) next.missed = [...missed, source];
+  } else {
+    const refresh = sessionRefreshResponseSchema.safeParse(result.data);
+    if (refresh.success && !refresh.data.tracked) {
+      next.untracked = [...state.untracked, source];
+    }
+  }
+  await writeFollowState(next);
+}
+
+/** Forwards each session your browser rotates, so Pond's copy of it stays signed in. */
+export function startSessionFollow(): void {
+  const settling = new Map<Source, ReturnType<typeof setTimeout>>();
+  browser.cookies.onChanged?.addListener(({ cookie, removed }) => {
+    if (removed) return;
+    const source = rotatedSessionSource(cookie);
+    if (!source) return;
+    clearTimeout(settling.get(source));
+    settling.set(
+      source,
+      setTimeout(() => {
+        settling.delete(source);
+        void forwardRotation(source).catch((err) =>
+          console.warn("[pond] session refresh failed", source, err),
+        );
+      }, ROTATION_SETTLE_MS),
+    );
+  });
+
+  browser.alarms.onAlarm.addListener((alarm) => {
+    if (alarm.name !== SESSION_ALARM) return;
+    void readFollowState().then(({ missed }) => {
+      for (const source of missed) void forwardRotation(source);
+    });
+  });
 }
 
 async function fetchPendingSource(): Promise<PendingProbe> {

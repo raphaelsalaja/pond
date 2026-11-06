@@ -5,7 +5,7 @@ import { saveFromSite } from "./capture";
 import { probeLibrary } from "./library";
 import { createMenus, handleCommand, handleMenuClick } from "./menus";
 import { clearBadge, flashBadge } from "./overlay";
-import { startSessionConnect } from "./session";
+import { startSessionConnect, startSessionFollow } from "./session";
 import { syncSettings } from "./settings";
 import { applyToolbarAction, createToolbarApply } from "./toolbar";
 import { handleGesture, handleOverlayResult, runTool } from "./tools";
@@ -83,4 +83,5 @@ export default defineBackground(() => {
   });
 
   startSessionConnect(() => flashBadge(undefined, "saved"));
+  startSessionFollow();
 });
