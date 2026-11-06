@@ -22,7 +22,7 @@ import { type QueryHandlerMap, query } from "./params";
 export const libraryMaintenanceQueries = {
   async "library.info"() {
     const path = libraryRoot();
-    return { path, ...readLibraryIdentity(path) };
+    return { path, ...(await readLibraryIdentity(path)) };
   },
 
   "library.identity.update": query(

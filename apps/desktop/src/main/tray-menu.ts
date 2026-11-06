@@ -27,7 +27,7 @@ export async function buildTooltip(): Promise<string> {
       .from(saves)
       .where(isNull(saves.deletedAt));
     return trayHeaderLabel({
-      libraryName: libraryDisplayName(),
+      libraryName: await libraryDisplayName(),
       active: row?.n ?? 0,
     });
   } catch {
@@ -69,7 +69,7 @@ async function loadTrayStatus(inflight: number): Promise<TrayStatusInput> {
     : [];
   const queue = db ? await readQueueSummary().catch(() => null) : null;
   return {
-    libraryName: libraryDisplayName(),
+    libraryName: await libraryDisplayName(),
     active: Number(activeRow?.n ?? 0),
     ingesting: queue?.actionable ?? 0,
     inflight: queue?.running ?? inflight,
@@ -106,6 +106,6 @@ function loadTrayBlankDocuments(): TrayBlankDocument[] {
   });
 }
 
-function libraryDisplayName(): string {
-  return readLibraryIdentity(libraryRoot()).name;
+async function libraryDisplayName(): Promise<string> {
+  return (await readLibraryIdentity(libraryRoot())).name;
 }

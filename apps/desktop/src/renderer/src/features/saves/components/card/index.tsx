@@ -16,6 +16,7 @@ import { SaveContextMenu } from "@/features/saves/components/context-menu";
 import { useSave } from "@/features/saves/hooks/use-saves";
 import { buildPondUrl } from "@/features/saves/lib/media/url";
 import { beginSaveDrag, endSaveDrag } from "@/features/saves/lib/start-drag";
+import { displayTitleForSave } from "@/features/saves/lib/text";
 import {
   useIsCursor,
   useIsPrimary,
@@ -139,6 +140,7 @@ export const SaveCard = memo(function SaveCard({
     <Card.Select
       id={`save-option-${id}`}
       role="option"
+      aria-label={displayTitleForSave(save)}
       aria-selected={isMulti}
       aria-posinset={position}
       aria-setsize={total}

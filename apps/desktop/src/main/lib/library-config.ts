@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import {
   cpSync,
   existsSync,
@@ -7,10 +8,11 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 import log from "electron-log/main.js";
 import { z } from "zod";
-import { renameSyncWithRetry } from "./rename-retry";
+import { renameSyncWithRetry, renameWithRetry } from "./rename-retry";
 
 const BUNDLE_JSON_SCHEMA = 1;
 
@@ -35,6 +37,36 @@ export function writeBundleJson<T>(file: string, data: T): void {
   const tmp = join(dirname(file), `.${basename(file)}.tmp`);
   writeFileSync(tmp, JSON.stringify(body, null, 2));
   renameSyncWithRetry(tmp, file);
+}
+
+export async function writeBundleJsonAsync<T>(
+  file: string,
+  data: T,
+): Promise<void> {
+  const body: BundleEnvelope<T> = {
+    schemaVersion: BUNDLE_JSON_SCHEMA,
+    updatedAt: Date.now(),
+    data,
+  };
+  await mkdir(dirname(file), { recursive: true });
+  const tmp = join(dirname(file), `.${basename(file)}.${randomUUID()}.tmp`);
+  await writeFile(tmp, JSON.stringify(body, null, 2));
+  await renameWithRetry(tmp, file);
+}
+
+export async function readBundleJsonAsync<T>(
+  file: string,
+): Promise<BundleJsonRead<T> | null> {
+  let contents: string;
+  try {
+    contents = await readFile(file, "utf8");
+  } catch (error) {
+    if (z.object({ code: z.literal("ENOENT") }).safeParse(error).success) {
+      return null;
+    }
+    throw error;
+  }
+  return parseContents<T>(contents);
 }
 
 export function readBundleJson<T>(
@@ -65,6 +97,10 @@ const EnvelopeSchema = z.object({
 function parseEnvelope<T>(file: string): BundleJsonRead<T> | null {
   if (!existsSync(file)) return null;
   const contents = readFileSync(file, "utf8");
+  return parseContents<T>(contents);
+}
+
+function parseContents<T>(contents: string): BundleJsonRead<T> | null {
   try {
     const parsed = EnvelopeSchema.safeParse(JSON.parse(contents));
     if (!parsed.success || parsed.data.data === undefined) return null;

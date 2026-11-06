@@ -31,7 +31,7 @@ export async function libraryInfo(): Promise<LibraryInfo> {
   return {
     libraryId: activeLibraryId(),
     path: libraryRoot(),
-    name: readLibraryIdentity(libraryRoot()).name,
+    name: (await readLibraryIdentity(libraryRoot())).name,
     counts: {
       active: Number(counts?.active ?? 0),
       trashed: Number(counts?.trashed ?? 0),

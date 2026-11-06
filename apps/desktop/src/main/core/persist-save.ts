@@ -34,7 +34,7 @@ export async function persistSave(
       await writeSaveInfo(updated);
     }
     if (patchTouchesEnrichment(patch)) {
-      writeEnrichmentSidecar(updated);
+      await writeEnrichmentSidecar(updated);
     }
 
     return updated;
