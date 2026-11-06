@@ -103,7 +103,7 @@ function failureDetail(rows: readonly EnrichmentFailure[]): string {
   const described = rows
     .map((row) => {
       const task = TASK_LABELS.get(row.task) ?? row.task;
-      return `${saveLabel({ id: row.saveId, title: row.title })}: ${task} — ${row.reason}`;
+      return `${saveLabel({ id: row.saveId, title: row.title })}: ${task}. ${row.reason}`;
     })
     .join(". ");
   return `${formatPlural(rows.length, TASKS)} couldn't finish. ${described}`;
