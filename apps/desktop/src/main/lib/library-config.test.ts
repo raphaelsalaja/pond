@@ -1,3 +1,5 @@
+import { execFileSync, spawn } from "node:child_process";
+import { once } from "node:events";
 import {
   existsSync,
   mkdirSync,
@@ -11,8 +13,10 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   readBundleJson,
+  readBundleJsonAsync,
   rotateBundleBackups,
   writeBundleJson,
+  writeBundleJsonAsync,
 } from "./library-config";
 
 let root: string;
@@ -20,6 +24,70 @@ let root: string;
 beforeEach(() => {
   root = join(tmpdir(), `pond-bundle-test-${Date.now()}-${Math.random()}`);
   mkdirSync(root, { recursive: true });
+});
+
+describe("asynchronous bundle files", () => {
+  it("keeps concurrent writes atomic", async () => {
+    const file = join(root, "enrichment.json");
+    await Promise.all([
+      writeBundleJsonAsync(file, { marker: "first" }),
+      writeBundleJsonAsync(file, { marker: "second" }),
+    ]);
+    const read = await readBundleJsonAsync<{ marker: string }>(file);
+    expect(["first", "second"]).toContain(read?.data.marker);
+    expect(readdirSync(root)).toEqual(["enrichment.json"]);
+  });
+
+  it("returns null for missing or corrupt files", async () => {
+    const file = join(root, "missing.json");
+    expect(await readBundleJsonAsync(file)).toBeNull();
+    writeFileSync(file, "not json");
+    expect(await readBundleJsonAsync(file)).toBeNull();
+  });
+
+  it("does not treat other read errors as missing files", async () => {
+    await expect(readBundleJsonAsync(root)).rejects.toMatchObject({
+      code: "EISDIR",
+    });
+  });
+
+  it.skipIf(process.platform === "win32")(
+    "runs a timer before a waiting file read completes",
+    async () => {
+      const file = join(root, "slow.json");
+      execFileSync("mkfifo", [file]);
+      const writer = spawn(
+        process.execPath,
+        [
+          "-e",
+          `const write = () => {
+            require("node:fs").writeFileSync(process.argv[1], JSON.stringify({data:{ready:true},updatedAt:1}));
+            process.disconnect();
+          };
+          const fallback = setTimeout(write, 2000);
+          process.once("message", () => { clearTimeout(fallback); write(); });`,
+          file,
+        ],
+        { stdio: ["ignore", "ignore", "inherit", "ipc"] },
+      );
+      const exited = once(writer, "exit");
+      let timerRan = false;
+      const timer = setTimeout(() => {
+        timerRan = true;
+        writer.send("write");
+      }, 0);
+      try {
+        expect((await readBundleJsonAsync(file))?.data).toEqual({
+          ready: true,
+        });
+        expect(timerRan).toBe(true);
+        expect(await exited).toEqual([0, null]);
+      } finally {
+        clearTimeout(timer);
+        writer.kill();
+      }
+    },
+  );
 });
 
 afterEach(() => {

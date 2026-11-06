@@ -1,11 +1,14 @@
-import { existsSync } from "node:fs";
+import { access } from "node:fs/promises";
 import { join } from "node:path";
 import { type NewSave, type Save, saves as savesTable } from "@pond/schema/db";
 import { eq, isNotNull, or, sql } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { z } from "zod";
 import { getDb } from "../db";
-import { readBundleJson, writeBundleJson } from "../lib/library-config";
+import {
+  readBundleJsonAsync,
+  writeBundleJsonAsync,
+} from "../lib/library-config";
 import { saveFile } from "../paths";
 
 const SIDECAR_FILE = "enrichment.json";
@@ -40,7 +43,7 @@ function sidecarPath(id: string): string {
   return saveFile(id, SIDECAR_FILE);
 }
 
-export function writeEnrichmentSidecar(save: Save): void {
+export async function writeEnrichmentSidecar(save: Save): Promise<void> {
   const data: EnrichmentFields = {};
   if (save.phash) data.phash = save.phash;
   if (save.blurhash) data.blurhash = save.blurhash;
@@ -62,9 +65,9 @@ export function writeEnrichmentSidecar(save: Save): void {
   if (save.dominantColors?.length) data.dominantColors = save.dominantColors;
 
   const file = sidecarPath(save.id);
-  if (Object.keys(data).length === 0 && !existsSync(file)) return;
   try {
-    writeBundleJson(file, data);
+    if (Object.keys(data).length === 0 && !(await sidecarExists(file))) return;
+    await writeBundleJsonAsync(file, data);
   } catch (err) {
     log.warn("[pond enrichment] sidecar write failed", save.id, err);
   }
@@ -99,15 +102,14 @@ const EnrichmentSidecarSchema = z.object({
   dominantColors: textList,
 });
 
-export function readEnrichmentSidecar(
+export async function readEnrichmentSidecar(
   id: string,
   root?: string,
-): EnrichmentFields | null {
+): Promise<EnrichmentFields | null> {
   const file = root
     ? join(root, "items", `${id}.info`, SIDECAR_FILE)
     : sidecarPath(id);
-  if (!existsSync(file)) return null;
-  const read = readBundleJson<EnrichmentFields>(file);
+  const read = await readBundleJsonAsync<EnrichmentFields>(file);
   const parsed = EnrichmentSidecarSchema.safeParse(read?.data);
   if (!parsed.success) return null;
 
@@ -158,21 +160,29 @@ export async function backfillEnrichmentSidecars(): Promise<void> {
       ),
     );
 
-  const missing = enriched
-    .map((r) => r.id)
-    .filter((id) => !existsSync(sidecarPath(id)));
-  if (missing.length === 0) return;
-
   let written = 0;
-  for (const id of missing) {
+  for (const { id } of enriched) {
+    if (await sidecarExists(sidecarPath(id))) continue;
     const rows = await db
       .select()
       .from(savesTable)
       .where(eq(savesTable.id, id));
     const save = rows[0];
     if (!save) continue;
-    writeEnrichmentSidecar(save);
+    await writeEnrichmentSidecar(save);
     written += 1;
   }
   log.info(`[pond enrichment] backfilled ${written} sidecars`);
+}
+
+async function sidecarExists(file: string): Promise<boolean> {
+  try {
+    await access(file);
+    return true;
+  } catch (error) {
+    if (z.object({ code: z.literal("ENOENT") }).safeParse(error).success) {
+      return false;
+    }
+    throw error;
+  }
 }

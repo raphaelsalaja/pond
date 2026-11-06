@@ -81,7 +81,7 @@ export async function reconcileLibraryIndex(
       const tags = metadata.tags ?? [];
 
       try {
-        const enrichment = readEnrichmentSidecar(id, root) ?? {};
+        const enrichment = (await readEnrichmentSidecar(id, root)) ?? {};
         const insertValues: typeof saves.$inferInsert = {
           ...enrichment,
           ...metadata.pond.userData,

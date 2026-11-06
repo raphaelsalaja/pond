@@ -26,7 +26,7 @@ async function createLibrary(name = "Existing") {
 
 it("falls back to the folder name for existing libraries", async () => {
   const root = await createLibrary();
-  expect(readLibraryIdentity(root)).toEqual({
+  expect(await readLibraryIdentity(root)).toEqual({
     name: "Existing",
     icon: null,
     mark: null,
@@ -54,6 +54,12 @@ it("updates portable identity without dropping metadata", async () => {
     id: "library-id",
     createdAt: 1,
     name: "Design",
+    accent: "#12ABEF",
+  });
+  expect(await readLibraryIdentity(root)).toEqual({
+    name: "Design",
+    icon: "data:image/png;base64,aWNvbg==",
+    mark: null,
     accent: "#12ABEF",
   });
 });

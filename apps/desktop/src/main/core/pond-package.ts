@@ -202,7 +202,7 @@ const runtime: PackageImportRuntime = {
         },
       ]);
       const inserted = await readSave(id);
-      if (inserted) writeEnrichmentSidecar(inserted);
+      if (inserted) await writeEnrichmentSidecar(inserted);
       if (!(await setSaveFolders(id, folderIds)).ok)
         throw new Error("Could not assign imported folders.");
     });

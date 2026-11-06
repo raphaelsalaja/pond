@@ -30,7 +30,7 @@ describe("enrichment sidecar", () => {
       }),
     );
 
-    expect(readEnrichmentSidecar("save-1", root)).toEqual({
+    expect(await readEnrichmentSidecar("save-1", root)).toEqual({
       sensitiveScore: 0.91,
       sensitiveModel: "model@revision",
     });

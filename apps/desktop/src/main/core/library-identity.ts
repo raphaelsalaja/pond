@@ -1,4 +1,5 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { z } from "zod";
 import {
@@ -39,24 +40,30 @@ export interface LibraryIdentityPatch {
   accent?: string | null;
 }
 
-export function readLibraryIdentity(root: string): LibraryIdentity {
-  const fallback = libraryNameFromPath(root);
-  const empty = { name: fallback, icon: null, mark: null, accent: null };
+export async function readLibraryIdentity(
+  root: string,
+): Promise<LibraryIdentity> {
   try {
     const parsed = StoredMetadataSchema.safeParse(
-      JSON.parse(readFileSync(join(root, "metadata.json"), "utf8")),
+      JSON.parse(await readFile(join(root, "metadata.json"), "utf8")),
     );
-    if (!parsed.success) return empty;
-    const icon = parsed.data.icon ?? null;
-    return {
-      name: parsed.data.name ?? fallback,
-      icon,
-      mark: icon ? (parsed.data.mark ?? null) : null,
-      accent: parsed.data.accent ?? null,
-    };
+    return identityFromMetadata(root, parsed.success ? parsed.data : {});
   } catch {
-    return empty;
+    return identityFromMetadata(root, {});
   }
+}
+
+function identityFromMetadata(
+  root: string,
+  metadata: z.infer<typeof StoredMetadataSchema>,
+): LibraryIdentity {
+  const icon = metadata.icon ?? null;
+  return {
+    name: metadata.name ?? libraryNameFromPath(root),
+    icon,
+    mark: icon ? (metadata.mark ?? null) : null,
+    accent: metadata.accent ?? null,
+  };
 }
 
 export function updateLibraryIdentity(
@@ -84,5 +91,5 @@ export function updateLibraryIdentity(
   const temporary = `${file}.tmp`;
   writeFileSync(temporary, JSON.stringify(parsed, null, 2));
   renameSyncWithRetry(temporary, file);
-  return readLibraryIdentity(root);
+  return identityFromMetadata(root, parsed);
 }
