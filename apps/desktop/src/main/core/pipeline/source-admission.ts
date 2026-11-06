@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from "node:async_hooks";
 import type {
   Source,
   SourceGateReason,
@@ -30,11 +31,17 @@ export interface SourceAdmission {
 
 const HOUR_MS = 60 * 60_000;
 const DAY_MS = 24 * HOUR_MS;
+const taskLease = new AsyncLocalStorage<string>();
+
+export function withSourceTaskLease<T>(leaseToken: string, run: () => T): T {
+  return taskLease.run(leaseToken, run);
+}
 
 export function inspectSourceAdmission(
   sqlite: Database.Database,
   source: Source,
   at: number,
+  leaseToken?: string,
 ): SourceAdmission {
   const gate = GateRowSchema.nullable().parse(
     sqlite
@@ -66,7 +73,11 @@ export function inspectSourceAdmission(
       needsProbe: false,
     };
   }
-  if (gate?.state === "half_open" && (gate.probeLeaseExpiresAt ?? 0) > at) {
+  if (
+    gate?.state === "half_open" &&
+    (gate.probeLeaseExpiresAt ?? 0) > at &&
+    gate.probeLeaseToken !== leaseToken
+  ) {
     return {
       admitted: false,
       nextRunAt: gate.probeLeaseExpiresAt ?? at,
@@ -156,7 +167,12 @@ export async function recordSourceRequest(
   const at = Date.now();
   return db.$raw
     .transaction(() => {
-      const admission = inspectSourceAdmission(db.$raw, source, at);
+      const admission = inspectSourceAdmission(
+        db.$raw,
+        source,
+        at,
+        taskLease.getStore(),
+      );
       if (!admission.admitted) return admission;
       db.$raw
         .prepare(

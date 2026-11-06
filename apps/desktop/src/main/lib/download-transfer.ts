@@ -26,10 +26,23 @@ export async function fetchDownload(
   },
 ): Promise<{ response: Response; bytes: Buffer | null }> {
   const startedAt = Date.now();
+  const idleController = new AbortController();
   const signal = AbortSignal.any([
-    AbortSignal.timeout(30_000),
+    idleController.signal,
     ...(args.signal ? [args.signal] : []),
   ]);
+  let idleTimer: ReturnType<typeof setTimeout> | undefined;
+  function resetIdleTimer() {
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => {
+      idleController.abort(
+        new DOMException(
+          "Download received no data for 30 seconds",
+          "TimeoutError",
+        ),
+      );
+    }, 30_000);
+  }
   const transfer: DownloadTransfer = {
     fileIndex: args.fileIndex,
     fileCount: args.fileCount,
@@ -46,11 +59,13 @@ export async function fetchDownload(
   let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
   try {
     signal.throwIfAborted();
+    resetIdleTimer();
     const response = await (args.fetcher ?? fetch)(args.url, {
       method: "GET",
       redirect: "follow",
       signal,
     });
+    resetIdleTimer();
     const mime = response.headers.get("content-type")?.split(";")[0]?.trim();
     transfer.request = {
       method: "GET",
@@ -95,6 +110,7 @@ export async function fetchDownload(
         if (done) break;
         signal.throwIfAborted();
         if (value.byteLength === 0) continue;
+        resetIdleTimer();
         const now = Date.now();
         transfer.request.firstByteMs ??= now - startedAt;
         received += value.byteLength;
@@ -132,6 +148,7 @@ export async function fetchDownload(
     report("processing");
     throw error;
   } finally {
+    clearTimeout(idleTimer);
     reader?.releaseLock();
   }
 }

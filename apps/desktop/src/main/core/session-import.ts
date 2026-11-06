@@ -23,6 +23,7 @@ import {
   readPartitionCookie,
   writePartitionCookies,
 } from "./refresh/harvest-window";
+import { resumeSessionDownloads } from "./session-downloads";
 import { identityKeyFromCookies } from "./session-identity";
 import { createSessionRefresh } from "./session-refresh";
 import { syncAccount } from "./sync";
@@ -151,6 +152,10 @@ export async function importSessionCookies(
     );
   }
 
+  if (written > 0 && (await isAccountConnected(account))) {
+    await resumeSessionDownloads(account);
+  }
+
   void syncAccount(account.id, { trigger: "manual" }).catch((err) =>
     log.warn("[pond session-import] follow-up sync threw", source, err),
   );
@@ -180,10 +185,13 @@ export const refreshSessionCookies = createSessionRefresh({
   isAuthCookie: isAuthCookieName,
   probeHandle: probeStagedHandle,
   writeCookies: async (account, cookies) => {
-    await writePartitionCookies({
+    const { written } = await writePartitionCookies({
       cookies,
       partition: partitionForAccount(account.id),
     });
+    if (written > 0 && (await isAccountConnected(account))) {
+      await resumeSessionDownloads(account, cookies);
+    }
   },
   signedBackIn: (account) => {
     log.info(

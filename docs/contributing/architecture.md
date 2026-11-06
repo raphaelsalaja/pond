@@ -128,6 +128,18 @@ budgets, breaker state, generation state, and attempt history are durable.
 Downloads, the sidebar, and the tray project that shared state through typed
 queries. They never infer queue truth from renderer activity.
 
+Retry batches can contain failed Saves and Saves that are still ingesting.
+A failed Save stays failed until a worker claims its next task. The orphan
+sweep preserves tasks in active and paused retry batches.
+
+The extension refreshes existing GitHub, Twitter, and YouTube Account sessions
+when it starts and when the browser changes their session cookies. Main matches
+the session to an existing Account before it copies cookies. A matching session
+can retry that Account's downloads that need authentication. Automatic recovery
+preserves paused and cancelled work. During an app session, it retries each Save
+once for each set of session cookies. An explicit connection or Retry action can
+retry again.
+
 The main process remains the sole database settlement authority. A small
 `utilityProcess` pool runs validated Node-compatible image processing, image
 probing, and poster extraction jobs. Each request and response carries its task
