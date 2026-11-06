@@ -6,6 +6,7 @@ import { type NativeResponse, nativeRequestSchema } from "@pond/schema/native";
 import type {
   ExtensionCookie,
   SessionImportResponse,
+  SessionRefreshResponse,
 } from "@pond/schema/session";
 import log from "electron-log/main.js";
 import { UnsupportedError } from "../core/pipeline/extractors/errors";
@@ -60,6 +61,10 @@ export interface NativePorts {
     source: Source,
     cookies: ExtensionCookie[],
   ) => Promise<SessionImportResponse>;
+  sessionRefresh?: (
+    source: Source,
+    cookies: ExtensionCookie[],
+  ) => Promise<SessionRefreshResponse>;
   importSharedFiles?: (paths: string[]) => Promise<{ ids: string[] }>;
   appVersion: () => string;
 }
@@ -125,6 +130,12 @@ export async function dispatchNative(
       }
       case "session.import": {
         const data = await ports.sessionImport(req.source, req.cookies);
+        return { ok: true, data };
+      }
+      case "session.refresh": {
+        if (!ports.sessionRefresh)
+          return { ok: false, error: "session_refresh_unavailable" };
+        const data = await ports.sessionRefresh(req.source, req.cookies);
         return { ok: true, data };
       }
       case "files.import": {

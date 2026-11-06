@@ -57,6 +57,7 @@ export const nativeRequestSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("session.pending") }),
   enqueueRequestSchema.extend({ type: z.literal("enqueue") }),
   sessionImportPayloadSchema.extend({ type: z.literal("session.import") }),
+  sessionImportPayloadSchema.extend({ type: z.literal("session.refresh") }),
   z.object({
     type: z.literal("files.import"),
     paths: z.array(z.string().min(1).max(4096)).min(1).max(50),

@@ -6,6 +6,11 @@ import type { inPageScrollCollect } from "../lib/scroll";
 import type { ListHarvestArgs, ListHarvestResult } from "../list-types";
 import { inPageYoutubeNormalize } from "./normalize";
 
+declare global {
+  /** YouTube's page config, read inside the hidden window. */
+  var ytcfg: { get(key: "LOGGED_IN"): boolean | undefined } | undefined;
+}
+
 export const YOUTUBE_LIST_URLS = [
   "https://www.youtube.com/playlist?list=WL",
   "https://www.youtube.com/playlist?list=LL",
@@ -28,9 +33,11 @@ async function inPageYoutubeList(
   scroll: ReturnType<typeof inPageScrollCollect>,
   norm: ReturnType<typeof inPageYoutubeNormalize>,
 ): Promise<ListHarvestResult> {
+  /** A dead session still loads Watch Later with a 200, as "The playlist does not exist." */
   if (
     location.pathname.startsWith("/signin") ||
-    location.hostname.includes("accounts.google.com")
+    location.hostname.includes("accounts.google.com") ||
+    globalThis.ytcfg?.get("LOGGED_IN") === false
   ) {
     return { ok: false, reason: "auth_required" };
   }

@@ -6,7 +6,13 @@ import {
   onCaptureComplete,
 } from "../core/captures";
 import { createFishHandoff } from "../fish-handoff";
-import { enqueue, libraryInfo, sessionImport, sessionPending } from "../ops";
+import {
+  enqueue,
+  libraryInfo,
+  sessionImport,
+  sessionPending,
+  sessionRefresh,
+} from "../ops";
 import type { NativePorts } from "./rpc";
 import { importSharedFiles } from "./share-inbox";
 
@@ -71,6 +77,7 @@ export function liveNativePorts(): NativePorts {
     },
     sessionPending,
     sessionImport,
+    sessionRefresh,
     importSharedFiles: (paths) => importSharedFiles(paths),
     appVersion: () => app.getVersion(),
   };

@@ -226,6 +226,20 @@ describe("dispatchNative", () => {
     ).resolves.toEqual({ ok: true, data: rejected });
     expect(sessionImport).toHaveBeenCalledWith("arena", []);
   });
+
+  it("forwards a rotated session to the refresh port", async () => {
+    const sessionRefresh = vi.fn(async () => ({
+      tracked: true,
+      refreshed: true,
+    }));
+    await expect(
+      dispatchNative(
+        { type: "session.refresh", source: "youtube", cookies: [] },
+        ports({ sessionRefresh }),
+      ),
+    ).resolves.toEqual({ ok: true, data: { tracked: true, refreshed: true } });
+    expect(sessionRefresh).toHaveBeenCalledWith("youtube", []);
+  });
 });
 
 describe("files.import", () => {

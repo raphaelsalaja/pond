@@ -19,7 +19,7 @@ Open Pond once so it can register the native host. On macOS this writes a manife
 - In settings, pick PNG or JPEG screenshots at full or page resolution, match the Library theme or a fixed one, and choose which sources to capture.
 - Keyboard shortcuts: `Alt+Shift+P` opens the panel, `Alt+Shift+S` saves the page, `Alt+Shift+I` saves images, `Alt+Shift+R` captures a region. Visible area and full page have no default shortcut.
 
-Session connect happens in the background when Pond is waiting and you open that site signed in.
+Session connect happens in the background when Pond is waiting and you open that site signed in. YouTube rotates its session on open tabs, which signs out any copy, so the extension forwards each rotation to the YouTube Account in Pond. Pond's own windows never rotate it.
 
 ## Supported sources
 

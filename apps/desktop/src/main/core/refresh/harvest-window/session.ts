@@ -39,6 +39,15 @@ export async function isPartitionSignedIn(
   return cookies.some((c) => isAuthCookie(source, c));
 }
 
+export async function readPartitionCookie(
+  source: Source,
+  partition: string,
+  name: string,
+): Promise<string | null> {
+  const cookies = await listCookiesForSource(source, partition);
+  return cookies.find((c) => c.name === name && c.value)?.value ?? null;
+}
+
 export async function isAccountConnected(
   account: ConnectedAccount,
 ): Promise<boolean> {

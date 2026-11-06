@@ -83,9 +83,27 @@ function queueFor(source: Source): Waiter[] {
   return created;
 }
 
+/** Every signed-in YouTube page rotates its Google session, which signs out any other copy of it. */
+const SESSION_ROTATION_URLS = [
+  "*://accounts.youtube.com/RotateCookies*",
+  "*://accounts.google.com/RotateCookies*",
+];
+const heldRotation = new WeakSet<Electron.Session>();
+
+/** Pond borrows your browser's session, so only the browser rotates it and the extension forwards each rotation. */
+function holdSessionRotation(persistent: Electron.Session): void {
+  if (heldRotation.has(persistent)) return;
+  heldRotation.add(persistent);
+  persistent.webRequest.onBeforeRequest(
+    { urls: SESSION_ROTATION_URLS },
+    (_details, callback) => callback({ cancel: true }),
+  );
+}
+
 function createHiddenWindow(partition: string): BrowserWindow {
   const persistent = session.fromPartition(partition);
   persistent.setUserAgent(browserUserAgent());
+  holdSessionRotation(persistent);
 
   const win = new BrowserWindow({
     show: false,
