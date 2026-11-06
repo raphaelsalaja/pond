@@ -8,7 +8,14 @@ export class InstagramPostExtractor implements Extractor {
   readonly source = "instagram" as const;
   readonly validUrl = INSTAGRAM_PATTERNS;
   readonly cookieDomain = ".instagram.com";
+  /** The web app's viewer record comes first; the profile picture's alt text is English only. */
   readonly probeExpression = `(() => {
+        try {
+          const config = window.require && window.require('PolarisConfig');
+          const viewer = config && config.getViewerData_DO_NOT_USE && config.getViewerData_DO_NOT_USE();
+          const name = viewer && viewer.username;
+          if (typeof name === 'string' && /^[A-Za-z0-9._]{1,30}$/.test(name)) return name;
+        } catch {}
         try {
           const img = document.querySelector('a[href^="/"] img[alt*="profile picture"]');
           const href = img?.closest('a')?.getAttribute('href') || '';

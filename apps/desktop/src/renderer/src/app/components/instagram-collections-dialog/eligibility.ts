@@ -1,7 +1,8 @@
 import type { ImportScope, Source } from "@pond/schema/db";
 import { importsListKind } from "@shared/import-scope";
 
-export const INSTAGRAM_COLLECTIONS_NOTICE = "instagram-collections";
+/** A new id, because the first notice opened a picker that still couldn't load. */
+export const INSTAGRAM_COLLECTIONS_NOTICE = "instagram-collections-graphql";
 
 type NoticeStep = "skip" | "mark-seen" | "show";
 
