@@ -17,7 +17,25 @@ export type CollectionsReply =
       ok: true;
       collections: Array<{ id: string; name: string; count: number | null }>;
     }
-  | { ok: false; reason: CollectionFailureReason; detail?: string };
+  | {
+      ok: false;
+      reason: CollectionFailureReason;
+      detail?: string;
+      /** The signed-in username, so a retry can open a page of your own. */
+      viewer?: string;
+    };
+
+export type CollectionsResult =
+  | { ok: true; collections: ImportCollectionOption[] }
+  | {
+      ok: false;
+      reason: CollectionFailureReason;
+      detail?: string;
+      viewer?: string;
+    };
+
+/** Long enough for every host and query an Instagram listing tries. */
+const DETAIL_LIMIT = 600;
 
 const ReplySchema = z
   .union([
@@ -36,21 +54,30 @@ const ReplySchema = z
     z.object({
       ok: z.literal(false),
       reason: z.enum(COLLECTION_FAILURES).catch("unknown"),
-      detail: z.string().max(200).optional().catch(undefined),
+      detail: z
+        .string()
+        .transform((detail) => detail.slice(0, DETAIL_LIMIT))
+        .optional()
+        .catch(undefined),
+      viewer: z
+        .string()
+        .regex(/^[A-Za-z0-9._]{1,30}$/)
+        .optional()
+        .catch(undefined),
     }),
   ])
   .catch({ ok: false, reason: "unknown", detail: "malformed reply" });
 
-export function readCollectionsReply(
-  value: JsonValue,
-):
-  | { ok: true; collections: ImportCollectionOption[] }
-  | { ok: false; reason: CollectionFailureReason; detail?: string } {
+export function readCollectionsReply(value: JsonValue): CollectionsResult {
   const reply = ReplySchema.parse(value);
   if (!reply.ok) {
-    return reply.detail
-      ? { ok: false, reason: reply.reason, detail: reply.detail }
-      : { ok: false, reason: reply.reason };
+    const failure: Extract<CollectionsResult, { ok: false }> = {
+      ok: false,
+      reason: reply.reason,
+    };
+    if (reply.detail) failure.detail = reply.detail;
+    if (reply.viewer) failure.viewer = reply.viewer;
+    return failure;
   }
   return {
     ok: true,

@@ -67,6 +67,7 @@ import { rotateBundleBackups } from "./lib/library-config";
 import { LibraryMetadataError } from "./lib/library-id";
 import { disableMenuActionImages } from "./lib/menu-action-images";
 import { killTrackedProcessTrees } from "./lib/process-tree";
+import { RELAUNCH_ARG } from "./lib/relaunch";
 import { recoverUnreadableLibrary } from "./library-recovery";
 import {
   consoleLoggingEnabled,
@@ -181,7 +182,8 @@ const singleInstanceLock = wantsMcp
   ? Promise.resolve(true)
   : acquireSingleInstanceLock({
       request: () => app.requestSingleInstanceLock(),
-      waitForPredecessor: !app.isPackaged,
+      waitForPredecessor:
+        !app.isPackaged || process.argv.includes(RELAUNCH_ARG),
       holder: () => singletonLockHolder(app.getPath("userData")),
       isAlive: isProcessAlive,
     });

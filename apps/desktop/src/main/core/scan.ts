@@ -89,7 +89,7 @@ export async function reconcileLibraryIndex(
 
       try {
         const present = await originalsPresent(root, id, files);
-        const enrichment = readEnrichmentSidecar(id, root) ?? {};
+        const enrichment = (await readEnrichmentSidecar(id, root)) ?? {};
         const insertValues: typeof saves.$inferInsert = {
           ...enrichment,
           ...metadata.pond.userData,

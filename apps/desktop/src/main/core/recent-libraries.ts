@@ -131,7 +131,9 @@ export async function listRecentLibraries(file: string, activePath: string) {
         const available = Boolean(
           await stat(join(entry.path, "metadata.json")).catch(() => null),
         );
-        const identity = available ? readLibraryIdentity(entry.path) : null;
+        const identity = available
+          ? await readLibraryIdentity(entry.path)
+          : null;
         return {
           path: entry.path,
           lastOpened: entry.lastOpened,

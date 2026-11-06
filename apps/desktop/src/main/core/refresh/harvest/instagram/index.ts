@@ -1,4 +1,7 @@
-export { buildInstagramCollectionsExpression } from "./collections";
+export {
+  buildInstagramCollectionsExpression,
+  listInstagramCollections,
+} from "./collections";
 export { adapt, buildExpression } from "./item";
 export {
   buildInstagramLikesExpression,

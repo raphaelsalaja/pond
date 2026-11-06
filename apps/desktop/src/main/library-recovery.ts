@@ -7,6 +7,7 @@ import {
   readLibraryId,
 } from "./lib/library-id";
 import { checkPointerSafety } from "./lib/library-pointer";
+import { appRelaunchOptions } from "./lib/relaunch";
 
 interface OpenProblem {
   message: string;
@@ -65,8 +66,10 @@ export async function recoverUnreadableLibrary(
       continue;
     }
     commitLibraryPointer(path);
-    app.relaunch();
-    app.exit(0);
+    const options = appRelaunchOptions();
+    if (options) app.relaunch(options);
+    else app.relaunch();
+    app.quit();
     return;
   }
 }

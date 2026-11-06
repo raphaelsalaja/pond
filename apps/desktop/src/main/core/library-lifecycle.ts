@@ -22,7 +22,7 @@ export async function renameLibraryBundle(
   name: string,
 ): Promise<{ path: string; previousName: string }> {
   const destination = libraryPathForName(source, name);
-  const previousName = readLibraryIdentity(source).name;
+  const previousName = (await readLibraryIdentity(source)).name;
   if (destination === source) {
     updateLibraryIdentity(source, {
       name: name.trim().replace(/\.pond$/i, ""),
