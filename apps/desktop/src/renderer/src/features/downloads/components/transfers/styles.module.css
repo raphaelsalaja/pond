@@ -34,6 +34,12 @@
   width: 100%;
   height: 6px;
 }
+.actions {
+  display: flex;
+  flex: none;
+  gap: 8px;
+  align-items: center;
+}
 .error {
   color: var(--ds-red-11);
 }

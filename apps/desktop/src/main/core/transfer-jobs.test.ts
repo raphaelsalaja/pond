@@ -160,6 +160,67 @@ it("recovers unfinished jobs as interrupted without starting work automatically"
     JSON.parse(await readFile(join(directory, "jobs.json"), "utf8"))[0].status,
   ).toBe("interrupted");
 });
+it("dismisses a failed library transfer and leaves the others in place", async () => {
+  const { store, request, directory } = await fixture();
+  await expect(
+    store.run(request, async () => {
+      throw new Error("One of the selected Saves no longer exists.");
+    }),
+  ).rejects.toThrow("no longer exists");
+  const [failed] = await store.list();
+  if (!failed) throw new Error("Missing failed transfer");
+  expect(failed.status).toBe("failed");
+  await writeFile(join(directory, `${failed.id}.jsonl`), "{}\n");
+  await store.run(
+    { ...request, destination: `${request.destination}-kept` },
+    async () => "kept",
+  );
+  const kept = (await store.list()).find((job) => job.id !== failed.id);
+  if (!kept) throw new Error("Missing kept transfer");
+  expect(await store.dismiss(failed.id)).toEqual({ ok: true });
+  expect(await store.dismiss(failed.id)).toEqual({
+    ok: false,
+    error: "This transfer is already gone.",
+  });
+  expect((await store.list()).map((job) => job.id)).toEqual([kept.id]);
+  const saved = JSON.parse(
+    await readFile(join(directory, "jobs.json"), "utf8"),
+  );
+  expect(saved).toHaveLength(1);
+  expect(saved[0].id).toBe(kept.id);
+  await expect(
+    readFile(join(directory, `${failed.id}.jsonl`), "utf8"),
+  ).rejects.toMatchObject({ code: "ENOENT" });
+  const reopened = createTransferJobStore(directory);
+  expect((await reopened.list()).map((job) => job.id)).toEqual([kept.id]);
+  await expect(
+    reopened.run(request, async () => "retried", failed.id),
+  ).rejects.toThrow("cannot be retried");
+});
+it("keeps a running transfer when dismiss is requested", async () => {
+  const { store, request, directory } = await fixture();
+  const ready = deferred();
+  const resume = deferred();
+  const run = store.run(request, async () => {
+    ready.release();
+    await resume.promise;
+    return "done";
+  });
+  await ready.promise;
+  const [job] = await store.list();
+  if (!job) throw new Error("Missing transfer");
+  expect(job.status).toBe("running");
+  expect(await store.dismiss(job.id)).toEqual({
+    ok: false,
+    error: "This transfer is still running.",
+  });
+  expect((await store.list())[0]?.status).toBe("running");
+  resume.release();
+  await expect(run).resolves.toBe("done");
+  expect(await store.dismiss(job.id)).toEqual({ ok: true });
+  expect(await store.list()).toEqual([]);
+  expect(await createTransferJobStore(directory).list()).toEqual([]);
+});
 it("isolates cancellation between parallel transfers", async () => {
   const { store, request } = await fixture();
   const ready = deferred();

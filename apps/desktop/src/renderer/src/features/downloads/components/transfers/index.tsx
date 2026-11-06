@@ -21,6 +21,22 @@ const states = {
   cancelled: "Canceled",
   interrupted: "Interrupted",
 } satisfies Record<TransferJob["status"], string>;
+const transferAction = {
+  cancel: "transferJobs.cancel",
+  dismiss: "transferJobs.dismiss",
+  retry: "transferJobs.retry",
+} as const;
+type TransferAction = keyof typeof transferAction;
+
+function canRetry(status: TransferJob["status"]): boolean {
+  return (
+    status === "failed" || status === "cancelled" || status === "interrupted"
+  );
+}
+function canDismiss(status: TransferJob["status"]): boolean {
+  return status !== "running" && status !== "cancelling";
+}
+
 export function TransferJobsPanel({ search = "" }: { search?: string }) {
   const client = useQueryClient();
   const [error, setError] = useState<string | null>(null);
@@ -30,24 +46,24 @@ export function TransferJobsPanel({ search = "" }: { search?: string }) {
     refetchInterval: 1000,
   });
   const action = useMutation({
-    mutationFn: async ({
-      id,
-      kind,
-    }: {
-      id: string;
-      kind: "cancel" | "retry";
-    }) => {
-      const result = await window.pond.query(
-        kind === "cancel" ? "transferJobs.cancel" : "transferJobs.retry",
-        { id },
-      );
-      if (!result.ok)
-        throw new Error("This transfer has already changed. Try again.");
+    mutationFn: async ({ id, kind }: { id: string; kind: TransferAction }) => {
+      const result = await window.pond.query(transferAction[kind], { id });
+      if (!result.ok) {
+        throw new Error(
+          kind === "dismiss"
+            ? result.error
+            : "This transfer has already changed. Try again.",
+        );
+      }
     },
     onMutate: () => setError(null),
     onSuccess: () => client.invalidateQueries({ queryKey: ["transfer-jobs"] }),
     onError: (cause) => setError(cause.message),
   });
+  const acting = (id: string, kind: TransferAction) =>
+    action.isPending &&
+    action.variables?.id === id &&
+    action.variables.kind === kind;
   const visible = (jobs.data ?? [])
     .filter((job) =>
       `${labels[job.request.kind]} ${job.request.destination}`
@@ -92,26 +108,47 @@ export function TransferJobsPanel({ search = "" }: { search?: string }) {
                 <span className={styles.error}>{job.error}</span>
               ) : null}
             </div>
-            {job.status === "running" ? (
-              <Button
-                size="sm"
-                variant="secondary"
-                disabled={action.isPending}
-                onClick={() => action.mutate({ id: job.id, kind: "cancel" })}
-              >
-                Cancel
-              </Button>
-            ) : ["failed", "cancelled", "interrupted"].includes(job.status) ? (
-              <Button
-                size="sm"
-                variant="secondary"
-                disabled={action.isPending}
-                loading={action.isPending}
-                onClick={() => action.mutate({ id: job.id, kind: "retry" })}
-              >
-                Retry
-              </Button>
-            ) : null}
+            {job.status === "cancelling" ? null : (
+              <div className={styles.actions}>
+                {job.status === "running" ? (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    disabled={action.isPending}
+                    loading={acting(job.id, "cancel")}
+                    onClick={() =>
+                      action.mutate({ id: job.id, kind: "cancel" })
+                    }
+                  >
+                    Cancel
+                  </Button>
+                ) : null}
+                {canRetry(job.status) ? (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    disabled={action.isPending}
+                    loading={acting(job.id, "retry")}
+                    onClick={() => action.mutate({ id: job.id, kind: "retry" })}
+                  >
+                    Retry
+                  </Button>
+                ) : null}
+                {canDismiss(job.status) ? (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    disabled={action.isPending}
+                    loading={acting(job.id, "dismiss")}
+                    onClick={() =>
+                      action.mutate({ id: job.id, kind: "dismiss" })
+                    }
+                  >
+                    Dismiss
+                  </Button>
+                ) : null}
+              </div>
+            )}
           </article>
         );
       })}
