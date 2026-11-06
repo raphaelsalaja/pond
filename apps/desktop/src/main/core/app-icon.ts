@@ -1,12 +1,16 @@
 import { existsSync, readdirSync } from "node:fs";
-import { rm, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 import type { Prefs } from "@pond/schema/db";
-import { app, type NativeImage, nativeImage } from "electron";
+import {
+  app,
+  type NativeImage,
+  nativeImage,
+  systemPreferences,
+} from "electron";
 import log from "electron-log/main.js";
-import sharp from "sharp";
 import {
   DEFAULT_APP_ICON,
+  pickIconGeneration,
   preferredAppIcon,
   resolveAppIconId,
   sortAppIconIds,
@@ -14,22 +18,22 @@ import {
 import { resolveMainOut } from "../lib/resolve-preload";
 import { libraryRoot } from "../paths";
 import { mainWindowState } from "../window-state";
+import { createAppIconController } from "./app-icon-controller";
+import { chooseAppIconSource } from "./app-icon-source";
 import {
   appBundlePath,
   hasCustomBundleIcon,
   setBundleIcon,
 } from "./bundle-icon";
+import { type IconStyleWatch, macosMajor, watchIconStyle } from "./icon-style";
 import { readLibraryIdentity } from "./library-identity";
 import { getPrefs } from "./prefs";
 
-const DOCK_CONTENT_SCALE = 0.8;
-/** AppKit holds about 32 MB of decoded representations for a 1024 px Dock image and 8 MB at 512 px. */
-const DOCK_ICON_PX = 512;
-const BUNDLE_ICON_PX = 1024;
-
-let lastAppliedPath: string | null = null;
-let bundleIconQueue: Promise<void> = Promise.resolve();
-let bundleIconChecked = false;
+let legacyBundleIconCleared = false;
+/** Shared with dock-tile/main.swift. */
+const DOCK_TILE_LIGHT_KEY = "DockTileLightImage";
+const DOCK_TILE_DARK_KEY = "DockTileDarkImage";
+const DOCK_TILE_CHANGED = "so.pond.desktop.dockTileChanged";
 
 function tintsRoot(): string {
   if (app.isPackaged) return join(process.resourcesPath, "app-icons");
@@ -42,9 +46,40 @@ function tintsRoot(): string {
   return existsSync(fromOut) ? fromOut : packagedDev;
 }
 
+/** Dock-ready tint images, written by scripts/prepare-dock-icons.mjs. */
+function dockIconsRoot(): string {
+  if (app.isPackaged) return join(process.resourcesPath, "dock-icons");
+  const fromApp = join(app.getAppPath(), "build/dock-icons");
+  if (existsSync(fromApp)) return fromApp;
+  const fromOut = resolveMainOut("../../build/dock-icons");
+  return existsSync(fromOut) ? fromOut : fromApp;
+}
+
 export function appIconFile(id: string): string | null {
   const path = join(tintsRoot(), id, "default.png");
   return existsSync(path) ? path : null;
+}
+
+/** A tint image for the Dock in the newest Icon Composer design generation this macOS supports. */
+function styledIconFile(
+  id: string,
+  file: "default.png" | "dark.png",
+): string | null {
+  const tint = join(dockIconsRoot(), id);
+  const generations = existsSync(tint)
+    ? readdirSync(tint).flatMap((name) => {
+        const match = name.match(/^macos-(\d+)$/);
+        return match?.[1] ? [Number(match[1])] : [];
+      })
+    : [];
+  const generation = pickIconGeneration(
+    generations,
+    macosMajor(process.platform, process.getSystemVersion()),
+  );
+  const candidates = [join(tint, file)];
+  if (generation !== null)
+    candidates.unshift(join(tint, `macos-${generation}`, file));
+  return candidates.find((path) => existsSync(path)) ?? null;
 }
 
 function availableIds(): string[] {
@@ -67,63 +102,94 @@ export function resolveAppIconPath(id: string): string | null {
   return appIconFile(resolved);
 }
 
-async function insetIcon(path: string, maxCanvas: number): Promise<Buffer> {
-  const meta = await sharp(path).metadata();
-  const canvas = Math.min(meta.width ?? maxCanvas, maxCanvas);
-  const contentSize = Math.max(1, Math.round(canvas * DOCK_CONTENT_SCALE));
-  const offset = Math.round((canvas - contentSize) / 2);
-  const content = await sharp(path)
-    .ensureAlpha()
-    .resize(contentSize, contentSize)
-    .png()
-    .toBuffer();
-  return sharp({
-    create: {
-      width: canvas,
-      height: canvas,
-      channels: 4,
-      background: { r: 0, g: 0, b: 0, alpha: 0 },
-    },
-  })
-    .composite([{ input: content, left: offset, top: offset }])
-    .png()
-    .toBuffer();
+/** The packaged app's built-in icon is the Icon Composer catalog, which follows the icon style. */
+function hasAdaptiveBuiltin(): boolean {
+  return (
+    app.isPackaged && existsSync(join(process.resourcesPath, "Assets.car"))
+  );
 }
 
-/** Rendered on demand: each 1024 px tint decodes to megabytes, and only the applied one is ever shown. */
-async function dockImage(path: string): Promise<NativeImage> {
-  return nativeImage.createFromBuffer(await insetIcon(path, DOCK_ICON_PX));
+const controller = createAppIconController({
+  decide: (id, style) =>
+    chooseAppIconSource({
+      platform: process.platform,
+      packaged: app.isPackaged,
+      adaptiveBuiltin: hasAdaptiveBuiltin(),
+      isDefault: id === DEFAULT_APP_ICON,
+      style,
+      lightImage: styledIconFile(id, "default.png") ?? "",
+      darkImage: styledIconFile(id, "dark.png"),
+    }),
+  showImage(path) {
+    const image = nativeImage.createFromPath(path);
+    log.info("[pond] app icon", path);
+    if (process.platform === "darwin") {
+      app.dock?.setIcon(image);
+      return;
+    }
+    const win = mainWindowState.current;
+    if (win && !win.isDestroyed()) win.setIcon(image);
+  },
+  showBuiltin() {
+    log.info("[pond] app icon", "built-in");
+    restoreBuiltinDockIcon();
+  },
+  onError: (err) => log.warn("[pond] apply app icon failed", err),
+});
+let styleWatch: IconStyleWatch | null = null;
+let styleKnown: Promise<void> | null = null;
+/** How long a switch waits for the helper's first report before using the light image. */
+const FIRST_STYLE_TIMEOUT_MS = 1000;
+
+/**
+ * Non-default colors depend on the icon style, so the watcher runs while one
+ * is selected. A switch waits for its first report, so the light image never
+ * shows on its way to a Dark or Clear one.
+ */
+function watchStyleWhileColored(): Promise<void> {
+  if (styleKnown) return styleKnown;
+  styleKnown = new Promise<void>((resolve) => {
+    styleWatch = watchIconStyle((style) => {
+      resolve();
+      controller.setStyle(style);
+    });
+    if (!styleWatch) resolve();
+    setTimeout(resolve, FIRST_STYLE_TIMEOUT_MS);
+  });
+  return styleKnown;
 }
+
+function stopStyleWatch(): void {
+  styleWatch?.stop();
+  styleWatch = null;
+  styleKnown = null;
+}
+
+/** Counts icon switches, so one still waiting on the icon style yields to a later one. */
+let latestSwitch = 0;
 
 export async function applyAppIcon(id?: string): Promise<void> {
+  const ticket = ++latestSwitch;
   const prefs = id == null ? await getPrefs().catch(() => null) : null;
-  const path = resolveAppIconPath(
+  if (ticket !== latestSwitch) return;
+  const resolved = resolveAppIconId(
     id ?? prefs?.window.appIcon ?? DEFAULT_APP_ICON,
+    new Set(availableIds()),
   );
-  if (!path) {
+  if (!appIconFile(resolved)) {
     log.warn("[pond] app icon file missing", id);
     return;
   }
-  if (path === lastAppliedPath) return;
-  lastAppliedPath = path;
-  try {
-    if (bundlePath() && path === appIconFile(DEFAULT_APP_ICON)) {
-      /** The bundle already draws the default icon, so the Dock needs no decoded copy of its own. */
-      app.dock?.setIcon(nativeImage.createEmpty());
-      bundleIconQueue = bundleIconQueue.then(() => applyBundleIcon(path));
-      return;
-    }
-    const image = await dockImage(path);
-    if (process.platform !== "darwin") {
-      const win = mainWindowState.current;
-      if (win && !win.isDestroyed()) win.setIcon(image);
-    } else {
-      app.dock?.setIcon(image);
-      bundleIconQueue = bundleIconQueue.then(() => applyBundleIcon(path));
-    }
-  } catch (err) {
-    log.warn("[pond] apply app icon failed", err);
+  if (resolved === DEFAULT_APP_ICON) {
+    controller.select(resolved);
+    stopStyleWatch();
+  } else {
+    await watchStyleWhileColored();
+    if (ticket !== latestSwitch) return;
+    controller.select(resolved);
   }
+  publishDockTile(resolved);
+  await clearLegacyBundleIcon();
 }
 
 export async function applyPreferredAppIcon(
@@ -146,33 +212,57 @@ async function openLibraryLogo() {
   }
 }
 
-function bundlePath(): string | null {
-  return appBundlePath({
+function restoreBuiltinDockIcon(): void {
+  const dock = app.dock;
+  if (!dock) return;
+  /** SAFETY: Electron's macOS Dock.setIcon passes null through as a nil NSApplication icon, which restores the bundle icon; its typings list only images. */
+  const setIcon = dock.setIcon.bind(dock) as (
+    image: NativeImage | null,
+  ) => void;
+  setIcon(null);
+}
+
+/**
+ * Pond once wrote the selected color onto Pond.app as a custom Finder icon. The
+ * Dock tile plug-in draws colors now, and a custom icon would hide the built-in
+ * one, so clear any that is left.
+ */
+async function clearLegacyBundleIcon(): Promise<void> {
+  if (legacyBundleIconCleared) return;
+  legacyBundleIconCleared = true;
+  const bundle = appBundlePath({
     platform: process.platform,
     packaged: app.isPackaged,
     exePath: app.getPath("exe"),
   });
+  if (!bundle || !hasCustomBundleIcon(bundle)) return;
+  await setBundleIcon(bundle, null).catch((err) =>
+    log.warn("[pond] reset bundle icon failed", err),
+  );
 }
 
-async function applyBundleIcon(path: string): Promise<void> {
-  const bundle = bundlePath();
-  if (!bundle) return;
-  const launching = !bundleIconChecked;
-  bundleIconChecked = true;
-  if (path === appIconFile(DEFAULT_APP_ICON)) {
-    await setBundleIcon(bundle, null).catch((err) =>
-      log.warn("[pond] reset bundle icon failed", err),
-    );
-    return;
+/**
+ * Tells the Dock tile plug-in (dock-tile/main.swift) which images to draw while
+ * Pond is not running, relative to Contents/Resources so moving Pond.app keeps
+ * them valid. It picks between them by icon style, so they change only with the
+ * selected color.
+ */
+function publishDockTile(id: string): void {
+  if (process.platform !== "darwin" || !app.isPackaged) return;
+  const light =
+    id === DEFAULT_APP_ICON ? null : styledIconFile(id, "default.png");
+  const dark = id === DEFAULT_APP_ICON ? null : styledIconFile(id, "dark.png");
+  for (const [key, path] of [
+    [DOCK_TILE_LIGHT_KEY, light],
+    [DOCK_TILE_DARK_KEY, dark ?? light],
+  ] as const) {
+    if (path)
+      systemPreferences.setUserDefault(
+        key,
+        "string",
+        relative(process.resourcesPath, path),
+      );
+    else systemPreferences.removeUserDefault(key);
   }
-  if (launching && hasCustomBundleIcon(bundle)) return;
-  const imagePath = join(app.getPath("temp"), "pond-bundle-icon.png");
-  try {
-    await writeFile(imagePath, await insetIcon(path, BUNDLE_ICON_PX));
-    await setBundleIcon(bundle, imagePath);
-  } catch (err) {
-    log.warn("[pond] set bundle icon failed", err);
-  } finally {
-    await rm(imagePath, { force: true }).catch(() => undefined);
-  }
+  systemPreferences.postNotification(DOCK_TILE_CHANGED, {}, true);
 }

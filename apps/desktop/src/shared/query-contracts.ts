@@ -16,6 +16,7 @@ import type {
   AccountQueryInputs,
   AccountQueryResults,
 } from "./account-contracts";
+import type { AppIconAppearance } from "./app-icons";
 import type {
   ArenaLinkQueryInputs,
   ArenaLinkQueryResults,
@@ -326,6 +327,7 @@ export interface QueryInputs
   "settings.setOnboarded": EmptyInput;
   "settings.getPrefs": EmptyInput;
   "settings.globalShortcutStatus": EmptyInput;
+  "settings.appIconAppearance": EmptyInput;
   "agent.keys": EmptyInput;
   "agent.listAvailableModels": EmptyInput;
   "agent.chats": { fishId?: string };
@@ -491,6 +493,7 @@ export interface QueryResults
   "agent.saveKey": OkResult;
   "settings.getPrefs": Prefs;
   "settings.globalShortcutStatus": GlobalShortcutStatus;
+  "settings.appIconAppearance": AppIconAppearance;
   "settings.setPrefs": OkSuccess<{ prefs: Prefs }>;
   "feedback.emit": OkResult;
   "notifications.openSettings": OkResult;

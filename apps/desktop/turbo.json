@@ -9,10 +9,15 @@
         "electron.vite.config.ts",
         "resources/**",
         "scripts/prepare-icon-previews.mjs",
+        "scripts/prepare-dock-icons.mjs",
         "tsconfig.node.json",
         "tsconfig.web.json"
       ],
-      "outputs": ["out/**", "src/renderer/src/generated/**"]
+      "outputs": [
+        "out/**",
+        "src/renderer/src/generated/**",
+        "build/dock-icons/**"
+      ]
     },
     "dist": {
       "dependsOn": ["build", "@pond/extension#build"],

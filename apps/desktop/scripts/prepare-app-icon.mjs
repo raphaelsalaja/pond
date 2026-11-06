@@ -5,7 +5,7 @@
  */
 
 import { spawnSync } from "node:child_process";
-import { mkdir, mkdtemp, rm } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -19,6 +19,11 @@ const sourcePng = resolve(
 );
 const outPng = join(buildDir, "icon.png");
 const outIcns = join(buildDir, "icon.icns");
+const iconComposerSource = resolve(
+  __dirname,
+  "../../../packages/icons/brand/tints/aqua/icon.icon",
+);
+const outAssetCatalog = join(buildDir, "Assets.car");
 
 /** Icon footprint inside the canvas. Native Dock tiles sit below ~1.0. */
 const CONTENT_SCALE = 0.8;
@@ -67,6 +72,50 @@ async function main() {
 
   if (process.platform === "darwin") {
     await writeIcns(outPng, outIcns);
+    await writeAssetCatalog(iconComposerSource, outAssetCatalog);
+  }
+}
+
+/**
+ * macOS 26+ renders the Icon Composer catalog in the system icon style; older
+ * macOS ignores it and keeps icon.icns. electron-builder can compile `.icon`
+ * itself, but then derives an icns capped at 256 px for those older systems.
+ */
+async function writeAssetCatalog(source, catalogPath) {
+  await rm(catalogPath, { force: true });
+  const parent = await mkdtemp(join(tmpdir(), "pond-app-icon-catalog-"));
+  try {
+    const result = spawnSync(
+      "xcrun",
+      [
+        "actool",
+        source,
+        "--compile",
+        parent,
+        "--app-icon",
+        "icon",
+        "--include-all-app-icons",
+        "--platform",
+        "macosx",
+        "--target-device",
+        "mac",
+        "--minimum-deployment-target",
+        "26.0",
+        "--output-partial-info-plist",
+        join(parent, "info.plist"),
+      ],
+      { stdio: ["ignore", "ignore", "inherit"] },
+    );
+    if (result.status !== 0) {
+      console.warn(
+        "[pond] actool 26+ unavailable; packager will use icns only",
+      );
+      return;
+    }
+    await copyFile(join(parent, "Assets.car"), catalogPath);
+    console.log("[pond] wrote build/Assets.car");
+  } finally {
+    await rm(parent, { recursive: true, force: true });
   }
 }
 

@@ -3,6 +3,40 @@ import type { LibraryMarkSource } from "./library-mark";
 
 export { DEFAULT_APP_ICON };
 
+/**
+ * The macOS icon style as it affects the app icon:
+ * - `light`: the Default style, full color on a light background.
+ * - `dark`: the Dark style, color on a dark background.
+ * - `monochrome`: Clear or Tinted, which drop the icon's own color.
+ */
+export type AppIconStyle = "light" | "dark" | "monochrome";
+
+/** What the settings previews need to match the Dock. */
+export interface AppIconAppearance {
+  /** Null where macOS has no icon styles. */
+  style: AppIconStyle | null;
+  /** The running macOS major version, or null outside macOS. */
+  macosMajor: number | null;
+}
+
+/**
+ * Tints keep one export set per Icon Composer design generation in
+ * `macos-NN/`, beside the macOS 26 images at the tint's root. The newest
+ * generation at or below the running macOS applies; null means the root set.
+ */
+export function pickIconGeneration(
+  available: Iterable<number>,
+  macosMajor: number | null,
+): number | null {
+  if (macosMajor === null) return null;
+  let best: number | null = null;
+  for (const generation of available) {
+    if (generation <= macosMajor && (best === null || generation > best))
+      best = generation;
+  }
+  return best;
+}
+
 const APP_ICON_ORDER = [
   DEFAULT_APP_ICON,
   "maraschino",

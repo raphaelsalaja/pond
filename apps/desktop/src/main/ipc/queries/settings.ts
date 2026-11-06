@@ -177,6 +177,14 @@ export const settingsQueries = {
   "settings.globalShortcutStatus"() {
     return globalShortcutStatus();
   },
+  async "settings.appIconAppearance"() {
+    /** Loaded on demand so the icon style reader stays out of main's startup graph. */
+    const { macosMajor, readIconStyle } = await import("../../core/icon-style");
+    return {
+      style: readIconStyle(),
+      macosMajor: macosMajor(process.platform, process.getSystemVersion()),
+    };
+  },
   async "settings.getPrefs"() {
     return await getPrefs();
   },

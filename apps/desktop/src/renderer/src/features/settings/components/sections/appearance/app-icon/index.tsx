@@ -1,9 +1,13 @@
 import { DEFAULT_PREFS } from "@pond/schema/db";
 import { Button } from "@pond/ui";
-import type { CSSProperties } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { type CSSProperties, useEffect } from "react";
 import { z } from "zod";
 import type { Binding } from "@/features/settings/components/engine";
-import { listAppIconPreviews } from "@/features/settings/lib/app-icon-previews";
+import {
+  appIconSwatch,
+  listAppIconPreviews,
+} from "@/features/settings/lib/app-icon-previews";
 import styles from "./styles.module.css";
 
 const ICONS = listAppIconPreviews();
@@ -19,6 +23,20 @@ export function AppIconRow({ binding }: { binding: Binding }) {
   const selected = ICONS.some((icon) => icon.id === stored)
     ? stored
     : DEFAULT_PREFS.window.appIcon;
+  const appearanceQuery = useQuery({
+    queryKey: ["settings.appIconAppearance"],
+    queryFn: () => window.pond.query("settings.appIconAppearance", {}),
+    staleTime: 0,
+  });
+  const appearance = appearanceQuery.data;
+  const { refetch } = appearanceQuery;
+  // The icon style changes in System Settings, so read it again whenever
+  // Pond's window comes back to the front.
+  useEffect(() => {
+    const refresh = () => void refetch();
+    window.addEventListener("focus", refresh);
+    return () => window.removeEventListener("focus", refresh);
+  }, [refetch]);
 
   return (
     <fieldset className={styles.grid} aria-label="App icon">
@@ -38,7 +56,11 @@ export function AppIconRow({ binding }: { binding: Binding }) {
             style={tint}
             onClick={() => binding.patch({ appIcon: icon.id })}
           >
-            <img src={icon.preview} alt="" draggable={false} />
+            <img
+              src={appIconSwatch(icon, appearance)}
+              alt=""
+              draggable={false}
+            />
           </Button>
         );
       })}

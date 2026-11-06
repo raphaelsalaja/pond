@@ -21,6 +21,7 @@ test("classifies desktop setup steps by runtime requirement", () => {
       ["rebuild-native.mjs", true],
       ["prepare-app-icon.mjs", false],
       ["prepare-icon-previews.mjs", false],
+      ["prepare-dock-icons.mjs", false],
       ["patch-electron-name.mjs", false],
       ["copy-replay-assets.mjs", true],
       ["build-native-host.mjs", process.platform === "darwin"],

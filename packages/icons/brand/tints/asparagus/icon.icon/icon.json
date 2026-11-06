@@ -1,0 +1,52 @@
+{
+  "features": ["refractivity"],
+  "fill": {
+    "automatic-gradient": "display-p3:0.5718758,0.5651081,0.1724672,1.0000000"
+  },
+  "groups": [
+    {
+      "blur-material": null,
+      "layers": [
+        {
+          "hidden": false,
+          "image-name": "icon.svg",
+          "name": "icon",
+          "opacity": 1,
+          "position": {
+            "scale": 3.38,
+            "translation-in-points": [0, 0]
+          },
+          "fill-specializations": [
+            {
+              "value": "system-light"
+            },
+            {
+              "appearance": "dark",
+              "value": {
+                "automatic-gradient": "display-p3:0.5921974,0.5857488,0.1963717,1.0000000"
+              }
+            }
+          ]
+        }
+      ],
+      "opacity": 1,
+      "refractivity": {
+        "depth": 0,
+        "enabled": true,
+        "strength": 0.4015234375
+      },
+      "shadow": {
+        "kind": "layer-color",
+        "opacity": 0.75
+      },
+      "translucency": {
+        "enabled": true,
+        "value": 0.44
+      }
+    }
+  ],
+  "supported-platforms": {
+    "circles": ["watchOS"],
+    "squares": "shared"
+  }
+}
