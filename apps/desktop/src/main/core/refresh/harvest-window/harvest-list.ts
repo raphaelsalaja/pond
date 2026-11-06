@@ -28,6 +28,7 @@ import {
   INSTAGRAM_HOME_URL,
   INSTAGRAM_LIKES_TIMEOUT_MS,
   INSTAGRAM_LIKES_URL,
+  listInstagramCollections,
 } from "../harvest/instagram";
 import {
   type CollectionFailureReason,
@@ -608,14 +609,21 @@ async function readSourceCollections(
       };
     }
     case "instagram": {
-      const run = await runOnSourcePage(
-        "instagram",
-        INSTAGRAM_HOME_URL,
-        buildInstagramCollectionsExpression(),
-        { partition: opts.partition },
-      );
-      if (!run.ok) return pageRunFailure(run.reason);
-      return readCollectionsReply(run.value);
+      const result = await listInstagramCollections(async (url) => {
+        const run = await runOnSourcePage(
+          "instagram",
+          url,
+          buildInstagramCollectionsExpression(),
+          { partition: opts.partition },
+        );
+        return run.ok
+          ? readCollectionsReply(run.value)
+          : pageRunFailure(run.reason);
+      });
+      if (result.ok) return result;
+      return result.detail
+        ? { ok: false, reason: result.reason, detail: result.detail }
+        : { ok: false, reason: result.reason };
     }
     case "cosmos": {
       const { listCosmosCollections } = await import("../harvest/cosmos/api");
