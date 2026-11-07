@@ -1,6 +1,13 @@
-import { type NewTask, OPS, SOURCES, saves, tasks } from "@pond/schema/db";
+import {
+  type NewTask,
+  OPS,
+  queueGenerations,
+  SOURCES,
+  saves,
+  tasks,
+} from "@pond/schema/db";
 import type Database from "better-sqlite3";
-import { and, eq, inArray, isNull, ne, notExists } from "drizzle-orm";
+import { and, eq, inArray, isNull, ne, notExists, or } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { ulid } from "ulid";
 import { z } from "zod";
@@ -59,7 +66,14 @@ export async function claimDueTasks(
             WHERE
               tasks.status IN ('pending', 'deferred')
               AND tasks.next_run_at <= ?
-              AND saves.status = 'ingesting'
+              AND (
+                saves.status = 'ingesting'
+                OR (
+                  saves.status = 'failed'
+                  AND queue_generations.kind = 'retry'
+                  AND queue_generations.status = 'active'
+                )
+              )
               AND saves.deleted_at IS NULL
               AND (
                 tasks.generation_id IS NULL
@@ -464,6 +478,22 @@ export async function sweepOrphanTasks(): Promise<void> {
       and(
         inArray(tasks.status, ["pending", "deferred"]),
         ne(saves.status, "ingesting"),
+        notExists(
+          db
+            .select({ id: queueGenerations.id })
+            .from(queueGenerations)
+            .where(
+              and(
+                eq(saves.status, "failed"),
+                eq(queueGenerations.id, tasks.generationId),
+                eq(queueGenerations.kind, "retry"),
+                or(
+                  eq(queueGenerations.status, "active"),
+                  eq(queueGenerations.status, "paused"),
+                ),
+              ),
+            ),
+        ),
       ),
     )
     .all();

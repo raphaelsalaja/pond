@@ -1,8 +1,8 @@
 import { type NewTask, type Source, saves, tasks } from "@pond/schema/db";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, or, sql } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { ulid } from "ulid";
-import { getDb } from "../../db";
+import { type Db, getDb } from "../../db";
 import { persistSave } from "../persist-save";
 import {
   isInteractiveTrigger,
@@ -73,10 +73,35 @@ export async function promoteInteractiveSaveTasks(
 export async function rependArchiveForCookies(saveId: string): Promise<void> {
   const db = await getDb();
   const now = new Date();
+  if (!rependArchiveTasks(db, saveId, now)) return;
+  await persistSave(
+    saveId,
+    { status: "ingesting", ingestStartedAt: now, ingestCompletedAt: null },
+    { actorReason: "pipeline:enqueue:page-cookies" },
+  );
+}
+
+export function rependArchiveTasks(db: Db, saveId: string, now: Date): boolean {
+  const running = db
+    .select({ id: tasks.id })
+    .from(tasks)
+    .where(and(eq(tasks.saveId, saveId), eq(tasks.status, "running")))
+    .get();
+  if (running) return false;
   db.update(tasks)
     .set({
       status: "pending",
       attempts: 0,
+      generationId: null,
+      cancellationFence: sql`${tasks.cancellationFence} + 1`,
+      deferredReason: null,
+      leaseOwner: null,
+      leaseToken: null,
+      leaseExpiresAt: null,
+      heartbeatAt: null,
+      startedAt: null,
+      failedAt: null,
+      completedAt: null,
       lastError: null,
       nextRunAt: now,
       updatedAt: now,
@@ -84,15 +109,14 @@ export async function rependArchiveForCookies(saveId: string): Promise<void> {
     .where(
       and(
         eq(tasks.saveId, saveId),
-        inArray(tasks.op, ["archive_page", "finalize"]),
+        or(
+          inArray(tasks.op, ["archive_page", "finalize"]),
+          inArray(tasks.status, ["dead", "blocked"]),
+        ),
       ),
     )
     .run();
-  await persistSave(
-    saveId,
-    { status: "ingesting", ingestStartedAt: now, ingestCompletedAt: null },
-    { actorReason: "pipeline:enqueue:page-cookies" },
-  );
+  return true;
 }
 
 export async function resetTasksForSave(

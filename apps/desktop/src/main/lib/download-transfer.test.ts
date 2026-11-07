@@ -1,8 +1,77 @@
 import type { DownloadActivityUpdate } from "@shared/download-activity";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { DownloadSizeError, fetchDownload } from "./download-transfer";
 
 describe("observed download transfers", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("keeps receiving a slow response while bytes arrive", async () => {
+    vi.useFakeTimers();
+    const download = fetchDownload({
+      url: "https://media.example/image",
+      fileIndex: 1,
+      fileCount: 1,
+      maxBytes: 10,
+      fetcher: async (_url, options) =>
+        timedResponse(options?.signal, { chunks: 3, close: true }),
+    });
+
+    await vi.advanceTimersByTimeAsync(60_000);
+
+    expect((await download).bytes).toEqual(Buffer.from([1, 1, 1]));
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("times out when a response stops sending bytes", async () => {
+    vi.useFakeTimers();
+    const updates: DownloadActivityUpdate[] = [];
+    const download = fetchDownload({
+      url: "https://media.example/image",
+      fileIndex: 1,
+      fileCount: 1,
+      maxBytes: 10,
+      reportActivity: (update) => updates.push(update),
+      fetcher: async (_url, options) =>
+        timedResponse(options?.signal, { chunks: 1, close: false }),
+    });
+    const rejected = expect(download).rejects.toMatchObject({
+      name: "TimeoutError",
+    });
+
+    await vi.advanceTimersByTimeAsync(49_999);
+    expect(updates.at(-1)?.transfer?.state).toBe("receiving");
+    await vi.advanceTimersByTimeAsync(1);
+
+    await rejected;
+    expect(updates.at(-1)?.transfer?.state).toBe("failed");
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("cancels a response while waiting for the next byte", async () => {
+    vi.useFakeTimers();
+    const controller = new AbortController();
+    const download = fetchDownload({
+      url: "https://media.example/image",
+      fileIndex: 1,
+      fileCount: 1,
+      maxBytes: 10,
+      signal: controller.signal,
+      fetcher: async (_url, options) =>
+        timedResponse(options?.signal, { chunks: 1, close: false }),
+    });
+    const rejected = expect(download).rejects.toMatchObject({
+      name: "AbortError",
+    });
+
+    await vi.advanceTimersByTimeAsync(20_000);
+    controller.abort();
+
+    await rejected;
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it("reports actual response and bytes without exposing URL credentials or query tokens", async () => {
     const updates: DownloadActivityUpdate[] = [];
     const result = await fetchDownload({
@@ -180,3 +249,40 @@ describe("observed download transfers", () => {
     expect(updates.at(-1)?.transfer?.state).toBe("failed");
   });
 });
+
+function timedResponse(
+  signal: AbortSignal | null | undefined,
+  { chunks, close }: { chunks: number; close: boolean },
+): Response {
+  let cleanup = () => {};
+  return new Response(
+    new ReadableStream({
+      start(controller) {
+        let sent = 0;
+        const abort = () => {
+          cleanup();
+          controller.error(signal?.reason);
+        };
+        const timer = setInterval(() => {
+          controller.enqueue(new Uint8Array([1]));
+          sent++;
+          if (sent === chunks) {
+            clearInterval(timer);
+            if (close) {
+              cleanup();
+              controller.close();
+            }
+          }
+        }, 20_000);
+        cleanup = () => {
+          clearInterval(timer);
+          signal?.removeEventListener("abort", abort);
+        };
+        signal?.addEventListener("abort", abort, { once: true });
+      },
+      cancel() {
+        cleanup();
+      },
+    }),
+  );
+}

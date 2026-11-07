@@ -12,6 +12,22 @@ interface RotatingSession {
 /** Copies of these sessions stop working once the browser rotates them, so the extension forwards every rotation. */
 export const ROTATING_SESSIONS: ReadonlyMap<Source, RotatingSession> = new Map([
   [
+    "twitter",
+    {
+      domain: "x.com",
+      rotates: ["auth_token", "ct0"],
+      sessionId: "twid",
+    },
+  ],
+  [
+    "github",
+    {
+      domain: "github.com",
+      rotates: ["user_session"],
+      sessionId: "dotcom_user",
+    },
+  ],
+  [
     "youtube",
     {
       domain: "youtube.com",

@@ -1,17 +1,37 @@
-import { type NewTask, saves, tasks } from "@pond/schema/db";
+import {
+  CANCEL_REASON,
+  type NewTask,
+  queueGenerations,
+  saves,
+  tasks,
+} from "@pond/schema/db";
 import { isWebPageSave } from "@shared/web-page-save";
-import { and, eq, inArray, isNull, notInArray } from "drizzle-orm";
+import { and, eq, inArray, isNull, ne, notInArray, or } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { ulid } from "ulid";
 import { getDb } from "../../db";
 import { persistSave } from "../persist-save";
+import { rependArchiveTasks } from "../pipeline/enqueue-scheduling";
 import { kickReconciler } from "../pipeline/reconciler-client";
 import { maxAttemptsFor } from "../pipeline/specs";
 import { getPrefs } from "../prefs";
 
+interface ArchiveBackfillRuntime {
+  getDb: typeof getDb;
+  persistSave: typeof persistSave;
+  kickReconciler: typeof kickReconciler;
+}
+
+const defaultRuntime: ArchiveBackfillRuntime = {
+  getDb,
+  persistSave,
+  kickReconciler,
+};
+
 export async function startArchiveBackfill(
   autoArchive: () => Promise<boolean> = async () =>
     (await getPrefs()).storage.autoArchive,
+  runtime: ArchiveBackfillRuntime = defaultRuntime,
 ): Promise<{
   ok: true;
   queued: number;
@@ -21,7 +41,7 @@ export async function startArchiveBackfill(
   const { ARCHIVE_VERSION, hasWarcArchive, readArchivedMeta } = await import(
     "../pipeline/workers/archive-page"
   );
-  const db = await getDb();
+  const db = await runtime.getDb();
   /** Settled saves only: ingesting saves already have live tasks, and pending archive_page behind non-done peers would deadlock the sequential gate. */
   const rows = db
     .select({
@@ -29,7 +49,6 @@ export async function startArchiveBackfill(
       source: saves.source,
       url: saves.url,
       files: saves.files,
-      status: saves.status,
     })
     .from(saves)
     .where(
@@ -42,38 +61,19 @@ export async function startArchiveBackfill(
     .all()
     .filter((row) => isWebPageSave(row));
 
-  const candidates: { id: string; status: string }[] = [];
+  const candidates: { id: string }[] = [];
   for (const r of rows) {
     if (!hasWarcArchive(r.files)) {
-      candidates.push({ id: r.id, status: r.status });
+      candidates.push({ id: r.id });
       continue;
     }
     const meta = await readArchivedMeta(r.id);
     if (meta.version < ARCHIVE_VERSION) {
-      candidates.push({ id: r.id, status: r.status });
+      candidates.push({ id: r.id });
     }
   }
 
-  const unarchived: { id: string }[] = [];
-  for (const c of candidates) {
-    if (c.status === "complete") {
-      unarchived.push({ id: c.id });
-      continue;
-    }
-    const blocked = db
-      .select({ id: tasks.id })
-      .from(tasks)
-      .where(
-        and(
-          eq(tasks.saveId, c.id),
-          notInArray(tasks.op, ["archive_page", "finalize"]),
-          notInArray(tasks.status, ["done"]),
-        ),
-      )
-      .get();
-    if (!blocked) unarchived.push({ id: c.id });
-  }
-  if (unarchived.length === 0) return { ok: true, queued: 0 };
+  if (candidates.length === 0) return { ok: true, queued: 0 };
 
   const withTask = new Set(
     db
@@ -84,7 +84,7 @@ export async function startArchiveBackfill(
           eq(tasks.op, "archive_page"),
           inArray(
             tasks.saveId,
-            unarchived.map((r) => r.id),
+            candidates.map((r) => r.id),
           ),
         ),
       )
@@ -94,16 +94,39 @@ export async function startArchiveBackfill(
 
   const now = new Date();
   let queued = 0;
-  for (const { id } of unarchived) {
+  for (const { id } of candidates) {
+    const blocked = db
+      .select({ id: tasks.id })
+      .from(tasks)
+      .leftJoin(queueGenerations, eq(queueGenerations.id, tasks.generationId))
+      .where(
+        and(
+          eq(tasks.saveId, id),
+          or(
+            eq(tasks.status, "cancelled"),
+            eq(tasks.lastError, CANCEL_REASON),
+            and(
+              ne(tasks.status, "done"),
+              inArray(queueGenerations.status, [
+                "paused",
+                "cancelling",
+                "cancelled",
+              ]),
+            ),
+            and(
+              notInArray(tasks.op, ["archive_page", "finalize"]),
+              ne(tasks.status, "done"),
+            ),
+          ),
+        ),
+      )
+      .get();
+    if (blocked) continue;
+    if (!rependArchiveTasks(db, id, now)) continue;
     if (withTask.has(id)) {
       db.update(tasks)
         .set({
-          status: "pending",
-          attempts: 0,
           maxAttempts: maxAttemptsFor("archive_page"),
-          lastError: null,
-          nextRunAt: now,
-          updatedAt: now,
         })
         .where(and(eq(tasks.saveId, id), eq(tasks.op, "archive_page")))
         .run();
@@ -122,11 +145,7 @@ export async function startArchiveBackfill(
       };
       db.insert(tasks).values(taskRow).onConflictDoNothing().run();
     }
-    db.update(tasks)
-      .set({ status: "pending", nextRunAt: now, updatedAt: now })
-      .where(and(eq(tasks.saveId, id), eq(tasks.op, "finalize")))
-      .run();
-    await persistSave(
+    await runtime.persistSave(
       id,
       { status: "ingesting", ingestStartedAt: now, ingestCompletedAt: null },
       { actorReason: "user:archive-backfill" },
@@ -134,17 +153,19 @@ export async function startArchiveBackfill(
     queued += 1;
   }
 
+  if (queued === 0) return { ok: true, queued };
   log.info("[pond archive-backfill] queued web saves for archiving", {
     queued,
   });
-  kickReconciler();
+  runtime.kickReconciler();
   return { ok: true, queued };
 }
 
 export async function archiveSiteForSave(
   saveId: string,
+  runtime: ArchiveBackfillRuntime = defaultRuntime,
 ): Promise<{ ok: boolean }> {
-  const db = await getDb();
+  const db = await runtime.getDb();
   const row = db
     .select({
       id: saves.id,
@@ -160,6 +181,7 @@ export async function archiveSiteForSave(
   }
 
   const now = new Date();
+  if (!rependArchiveTasks(db, saveId, now)) return { ok: false };
   const payload = { scope: "site" as const };
   const existing = db
     .select({ id: tasks.id })
@@ -169,13 +191,8 @@ export async function archiveSiteForSave(
   if (existing) {
     db.update(tasks)
       .set({
-        status: "pending",
-        attempts: 0,
         maxAttempts: maxAttemptsFor("archive_page"),
         payload,
-        lastError: null,
-        nextRunAt: now,
-        updatedAt: now,
       })
       .where(eq(tasks.id, existing.id))
       .run();
@@ -196,16 +213,12 @@ export async function archiveSiteForSave(
     db.insert(tasks).values(taskRow).onConflictDoNothing().run();
   }
 
-  db.update(tasks)
-    .set({ status: "pending", nextRunAt: now, updatedAt: now })
-    .where(and(eq(tasks.saveId, saveId), eq(tasks.op, "finalize")))
-    .run();
-  await persistSave(
+  await runtime.persistSave(
     saveId,
     { status: "ingesting", ingestStartedAt: now, ingestCompletedAt: null },
     { actorReason: "user:archive-site" },
   );
   log.info("[pond archive-backfill] queued full-site archive", { saveId });
-  kickReconciler();
+  runtime.kickReconciler();
   return { ok: true };
 }

@@ -141,10 +141,12 @@ async function pushSession(source: Source): Promise<PushSessionResult> {
     return { ok: false, reason: "network", detail: "bad response shape" };
   }
   if (imported.data.connected) {
-    const follow = await readFollowState();
-    await writeFollowState({
-      ...follow,
-      untracked: follow.untracked.filter((s) => s !== source),
+    await queueSessionFollow(async () => {
+      const follow = await readFollowState();
+      await writeFollowState({
+        ...follow,
+        untracked: follow.untracked.filter((s) => s !== source),
+      });
     });
   }
   return { ok: true, data: imported.data };
@@ -161,7 +163,19 @@ async function writeFollowState(state: FollowState): Promise<void> {
   await browser.storage.session.set({ [FOLLOW_STORAGE_KEY]: state });
 }
 
-async function forwardRotation(source: Source): Promise<void> {
+let followUpdates = Promise.resolve();
+
+function queueSessionFollow(run: () => Promise<void>): Promise<void> {
+  const next = followUpdates.then(run);
+  followUpdates = next.catch(() => {});
+  return next;
+}
+
+function forwardRotation(source: Source): Promise<void> {
+  return queueSessionFollow(() => refreshSession(source));
+}
+
+async function refreshSession(source: Source): Promise<void> {
   const session = ROTATING_SESSIONS.get(source);
   const state = await readFollowState();
   if (!session || state.untracked.includes(source)) return;
@@ -188,6 +202,15 @@ async function forwardRotation(source: Source): Promise<void> {
 /** Forwards each session your browser rotates, so Pond's copy of it stays signed in. */
 export function startSessionFollow(): void {
   const settling = new Map<Source, ReturnType<typeof setTimeout>>();
+  void (async () => {
+    for (const source of ROTATING_SESSIONS.keys()) {
+      try {
+        await forwardRotation(source);
+      } catch (err) {
+        console.warn("[pond] session refresh failed", source, err);
+      }
+    }
+  })();
   browser.cookies.onChanged?.addListener(({ cookie, removed }) => {
     if (removed) return;
     const source = rotatedSessionSource(cookie);

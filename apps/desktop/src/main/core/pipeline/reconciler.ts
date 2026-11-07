@@ -36,6 +36,7 @@ import {
   trackRunningIngest,
   untrackRunningIngest,
 } from "./running-ingest";
+import { withSourceTaskLease } from "./source-admission";
 import {
   claimDueTasks,
   extendOwnedLeasesSync,
@@ -424,7 +425,8 @@ async function claimAndDispatch(): Promise<void> {
 }
 
 async function dispatchTask(task: DueTask): Promise<void> {
-  if (!task.leaseToken) return;
+  const leaseToken = task.leaseToken;
+  if (!leaseToken) return;
   const interactive = isInteractiveTask(task);
   runningTaskIds.add(task.id);
   inflightByOp[task.op]++;
@@ -498,12 +500,14 @@ async function dispatchTask(task: DueTask): Promise<void> {
     try {
       await Promise.race([
         track(
-          WORKERS[task.op](task.saveId, payload, {
-            signal: controller.signal,
-            reportActivity: activity.report,
-            leaseToken: task.leaseToken,
-            cancellationFence: task.cancellationFence,
-          }),
+          withSourceTaskLease(leaseToken, () =>
+            WORKERS[task.op](task.saveId, payload, {
+              signal: controller.signal,
+              reportActivity: activity.report,
+              leaseToken,
+              cancellationFence: task.cancellationFence,
+            }),
+          ),
         ),
         watchdog,
       ]);
