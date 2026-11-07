@@ -40,6 +40,8 @@ Incremental runs load only a bounded **recent window** of known ids
 (`RECENT_KNOWN_WINDOW`) instead of the whole library, and the harvesters
 **early-stop** once they hit a streak of already-known ids — so a no-op sync is
 cheap and a sync with N new items walks roughly N items, not the entire backlog.
+A split slide adds its post's Source ID (`rawJson.split.sourceId`) to the known
+ids, so the post isn't fetched again while any slide survives.
 
 **Full re-sync escape hatch:** pass `forceFull: true` (exposed over IPC via
 `syncRunNow` / `syncRunAll`) to ignore the watermark and walk the whole remote
