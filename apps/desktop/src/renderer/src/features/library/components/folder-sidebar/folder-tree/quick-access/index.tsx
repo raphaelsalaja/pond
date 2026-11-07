@@ -113,9 +113,11 @@ export function QuickAccess({
       ],
     });
   }
-  const quickOrganization = useOrganizationTree(quickEntries, (ids) => {
-    openQuickSelection(ids);
-  });
+  const quickOrganization = useOrganizationTree(
+    quickEntries,
+    openQuickSelection,
+    nav,
+  );
   function quickSelectionItems(): MenuItemSpec[] {
     const ids = quickOrganization.selected;
     const selectedFolderIds = quickFolders

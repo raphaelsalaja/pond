@@ -9,6 +9,7 @@ import {
   inheritedQueryFor,
 } from "@/features/library/lib/smart-folders";
 import { useFolders } from "@/features/library/state/folders";
+import { useLibraryNav } from "@/features/library/state/library-chrome";
 import {
   savedViews,
   useEditingSavedViewId,
@@ -45,6 +46,7 @@ export function SmartFoldersSection({
   active?: boolean;
 }) {
   const views = useSavedViews();
+  const nav = useLibraryNav();
   const { activeViewId } = useViewStore();
   const [presentations] = usePrefs("savedViewViews");
   const [sidebar] = usePrefs("sidebar");
@@ -83,24 +85,28 @@ export function SmartFoldersSection({
     }
     return children;
   }, [views]);
-  const organization = useOrganizationTree(views, (ids) => {
-    if (ids.length === 1 && ids[0]) {
-      savedViews.select(ids[0]);
-      onSelect();
-    } else if (ids.length > 1) {
-      resetFilters();
-      selectLibraryNav({ kind: "all" });
-      setQuery({
-        combinator: "or",
-        rules: views
-          .filter((view) => ids.includes(view.id))
-          .map((view) =>
-            combineQueries([inheritedQueryFor(view, views), view.query]),
-          ),
-      });
-      onSelect();
-    }
-  });
+  const organization = useOrganizationTree(
+    views,
+    (ids) => {
+      if (ids.length === 1 && ids[0]) {
+        savedViews.select(ids[0]);
+        onSelect();
+      } else if (ids.length > 1) {
+        resetFilters();
+        selectLibraryNav({ kind: "all" });
+        setQuery({
+          combinator: "or",
+          rules: views
+            .filter((view) => ids.includes(view.id))
+            .map((view) =>
+              combineQueries([inheritedQueryFor(view, views), view.query]),
+            ),
+        });
+        onSelect();
+      }
+    },
+    nav,
+  );
   const quickAccessIds = views
     .filter((view) => presentations[view.id]?.quickAccess)
     .toSorted(

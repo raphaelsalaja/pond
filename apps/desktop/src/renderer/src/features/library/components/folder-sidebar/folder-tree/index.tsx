@@ -124,7 +124,11 @@ export function FolderTree({ folderRows, libraryPage, nav }: FolderTreeProps) {
   function openSelectedFolders(ids: string[]) {
     enterFolders(ids, includeSubfolders);
   }
-  const organization = useOrganizationTree(folderRows, openSelectedFolders);
+  const organization = useOrganizationTree(
+    folderRows,
+    openSelectedFolders,
+    nav,
+  );
   const drag = useFolderDragDrop({
     selectedIds: organization.selected,
     folderRows,

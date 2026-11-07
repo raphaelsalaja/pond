@@ -1,6 +1,7 @@
 import { act, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { afterEach, expect, it } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
+import type { LibraryNav } from "@/shared/lib/library-nav";
 import { useOrganizationTree } from "./use-organization-tree";
 
 const entries = [
@@ -9,11 +10,20 @@ const entries = [
   { id: "c", name: "Charlie", parentId: null },
   { id: "d", name: "Delta", parentId: null },
 ];
-function Fixture({ removed = [] }: { removed?: string[] }) {
+function Fixture({
+  removed = [],
+  navigation,
+  onSelection = () => {},
+}: {
+  removed?: string[];
+  navigation?: LibraryNav;
+  onSelection?: (ids: string[]) => void;
+}) {
   const [open, setOpen] = useState(true);
   const tree = useOrganizationTree(
     entries.filter((entry) => !removed.includes(entry.id)),
-    () => {},
+    onSelection,
+    navigation,
   );
   return (
     <div ref={tree.root} role="tree" aria-label="Folders" aria-multiselectable>
@@ -92,6 +102,37 @@ it("toggles disconnected rows and preserves their context selection", async () =
   expect(selected()).toEqual(["a", "d"]);
   await key("d", " ");
   expect(selected()).toEqual(["a"]);
+});
+it("opens a context menu on an unselected row without selecting it", async () => {
+  const onSelection = vi.fn();
+  await act(async () => root.render(<Fixture onSelection={onSelection} />));
+  await click("a");
+  onSelection.mockClear();
+  await act(async () =>
+    row("c").dispatchEvent(new MouseEvent("contextmenu", { bubbles: true })),
+  );
+  expect(selected()).toEqual(["a"]);
+  expect(onSelection).not.toHaveBeenCalled();
+  expect(document.activeElement).toBe(row("c"));
+});
+it("clears the selection when navigation moves elsewhere", async () => {
+  let navigation: LibraryNav = { kind: "all" };
+  const onSelection = (ids: string[]) => {
+    navigation = { kind: "folder", id: ids.join(",") };
+  };
+  const render = () =>
+    act(async () =>
+      root.render(
+        <Fixture navigation={navigation} onSelection={onSelection} />,
+      ),
+    );
+  await render();
+  await click("a");
+  await render();
+  expect(selected()).toEqual(["a"]);
+  navigation = { kind: "trash" };
+  await render();
+  expect(selected()).toEqual([]);
 });
 it("collapses and expands branches, finds a parent, and supports end and typeahead", async () => {
   await act(async () => root.render(<Fixture />));
