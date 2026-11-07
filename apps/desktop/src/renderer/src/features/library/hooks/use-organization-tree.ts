@@ -1,4 +1,5 @@
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import type { LibraryNav } from "@/shared/lib/library-nav";
 
 interface TreeEntry {
   id: string;
@@ -6,9 +7,11 @@ interface TreeEntry {
   parentId: string | null;
 }
 
+/** A change to `navigation` that this tree's own selection didn't cause clears the selection. */
 export function useOrganizationTree(
   entries: readonly TreeEntry[],
   onSelection: (ids: string[]) => void,
+  navigation?: LibraryNav,
 ) {
   const { byId, positions } = useMemo(() => {
     const byId = new Map(entries.map((entry) => [entry.id, entry]));
@@ -29,12 +32,25 @@ export function useOrganizationTree(
   const [selected, setSelected] = useState<string[]>([]);
   const hadFocus = useRef(false);
   const [cursor, setCursor] = useState<string | null>(null);
+  const selecting = useRef(false);
+  const anchor = useRef<string | null>(null);
+  const commit = (ids: string[]) => {
+    selecting.current = true;
+    setSelected(ids);
+    onSelection(ids);
+  };
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `navigation` is the reset trigger.
+  useEffect(() => {
+    if (selecting.current) {
+      selecting.current = false;
+      return;
+    }
+    anchor.current = null;
+    setSelected((current) => (current.length ? [] : current));
+  }, [navigation]);
   useLayoutEffect(() => {
     const retained = selected.filter((id) => byId.has(id));
-    if (retained.length !== selected.length) {
-      setSelected(retained);
-      onSelection(retained);
-    }
+    if (retained.length !== selected.length) commit(retained);
     const rows = visibleRows();
     if (cursor && rows.some((row) => row.dataset.treeId === cursor)) return;
     const parentId = cursor ? byId.get(cursor)?.parentId : null;
@@ -51,7 +67,6 @@ export function useOrganizationTree(
         fallback?.focus();
     }
   });
-  const anchor = useRef<string | null>(null);
   const typeahead = useRef({ text: "", time: 0 });
   const visibleRows = () =>
     [
@@ -92,8 +107,7 @@ export function useOrganizationTree(
       anchor.current = id;
     }
     setCursor(id);
-    setSelected(next);
-    onSelection(next);
+    commit(next);
   };
   function keyDown(
     event: React.KeyboardEvent,
@@ -110,8 +124,7 @@ export function useOrganizationTree(
       const ids = rows.flatMap((row) =>
         row.dataset.treeId ? [row.dataset.treeId] : [],
       );
-      setSelected(ids);
-      onSelection(ids);
+      commit(ids);
       event.preventDefault();
       event.stopPropagation();
       return;
@@ -151,9 +164,8 @@ export function useOrganizationTree(
         select(id);
         break;
       case "Escape":
-        setSelected([]);
         anchor.current = null;
-        onSelection([]);
+        commit([]);
         break;
       default: {
         if (
@@ -226,7 +238,6 @@ export function useOrganizationTree(
         onClick: (event: React.MouseEvent) => select(id, event),
         onContextMenu: (event: React.MouseEvent<HTMLElement>) => {
           event.currentTarget.focus();
-          if (!selected.includes(id)) select(id);
         },
         onKeyDown: (event: React.KeyboardEvent) =>
           keyDown(event, id, expanded, toggle),
