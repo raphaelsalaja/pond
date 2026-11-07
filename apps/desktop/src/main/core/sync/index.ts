@@ -8,6 +8,7 @@ import type { SyncRunEvent } from "@pond/schema/events";
 import log from "electron-log/main.js";
 import { isSourceFetchDue } from "../../../shared/sync-schedule";
 import { commitEvent, startSyncEvent, toErrorInfo } from "../../lib/wide-event";
+import { isMymindConnecting } from "../mymind/connect";
 import { isAccountConnected } from "../refresh/harvest-window";
 import { isSyncBlockedByStorageGuard } from "../storage-watcher";
 import { watchNow } from "../watch/run";
@@ -48,6 +49,7 @@ interface SyncOptions {
 const lastScheduledAt = new Map<string, number>();
 
 const SYNC_WATCHDOG_MS = {
+  mymind: 20 * 60_000,
   twitter: 30 * 60_000,
   youtube: 20 * 60_000,
   cosmos: 20 * 60_000,
@@ -72,6 +74,7 @@ const SYNC_WATCHDOG_MS = {
 } satisfies Record<Source, number>;
 
 const SYNCABLE_SOURCES: readonly Source[] = [
+  "mymind",
   "twitter",
   "youtube",
   "cosmos",
@@ -188,6 +191,7 @@ export async function syncAccount(
     return;
   }
   const { source } = account;
+  if (source === "mymind" && isMymindConnecting(accountId)) return;
   const existing = inFlight.get(accountId);
   if (existing) {
     const ageSec = Math.round((Date.now() - existing.startedAt) / 1000);
@@ -251,7 +255,10 @@ export async function syncAccount(
       runningSince: new Date(startedAt).toISOString(),
     });
     await ensureAccountHandle(account);
-    if (source === "twitter") {
+    if (source === "mymind") {
+      const { syncMymind } = await import("../mymind/sync");
+      await syncMymind(account, controller.signal, ev, opts.maxItems);
+    } else if (source === "twitter") {
       await syncTwitter(
         account,
         controller.signal,

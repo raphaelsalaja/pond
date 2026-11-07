@@ -1,6 +1,7 @@
 import { SOURCES, type Source } from "@pond/schema/db";
 import { isWatchableSource } from "@pond/schema/watches";
 import { connectFlow } from "@/features/sources/state/connect-flow";
+import { mymindConnectFlow } from "@/features/sources/state/mymind-connect-flow";
 import { sourceFlow } from "@/features/sources/state/source-flow";
 import { watchFlow } from "@/features/sources/state/watch-flow";
 
@@ -15,6 +16,10 @@ export async function startConnect(
   source: Source,
   whenConnected: (() => void) | null = null,
 ): Promise<void> {
+  if (source === "mymind") {
+    mymindConnectFlow.start(undefined, whenConnected);
+    return;
+  }
   let connected: string[] = [];
   try {
     const result = await window.pond.query("accounts.list", {});

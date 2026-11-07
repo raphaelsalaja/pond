@@ -30,6 +30,7 @@ const PER_SOURCE_CAP = {
   unsplash: 1,
   bluesky: 1,
   marked: 1,
+  mymind: 0,
   web: 2,
   local: 0,
 } satisfies Record<Source, number>;
@@ -69,6 +70,7 @@ const busyBySource = {
   unsplash: 0,
   bluesky: 0,
   marked: 0,
+  mymind: 0,
   web: 0,
   local: 0,
 } satisfies Record<Source, number>;

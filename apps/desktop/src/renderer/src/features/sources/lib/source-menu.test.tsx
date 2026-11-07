@@ -9,6 +9,7 @@ import { sourceFlow } from "@/features/sources/state/source-flow";
 import {
   accountMenuTarget,
   buildSourceActionMenu,
+  buildSourceActionRows,
   watchMenuTarget,
 } from "./source-menu";
 
@@ -120,6 +121,40 @@ afterEach(() => {
 });
 
 describe("buildSourceActionMenu", () => {
+  it("uses the export import for older mymind Saves", async () => {
+    const target = { ...account(), source: "mymind" as const, handle: null };
+    const items = buildSourceActionMenu(target);
+    expect(findItem(items, "Choose What to Import")).toBeNull();
+    expect(findItem(items, "Fetch Older Saves")).toBeNull();
+    expect(findItem(items, "Fetch Save Details")).toBeNull();
+    expect(findItem(items, "Fetch Original Media")).toBeNull();
+    const older = findItem(items, "Import Older Saves");
+    if (!older || !("onClick" in older))
+      throw new Error("Missing export action");
+    vi.stubGlobal("pond", {
+      ...window.pond,
+      query: vi.fn(async () => ({ ok: true, imported: 0, skipped: 0 })),
+    });
+    older.onClick?.();
+    await vi.waitFor(() => {
+      expect(window.pond.query).toHaveBeenCalledWith("saves.importMymind", {});
+    });
+    expect(window.pond.syncRunNow).not.toHaveBeenCalled();
+    expect(buildSourceActionRows(target).fetch.map((row) => row.title)).toEqual(
+      ["Fetch New Saves", "Import Older Saves"],
+    );
+  });
+
+  it("opens key setup when reconnecting mymind", () => {
+    const items = buildSourceActionMenu({ ...account(), source: "mymind" });
+    const reconnect = findItem(items, "Reconnect");
+    if (!reconnect || !("onClick" in reconnect))
+      throw new Error("Missing reconnect action");
+    reconnect.onClick?.();
+    expect(sourceFlow.current()).toBe("connect-mymind");
+    expect(window.pond.connectSource).not.toHaveBeenCalled();
+  });
+
   it("separates a connected account menu without group titles", () => {
     expect(groups(buildSourceActionMenu(account()))).toEqual([
       ["Open Instagram Profile", "Show Saved Items"],

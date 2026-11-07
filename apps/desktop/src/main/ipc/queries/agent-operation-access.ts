@@ -4,6 +4,7 @@ export const queryOperationAccess = {
   "accounts.blueskySession": "hidden",
   "accounts.blueskySignIn": "hidden",
   "accounts.blueskySignOut": "hidden",
+  "accounts.connectMymind": "hidden",
   "accounts.disconnect": "review",
   "accounts.importOptions": "read",
   "accounts.list": "read",

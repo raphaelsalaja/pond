@@ -1,3 +1,4 @@
+import { IconLightbulb } from "@pond/icons";
 import {
   IconBrandArena,
   IconBrandBehance,
@@ -56,6 +57,7 @@ const SOURCE_LOGOS = {
   unsplash: null,
   bluesky: null,
   marked: null,
+  mymind: null,
   web: null,
   local: null,
 } satisfies Record<Source, string | null>;
@@ -80,6 +82,7 @@ const SOURCE_ICONS = {
   unsplash: IconBrandUnsplash,
   bluesky: IconBrandBluesky,
   marked: IconBrandMarked,
+  mymind: IconLightbulb,
   web: IconSourceWeb,
   local: IconSourceLocal,
 } satisfies Record<Source, IconComponent | null>;

@@ -72,7 +72,10 @@ async function adoptOrphanedSave(
   const { accountId } = opts;
   if (!accountId) return;
   const connected = new Set((await listAccounts()).map((a) => a.id));
-  if (!harvestShouldAdoptSave(current, accountId, connected)) return;
+  if (
+    !harvestShouldAdoptSave(current, accountId, connected, opts.adoptOrphaned)
+  )
+    return;
   await persistSave(
     current.id,
     { accountId },
@@ -296,6 +299,7 @@ async function enqueueMany(
         trigger: opts.trigger,
         force: opts.force,
         accountId: opts.accountId,
+        adoptOrphaned: opts.adoptOrphaned,
         listKinds: candidate.listKinds,
       };
       if (candidate.seed) one.seed = candidate.seed;

@@ -10,6 +10,8 @@ import {
   normalizeImportScope,
 } from "../../../shared/import-scope";
 import type { OkFailure } from "../../../shared/query-contracts-shared";
+import { MymindCredentialSchema } from "../../core/mymind/client";
+import { connectMymind } from "../../core/mymind/connect";
 import { releaseFilteredSaves } from "../../core/pipeline/import-filter";
 import type { CollectionFailureReason } from "../../core/refresh/harvest/lib/collections-reply";
 import {
@@ -200,6 +202,29 @@ export function createImportOptionsQuery(
 }
 
 export const accountsQueries = {
+  "accounts.connectMymind": query(
+    MymindCredentialSchema.extend({
+      accountId: z.string().trim().min(1).max(100).optional(),
+    }),
+    async (params) => {
+      try {
+        const result = await connectMymind(params);
+        if (result.ok)
+          void syncAccount(result.account.id, { trigger: "manual" }).catch(
+            () => {},
+          );
+        return result;
+      } catch (error) {
+        return {
+          ok: false as const,
+          error:
+            error instanceof Error
+              ? error.message
+              : "mymind could not connect.",
+        };
+      }
+    },
+  ),
   async "accounts.list"() {
     fillMissingAvatars();
     const accounts = await listAccounts();

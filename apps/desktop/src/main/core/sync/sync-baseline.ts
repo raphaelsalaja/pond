@@ -20,6 +20,8 @@ export interface SyncBaseline {
 export function syncBaselineWhere(
   account: Pick<ConnectedAccount, "id" | "source">,
 ) {
+  if (account.source === "mymind")
+    return and(eq(saves.accountId, account.id), isNull(saves.deletedAt));
   return and(
     eq(saves.source, account.source),
     or(eq(saves.accountId, account.id), isNull(saves.accountId)),

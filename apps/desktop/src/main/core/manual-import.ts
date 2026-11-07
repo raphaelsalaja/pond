@@ -51,6 +51,7 @@ export interface ManualSaveInput {
   thumbnailPath?: string | null;
   sourceId?: string | null;
   source?: Source;
+  accountId?: string;
   importedFrom?: ImportOrigin;
   savedAt?: Date;
   createdAt?: Date;
@@ -302,6 +303,7 @@ async function importManualSave(
     id,
     source,
     sourceId,
+    accountId: input.accountId,
     importedFrom: input.importedFrom ?? null,
     url: input.url?.trim() || `pond:local/${id}`,
     title,

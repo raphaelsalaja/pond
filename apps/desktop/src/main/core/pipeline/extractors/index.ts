@@ -42,7 +42,8 @@ const EXTRACTORS = {
   unsplash: new UnsplashAssetExtractor(),
   bluesky: new BlueskyPostExtractor(),
   marked: new MarkedRefExtractor(),
-} as const satisfies Record<ExternalSource, Extractor>;
+  mymind: null,
+} as const satisfies Record<ExternalSource, Extractor | null>;
 
 const WEB_EXTRACTOR: Extractor = {
   id: "web-page",
@@ -57,7 +58,9 @@ const WEB_EXTRACTOR: Extractor = {
   },
 };
 
-export const EXTRACTOR_LIST: readonly Extractor[] = Object.values(EXTRACTORS);
+export const EXTRACTOR_LIST: readonly Extractor[] = Object.values(
+  EXTRACTORS,
+).filter((extractor) => extractor !== null);
 
 export function extractorFor(source: Source): Extractor | null {
   if (source === "local") return null;

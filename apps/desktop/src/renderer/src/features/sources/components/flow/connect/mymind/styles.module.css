@@ -1,0 +1,34 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.description {
+  margin: 0;
+  font-size: var(--ds-text-sm);
+  line-height: 20px;
+  color: var(--ds-gray-11);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  padding-top: 20px;
+  margin-top: 8px;
+  border-top: 1px solid var(--ds-gray-4);
+}
+
+.error {
+  overflow: hidden;
+  font-size: var(--ds-text-sm);
+  line-height: 20px;
+  color: var(--ds-red-11);
+
+  p {
+    margin: 0;
+  }
+}

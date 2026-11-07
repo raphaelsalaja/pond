@@ -7,7 +7,9 @@ import {
 import { session } from "electron";
 import log from "electron-log/main.js";
 import { ulid } from "ulid";
+import { removeMymindCredential } from "../mymind/credentials";
 import { getPrefs, setPrefs } from "../prefs";
+import { cancelSync } from "./sync-status";
 
 export const LEGACY_PARTITION = "persist:pond-scrapers";
 
@@ -130,12 +132,15 @@ export async function patchAccountSync(
 }
 
 export async function removeAccount(accountId: string): Promise<void> {
+  const account = await getAccount(accountId);
+  if (account?.source === "mymind") cancelSync(accountId);
   await writeAccounts((accounts) => {
     if (!accounts[accountId]) return accounts;
     const next = { ...accounts };
     delete next[accountId];
     return next;
   });
+  if (account?.source === "mymind") await removeMymindCredential(accountId);
   try {
     await session
       .fromPartition(partitionForAccount(accountId))
@@ -151,7 +156,7 @@ export async function partitionForIngest(
 ): Promise<string> {
   if (accountId) {
     const account = await getAccount(accountId);
-    if (account) return partitionForAccount(account.id);
+    if (account?.source === source) return partitionForAccount(account.id);
   }
   const accounts = await listAccountsForSource(source);
   const first = accounts[0];

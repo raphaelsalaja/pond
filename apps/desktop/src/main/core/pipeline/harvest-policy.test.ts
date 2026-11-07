@@ -15,6 +15,25 @@ describe("harvestShouldAdoptSave", () => {
     ).toBe(true);
   });
 
+  it("keeps a disconnected account's Save when adoption is disabled", () => {
+    expect(
+      harvestShouldAdoptSave(
+        { accountId: "removed" },
+        "mymind-account",
+        connected,
+        false,
+      ),
+    ).toBe(false);
+    expect(
+      harvestShouldAdoptSave(
+        { accountId: "removed" },
+        "mymind-account",
+        connected,
+        true,
+      ),
+    ).toBe(true);
+  });
+
   it("leaves saves owned by a connected account or by no account", () => {
     expect(
       harvestShouldAdoptSave({ accountId: "other" }, "current", connected),

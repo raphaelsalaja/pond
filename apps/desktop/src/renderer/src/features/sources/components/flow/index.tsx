@@ -1,6 +1,7 @@
 import { Dialog } from "@pond/ui";
 import { type CSSProperties, type JSX, useState } from "react";
 import { ConnectGlow } from "@/features/sources/components/flow/connect/glow";
+import { MymindConnectPage } from "@/features/sources/components/flow/connect/mymind";
 import {
   ConnectActions,
   ConnectWaitSection,
@@ -16,6 +17,10 @@ import {
   useConnectSource,
 } from "@/features/sources/state/connect-flow";
 import {
+  mymindConnectFlow,
+  useMymindConnectSession,
+} from "@/features/sources/state/mymind-connect-flow";
+import {
   type SourceFlowPage,
   sourceFlow,
   useSourceFlowDepth,
@@ -26,7 +31,10 @@ import { useWatchSource, watchFlow } from "@/features/sources/state/watch-flow";
 const PAGES = {
   "connect-wait": ConnectWaitSection,
   "watch-target": WatchTargetSection,
-} satisfies Record<SourceFlowPage, () => JSX.Element | null>;
+} satisfies Record<
+  Exclude<SourceFlowPage, "connect-mymind">,
+  () => JSX.Element | null
+>;
 
 const visuallyHidden: CSSProperties = {
   position: "absolute",
@@ -45,6 +53,8 @@ function usePageTitle(page: SourceFlowPage): string {
   const watchSource = useWatchSource();
 
   switch (page) {
+    case "connect-mymind":
+      return "Connect mymind";
     case "connect-wait":
       return connectingSource ? "Connection Request" : "Add Connection";
     case "watch-target":
@@ -57,6 +67,7 @@ function usePageTitle(page: SourceFlowPage): string {
 }
 
 export function SourceFlowHost() {
+  const mymindSession = useMymindConnectSession();
   const activePage = useSourceFlowPage();
   const activeDepth = useSourceFlowDepth();
   const open = activePage != null;
@@ -74,7 +85,7 @@ export function SourceFlowHost() {
   const page = activePage ?? presentation.page;
   const depth = open ? activeDepth : presentation.depth;
   const title = usePageTitle(page ?? "connect-wait");
-  const Page = page ? PAGES[page] : null;
+  const Page = page && page !== "connect-mymind" ? PAGES[page] : null;
 
   return (
     <Dialog.Root
@@ -83,32 +94,43 @@ export function SourceFlowHost() {
         if (next) return;
         sourceFlow.close();
         connectFlow.clear();
+        mymindConnectFlow.clear();
         watchFlow.clear();
       }}
     >
       <Dialog.Portal>
         <Dialog.Backdrop />
-        {page && Page ? (
+        {page ? (
           <Dialog.Popup pageId={page} depth={depth}>
-            {page === "connect-wait" ? <ConnectGlow /> : null}
-            <WatchTargetRoot>
-              <Dialog.Header data-empty>
-                <Dialog.Title style={visuallyHidden}>{title}</Dialog.Title>
-              </Dialog.Header>
-              <Dialog.Viewport>
-                <Page />
-              </Dialog.Viewport>
-              <Dialog.Footer>
-                {page === "connect-wait" ? (
-                  <ConnectActions />
-                ) : (
-                  <>
-                    <Dialog.Cancel />
-                    <WatchTargetSubmit />
-                  </>
-                )}
-              </Dialog.Footer>
-            </WatchTargetRoot>
+            {page === "connect-mymind" ? (
+              <MymindConnectPage
+                key={mymindSession.revision}
+                accountId={mymindSession.accountId}
+                active={open}
+              />
+            ) : Page ? (
+              <>
+                {page === "connect-wait" ? <ConnectGlow /> : null}
+                <WatchTargetRoot>
+                  <Dialog.Header data-empty>
+                    <Dialog.Title style={visuallyHidden}>{title}</Dialog.Title>
+                  </Dialog.Header>
+                  <Dialog.Viewport>
+                    <Page />
+                  </Dialog.Viewport>
+                  <Dialog.Footer>
+                    {page === "connect-wait" ? (
+                      <ConnectActions />
+                    ) : (
+                      <>
+                        <Dialog.Cancel />
+                        <WatchTargetSubmit />
+                      </>
+                    )}
+                  </Dialog.Footer>
+                </WatchTargetRoot>
+              </>
+            ) : null}
           </Dialog.Popup>
         ) : null}
       </Dialog.Portal>

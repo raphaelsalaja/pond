@@ -18,6 +18,8 @@ export interface EnqueueOptions {
   force?: boolean;
   seed?: EnqueueSeed;
   accountId?: string | null;
+  /** Keep the current account owner when false. The default is true. */
+  adoptOrphaned?: boolean;
   generationId?: string | null;
   cookies?: ImportableCookie[];
   listKinds?: ListKind[];
