@@ -69,3 +69,38 @@ it("abandons a pending reveal when navigation changes scope", async () => {
   expect(shown).not.toHaveBeenCalled();
   off();
 });
+
+it("moves to the next remaining result when the watched one leaves", () => {
+  resultNavigation.setSource({ key: "folder", ids: ["a", "b", "c"] });
+  const onLeave = vi.fn();
+  const off = resultNavigation.watchDeparture("b", onLeave);
+  resultNavigation.setSource({ key: "folder", ids: ["a", "b", "c", "d"] });
+  expect(onLeave).not.toHaveBeenCalled();
+  resultNavigation.setSource({ key: "folder", ids: ["a", "c", "d"] });
+  expect(onLeave).toHaveBeenCalledExactlyOnceWith("c");
+  off();
+});
+
+it("falls back to the previous result, then to nothing", () => {
+  resultNavigation.setSource({ key: "folder", ids: ["a", "b"] });
+  const last = vi.fn();
+  const offLast = resultNavigation.watchDeparture("b", last);
+  resultNavigation.setSource({ key: "folder", ids: ["a"] });
+  expect(last).toHaveBeenCalledExactlyOnceWith("a");
+  offLast();
+  const only = vi.fn();
+  const offOnly = resultNavigation.watchDeparture("a", only);
+  resultNavigation.setSource({ key: "folder", ids: [] });
+  expect(only).toHaveBeenCalledExactlyOnceWith(null);
+  offOnly();
+});
+
+it("ignores a result that leaves because the scope changed", () => {
+  resultNavigation.setSource({ key: "folder", ids: ["a", "b"] });
+  const onLeave = vi.fn();
+  const off = resultNavigation.watchDeparture("a", onLeave);
+  resultNavigation.setSource({ key: "trash", ids: ["x"] });
+  resultNavigation.setSource({ key: "trash", ids: [] });
+  expect(onLeave).not.toHaveBeenCalled();
+  off();
+});

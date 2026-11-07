@@ -17,7 +17,10 @@ export function saveIdFromPath(pathname: string): string | null {
   }
 }
 
-export function openSave(id: string): void {
+export function openSave(
+  id: string,
+  options: { replace?: boolean } = {},
+): void {
   const path = `/save/${encodeURIComponent(id)}`;
   primarySelection.set(id);
   selection.setCursor(id);
@@ -25,7 +28,17 @@ export function openSave(id: string): void {
   if (!router) return;
   const { pathname, searchStr } = router.state.location;
   rememberListPath(pathname, searchStr);
-  router.history.push(path);
+  if (options.replace) router.history.replace(path);
+  else router.history.push(path);
+}
+
+/** Moves on when the open Save leaves its results, so a move or trash keeps the preview going. */
+export function followDeparture(id: string): () => void {
+  return resultNavigation.watchDeparture(id, (next) => {
+    if (selection.getCursor() !== id) return;
+    if (next) openSave(next, { replace: true });
+    else closeSave();
+  });
 }
 
 /** Drops the step when the viewer has already moved on, so a slow page load cannot jump back. */
