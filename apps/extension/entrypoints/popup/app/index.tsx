@@ -9,6 +9,7 @@ import {
   IconGear3,
   IconImages,
   IconKeyboard,
+  IconLightbulb,
 } from "@pond/icons";
 import {
   IconBrandArena,
@@ -159,6 +160,7 @@ const LOGOS = {
   unsplash: IconBrandUnsplash,
   bluesky: IconBrandBluesky,
   marked: IconBrandMarked,
+  mymind: IconLightbulb,
 } satisfies Record<ExternalSource, ComponentType<SVGProps<SVGSVGElement>>>;
 
 function Harvest({

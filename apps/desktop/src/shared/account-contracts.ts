@@ -24,6 +24,11 @@ export interface AccountQueryInputs {
     start?: boolean;
   };
   "accounts.disconnect": { accountId: string };
+  "accounts.connectMymind": {
+    kid: string;
+    secret: string;
+    accountId?: string;
+  };
   "accounts.blueskySession": { accountId: string };
   "accounts.blueskySignIn": { accountId: string };
   "accounts.blueskySignOut": { accountId: string };
@@ -59,6 +64,7 @@ export interface AccountQueryResults {
   }>;
   "accounts.setImportScope": OkResult;
   "accounts.disconnect": OkResult;
+  "accounts.connectMymind": OkResult<{ account: ConnectedAccount }>;
   /** Whether Pond's bsky.app page is signed in as this Account, which Bookmarks need and likes don't. */
   "accounts.blueskySession": OkResult<{
     signedIn: boolean;

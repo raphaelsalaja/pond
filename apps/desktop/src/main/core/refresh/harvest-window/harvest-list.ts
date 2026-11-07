@@ -461,6 +461,8 @@ function listUrlForSource(
       return null;
     case "marked":
       return MARKED_LIST_URL;
+    case "mymind":
+      return null;
     case "web":
       return null;
     case "local":
@@ -511,6 +513,8 @@ function buildListExpressionFor(
       return null;
     case "marked":
       return buildMarkedListExpression(args);
+    case "mymind":
+      return null;
     case "web":
       return null;
     case "local":

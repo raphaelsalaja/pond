@@ -2,15 +2,20 @@
 
 # Supported sources
 
-Pond can capture saves from the sources below. To add one, run
+Pond can capture or import saves from the sources below. To add one, run
 `pnpm new-source <id>` and follow [`CONTRIBUTING.md`](../CONTRIBUTING.md).
 
 The **Sync** column shows how a source's saved list is walked (`cursor` /
 `scroll` / `full`), or a dash for capture-only sources.
 
 The **Connect** column shows how you connect an Account: `session` reads the
-site with your signed-in session, and `handle` takes your public handle with
-no sign-in.
+site with your signed-in session, `handle` takes your public handle with
+no sign-in, and `api-key` uses the key you supply.
+
+mymind reads a complete date window from its API on each request. It imports only
+cards created after the first connection. Use a mymind export to import older
+cards. Imported cards keep their original content source. Private mymind pages
+have no capture extractor.
 
 | Source | Id | Hosts | URL patterns | Sync | Connect |
 | --- | --- | --- | --- | --- | --- |
@@ -33,6 +38,7 @@ no sign-in.
 | Unsplash | `unsplash` | `unsplash.com` | `^https?:\/\/(?:www\.)?unsplash\.com\/(?:photos|illustrations)\/(?:[^/?#]*-)?([A-Za-z0-9_-]{11})(?=[/?#]|$)` | `cursor` | `session` |
 | Bluesky | `bluesky` | `bsky.app` | `^https?:\/\/(?:www\.)?bsky\.app\/profile\/[^/?#]+\/post\/([2-7a-z]{13})(?=[/?#]|$)` | `cursor` | `handle` |
 | Marked | `marked` | `marked.dev` | `^https?:\/\/(?:www\.)?marked\.dev\/ref\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?=[/?#]|$)` | `full` | `session` |
+| mymind | `mymind` | `mymind.com` |  | `full` | `api-key` |
 
 `local` is a built-in pseudo-source for files imported directly into the
 library; it has no network extractor.

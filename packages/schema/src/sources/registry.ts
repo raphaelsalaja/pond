@@ -232,6 +232,16 @@ export const SOURCE_DESCRIPTORS = [
     /** One `listLibraryRefs` call returns the whole library, so there is no page order to stop early on. */
     sync: { strategy: "full" },
   },
+  {
+    id: "mymind",
+    label: "mymind",
+    hosts: ["mymind.com"],
+    /** Imported cards keep their original content source. */
+    urlPatterns: [],
+    connect: "api-key",
+    /** Read the complete date window. The stream has no order or cursor guarantee. */
+    sync: { strategy: "full" },
+  },
 ] as const satisfies readonly SourceDescriptor[];
 
 export type ExternalSource = (typeof SOURCE_DESCRIPTORS)[number]["id"];

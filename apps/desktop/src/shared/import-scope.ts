@@ -46,6 +46,7 @@ const SAVED_AND_LIKED: readonly ListKind[] = ["saved", "liked"];
 const ALL_MEDIA: readonly ImportMediaKind[] = ["image", "video", "text"];
 
 const IMPORT_SCOPE_OPTIONS = {
+  mymind: EVERYTHING_ONLY,
   twitter: {
     listKinds: SAVED_AND_LIKED,
     collections: "folder",

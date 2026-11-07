@@ -48,10 +48,14 @@ export const HOOK_SOURCES = {
   unsplash: { matches: unsplash, likes: [], item: "Photo" },
   bluesky: { matches: bluesky, likes: [], item: "Post" },
   marked: { matches: marked, likes: [], item: "Ref" },
+  mymind: { matches: [], likes: [], item: "Card" },
 } as const satisfies Record<ExternalSource, HookSource>;
 
 export const HOOK_SOURCE_IDS: readonly ExternalSource[] = SOURCES.filter(
-  (source): source is ExternalSource => source !== "web" && source !== "local",
+  (source): source is ExternalSource =>
+    source !== "web" &&
+    source !== "local" &&
+    HOOK_SOURCES[source].matches.length > 0,
 );
 
 export const HOOK_MATCHES: string[] = HOOK_SOURCE_IDS.flatMap((source) => [

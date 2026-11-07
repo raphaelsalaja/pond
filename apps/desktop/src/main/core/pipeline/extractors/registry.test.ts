@@ -9,11 +9,18 @@ import { sourceIdFromUrl } from "../url";
 import { EXTRACTOR_LIST, extractorFor, resolveExtractor } from ".";
 
 describe("extractor registry", () => {
-  it("has exactly one extractor per external source", () => {
-    expect(EXTRACTOR_LIST).toHaveLength(EXTERNAL_SOURCE_IDS.length);
-    for (const id of EXTERNAL_SOURCE_IDS) {
+  it("has exactly one extractor per capture source", () => {
+    const sources = EXTERNAL_SOURCE_IDS.filter((id) => id !== "mymind");
+    expect(EXTRACTOR_LIST).toHaveLength(sources.length);
+    for (const id of sources) {
       expect(extractorFor(id)?.source).toBe(id);
     }
+  });
+
+  it("imports mymind cards without a page extractor", () => {
+    expect(extractorFor("mymind")).toBeNull();
+    expect(resolveExtractor("https://access.mymind.com/").source).toBe("web");
+    expect(sourceIdFromUrl("mymind", "https://access.mymind.com/")).toBeNull();
   });
 
   it("has no extractor for local", () => {

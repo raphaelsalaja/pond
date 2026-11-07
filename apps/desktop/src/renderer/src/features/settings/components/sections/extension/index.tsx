@@ -3,6 +3,7 @@ import {
   sourceFlag,
 } from "@pond/schema/browser-extension";
 import {
+  descriptorFor,
   EXTERNAL_SOURCE_IDS,
   type ExternalSource,
   sourceLabel,
@@ -33,6 +34,7 @@ const SAVES = {
   unsplash: "Save photos with the Pond toolbar button.",
   bluesky: "Save posts with the Pond toolbar button.",
   marked: "Save refs with the Pond toolbar button.",
+  mymind: "Import cards through the mymind API.",
 } satisfies Record<ExternalSource, string>;
 
 const LIKE_SOURCES: ReadonlySet<ExternalSource> = new Set(
@@ -46,7 +48,9 @@ export function ExtensionSources() {
 
   return (
     <Settings.List>
-      {EXTERNAL_SOURCE_IDS.map((source) => {
+      {EXTERNAL_SOURCE_IDS.filter(
+        (source) => descriptorFor(source).connect !== "api-key",
+      ).map((source) => {
         const label = sourceLabel(source);
         const on = sourceFlag(extension.enabled, source);
         const upvotes = source === "reddit";

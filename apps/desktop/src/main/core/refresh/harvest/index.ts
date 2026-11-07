@@ -126,6 +126,13 @@ const REGISTRY = {
     adapt: marked.adapt,
     sourceIdFromUrl: (url) => sourceIdFromUrl("marked", url),
   },
+  mymind: {
+    buildExpression: () => {
+      throw new Error("mymind cards are imported through the API");
+    },
+    adapt: () => null,
+    sourceIdFromUrl: () => null,
+  },
   web: {
     buildExpression: () => {
       throw new Error("web source does not harvest via the window pool");

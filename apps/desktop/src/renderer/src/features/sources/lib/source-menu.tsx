@@ -19,9 +19,11 @@ import type { CardModel } from "@/features/sources/components/sync-monitor/lib/h
 import type { AccountRow } from "@/features/sources/hooks/use-accounts";
 import type { WatchRow } from "@/features/sources/hooks/use-watches";
 import { hasImportChoices } from "@/features/sources/lib/import-scope";
+import { importMymindExport } from "@/features/sources/lib/mymind-export";
 import { getSourceDef } from "@/features/sources/lib/registry";
 import { sourceTargetUrl } from "@/features/sources/lib/source-target-url";
 import { connectFlow } from "@/features/sources/state/connect-flow";
+import { mymindConnectFlow } from "@/features/sources/state/mymind-connect-flow";
 import { sourceDetail } from "@/features/sources/state/source-detail";
 import { sourceFlow } from "@/features/sources/state/source-flow";
 import { formatNumber, formatPlural } from "@/shared/lib/format";
@@ -249,7 +251,13 @@ function fetchItems(target: SourceMenuTarget): MenuItemSpec[] {
     ? []
     : [primaryFetchItem(target)];
   if (scopeItem) items.push(scopeItem);
-  if (target.type === "account") {
+  if (target.type === "account" && target.source === "mymind") {
+    items.push({
+      label: "Import Older Saves",
+      icon: <IconArchive />,
+      onClick: () => void importMymindExport(),
+    });
+  } else if (target.type === "account") {
     items.push(
       {
         label: "Fetch Older Saves",
@@ -306,7 +314,12 @@ function confirmOriginalMedia(source: Source): void {
 function startSourceSignIn(
   source: Source,
   accounts: readonly AccountRow[],
+  accountId?: string,
 ): void {
+  if (source === "mymind") {
+    mymindConnectFlow.start(accountId);
+    return;
+  }
   connectFlow.start(
     source,
     accounts
@@ -353,9 +366,10 @@ function connectionItems(
   const items: MenuItemSpec[] = [];
   if (target.type === "account") {
     items.push({
-      label: "Sign In Again",
+      label: target.source === "mymind" ? "Reconnect" : "Sign In Again",
       icon: <IconLink2 />,
-      onClick: () => startSourceSignIn(target.source, options.accounts ?? []),
+      onClick: () =>
+        startSourceSignIn(target.source, options.accounts ?? [], target.id),
     });
   }
   items.push({
@@ -557,6 +571,21 @@ function fetchRows(target: SourceMenuTarget): SourceActionRow[] {
     ],
   });
   if (target.type !== "account") return rows;
+  if (target.source === "mymind") {
+    rows.push({
+      id: "older",
+      title: "Import Older Saves",
+      description:
+        "Use your mymind export to import items saved before you connected.",
+      actions: [
+        {
+          label: "Import Export",
+          onClick: () => void importMymindExport(),
+        },
+      ],
+    });
+    return rows;
+  }
   rows.push(
     {
       id: "older",
@@ -623,13 +652,16 @@ function connectionRows(
   return [
     {
       id: "sign-in",
-      title: "Sign In Again",
-      description: `Use this when ${sourceLabel} signs you out.`,
+      title: target.source === "mymind" ? "Reconnect" : "Sign In Again",
+      description:
+        target.source === "mymind"
+          ? "Replace the access key. Your import start date stays the same."
+          : `Use this when ${sourceLabel} signs you out.`,
       actions: [
         {
-          label: "Sign In",
+          label: target.source === "mymind" ? "Reconnect" : "Sign In",
           onClick: () =>
-            startSourceSignIn(target.source, options.accounts ?? []),
+            startSourceSignIn(target.source, options.accounts ?? [], target.id),
         },
       ],
     },

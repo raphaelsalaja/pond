@@ -200,6 +200,7 @@ export const CAPTURE_EXPECTATIONS = {
     required: ["mediaUrl"],
     recommended: ["title", "author", "capture.upstream.url"],
   },
+  mymind: { required: [], recommended: [] },
   web: {
     required: ["title"],
     recommended: ["description", "mediaUrl"],
