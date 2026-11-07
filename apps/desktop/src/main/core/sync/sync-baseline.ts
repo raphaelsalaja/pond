@@ -3,7 +3,7 @@ import {
   type SourceSyncPrefs,
   saves,
 } from "@pond/schema/db";
-import { and, count, desc, eq, isNull, or } from "drizzle-orm";
+import { and, count, desc, eq, isNull, or, sql } from "drizzle-orm";
 import { getDb } from "../../db";
 import { getAccountSync, patchAccountSync } from "./accounts";
 
@@ -15,6 +15,25 @@ export interface SyncBaseline {
   knownIds: Set<string>;
   total: number;
   full: boolean;
+}
+
+/** A split slide keeps its post's Source ID here, so the post stays known after the original save is purged. */
+const knownIdColumns = {
+  sourceId: saves.sourceId,
+  postSourceId: sql<
+    string | null
+  >`json_extract(${saves.rawJson}, '$.split.sourceId')`,
+};
+
+export function knownIdsFromRows(
+  rows: ReadonlyArray<{ sourceId: string; postSourceId: string | null }>,
+): Set<string> {
+  const ids = new Set<string>();
+  for (const row of rows) {
+    ids.add(row.sourceId);
+    if (row.postSourceId) ids.add(row.postSourceId);
+  }
+  return ids;
 }
 
 export function syncBaselineWhere(
@@ -34,10 +53,10 @@ export async function loadAllKnownIds(
 ): Promise<Set<string>> {
   const db = await getDb();
   const rows = await db
-    .select({ sourceId: saves.sourceId })
+    .select(knownIdColumns)
     .from(saves)
     .where(syncBaselineWhere(account));
-  return new Set<string>(rows.map((r) => r.sourceId));
+  return knownIdsFromRows(rows);
 }
 
 export async function loadSyncBaseline(
@@ -52,12 +71,12 @@ export async function loadSyncBaseline(
     return { knownIds, total: knownIds.size, full: true };
   }
   const rows = await db
-    .select({ sourceId: saves.sourceId })
+    .select(knownIdColumns)
     .from(saves)
     .where(syncBaselineWhere(account))
     .orderBy(desc(saves.savedAt))
     .limit(RECENT_KNOWN_WINDOW);
-  const knownIds = new Set<string>(rows.map((r) => r.sourceId));
+  const knownIds = knownIdsFromRows(rows);
   const totalRow = await db
     .select({ c: count() })
     .from(saves)
