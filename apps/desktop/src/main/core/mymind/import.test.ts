@@ -1,4 +1,5 @@
 import { readFile, stat } from "node:fs/promises";
+import { basename } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { type MymindObject, MymindObjectSchema } from "./client";
 import { importMymindObject, mergeMymindMetadata } from "./import";
@@ -235,7 +236,7 @@ describe("mymind card import", () => {
     dependencies.createSave = vi.fn<ImportDependencies["createSave"]>(
       async (save) => {
         path = save.filePaths?.[0] ?? "";
-        expect(path.endsWith("/photo.png")).toBe(true);
+        expect(basename(path)).toBe("photo.png");
         expect(await readFile(path, "utf8")).toBe("file bytes");
         expect(save.url).toBe("https://example.com/source");
         return { ok: true, id: "file-save" };
