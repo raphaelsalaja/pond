@@ -1,7 +1,7 @@
 import type { Browser, Platform } from "./platform";
 
 /** Keep in sync with apps/desktop and apps/extension package versions on each release. */
-const POND_VERSION = "2.3.1";
+const POND_VERSION = "2.4.0";
 
 const RELEASES_PAGE = "https://github.com/raphaelsalaja/pond/releases";
 const RELEASES_BASE = `${RELEASES_PAGE}/latest/download`;
