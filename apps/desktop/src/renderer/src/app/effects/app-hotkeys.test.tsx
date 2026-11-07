@@ -158,16 +158,22 @@ describe("app hotkeys in text fields", () => {
     expect(attr("popover")).toBe("closed");
   });
 
-  it("stops typing keys in capture before window bubble listeners", async () => {
+  it("lets the field handle typing keys before stopping window listeners", async () => {
     const input = document.createElement("input");
+    const field: string[] = [];
+    input.addEventListener("keydown", (event) => field.push(event.key));
     await mount(input);
     const seen: string[] = [];
     const onBubble = (event: KeyboardEvent) => {
       seen.push(event.key);
     };
     window.addEventListener("keydown", onBubble);
-    await act(async () => press("[", input));
+    await act(async () => {
+      press("[", input);
+      press("Enter", input);
+    });
     window.removeEventListener("keydown", onBubble);
+    expect(field).toEqual(["[", "Enter"]);
     expect(seen).toEqual([]);
   });
 

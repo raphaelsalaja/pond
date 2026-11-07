@@ -7,9 +7,10 @@ export function EditableHotkeyGuard() {
       if (!appHotkeyBlockedByEditable(event)) return;
       event.stopImmediatePropagation();
     };
-    /** Window capture runs before TanStack hotkeys, which register on window without capture. */
-    window.addEventListener("keydown", onKey, true);
-    return () => window.removeEventListener("keydown", onKey, true);
+    /** The root element bubbles after React's field handlers and before TanStack hotkeys on document. */
+    const root = document.documentElement;
+    root.addEventListener("keydown", onKey);
+    return () => root.removeEventListener("keydown", onKey);
   }, []);
   return null;
 }
