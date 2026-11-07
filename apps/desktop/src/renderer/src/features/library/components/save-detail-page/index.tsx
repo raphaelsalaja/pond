@@ -20,6 +20,7 @@ import {
 } from "@/features/saves";
 import {
   closeSave,
+  followDeparture,
   primarySelection,
   selection,
   stepSave,
@@ -51,6 +52,8 @@ export function SaveDetailPage() {
     if (primarySelection.get() !== id) primarySelection.set(id);
     selection.setCursor(id);
   }, [id]);
+
+  useEffect(() => followDeparture(id), [id]);
 
   const step = useCallback((delta: number) => stepSave(id, delta), [id]);
 
