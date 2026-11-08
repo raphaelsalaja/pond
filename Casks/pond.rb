@@ -1,9 +1,9 @@
 cask "pond" do
   arch arm: "arm64", intel: "x64"
 
-  version "2.4.0"
-  sha256 arm:   "25cd2d3af079b90dadcba7f267d35fa234cd516e077da1c2d1ffb1c13f09a4f2",
-         intel: "12f3bbe6c50c5d57929d23a3cff1a29aaeb69519927f27289b51371e1180ee82"
+  version "2.5.0"
+  sha256 arm:   "2e00cc95d2392a7f9fbab6ec321501cfe9809d2dba548fcc8161a6aeabaa9e9b",
+         intel: "d76c6ca3aaf623a2555f13d3aaeae4d9d1d047873740ca00b4080f8eb2fff7cf"
 
   url "https://github.com/raphaelsalaja/pond/releases/download/v#{version}/Pond-#{version}-#{arch}.dmg"
   name "Pond"
