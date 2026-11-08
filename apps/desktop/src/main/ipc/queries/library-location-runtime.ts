@@ -21,7 +21,7 @@ import { flushTagsDump, hydrateTagsFromBundle } from "../../core/tags-bundle";
 import { clearUndoHistory } from "../../core/undo";
 import { closeDb } from "../../db";
 import { rotateBundleBackups } from "../../lib/library-config";
-import { appRelaunchOptions } from "../../lib/relaunch";
+import { relaunchApp } from "../../lib/relaunch-app";
 import { invalidatePaths, resolvePaths } from "../../paths";
 
 const libraryWork = createLibraryWorkCoordinator({
@@ -75,9 +75,7 @@ export async function relaunchSoon(): Promise<void> {
   relaunchPending = true;
   setTimeout(() => {
     log.info("[pond library-ops] relaunching into new library");
-    const options = appRelaunchOptions();
-    if (options) app.relaunch(options);
-    else app.relaunch();
+    relaunchApp();
     app.quit();
   }, 150);
 }
