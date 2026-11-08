@@ -23,9 +23,9 @@ import {
   cuesToTranscript,
   parseCaptions,
 } from "../../refresh/captions-transcript";
-import { transcodeItems } from "../../refresh/download-transcode";
+import type { transcodeItems } from "../../refresh/download-transcode";
 import { type DownloadedVideoItem, downloadVideo } from "../../refresh/yt-dlp";
-import { downloadCaptions } from "../../refresh/yt-dlp-captions";
+import type { downloadCaptions } from "../../refresh/yt-dlp-captions";
 import { isAutoVideoBlockedByStorageGuard } from "../../storage-watcher";
 import { TerminalError, TransientError } from "../extractors/errors";
 import { expectedVideoDownloads, resolveYtDlpTarget } from "../specs";
@@ -56,10 +56,13 @@ const defaultRuntime: FetchVideoRuntime = {
   readSave,
   getVideoDownloadPrefs,
   downloadVideo,
-  downloadCaptions,
+  /** Only Download dialog requests caption or convert, so these load on first use. */
+  downloadCaptions: async (args) =>
+    (await import("../../refresh/yt-dlp-captions")).downloadCaptions(args),
   isAutoVideoBlockedByStorageGuard,
   persistSave,
-  transcodeItems,
+  transcodeItems: async (input) =>
+    (await import("../../refresh/download-transcode")).transcodeItems(input),
 };
 
 export async function runFetchVideoYtdlp(
