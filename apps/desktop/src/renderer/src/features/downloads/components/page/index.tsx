@@ -1,4 +1,5 @@
 import {
+  IconArchiveDownload,
   IconBroom,
   IconCircleCheck,
   IconLink2,
@@ -6,7 +7,7 @@ import {
   IconMediaPlayFill,
 } from "@pond/icons";
 import { sourceLabel } from "@pond/schema/sources";
-import { Button, Tooltip } from "@pond/ui";
+import { Button, Keyboard, Tooltip } from "@pond/ui";
 import {
   useInfiniteQuery,
   useMutation,
@@ -38,6 +39,7 @@ import {
   showsCompletedDownloads,
   statusFeed,
 } from "@/features/downloads/lib/status-feed";
+import { downloadDialog } from "@/features/downloads/state/download-dialog";
 import {
   downloadsFilters,
   useDownloadsFilters,
@@ -52,6 +54,7 @@ import {
   TableFilterToggle,
 } from "@/shared/components/table-filters";
 import { uniqueFilterOptions } from "@/shared/components/table-filters/chip-label";
+import { shortcutGlyphs } from "@/shared/lib/shortcuts";
 import { useDownloadActivity } from "../../hooks/use-download-activity";
 import { TransferJobsPanel } from "../transfers";
 import { DownloadOptionsMenu } from "./options";
@@ -183,6 +186,23 @@ export function DownloadsPage() {
     <SearchChrome.Root
       actions={
         <>
+          <Tooltip
+            label="Download Video or Audio"
+            shortcut={
+              <Keyboard.Cluster keys={shortcutGlyphs("library.download")} />
+            }
+            side="bottom"
+          >
+            <Button
+              icon
+              size="sm"
+              variant="ghost"
+              aria-label="Download Video or Audio"
+              onClick={() => downloadDialog.open()}
+            >
+              <IconArchiveDownload />
+            </Button>
+          </Tooltip>
           <DownloadOptionsMenu />
           <TableFilterToggle
             open={filtersOpen}

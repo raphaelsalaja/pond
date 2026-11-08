@@ -429,6 +429,11 @@ export const SHORTCUTS = {
     label: "Import from Links",
     group: "Library",
   },
+  "library.download": {
+    keys: "Mod+Shift+J",
+    label: "Download Video or Audio",
+    group: "Library",
+  },
 } as const satisfies Record<string, ShortcutDef>;
 
 export type ShortcutId = keyof typeof SHORTCUTS;

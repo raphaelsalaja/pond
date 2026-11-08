@@ -3,6 +3,7 @@ import { Dialog } from "@pond/ui";
 import { isBlankDocumentKind } from "@shared/blank-documents";
 import { DEFAULT_FISH_ID } from "@shared/fish-contracts";
 import { useEffect } from "react";
+import { downloadDialog } from "@/features/downloads";
 import { fishPath } from "@/features/fish";
 import {
   createBlankDocument,
@@ -305,6 +306,10 @@ export function MenuBridge() {
 
         case "library.import-links":
           newMenuDialog.open({ kind: "links" });
+          return;
+
+        case "library.download":
+          downloadDialog.open();
           return;
 
         case "library.import-clipboard":

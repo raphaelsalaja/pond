@@ -1,0 +1,50 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: var(--ds-text-sm);
+  font-weight: var(--ds-weight-lg);
+  color: var(--ds-gray-12);
+  white-space: nowrap;
+
+  & > svg {
+    color: var(--ds-gray-10);
+  }
+}
+
+.tiles {
+  width: max-content;
+  max-width: 100%;
+
+  & > * {
+    padding-inline: 14px;
+  }
+}
+
+.select {
+  width: 240px;
+}
+
+.hint {
+  max-width: 280px;
+  font-size: var(--ds-text-xs);
+  color: var(--ds-gray-9);
+}
+
+.rate {
+  width: 120px;
+}
+
+.destination {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}

@@ -1,0 +1,40 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  outline: none;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 8px 6px 12px;
+  background: var(--ds-gray-2);
+  border-radius: var(--ds-radius-xl);
+  box-shadow: inset 0 0 0 1px var(--ds-gray-a3);
+}
+
+.screen {
+  overflow: hidden;
+  background: var(--ds-black-a12);
+  border-radius: 10px;
+  box-shadow: 0 0 0 1px var(--ds-gray-a3);
+}
+
+.video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: contain;
+}
+
+.transport {
+  padding-inline: 8px;
+}
+
+.dock {
+  min-width: 0;
+}

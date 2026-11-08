@@ -50,6 +50,10 @@ const descriptions = new Map<string, string>(
       "Export converted image or video-to-GIF copies using a preset. Opens a native export directory picker; originals are retained. Returns a job ID for progress and cancellation.",
     "conversion.capabilities":
       "List conversion formats and the codecs available in this Pond build.",
+    "downloader.probe":
+      "Read a media link before downloading it: title, length, quality options with sizes, captions, Most Replayed, or the entries of a playlist.",
+    "downloader.start":
+      "Download media links into the Library as Saves. Mode is video, audio, or transcript; a range trims a single link to a clip. Container, fps, and compression convert a video after download; GIF needs a range of 30 seconds or less.",
     "conversion.compress":
       "Compress selected existing image files in one recoverable batch. Replaces originals, regenerates derived data, and records the operation for Undo.",
     "library.switchTo":

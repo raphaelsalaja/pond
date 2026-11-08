@@ -283,6 +283,7 @@ describe("app menu sections", () => {
         { label: "Import Files" },
         { label: "Import Folders" },
         { label: "Import from Links" },
+        { label: "Download Video or Audio" },
         { label: "Import from Clipboard" },
         { type: "separator" },
         { label: "Import Bookmarks" },

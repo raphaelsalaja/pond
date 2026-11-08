@@ -1,5 +1,4 @@
 import { resolve, sep } from "node:path";
-import { pathToFileURL } from "node:url";
 import { saves } from "@pond/schema/db";
 import { isThumbnailKind } from "@shared/save-file-names";
 import { eq } from "drizzle-orm";
@@ -9,6 +8,7 @@ import { z } from "zod";
 import type { QueryResult } from "../../../shared/query-contracts";
 import { readLibraryMedia } from "../../core/storage/library-media-storage";
 import { getDb } from "../../db";
+import { writeFileRefsToClipboard } from "../../lib/clipboard-files";
 import { saveDir } from "../../paths";
 import { resolveSaveFilePath } from "../helpers";
 import {
@@ -19,18 +19,6 @@ import {
 } from "./params";
 
 const FileParams = z.object({ id: StringParam, fileIndex: FileIndexParam });
-
-async function writeFileRefsToClipboard(paths: string[]): Promise<void> {
-  if (paths.length === 0) return;
-  await clipboard.write([
-    new ClipboardItem({
-      "text/plain": paths.join("\n"),
-      "text/uri-list": paths
-        .map((path) => pathToFileURL(path).href)
-        .join("\r\n"),
-    }),
-  ]);
-}
 
 export const savesClipboardQueries = {
   "saves.copyImage": query(

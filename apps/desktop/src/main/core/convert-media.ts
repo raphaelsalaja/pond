@@ -259,7 +259,7 @@ export function buildFfmpegConversionArguments(
   return args;
 }
 
-async function runFfmpeg(input: {
+export async function runFfmpeg(input: {
   path: string;
   args: string[];
   signal: AbortSignal;

@@ -161,6 +161,7 @@ export function buildTrayTemplate(
           "library.import-links",
           accelerators.importLinks,
         ),
+        run("Download Video or Audio", "library.download"),
         run("Import from Clipboard", "library.import-clipboard"),
         { type: "separator" },
         run("Import Bookmarks", "library.import-bookmarks"),

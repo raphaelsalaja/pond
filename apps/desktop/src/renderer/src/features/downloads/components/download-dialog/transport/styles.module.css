@@ -1,0 +1,27 @@
+.transport {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+}
+
+.clock {
+  font-family: var(--ds-font-mono);
+  font-size: var(--ds-text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-12);
+}
+
+.total {
+  color: var(--ds-gray-9);
+}
+
+.buttons {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.aside {
+  display: flex;
+  justify-content: flex-end;
+}

@@ -11,6 +11,8 @@ import {
   whisperModelVersion,
 } from "../whisper";
 
+const CAPTIONS_TRANSCRIPT_MODEL = "captions";
+
 function isAudioVisual(save: Save): boolean {
   const file = pickPrimaryFile(save);
   const kind = deriveTypeKind(file, save);
@@ -28,6 +30,8 @@ export const transcriptEnricher: Enricher = {
   eligible(save: Save) {
     if (save.status !== "complete" || save.deletedAt != null) return false;
     if (!isAudioVisual(save)) return false;
+    /** Captions from the site are a better transcript than on-device speech recognition. */
+    if (save.transcriptModel === CAPTIONS_TRANSCRIPT_MODEL) return false;
     return save.transcriptModel !== whisperModelVersion();
   },
   async run(save: Save) {

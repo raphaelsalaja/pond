@@ -170,6 +170,27 @@ export async function pickProducedPoster(
   return null;
 }
 
+/** Info JSON and thumbnail for a run that wrote no media, keyed off the first info.json stem. */
+export async function readSidecars(dir: string): Promise<{
+  infoJson: RawYtdlp | null;
+  poster: { path: string; mimeType: string } | null;
+}> {
+  let entries: string[];
+  try {
+    entries = await readdir(dir);
+  } catch {
+    return { infoJson: null, poster: null };
+  }
+  const info = entries.find((name) => /\.info\.json$/i.test(name));
+  if (!info) return { infoJson: null, poster: null };
+  const anchor = join(dir, `${info.replace(/\.info\.json$/i, "")}.media`);
+  const [infoJson, poster] = await Promise.all([
+    readInfoJson(dir, anchor).catch(() => null),
+    pickProducedPoster(dir, anchor),
+  ]);
+  return { infoJson, poster };
+}
+
 function imageMimeFor(name: string): string {
   const ext = extname(name).toLowerCase();
   switch (ext) {
@@ -196,6 +217,14 @@ function mimeFor(path: string): string {
       return "video/quicktime";
     case ".mkv":
       return "video/x-matroska";
+    case ".mp3":
+      return "audio/mpeg";
+    case ".m4a":
+      return "audio/mp4";
+    case ".opus":
+      return "audio/opus";
+    case ".ogg":
+      return "audio/ogg";
     default:
       return "video/mp4";
   }

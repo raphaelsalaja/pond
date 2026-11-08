@@ -173,6 +173,7 @@ export type MenuActionId =
   | "library.import-files"
   | "library.import-folders"
   | "library.import-links"
+  | "library.download"
   | "library.import-clipboard"
   | "library.import-bookmarks"
   | "library.import-mymind"

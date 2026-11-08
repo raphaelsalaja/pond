@@ -35,6 +35,7 @@ import {
   type BlankDocumentIcons,
   type BlankDocumentKind,
 } from "@shared/blank-documents";
+import { downloadDialog } from "@/features/downloads";
 import { newMenuDialog } from "@/features/library/state/new-menu-dialog";
 import {
   connectableSourceItems,
@@ -181,6 +182,14 @@ export function buildNewMenuItems(
           keywords: "url website bookmark save",
           shortcut: shortcutGlyphs("library.import-links"),
           onClick: () => newMenuDialog.open({ kind: "links" }),
+        },
+        {
+          id: "download",
+          label: "Download Video or Audio",
+          icon: <IconArchiveDownload />,
+          keywords: "youtube yt-dlp clip trim mp3 m4a transcript playlist",
+          shortcut: shortcutGlyphs("library.download"),
+          onClick: () => downloadDialog.open(),
         },
         {
           id: "clipboard",

@@ -40,6 +40,7 @@ describe("new menu spec", () => {
       "Import Files",
       "Import Folders",
       "Import from Links",
+      "Download Video or Audio",
       "Import from Clipboard",
       "Import Bookmarks",
       "Import mymind",

@@ -1486,6 +1486,20 @@ export const IconFlagFill = /* @__PURE__ */ createIcon("Flag", "fill", [
     },
   ],
 ]);
+export const IconFlame = /* @__PURE__ */ createIcon("Flame", "outline", [
+  [
+    "path",
+    {
+      d: "M9 16.25C10.519 16.25 11.75 15.015 11.75 13.491C11.75 11.395 9 9 9 9C9 9 6.25 11.396 6.25 13.491C6.25 15.015 7.481 16.25 9 16.25Z",
+    },
+  ],
+  [
+    "path",
+    {
+      d: "M9 16.25C12.038 16.25 14.5 13.78 14.5 10.733C14.5 6.542 9 1.75 9 1.75C9 1.75 3.5 6.542 3.5 10.733C3.5 13.78 5.962 16.25 9 16.25Z",
+    },
+  ],
+]);
 export const IconFlipHorizontal2 = /* @__PURE__ */ createIcon(
   "FlipHorizontal2",
   "outline",
@@ -2495,12 +2509,48 @@ export const IconMediaFastBackwards = /* @__PURE__ */ createIcon(
     ["path", { d: "M15.25 4.5L9.75 9L15.25 13.5Z" }],
   ],
 );
+export const IconMediaFastBackwardsFill = /* @__PURE__ */ createIcon(
+  "MediaFastBackwards",
+  "fill",
+  [
+    [
+      "path",
+      {
+        d: "M9 5.06Q9 3.9 8.05 4.5L2.95 8.3Q2.1 9 2.95 9.7L8.05 13.5Q9 14.1 9 12.94Z",
+      },
+    ],
+    [
+      "path",
+      {
+        d: "M16 5.06Q16 3.9 15.05 4.5L9.95 8.3Q9.1 9 9.95 9.7L15.05 13.5Q16 14.1 16 12.94Z",
+      },
+    ],
+  ],
+);
 export const IconMediaFastForward = /* @__PURE__ */ createIcon(
   "MediaFastForward",
   "outline",
   [
     ["path", { d: "M9.75 4.5L15.25 9L9.75 13.5Z" }],
     ["path", { d: "M2.75 4.5L8.25 9L2.75 13.5Z" }],
+  ],
+);
+export const IconMediaFastForwardFill = /* @__PURE__ */ createIcon(
+  "MediaFastForward",
+  "fill",
+  [
+    [
+      "path",
+      {
+        d: "M9 5.06Q9 3.9 9.95 4.5L15.05 8.3Q15.9 9 15.05 9.7L9.95 13.5Q9 14.1 9 12.94Z",
+      },
+    ],
+    [
+      "path",
+      {
+        d: "M2 5.06Q2 3.9 2.95 4.5L8.05 8.3Q8.9 9 8.05 9.7L2.95 13.5Q2 14.1 2 12.94Z",
+      },
+    ],
   ],
 );
 export const IconMediaLibrary = /* @__PURE__ */ createIcon(

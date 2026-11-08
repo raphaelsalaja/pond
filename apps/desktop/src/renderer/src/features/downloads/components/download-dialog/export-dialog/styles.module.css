@@ -1,0 +1,24 @@
+.popup {
+  --width: 640px;
+}
+
+.body {
+  padding-block: 20px 24px;
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 20px 32px;
+  justify-content: start;
+}
+
+.wide {
+  grid-column: 1 / -1;
+}
+
+.estimate {
+  font-size: var(--ds-text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-10);
+}

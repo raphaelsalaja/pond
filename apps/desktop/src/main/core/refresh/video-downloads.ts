@@ -5,6 +5,7 @@ import {
   saves,
   tasks,
 } from "@pond/schema/db";
+import type { DownloadRequest } from "@shared/downloader-contracts";
 import { isVideoFile } from "@shared/media-index";
 import { and, eq, inArray, isNull, ne, notInArray } from "drizzle-orm";
 import log from "electron-log/main.js";
@@ -47,6 +48,7 @@ const defaultRuntime: VideoDownloadRuntime = {
 interface QueueVideoDownloadOptions {
   /** Interactive tasks bypass the pipeline pause, so bulk requests must stay background. */
   interactive: boolean;
+  download?: DownloadRequest;
 }
 
 interface SaveRef {
@@ -94,7 +96,7 @@ export async function queueVideoDownloads(
   const now = new Date();
   let queued = 0;
   for (const batch of batches(saveIds)) {
-    queued += requestIngestingDownloads(db, batch, options.interactive, now);
+    queued += requestIngestingDownloads(db, batch, options, now);
     queued += await reopenSettledSaves(db, batch, options, now, runtime);
   }
   if (queued > 0) runtime.kickReconciler();
@@ -143,7 +145,7 @@ export async function removeVideos(
 function requestIngestingDownloads(
   db: Db,
   saveIds: string[],
-  interactive: boolean,
+  options: QueueVideoDownloadOptions,
   now: Date,
 ): number {
   return db.$raw
@@ -188,7 +190,7 @@ function requestIngestingDownloads(
             .set({
               payload: requestedPayload(
                 TaskPayloadSchema.parse(video.payload),
-                interactive,
+                options,
               ),
               updatedAt: now,
             })
@@ -206,7 +208,7 @@ function requestIngestingDownloads(
           save,
           "fetch_video_ytdlp",
           video?.id,
-          requestedPayload({}, interactive),
+          requestedPayload({}, options),
           now,
         );
         for (const task of own) {
@@ -275,7 +277,7 @@ async function reopenSettledSaves(
       .all()
       .map((row) => [`${row.saveId}:${row.op}`, row.id]),
   );
-  const requested = requestedPayload({}, options.interactive);
+  const requested = requestedPayload({}, options);
 
   for (const row of rows) {
     for (const op of VIDEO_FOLLOW_UPS) {
@@ -299,10 +301,13 @@ async function reopenSettledSaves(
 
 function requestedPayload(
   base: TaskPayload,
-  interactive: boolean,
+  options: QueueVideoDownloadOptions,
 ): NewTask["payload"] {
-  const payload = { ...base, requested: true };
-  return interactive ? withInteractivePriority(payload) : payload;
+  const { download: _previous, ...rest } = base;
+  const payload = options.download
+    ? { ...rest, requested: true, download: options.download }
+    : { ...rest, requested: true };
+  return options.interactive ? withInteractivePriority(payload) : payload;
 }
 
 function requestTask(

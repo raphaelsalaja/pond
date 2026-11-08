@@ -1,0 +1,23 @@
+.popup {
+  --page-dialog-width: 600px;
+
+  &[data-page="single"] {
+    --page-dialog-width: 760px;
+  }
+}
+
+.header {
+  justify-content: center;
+  padding-inline: 48px;
+}
+
+.title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.total {
+  font-variant-numeric: tabular-nums;
+}

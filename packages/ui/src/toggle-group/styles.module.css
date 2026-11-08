@@ -24,6 +24,15 @@
     border-radius: var(--ds-radius-sm);
     box-shadow: var(--ds-shadow-xs);
   }
+
+  &[data-variant="tiles"] {
+    display: flex;
+    gap: 6px;
+    padding: 0;
+    overflow: visible;
+    background: none;
+    border-radius: 0;
+  }
 }
 
 .indicator {

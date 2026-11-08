@@ -1,5 +1,5 @@
 import { Outlet, useRouterState } from "@tanstack/react-router";
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { SaveDetails } from "@/app/components/save-details";
 import { Toolbar } from "@/app/components/toolbar";
 import { Tray } from "@/app/components/tray";
@@ -7,6 +7,7 @@ import { AppHotkeys } from "@/app/effects/app-hotkeys";
 import { EditableHotkeyGuard } from "@/app/effects/editable-hotkey-guard";
 import { MenuBridge } from "@/app/effects/menu-bridge";
 import { UndoRedoBridge } from "@/app/effects/undo-redo-bridge";
+import { useDownloadDialog } from "@/features/downloads/state/download-dialog";
 import { fishIdFromPath } from "@/features/fish";
 import { FolderSidebar } from "@/features/library/components/folder-sidebar";
 import { NewMenuDialogHost } from "@/features/library/components/new-menu";
@@ -39,6 +40,25 @@ const SettingsSidebar = lazy(() =>
     default: module.SettingsSidebar,
   })),
 );
+
+const DownloadDialogHost = lazy(() =>
+  import("@/features/downloads/components/download-dialog").then((module) => ({
+    default: module.DownloadDialogHost,
+  })),
+);
+
+/** The trim editor is heavy, so it loads the first time the dialog opens. */
+function DownloadDialogSlot() {
+  const { open } = useDownloadDialog();
+  const [loaded, setLoaded] = useState(open);
+  if (open && !loaded) setLoaded(true);
+  if (!loaded) return null;
+  return (
+    <Suspense fallback={null}>
+      <DownloadDialogHost />
+    </Suspense>
+  );
+}
 
 export function RootShell() {
   const isSettings = useRouterState({
@@ -127,6 +147,7 @@ export function RootShell() {
       </AppShell.Root>
       <Tray.Library />
       <SourceFlowHost />
+      <DownloadDialogSlot />
     </>
   );
 }

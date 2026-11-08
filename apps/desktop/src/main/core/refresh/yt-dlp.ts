@@ -4,18 +4,14 @@ import { join } from "node:path";
 import type { Source } from "@pond/schema/db";
 import type { RawYtdlp } from "@pond/schema/raw";
 import type { ReportDownloadActivity } from "@shared/download-activity";
+import type { DownloadRequest } from "@shared/downloader-contracts";
 import log from "electron-log/main.js";
 import { TASK_WATCHDOG_MS } from "../pipeline/task-timeouts";
 import { getVideoDownloadPrefs } from "../prefs";
 import { partitionForIngest } from "../sync/accounts";
 import { binariesAvailable } from "./binaries";
 import { writeNetscapeCookies } from "./cookies";
-import {
-  cookieAttempts,
-  formatSelector,
-  maxFilesizeArg,
-  YTDLP_TRANSFER_FLAGS,
-} from "./yt-dlp-format";
+import { cookieAttempts, downloadArgv } from "./yt-dlp-format";
 import {
   keepsPartialDownload,
   pickProducedFiles,
@@ -25,10 +21,7 @@ import {
   type SubtitleFile,
 } from "./yt-dlp-output";
 import { runWithTimeout } from "./yt-dlp-process";
-import {
-  createYtdlpProgressReporter,
-  YTDLP_PROGRESS_TEMPLATE,
-} from "./yt-dlp-progress";
+import { createYtdlpProgressReporter } from "./yt-dlp-progress";
 import { ensureYtDlp } from "./yt-dlp-updater";
 
 interface DownloadVideoArgs {
@@ -40,6 +33,8 @@ interface DownloadVideoArgs {
   /** Quoted/carousel tweets are a yt-dlp playlist; YouTube watch URLs must never expand. */
   allowPlaylist?: boolean;
   expectedCount?: number;
+  /** A download someone set up in the Download dialog; overrides the per-source preferences. */
+  request?: DownloadRequest;
 }
 
 export interface DownloadedVideoItem {
@@ -59,6 +54,8 @@ interface DownloadedVideos {
 
 const HARD_TIMEOUT_MS = 90_000;
 const MAX_PLAYLIST_TIMEOUT_FACTOR = 4;
+/** Cutting at exact frames re-encodes the section silently, so progress lines stall for longer. */
+const SECTION_TIMEOUT_FACTOR = 4;
 const VIDEO_WATCHDOG_MS = TASK_WATCHDOG_MS.fetch_video_ytdlp;
 
 export async function downloadVideo(
@@ -98,60 +95,17 @@ export async function downloadVideo(
       : undefined;
     cookies = await writeNetscapeCookies(partition);
 
-    const argv = [
-      args.allowPlaylist ? "--yes-playlist" : "--no-playlist",
-      "--no-warnings",
-      "--newline",
-      "--progress",
-      "--progress-delta",
-      "0.5",
-      "--progress-template",
-      `download:${YTDLP_PROGRESS_TEMPLATE}`,
-      "--no-part",
-      "--restrict-filenames",
-      "--write-info-json",
-      "--socket-timeout",
-      "30",
-      "--retries",
-      "3",
-      ...YTDLP_TRANSFER_FLAGS,
-      "-f",
-      formatSelector(args.source, prefs),
-    ];
-    if (args.source === "youtube" || prefs.embedThumbnail) {
-      argv.push("--write-thumbnail", "--convert-thumbnails", "jpg");
-    }
-    const filesize = maxFilesizeArg(prefs);
-    if (filesize) argv.unshift("--max-filesize", filesize);
-
-    if (ffmpeg) {
-      argv.push("--ffmpeg-location", ffmpeg);
-      if (prefs.container !== "auto") {
-        argv.push("--merge-output-format", prefs.container);
-      }
-      if (prefs.embedMetadata) argv.push("--embed-metadata");
-      if (prefs.embedThumbnail) argv.push("--embed-thumbnail");
-      if (prefs.embedChapters) argv.push("--embed-chapters");
-      if (prefs.sponsorblockRemove) argv.push("--sponsorblock-remove", "all");
-      if (prefs.subtitles === "embed") {
-        argv.push("--embed-subs", "--sub-langs", prefs.subtitleLang);
-      }
-    } else {
-      argv.push("-f", "b[ext=mp4]/b");
-    }
-
-    if (prefs.subtitles === "download") {
-      argv.push(
-        "--write-subs",
-        "--write-auto-subs",
-        "--sub-langs",
-        prefs.subtitleLang,
-      );
-      if (ffmpeg) argv.push("--convert-subs", "srt");
-    }
+    const argv = downloadArgv({
+      source: args.source,
+      prefs,
+      ffmpeg,
+      allowPlaylist: Boolean(args.allowPlaylist),
+      request: args.request,
+    });
 
     const timeoutMs =
       HARD_TIMEOUT_MS *
+      (args.request?.range ? SECTION_TIMEOUT_FACTOR : 1) *
       Math.min(
         MAX_PLAYLIST_TIMEOUT_FACTOR,
         Math.max(1, args.expectedCount ?? 1),
@@ -228,9 +182,13 @@ export async function downloadVideo(
     }
 
     const wantPoster =
-      args.source === "youtube" || Boolean(prefs.embedThumbnail);
+      Boolean(args.request) ||
+      args.source === "youtube" ||
+      Boolean(prefs.embedThumbnail);
     const subtitles =
-      prefs.subtitles === "download" ? await pickSubtitleFiles(mediaDir) : [];
+      prefs.subtitles === "download" && args.request?.mode !== "audio"
+        ? await pickSubtitleFiles(mediaDir)
+        : [];
     const items: DownloadedVideoItem[] = [];
     for (let i = 0; i < produced.length; i++) {
       const file = produced[i];
