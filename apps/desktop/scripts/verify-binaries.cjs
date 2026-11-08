@@ -25,8 +25,10 @@ async function verify(context, { runFfmpeg = runFfmpegVersion } = {}) {
   const nativeHostPath = join(resourcesDir, "bin", nativeHostName(platform));
 
   assertPresent(ffmpegPath, "ffmpeg");
-  // A binary built for another OS cannot be executed on the packaging host.
-  if (process.platform === platform) {
+  // Another OS can't run it, and Rosetta's first launch of another arch outlasts
+  // the timeout, so verifyMacSlices covers cross-arch Mac builds instead.
+  const runnable = arch === process.arch || arch === "universal";
+  if (process.platform === platform && runnable) {
     const result = runFfmpeg(ffmpegPath);
     if (result.error || result.status !== 0) {
       throw new Error(
@@ -46,8 +48,39 @@ async function verify(context, { runFfmpeg = runFfmpegVersion } = {}) {
     );
     assertPresent(nativeHostPath, "pond-native-host");
   }
+  if (platform === "darwin" && process.platform === "darwin") {
+    verifyMacSlices(resourcesDir, arch);
+  }
 
   console.log(`[pond verify] bundled ffmpeg OK (${platform})`);
+}
+
+const MAC_SLICES = new Map([
+  ["arm64", ["arm64"]],
+  ["x64", ["x86_64"]],
+  ["universal", ["arm64", "x86_64"]],
+]);
+
+/** One runner packages both Mac builds, so each helper must carry the packed arch's slice. */
+function verifyMacSlices(resourcesDir, arch, readArchs = lipoArchs) {
+  const wanted = MAC_SLICES.get(arch);
+  if (!wanted) return;
+  for (const name of ["ffmpeg", "pond-native-host"]) {
+    const path = join(resourcesDir, "bin", name);
+    const archs = readArchs(path);
+    const missing = wanted.filter((slice) => !archs.includes(slice));
+    if (missing.length > 0) {
+      throw new Error(
+        `[pond verify] bundled ${name} at ${path} is ${archs.join(", ") || "unreadable"}, ` +
+          `missing ${missing.join(", ")}. The ${arch} build cannot run it.`,
+      );
+    }
+  }
+}
+
+function lipoArchs(path) {
+  const result = spawnSync("lipo", ["-archs", path], { encoding: "utf8" });
+  return result.status === 0 ? result.stdout.trim().split(/\s+/) : [];
 }
 
 function runFfmpegVersion(ffmpegPath) {
@@ -283,6 +316,7 @@ function listFiles(root) {
 }
 
 exports.verifySharpRuntime = verifySharpRuntime;
+exports.verifyMacSlices = verifyMacSlices;
 exports.verify = verify;
 
 function assertPresent(path, label) {

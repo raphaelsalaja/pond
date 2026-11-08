@@ -21,6 +21,7 @@
         "electron-builder.yml",
         "resources/**",
         "scripts/build-native-host.mjs",
+        "scripts/fetch-mac-ffmpeg.mjs",
         "scripts/fix-dmg-window.cjs",
         "scripts/prepare-dmg-background.mjs",
         "scripts/verify-binaries.cjs",
@@ -29,7 +30,8 @@
       "outputs": [
         "dist/**",
         "resources/bin/pond-native-host",
-        "resources/bin/pond-native-host.exe"
+        "resources/bin/pond-native-host.exe",
+        "vendor/ffmpeg/**"
       ]
     }
   }

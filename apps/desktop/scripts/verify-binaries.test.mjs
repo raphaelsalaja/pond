@@ -11,7 +11,7 @@ import { tmpdir } from "node:os";
 import { join, sep } from "node:path";
 import { afterEach, describe, it } from "node:test";
 
-const { verifySharpRuntime } = createRequire(import.meta.url)(
+const { verifyMacSlices, verifySharpRuntime } = createRequire(import.meta.url)(
   "./verify-binaries.cjs",
 );
 
@@ -75,6 +75,40 @@ describe("verifySharpRuntime", () => {
       { recursive: true },
     );
     assert.throws(() => verifySharpRuntime(root, "x64"), /darwin-x64/);
+  });
+});
+
+describe("verifyMacSlices", () => {
+  const slices = (map) => (path) => map[path.split(sep).at(-1)] ?? [];
+
+  it("accepts universal and matching helpers", () => {
+    const read = slices({
+      ffmpeg: ["x86_64"],
+      "pond-native-host": ["x86_64", "arm64"],
+    });
+    assert.doesNotThrow(() => verifyMacSlices("/res", "x64", read));
+  });
+
+  it("fails an Intel build that ships an Apple silicon native host", () => {
+    const read = slices({
+      ffmpeg: ["x86_64"],
+      "pond-native-host": ["arm64"],
+    });
+    assert.throws(
+      () => verifyMacSlices("/res", "x64", read),
+      /pond-native-host .* missing x86_64/,
+    );
+  });
+
+  it("fails an Intel build that ships Apple silicon ffmpeg", () => {
+    const read = slices({
+      ffmpeg: ["arm64"],
+      "pond-native-host": ["x86_64", "arm64"],
+    });
+    assert.throws(
+      () => verifyMacSlices("/res", "x64", read),
+      /ffmpeg .* missing x86_64/,
+    );
   });
 });
 

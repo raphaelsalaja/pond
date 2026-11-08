@@ -13,6 +13,8 @@ const out = resolve(
   outDir,
   process.platform === "win32" ? "pond-native-host.exe" : "pond-native-host",
 );
+/** Both Mac builds package from one runner, so the host must carry both slices. */
+const MAC_ARCHS = ["-arch", "arm64", "-arch", "x86_64"];
 
 mkdirSync(outDir, { recursive: true });
 
@@ -30,7 +32,10 @@ console.log(`[pond] native host ok (${out})`);
 
 function buildUnixHost() {
   const compiler = process.env.CC || "cc";
-  return spawnSync(compiler, ["-O2", "-o", out, src], { stdio: "inherit" });
+  const archs = process.platform === "darwin" ? MAC_ARCHS : [];
+  return spawnSync(compiler, ["-O2", ...archs, "-o", out, src], {
+    stdio: "inherit",
+  });
 }
 
 function buildWindowsHost() {
