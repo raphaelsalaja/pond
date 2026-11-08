@@ -77,8 +77,16 @@ export type SpawnRelaunchProcess = (
 
 /**
  * Closes inherited descriptors before `exec` so the replacement does not pin the predecessor's AppImage mount. Chromium's launcher does this for `app.relaunch`; `child_process.spawn` does not.
+ * @remarks Runs under bash because dash, Debian's `/bin/sh`, reads `exec 12>&-` as a command named `12` and exits before the `exec`.
  */
 const CLOSE_INHERITED_FDS = `for f in /proc/self/fd/*; do n=\${f##*/}; if [ "$n" -gt 2 ] 2>/dev/null; then eval "exec $n>&-" 2>/dev/null; fi; done; exec "$0" "$@"`;
+
+export function relaunchCommand(plan: Pick<RelaunchSpawn, "command" | "args">) {
+  return {
+    command: "bash",
+    args: ["-c", CLOSE_INHERITED_FDS, plan.command, ...plan.args],
+  };
+}
 
 export interface SpawnRelaunchOptions {
   spawnProcess?: SpawnRelaunchProcess;
@@ -89,15 +97,12 @@ export function spawnRelaunch(
   plan: RelaunchSpawn,
   { spawnProcess = spawn, onError }: SpawnRelaunchOptions,
 ): void {
-  const child = spawnProcess(
-    "/bin/sh",
-    ["-c", CLOSE_INHERITED_FDS, plan.command, ...plan.args],
-    {
-      detached: true,
-      stdio: "ignore",
-      env: plan.env,
-    },
-  );
+  const { command, args } = relaunchCommand(plan);
+  const child = spawnProcess(command, args, {
+    detached: true,
+    stdio: "ignore",
+    env: plan.env,
+  });
   child.once("error", onError);
   child.unref();
 }

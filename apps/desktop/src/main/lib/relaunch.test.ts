@@ -1,9 +1,11 @@
+import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 import {
   appRelaunchEnv,
   appRelaunchOptions,
   planRelaunch,
   RELAUNCH_ARG,
+  relaunchCommand,
   type SpawnRelaunchProcess,
   spawnRelaunch,
 } from "./relaunch";
@@ -133,7 +135,7 @@ describe("spawnRelaunch", () => {
     );
 
     expect(spawned).toEqual([
-      "/bin/sh",
+      "bash",
       [
         "-c",
         expect.stringContaining("/proc/self/fd"),
@@ -171,4 +173,26 @@ describe("spawnRelaunch", () => {
 
     expect(reported).toEqual(new Error("spawn failed"));
   });
+
+  it.runIf(process.platform === "linux")(
+    "closes descriptors above 9 and execs the replacement",
+    () => {
+      const { command, args } = relaunchCommand({
+        command: "/bin/sh",
+        args: ["-c", "ls /proc/$$/fd"],
+      });
+      const result = spawnSync(command, args, {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe", ...Array(12).fill("pipe")],
+      });
+
+      expect(result.status).toBe(0);
+      const fds = String(result.stdout)
+        .split(/\s+/)
+        .filter(Boolean)
+        .map(Number);
+      expect(fds).toContain(1);
+      expect(fds.filter((fd) => fd > 2)).toEqual([]);
+    },
+  );
 });
