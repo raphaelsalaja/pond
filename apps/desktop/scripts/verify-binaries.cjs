@@ -25,8 +25,10 @@ async function verify(context, { runFfmpeg = runFfmpegVersion } = {}) {
   const nativeHostPath = join(resourcesDir, "bin", nativeHostName(platform));
 
   assertPresent(ffmpegPath, "ffmpeg");
-  // A binary built for another OS cannot be executed on the packaging host.
-  if (process.platform === platform) {
+  // Another OS can't run it, and Rosetta's first launch of another arch outlasts
+  // the timeout, so verifyMacSlices covers cross-arch Mac builds instead.
+  const runnable = arch === process.arch || arch === "universal";
+  if (process.platform === platform && runnable) {
     const result = runFfmpeg(ffmpegPath);
     if (result.error || result.status !== 0) {
       throw new Error(
