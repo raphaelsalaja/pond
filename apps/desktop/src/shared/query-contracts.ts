@@ -28,6 +28,10 @@ import type {
   ConversionQueryResults,
 } from "./conversion-contracts";
 import type { DownloadActivity } from "./download-activity";
+import type {
+  DownloaderQueryInputs,
+  DownloaderQueryResults,
+} from "./downloader-contracts";
 import type { FeedbackEvent } from "./feedback";
 import type { FishQueryInputs, FishQueryResults } from "./fish-contracts";
 import type {
@@ -148,6 +152,7 @@ export interface QueryInputs
     FishQueryInputs,
     FishMcpQueryInputs,
     ConversionQueryInputs,
+    DownloaderQueryInputs,
     SavesReadQueryInputs,
     SavesMutationQueryInputs,
     SavesImportQueryInputs,
@@ -366,6 +371,7 @@ export interface QueryResults
     FishQueryResults,
     FishMcpQueryResults,
     ConversionQueryResults,
+    DownloaderQueryResults,
     SavesReadQueryResults,
     SavesMutationQueryResults,
     SavesImportQueryResults,

@@ -7,6 +7,7 @@ import { AppHotkeys } from "@/app/effects/app-hotkeys";
 import { EditableHotkeyGuard } from "@/app/effects/editable-hotkey-guard";
 import { MenuBridge } from "@/app/effects/menu-bridge";
 import { UndoRedoBridge } from "@/app/effects/undo-redo-bridge";
+import { DownloadDialogHost } from "@/features/downloads/components/download-dialog";
 import { fishIdFromPath } from "@/features/fish";
 import { FolderSidebar } from "@/features/library/components/folder-sidebar";
 import { NewMenuDialogHost } from "@/features/library/components/new-menu";
@@ -127,6 +128,7 @@ export function RootShell() {
       </AppShell.Root>
       <Tray.Library />
       <SourceFlowHost />
+      <DownloadDialogHost />
     </>
   );
 }

@@ -80,6 +80,12 @@ export function buildFileSection(context: AppMenuContext): AppMenuItem {
             click: sendMenuAction("library.import-links"),
           },
           {
+            label: "Download Video or Audio",
+            accelerator: accelerator("library.download"),
+            registerAccelerator: false,
+            click: sendMenuAction("library.download"),
+          },
+          {
             label: "Import from Clipboard",
             click: sendMenuAction("library.import-clipboard"),
           },

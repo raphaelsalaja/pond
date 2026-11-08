@@ -1,5 +1,6 @@
 import { useHotkeySequences, useHotkeys } from "@tanstack/react-hotkeys";
 import { useEffect } from "react";
+import { downloadDialog } from "@/features/downloads";
 import {
   createNote,
   importPaths,
@@ -314,6 +315,11 @@ export function AppHotkeys() {
       {
         hotkey: bindingKeys(shortcuts, "library.import-links"),
         callback: () => newMenuDialog.open({ kind: "links" }),
+        options: { ignoreInputs: true },
+      },
+      {
+        hotkey: bindingKeys(shortcuts, "library.download"),
+        callback: () => downloadDialog.open(),
         options: { ignoreInputs: true },
       },
       {

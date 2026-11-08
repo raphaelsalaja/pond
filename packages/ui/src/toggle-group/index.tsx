@@ -4,7 +4,7 @@ import { useLayoutEffect, useRef } from "react";
 import styles from "./styles.module.css";
 
 export interface ToggleGroupProps extends Base.Props {
-  variant?: "raised" | "outline";
+  variant?: "raised" | "outline" | "tiles";
 }
 
 function pressedToggle(root: HTMLElement): HTMLElement | null {

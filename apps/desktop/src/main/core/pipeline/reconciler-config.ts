@@ -1,6 +1,7 @@
 import type { Op, Source, Task } from "@pond/schema/db";
 import type { JsonValue } from "@pond/schema/json";
 import type { ReportDownloadActivity } from "@shared/download-activity";
+import { DownloadRequestSchema } from "@shared/downloader-contracts";
 import { z } from "zod";
 
 export const POLL_INTERVAL_MS = 5_000;
@@ -55,7 +56,10 @@ const ArchivePayloadSchema = z
   .catch({});
 
 const FetchVideoPayloadSchema = z
-  .object({ requested: z.boolean().optional().catch(undefined) })
+  .object({
+    requested: z.boolean().optional().catch(undefined),
+    download: DownloadRequestSchema.optional().catch(undefined),
+  })
   .catch({});
 
 export const WORKERS = {

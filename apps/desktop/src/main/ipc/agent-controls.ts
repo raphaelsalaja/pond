@@ -76,6 +76,7 @@ const nativeFlows = {
   "library.import-files": "Import files",
   "library.import-folders": "Import folders",
   "library.import-links": "Import links",
+  "library.download": "Open the Download dialog",
   "library.import-clipboard": "Import from the clipboard",
   "library.import-bookmarks": "Import bookmarks",
   "library.import-mymind": "Import a mymind export",

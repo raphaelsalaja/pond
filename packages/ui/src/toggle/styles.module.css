@@ -101,6 +101,33 @@
   }
 }
 
+[data-pond-toggle-group][data-variant="tiles"] > .root {
+  flex: none;
+  height: var(--ds-size-md);
+  font-weight: var(--ds-weight-md);
+  color: var(--ds-gray-10);
+  background: var(--ds-gray-a2);
+  border-radius: var(--ds-radius-md);
+  transition:
+    background var(--ds-duration-snap) var(--ds-easing-standard),
+    color var(--ds-duration-snap) var(--ds-easing-standard),
+    box-shadow var(--ds-duration-snap) var(--ds-easing-standard);
+
+  &:hover,
+  &[data-demo-state="hover"] {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-a3);
+  }
+
+  &[data-pressed],
+  &[data-pressed]:hover {
+    font-weight: var(--ds-weight-md);
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-1);
+    box-shadow: var(--ds-shadow-sm);
+  }
+}
+
 [data-pond-toggle-group][data-variant="outline"] > .root {
   color: var(--ds-gray-9);
   border-radius: 0;

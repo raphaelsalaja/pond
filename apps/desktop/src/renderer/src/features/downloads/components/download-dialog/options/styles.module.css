@@ -1,0 +1,35 @@
+.modes {
+  display: flex;
+  width: 100%;
+}
+
+.mode {
+  flex: 1;
+  gap: 6px;
+  justify-content: center;
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 32px;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.label {
+  font-size: var(--ds-text-md);
+  font-weight: var(--ds-weight-lg);
+  color: var(--ds-gray-12);
+}
+
+.hint {
+  font-size: var(--ds-text-sm);
+  color: var(--ds-gray-10);
+}
