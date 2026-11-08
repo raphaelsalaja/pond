@@ -26,6 +26,7 @@ const CHROMIUM_NMH_DIRS = [
   "Library/Application Support/Arc/User Data/NativeMessagingHosts",
   "Library/Application Support/Dia/User Data/NativeMessagingHosts",
   "Library/Application Support/Vivaldi/NativeMessagingHosts",
+  "Library/Application Support/net.imput.helium/NativeMessagingHosts",
 ] as const;
 
 const FIREFOX_NMH_TARGETS = [
@@ -75,6 +76,7 @@ const LINUX_CHROMIUM_CONFIG_DIRS = [
   "microsoft-edge-beta",
   "microsoft-edge-dev",
   "vivaldi",
+  "net.imput.helium",
 ] as const;
 
 function linuxConfigHome(

@@ -79,6 +79,26 @@ describe("native host manifests", () => {
     ]);
   });
 
+  it("registers Helium", async () => {
+    const writes: string[] = [];
+
+    await writeNativeHostManifests({
+      platform: "darwin",
+      hostPath: () => "/Applications/Pond.app/pond-native-host",
+      home: () => "/Users/test",
+      exists: (path) =>
+        posix(path) === "/Applications/Pond.app/pond-native-host" ||
+        posix(path) ===
+          "/Users/test/Library/Application Support/net.imput.helium",
+      makeDirectory: () => {},
+      writeFile: (path) => writes.push(posix(path)),
+    });
+
+    expect(writes).toEqual([
+      "/Users/test/Library/Application Support/net.imput.helium/NativeMessagingHosts/so.pond.host.json",
+    ]);
+  });
+
   it("registers Firefox before its support directory exists", async () => {
     const writes: string[] = [];
 
@@ -267,6 +287,7 @@ describe("native host manifests", () => {
         path === `${configHome}/google-chrome` ||
         path === `${configHome}/BraveSoftware/Brave-Browser` ||
         path === `${configHome}/BraveSoftware/Brave-Origin` ||
+        path === `${configHome}/net.imput.helium` ||
         path === "/home/test/.var/app/com.google.Chrome/config/google-chrome" ||
         path === "/home/test/.mozilla" ||
         path === "/home/test/.var/app/org.mozilla.firefox/.mozilla",
@@ -282,6 +303,7 @@ describe("native host manifests", () => {
       `${configHome}/google-chrome/NativeMessagingHosts/so.pond.host.json`,
       `${configHome}/BraveSoftware/Brave-Browser/NativeMessagingHosts/so.pond.host.json`,
       `${configHome}/BraveSoftware/Brave-Origin/NativeMessagingHosts/so.pond.host.json`,
+      `${configHome}/net.imput.helium/NativeMessagingHosts/so.pond.host.json`,
       "/home/test/.var/app/com.google.Chrome/config/google-chrome/NativeMessagingHosts/so.pond.host.json",
       "/home/test/.mozilla/native-messaging-hosts/so.pond.host.json",
       "/home/test/.var/app/org.mozilla.firefox/.mozilla/native-messaging-hosts/so.pond.host.json",

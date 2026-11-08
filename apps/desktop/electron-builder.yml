@@ -114,7 +114,9 @@ mac:
   # Signs the app extensions, which electron-builder skips, then the app as usual.
   sign: scripts/sign-mac.cjs
   extraResources:
-    - from: node_modules/ffmpeg-static/ffmpeg
+    # One runner packages both architectures, so ffmpeg comes per arch from
+    # scripts/fetch-mac-ffmpeg.mjs rather than the runner-only ffmpeg-static copy.
+    - from: vendor/ffmpeg/darwin-${arch}/ffmpeg
       to: bin/ffmpeg
     # Loaded by the main process to open Safari at Pond's extension; Safari answers
     # only the main process of the app that holds the extension.

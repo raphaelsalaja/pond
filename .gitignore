@@ -73,6 +73,8 @@ apps/desktop/resources/replay/sw.js
 apps/desktop/resources/bin/pond-native-host
 apps/desktop/resources/bin/pond-native-host.exe
 apps/desktop/resources/bin/pond-apple-model
+# Per-architecture Mac ffmpeg fetched by apps/desktop/scripts/fetch-mac-ffmpeg.mjs
+apps/desktop/vendor/
 
 # Safari App Extension compiled by apps/desktop/scripts/build-safari-extension.mjs
 apps/desktop/resources/SafariExtension/
