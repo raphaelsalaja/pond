@@ -46,13 +46,42 @@ function iconName(el: Element): string | null {
   );
 }
 
+function isSavedIcon(icon: string | null): boolean {
+  if (!icon) return false;
+  const name = icon.toLowerCase();
+  return (
+    name === "save-fill" ||
+    name === "saved" ||
+    (name.includes("save") && name.includes("fill"))
+  );
+}
+
 function isUnsaveClick(el: Element): boolean {
   const icon = iconName(el);
-  if (icon === "save-fill") return true;
+  if (isSavedIcon(icon)) return true;
   const text = compactText(el.textContent);
+  if (el.getAttribute("aria-pressed") === "true") {
+    const label = el.getAttribute("aria-label");
+    if (
+      looksLikeSaveLabel(label) ||
+      icon?.toLowerCase().includes("save") ||
+      text === "save" ||
+      text === "save post" ||
+      text === "bookmark"
+    ) {
+      return true;
+    }
+  }
   return (
     text === "unsave" || text === "remove from saved" || text === "unsave post"
   );
+}
+
+function postIsSaved(node: Element): boolean {
+  if (node.localName !== "shreddit-post" || !node.hasAttribute("saved")) {
+    return false;
+  }
+  return node.getAttribute("saved") !== "false";
 }
 
 function isSaveClickNode(el: Element): boolean {
@@ -66,30 +95,40 @@ function isSaveClickNode(el: Element): boolean {
   return text === "save" || text === "save post" || text === "bookmark";
 }
 
-function isSaveClick(ev: Event): boolean {
-  for (const node of composedNodes(ev)) {
-    if (!(node instanceof Element)) continue;
-    if (isUnsaveClick(node) && compactText(node.textContent).length < 32) {
-      return false;
-    }
-    if (isSaveClickNode(node) && compactText(node.textContent).length < 32) {
-      return true;
+function eventElements(ev: Event): Element[] {
+  const seen = new Set<Element>();
+  const out: Element[] = [];
+  const add = (node: EventTarget | null) => {
+    if (!(node instanceof Element) || seen.has(node)) return;
+    seen.add(node);
+    out.push(node);
+  };
+  for (const node of composedNodes(ev)) add(node);
+  if (ev.target instanceof Element) {
+    let cur: Element | null = ev.target;
+    let depth = 0;
+    while (cur && depth < 24) {
+      add(cur);
+      const root = cur.getRootNode();
+      cur =
+        cur.parentElement ?? (root instanceof ShadowRoot ? root.host : null);
+      depth++;
     }
   }
-  if (!(ev.target instanceof Element)) return false;
-  let cur: Element | null = ev.target;
-  let depth = 0;
-  while (cur && depth < 12) {
-    if (isUnsaveClick(cur) && compactText(cur.textContent).length < 32) {
-      return false;
-    }
-    if (isSaveClickNode(cur) && compactText(cur.textContent).length < 32) {
-      return true;
-    }
-    cur = cur.parentElement;
-    depth++;
+  return out;
+}
+
+/** The "Save" label is often a child of the control that already shows the saved state. */
+export function isSaveClick(ev: Event): boolean {
+  const nodes = eventElements(ev);
+  let save = false;
+  for (const node of nodes) {
+    if (postIsSaved(node)) return false;
+    if (compactText(node.textContent).length >= 32) continue;
+    if (isUnsaveClick(node)) return false;
+    if (isSaveClickNode(node)) save = true;
   }
-  return false;
+  return save;
 }
 
 function permalinkFromPost(post: Element): string | null {
@@ -175,7 +214,20 @@ function graphqlInput(request: JsonRecord | null): JsonRecord {
   return isRecord(vars.input) ? vars.input : vars;
 }
 
-function isGraphqlSave(body: string | null): boolean {
+function readSaveState(input: JsonRecord, body: string): string | null {
+  const value = input.saveState ?? input.save_state;
+  if (value === true) return "true";
+  if (value === false) return "false";
+  const text =
+    asText(value) ?? /"save_?[Ss]tate"\s*:\s*"([^"]+)"/.exec(body)?.[1];
+  return text?.trim().toLowerCase() ?? null;
+}
+
+function isSavedState(state: string): boolean {
+  return state === "saved" || state === "save" || state === "true";
+}
+
+export function isGraphqlSave(body: string | null): boolean {
   if (!body || !/save/i.test(body)) return false;
   if (COMMENT_ID_RE.test(body) && !POST_ID_RE.test(body)) return false;
   const request = parseJsonRecord(body);
@@ -186,6 +238,9 @@ function isGraphqlSave(body: string | null): boolean {
   if (input.saved === false || input.save === false) return false;
   const action = String(input.action ?? "").toLowerCase();
   if (action === "unsave") return false;
+  // UpdatePostSaveState is both directions; saveState says which one.
+  const state = readSaveState(input, body);
+  if (state) return isSavedState(state);
   if (/postsave|savepost|save.?state/i.test(op)) return true;
   if (/updatePostSaveState/i.test(body) && !/unsave/i.test(body)) return true;
   return action === "save" || input.saved === true || input.save === true;
