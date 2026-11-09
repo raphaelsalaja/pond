@@ -15,7 +15,10 @@ interface TagMenuProps {
   appliedKeys?: ReadonlySet<string>;
   mixedKeys?: ReadonlySet<string>;
   counts?: ReadonlyMap<string, number>;
-  onToggle: (name: string) => void | Promise<void>;
+  onToggle: (
+    name: string,
+    options?: { created?: boolean },
+  ) => void | Promise<void>;
   allowCreate?: boolean;
   placeholder?: string;
   emptyLabel?: ReactNode;

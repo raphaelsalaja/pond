@@ -19,6 +19,7 @@ import type { TagsRowData } from "@/features/tags/components/manager/lib/types";
 import { TagPicker } from "@/features/tags/components/picker";
 import { useTagCreation } from "@/features/tags/hooks/use-tag-creation";
 import { useTagsData } from "@/features/tags/hooks/use-tag-manager";
+import { tagOperations } from "@/features/tags/operations/tag-client";
 import { useTagCreationRequest } from "@/features/tags/state/creation";
 import { MatchesEmpty } from "@/shared/components/matches-empty";
 import { SearchChrome } from "@/shared/components/search-chrome";
@@ -237,6 +238,7 @@ export function TagsPage() {
   const { creating, startCreate, cancelCreate, saveCreate } = useTagCreation();
   const creationRequest = useTagCreationRequest();
   const handledCreationRequest = useRef(0);
+  const [creationGroup, setCreationGroup] = useState<string | null>(null);
   const [descriptionDraft, setDescriptionDraft] = useState("");
   const cancelDescriptionRef = useRef(false);
   const clearRef = useRef<() => void>(() => {});
@@ -249,9 +251,15 @@ export function TagsPage() {
     )
       return;
     handledCreationRequest.current = creationRequest.token;
-    setScope(creationRequest.kind === "group" ? "all" : "ungrouped");
+    const group = groupSummaries.find((candidate) => candidate.id === scope);
+    setScope(
+      creationRequest.kind === "group" ? "all" : group ? scope : "ungrouped",
+    );
+    setCreationGroup(
+      creationRequest.kind === "tag" ? (group?.name ?? null) : null,
+    );
     startCreate(creationRequest.kind);
-  }, [creationRequest, startCreate]);
+  }, [creationRequest, groupSummaries, scope, startCreate]);
   const contextValue = useMemo(
     () => ({
       groups: groupOptions,
@@ -366,6 +374,21 @@ export function TagsPage() {
           : (groupSummaries.find((group) => group.id === scope)?.name ??
             "All Tags");
 
+  function beginCreate(kind: "tag" | "group") {
+    setCreationGroup(null);
+    startCreate(kind);
+  }
+
+  async function commitCreate(name: string) {
+    const groupName = creationGroup;
+    try {
+      await saveCreate(name);
+      if (groupName) await tagOperations.addToGroup(name, groupName);
+    } finally {
+      setCreationGroup(null);
+    }
+  }
+
   function commitGroupDescription() {
     const group = activeGroupRow?.group;
     if (!group || descriptionDraft.trim() === (group.description ?? "")) return;
@@ -471,7 +494,7 @@ export function TagsPage() {
                           variant="ghost"
                           size="xs"
                           aria-label="New Group"
-                          onClick={() => startCreate("group")}
+                          onClick={() => beginCreate("group")}
                         >
                           <IconPlus size={12} />
                         </Button>
@@ -580,11 +603,29 @@ export function TagsPage() {
                 </section>
               ) : null}
 
+              {scope === "ungrouped" && ungrouped.length > 0 ? (
+                <section className={styles.detail}>
+                  <div className={styles.title}>
+                    <h1>
+                      Uncategorized
+                      <span className={styles.count}>({ungrouped.length})</span>
+                    </h1>
+                    <Button
+                      variant="secondary"
+                      size="xs"
+                      onClick={() => beginCreate("tag")}
+                    >
+                      New Tag
+                    </Button>
+                  </div>
+                </section>
+              ) : null}
+
               {creating === "tag" ? (
                 <div className={styles.draft}>
                   <DraftRow
                     creating="tag"
-                    onSave={saveCreate}
+                    onSave={commitCreate}
                     onFinish={cancelCreate}
                   />
                 </div>
@@ -610,7 +651,7 @@ export function TagsPage() {
                     <Button
                       variant="primary"
                       size="sm"
-                      onClick={() => startCreate("tag")}
+                      onClick={() => beginCreate("tag")}
                     >
                       New Tag
                     </Button>
@@ -664,7 +705,7 @@ export function TagsPage() {
                       <Button
                         variant="primary"
                         size="sm"
-                        onClick={() => startCreate("tag")}
+                        onClick={() => beginCreate("tag")}
                       >
                         New Tag
                       </Button>
