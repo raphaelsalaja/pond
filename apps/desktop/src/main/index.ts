@@ -65,10 +65,14 @@ import { ensureIngestToken } from "./keychain";
 import { broadcast } from "./lib/broadcast";
 import { rotateBundleBackups } from "./lib/library-config";
 import { LibraryMetadataError } from "./lib/library-id";
+import { readLibraryPointer } from "./lib/library-pointer";
 import { disableMenuActionImages } from "./lib/menu-action-images";
 import { killTrackedProcessTrees } from "./lib/process-tree";
 import { RELAUNCH_ARG } from "./lib/relaunch";
-import { recoverUnreadableLibrary } from "./library-recovery";
+import {
+  recoverMissingLibrary,
+  recoverUnreadableLibrary,
+} from "./library-recovery";
 import {
   consoleLoggingEnabled,
   protocolRegistration,
@@ -341,6 +345,18 @@ app.whenReady().then(async () => {
 
 async function openActiveLibrary(): Promise<PondPaths | null> {
   try {
+    const pointer = readLibraryPointer();
+    if (pointer && !existsSync(pointer)) {
+      log.warn("[pond] Library is missing", pointer);
+      if (wantsMcp) {
+        app.exit(1);
+        return null;
+      }
+      if (!(await recoverMissingLibrary(pointer))) {
+        app.exit(0);
+        return null;
+      }
+    }
     ensureDefaultLibrary();
     return resolvePaths();
   } catch (error) {
