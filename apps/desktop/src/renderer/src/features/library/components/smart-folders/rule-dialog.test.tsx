@@ -204,7 +204,75 @@ describe("smart folder rule dialog", () => {
     expect(attempts).toBe(1);
     expect(closed).toBe(true);
   });
+
+  it("lists folders and tags with their parent or group, in the same order as the other pickers", async () => {
+    const saved: Query[] = [];
+    await render({
+      name: "Food",
+      query: {
+        combinator: "and",
+        rules: [
+          { field: "folder", operator: "some", value: [] },
+          { field: "tags", operator: "some", value: ["Design"] },
+        ],
+      },
+      choices: {
+        folders: [
+          { value: "yt-food", label: "Food", crumb: "YouTube" },
+          { value: "youtube", label: "YouTube" },
+          { value: "ig-food", label: "Food", crumb: "Instagram" },
+          { value: "instagram", label: "Instagram" },
+        ],
+        tags: [
+          { value: "Motion", label: "Motion", crumb: "Craft" },
+          { value: "Design", label: "Design" },
+        ],
+      },
+      onSave: async (_name, query) => {
+        saved.push(query);
+      },
+    });
+    await act(async () => button("Folders Values").click());
+    expect(choiceRows()).toEqual([
+      { crumb: null, label: "Instagram" },
+      { crumb: "Instagram", label: "Food" },
+      { crumb: null, label: "YouTube" },
+      { crumb: "YouTube", label: "Food" },
+    ]);
+    const nested = [...document.querySelectorAll('[role="option"]')].find(
+      (node) =>
+        node.querySelector("[data-menu-breadcrumb]")?.textContent ===
+        "Instagram",
+    );
+    if (!(nested instanceof HTMLElement))
+      throw new Error("Missing Instagram Food option");
+    await act(async () => nested.click());
+    await act(async () => button("Folders Values").click());
+    await act(async () => button("Tags Values").click());
+    expect(choiceRows()).toEqual([
+      { crumb: "Craft", label: "Motion" },
+      { crumb: null, label: "Design" },
+    ]);
+    await act(async () => button("Create").click());
+    expect(saved).toHaveLength(1);
+    expect(JSON.stringify(saved[0])).toContain("ig-food");
+    expect(JSON.stringify(saved[0])).not.toContain("Instagram");
+  });
 });
+
+function choiceRows(): { crumb: string | null; label: string | null }[] {
+  const popup = [...document.querySelectorAll("[data-open]")]
+    .filter((node) => node.querySelector('[role="option"]'))
+    .at(-1);
+  return [...(popup?.querySelectorAll('[role="option"]') ?? [])].map((node) => {
+    const crumb = node.querySelector("[data-menu-breadcrumb]");
+    const current = node.querySelector("[data-menu-breadcrumb-current]");
+    return {
+      crumb: crumb?.textContent ?? null,
+      label: current?.textContent ?? node.textContent,
+    };
+  });
+}
 
 describe("rule draft persistence", () => {
   it("preserves nested any/all, group and predicate negation, and numeric semantics", () => {

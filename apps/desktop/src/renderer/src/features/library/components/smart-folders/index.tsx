@@ -22,7 +22,7 @@ import {
   SidebarSectionMenu,
   useRevealSidebarSection,
 } from "@/features/settings";
-import { useTags } from "@/features/tags";
+import { useTagGroups, useTags } from "@/features/tags";
 import { usePrefs } from "@/shared/state/prefs";
 import { useOrganizationTree } from "../../hooks/use-organization-tree";
 import { resetFilters, setQuery } from "../../state/view-store";
@@ -31,6 +31,7 @@ import { SmartFolderEntry } from "./entry";
 import { creationItems } from "./menu-items";
 import { RuleDialog } from "./rule-dialog";
 import { newRule } from "./rule-editor";
+import { ruleChoices } from "./rule-editor/choices";
 import type { EditorRequest } from "./types";
 
 async function countMatches(query: Query): Promise<number> {
@@ -220,6 +221,7 @@ function SmartFolderEditor({
   const libraryRevision = useSelector(savesStore, (state) => state.revision);
   const folders = useFolders();
   const tags = useTags();
+  const tagGroups = useTagGroups();
   const view = request.mode === "edit" ? request.view : null;
   const parentId =
     request.mode === "edit" ? request.view.parentId : request.parentId;
@@ -249,13 +251,7 @@ function SmartFolderEditor({
       query={initialQuery}
       inheritedQuery={inheritedQuery}
       parentName={parent?.name}
-      choices={{
-        folders: folders.map((folder) => ({
-          value: folder.id,
-          label: folder.name,
-        })),
-        tags: tags.map((tag) => ({ value: tag.name, label: tag.name })),
-      }}
+      choices={ruleChoices({ folders, tags, tagGroups })}
       count={countMatches}
       onClose={onClose}
       onSave={async (name, query) => {

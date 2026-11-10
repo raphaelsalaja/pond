@@ -84,7 +84,7 @@ export const pondQuery = vi.fn(async (name: string, patch?: WirePrefsPatch) => {
   if (name === "savedViews.list") return savedViewList.current;
   if (name === "accounts.list") return { accounts: [] };
   if (name === "watches.list") return { watches: [] };
-  if (name === "tags.list") return [];
+  if (name === "tags.list" || name === "tagGroups.list") return [];
   if (name === "canvases.list") return [];
   if (name === "fish.list") return fishList.current;
   if (name === "folders.list") return folderList.current;
