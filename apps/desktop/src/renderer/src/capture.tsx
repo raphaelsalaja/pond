@@ -12,6 +12,8 @@ const DEFAULT_WIDTH = 550;
 const IMAGE_WAIT_MS = 6000;
 
 const params = new URLSearchParams(location.search);
+document.documentElement.dataset.card = params.get("card") ?? "";
+delete document.documentElement.dataset.ready;
 const kindParam = params.get("kind");
 const KIND =
   kindParam === "text" ? "text" : kindParam === "threads" ? "threads" : "tweet";

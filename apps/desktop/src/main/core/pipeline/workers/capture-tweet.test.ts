@@ -249,6 +249,31 @@ describe("runCaptureTweet reply parent enrichment", () => {
     ).toBeUndefined();
   });
 
+  it("renders a current card again when refresh asks for its own media", async () => {
+    const current: RawJson = {
+      extractorId: "test",
+      extractedAt: "2026-10-16T00:00:00.000Z",
+      captureTweetVersion: 12,
+      capture: {
+        id: "9",
+        source: "twitter",
+        url: "https://x.com/a/status/9",
+        description: "A photo",
+        media: [{ type: "image", url: "https://pbs.twimg.com/media/a.jpg" }],
+      },
+    };
+    const harness = makePorts(save(current), {
+      light: { ok: true, png: rendered },
+      dark: { ok: true, png: rendered },
+    });
+
+    await harness.runCaptureTweet("save-1");
+    expect(harness.renderTweetCardPng).not.toHaveBeenCalled();
+
+    await harness.runCaptureTweet("save-1", { force: true });
+    expect(harness.renderTweetCardPng).toHaveBeenCalled();
+  });
+
   it("stops before a screenshot when capture is already cancelled", async () => {
     const harness = makePorts(save(replyRaw()), {
       light: { ok: true, png: rendered },

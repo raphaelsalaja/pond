@@ -42,6 +42,8 @@ interface CaptureTweetOptions {
   nativeOnly?: boolean;
   retryPendingParent?: boolean;
   signal?: AbortSignal;
+  /** Refresh rebuilds the card from the save's own capture even when the version is current. */
+  force?: boolean;
 }
 
 export interface CaptureTweetSave {
@@ -119,10 +121,15 @@ export function createCaptureTweetTask(
     opts?: CaptureTweetOptions,
   ) => Promise<CaptureTweetResult>,
 ) {
-  return async (saveId: string, signal?: AbortSignal): Promise<void> => {
-    const opts: CaptureTweetOptions = { retryPendingParent: true };
-    if (signal) opts.signal = signal;
-    const result = await captureTweet(saveId, opts);
+  return async (
+    saveId: string,
+    signal?: AbortSignal,
+    opts?: { force?: boolean },
+  ): Promise<void> => {
+    const next: CaptureTweetOptions = { retryPendingParent: true };
+    if (signal) next.signal = signal;
+    if (opts?.force) next.force = true;
+    const result = await captureTweet(saveId, next);
     if (signal?.aborted) return;
     if (result.authWall && result.captured === 0) {
       throw new TransientError(
@@ -152,6 +159,7 @@ async function runCaptureTweetWithPorts<SaveRow extends CaptureTweetSave>(
   if (!save.sourceId) return idle;
 
   if (
+    !opts?.force &&
     !isCaptureTweetStale(save.rawJson) &&
     !(opts?.retryPendingParent && needsReplyParentEnrichment(save.rawJson))
   ) {
