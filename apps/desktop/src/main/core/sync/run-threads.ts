@@ -12,7 +12,7 @@ import {
 } from "../refresh/harvest-window";
 import { partitionForAccount } from "./accounts";
 import { mergeEntryListKinds, stampListKind, unionById } from "./harvest-union";
-import { organizeIncoming } from "./incoming";
+import { fileIncomingSaves } from "./incoming";
 import {
   loadSyncBaseline,
   patchAccountSync,
@@ -211,9 +211,10 @@ export async function syncThreads(
     ev.outcome = "aborted";
     return;
   }
-  await organizeIncoming(
+  await fileIncomingSaves(
     bulk.createdIds,
-    account.sync.incoming,
+    accountId,
+    "threads",
     "sync:threads",
   );
 

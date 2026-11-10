@@ -3,7 +3,7 @@ import type { SyncRunEvent } from "@pond/schema/events";
 import { libraryRoot } from "../../paths";
 import { setSourceCooldown } from "../pipeline/rate-governor";
 import { patchAccountSync } from "../sync/accounts";
-import { organizeIncoming } from "../sync/incoming";
+import { fileIncomingSaves } from "../sync/incoming";
 import { emit } from "../sync/sync-status";
 import { type createMymindClient, MymindApiError } from "./client";
 import { readMymindCredential, removeMymindCredential } from "./credentials";
@@ -140,9 +140,10 @@ export async function syncMymind(
           },
         });
         if (result.imported)
-          await organizeIncoming(
+          await fileIncomingSaves(
             [result.id],
-            account.sync.incoming,
+            accountId,
+            "mymind",
             "sync:mymind",
           );
         emit({
