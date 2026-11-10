@@ -201,7 +201,7 @@ export const viewerSection = defineCustomSection({
           control: "switch",
           key: "hoverVideo",
           title: "Hover Preview",
-          description: "Play and scrub thumbnails with the pointer.",
+          description: "Play the video while the pointer is over it.",
         },
         {
           control: "switch",
