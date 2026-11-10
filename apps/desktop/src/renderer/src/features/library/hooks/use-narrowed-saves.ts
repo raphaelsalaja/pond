@@ -48,6 +48,17 @@ export function useNarrowedSaves(mode: SaveListMode, sourceFilter: string) {
   const folderId = nav.kind === "folder" ? nav.id : null;
   const searchEverywhere = searchScope === "all" && keywords.trim().length > 0;
   const recentlyAdded = !searchEverywhere && mode === "recentlyAdded";
+  // A visit rewrites recents for every collection. Only Recents queries by those ids.
+  const recentSaveIds = useMemo(
+    () => (mode === "recents" ? recents.map((entry) => entry.saveId) : null),
+    [mode, recents],
+  );
+  // Hold the 7-day boundary while Recently Added stays open. Sampling the clock
+  // again when a Save opens would change the query, clear the page, and the
+  // preview would read that empty page as the Save leaving.
+  const [addedSince, setAddedSince] = useState<number | null>(null);
+  if (recentlyAdded && addedSince === null) setAddedSince(recentlyAddedSince());
+  else if (!recentlyAdded && addedSince !== null) setAddedSince(null);
   useEffect(() => {
     if (viewsReady)
       activateFolderPresentation(
@@ -65,7 +76,8 @@ export function useNarrowedSaves(mode: SaveListMode, sourceFilter: string) {
       orderFolderId: searchEverywhere ? undefined : (folderId ?? undefined),
       sortDir: !recentlyAdded && sortDir === "asc" ? "asc" : "desc",
       scope: {
-        savedSince: recentlyAdded ? recentlyAddedSince() : undefined,
+        savedSince:
+          recentlyAdded && addedSince !== null ? addedSince : undefined,
         deletedOnly: mode === "trash",
         source: searchEverywhere ? undefined : sourceFilter || undefined,
         untagged: !searchEverywhere && mode === "untagged",
@@ -81,7 +93,7 @@ export function useNarrowedSaves(mode: SaveListMode, sourceFilter: string) {
         tag: !searchEverywhere && nav.kind === "tag" ? nav.name : undefined,
         saveIds:
           !searchEverywhere && mode === "recents"
-            ? recents.map((entry) => entry.saveId)
+            ? (recentSaveIds ?? [])
             : undefined,
       },
     }),
@@ -100,7 +112,8 @@ export function useNarrowedSaves(mode: SaveListMode, sourceFilter: string) {
       nav,
       includeSubfolders,
       folders,
-      recents,
+      recentSaveIds,
+      addedSince,
     ],
   );
   const [state, setState] = useState<QuerySessionState>({
