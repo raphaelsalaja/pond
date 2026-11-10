@@ -2,7 +2,7 @@ import { setTimeout as sleep } from "node:timers/promises";
 import type { Capture } from "@pond/schema/raw";
 import { buildTextCardData, type TextCardData } from "@shared/text-card";
 import { buildTweetCardData, type TweetCardData } from "@shared/tweet-card";
-import { BrowserWindow } from "electron";
+import { BrowserWindow, nativeImage } from "electron";
 import log from "electron-log/main.js";
 import sharp from "sharp";
 import { z } from "zod";
@@ -24,14 +24,18 @@ const TWEET_PAD_CSS = 24;
 const TWEET_RADIUS_CSS = 16;
 const READY_TIMEOUT_MS = 12_000;
 const LOAD_TIMEOUT_MS = 15_000;
-const CDP_TIMEOUT_MS = 10_000;
-const CAPTURE_TIMEOUT_MS = 15_000;
-const RENDER_TIMEOUT_MS = 30_000;
+/** A hidden window that never commits a frame must cost seconds, not block the Save for half a minute. */
+const CAPTURE_TIMEOUT_MS = 6_000;
+/** Offscreen frames arrive on the paint event; wait this long for one before retrying a capture. */
+const PAINT_WAIT_MS = 1_500;
+const RENDER_TIMEOUT_MS = 24_000;
 const IDLE_DISPOSE_MS = 60_000;
 
 let win: BrowserWindow | null = null;
 let chain: Promise<unknown> = Promise.resolve();
 let idleTimer: ReturnType<typeof setTimeout> | null = null;
+/** Chromium treats a hash-only change as a same-document navigation; the next capturePage then never gets a frame. */
+let loadSeq = 0;
 
 function clearIdleDispose(): void {
   if (idleTimer) {
@@ -65,10 +69,15 @@ function ensureWindow(): BrowserWindow {
     width: CARD_WIDTH + 2,
     height: INITIAL_HEIGHT,
     webPreferences: {
+      /**
+       * An offscreen window keeps drawing for itself. A merely hidden one stops
+       * committing frames here, which made every capturePage wait to time out.
+       */
+      offscreen: true,
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
-      /** Hidden windows otherwise throttle timers/rAF, stalling image loads. */
+      /** Offscreen windows otherwise throttle timers/rAF, stalling image loads. */
       backgroundThrottling: false,
     },
   });
@@ -76,6 +85,19 @@ function ensureWindow(): BrowserWindow {
     win = null;
   });
   return win;
+}
+
+/** Resolves after the next painted frame, or after `PAINT_WAIT_MS` when nothing paints. */
+function nextPaint(target: BrowserWindow): Promise<void> {
+  return new Promise((resolve) => {
+    const done = () => {
+      clearTimeout(timer);
+      target.webContents.off("paint", done);
+      resolve();
+    };
+    const timer = setTimeout(done, PAINT_WAIT_MS);
+    target.webContents.once("paint", done);
+  });
 }
 
 function captureQuery(kind: CaptureKind, scheme: "light" | "dark"): string {
@@ -92,7 +114,12 @@ async function loadCapture(
   scheme: "light" | "dark",
   data: TweetCardData | TextCardData,
 ): Promise<void> {
-  const search = captureQuery(kind, scheme);
+  /**
+   * The light and dark cards differ only by scheme (and a card can repeat), so
+   * add a nonce: a hash-only change keeps the document and the reused window
+   * never commits another frame for capturePage.
+   */
+  const search = `${captureQuery(kind, scheme)}&v=${++loadSeq}`;
   const hash = captureHash(data);
   const devUrl = process.env.ELECTRON_RENDERER_URL;
   const load = devUrl
@@ -138,48 +165,56 @@ async function readCardRect(target: BrowserWindow): Promise<CardRect | null> {
   return { x: r.x, y: r.y, width: r.width, height: r.height };
 }
 
-/** Captures `rect` at SCALE via CDP device-metrics override; capturePage takes CSS px but returns a NativeImage at the overridden device scale. */
+const ScreenshotSchema = z.object({ data: z.string() });
+
+/**
+ * Captures `rect` at SCALE through the CDP screenshot clip. `capturePage` reads
+ * a surface the window must first present; an offscreen window instead paints
+ * frames it never shows, so ask the compositor directly.
+ */
 async function captureAtScale(
   target: BrowserWindow,
   rect: CardRect,
-): Promise<Electron.NativeImage> {
+): Promise<Electron.NativeImage | null> {
   const dbg = target.webContents.debugger;
   let attached = false;
   if (!dbg.isAttached()) {
     dbg.attach("1.3");
     attached = true;
   }
-  try {
-    const [w, h] = target.getContentSize();
-    await withTimeout(
-      dbg.sendCommand("Emulation.setDeviceMetricsOverride", {
-        width: w ?? CARD_WIDTH,
-        height: h ?? INITIAL_HEIGHT,
-        deviceScaleFactor: SCALE,
-        mobile: false,
-      }),
-      CDP_TIMEOUT_MS,
-      "setDeviceMetricsOverride",
-    );
-    await sleep(50);
-    return await withTimeout(
-      target.webContents.capturePage({
-        x: Math.max(0, Math.floor(rect.x)),
-        y: Math.max(0, Math.floor(rect.y)),
-        width: Math.max(1, Math.ceil(rect.width)),
-        height: Math.max(1, Math.ceil(rect.height)),
+  const clip = {
+    x: Math.max(0, Math.floor(rect.x)),
+    y: Math.max(0, Math.floor(rect.y)),
+    width: Math.max(1, Math.ceil(rect.width)),
+    height: Math.max(1, Math.ceil(rect.height)),
+    scale: SCALE,
+  };
+  const shoot = async (): Promise<Electron.NativeImage | null> => {
+    const raw = await withTimeout(
+      dbg.sendCommand("Page.captureScreenshot", {
+        format: "png",
+        captureBeyondViewport: true,
+        clip,
       }),
       CAPTURE_TIMEOUT_MS,
-      "capturePage",
+      "captureScreenshot",
     );
-  } finally {
+    const parsed = ScreenshotSchema.safeParse(raw);
+    if (!parsed.success) return null;
+    return nativeImage.createFromBuffer(
+      Buffer.from(parsed.data.data, "base64"),
+    );
+  };
+  try {
     try {
-      await withTimeout(
-        dbg.sendCommand("Emulation.clearDeviceMetricsOverride"),
-        CDP_TIMEOUT_MS,
-        "clearDeviceMetricsOverride",
-      );
-    } catch {}
+      return await shoot();
+    } catch (err) {
+      /** The first shot lands before the offscreen surface has a frame to read. */
+      log.debug("[pond render-card] first capture missed", err);
+    }
+    await nextPaint(target);
+    return await shoot();
+  } finally {
     if (attached) {
       try {
         dbg.detach();
@@ -268,7 +303,7 @@ async function renderOne(
   }
 
   const image = await captureAtScale(target, rect);
-  if (image.getSize().width === 0) return null;
+  if (!image || image.getSize().width === 0) return null;
   const raw = image.toPNG();
   if (raw.byteLength === 0) return null;
   return pad(raw, scheme, padCss, radiusCss);
