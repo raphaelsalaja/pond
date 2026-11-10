@@ -16,6 +16,7 @@ import { AppShell } from "@/features/library/components/workspace-shell";
 import { enterFolder } from "@/features/library/operations/enter-folder";
 import { savedViews } from "@/features/library/state/saved-views";
 import { DuplicateImportReviewHost } from "@/features/saves/components/duplicate-import-review";
+import { SaveTagPickerHost } from "@/features/saves/components/tag-picker-host";
 import { SaveHotkeys } from "@/features/saves/effects/save-hotkeys";
 import { ViewerPreload } from "@/features/saves/effects/viewer-preload";
 import { isSaveCollectionPath } from "@/features/saves/lib/list-path";
@@ -114,6 +115,7 @@ export function RootShell() {
       <NewMenuDialogHost />
       <OrganizationRenameDialogHost />
       <DuplicateImportReviewHost />
+      <SaveTagPickerHost />
       <AppShell.Root
         header={<Toolbar />}
         right={
