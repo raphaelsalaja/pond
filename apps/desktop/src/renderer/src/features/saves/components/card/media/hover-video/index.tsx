@@ -42,8 +42,6 @@ export function HoverVideo({
   const motionPaused = useMachineMotionPaused();
   const hoverEnabled = prefs.hoverVideo !== false;
   const internalRef = useRef<HTMLVideoElement | null>(null);
-  const seekRatio = useRef(0);
-  const seekFrame = useRef(0);
   const [hoverPrimed, setHoverPrimed] = useState(false);
   const [active, setActive] = useState(false);
   const [videoReady, setVideoReady] = useState(false);
@@ -97,10 +95,6 @@ export function HoverVideo({
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("blur", pause);
       window.removeEventListener("focus", onVisibility);
-      if (seekFrame.current) {
-        cancelAnimationFrame(seekFrame.current);
-        seekFrame.current = 0;
-      }
       pause();
     };
   }, [active, primed, hoverEnabled, motionPaused]);
@@ -181,27 +175,6 @@ export function HoverVideo({
         aria-label={label}
         onMouseEnter={onEnter}
         onMouseLeave={onLeave}
-        onMouseMove={(event) => {
-          if (!hoverEnabled || document.body.dataset.saveDragging) return;
-          const rect = event.currentTarget.getBoundingClientRect();
-          if (rect.width === 0) return;
-          seekRatio.current = Math.min(
-            1,
-            Math.max(0, (event.clientX - rect.left) / rect.width),
-          );
-          if (seekFrame.current) return;
-          seekFrame.current = requestAnimationFrame(() => {
-            seekFrame.current = 0;
-            const el = internalRef.current;
-            if (!el || !Number.isFinite(el.duration) || el.duration <= 0)
-              return;
-            const next = seekRatio.current * el.duration;
-            if (Math.abs(el.currentTime - next) < 0.04) return;
-            try {
-              el.currentTime = next;
-            } catch {}
-          });
-        }}
         onFocus={onEnter}
         onBlur={onLeave}
         onError={onBroken}

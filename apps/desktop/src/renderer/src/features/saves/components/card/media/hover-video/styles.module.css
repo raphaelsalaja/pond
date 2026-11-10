@@ -44,7 +44,7 @@
   opacity: 1;
 }
 
-/* A card drag would otherwise scrub and play the video under the pointer. */
+/* A card drag would otherwise play the video under the pointer. */
 :global(body[data-save-dragging]) .media {
   pointer-events: none;
 }
