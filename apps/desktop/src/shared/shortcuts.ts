@@ -213,6 +213,7 @@ export const SHORTCUTS = {
   },
   "save.export": { keys: "Mod+E", label: "Export", group: "Saves" },
   "save.refresh": { keys: "R", label: "Refresh from Source", group: "Saves" },
+  "save.split": { keys: "S", label: "Split Into Saves", group: "Saves" },
   "save.add-tag": { keys: "A", label: "Add Tags", group: "Saves" },
   "save.rate-0": { keys: "Alt+0", label: "Clear Rating", group: "Saves" },
   "save.rate-1": { keys: "Alt+1", label: "Rate 1 Star", group: "Saves" },

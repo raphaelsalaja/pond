@@ -25,6 +25,7 @@ import {
   archiveSitesForSelection,
   refreshDetailsForSelection,
 } from "@/features/saves/lib/selection";
+import { splitIntoSaves } from "@/features/saves/lib/split-save";
 import { viewerMemory } from "@/features/saves/lib/viewer-memory";
 import { inspect } from "@/features/saves/state/inspect";
 import { shortcutGlyphs } from "@/shared/lib/shortcuts";
@@ -106,12 +107,6 @@ function downloadVideoTitle(queued: number): string {
   return `Downloading ${queued} videos`;
 }
 
-function splitTitle(split: number, created: number): string {
-  const total = split + created;
-  if (split === 1) return `Split into ${total} saves`;
-  return `Split ${split} saves into ${total}`;
-}
-
 function removeVideoTitle(removed: number): string {
   if (removed === 0) return "No videos to remove";
   if (removed === 1) return "Video removed";
@@ -160,17 +155,8 @@ export function buildDetailItems({
         label: "Split Into Saves",
         icon: glyph(IconUngroup),
         hidden: !canSplit,
-        onClick: () => {
-          void window.pond.query("saves.split", { ids }).then((result) =>
-            notify({
-              id: "split-saves",
-              title: result.ok
-                ? splitTitle(result.split, result.created)
-                : "Couldn't split",
-              description: result.ok ? undefined : result.error,
-            }),
-          );
-        },
+        shortcut: shortcutGlyphs("save.split"),
+        onClick: () => splitIntoSaves(ids),
       },
     ],
     media: [

@@ -41,6 +41,10 @@ import {
   type SelectionActionResult,
   trashSelection,
 } from "@/features/saves/lib/selection";
+import {
+  splitIntoSaves,
+  splitTargetIds,
+} from "@/features/saves/lib/split-save";
 import { pool } from "@/features/saves/state/pool";
 import { resultNavigation } from "@/features/saves/state/result-navigation";
 import {
@@ -240,6 +244,24 @@ export function SaveHotkeys() {
           refreshDetailsForSelection,
         ),
         options: { enabled: hasPrimary, ignoreInputs: true },
+      },
+      {
+        hotkey: bindingKeys(shortcuts, "save.split"),
+        callback: (event: KeyboardEvent) => {
+          const ids = splitTargetIds(
+            selection.snapshot(),
+            primarySelectionStore.state.id,
+            (id) => pool.get(id),
+          );
+          if (ids.length === 0) return;
+          event.preventDefault();
+          splitIntoSaves(ids);
+        },
+        options: {
+          enabled: hasPrimary || hasMulti,
+          ignoreInputs: true,
+          preventDefault: false,
+        },
       },
       {
         hotkey: bindingKeys(shortcuts, "save.add-tag"),
