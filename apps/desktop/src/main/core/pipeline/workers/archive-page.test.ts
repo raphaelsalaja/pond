@@ -29,6 +29,7 @@ function setup(
   const crawlSite = vi.fn(async (_rootUrl: URL, _scope: string) => ({
     pages: [{ url: save.url, title: save.title }],
     warcBytes: Buffer.from("warc"),
+    authWalled: false,
   }));
   const persistArchive = vi.fn(
     async (_saveId: string, files: WriteFileArgs[]) => {
@@ -82,6 +83,47 @@ describe("archive_page automatic archive", () => {
       description: "A short page",
       mediaUrl: "https://example.com/preview.jpg",
     });
+  });
+
+  it("finishes the save without an archive when the page sits behind a login wall", async () => {
+    const { save, readSave, autoArchivePages, crawlSite, persistArchive } =
+      setup(true);
+    crawlSite.mockResolvedValueOnce({
+      pages: [],
+      warcBytes: Buffer.alloc(0),
+      authWalled: true,
+    });
+
+    await runArchivePage("save-1", {}, ctx, {
+      readSave,
+      autoArchive: autoArchivePages,
+      crawlSite,
+      persistArchive,
+    });
+
+    expect(persistArchive).not.toHaveBeenCalled();
+    expect(hasWarcArchive(save.files)).toBe(false);
+    expect(save.files).toEqual([preview]);
+  });
+
+  it("retries when a crawl captures no page and no login wall explains it", async () => {
+    const { readSave, autoArchivePages, crawlSite, persistArchive } =
+      setup(true);
+    crawlSite.mockResolvedValueOnce({
+      pages: [],
+      warcBytes: Buffer.alloc(0),
+      authWalled: false,
+    });
+
+    await expect(
+      runArchivePage("save-1", {}, ctx, {
+        readSave,
+        autoArchive: autoArchivePages,
+        crawlSite,
+        persistArchive,
+      }),
+    ).rejects.toThrow("no pages captured");
+    expect(persistArchive).not.toHaveBeenCalled();
   });
 
   it("keeps metadata only and writes no archive when automatic archiving is off", async () => {
