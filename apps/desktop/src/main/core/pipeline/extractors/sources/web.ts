@@ -9,12 +9,10 @@ import metascraperPublisher from "metascraper-publisher";
 import metascraperTitle from "metascraper-title";
 import metascraperUrl from "metascraper-url";
 import { z } from "zod";
-import {
-  browserUserAgent,
-  renderPageHtml,
-} from "../../../refresh/web-page-renderer";
+import { renderPageHtml } from "../../../refresh/web-page-renderer";
 import { TerminalError, TransientError } from "../errors";
 import type { Capture, ExtractInput, Extractor } from "../types";
+import { fetchHtml } from "./web-fetch";
 
 type WebExtras = {
   publisher?: string;
@@ -163,8 +161,6 @@ const scrape = metascraper([
   metascraperUrl(),
 ]);
 
-const FETCH_TIMEOUT_MS = 15_000;
-
 interface WebPageExtractorDependencies {
   fetchHtml: (url: string) => Promise<string | null>;
   renderHtml: (url: string, signal?: AbortSignal) => Promise<string>;
@@ -233,42 +229,6 @@ export class WebPageExtractor implements Extractor {
     if (Object.keys(extras).length > 0) capture.extras = extras;
     return capture;
   }
-}
-
-/** Resolves null on 403: bot walls fingerprint the TLS handshake, so only a real browser gets through. */
-async function fetchHtml(url: string): Promise<string | null> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-  let res: Response;
-  try {
-    res = await fetch(url, {
-      redirect: "follow",
-      signal: controller.signal,
-      headers: {
-        "user-agent": browserUserAgent(),
-        accept:
-          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-      },
-    });
-  } catch (err) {
-    throw new TransientError(
-      `web fetch failed: ${err instanceof Error ? err.message : String(err)}`,
-    );
-  } finally {
-    clearTimeout(timer);
-  }
-
-  if (res.status === 403) return null;
-  assertPageStatus(res.status, "web fetch");
-
-  const contentType = res.headers.get("content-type") ?? "";
-  if (contentType && !/text\/html|xml|xhtml/i.test(contentType)) {
-    throw new TerminalError(`web fetch non-html content-type: ${contentType}`);
-  }
-
-  const text = await res.text();
-  if (!text.trim()) throw new TerminalError("web fetch returned empty body");
-  return text;
 }
 
 async function renderHtml(url: string, signal?: AbortSignal): Promise<string> {
