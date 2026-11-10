@@ -1,5 +1,6 @@
 import type { Capture, RawJson } from "@pond/schema/raw";
 import { describe, expect, it, vi } from "vitest";
+import { CaptureIncompleteError } from "../extractors/errors";
 import {
   type CaptureTweetPorts,
   type CaptureTweetSave,
@@ -207,7 +208,9 @@ describe("runCaptureTweet reply parent enrichment", () => {
 
     const runTask = createCaptureTweetTask(harness.runCaptureTweet);
 
-    await expect(runTask("save-1")).rejects.toThrow(
+    const first = runTask("save-1");
+    await expect(first).rejects.toBeInstanceOf(CaptureIncompleteError);
+    await expect(first).rejects.toThrow(
       "capture_tweet: reply parent still pending",
     );
     await expect(runTask("save-1")).rejects.toThrow(

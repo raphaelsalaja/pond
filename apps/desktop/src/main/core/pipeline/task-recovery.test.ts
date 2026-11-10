@@ -94,6 +94,35 @@ describe.skipIf(!nativeSqliteAvailable())("download recovery", () => {
     ).toEqual([{ status: "failed" }, { status: "ingesting" }]);
   });
 
+  it("claims never-attempted work before earlier retries", async () => {
+    const { $raw } = await getDb();
+    const at = Date.now();
+    const insertSave = $raw.prepare(
+      `INSERT INTO saves (id, source, source_id, url, status)
+      VALUES (?, 'twitter', ?, ?, 'ingesting')`,
+    );
+    insertSave.run("fresh", "fresh", "https://x.com/a/status/1");
+    insertSave.run("retry", "retry", "https://x.com/a/status/2");
+    const insertTask = $raw.prepare(
+      `INSERT INTO tasks (
+        id, save_id, source, op, status, attempts, max_attempts,
+        deferred_reason, next_run_at, created_at
+      ) VALUES (?, ?, 'twitter', 'capture_tweet', 'deferred', ?, 4, 'retry_backoff', ?, ?)`,
+    );
+    insertTask.run("task-retry", "retry", 3, at - 5_000, at - 10_000);
+    insertTask.run("task-fresh", "fresh", 0, at - 1_000, at - 9_000);
+
+    const claimed = await claimDueTasks({
+      owner: "test",
+      limit: 1,
+      availableInteractive: 0,
+      availableBackground: 1,
+      availableByOp: { capture_tweet: 1 },
+    });
+
+    expect(claimed.map((task) => task.saveId)).toEqual(["fresh"]);
+  });
+
   it("preserves paused retries and removes unrelated orphan tasks", async () => {
     await seedFailedSave("retry");
     const retry = await createRetryGeneration(["retry"]);

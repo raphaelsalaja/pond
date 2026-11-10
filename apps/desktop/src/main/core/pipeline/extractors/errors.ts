@@ -36,4 +36,11 @@ export class GeoRestrictedError extends ExtractorError {
 
 export class TransientError extends ExtractorError {}
 
+/**
+ * The capture did what it could; only a secondary field is still missing.
+ * Retrying is worthwhile, but the source is healthy, so it must not count
+ * toward the source circuit breaker.
+ */
+export class CaptureIncompleteError extends TransientError {}
+
 export class TerminalError extends ExtractorError {}
