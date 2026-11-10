@@ -7,17 +7,24 @@ import { adapt, buildExpression } from "./item";
 
 const REPO_URL = "https://github.com/vercel/next.js";
 
-function repoPage(opts: { image?: string; repoMeta?: boolean } = {}): string {
-  const image =
-    opts.image ??
-    "https://repository-images.githubusercontent.com/70107786/4602445c";
+const CUSTOM_PREVIEW =
+  "https://repository-images.githubusercontent.com/70107786/4602445c";
+const GENERATED_PREVIEW = "https://opengraph.githubassets.com/1/vercel/next.js";
+
+function repoPage(
+  opts: { images?: string[]; repoMeta?: boolean } = {},
+): string {
+  const images = opts.images ?? [CUSTOM_PREVIEW];
+  const imageTags = images
+    .map((image) => `<meta property="og:image" content="${image}">`)
+    .join("\n");
   const repoMeta =
     opts.repoMeta === false
       ? ""
       : '<meta name="octolytics-dimension-repository_nwo" content="vercel/next.js">';
   return `<!doctype html><html><head>
 <meta property="og:title" content="GitHub - vercel/next.js: The React Framework">
-<meta property="og:image" content="${image}">
+${imageTags}
 ${repoMeta}
 </head><body>
 <div class="sidebarSection"><h2><span>About</span></h2>
@@ -80,21 +87,22 @@ describe("GitHub repo page", () => {
     expect(html).not.toContain("clipboard-copy");
   });
 
-  it("keeps a custom social preview and skips GitHub's generated card", async () => {
+  it("prefers a custom social preview, then GitHub's generated card", async () => {
     const custom = await harvest(repoPage());
-    expect(custom?.media).toEqual([
-      {
-        url: "https://repository-images.githubusercontent.com/70107786/4602445c",
-        type: "image",
-      },
+    expect(custom?.media).toEqual([{ url: CUSTOM_PREVIEW, type: "image" }]);
+
+    const generated = await harvest(repoPage({ images: [GENERATED_PREVIEW] }));
+    expect(generated?.media).toEqual([
+      { url: GENERATED_PREVIEW, type: "image" },
     ]);
 
-    const generated = await harvest(
-      repoPage({
-        image: "https://opengraph.githubassets.com/1/vercel/next.js",
-      }),
+    const both = await harvest(
+      repoPage({ images: [GENERATED_PREVIEW, CUSTOM_PREVIEW] }),
     );
-    expect(generated?.media).toEqual([]);
+    expect(both?.media).toEqual([{ url: CUSTOM_PREVIEW, type: "image" }]);
+
+    const none = await harvest(repoPage({ images: [] }));
+    expect(none?.media).toEqual([]);
   });
 
   it("returns nothing for a page without the repo meta", async () => {

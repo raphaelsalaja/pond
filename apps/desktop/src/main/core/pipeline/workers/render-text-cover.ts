@@ -20,13 +20,23 @@ import { readSave } from "./apply";
 
 function needsTextCover(
   save: NonNullable<Awaited<ReturnType<typeof readSave>>>,
+  imageFallback = false,
 ): boolean {
   const hasProse =
     Boolean(save.description?.trim()) || save.mediaType === "text";
   if (!hasProse) return false;
   if (!textBodyFromFields(save.description, save.title)) return false;
   const files = save.files ?? [];
-  if (save.mediaType === "video" || save.mediaType === "image") return false;
+  /*
+   * An image save waits for its file. The generated GitHub card can miss
+   * without failing ingest, and then this cover is the thumbnail.
+   */
+  if (
+    save.mediaType === "video" ||
+    (save.mediaType === "image" && !imageFallback)
+  ) {
+    return false;
+  }
   return !files.some((f) => {
     if (isAuxiliaryKind(f.kind)) return false;
     return (
@@ -97,12 +107,12 @@ async function stampVersion(
 
 export async function runRenderTextCover(
   saveId: string,
-  opts: { force?: boolean } = {},
+  opts: { force?: boolean; imageFallback?: boolean } = {},
 ): Promise<number> {
   const save = await readSave(saveId);
   if (!save) return 0;
   if (save.source === "twitter") return 0;
-  if (!needsTextCover(save)) return 0;
+  if (!needsTextCover(save, opts.imageFallback === true)) return 0;
 
   if (
     !opts.force &&
