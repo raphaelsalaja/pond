@@ -1,5 +1,5 @@
 import type { Folder } from "@pond/schema/db";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { type FolderListSort, flattenFolderTree, sortFolderRows } from "./tree";
 import type { FolderDropState } from "./use-folder-drag-drop";
@@ -43,6 +43,8 @@ function persistFolderListSort(next: FolderListSort): FolderListSort {
 export function useFolderTreeState(folderRows: Folder[]) {
   const [collapsed, setCollapsed] = useState(loadCollapsedFolders);
   const [sort, setSortState] = useState(loadFolderListSort);
+  const folderRowsRef = useRef(folderRows);
+  folderRowsRef.current = folderRows;
   const sortedRows = useMemo(
     () => sortFolderRows(folderRows, sort),
     [folderRows, sort],
@@ -61,10 +63,19 @@ export function useFolderTreeState(folderRows: Folder[]) {
 
   const revealFolder = useCallback((id: string) => {
     setCollapsed((previous) => {
-      if (!previous.has(id)) return previous;
+      const parents = new Map(
+        folderRowsRef.current.map((row) => [row.id, row.parentId]),
+      );
       const next = new Set(previous);
-      next.delete(id);
-      return persistCollapsedFolders(next);
+      let current: string | null = id;
+      let changed = false;
+      const seen = new Set<string>();
+      while (current && !seen.has(current)) {
+        seen.add(current);
+        if (next.delete(current)) changed = true;
+        current = parents.get(current) ?? null;
+      }
+      return changed ? persistCollapsedFolders(next) : previous;
     });
   }, []);
 

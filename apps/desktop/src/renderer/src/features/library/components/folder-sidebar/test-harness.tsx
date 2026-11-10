@@ -88,6 +88,7 @@ export const pondQuery = vi.fn(async (name: string, patch?: WirePrefsPatch) => {
   if (name === "canvases.list") return [];
   if (name === "fish.list") return fishList.current;
   if (name === "folders.list") return folderList.current;
+  if (name === "folders.create") return folder("Untitled");
   if (name === "folders.memberships") return [];
   if (name === "folders.metadata.get")
     return {
