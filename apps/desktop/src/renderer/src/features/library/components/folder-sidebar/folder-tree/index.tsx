@@ -151,9 +151,16 @@ export function FolderTree({ folderRows, libraryPage, nav }: FolderTreeProps) {
     ? (counts.folders[activeFolder.id] ?? 0)
     : 0;
 
+  // The inline editor mounts on the folder row, so a collapsed ancestor
+  // has to open before that row can be named.
   useEffect(() => {
-    if (editingFolderId) setFoldersOpen(true);
-  }, [editingFolderId]);
+    if (!editingFolderId) return;
+    setFoldersOpen(true);
+    const parentId = folders
+      .snapshot()
+      .find((folder) => folder.id === editingFolderId)?.parentId;
+    if (parentId) tree.revealFolder(parentId);
+  }, [editingFolderId, tree.revealFolder]);
   useRevealSidebarSection("folders", editingFolderId !== null);
 
   function previewFolderDrop({ active, over }: DragOverEvent): void {

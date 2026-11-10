@@ -490,6 +490,93 @@ describe("folder sidebar tree", () => {
     );
   });
 
+  it("expands a collapsed folder so a new subfolder can be named", async () => {
+    folderList.current = [folder("Travel"), folder("Tickets", "Travel")];
+    await folders.refresh();
+    await harness.mount();
+    await act(async () => harness.iconButton("Collapse Travel").click());
+    expect(() => harness.button("Tickets")).toThrow(
+      "Missing sidebar button: Tickets",
+    );
+
+    await act(async () => {
+      harness.button("Travel").dispatchEvent(
+        new MouseEvent("contextmenu", {
+          bubbles: true,
+          cancelable: true,
+          button: 2,
+          clientX: 24,
+          clientY: 24,
+        }),
+      );
+    });
+    const created = folder("Untitled", "Travel");
+    pondQuery.mockImplementationOnce(async () => {
+      folderList.current = [...folderList.current, created];
+      return created;
+    });
+    await act(async () => harness.menuItem("New Subfolder").click());
+
+    await vi.waitFor(() => {
+      const input = harness.host.querySelector<HTMLInputElement>(
+        'input[aria-label="Folder name"]',
+      );
+      expect(input).toBeInstanceOf(HTMLInputElement);
+      expect(document.activeElement).toBe(input);
+    });
+    const input = harness.host.querySelector<HTMLInputElement>(
+      'input[aria-label="Folder name"]',
+    );
+    if (!input) throw new Error("Missing folder name input");
+    expect(input.value).toBe("Untitled");
+    expect(input.selectionStart).toBe(0);
+    expect(input.selectionEnd).toBe("Untitled".length);
+    expect(
+      harness.iconButton("Collapse Travel").getAttribute("aria-expanded"),
+    ).toBe("true");
+    expect(harness.button("Tickets")).toBeDefined();
+    expect(pondQuery).toHaveBeenCalledWith("folders.create", {
+      name: "Untitled",
+      parentId: "Travel",
+    });
+  });
+
+  it("opens collapsed ancestors when a nested folder is named", async () => {
+    folderList.current = [
+      folder("Travel"),
+      folder("Europe", "Travel"),
+      folder("Notes", "Europe"),
+    ];
+    localStorage.setItem(
+      "pond:collapsed-folders",
+      JSON.stringify(["Travel", "Europe"]),
+    );
+    await folders.refresh();
+    await harness.mount();
+    expect(() => harness.button("Europe")).toThrow(
+      "Missing sidebar button: Europe",
+    );
+    expect(() => harness.button("Notes")).toThrow(
+      "Missing sidebar button: Notes",
+    );
+
+    await act(async () => folders.startEditing("Notes"));
+
+    await vi.waitFor(() => {
+      const input = harness.host.querySelector<HTMLInputElement>(
+        'input[aria-label="Folder name"]',
+      );
+      expect(input?.value).toBe("Notes");
+      expect(document.activeElement).toBe(input);
+    });
+    expect(
+      harness.iconButton("Collapse Travel").getAttribute("aria-expanded"),
+    ).toBe("true");
+    expect(
+      harness.iconButton("Collapse Europe").getAttribute("aria-expanded"),
+    ).toBe("true");
+  });
+
   it("opens folder operations from the disclosure button", async () => {
     folderList.current = [folder("Travel"), folder("Tickets", "Travel")];
     await folders.refresh();
