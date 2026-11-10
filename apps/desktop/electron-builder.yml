@@ -135,26 +135,8 @@ mac:
       to: PlugIns/Pond Extension.appex
     - from: resources/ShareExtension/Pond Share.appex
       to: PlugIns/Pond Share.appex
-  # Register `.pond` as a macOS package so Finder shows a library as a
-  # single bundle instead of a folder full of items/, trash/, metadata.
-  # LaunchServices only honors this in packaged builds, not `dev`.
   extendInfo:
-    UTExportedTypeDeclarations:
-      - UTTypeIdentifier: so.pond.library
-        UTTypeDescription: Pond Library
-        UTTypeConformsTo:
-          - com.apple.package
-        UTTypeTagSpecification:
-          public.filename-extension:
-            - pond
     CFBundleDocumentTypes:
-      - CFBundleTypeName: Pond Library
-        CFBundleTypeRole: Editor
-        LSTypeIsPackage: true
-        LSItemContentTypes:
-          - so.pond.library
-        CFBundleTypeExtensions:
-          - pond
       # Lets the Dock icon accept any file or folder as an import. Alternate
       # rank keeps Pond from becoming the default app for those files.
       - CFBundleTypeName: Importable File

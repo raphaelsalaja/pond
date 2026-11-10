@@ -381,6 +381,12 @@ async function postLaunchInit(): Promise<void> {
       log.warn("[pond] library displacement watch failed to start", err),
     );
 
+  if (process.platform === "darwin" && !process.env.POND_SANDBOX) {
+    void import("./core/library-folder-icon")
+      .then((module) => module.applyLibraryFolderIcon(libraryRoot()))
+      .catch((err) => log.warn("[pond] library folder icon failed", err));
+  }
+
   try {
     await syncLibraryRootMetadata();
     if (existsSync(libraryRoot())) {
