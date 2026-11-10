@@ -34,6 +34,18 @@
   white-space: nowrap;
 }
 
+button.label {
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  text-align: start;
+  letter-spacing: inherit;
+  cursor: pointer;
+  background: none;
+  border: 0;
+}
+
 .crumb,
 .separator,
 .count {

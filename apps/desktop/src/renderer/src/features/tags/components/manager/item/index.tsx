@@ -1,11 +1,19 @@
 import { useDataTable } from "@pond/ui";
 import { useSelector } from "@tanstack/react-store";
+import type { KeyboardEvent, MouseEvent } from "react";
 import { TagContextMenu } from "@/features/tags/components/context-menu";
 import { ActionsCell, NameCell } from "../lib/cells";
 import { TagRowProvider, useTagRow } from "../lib/row-context";
 import { TagCheckbox } from "../lib/select";
 import type { TagsRowData } from "../lib/types";
 import styles from "./styles.module.css";
+
+function fromControl(target: EventTarget | null) {
+  return (
+    target instanceof Element &&
+    target.closest("button, input, textarea, a") !== null
+  );
+}
 
 export function TagItem({
   row,
@@ -22,12 +30,39 @@ export function TagItem({
 }
 
 function ItemRow({ variant }: { variant: "row" | "card" | "index" }) {
-  const { row, rowRef, buildMenuItems } = useTagRow();
+  const { row, rowRef, buildMenuItems, renaming, openTagItems } = useTagRow();
   const { selectionStore, actions } = useDataTable<TagsRowData>();
   const selected = useSelector(selectionStore, (state) =>
     state.selectedIds.has(row.id),
   );
   if (row.kind !== "tag") return null;
+
+  function selectRange() {
+    actions.toggleRow(row.id, true);
+  }
+
+  function openFromPointer(event: MouseEvent<HTMLDivElement>) {
+    if (variant !== "index") return;
+    if (event.shiftKey) {
+      selectRange();
+      return;
+    }
+    if (renaming || fromControl(event.target)) return;
+    openTagItems();
+  }
+
+  function openFromKeyboard(event: KeyboardEvent<HTMLDivElement>) {
+    if (variant !== "index") return;
+    if (event.key !== "Enter" && event.key !== " ") return;
+    if (event.shiftKey) {
+      event.preventDefault();
+      selectRange();
+      return;
+    }
+    if (renaming || fromControl(event.target)) return;
+    event.preventDefault();
+    openTagItems();
+  }
 
   return (
     <TagContextMenu buildItems={buildMenuItems}>
@@ -42,21 +77,8 @@ function ItemRow({ variant }: { variant: "row" | "card" | "index" }) {
         aria-selected={selected}
         tabIndex={variant === "index" ? 0 : -1}
         title={row.tag.name}
-        onClick={(event) => {
-          if (variant === "index" && event.shiftKey) {
-            actions.toggleRow(row.id, true);
-          }
-        }}
-        onKeyDown={(event) => {
-          if (
-            variant === "index" &&
-            event.shiftKey &&
-            (event.key === "Enter" || event.key === " ")
-          ) {
-            event.preventDefault();
-            actions.toggleRow(row.id, true);
-          }
-        }}
+        onClick={openFromPointer}
+        onKeyDown={openFromKeyboard}
       >
         {variant !== "index" ? (
           <TagCheckbox rowId={row.id} name={row.tag.name} />

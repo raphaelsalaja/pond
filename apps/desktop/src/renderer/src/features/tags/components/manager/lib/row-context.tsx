@@ -9,7 +9,12 @@ import {
   useRef,
   useState,
 } from "react";
-import { libraryChrome, resetFilters, setQuery } from "@/features/library";
+import {
+  libraryChrome,
+  resetFilters,
+  selectLibraryNav,
+  setQuery,
+} from "@/features/library";
 import {
   buildTagMenuItems,
   type TagMenuActions,
@@ -33,6 +38,7 @@ interface TagRowContextValue {
   saveRename: (name: string) => Promise<void>;
   finishRename: () => void;
   buildMenuItems: () => MenuItemSpec[];
+  openTagItems: () => void;
 }
 
 const TagRowContext = createContext<TagRowContextValue | null>(null);
@@ -82,6 +88,11 @@ export function TagRowProvider({
     element.addEventListener("keydown", onKeyDown);
     return () => element.removeEventListener("keydown", onKeyDown);
   }, [renaming]);
+
+  function openTagItems() {
+    if (isGroup) return;
+    selectLibraryNav({ kind: "tag", name });
+  }
 
   function confirmDelete() {
     if (isGroup) {
@@ -135,11 +146,7 @@ export function TagRowProvider({
       ),
       inGroup,
       starred: row.kind === "tag" && row.tag.starred,
-      onFilter: () => {
-        resetFilters();
-        libraryChrome.setNav({ kind: "tag", name });
-        getAppRouter()?.history.push("/");
-      },
+      onFilter: openTagItems,
       onSetStarred: (starred) =>
         void window.pond.query("tags.update", {
           name,
@@ -173,6 +180,7 @@ export function TagRowProvider({
     saveRename,
     finishRename,
     buildMenuItems,
+    openTagItems,
   };
 
   return <TagRowContext value={value}>{children}</TagRowContext>;
