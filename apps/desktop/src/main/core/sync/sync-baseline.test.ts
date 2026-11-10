@@ -12,7 +12,7 @@ describe("syncBaselineWhere", () => {
     expect(query.sql).not.toContain('"saves"."source"');
     expect(query.params).toEqual(["mymind-account"]);
   });
-  it("omits trashed source ids so a re-sync can recapture them", () => {
+  it("leaves trashed source ids out of the live baseline", () => {
     expect(syncBaselineWhere.toString()).toMatch(/deletedAt/);
     void syncBaselineWhere({ id: "acc", source: "threads" });
   });

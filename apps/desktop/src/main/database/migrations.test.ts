@@ -4,6 +4,7 @@ import { join } from "node:path";
 import * as schema from "@pond/schema/db";
 import Database from "better-sqlite3";
 import { is } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/better-sqlite3";
 import { getTableConfig, SQLiteTable } from "drizzle-orm/sqlite-core";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
@@ -116,6 +117,38 @@ describe.skipIf(!nativeSqliteAvailable())("pond database migrations", () => {
         own: null,
         tweet: null,
       });
+    } finally {
+      db.close();
+    }
+  });
+
+  it("keeps source ids that were deleted after the save row is gone", () => {
+    const db = new Database(":memory:");
+    try {
+      migratePond(db);
+      const columns = db
+        .prepare("pragma table_info(deleted_source_ids)")
+        .all()
+        .map((row) => z.object({ name: z.string() }).parse(row).name);
+      expect(columns).toEqual(["source", "source_id"]);
+      const insert = db.prepare(
+        "INSERT OR IGNORE INTO deleted_source_ids (source, source_id) VALUES (?, ?)",
+      );
+      insert.run("twitter", "100");
+      insert.run("twitter", "100");
+      expect(
+        db.prepare("SELECT source_id FROM deleted_source_ids").all(),
+      ).toEqual([{ source_id: "100" }]);
+      const orm = drizzle(db, { schema });
+      const again = { source: "twitter" as const, sourceId: "100" };
+      orm
+        .insert(schema.deletedSourceIds)
+        .values(again)
+        .onConflictDoNothing()
+        .run();
+      expect(
+        db.prepare("SELECT source_id FROM deleted_source_ids").all(),
+      ).toEqual([{ source_id: "100" }]);
     } finally {
       db.close();
     }

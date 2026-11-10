@@ -2,6 +2,7 @@ import { lstat } from "node:fs/promises";
 import { join } from "node:path";
 import type { NewSave, Save, SyncAction, Tag } from "@pond/schema/db";
 import {
+  deletedSourceIds,
   folders as foldersTable,
   savedViews as savedViewsTable,
   saveFolders as saveFoldersTable,
@@ -30,6 +31,7 @@ import { withRawSlim } from "../lib/raw-slim";
 import { renameWithRetry } from "../lib/rename-retry";
 import { libraryRoot, saveDir } from "../paths";
 import { BatchRecoveryError, runRecoverableBatch } from "./batch-journal";
+import { deletedSourceKeys, remembersDeletedSource } from "./deleted-sources";
 import {
   replaceFolderMemberships,
   writeFolderMemberships,
@@ -429,9 +431,19 @@ function applyToIndex(
         return;
       }
       case "delete":
-      case "purge":
+      case "purge": {
+        if (remembersDeletedSource(tx.before, tx.meta?.actorReason)) {
+          const keys = deletedSourceKeys(tx.before);
+          if (keys.length > 0) {
+            db.insert(deletedSourceIds)
+              .values(keys)
+              .onConflictDoNothing()
+              .run();
+          }
+        }
         db.delete(savesTable).where(eq(savesTable.id, tx.id)).run();
         return;
+      }
       case "trash":
         db.update(savesTable)
           .set({ deletedAt: new Date() })

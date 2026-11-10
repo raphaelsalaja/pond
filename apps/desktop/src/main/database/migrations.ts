@@ -104,6 +104,12 @@ export function migratePond(sqlite: Database.Database): void {
 				CREATE INDEX IF NOT EXISTS saves_deleted_idx ON saves(deleted_at);
 				CREATE INDEX IF NOT EXISTS saves_status_idx ON saves(status);
 
+				CREATE TABLE IF NOT EXISTS deleted_source_ids (
+					source TEXT NOT NULL,
+					source_id TEXT NOT NULL,
+					PRIMARY KEY (source, source_id)
+				);
+
 				CREATE TABLE IF NOT EXISTS queue_generations (
 					id TEXT PRIMARY KEY,
 					kind TEXT NOT NULL,

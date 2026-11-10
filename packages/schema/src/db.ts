@@ -137,6 +137,21 @@ export interface ImageCrop {
   h: number;
 }
 
+/**
+ * Source ids removed on purpose.
+ * Automatic fetching treats these as already known; Fetch Older Saves does not.
+ */
+export const deletedSourceIds = sqliteTable(
+  "deleted_source_ids",
+  {
+    source: text("source").$type<Source>().notNull(),
+    sourceId: text("source_id").notNull(),
+  },
+  (t) => ({
+    pk: unique("deleted_source_ids_pk").on(t.source, t.sourceId),
+  }),
+);
+
 export const saves = sqliteTable(
   "saves",
   {
