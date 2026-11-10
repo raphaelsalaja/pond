@@ -49,8 +49,9 @@ class FakeWorkerProcess implements QueueWorkerProcess {
 
 function job(leaseToken: string) {
   return {
-    operation: "probe_image" as const,
-    bytes: new Uint8Array([1]),
+    operation: "build_poster" as const,
+    sourcePath: "/tmp/poster.mp4",
+    filename: "poster.jpg",
     leaseToken,
     cancellationFence: 0,
   };
@@ -74,6 +75,7 @@ it("replaces a dead worker and continues queued jobs", async () => {
   const second = host.run(job("second"));
   const third = host.run(job("third"));
 
+  await new Promise((resolve) => setTimeout(resolve, 0));
   expect(workers).toHaveLength(2);
   workers[0]?.exit(9);
   await expect(first).rejects.toThrow(
@@ -89,5 +91,60 @@ it("replaces a dead worker and continues queued jobs", async () => {
 
   await expect(second).resolves.toBeNull();
   await expect(third).resolves.toBeNull();
+  host.dispose();
+});
+
+it("keeps media when an image worker dies instead of failing the save", async () => {
+  const workers: FakeWorkerProcess[] = [];
+  const host = createQueueWorkerHost({
+    spawn: () => {
+      const worker = new FakeWorkerProcess();
+      workers.push(worker);
+      return worker;
+    },
+    createJobId: () => "job",
+    validateSourcePath: async () => true,
+    onStopped: () => {},
+  });
+
+  const image = host.run({
+    operation: "probe_image",
+    bytes: new Uint8Array([1]),
+    leaseToken: "image",
+    cancellationFence: 0,
+  });
+
+  workers[0]?.exit(139);
+  await expect(image).resolves.toBeNull();
+  host.dispose();
+});
+
+it("runs jobs in this process when spawning a worker would crash", async () => {
+  let spawned = 0;
+  const requests: QueueWorkerRequest[] = [];
+  const host = createQueueWorkerHost({
+    spawn: () => {
+      spawned += 1;
+      throw new Error("should not spawn");
+    },
+    createJobId: () => "inline-job",
+    validateSourcePath: async () => true,
+    onStopped: () => {},
+    execute: async (request) => {
+      requests.push(request);
+      return {
+        ok: true,
+        result: null,
+        jobId: request.jobId,
+        leaseToken: request.leaseToken,
+        cancellationFence: request.cancellationFence,
+      };
+    },
+  });
+
+  await expect(host.run(job("inline"))).resolves.toBeNull();
+  expect(spawned).toBe(0);
+  expect(requests).toHaveLength(1);
+  expect(requests[0]?.jobId).toBe("inline-job");
   host.dispose();
 });
