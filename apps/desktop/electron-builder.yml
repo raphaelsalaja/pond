@@ -198,12 +198,24 @@ nsis:
   # Removes the HKCU registrations Pond writes at runtime; keeps the Library.
   include: packaging/installer.nsh
 
-# Linux ships x64 AppImage and deb packages. electron-builder writes
-# latest-linux.yml for the AppImage updater; the deb is installed and upgraded
-# by the system package manager. `pond.desktop` also registers the `pond://`
-# handler and the tray/window class used by the menu and the CLI.
+# Linux ships AppImage and deb packages for x64 and arm64 (the arm64 build is
+# for 64-bit ARM machines such as Asahi Linux on Apple Silicon). Each
+# architecture packages on its own runner: electron-builder rebuilds the native
+# modules (better-sqlite3, sharp, sqlite-vec, onnxruntime) for the build host,
+# so `scripts/dist-linux.mjs` always passes the host arch and a bare
+# `electron-builder --linux` must not be used. The targets intentionally carry
+# NO per-target arch list: an explicit list would override the CLI arch flag
+# and force cross-arch packaging (which ships host-arch native binaries into
+# the wrong package). The script also overrides `linux.artifactName` per
+# build, because the `${arch}` token expands to the packaging-convention name
+# (x86_64/amd64) on Linux while electron-updater matches `process.arch`
+# (x64/arm64) inside file URLs. Each build publishes its own single-arch
+# latest-linux.yml, and the release workflow merges them into one. The deb is
+# installed and upgraded by the system package manager (its package name stays
+# arch-agnostic: `pond`). `pond.desktop` also registers the `pond://` handler
+# and the tray/window class used by the menu and the CLI.
 linux:
-  artifactName: ${productName}-${version}.${ext}
+  artifactName: ${productName}-${version}-${arch}.${ext}
   category: Utility
   executableName: pond
   icon: icon.png
@@ -213,12 +225,8 @@ linux:
     Pond keeps everything you save across social sources and the web in one
     local-first library on your computer.
   target:
-    - target: AppImage
-      arch:
-        - x64
-    - target: deb
-      arch:
-        - x64
+    - AppImage
+    - deb
   extraResources:
     - from: node_modules/ffmpeg-static/ffmpeg
       to: bin/ffmpeg

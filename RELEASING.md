@@ -1,6 +1,6 @@
 # Releasing Pond
 
-Pond ships via **GitHub Releases**: signed and notarized macOS `.dmg` and `.zip` files (arm64 + x64) with `latest-mac.yml` for auto-update, and a Windows x64 NSIS installer with `latest.yml` for auto-update. The extension zips are attached to the release too, and the `stores` job submits them to the Chrome Web Store and Firefox Add-ons from there, so every release must carry `pond-extension-X.Y.Z-chrome.zip`, `pond-extension-X.Y.Z-firefox.zip`, and `pond-extension-X.Y.Z-sources.zip`.
+Pond ships via **GitHub Releases**: signed and notarized macOS `.dmg` and `.zip` files (arm64 + x64) with `latest-mac.yml` for auto-update, a Windows x64 NSIS installer with `latest.yml` for auto-update, and Linux AppImage and deb packages for x64 + arm64 with a merged `latest-linux.yml` for auto-update. The extension zips are attached to the release too, and the `stores` job submits them to the Chrome Web Store and Firefox Add-ons from there, so every release must carry `pond-extension-X.Y.Z-chrome.zip`, `pond-extension-X.Y.Z-firefox.zip`, and `pond-extension-X.Y.Z-sources.zip`.
 
 ## Version bump
 
@@ -37,10 +37,11 @@ git push origin v1.0.1
 Pushing a tag matching `v*` triggers [`.github/workflows/release.yml`](.github/workflows/release.yml), which runs these jobs:
 
 1. `draft`: verifies the version in every file listed above, stops if any Apple signing secret is missing, and creates a draft release for the tag unless one exists
-2. `macos` and `windows`, in parallel, each uploading into the draft:
+2. `macos`, `windows`, `linux`, and `linux-arm64`, in parallel, each uploading into the draft:
    - `macos` runs lint, typecheck, tests, build, and the desktop smoke test, then signs and notarizes the app and uploads the DMGs, zips, and `latest-mac.yml`. It also builds the store zips for the browser extension and uploads them.
    - `windows` builds the workspace, runs the desktop smoke test, and runs `pnpm dist:win:publish`, which uploads the installer, its blockmap, and `latest.yml`.
-3. `publish`: checks that every artifact listed below is attached, then publishes the release, which makes it visible to the updater
+   - `linux` (x64 runner) and `linux-arm64` (arm64 runner) build the workspace, run the desktop smoke test, and run `pnpm dist:linux:publish`, which uploads that architecture's AppImage, deb, and blockmaps. Native modules rebuild for the build host, so each architecture packages on its own runner; each job also publishes a single-arch `latest-linux.yml`.
+3. `publish`: merges the two single-arch `latest-linux.yml` manifests into one (the updater picks the entry whose URL matches its own architecture), checks that every artifact listed below is attached, then publishes the release, which makes it visible to the updater
 4. `stores`: submits the extension zips to the Chrome Web Store and Firefox Add-ons for review. Each store is skipped with a warning until its secrets are set (see [Extension stores](#extension-stores))
 5. `homebrew`: updates [`Casks/pond.rb`](Casks/pond.rb) with the release version and DMG checksums
 
@@ -58,6 +59,9 @@ Artifact names (used by the website download links and the updater):
 - `Pond-<version>-x64.exe`
 - `Pond-<version>-x64.exe.blockmap`
 - `latest.yml`
+- `Pond-<version>-x64.AppImage` and `Pond-<version>-arm64.AppImage` (plus their `.blockmap` files)
+- `Pond-<version>-x64.deb` and `Pond-<version>-arm64.deb`
+- `latest-linux.yml` (merged by the `publish` job; lists both architectures)
 - `pond-extension-<version>-chrome.zip`
 - `pond-extension-<version>-firefox.zip`
 - `pond-extension-<version>-sources.zip`
@@ -124,9 +128,10 @@ macOS artifacts are available.
 pnpm install
 pnpm dist:mac   # on macOS
 pnpm dist:win   # on Windows
+pnpm dist:linux # on Linux (packages the host architecture, x64 or arm64)
 ```
 
-Artifacts land in `apps/desktop/dist/`. `dist:win` needs the Visual Studio C++ Build Tools; see [Windows development](CONTRIBUTING.md#windows-development).
+Artifacts land in `apps/desktop/dist/`. `dist:win` needs the Visual Studio C++ Build Tools; see [Windows development](CONTRIBUTING.md#windows-development). `dist:linux` needs a C compiler (for the native host), `fakeroot` (deb), and packages the architecture it runs on — to build for arm64, run it on an arm64 machine, such as Asahi Linux.
 
 To try a pull request without building it, download the unsigned test installers that [`package.yml`](.github/workflows/package.yml) attaches to each run (`Pond-windows-x64`, `Pond-macos`). They are kept for 7 days, are not notarized, and cannot auto-update.
 
@@ -174,22 +179,23 @@ published `pond --version` matches `packages/cli/package.json`.
 
 Run these before announcing a release:
 
-- [ ] GitHub Release contains versioned arm64 + x64 `.dmg` and `.zip`, `latest-mac.yml`, Windows x64 `.exe` + blockmap, `latest.yml`, and the three `pond-extension-X.Y.Z-*.zip` store zips
+- [ ] GitHub Release contains versioned arm64 + x64 `.dmg` and `.zip`, `latest-mac.yml`, Windows x64 `.exe` + blockmap, `latest.yml`, Linux x64 + arm64 `.AppImage` + blockmap and `.deb`, `latest-linux.yml` (listing both architectures), and the three `pond-extension-X.Y.Z-*.zip` store zips
 - [ ] `Casks/pond.rb` contains the release version and DMG checksums
 - [ ] `spctl -a -vv /Volumes/Pond/Pond.app` reports `Notarized Developer ID`
 - [ ] Fresh Mac: download arm64 DMG → open Pond → it launches without a Gatekeeper prompt
 - [ ] Fresh Windows 10/11 x64: run `Pond-X.Y.Z-x64.exe` → Pond installs without administrator rights and launches, and the installer's Properties → Digital Signatures tab shows the publisher
-- [ ] Website Download buttons (Mac, Intel Mac, Windows) hit the new artifacts
+- [ ] Fresh Debian x64 and fresh ARM (Asahi): `sudo apt install ./Pond-X.Y.Z-<arch>.deb` → Pond launches, the browser extension can reach it, and the library works (thumbnails, search, video import)
+- [ ] Website Download buttons (Mac, Intel Mac, Windows, Linux, and the ARM links once the first arm64 release is out) hit the new artifacts
 - [ ] Open Pond once so it registers the native host (a manifest file on macOS; on Windows the installer writes the `HKCU` keys and Pond writes the manifests they point to)
 - [ ] Browser Extension dialog → **Download** next to Chrome → load the Downloads folder unpacked → click the Pond icon or right-click a page → save appears in Pond
 - [ ] Settings → **Check Now** opens the update dialog immediately. On the latest build it says Pond is up to date; it does not wait until Settings closes
 - [ ] Workspace menu and the macOS application menu → **Check for Updates** run that same check without opening Settings
 - [ ] Windows: Settings → **Check Now** opens the same up-to-date dialog
-- [ ] Optional: tag a patch on a fork and confirm auto-update downloads the new build on both platforms
+- [ ] Optional: tag a patch on a fork and confirm auto-update downloads the new build on both platforms and both Linux architectures (x64, arm64)
 
 ## Notes
 
 - **Local packaging**: `pnpm dist:mac` signs with a Developer ID identity in your login keychain and skips notarization unless the Apple variables are set.
-- **Auto-update**: Requires the published `latest-mac.yml` (macOS) or `latest.yml` (Windows) from the release workflow. Dev builds skip the updater.
+- **Auto-update**: Requires the published `latest-mac.yml` (macOS), `latest.yml` (Windows), or `latest-linux.yml` (Linux, merged x64 + arm64) from the release workflow. Dev builds skip the updater.
 - **Windows**: The x64 NSIS installer is per-user and installs to `%LOCALAPPDATA%\Programs\Pond`. Its uninstaller removes the `pond` protocol, native messaging, and login registry entries but keeps the Library. Before publishing, install, update from the previous release, uninstall on a clean machine, and confirm `reg query HKCU\Software\Classes\pond` finds nothing. Windows arm64 stays disabled until its native dependency set is verified on an arm64 runner.
-- **Linux**: Builds remain disabled.
+- **Linux**: `linux` and `linux-arm64` package on x64 and arm64 runners respectively. Native modules rebuild for the build host, so each architecture builds on its own runner and the artifact name carries the arch. The `publish` job merges the single-arch `latest-linux.yml` manifests into one; electron-updater selects the entry whose URL matches its own architecture, and the deb upgrades through the system package manager.

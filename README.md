@@ -21,22 +21,22 @@ The installer is not code-signed yet, so Windows SmartScreen may show "Windows p
 
 ### Linux
 
-Download `Pond-X.Y.Z.deb` from [GitHub Releases](https://github.com/raphaelsalaja/pond/releases) and install it with your package manager:
+Download `Pond-X.Y.Z-x64.deb` (or `Pond-X.Y.Z-arm64.deb` on 64-bit ARM machines, such as Asahi Linux on Apple Silicon) from [GitHub Releases](https://github.com/raphaelsalaja/pond/releases) and install it with your package manager:
 
 ```bash
-sudo apt install ./Pond-X.Y.Z.deb
+sudo apt install ./Pond-X.Y.Z-x64.deb
 ```
 
-The deb registers the desktop entry, the `pond://` handler, and the browser native host. Pond needs a 64-bit Linux desktop with GLIBC 2.31 or later (Ubuntu 22.04, Debian 12, and newer), and it updates itself from GitHub Releases.
+The deb registers the desktop entry, the `pond://` handler, and the browser native host. Pond needs a 64-bit Linux desktop (x86_64 or ARM64) with GLIBC 2.31 or later (Ubuntu 22.04, Debian 12, and newer), and it updates itself from GitHub Releases.
 
-A portable `Pond-X.Y.Z.AppImage` is also published. Make it executable and run it:
+A portable `Pond-X.Y.Z-<arch>.AppImage` is also published for each architecture. Make it executable and run it:
 
 ```bash
-chmod +x Pond-X.Y.Z.AppImage
-./Pond-X.Y.Z.AppImage
+chmod +x Pond-X.Y.Z-x64.AppImage
+./Pond-X.Y.Z-x64.AppImage
 ```
 
-On distributions that restrict unprivileged user namespaces (Ubuntu 23.10 and later), the AppImage needs `--no-sandbox` or an AppArmor profile. Prefer the deb there. AppImage builds do not add themselves to your application menu; to install desktop integration, use [AppImageLauncher](https://github.com/TheAssassin/AppImageLauncher) or create the entry by hand. Linux on Arm is not built yet.
+On distributions that restrict unprivileged user namespaces (Ubuntu 23.10 and later), the AppImage needs `--no-sandbox` or an AppArmor profile. Prefer the deb there. AppImage builds do not add themselves to your application menu; to install desktop integration, use [AppImageLauncher](https://github.com/TheAssassin/AppImageLauncher) or create the entry by hand.
 
 ### Browser extension
 

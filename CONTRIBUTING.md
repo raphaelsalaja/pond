@@ -5,7 +5,7 @@
 - **Node** 24 and **pnpm** 11.27.0 (see `.nvmrc` and `package.json`).
 - **Style**: [Biome](https://biomejs.dev/) handles formatting; `pnpm lint` and `pnpm oxlint` check the repository standards.
 - **Commits**: [Conventional Commits](https://www.conventionalcommits.org/) enforced by commitlint + husky.
-- **Checks**: run `pnpm check` and `pnpm build` before opening a PR. CI also verifies generated source documentation, and it runs the build, tests, and desktop smoke test on Ubuntu, Windows, and macOS.
+- **Checks**: run `pnpm check` and `pnpm build` before opening a PR. CI also verifies generated source documentation, and it runs the build, tests, and desktop smoke test on Ubuntu x64 and ARM, Windows, and macOS.
 - **PRs**: Keep scope focused; link issues when relevant. Generated source documentation must stay in sync: run `pnpm generate` after descriptor changes.
 
 ## Engineering standards
@@ -53,13 +53,13 @@ After `pnpm build`, run the end-to-end smoke test from a normal desktop session 
 pnpm --filter @pond/desktop smoke:desktop
 ```
 
-Pull requests that touch the desktop app, extension, or packages also run [`package.yml`](.github/workflows/package.yml), which builds unsigned test installers. Reviewers can download `Pond-windows-x64` (the installer and `latest.yml`), `Pond-linux-x64` (the AppImage, deb, and `latest-linux.yml`), and `Pond-macos` (Apple Silicon and Intel disk images) from the workflow run's artifacts; they are kept for 7 days and cannot auto-update. The same workflow can be started manually with `workflow_dispatch`.
+Pull requests that touch the desktop app, extension, or packages also run [`package.yml`](.github/workflows/package.yml), which builds unsigned test installers. Reviewers can download `Pond-windows-x64` (the installer and `latest.yml`), `Pond-linux-x64` (the x64 AppImage, deb, and `latest-linux.yml`), `Pond-linux-arm64` (the arm64 AppImage, deb, and `latest-linux.yml`), and `Pond-macos` (Apple Silicon and Intel disk images) from the workflow run's artifacts; they are kept for 7 days and cannot auto-update. The same workflow can be started manually with `workflow_dispatch`.
 
 Keep platform-specific code behind `process.platform` checks and add tests that pass the platform in as a parameter, so every platform's behavior is covered on every CI runner.
 
 ## Linux development
 
-Pond builds and runs on Linux x64 with a desktop session. In addition to Node 24 and pnpm 11.27.0:
+Pond builds and runs on 64-bit Linux (x64 and ARM, such as Asahi Linux on Apple Silicon) with a desktop session. In addition to Node 24 and pnpm 11.27.0:
 
 - Install a C compiler and `make` (`build-essential` on Debian and Ubuntu, `base-devel` on Arch). `pnpm dist:linux` compiles the native messaging host, `pond-native-host`, with `cc`; set `CC` to use a different compiler. Without a compiler, install still succeeds but the browser extension cannot reach Pond.
 - Install [`fc-cache`](https://wiki.archlinux.org/title/font_configuration) (part of `fontconfig`) so activated fonts appear in other apps without a sign-out.
@@ -72,7 +72,7 @@ Pond builds and runs on Linux x64 with a desktop session. In addition to Node 24
 pnpm dist:linux
 ```
 
-This builds the desktop app and extension, compiles the native host, and writes `Pond-X.Y.Z.AppImage`, `Pond-X.Y.Z.deb`, and `latest-linux.yml` to `apps/desktop/dist/`. Linux on Arm is not supported yet; the native dependencies install for the host architecture.
+This builds the desktop app and extension, compiles the native host, and writes `Pond-X.Y.Z-<arch>.AppImage`, `Pond-X.Y.Z-<arch>.deb`, and `latest-linux.yml` to `apps/desktop/dist/`, where `<arch>` is the host architecture. The native dependencies (better-sqlite3, sqlite-vec, sharp, onnxruntime, ffmpeg-static) all ship linux-arm64 builds, so the same steps work on 64-bit ARM. Cross-arch packaging is not supported — build on the architecture you are packaging for.
 
 Pond keeps per-user files in the XDG directories: configuration in `$XDG_CONFIG_HOME/pond`, the native-host socket in `$XDG_RUNTIME_DIR/pond` when the session sets it (otherwise `$XDG_CONFIG_HOME/pond`), the copied native host in `$XDG_DATA_HOME/Pond/bin`, logs in Electron's logs directory, and the autostart entry at `$XDG_CONFIG_HOME/autostart/pond.desktop`.
 
