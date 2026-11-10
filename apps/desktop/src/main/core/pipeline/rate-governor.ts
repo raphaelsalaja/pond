@@ -94,28 +94,36 @@ export function setSourceCooldown(source: Source, ms: number): void {
   schedulePersist(true);
 }
 
-export function noteTransientFailure(source: Source): void {
+export async function noteTransientFailure(source: Source): Promise<void> {
   loadState();
   const t = now();
-  void noteDurableSourceFailure(source, {
+  const durable = noteDurableSourceFailure(source, {
     threshold: BREAKER_THRESHOLD,
     windowMs: BREAKER_WINDOW_MS,
     openMs: BREAKER_TRIP_MS,
   });
-  const entry = breakerCounters.get(source);
-  if (!entry || t - entry.firstAt > BREAKER_WINDOW_MS) {
-    breakerCounters.set(source, { count: 1, firstAt: t });
-    return;
-  }
-  entry.count += 1;
-  if (entry.count >= BREAKER_THRESHOLD) {
-    breakerCounters.delete(source);
-    const until = t + BREAKER_TRIP_MS;
-    const prev = breakerUntil.get(source) ?? 0;
-    if (until > prev) {
-      breakerUntil.set(source, until);
-      log.warn("[pond governor] circuit breaker tripped", { source });
-      schedulePersist(true);
+  try {
+    const entry = breakerCounters.get(source);
+    if (!entry || t - entry.firstAt > BREAKER_WINDOW_MS) {
+      breakerCounters.set(source, { count: 1, firstAt: t });
+      return;
+    }
+    entry.count += 1;
+    if (entry.count >= BREAKER_THRESHOLD) {
+      breakerCounters.delete(source);
+      const until = t + BREAKER_TRIP_MS;
+      const prev = breakerUntil.get(source) ?? 0;
+      if (until > prev) {
+        breakerUntil.set(source, until);
+        log.warn("[pond governor] circuit breaker tripped", { source });
+        schedulePersist(true);
+      }
+    }
+  } finally {
+    try {
+      await durable;
+    } catch (error) {
+      log.warn("[pond governor] failed to record source failure", error);
     }
   }
 }

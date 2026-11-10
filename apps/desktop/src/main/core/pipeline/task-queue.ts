@@ -14,7 +14,11 @@ import { z } from "zod";
 import { getDb } from "../../db";
 import { persistSave } from "../persist-save";
 import { isInteractiveTask, TaskPayloadSchema } from "./priority";
-import { type DueTask, isSourceTask } from "./reconciler-config";
+import {
+  type DueTask,
+  isSourceTask,
+  PER_OP_CONCURRENCY,
+} from "./reconciler-config";
 import { claimSourceProbe, inspectSourceAdmission } from "./source-admission";
 import { maxAttemptsFor, planOps } from "./specs";
 
@@ -28,7 +32,13 @@ const ClaimCandidateSchema = z.object({
   generationId: z.string().nullable(),
 });
 
-const CLAIM_CANDIDATE_LIMIT = 500;
+export const CLAIM_CANDIDATE_LIMIT = 500;
+/**
+ * One source operation can only fill a few claim slots. Headroom above the
+ * busiest op cap lets that lane fill after admission skips without crowding
+ * every later save out of the window.
+ */
+const LANE_CANDIDATE_LIMIT = Math.max(...Object.values(PER_OP_CONCURRENCY)) * 2;
 export const TASK_LEASE_MS = 20 * 60_000;
 
 export interface ClaimDueTasksOptions {
@@ -52,69 +62,90 @@ export async function claimDueTasks(
         db.$raw
           .prepare(
             `SELECT
-              tasks.id,
-              tasks.save_id AS saveId,
-              tasks.source,
-              tasks.op,
-              tasks.payload,
-              tasks.cancellation_fence AS cancellationFence,
-              tasks.generation_id AS generationId
-            FROM tasks
-            INNER JOIN saves ON saves.id = tasks.save_id
-            LEFT JOIN queue_generations
-              ON queue_generations.id = tasks.generation_id
-            WHERE
-              tasks.status IN ('pending', 'deferred')
-              AND tasks.next_run_at <= ?
-              AND (
-                saves.status = 'ingesting'
-                OR (
-                  saves.status = 'failed'
-                  AND queue_generations.kind = 'retry'
-                  AND queue_generations.status = 'active'
+              id,
+              saveId,
+              source,
+              op,
+              payload,
+              cancellationFence,
+              generationId
+            FROM (
+              SELECT
+                tasks.id AS id,
+                tasks.save_id AS saveId,
+                tasks.source AS source,
+                tasks.op AS op,
+                tasks.payload AS payload,
+                tasks.cancellation_fence AS cancellationFence,
+                tasks.generation_id AS generationId,
+                CASE json_extract(tasks.payload, '$.priority')
+                  WHEN 'interactive' THEN 0
+                  ELSE 1
+                END AS priority_rank,
+                tasks.next_run_at AS next_run_at,
+                tasks.created_at AS created_at,
+                ROW_NUMBER() OVER (
+                  PARTITION BY tasks.source, tasks.op
+                  ORDER BY
+                    CASE json_extract(tasks.payload, '$.priority')
+                      WHEN 'interactive' THEN 0
+                      ELSE 1
+                    END,
+                    tasks.next_run_at ASC,
+                    tasks.created_at ASC
+                ) AS lane_rank
+              FROM tasks
+              INNER JOIN saves ON saves.id = tasks.save_id
+              LEFT JOIN queue_generations
+                ON queue_generations.id = tasks.generation_id
+              WHERE
+                tasks.status IN ('pending', 'deferred')
+                AND tasks.next_run_at <= ?
+                AND (
+                  saves.status = 'ingesting'
+                  OR (
+                    saves.status = 'failed'
+                    AND queue_generations.kind = 'retry'
+                    AND queue_generations.status = 'active'
+                  )
                 )
-              )
-              AND saves.deleted_at IS NULL
-              AND (
-                tasks.generation_id IS NULL
-                OR queue_generations.status = 'active'
-              )
-              AND NOT EXISTS (
-                SELECT 1 FROM tasks AS peers
-                WHERE peers.save_id = tasks.save_id
-                  AND peers.status NOT IN ('done', 'cancelled')
-                  AND CASE peers.op
-                    WHEN 'harvest_metadata' THEN 0
-                    WHEN 'capture_tweet' THEN 1
-                    WHEN 'render_text_cover' THEN 2
-                    WHEN 'fetch_blobs' THEN 3
-                    WHEN 'archive_page' THEN 4
-                    WHEN 'fetch_video_ytdlp' THEN 5
-                    WHEN 'ensure_poster' THEN 6
-                    WHEN 'fetch_avatar' THEN 7
-                    WHEN 'finalize' THEN 8
-                  END < CASE tasks.op
-                    WHEN 'harvest_metadata' THEN 0
-                    WHEN 'capture_tweet' THEN 1
-                    WHEN 'render_text_cover' THEN 2
-                    WHEN 'fetch_blobs' THEN 3
-                    WHEN 'archive_page' THEN 4
-                    WHEN 'fetch_video_ytdlp' THEN 5
-                    WHEN 'ensure_poster' THEN 6
-                    WHEN 'fetch_avatar' THEN 7
-                    WHEN 'finalize' THEN 8
-                  END
-              )
-            ORDER BY
-              CASE json_extract(tasks.payload, '$.priority')
-                WHEN 'interactive' THEN 0
-                ELSE 1
-              END,
-              tasks.next_run_at ASC,
-              tasks.created_at ASC
+                AND saves.deleted_at IS NULL
+                AND (
+                  tasks.generation_id IS NULL
+                  OR queue_generations.status = 'active'
+                )
+                AND NOT EXISTS (
+                  SELECT 1 FROM tasks AS peers
+                  WHERE peers.save_id = tasks.save_id
+                    AND peers.status NOT IN ('done', 'cancelled')
+                    AND CASE peers.op
+                      WHEN 'harvest_metadata' THEN 0
+                      WHEN 'capture_tweet' THEN 1
+                      WHEN 'render_text_cover' THEN 2
+                      WHEN 'fetch_blobs' THEN 3
+                      WHEN 'archive_page' THEN 4
+                      WHEN 'fetch_video_ytdlp' THEN 5
+                      WHEN 'ensure_poster' THEN 6
+                      WHEN 'fetch_avatar' THEN 7
+                      WHEN 'finalize' THEN 8
+                    END < CASE tasks.op
+                      WHEN 'harvest_metadata' THEN 0
+                      WHEN 'capture_tweet' THEN 1
+                      WHEN 'render_text_cover' THEN 2
+                      WHEN 'fetch_blobs' THEN 3
+                      WHEN 'archive_page' THEN 4
+                      WHEN 'fetch_video_ytdlp' THEN 5
+                      WHEN 'ensure_poster' THEN 6
+                      WHEN 'fetch_avatar' THEN 7
+                      WHEN 'finalize' THEN 8
+                    END
+                )
+            )
+            WHERE lane_rank <= ?
+            ORDER BY priority_rank ASC, next_run_at ASC, created_at ASC
             LIMIT ?`,
           )
-          .all(at, CLAIM_CANDIDATE_LIMIT),
+          .all(at, LANE_CANDIDATE_LIMIT, CLAIM_CANDIDATE_LIMIT),
       );
       const ordered = fairCandidates(candidates);
       const available = { ...options.availableByOp };

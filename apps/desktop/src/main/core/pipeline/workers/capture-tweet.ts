@@ -13,7 +13,7 @@ import {
   renderThreadsCardPng,
   renderTweetCardPng,
 } from "../../render-card";
-import { TransientError } from "../extractors/errors";
+import { DependencyPendingError, TransientError } from "../extractors/errors";
 import { readSave, type WriteFileArgs } from "./apply";
 import {
   type InlinedAvatars,
@@ -130,7 +130,9 @@ export function createCaptureTweetTask(
       );
     }
     if (result.replyParentPending) {
-      throw new TransientError("capture_tweet: reply parent still pending");
+      throw new DependencyPendingError(
+        "capture_tweet: reply parent still pending",
+      );
     }
   };
 }

@@ -36,4 +36,7 @@ export class GeoRestrictedError extends ExtractorError {
 
 export class TransientError extends ExtractorError {}
 
+/** Waiting on another capture. Backs off, and must not trip the source breaker. */
+export class DependencyPendingError extends TransientError {}
+
 export class TerminalError extends ExtractorError {}

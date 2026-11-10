@@ -11,7 +11,11 @@ import log from "electron-log/main.js";
 import { getDb } from "../../db";
 import { commitSaveIngestEvent, toErrorInfo } from "../../lib/wide-event";
 import { persistSave } from "../persist-save";
-import { RateLimitedError, TransientError } from "./extractors/errors";
+import {
+  DependencyPendingError,
+  RateLimitedError,
+  TransientError,
+} from "./extractors/errors";
 import {
   noteTransientFailure,
   setSourceCooldown,
@@ -135,14 +139,15 @@ export async function handleFailure(
 
   if (isSourceTask(task.op)) {
     const source = task.source;
+    const countsAsSourceFailure =
+      cause instanceof WorkerWatchdogError ||
+      (cause instanceof TransientError &&
+        !(cause instanceof DependencyPendingError));
     if (cause instanceof RateLimitedError) {
       const ms = (cause.retryAfterSec ?? 60) * 1000;
       setSourceCooldown(source, ms);
-    } else if (
-      cause instanceof TransientError ||
-      cause instanceof WorkerWatchdogError
-    ) {
-      noteTransientFailure(source);
+    } else if (countsAsSourceFailure) {
+      await noteTransientFailure(source);
     }
   }
 
