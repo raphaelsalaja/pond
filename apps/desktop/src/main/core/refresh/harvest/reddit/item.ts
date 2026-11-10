@@ -27,6 +27,10 @@ async function inPageRedditHarvest(
     }
     await new Promise((r) => setTimeout(r, 250));
   }
+  const playerDeadline = Date.now() + 4_000;
+  while (norm.videoPending() && Date.now() < playerDeadline) {
+    await new Promise((r) => setTimeout(r, 200));
+  }
   return norm.extractPostMeta();
 }
 

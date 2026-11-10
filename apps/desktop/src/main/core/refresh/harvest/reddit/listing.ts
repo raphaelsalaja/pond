@@ -1,4 +1,5 @@
 import type { ListKind, MediaType } from "@pond/schema/db";
+import { descriptorFor, hostToSource } from "@pond/schema/sources";
 import { z } from "zod";
 
 export interface ListingMedia {
@@ -82,7 +83,32 @@ const RedditVideoSchema = z
   .optional()
   .catch(undefined);
 
-const RedditPostSchema = z.object({
+const RedditPreviewSchema = z
+  .object({
+    images: z
+      .array(
+        z
+          .object({
+            source: z.object({ url: OptionalText }).optional().catch(undefined),
+          })
+          .catch({}),
+      )
+      .optional()
+      .catch(undefined),
+  })
+  .optional()
+  .catch(undefined);
+
+const RedditLinkSchema = z.object({
+  url: OptionalText,
+  url_overridden_by_dest: OptionalText,
+  is_video: z.boolean().optional().catch(undefined),
+  media: RedditVideoSchema,
+  secure_media: RedditVideoSchema,
+  preview: RedditPreviewSchema,
+});
+
+const RedditPostSchema = RedditLinkSchema.extend({
   id: OptionalText,
   permalink: OptionalText,
   title: OptionalText,
@@ -93,26 +119,8 @@ const RedditPostSchema = z.object({
   created_utc: OptionalNumber,
   score: OptionalNumber,
   num_comments: OptionalNumber,
-  url: OptionalText,
-  is_video: z.boolean().optional().catch(undefined),
-  media: RedditVideoSchema,
-  secure_media: RedditVideoSchema,
-  preview: z
-    .object({
-      images: z
-        .array(
-          z
-            .object({
-              source: z
-                .object({ url: OptionalText })
-                .optional()
-                .catch(undefined),
-            })
-            .catch({}),
-        )
-        .optional()
-        .catch(undefined),
-    })
+  crosspost_parent_list: z
+    .array(RedditLinkSchema.catch({}))
     .optional()
     .catch(undefined),
   media_metadata: z
@@ -232,22 +240,22 @@ export function entriesFromListing(listing: RedditListing): ListingPage {
   return { entries, after };
 }
 
+type RedditLink = z.infer<typeof RedditLinkSchema>;
+
+/**
+ * yt-dlp already downloads a Reddit post's own v.redd.it file, a crosspost's
+ * parent file, and an outbound video it knows how to continue into. YouTube,
+ * Vimeo, and TikTok are the Pond sources whose item URLs are those videos.
+ * Any other embed stays an image so an unsupported host cannot fail the save.
+ */
+const EMBED_VIDEO_SOURCES = ["youtube", "vimeo", "tiktok"] as const;
+const YOUTUBE_ID = /^[A-Za-z0-9_-]{11}$/;
+
 function mediaFromPost(
   data: RedditPost,
 ): Pick<ListingEntry, "mediaUrl" | "mediaUrls" | "mediaType"> {
-  const redditVideo =
-    data.media?.reddit_video ?? data.secure_media?.reddit_video;
-  const videoUrl = redditVideo?.fallback_url ?? redditVideo?.dash_url;
-  const preview = firstPreviewUrl(data);
-  if (data.is_video === true && videoUrl) {
-    const video: ListingMedia = { url: videoUrl, type: "video" };
-    if (preview) video.poster = preview;
-    return {
-      mediaUrl: preview ?? videoUrl,
-      mediaUrls: [video],
-      mediaType: "video",
-    };
-  }
+  const video = videoFromPost(data);
+  if (video) return video;
   const gallery = galleryUrls(data);
   if (gallery.length > 0) {
     return {
@@ -264,6 +272,7 @@ function mediaFromPost(
       mediaType: "image",
     };
   }
+  const preview = firstPreviewUrl(data);
   if (preview) {
     return {
       mediaUrl: preview,
@@ -274,7 +283,110 @@ function mediaFromPost(
   return {};
 }
 
-function firstPreviewUrl(data: RedditPost): string | undefined {
+function videoFromPost(
+  data: RedditPost,
+): Pick<ListingEntry, "mediaUrl" | "mediaUrls" | "mediaType"> | null {
+  const own = hostedVideo(data);
+  if (own) return videoMedia(own.url, own.poster);
+  for (const parent of data.crosspost_parent_list ?? []) {
+    const parentVideo = hostedVideo(parent);
+    if (!parentVideo) continue;
+    return videoMedia(
+      parentVideo.url,
+      firstPreviewUrl(data) ?? parentVideo.poster,
+    );
+  }
+  const embed = embeddedVideoUrl(data) ?? parentEmbeddedVideoUrl(data);
+  if (embed) return videoMedia(embed, firstPreviewUrl(data));
+  return null;
+}
+
+function videoMedia(
+  url: string,
+  poster: string | undefined,
+): Pick<ListingEntry, "mediaUrl" | "mediaUrls" | "mediaType"> {
+  const video: ListingMedia = { url, type: "video" };
+  if (poster) video.poster = poster;
+  return {
+    mediaUrl: poster ?? url,
+    mediaUrls: [video],
+    mediaType: "video",
+  };
+}
+
+function hostedVideo(
+  data: RedditLink,
+): { url: string; poster?: string } | null {
+  const redditVideo =
+    data.media?.reddit_video ?? data.secure_media?.reddit_video;
+  const url = redditVideo?.fallback_url ?? redditVideo?.dash_url;
+  if (data.is_video !== true || !url) return null;
+  const poster = firstPreviewUrl(data);
+  return poster ? { url, poster } : { url };
+}
+
+function parentEmbeddedVideoUrl(data: RedditPost): string | null {
+  for (const parent of data.crosspost_parent_list ?? []) {
+    const url = embeddedVideoUrl(parent);
+    if (url) return url;
+  }
+  return null;
+}
+
+function embeddedVideoUrl(data: RedditLink): string | null {
+  for (const raw of [data.url_overridden_by_dest, data.url]) {
+    const video = supportedEmbedUrl(raw);
+    if (video) return video;
+  }
+  return null;
+}
+
+function isEmbedVideoSource(
+  source: ReturnType<typeof hostToSource>,
+): source is (typeof EMBED_VIDEO_SOURCES)[number] {
+  for (const id of EMBED_VIDEO_SOURCES) {
+    if (source === id) return true;
+  }
+  return false;
+}
+
+function supportedEmbedUrl(raw: string | undefined): string | null {
+  if (!raw) return null;
+  const source = hostToSource(raw);
+  if (
+    isEmbedVideoSource(source) &&
+    descriptorFor(source).urlPatterns.some((pattern) => pattern.test(raw))
+  ) {
+    return raw;
+  }
+  return youtubeVideoUrl(raw);
+}
+
+function youtubeVideoUrl(raw: string): string | null {
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    return null;
+  }
+  const host = url.hostname.replace(/^www\./, "").toLowerCase();
+  if (host === "youtu.be") {
+    const id = url.pathname.split("/").filter(Boolean)[0];
+    return id && YOUTUBE_ID.test(id) ? raw : null;
+  }
+  const youtube =
+    host === "youtube.com" ||
+    host === "youtube-nocookie.com" ||
+    host.endsWith(".youtube.com");
+  if (!youtube) return null;
+  const fromPath = /^\/(?:embed|live|shorts)\/([^/?#]+)/.exec(
+    url.pathname,
+  )?.[1];
+  const id = url.searchParams.get("v") ?? fromPath;
+  return id && YOUTUBE_ID.test(id) ? raw : null;
+}
+
+function firstPreviewUrl(data: RedditLink): string | undefined {
   const source = data.preview?.images?.[0]?.source;
   return source?.url?.replace(/&amp;/g, "&");
 }
