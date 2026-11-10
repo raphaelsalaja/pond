@@ -20,7 +20,10 @@ import { TagPicker } from "@/features/tags/components/picker";
 import { useTagCreation } from "@/features/tags/hooks/use-tag-creation";
 import { useTagsData } from "@/features/tags/hooks/use-tag-manager";
 import { tagOperations } from "@/features/tags/operations/tag-client";
-import { useTagCreationRequest } from "@/features/tags/state/creation";
+import {
+  tagCreation,
+  useTagCreationRequest,
+} from "@/features/tags/state/creation";
 import { MatchesEmpty } from "@/shared/components/matches-empty";
 import { SearchChrome } from "@/shared/components/search-chrome";
 import { findScrollParent } from "@/shared/lib/dom";
@@ -237,7 +240,6 @@ export function TagsPage() {
   const [scope, setScope] = useState<Scope>("all");
   const { creating, startCreate, cancelCreate, saveCreate } = useTagCreation();
   const creationRequest = useTagCreationRequest();
-  const handledCreationRequest = useRef(0);
   const [creationGroup, setCreationGroup] = useState<string | null>(null);
   const [descriptionDraft, setDescriptionDraft] = useState("");
   const cancelDescriptionRef = useRef(false);
@@ -245,20 +247,13 @@ export function TagsPage() {
   const columns = useGridColumns();
 
   useEffect(() => {
-    if (
-      creationRequest.token === 0 ||
-      creationRequest.token === handledCreationRequest.current
-    )
-      return;
-    handledCreationRequest.current = creationRequest.token;
+    if (creationRequest.token === 0) return;
+    const request = tagCreation.takeRequest();
+    if (!request) return;
     const group = groupSummaries.find((candidate) => candidate.id === scope);
-    setScope(
-      creationRequest.kind === "group" ? "all" : group ? scope : "ungrouped",
-    );
-    setCreationGroup(
-      creationRequest.kind === "tag" ? (group?.name ?? null) : null,
-    );
-    startCreate(creationRequest.kind);
+    setScope(request.kind === "group" ? "all" : group ? scope : "ungrouped");
+    setCreationGroup(request.kind === "tag" ? (group?.name ?? null) : null);
+    startCreate(request.kind);
   }, [creationRequest, groupSummaries, scope, startCreate]);
   const contextValue = useMemo(
     () => ({
@@ -600,6 +595,24 @@ export function TagsPage() {
                       }}
                     />
                   </Input.Root>
+                </section>
+              ) : null}
+
+              {scope === "all" && total > 0 ? (
+                <section className={styles.detail}>
+                  <div className={styles.title}>
+                    <h1>
+                      All Tags
+                      <span className={styles.count}>({total})</span>
+                    </h1>
+                    <Button
+                      variant="secondary"
+                      size="xs"
+                      onClick={() => beginCreate("tag")}
+                    >
+                      New Tag
+                    </Button>
+                  </div>
                 </section>
               ) : null}
 

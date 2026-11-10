@@ -126,7 +126,7 @@ describe("library Tags page", () => {
     expect(host.textContent).toContain("Typography");
     expect(host.textContent).toContain("Starred");
     expect(host.querySelector('[aria-label="New Group"]')).not.toBeNull();
-    expect(host.textContent).not.toContain("New Tag");
+    expect(host.querySelector("h1")?.textContent).toContain("All Tags");
   });
 
   it("filters tags using the existing manager", async () => {
@@ -297,6 +297,33 @@ describe("library Tags page", () => {
       group: "Design",
     });
     expect(host.querySelector("h1")?.textContent).toContain("Design");
+  });
+
+  it("offers New Tag in All and creates the tag without leaving it", async () => {
+    await mount();
+    const newTag = [...host.querySelectorAll("button")].find(
+      (node) => node.textContent?.trim() === "New Tag",
+    );
+    if (!newTag) throw new Error("Missing New Tag in All");
+
+    await act(async () => newTag.click());
+    const draft = host.querySelector('input[placeholder="Tag name"]');
+    if (!(draft instanceof HTMLInputElement)) {
+      throw new Error("Missing tag draft");
+    }
+    await fill(draft, "Reading");
+    await act(async () => {
+      draft.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+      );
+    });
+
+    expect(query).toHaveBeenCalledWith("tags.create", { name: "Reading" });
+    expect(query).not.toHaveBeenCalledWith(
+      "tagGroups.addTags",
+      expect.anything(),
+    );
+    expect(host.querySelector("h1")?.textContent).toContain("All Tags");
   });
 
   it("offers New Tag on Uncategorized when it already has tags", async () => {
