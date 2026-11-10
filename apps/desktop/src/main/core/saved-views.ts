@@ -237,12 +237,13 @@ export async function reorderViews(
         model: "saved_view",
         id,
         patch: { sortOrder: i },
-        before: row,
+        before: { sortOrder: row.sortOrder },
         meta: { actor: "user", actorReason: "saved-view-reorder" },
       });
     }
     if (txs.length === 0) return { ok: true };
     await runtime.commit(txs);
+    runtime.recordUndo?.(txs);
     return { ok: true };
   });
 }

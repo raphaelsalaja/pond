@@ -1,3 +1,9 @@
+import { closestCenter, DndContext } from "@dnd-kit/core";
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { IconPlus } from "@pond/icons";
 import type { SavedView } from "@pond/schema/db";
 import { EMPTY_QUERY, type Query } from "@pond/schema/filters/types";
@@ -23,15 +29,18 @@ import {
   useRevealSidebarSection,
 } from "@/features/settings";
 import { useTags } from "@/features/tags";
+import { SIDEBAR_SORTABLE_SCREEN_READER_INSTRUCTIONS } from "@/shared/lib/dnd-kit";
 import { usePrefs } from "@/shared/state/prefs";
 import { useOrganizationTree } from "../../hooks/use-organization-tree";
 import { resetFilters, setQuery } from "../../state/view-store";
 import { selectLibraryNav } from "../folder-sidebar/navigation";
 import { SmartFolderEntry } from "./entry";
 import { creationItems } from "./menu-items";
+import { smartFolderRows, smartFolderSortableIds } from "./reorder";
 import { RuleDialog } from "./rule-dialog";
 import { newRule } from "./rule-editor";
 import type { EditorRequest } from "./types";
+import { useSmartFolderDrag } from "./use-smart-folder-drag";
 
 async function countMatches(query: Query): Promise<number> {
   const result = await window.pond.query("saves.queryCount", { query });
@@ -51,6 +60,18 @@ export function SmartFoldersSection({
   const [presentations] = usePrefs("savedViewViews");
   const [sidebar] = usePrefs("sidebar");
   const [open, setOpen] = useState(true);
+  const [closedGroups, setClosedGroups] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+  const setGroupOpen = (id: string, next: boolean) => {
+    setClosedGroups((current) => {
+      if (current.has(id) === !next) return current;
+      const groups = new Set(current);
+      if (next) groups.delete(id);
+      else groups.add(id);
+      return groups;
+    });
+  };
   const [editor, setEditor] = useState<EditorRequest | null>(null);
   const editingViewId = useEditingSavedViewId();
   useRevealSidebarSection("smartFolders", editingViewId !== null);
@@ -107,6 +128,20 @@ export function SmartFoldersSection({
     },
     nav,
   );
+  const rows = useMemo(
+    () => smartFolderRows(childrenByParent),
+    [childrenByParent],
+  );
+  const sortableIds = useMemo(
+    () => smartFolderSortableIds(childrenByParent),
+    [childrenByParent],
+  );
+  const drag = useSmartFolderDrag({
+    views,
+    rows,
+    selectedIds: organization.selected,
+    onReveal: (id) => setGroupOpen(id, true),
+  });
   const quickAccessIds = views
     .filter((view) => presentations[view.id]?.quickAccess)
     .toSorted(
@@ -176,33 +211,57 @@ export function SmartFoldersSection({
             </Menu.Root>
           </Sidebar.GroupHeader>
         </SidebarSectionMenu>
-        <Sidebar.CollapsibleGroupContent
-          ref={organization.root}
-          role="tree"
-          aria-label="Smart Folders"
-          aria-multiselectable
-          inert={!open}
-          aria-hidden={!open}
+        <DndContext
+          accessibility={{
+            announcements: drag.announcements,
+            screenReaderInstructions:
+              SIDEBAR_SORTABLE_SCREEN_READER_INSTRUCTIONS,
+          }}
+          collisionDetection={closestCenter}
+          modifiers={[restrictToVerticalAxis]}
+          sensors={drag.sensors}
+          onDragCancel={drag.cancel}
+          onDragEnd={drag.finish}
+          onDragMove={drag.move}
+          onDragOver={drag.preview}
+          onDragStart={drag.start}
         >
-          {(childrenByParent.get(null) ?? []).map((view) => (
-            <SmartFolderEntry
-              organization={organization}
-              key={view.id}
-              view={view}
-              views={views}
-              childrenByParent={childrenByParent}
-              activeId={active ? activeViewId : null}
-              onSelect={onSelect}
-              depth={0}
-              editingViewId={editingViewId}
-              onFinishRenaming={() => savedViews.finishEditing()}
-              onStartRenaming={savedViews.startEditing}
-              openEditor={setEditor}
-              presentations={presentations}
-              quickAccessIds={quickAccessIds}
-            />
-          ))}
-        </Sidebar.CollapsibleGroupContent>
+          <SortableContext
+            items={sortableIds}
+            strategy={verticalListSortingStrategy}
+          >
+            <Sidebar.CollapsibleGroupContent
+              ref={organization.root}
+              role="tree"
+              aria-label="Smart Folders"
+              aria-multiselectable
+              inert={!open}
+              aria-hidden={!open}
+            >
+              {(childrenByParent.get(null) ?? []).map((view) => (
+                <SmartFolderEntry
+                  organization={organization}
+                  key={view.id}
+                  view={view}
+                  views={views}
+                  childrenByParent={childrenByParent}
+                  activeId={active ? activeViewId : null}
+                  onSelect={onSelect}
+                  depth={0}
+                  editingViewId={editingViewId}
+                  onFinishRenaming={() => savedViews.finishEditing()}
+                  onStartRenaming={savedViews.startEditing}
+                  openEditor={setEditor}
+                  presentations={presentations}
+                  quickAccessIds={quickAccessIds}
+                  drop={drag.drop}
+                  groupOpen={(id) => !closedGroups.has(id)}
+                  onGroupOpenChange={setGroupOpen}
+                />
+              ))}
+            </Sidebar.CollapsibleGroupContent>
+          </SortableContext>
+        </DndContext>
       </Sidebar.CollapsibleGroup>
       {editorDialog}
     </>

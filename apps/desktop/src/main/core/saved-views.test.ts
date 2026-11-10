@@ -5,13 +5,14 @@ import type { Transaction } from "@pond/schema/tx";
 import Database from "better-sqlite3";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/better-sqlite3";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { initializePondSchema } from "../db";
 import {
   createView,
   deleteView,
   listViews,
   renameViewsBatch,
+  reorderViews,
   updateView,
 } from "./saved-views";
 
@@ -297,5 +298,36 @@ describe.skipIf(!nativeSqliteAvailable())("saved view hierarchy", () => {
     expect(await updateView(group, { name: "Updated" }, runtime)).toEqual({
       ok: true,
     });
+  });
+
+  it("persists a smart folder reorder as sibling sort order that can be undone", async () => {
+    const { runtime, create } = setup();
+    const undo = vi.fn();
+    const recording = { ...runtime, recordUndo: undo };
+    const first = await create({ name: "Alpha", kind: "smart_folder" });
+    const second = await create({ name: "Beta", kind: "smart_folder" });
+    expect(await reorderViews([second, first], recording)).toEqual({
+      ok: true,
+    });
+    expect(
+      (await listViews(runtime)).map((view) => [view.id, view.sortOrder]),
+    ).toEqual([
+      [second, 0],
+      [first, 1],
+    ]);
+    expect(undo).toHaveBeenCalledWith([
+      expect.objectContaining({
+        kind: "update",
+        id: second,
+        patch: { sortOrder: 0 },
+        before: { sortOrder: 1 },
+      }),
+      expect.objectContaining({
+        kind: "update",
+        id: first,
+        patch: { sortOrder: 1 },
+        before: { sortOrder: 0 },
+      }),
+    ]);
   });
 });

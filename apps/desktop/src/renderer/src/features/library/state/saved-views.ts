@@ -212,6 +212,12 @@ export const savedViews = {
     if (!result.ok) throw new Error("Could not delete this smart folder item.");
     await savedViews.refresh();
   },
+  async reorder(ids: string[]): Promise<void> {
+    if (ids.length === 0) return;
+    const result = await window.pond.query("savedViews.reorder", { ids });
+    if (!result.ok) throw new Error("Could not reorder these smart folders.");
+    await savedViews.refresh();
+  },
 };
 
 export function useSavedViews(): SavedView[] {
