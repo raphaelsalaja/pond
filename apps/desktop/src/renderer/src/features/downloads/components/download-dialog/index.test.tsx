@@ -8,6 +8,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { downloadDialog } from "@/features/downloads/state/download-dialog";
+import { DownloadDialogHost } from "./index";
 
 const VIDEO: DownloadSingleProbe = {
   kind: "single",
@@ -51,9 +53,13 @@ beforeEach(() => {
       disconnect() {}
     },
   );
+  // The dialog store lives for the whole file. Close it so the next open
+  // starts a new session instead of reusing a dialog left open by the last case.
+  downloadDialog.close();
 });
 
 afterEach(() => {
+  downloadDialog.close();
   document.body.replaceChildren();
   vi.unstubAllGlobals();
 });
@@ -66,8 +72,12 @@ async function renderDialog(
   probes: Record<string, DownloadProbeResult>,
   links: string[],
 ) {
-  vi.resetModules();
   const calls: Call[] = [];
+  // `window.pond` is read when a query runs, so one module instance is enough.
+  // Re-importing the dialog per test (`vi.resetModules()`) evaluates the Motion
+  // and sources graph inside the 5s test budget. On a busy Windows runner that
+  // exceeds the timeout, and the next test then clears the cache while the
+  // first import is still evaluating, so the component and this store diverge.
   vi.stubGlobal("pond", {
     async query(name: string, input: StubInput) {
       calls.push({ name, input });
@@ -92,10 +102,6 @@ async function renderDialog(
       throw new Error(`Unexpected query: ${name}`);
     },
   });
-  const { DownloadDialogHost } = await import("./index");
-  const { downloadDialog } = await import(
-    "@/features/downloads/state/download-dialog"
-  );
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
@@ -123,7 +129,10 @@ async function renderDialog(
       await flush();
     },
     async cleanup() {
-      await act(async () => root.unmount());
+      await act(async () => {
+        downloadDialog.close();
+        root.unmount();
+      });
       host.remove();
     },
   };
