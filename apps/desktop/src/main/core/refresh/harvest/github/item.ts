@@ -5,6 +5,7 @@ import type { Capture } from "@pond/schema/raw";
 import { z } from "zod";
 import { captureFromPageDom, type HarvestAdaptCtx } from "../from-page";
 import { buildItemExpression } from "../lib/expression";
+import { selectRepositoryPreview } from "./open-graph";
 
 interface GithubRepoPage {
   title: string;
@@ -89,10 +90,8 @@ async function inPageGithubHarvest(): Promise<GithubRepoPage | null> {
   if (homepage) page.homepage = homepage;
   if (body) page.readme = readmeHtml(body);
 
-  /** GitHub draws the default card from the repo's stats on a rate-limited host; only a custom preview is worth keeping. */
-  const image = meta("og:image");
-  if (image && !image.includes("opengraph.githubassets.com")) {
-    page.mediaUrls.push({ url: image, type: "image" });
+  for (const url of openGraphImages()) {
+    page.mediaUrls.push({ url, type: "image" });
   }
   return page;
 
@@ -129,11 +128,22 @@ async function inPageGithubHarvest(): Promise<GithubRepoPage | null> {
     }
     return copy.innerHTML;
   }
+
+  function openGraphImages(): string[] {
+    return Array.from(
+      document.querySelectorAll(
+        'meta[property="og:image"], meta[name="og:image"]',
+      ),
+    )
+      .map((element) => element.getAttribute("content")?.trim() ?? "")
+      .filter((url) => url.length > 0);
+  }
 }
 
 export function adapt(raw: JsonValue, ctx: HarvestAdaptCtx): Capture | null {
   const capture = captureFromPageDom(raw, ctx);
   if (!capture) return null;
+  capture.media = selectRepositoryPreview(capture.media);
   const { homepage, readme } = RepoExtrasSchema.parse(raw);
   if (homepage) capture.extras = { ...capture.extras, externalLink: homepage };
   if (readme) capture.article = { html: readme };
