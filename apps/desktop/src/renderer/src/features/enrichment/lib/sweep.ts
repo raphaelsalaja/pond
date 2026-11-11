@@ -6,7 +6,12 @@ import {
 } from "@shared/machine-pace";
 import pLimit from "p-limit";
 import { enrichmentMonitor } from "@/features/enrichment/state/enrichment-monitor";
-import { onPoolDirty, pool, upsertSave } from "@/features/saves/pool";
+import {
+  ensureSaves,
+  onPoolDirty,
+  pool,
+  upsertSave,
+} from "@/features/saves/pool";
 import type { Save } from "@/features/saves/types";
 import {
   readMachinePace,
@@ -243,6 +248,7 @@ function schedule(enricher: Enricher, save: Save): void {
   publishActivity();
   void limit(async () => {
     await whenIdle();
+    if (!pool.get(save.id)) await ensureSaves([save.id]).catch(() => undefined);
     const current = pool.get(save.id);
     const prefs = getPrefsSnapshot();
     if (

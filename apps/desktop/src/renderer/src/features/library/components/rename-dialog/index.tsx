@@ -6,7 +6,12 @@ import {
 } from "@/features/library/components/batch-rename";
 import { closeRenameDialog } from "@/features/library/state/rename-dialog";
 import { CardThumb } from "@/features/saves";
-import { ensureSaves, reloadSaves, savesStore } from "@/features/saves/pool";
+import {
+  ensureSaves,
+  reloadSaves,
+  savesStore,
+  useRetainedSaves,
+} from "@/features/saves/pool";
 
 const TOKENS = [
   { token: "{n}", label: "Number" },
@@ -33,6 +38,7 @@ export function RenameDialog({
         a.length === b.length && a.every((save, index) => save === b[index]),
     },
   );
+  useRetainedSaves(ids);
   useEffect(() => {
     void ensureSaves(ids);
   }, [ids]);

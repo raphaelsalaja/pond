@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { z } from "zod";
-import { reloadSaves } from "@/features/saves/pool";
+import { protectSaves, reloadSaves } from "@/features/saves/pool";
 import { hydrateLiveDownloadSaves } from "../components/page/hydrate-live-saves";
 
 const InflightIdsSchema = z.array(z.string()).catch([]);
@@ -12,6 +12,8 @@ let stopHydration: (() => void) | null = null;
 function startHydration(): () => void {
   let stopped = false;
   let inflight = new Set<string>();
+  let live: readonly string[] = [];
+  const release = protectSaves(() => [...live, ...inflight]);
   const hydrate = async (
     name: "downloads.ingestingOrFailed" | "pipeline.inflight",
   ) => {
@@ -19,6 +21,7 @@ function startHydration(): () => void {
       const ids = InflightIdsSchema.parse(await window.pond.query(name, {}));
       if (stopped) return;
       if (name === "downloads.ingestingOrFailed") {
+        live = ids;
         await hydrateLiveDownloadSaves(ids, () => stopped);
         return;
       }
@@ -35,6 +38,7 @@ function startHydration(): () => void {
   return () => {
     stopped = true;
     clearInterval(timer);
+    release();
   };
 }
 

@@ -4,7 +4,11 @@ import { useSelector } from "@tanstack/react-store";
 import { type ReactNode, useEffect, useId } from "react";
 import { SaveTile } from "@/features/saves";
 import { pickPrimaryFile } from "@/features/saves/media";
-import { ensureSaves, savesStore } from "@/features/saves/pool";
+import {
+  ensureSaves,
+  savesStore,
+  useRetainedSaves,
+} from "@/features/saves/pool";
 import type { Save } from "@/features/saves/types";
 import { formatBytes } from "@/shared/lib/format";
 import styles from "./styles.module.css";
@@ -123,6 +127,7 @@ export function Group({
         a.length === b.length && a.every((save, index) => save === b[index]),
     },
   );
+  useRetainedSaves(group.ids);
   useEffect(() => {
     void ensureSaves(group.ids);
   }, [group.ids]);

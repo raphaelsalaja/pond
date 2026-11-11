@@ -11,7 +11,11 @@ import {
   closeConversionDialog,
   type ExportMode,
 } from "@/features/library/state/conversion-dialog";
-import { ensureSaves, savesStore } from "@/features/saves/pool";
+import {
+  ensureSaves,
+  savesStore,
+  useRetainedSaves,
+} from "@/features/saves/pool";
 import { errorCopy } from "@/shared/lib/error-copy";
 import { formatPlural } from "@/shared/lib/format";
 import {
@@ -105,6 +109,7 @@ export function ConversionDialog({
     }
     void start({ mode, ids: exportIds, fileIndex, preset });
   }
+  useRetainedSaves(ids);
   useEffect(() => {
     void ensureSaves(ids).catch(() => undefined);
   }, [ids]);

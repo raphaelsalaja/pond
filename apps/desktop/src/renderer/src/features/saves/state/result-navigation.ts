@@ -5,6 +5,7 @@ import {
   type ResultRectangle,
   spatialNeighbor,
 } from "@/features/saves/lib/spatial-navigation";
+import { protectSaves } from "@/features/saves/state/pool";
 
 interface ResultSource {
   key?: string;
@@ -29,6 +30,9 @@ let pendingReveal: string | null = null;
 let focusOnReveal = false;
 let focusOwner: Element | null = null;
 let rectangles: readonly ResultRectangle[] = [];
+
+/** `loadedIds` reads the live query page, so results stay protected before the view republishes them. */
+protectSaves(() => [...source.ids, ...(source.loadedIds?.() ?? [])]);
 
 export const resultNavigation = {
   key(): string | undefined {

@@ -86,9 +86,76 @@ function emitDirty(ids: readonly string[]): void {
   for (const listener of dirtyListeners) listener(ids);
 }
 
+/** Protected rows can hold the pool above this; only unprotected rows are evicted. */
+export const POOL_SOFT_CAP = 5_000;
+/** Trimming below the cap leaves headroom so the next page load does not trim again. */
+export const POOL_TRIM_TARGET = 4_000;
+const TRIM_DELAY_MS = 1_000;
+
+/** Insertion order is recency: the first ID is the least recently touched. */
+const touched = new Set<string>();
+type PoolGuard = () => Iterable<string | null | undefined>;
+const guards = new Set<PoolGuard>();
+let trimTimer: ReturnType<typeof setTimeout> | null = null;
+
+function touch(id: string): void {
+  touched.delete(id);
+  touched.add(id);
+}
+
+/** Keeps every ID the guard returns at trim time in the pool until the returned release runs. */
+export function protectSaves(guard: PoolGuard): () => void {
+  guards.add(guard);
+  return () => {
+    guards.delete(guard);
+  };
+}
+
+function scheduleTrim(): void {
+  if (trimTimer !== null || savesStore.state.byId.size <= POOL_SOFT_CAP) return;
+  trimTimer = setTimeout(() => {
+    trimTimer = null;
+    trimPool();
+  }, TRIM_DELAY_MS);
+}
+
+/** Evicts least recently touched, unprotected rows down to the trim target; `ensureSaves` refetches them. */
+export function trimPool(): number {
+  const { byId } = savesStore.state;
+  if (byId.size <= POOL_SOFT_CAP) return 0;
+  const kept = new Set<string>();
+  for (const guard of guards) {
+    for (const id of guard()) if (id) kept.add(id);
+  }
+  const excess = byId.size - POOL_TRIM_TARGET;
+  const evicted = new Set<string>();
+  for (const id of touched) {
+    if (evicted.size >= excess) break;
+    if (!kept.has(id) && byId.has(id)) evicted.add(id);
+  }
+  removeSaves(evicted);
+  return evicted.size;
+}
+
+function removeSaves(present: ReadonlySet<string>): void {
+  if (present.size === 0) return;
+  savesStore.setState((s) => {
+    for (const id of present) s.byId.delete(id);
+    return {
+      byId: s.byId,
+      sorted: s.sorted.filter((save) => !present.has(save.id)),
+      revision: s.revision + 1,
+    };
+  });
+  for (const id of present) touched.delete(id);
+  emitDirty([...present]);
+}
+
 export const pool = {
   get(id: string): Save | undefined {
-    return savesStore.state.byId.get(id);
+    const save = savesStore.state.byId.get(id);
+    if (save) touch(id);
+    return save;
   },
   ids(): IterableIterator<string> {
     return savesStore.state.byId.keys();
@@ -106,17 +173,7 @@ export const pool = {
     deleteSave(id);
   },
   bulkDelete(ids: readonly string[]): void {
-    const present = new Set(ids.filter((id) => savesStore.state.byId.has(id)));
-    if (present.size === 0) return;
-    savesStore.setState((s) => {
-      for (const id of present) s.byId.delete(id);
-      return {
-        byId: s.byId,
-        sorted: s.sorted.filter((save) => !present.has(save.id)),
-        revision: s.revision + 1,
-      };
-    });
-    emitDirty([...present]);
+    removeSaves(new Set(ids.filter((id) => savesStore.state.byId.has(id))));
   },
   clear(): void {
     clearSaves();
@@ -136,7 +193,9 @@ export function upsertSave(save: Save): void {
         : sortByRecency(s.byId.values());
     return { byId: s.byId, sorted, revision: s.revision + 1 };
   });
+  touch(save.id);
   if (dirty) emitDirty([save.id]);
+  scheduleTrim();
 }
 
 export function bulkUpsertSaves(list: ReadonlyArray<Save>): void {
@@ -151,7 +210,9 @@ export function bulkUpsertSaves(list: ReadonlyArray<Save>): void {
       revision: s.revision + 1,
     };
   });
+  for (const save of list) touch(save.id);
   emitDirty(list.map((s) => s.id));
+  scheduleTrim();
 }
 
 export function deleteSave(id: string): void {
@@ -166,10 +227,14 @@ export function deleteSave(id: string): void {
       revision: s.revision + 1,
     };
   });
+  touched.delete(id);
   if (dirty) emitDirty([id]);
 }
 
 function clearSaves(): void {
+  touched.clear();
+  if (trimTimer !== null) clearTimeout(trimTimer);
+  trimTimer = null;
   savesStore.setState((s) =>
     s.byId.size === 0
       ? s
@@ -184,4 +249,5 @@ export function patchSaveRawJson(id: string, rawJson: Save["rawJson"]): void {
     s.byId.set(id, { ...prev, rawJson });
     return { byId: s.byId, sorted: s.sorted, revision: s.revision + 1 };
   });
+  if (savesStore.state.byId.has(id)) touch(id);
 }

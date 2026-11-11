@@ -1,6 +1,10 @@
 import { useSelector } from "@tanstack/react-store";
 import { useEffect, useMemo } from "react";
-import { ensureSaves, savesStore } from "@/features/saves/pool";
+import {
+  ensureSaves,
+  savesStore,
+  useRetainedSaves,
+} from "@/features/saves/pool";
 import type { Save } from "@/features/saves/types";
 
 function sameItems(
@@ -13,6 +17,7 @@ function sameItems(
 /** Live, untrashed saves for these ids; re-renders only when one of them changes. */
 export function useSavesById(ids: readonly string[]): readonly Save[] {
   const key = ids.join("\n");
+  useRetainedSaves(ids);
   useEffect(() => {
     if (key) void ensureSaves(key.split("\n")).catch(() => {});
   }, [key]);

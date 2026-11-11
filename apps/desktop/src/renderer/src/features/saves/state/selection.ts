@@ -1,5 +1,6 @@
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
+import { protectSaves } from "@/features/saves/state/pool";
 
 interface SelectionState {
   readonly ids: ReadonlySet<string>;
@@ -156,3 +157,8 @@ export function usePrimarySelection(): string | null {
 export function useIsPrimary(id: string): boolean {
   return useSelector(primarySelectionStore, (s) => s.id === id);
 }
+
+protectSaves(() => {
+  const { ids, anchor, cursor } = selectionStore.state;
+  return [...ids, anchor, cursor, primarySelectionStore.state.id];
+});
