@@ -15,11 +15,15 @@ import {
   Menu,
   Popover,
 } from "@pond/ui";
+import { DEFAULT_APP_ICON } from "@shared/app-icons";
 import type { LibraryMarkSource } from "@shared/library-mark";
+import type { LogoSource } from "@shared/logo-crop";
 import { useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { type RefObject, useRef, useState } from "react";
+import { type ReactNode, type RefObject, useRef, useState } from "react";
+import { listAppIconPreviews } from "@/features/settings";
 import defaultAppIcon from "@/generated/app-icon-previews/aqua.png";
+import { LogoCropDialog } from "@/shared/components/logo-crop-dialog";
 import { errorCopy } from "@/shared/lib/error-copy";
 import { gentleSpring } from "@/shared/lib/motion";
 import { LIBRARY_EMOJI } from "./emoji";
@@ -32,6 +36,7 @@ import {
   type LibrarySwatch,
 } from "./icons";
 import {
+  isDefaultMark,
   type LibraryMark,
   markKey,
   markToLogo,
@@ -40,7 +45,15 @@ import {
 } from "./mark";
 import styles from "./styles.module.css";
 
-type Picker = "emoji" | "icon";
+type Picker = "pond" | "emoji" | "icon";
+
+const POND_LOGOS = listAppIconPreviews();
+
+const PICKER_LABELS: Record<Picker, string> = {
+  pond: "Choose Pond Logo",
+  emoji: "Choose Emoji",
+  icon: "Choose Icon",
+};
 
 interface LibraryCustomizeDialogProps {
   library: {
@@ -63,6 +76,12 @@ function restoreMark(
   const source = library.mark;
   const image = { kind: "image", src: library.icon } as const;
   if (!source) return { mark: image, swatch: DEFAULT_LIBRARY_SWATCH };
+  if (source.kind === "pond") {
+    return {
+      mark: { kind: "pond", tint: source.tint },
+      swatch: DEFAULT_LIBRARY_SWATCH,
+    };
+  }
   const hue = source.color.split("-")[0];
   /** A retired shade keeps its hue so the mark still reopens as an emoji or icon. */
   const swatch =
@@ -81,6 +100,8 @@ function markSource(
   mark: LibraryMark,
   swatch: LibrarySwatch,
 ): LibraryMarkSource | null {
+  if (isDefaultMark(mark)) return null;
+  if (mark.kind === "pond") return { kind: "pond", tint: mark.tint };
   if (mark.kind === "emoji") {
     return { kind: "emoji", emoji: mark.emoji, color: swatch.id };
   }
@@ -113,13 +134,14 @@ export function LibraryCustomizeDialog({
   const [markChanged, setMarkChanged] = useState(false);
   const [picker, setPicker] = useState<Picker>("emoji");
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [cropSource, setCropSource] = useState<LogoSource | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const reduceMotion = useReducedMotion();
   const nextName = name.trim().replace(/\.pond$/i, "");
   const nameChanged = nextName !== library.name;
   const changed = nameChanged || markChanged;
-  const tinted = mark.kind !== "image";
+  const tinted = mark.kind === "emoji" || mark.kind === "icon";
 
   function changeMark(next: LibraryMark) {
     setMark(next);
@@ -139,7 +161,7 @@ export function LibraryCustomizeDialog({
     setError(null);
     try {
       const result = await window.pond.query("library.identity.pickIcon", {});
-      if (result.ok) changeMark({ kind: "image", src: result.icon });
+      if (result.ok) setCropSource(result.image);
       else if (result.reason !== "cancelled") {
         setError("Choose a supported image.");
       }
@@ -233,7 +255,7 @@ export function LibraryCustomizeDialog({
                   </AnimatePresence>
                   <span ref={editRef} className={styles.edit}>
                     <MarkMenu
-                      customized={tinted || mark.src !== null}
+                      customized={!isDefaultMark(mark)}
                       disabled={busy}
                       pickerOpen={pickerOpen}
                       onPick={openPicker}
@@ -250,7 +272,7 @@ export function LibraryCustomizeDialog({
                   onOpenChange={setPickerOpen}
                   onChange={(next) => {
                     changeMark(next);
-                    if (next.kind === "emoji") setPickerOpen(false);
+                    if (next.kind !== "icon") setPickerOpen(false);
                   }}
                 />
               </div>
@@ -295,6 +317,16 @@ export function LibraryCustomizeDialog({
               </Dialog.Confirm>
             </Dialog.Footer>
           </form>
+          {cropSource ? (
+            <LogoCropDialog
+              source={cropSource}
+              onClose={() => setCropSource(null)}
+              onCrop={(icon) => {
+                changeMark({ kind: "image", src: icon });
+                setCropSource(null);
+              }}
+            />
+          ) : null}
         </Dialog.Popup>
       </Dialog.Portal>
     </Dialog.Root>
@@ -378,6 +410,16 @@ function MarkGlyph({ mark }: { mark: LibraryMark }) {
   if (mark.kind === "icon") {
     return <LibraryIcon name={mark.icon} size={PREVIEW_GLYPH} />;
   }
+  if (mark.kind === "pond") {
+    const logo = POND_LOGOS.find((entry) => entry.id === mark.tint);
+    return (
+      <img
+        className={styles.image}
+        src={logo?.preview ?? defaultAppIcon}
+        alt=""
+      />
+    );
+  }
   return (
     <img className={styles.image} src={mark.src ?? defaultAppIcon} alt="" />
   );
@@ -415,6 +457,12 @@ function MarkMenu({
       <Menu.Portal>
         <Menu.Positioner side="bottom" align="start" sideOffset={8}>
           <Menu.Popup finalFocus={!pickerOpen}>
+            <Menu.Item onClick={() => onPick("pond")}>
+              <Menu.ItemIcon>
+                <LibraryIcon name="pond" />
+              </Menu.ItemIcon>
+              <Menu.ItemLabel>Choose Pond Logo</Menu.ItemLabel>
+            </Menu.Item>
             <Menu.Item onClick={() => onPick("emoji")}>
               <Menu.ItemIcon>
                 <IconFaceSmile />
@@ -460,6 +508,45 @@ interface MarkPickerProps {
   onChange: (mark: LibraryMark) => void;
 }
 
+interface PickerOption {
+  key: string;
+  label: string;
+  content: ReactNode;
+  selected: boolean;
+  next: LibraryMark;
+}
+
+function pickerOptions(picker: Picker, mark: LibraryMark): PickerOption[] {
+  if (picker === "pond") {
+    return POND_LOGOS.map((entry) => ({
+      key: entry.id,
+      label: entry.label,
+      content: <img className={styles.logo} src={entry.preview} alt="" />,
+      selected:
+        mark.kind === "pond"
+          ? mark.tint === entry.id
+          : isDefaultMark(mark) && entry.id === DEFAULT_APP_ICON,
+      next: { kind: "pond", tint: entry.id },
+    }));
+  }
+  if (picker === "emoji") {
+    return LIBRARY_EMOJI.map((entry) => ({
+      key: entry.emoji,
+      label: entry.label,
+      content: <span className={styles.option}>{entry.emoji}</span>,
+      selected: mark.kind === "emoji" && mark.emoji === entry.emoji,
+      next: { kind: "emoji", emoji: entry.emoji },
+    }));
+  }
+  return LIBRARY_ICONS.map(({ id, label, Icon }) => ({
+    key: id,
+    label,
+    content: <Icon />,
+    selected: mark.kind === "icon" && mark.icon === id,
+    next: { kind: "icon", icon: id },
+  }));
+}
+
 function MarkPicker({
   anchor,
   picker,
@@ -468,22 +555,7 @@ function MarkPicker({
   onOpenChange,
   onChange,
 }: MarkPickerProps) {
-  const options =
-    picker === "emoji"
-      ? LIBRARY_EMOJI.map((entry) => ({
-          key: entry.emoji,
-          label: entry.label,
-          content: <span className={styles.option}>{entry.emoji}</span>,
-          selected: mark.kind === "emoji" && mark.emoji === entry.emoji,
-          next: { kind: "emoji", emoji: entry.emoji } as const,
-        }))
-      : LIBRARY_ICONS.map(({ id, label, Icon }) => ({
-          key: id,
-          label,
-          content: <Icon />,
-          selected: mark.kind === "icon" && mark.icon === id,
-          next: { kind: "icon", icon: id } as const,
-        }));
+  const options = pickerOptions(picker, mark);
 
   return (
     <Popover.Root open={open} onOpenChange={onOpenChange}>
@@ -496,7 +568,7 @@ function MarkPicker({
         >
           <Popover.Popup
             className={styles.picker}
-            aria-label={picker === "emoji" ? "Choose Emoji" : "Choose Icon"}
+            aria-label={PICKER_LABELS[picker]}
           >
             <div className={styles.grid} data-scroll-fade="vertical">
               {options.map((option) => (

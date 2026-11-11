@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LibrarySettings } from ".";
 
 const customLogo = "data:image/png;base64,Y3VzdG9t";
+const customSource = "data:image/png;base64,c291cmNl";
 interface LibraryInfo {
   path: string;
   name: string;
@@ -27,6 +28,9 @@ const query = vi.fn(
     if (name === "library.info") return libraryInfo;
     if (name === "library.recent") return [];
     if (name === "library.identity.pickIcon") {
+      return { ok: true, image: { src: customSource, width: 300, height: 900 } };
+    }
+    if (name === "library.identity.cropIcon") {
       return { ok: true, icon: customLogo };
     }
     if (name === "library.identity.update") {
@@ -96,6 +100,20 @@ describe("library settings", () => {
     if (!(choose instanceof HTMLButtonElement))
       throw new Error("Missing Choose Logo button");
     await act(async () => choose.click());
+    const crop = await vi.waitFor(() => {
+      const button = [
+        ...document.querySelectorAll<HTMLButtonElement>(
+          '[role="dialog"] button',
+        ),
+      ].find((candidate) => candidate.textContent?.trim() === "Crop");
+      if (!button) throw new Error("Missing Crop button");
+      return button;
+    });
+    await act(async () => crop.click());
+    expect(query).toHaveBeenCalledWith("library.identity.cropIcon", {
+      src: customSource,
+      crop: { x: 0, y: 300, size: 300 },
+    });
     await vi.waitFor(() =>
       expect(query).toHaveBeenCalledWith("library.identity.update", {
         icon: customLogo,

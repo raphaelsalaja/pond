@@ -115,7 +115,9 @@ async function buildLibraryWindow(): Promise<BrowserWindow> {
       ? "#000000"
       : "#ffffff");
 
-  const { applyAppIcon, resolveAppIconPath } = await import("./core/app-icon");
+  const { applyPreferredAppIcon, resolveAppIconPath } = await import(
+    "./core/app-icon"
+  );
   const appIcon = resolveAppIconPath(prefs?.window.appIcon ?? DEFAULT_APP_ICON);
 
   const options: BrowserWindowConstructorOptions = {
@@ -281,7 +283,7 @@ async function buildLibraryWindow(): Promise<BrowserWindow> {
     await win.loadFile(resolveMainOut("../renderer/index.html"));
   }
 
-  void applyAppIcon(prefs?.window.appIcon);
+  void applyPreferredAppIcon(prefs?.window);
 
   if (!nativeThemeListenerAttached) {
     nativeThemeListenerAttached = true;

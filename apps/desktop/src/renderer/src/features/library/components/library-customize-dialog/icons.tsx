@@ -19,6 +19,7 @@ import {
   IconLeafFill,
   IconLightbulbFill,
   IconLocationFill,
+  IconMagnifierFill,
   IconMusicNoteFill,
   IconNoteFill,
   IconPaintbrushFill,
@@ -34,8 +35,6 @@ import {
 import type { IconComponent, IconProps } from "@pond/icons/types";
 import { LOGO_PATH, LOGO_VIEW_BOX } from "@pond/ui";
 import { FOLDER_ICONS, type FolderIconId } from "@/shared/lib/folder-icons";
-
-export type LibraryIconId = "pond" | Exclude<FolderIconId, "folder">;
 
 /** Padded so the mark sits at the optical size of the 18px fill icons. */
 const POND_INSET = 24;
@@ -88,7 +87,17 @@ const FILLS = {
   gamepad: IconGamepadFill,
   leaf: IconLeafFill,
   shopping: IconBagShoppingFill,
-} satisfies Record<Exclude<LibraryIconId, "pond">, IconComponent>;
+  research: IconMagnifierFill,
+} satisfies Partial<Record<Exclude<FolderIconId, "folder">, IconComponent>>;
+
+type FilledIconId = keyof typeof FILLS;
+
+export type LibraryIconId = "pond" | FilledIconId;
+
+/** Logos are drawn solid, so only folder icons with a fill drawing are offered. */
+function isFilled(id: FolderIconId): id is FilledIconId {
+  return id in FILLS;
+}
 
 export const LIBRARY_ICONS: readonly {
   id: LibraryIconId;
@@ -97,7 +106,7 @@ export const LIBRARY_ICONS: readonly {
 }[] = [
   { id: "pond", label: "Pond", Icon: PondIcon },
   ...FOLDER_ICONS.flatMap(({ id, label }) =>
-    id === "folder" ? [] : [{ id, label, Icon: FILLS[id] }],
+    isFilled(id) ? [{ id, label, Icon: FILLS[id] }] : [],
   ),
 ];
 

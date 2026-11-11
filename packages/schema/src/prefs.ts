@@ -218,6 +218,7 @@ const windowSlice = z.object({
     .enum(["continue", "library", "sources", "trash", "settings"])
     .catch("continue"),
   appIcon: z.string().min(1).catch(DEFAULT_APP_ICON),
+  appIconMatchesLibrary: z.boolean().catch(false),
   interfaceZoom: z.number().int().min(50).max(200).catch(100),
 });
 
