@@ -14,6 +14,8 @@ import {
   setSaveTags,
 } from "@/features/saves/lib/mutate";
 import { pool } from "@/features/saves/state/pool";
+import { primarySelection, selection } from "@/features/saves/state/selection";
+import { openSaveTagPicker } from "@/features/saves/state/tag-picker";
 import type { Save, SaveFile } from "@/features/saves/types";
 import { mergeUniqueTags, tagClipboard } from "@/features/tags";
 import { notify } from "@/shared/lib/toast";
@@ -130,17 +132,45 @@ export function focusPaneTitle(): void {
   requestAnimationFrame(tick);
 }
 
-export function openTagPicker(): void {
-  let tries = 0;
-  const tick = () => {
-    const el = document.querySelector<HTMLButtonElement>("[data-tag-add]");
-    if (el) {
-      el.click();
+function selectedSaveIds(): readonly string[] {
+  const ids = selection.snapshot();
+  if (ids.length > 0) return ids;
+  const primary = primarySelection.get();
+  return primary ? [primary] : [];
+}
+
+/**
+ * A context-menu click closes that menu and moves focus. Opening in the same
+ * turn makes the picker treat the move as a dismissal.
+ */
+function menuIsOpen(): boolean {
+  return document.querySelector("[role='menu'][data-open]") != null;
+}
+
+function openAfterMenuCloses(open: () => void): void {
+  const started = performance.now();
+  const attempt = () => {
+    if (!menuIsOpen() || performance.now() - started > 400) {
+      requestAnimationFrame(open);
       return;
     }
-    if (tries++ < 4) requestAnimationFrame(tick);
+    requestAnimationFrame(attempt);
   };
-  requestAnimationFrame(tick);
+  requestAnimationFrame(attempt);
+}
+
+export function openTagPicker(): void {
+  const ids = selectedSaveIds();
+  if (ids.length === 0) return;
+  const primary = primarySelection.get();
+  const anchorId =
+    primary && ids.includes(primary) ? primary : (ids[0] ?? null);
+  const open = () => openSaveTagPicker(ids, anchorId);
+  if (menuIsOpen()) {
+    openAfterMenuCloses(open);
+    return;
+  }
+  open();
 }
 
 export async function purgeForever(save: Save): Promise<void> {
