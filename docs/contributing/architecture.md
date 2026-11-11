@@ -194,4 +194,6 @@ Enrichment revalidates the current Save and enabled preference when a queued job
 
 Settings has a dedicated renderer and scoped preload. Its singleton native window reuses the section registry, search and provider UI without booting Library selection, ingestion or enrichment effects. Main broadcasts committed preferences to every renderer; Settings delegates Processing rescans to the Library rather than starting a second enrichment loop. Settings deep links and native commands select the same window, while app activation explicitly creates or focuses the Library.
 
+With Keep Running When Closed on and a tray icon present, closing the Library hides it. After 60 seconds hidden, main destroys the window so its renderer exits, while fetching and sync continue in main. The release waits while a preview window is open, and never runs during quit or when Pond would quit without the window. Every reopen path rebuilds the window through `openLibraryWindow` with the persisted bounds and last route. Preload buffers navigation, menu commands and dropped files until the new renderer subscribes.
+
 Immediate folder assignments use deltas and notes/tag removal use main-owned bulk transactions with Undo.

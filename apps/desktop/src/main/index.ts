@@ -292,7 +292,7 @@ app.whenReady().then(async () => {
   installAppMenu({
     shortcuts: menuPrefs.shortcuts,
     focusedOrMain,
-    openLibraryWindow: () => void openLibraryWindow(),
+    openLibraryWindow,
   });
 
   ipcMain.on(IPC.menuRecents, (_event, entries: RecentMenuEntry[]) => {

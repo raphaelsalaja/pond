@@ -25,6 +25,10 @@ let handle: TrayHandle | null = null;
 let lastOpts: TrayOptions | null = null;
 let busyPoll: NodeJS.Timeout | null = null;
 
+export function isTrayVisible(): boolean {
+  return handle !== null;
+}
+
 export async function setTrayVisible(visible: boolean): Promise<void> {
   if (visible) {
     if (handle) return;
