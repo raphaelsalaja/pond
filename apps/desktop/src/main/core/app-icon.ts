@@ -24,9 +24,7 @@ import { getPrefs } from "./prefs";
 
 const DOCK_CONTENT_SCALE = 0.8;
 
-const dockCache = new Map<string, NativeImage>();
 let lastAppliedPath: string | null = null;
-let warming = false;
 let bundleIconQueue: Promise<void> = Promise.resolve();
 let bundleIconChecked = false;
 
@@ -92,29 +90,10 @@ async function insetIcon(
   return nativeImage.createFromBuffer(buf);
 }
 
+/** Rendered on demand: each 1024 px tint decodes to megabytes, and only the applied one is ever shown. */
 async function dockImage(path: string): Promise<NativeImage> {
-  const cached = dockCache.get(path);
-  if (cached) return cached;
   const meta = await sharp(path).metadata();
-  const image = await insetIcon(path, DOCK_CONTENT_SCALE, meta.width ?? 1024);
-  dockCache.set(path, image);
-  return image;
-}
-
-function warmDockCache(): void {
-  if (warming) return;
-  warming = true;
-  void (async () => {
-    for (const id of availableIds()) {
-      const path = appIconFile(id);
-      if (!path || dockCache.has(path)) continue;
-      try {
-        await dockImage(path);
-      } catch (err) {
-        log.warn("[pond] app icon warm failed", id, err);
-      }
-    }
-  })();
+  return insetIcon(path, DOCK_CONTENT_SCALE, meta.width ?? 1024);
 }
 
 export async function applyAppIcon(id?: string): Promise<void> {
@@ -126,10 +105,7 @@ export async function applyAppIcon(id?: string): Promise<void> {
     log.warn("[pond] app icon file missing", id);
     return;
   }
-  if (path === lastAppliedPath) {
-    warmDockCache();
-    return;
-  }
+  if (path === lastAppliedPath) return;
   lastAppliedPath = path;
   try {
     const image = await dockImage(path);
@@ -142,7 +118,6 @@ export async function applyAppIcon(id?: string): Promise<void> {
         applyBundleIcon(path, image),
       );
     }
-    warmDockCache();
   } catch (err) {
     log.warn("[pond] apply app icon failed", err);
   }
