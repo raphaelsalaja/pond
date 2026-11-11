@@ -470,6 +470,29 @@ it("assigns a mixed folder immediately from the inspector menu", async () => {
   });
 });
 
+it("shows an assigned nested folder as one breadcrumb with its full path", async () => {
+  await act(async () =>
+    root.render(
+      <SaveInspector
+        saveId="a"
+        folders={[
+          { id: "parent", name: "Knowledge Base", count: 0 },
+          { id: "child", name: "Design", parentId: "parent", count: 1 },
+        ]}
+      />,
+    ),
+  );
+  const chip = host.querySelector<HTMLElement>(
+    '[title="Knowledge Base / Design"]',
+  );
+  expect(chip?.textContent).toContain("Knowledge Base");
+  expect(chip?.textContent).toContain("›");
+  expect(chip?.textContent).toContain("Design");
+  expect(
+    host.querySelector('[aria-label="Remove folder Knowledge Base / Design"]'),
+  ).not.toBeNull();
+});
+
 it("lists folders with their parent as a breadcrumb and filters by search", async () => {
   await act(async () =>
     root.render(
