@@ -30,6 +30,7 @@ import {
   type McpAccessGroup,
   mcpToolAllowed,
 } from "./mcp-access";
+import { watchMcpHost } from "./mcp-host";
 import {
   applyFilter,
   applyFilterInput,
@@ -240,5 +241,24 @@ export async function startPondMcp(): Promise<void> {
   );
 
   const transport = new StdioServerTransport();
+  let quitting = false;
+  const quit = (reason: string) => {
+    if (quitting) return;
+    quitting = true;
+    stopWatching();
+    log.info("[pond mcp] host disconnected; quitting", reason);
+    app.quit();
+  };
+  transport.onclose = () => quit("transport-closed");
+  const stopWatching = watchMcpHost({
+    stdin: process.stdin,
+    parentPid: () => process.ppid,
+    onLost: quit,
+    every: (run, ms) => {
+      const timer = setInterval(run, ms);
+      timer.unref();
+      return () => clearInterval(timer);
+    },
+  });
   await server.connect(transport);
 }
