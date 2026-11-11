@@ -3,11 +3,14 @@ import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { useEffect } from "react";
 import { z } from "zod";
+import { protectSaves } from "@/features/saves/state/pool";
 import { loadPrefs, patchPrefsSection } from "@/shared/state/prefs";
 
 const RECENTS_CAP = 20;
 
 const store = new Store<RecentSaveVisit[]>([]);
+
+protectSaves(() => store.state.map((entry) => entry.saveId));
 
 const RecentsSchema = z.array(
   z

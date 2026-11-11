@@ -1,5 +1,6 @@
 import type { NewSave } from "@pond/schema/db";
 import type { Transaction, TxMeta } from "@pond/schema/tx";
+import { ensureSaves } from "@/features/saves/lib/ensure-saves";
 import { optimistic } from "@/features/saves/lib/optimistic";
 import { pool } from "@/features/saves/state/pool";
 import type { Save } from "@/features/saves/types";
@@ -24,6 +25,12 @@ export type SaveEdit = Partial<
     | "ingestCompletedAt"
   >
 >;
+
+/** The bounded pool may have evicted the row; the edit applies to the refetched row instead of being dropped. */
+async function refetch(id: string): Promise<Save | undefined> {
+  await ensureSaves([id]).catch(() => undefined);
+  return pool.get(id);
+}
 
 function metaFor(opts: MutateOpts): TxMeta | undefined {
   if (!opts.actorReason) return undefined;
@@ -61,7 +68,7 @@ export async function mutateSave(
   patch: SaveEdit,
   opts: MutateOpts = {},
 ): Promise<void> {
-  const prev = pool.get(id);
+  const prev = pool.get(id) ?? (await refetch(id));
   if (!prev) {
     if (opts.throwOnError) throw new Error("This save is no longer available.");
     return;
@@ -87,7 +94,7 @@ export async function mutateSave(
 }
 
 export async function setSaveTags(id: string, tags: string[]): Promise<void> {
-  const prev = pool.get(id);
+  const prev = pool.get(id) ?? (await refetch(id));
   if (!prev) return;
   await optimistic(
     () => pool.upsert({ ...prev, tags }),
@@ -97,7 +104,7 @@ export async function setSaveTags(id: string, tags: string[]): Promise<void> {
 }
 
 export async function trashSave(id: string): Promise<void> {
-  const prev = pool.get(id);
+  const prev = pool.get(id) ?? (await refetch(id));
   if (!prev) return;
   await optimistic(
     () => pool.upsert({ ...prev, deletedAt: Date.now() }),
@@ -108,7 +115,7 @@ export async function trashSave(id: string): Promise<void> {
 }
 
 export async function untrashSave(id: string): Promise<void> {
-  const prev = pool.get(id);
+  const prev = pool.get(id) ?? (await refetch(id));
   if (!prev) return;
   await optimistic(
     () => pool.upsert({ ...prev, deletedAt: null }),
@@ -118,7 +125,7 @@ export async function untrashSave(id: string): Promise<void> {
 }
 
 export async function purgeSave(id: string): Promise<void> {
-  const prev = pool.get(id);
+  const prev = pool.get(id) ?? (await refetch(id));
   if (!prev) return;
   await optimistic(
     () => pool.delete(id),

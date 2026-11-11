@@ -2,7 +2,6 @@ import { IconBookmark, IconFile } from "@pond/icons";
 import { Button } from "@pond/ui";
 import type { AssistantSource } from "@shared/assistant";
 import { sourceExcerpt } from "@shared/assistant-text";
-import { useSelector } from "@tanstack/react-store";
 import type { CSSProperties } from "react";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -11,7 +10,7 @@ import {
   pickCardUnit,
   thumbUrlFor,
 } from "@/features/saves/media";
-import { ensureSaves, savesStore } from "@/features/saves/pool";
+import { ensureSaves, useSave } from "@/features/saves/pool";
 import styles from "./styles.module.css";
 
 interface ThumbnailStyle extends CSSProperties {
@@ -42,7 +41,7 @@ export function SourceThumbnail({
   fit?: "square" | "natural";
   visual?: boolean;
 }) {
-  const save = useSelector(savesStore, (state) => state.byId.get(id));
+  const save = useSave(id);
   const unit = useMemo(() => (save ? pickCardUnit(save) : null), [save]);
   const candidate = unit?.isVideo ? unit.posterUrl : unit?.url;
   const src =

@@ -1,4 +1,5 @@
 import { Store } from "@tanstack/store";
+import { protectSaves } from "@/features/saves/state/pool";
 
 export interface SaveTagPickerRequest {
   key: number;
@@ -7,6 +8,8 @@ export interface SaveTagPickerRequest {
 }
 
 export const saveTagPickerStore = new Store<SaveTagPickerRequest | null>(null);
+
+protectSaves(() => saveTagPickerStore.state?.ids ?? []);
 
 let nextKey = 0;
 

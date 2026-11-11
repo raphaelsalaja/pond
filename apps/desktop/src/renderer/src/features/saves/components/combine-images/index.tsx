@@ -8,6 +8,7 @@ import {
 } from "@shared/combine-images-layout";
 import { useSelector } from "@tanstack/react-store";
 import { type DragEvent, useEffect, useMemo, useState } from "react";
+import { useRetainedSaves } from "@/features/saves/hooks/use-saves";
 import { ensureSaves } from "@/features/saves/lib/ensure-saves";
 import { savesStore } from "@/features/saves/state/pool";
 import { errorCopy } from "@/shared/lib/error-copy";
@@ -28,6 +29,7 @@ function useImages(order: readonly string[]): CombineImage[] {
         a.length === b.length && a.every((save, index) => save === b[index]),
     },
   );
+  useRetainedSaves(order);
   useEffect(() => {
     void ensureSaves(order);
   }, [order]);

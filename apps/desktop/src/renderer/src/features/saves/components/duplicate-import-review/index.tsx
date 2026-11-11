@@ -3,9 +3,9 @@ import type {
   DuplicateImportCandidate,
   DuplicateImportChoice,
 } from "@shared/saves-import-contracts";
-import { useSelector } from "@tanstack/react-store";
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { CardThumb } from "@/features/saves/components/card/media";
+import { useSave } from "@/features/saves/hooks/use-saves";
 import { ensureSaves } from "@/features/saves/lib/ensure-saves";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
 import { pickPrimaryFile } from "@/features/saves/lib/media/units";
@@ -14,7 +14,6 @@ import {
   completeDuplicateImportReview,
   useDuplicateImportReview,
 } from "@/features/saves/state/duplicate-import-review";
-import { savesStore } from "@/features/saves/state/pool";
 import type { Save } from "@/features/saves/types";
 import { useRetainedDialogPayload } from "@/shared/hooks/use-retained-dialog-payload";
 import { formatBytes } from "@/shared/lib/format";
@@ -103,9 +102,7 @@ function DuplicateImportReview({
   >({});
   const candidate = candidates[index];
   const existingId = candidate?.existingId;
-  const save = useSelector(savesStore, (state) =>
-    existingId ? state.byId.get(existingId) : undefined,
-  );
+  const save = useSave(existingId);
   useEffect(() => {
     if (existingId) void ensureSaves([existingId]);
   }, [existingId]);

@@ -40,6 +40,21 @@ it("shows an edit immediately and sends its previous value for undo", async () =
   expect(pool.get("saved")?.title).toBe("After");
 });
 
+it("refetches a Save the pool evicted before applying an edit", async () => {
+  pool.clear();
+  const query = vi.fn(async () => [
+    { id: "saved", title: "Before", url: "https://example.com" },
+  ]);
+  const tx = vi.fn(async () => undefined);
+  vi.stubGlobal("window", { pond: { query, tx } });
+  await mutateSave("saved", { title: "After" }, { throwOnError: true });
+  expect(query).toHaveBeenCalledWith("saves.getMany", { ids: ["saved"] });
+  expect(tx).toHaveBeenCalledWith(
+    expect.objectContaining({ before: { title: "Before" } }),
+  );
+  expect(pool.get("saved")?.title).toBe("After");
+});
+
 it("restores tag membership when persistence rejects the edit", async () => {
   const pending = Promise.withResolvers<void>();
   const query = vi.fn(() => pending.promise);

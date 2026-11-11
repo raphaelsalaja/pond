@@ -9,7 +9,7 @@ import { SaveInfoSections } from "@/features/saves/components/detail/info-sectio
 import { KebabMenu } from "@/features/saves/components/detail/kebab";
 import { RatingStars } from "@/features/saves/components/detail/rating";
 import { RelatedSaves } from "@/features/saves/components/detail/related-saves";
-import { useSaves } from "@/features/saves/hooks/use-saves";
+import { useRetainedSaves, useSaves } from "@/features/saves/hooks/use-saves";
 import { ensureSaves, reloadSaves } from "@/features/saves/lib/ensure-saves";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
 import { sensitiveContentMenuItem } from "@/features/saves/lib/menu/sensitive";
@@ -85,6 +85,7 @@ export function SaveInspector({
 }: SaveInspectorProps) {
   const ids = useStableStrings(saveIds?.length ? saveIds : [saveId]);
   const targetKey = JSON.stringify(ids);
+  useRetainedSaves(ids);
   const available = useSaves();
   const [drafts] = useState<InspectorDrafts>(() => new Map());
   const [loadError, setLoadError] = useState<string | null>(null);
