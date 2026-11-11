@@ -14,6 +14,7 @@ import {
   tokenizeEmbeddingTexts,
 } from "../../shared/embeddings";
 import { EMBEDDING_MODEL } from "../../shared/on-device-models";
+import { createIdleResource } from "../lib/idle-resource";
 import { appDataRoot } from "../paths";
 import { getPrefs } from "./prefs";
 
@@ -44,40 +45,14 @@ export function embeddingQueryText(
   }
 }
 
-interface Disposable {
-  dispose(): void | Promise<void>;
-}
-
-interface EmbeddingTextBundle extends Disposable {
+interface EmbeddingTextBundle {
   tokenizer: PreTrainedTokenizer;
   model: PreTrainedModel;
+  dispose(): Promise<void>;
 }
 
-const embeddingCache = new Map<string, Promise<EmbeddingTextBundle>>();
-const MODEL_CACHE_LIMIT = 1;
-
-function memo<T extends Disposable>(
-  cache: Map<string, Promise<T>>,
-  key: string,
-  load: () => Promise<T>,
-): Promise<T> {
-  const existing = cache.get(key);
-  if (existing) return existing;
-  const pending = load();
-  cache.set(key, pending);
-  pending.catch(() => cache.delete(key));
-  if (cache.size > MODEL_CACHE_LIMIT) {
-    const oldest = cache.entries().next().value;
-    if (oldest && oldest[0] !== key) {
-      cache.delete(oldest[0]);
-      void oldest[1].then(
-        (value) => value.dispose(),
-        () => undefined,
-      );
-    }
-  }
-  return pending;
-}
+/** The main process stays resident with the window closed, so the model must not outlive the searches that need it. */
+const EMBEDDING_IDLE_MS = 60_000;
 
 /**
  * transformers.js caches downloads beside its own package, which in a packaged
@@ -88,34 +63,42 @@ export function modelCacheDir(userData: string): string {
   return join(userData, "models");
 }
 
-async function embeddingTextBundle(): Promise<EmbeddingTextBundle> {
-  return memo(embeddingCache, EMBEDDING_MODEL.revision, async () => {
-    const transformers = await import("@huggingface/transformers");
-    transformers.env.allowLocalModels = false;
-    transformers.env.cacheDir = modelCacheDir(appDataRoot());
-    const options = { revision: EMBEDDING_MODEL.revision };
-    const config = await transformers.AutoConfig.from_pretrained(
-      EMBEDDING_MODEL.id,
-      options,
-    );
-    Object.assign(config, { audio_config: null, vision_config: null });
-    const [tokenizer, model] = await Promise.all([
-      transformers.AutoTokenizer.from_pretrained(EMBEDDING_MODEL.id, options),
-      transformers.AutoModel.from_pretrained(EMBEDDING_MODEL.id, {
-        ...options,
-        config,
-        device: "cpu",
-        dtype: "q4",
-      }),
-    ]);
-    return {
-      tokenizer,
-      model,
-      dispose: async () => {
-        await model.dispose();
-      },
-    };
-  });
+const embeddingText = createIdleResource<EmbeddingTextBundle>({
+  load: loadEmbeddingTextBundle,
+  idleMs: EMBEDDING_IDLE_MS,
+  schedule: (run, ms) => {
+    const timer = setTimeout(run, ms);
+    timer.unref();
+    return () => clearTimeout(timer);
+  },
+});
+
+async function loadEmbeddingTextBundle(): Promise<EmbeddingTextBundle> {
+  const transformers = await import("@huggingface/transformers");
+  transformers.env.allowLocalModels = false;
+  transformers.env.cacheDir = modelCacheDir(appDataRoot());
+  const options = { revision: EMBEDDING_MODEL.revision };
+  const config = await transformers.AutoConfig.from_pretrained(
+    EMBEDDING_MODEL.id,
+    options,
+  );
+  Object.assign(config, { audio_config: null, vision_config: null });
+  const [tokenizer, model] = await Promise.all([
+    transformers.AutoTokenizer.from_pretrained(EMBEDDING_MODEL.id, options),
+    transformers.AutoModel.from_pretrained(EMBEDDING_MODEL.id, {
+      ...options,
+      config,
+      device: "cpu",
+      dtype: "q4",
+    }),
+  ]);
+  return {
+    tokenizer,
+    model,
+    dispose: async () => {
+      await model.dispose();
+    },
+  };
 }
 
 function sentenceVector(output: {
@@ -197,12 +180,13 @@ export async function encodeQueryEmbeddings(
   const channels = queryEmbeddingChannels(media, resolvedPrefs.ai);
   if (!channels.text && !channels.media) return {};
 
-  const { model, tokenizer } = await embeddingTextBundle();
-  const inputs = tokenizeEmbeddingTexts(
-    (batch, options) => tokenizer(batch, options),
-    [embeddingQueryText(task, trimmed)],
-  );
-  const vector = sentenceVector(await model(inputs));
+  const vector = await embeddingText.use(async ({ model, tokenizer }) => {
+    const inputs = tokenizeEmbeddingTexts(
+      (batch, options) => tokenizer(batch, options),
+      [embeddingQueryText(task, trimmed)],
+    );
+    return sentenceVector(await model(inputs));
+  });
   const result: QueryEmbeddings = {};
   if (channels.text) {
     result.text = { model: textEmbeddingVersion(), vector };
@@ -217,12 +201,13 @@ export async function encodeClassificationLabelEmbeddings(
   texts: string[],
 ): Promise<number[][]> {
   if (texts.length === 0) return [];
-  const { model, tokenizer } = await embeddingTextBundle();
-  const inputs = tokenizeEmbeddingTexts(
-    (batch, options) => tokenizer(batch, options),
-    texts,
-  );
-  const output = await model(inputs);
+  const output = await embeddingText.use(async ({ model, tokenizer }) => {
+    const inputs = tokenizeEmbeddingTexts(
+      (batch, options) => tokenizer(batch, options),
+      texts,
+    );
+    return model(inputs);
+  });
   const tensor = output.sentence_embedding;
   if (tensor?.dims.length !== 2 || tensor.dims[0] !== texts.length) {
     throw new Error(
