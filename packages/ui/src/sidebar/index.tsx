@@ -11,10 +11,12 @@ import {
   use,
   useId,
   useLayoutEffect,
+  useRef,
   useState,
 } from "react";
 import { Input } from "../input";
 import { pop } from "../shared/pop";
+import { useEasedScrollClamp } from "./scroll-clamp";
 import styles from "./styles.module.css";
 
 interface RootProps extends React.ComponentPropsWithoutRef<"div"> {
@@ -147,13 +149,20 @@ function Footer({ className, ...props }: FooterProps) {
 
 interface ScrollProps extends React.ComponentPropsWithoutRef<"div"> {}
 
-function Scroll({ className, ...props }: ScrollProps) {
+function Scroll({ className, children, ...props }: ScrollProps) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const spaceRef = useRef<HTMLDivElement>(null);
+  useEasedScrollClamp(scrollRef, spaceRef);
   return (
     <div
+      ref={scrollRef}
       className={cn(styles.scroll, className)}
       data-scroll-fade="vertical"
       {...props}
-    />
+    >
+      {children}
+      <div ref={spaceRef} aria-hidden className={styles.clamp} />
+    </div>
   );
 }
 

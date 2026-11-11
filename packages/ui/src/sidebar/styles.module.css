@@ -40,6 +40,15 @@
   overflow-y: auto;
 }
 
+.clamp {
+  flex: none;
+  height: 0;
+  /* Cancels the scroll's 1px gap, so the spacer adds no height at rest. */
+  margin-top: -1px;
+  pointer-events: none;
+  transition: height var(--ds-duration-medium) var(--ds-easing-snap);
+}
+
 .result {
   display: block;
   max-width: calc(100% - 24px);
