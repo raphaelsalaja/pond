@@ -87,6 +87,23 @@ describe("app menu sections", () => {
     );
   });
 
+  it("checks for updates from the application menu instead of opening Settings", () => {
+    const context = createContext({ isMac: true, isPackaged: true });
+    const actions: string[] = [];
+    const navigated: string[] = [];
+    context.sendMenuAction = (id) => {
+      actions.push(id);
+      return () => undefined;
+    };
+    context.navTo = (path) => {
+      navigated.push(path);
+      return () => undefined;
+    };
+    buildApplicationSections(context, buildSettingsItem(context));
+    expect(navigated).not.toContain("/settings/general");
+    expect(actions).toContain("updates.check");
+  });
+
   it("exposes Windows Settings and Quit in conventional menus", () => {
     const context = createContext({ isMac: false, isPackaged: true });
     const settings = buildSettingsItem(context);
