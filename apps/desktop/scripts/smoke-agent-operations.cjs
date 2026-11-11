@@ -39,7 +39,7 @@ app.whenReady().then(async () => {
           import { pondOperations } from ${JSON.stringify(`${main}/ipc/queries/index.ts`)};
           import { registerPondOperations, applyPondOperation } from ${JSON.stringify(`${main}/core/agent/operations.ts`)};
           import { libraryContext } from ${JSON.stringify(`${main}/core/agent/context.ts`)};
-          import { createChat, appendMessage } from ${JSON.stringify(`${main}/core/agent/persist.ts`)};
+          import { fishThread, appendMessage } from ${JSON.stringify(`${main}/core/agent/persist.ts`)};
           import { reviewChanges } from ${JSON.stringify(`${main}/core/agent/review.ts`)};
           import { listFolders } from ${JSON.stringify(`${main}/core/folders.ts`)};
           import { currentLibraryId } from ${JSON.stringify(`${main}/core/prefs-scope.ts`)};
@@ -55,7 +55,7 @@ app.whenReady().then(async () => {
             const prepared = await run.execute({ operation: "folders.create", arguments: { name: "Agent Smoke Folder" }, reason: "Create the test Folder" });
             assert.equal(prepared.status, "pending-review");
             assert.equal((await listFolders()).length, 0);
-            const chat = await createChat();
+            const chat = await fishThread();
             const messageId = await appendMessage({ chatId: chat.id, role: "assistant", content: "Ready for review.", metadata: { changes: context.changes() } });
             const review = { messageId, changeIds: [prepared.changeId], action: "apply" };
             const applied = await reviewChanges(review);
