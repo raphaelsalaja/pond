@@ -19,7 +19,11 @@ import type { TagsRowData } from "@/features/tags/components/manager/lib/types";
 import { TagPicker } from "@/features/tags/components/picker";
 import { useTagCreation } from "@/features/tags/hooks/use-tag-creation";
 import { useTagsData } from "@/features/tags/hooks/use-tag-manager";
-import { useTagCreationRequest } from "@/features/tags/state/creation";
+import { tagOperations } from "@/features/tags/operations/tag-client";
+import {
+  tagCreation,
+  useTagCreationRequest,
+} from "@/features/tags/state/creation";
 import { MatchesEmpty } from "@/shared/components/matches-empty";
 import { SearchChrome } from "@/shared/components/search-chrome";
 import { findScrollParent } from "@/shared/lib/dom";
@@ -236,22 +240,21 @@ export function TagsPage() {
   const [scope, setScope] = useState<Scope>("all");
   const { creating, startCreate, cancelCreate, saveCreate } = useTagCreation();
   const creationRequest = useTagCreationRequest();
-  const handledCreationRequest = useRef(0);
+  const [creationGroup, setCreationGroup] = useState<string | null>(null);
   const [descriptionDraft, setDescriptionDraft] = useState("");
   const cancelDescriptionRef = useRef(false);
   const clearRef = useRef<() => void>(() => {});
   const columns = useGridColumns();
 
   useEffect(() => {
-    if (
-      creationRequest.token === 0 ||
-      creationRequest.token === handledCreationRequest.current
-    )
-      return;
-    handledCreationRequest.current = creationRequest.token;
-    setScope(creationRequest.kind === "group" ? "all" : "ungrouped");
-    startCreate(creationRequest.kind);
-  }, [creationRequest, startCreate]);
+    if (creationRequest.token === 0) return;
+    const request = tagCreation.takeRequest();
+    if (!request) return;
+    const group = groupSummaries.find((candidate) => candidate.id === scope);
+    setScope(request.kind === "group" ? "all" : group ? scope : "ungrouped");
+    setCreationGroup(request.kind === "tag" ? (group?.name ?? null) : null);
+    startCreate(request.kind);
+  }, [creationRequest, groupSummaries, scope, startCreate]);
   const contextValue = useMemo(
     () => ({
       groups: groupOptions,
@@ -366,6 +369,21 @@ export function TagsPage() {
           : (groupSummaries.find((group) => group.id === scope)?.name ??
             "All Tags");
 
+  function beginCreate(kind: "tag" | "group") {
+    setCreationGroup(null);
+    startCreate(kind);
+  }
+
+  async function commitCreate(name: string) {
+    const groupName = creationGroup;
+    try {
+      await saveCreate(name);
+      if (groupName) await tagOperations.addToGroup(name, groupName);
+    } finally {
+      setCreationGroup(null);
+    }
+  }
+
   function commitGroupDescription() {
     const group = activeGroupRow?.group;
     if (!group || descriptionDraft.trim() === (group.description ?? "")) return;
@@ -471,7 +489,7 @@ export function TagsPage() {
                           variant="ghost"
                           size="xs"
                           aria-label="New Group"
-                          onClick={() => startCreate("group")}
+                          onClick={() => beginCreate("group")}
                         >
                           <IconPlus size={12} />
                         </Button>
@@ -580,11 +598,47 @@ export function TagsPage() {
                 </section>
               ) : null}
 
+              {scope === "all" && total > 0 ? (
+                <section className={styles.detail}>
+                  <div className={styles.title}>
+                    <h1>
+                      All Tags
+                      <span className={styles.count}>({total})</span>
+                    </h1>
+                    <Button
+                      variant="secondary"
+                      size="xs"
+                      onClick={() => beginCreate("tag")}
+                    >
+                      New Tag
+                    </Button>
+                  </div>
+                </section>
+              ) : null}
+
+              {scope === "ungrouped" && ungrouped.length > 0 ? (
+                <section className={styles.detail}>
+                  <div className={styles.title}>
+                    <h1>
+                      Uncategorized
+                      <span className={styles.count}>({ungrouped.length})</span>
+                    </h1>
+                    <Button
+                      variant="secondary"
+                      size="xs"
+                      onClick={() => beginCreate("tag")}
+                    >
+                      New Tag
+                    </Button>
+                  </div>
+                </section>
+              ) : null}
+
               {creating === "tag" ? (
                 <div className={styles.draft}>
                   <DraftRow
                     creating="tag"
-                    onSave={saveCreate}
+                    onSave={commitCreate}
                     onFinish={cancelCreate}
                   />
                 </div>
@@ -610,7 +664,7 @@ export function TagsPage() {
                     <Button
                       variant="primary"
                       size="sm"
-                      onClick={() => startCreate("tag")}
+                      onClick={() => beginCreate("tag")}
                     >
                       New Tag
                     </Button>
@@ -664,7 +718,7 @@ export function TagsPage() {
                       <Button
                         variant="primary"
                         size="sm"
-                        onClick={() => startCreate("tag")}
+                        onClick={() => beginCreate("tag")}
                       >
                         New Tag
                       </Button>

@@ -12,7 +12,10 @@ interface TagMenuOptions {
   tags: readonly TagRow[];
   groups: readonly TagGroupRow[];
   appliedKeys: ReadonlySet<string> | undefined;
-  onToggle: (name: string) => void | Promise<void>;
+  onToggle: (
+    name: string,
+    options?: { created?: boolean },
+  ) => void | Promise<void>;
   allowCreate: boolean;
   recommendedNames: readonly string[];
   layout: "list" | "grid";
@@ -255,14 +258,16 @@ export function useTagMenu({
       if (info.kind === "batch") {
         for (const item of info.labels) {
           const lower = item.toLowerCase();
-          if (!tagsByLower.has(lower)) await tagOperations.create("tag", item);
-          if (!appliedKeys?.has(lower)) await onToggle(item);
+          const existed = tagsByLower.has(lower);
+          if (!existed) await tagOperations.create("tag", item);
+          if (!appliedKeys?.has(lower))
+            await onToggle(item, { created: !existed });
         }
         setQuery("");
         return;
       }
-      if (!tagsByLower.has(label.toLowerCase()))
-        await tagOperations.create("tag", label);
+      const existed = tagsByLower.has(label.toLowerCase());
+      if (!existed) await tagOperations.create("tag", label);
       if (info.kind === "group") {
         const group = groups.find(
           (candidate) =>
@@ -271,7 +276,7 @@ export function useTagMenu({
         if (!group) await tagOperations.create("group", info.group);
         await tagOperations.addToGroup(label, group?.name ?? info.group);
       }
-      await onToggle(label);
+      await onToggle(label, { created: !existed });
       setQuery("");
     } catch (cause) {
       setError(errorCopy(cause, "Couldn't create the tag. Try again."));

@@ -49,6 +49,10 @@ export default defineConfig({
           include: ["src/**/*.test.tsx", ...rendererTypeScriptTests],
           environment: "jsdom",
           setupFiles: ["./test/renderer-setup.ts"],
+          // The first jsdom test in a file pays for a cold module graph; the
+          // Windows runner is roughly four times slower than Linux.
+          testTimeout: 20_000,
+          hookTimeout: 20_000,
         },
       },
     ],

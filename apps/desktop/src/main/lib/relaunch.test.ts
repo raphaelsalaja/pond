@@ -175,11 +175,16 @@ describe("spawnRelaunch", () => {
   });
 
   it.runIf(process.platform === "linux")(
-    "closes descriptors above 9 and execs the replacement",
+    "closes inherited descriptors before exec",
     () => {
       const { command, args } = relaunchCommand({
         command: "/bin/sh",
-        args: ["-c", "ls /proc/$$/fd"],
+        args: [
+          "-c",
+          // An fd path only exists while that fd is open, which also drops the
+          // now-closed directory handle the glob itself was expanded through.
+          'for f in /proc/$$/fd/*; do n=$(basename "$f"); if [ -e "$f" ]; then echo "$n"; fi; done',
+        ],
       });
       const result = spawnSync(command, args, {
         encoding: "utf8",
