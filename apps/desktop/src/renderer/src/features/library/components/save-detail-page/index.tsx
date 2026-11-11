@@ -8,13 +8,15 @@ import {
   useState,
 } from "react";
 import { AppShell } from "@/features/library/components/workspace-shell";
-import type { ViewerNav } from "@/features/saves";
+import type { PreviewStepBinding, ViewerNav } from "@/features/saves";
 import {
+  activeVideoShown,
   isTextOnlySave,
   loadOpenWithApps,
   type OpenWithApp,
   openWithKind,
   peekOpenWithApps,
+  previewStepRuns,
   saveOwnsKeyboard,
   useTrackVisit,
 } from "@/features/saves";
@@ -39,8 +41,18 @@ import {
 } from "@/features/saves/viewers";
 import { tagClipboard } from "@/features/tags";
 import { SpecContextMenu } from "@/shared/components/spec-context-menu";
-import { bindingKeys, useShortcutBindings } from "@/shared/lib/shortcuts";
+import {
+  bindingKeys,
+  type ShortcutDef,
+  useShortcutBindings,
+} from "@/shared/lib/shortcuts";
 import styles from "./styles.module.css";
+
+interface DetailHotkey {
+  hotkey: NonNullable<ShortcutDef["keys"]>;
+  when?: (event: KeyboardEvent) => boolean;
+  run: () => void;
+}
 
 export function SaveDetailPage() {
   const { id } = useParams({ from: "/_library/save/$id" });
@@ -67,37 +79,54 @@ export function SaveDetailPage() {
     [step],
   );
 
+  const stepRuns = (binding: PreviewStepBinding) => (event: KeyboardEvent) =>
+    previewStepRuns({
+      event,
+      binding,
+      bindings: shortcuts,
+      videoShown: activeVideoShown(),
+    });
+
+  const hotkeys: DetailHotkey[] = [
+    {
+      hotkey: bindingKeys(shortcuts, "viewer.step-prev"),
+      when: stepRuns("step"),
+      run: () => stepImageOrSave(-1),
+    },
+    {
+      hotkey: bindingKeys(shortcuts, "viewer.step-next"),
+      when: stepRuns("step"),
+      run: () => stepImageOrSave(1),
+    },
+    {
+      hotkey: bindingKeys(shortcuts, "viewer.video-step-prev"),
+      when: stepRuns("video-step"),
+      run: () => stepImageOrSave(-1),
+    },
+    {
+      hotkey: bindingKeys(shortcuts, "viewer.video-step-next"),
+      when: stepRuns("video-step"),
+      run: () => stepImageOrSave(1),
+    },
+    {
+      hotkey: bindingKeys(shortcuts, "viewer.prev-save"),
+      run: () => step(-1),
+    },
+    {
+      hotkey: bindingKeys(shortcuts, "viewer.next-save"),
+      run: () => step(1),
+    },
+    {
+      hotkey: "Escape",
+      run: () => {
+        if (!viewerEscape.cancel()) closeSave();
+      },
+    },
+  ];
+
   useHotkeys(
-    [
-      {
-        hotkey: bindingKeys(shortcuts, "viewer.step-prev"),
-        callback: () => stepImageOrSave(-1),
-        options: { ignoreInputs: true },
-      },
-      {
-        hotkey: bindingKeys(shortcuts, "viewer.step-next"),
-        callback: () => stepImageOrSave(1),
-        options: { ignoreInputs: true },
-      },
-      {
-        hotkey: bindingKeys(shortcuts, "viewer.prev-save"),
-        callback: () => step(-1),
-        options: { ignoreInputs: true },
-      },
-      {
-        hotkey: bindingKeys(shortcuts, "viewer.next-save"),
-        callback: () => step(1),
-        options: { ignoreInputs: true },
-      },
-      {
-        hotkey: "Escape" as const,
-        callback: () => {
-          if (!viewerEscape.cancel()) closeSave();
-        },
-        options: { ignoreInputs: true },
-      },
-    ].map((binding) => ({
-      ...binding,
+    hotkeys.map(({ hotkey, when, run }) => ({
+      hotkey,
       callback: (event: KeyboardEvent) => {
         if (!saveOwnsKeyboard(event)) return;
         if (
@@ -106,10 +135,15 @@ export function SaveDetailPage() {
           event.target.closest("button, input, [role='slider']")
         )
           return;
+        if (when && !when(event)) return;
         event.preventDefault();
-        binding.callback();
+        run();
       },
-      options: { ...binding.options, preventDefault: false },
+      options: {
+        ignoreInputs: true,
+        preventDefault: false,
+        conflictBehavior: "allow" as const,
+      },
     })),
   );
 

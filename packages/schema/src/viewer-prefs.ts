@@ -34,4 +34,7 @@ export const ViewerPrefsSchema = z.object({
   rememberPlayback: z.boolean().catch(true),
   loopShortVideos: z.boolean().catch(true),
   videoWheelBehavior: z.enum(["none", "progress", "volume"]).catch("progress"),
+  videoSeekSeconds: z
+    .union([z.literal(5), z.literal(10), z.literal(15), z.literal(30)])
+    .catch(10),
 });

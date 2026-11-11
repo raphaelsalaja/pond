@@ -2,12 +2,15 @@ import { Button, Dialog } from "@pond/ui";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  activeVideoShown,
   CardThumb,
   collectionOwnsKeyboard,
   inspect,
   MediaViewer,
   onQuickPreviewRequest,
+  type PreviewStepBinding,
   previewFileIndex,
+  previewStepRuns,
   runViewerAction,
   StoredFileViewer,
   selectOnlySave,
@@ -138,14 +141,46 @@ export function HoverPreview() {
       })
       .catch(() => {});
   };
-  useHotkey(bindingKeys(shortcuts, "viewer.step-prev"), () => step(-1, true), {
+  const stepHotkey =
+    (binding: PreviewStepBinding, delta: number) => (event: KeyboardEvent) => {
+      if (
+        !previewStepRuns({
+          event,
+          binding,
+          bindings: shortcuts,
+          videoShown: activeVideoShown(),
+        })
+      )
+        return;
+      event.preventDefault();
+      step(delta, true);
+    };
+  const stepOptions = {
     enabled: open,
     ignoreInputs: true,
-  });
-  useHotkey(bindingKeys(shortcuts, "viewer.step-next"), () => step(1, true), {
-    enabled: open,
-    ignoreInputs: true,
-  });
+    preventDefault: false,
+    conflictBehavior: "allow" as const,
+  };
+  useHotkey(
+    bindingKeys(shortcuts, "viewer.step-prev"),
+    stepHotkey("step", -1),
+    stepOptions,
+  );
+  useHotkey(
+    bindingKeys(shortcuts, "viewer.step-next"),
+    stepHotkey("step", 1),
+    stepOptions,
+  );
+  useHotkey(
+    bindingKeys(shortcuts, "viewer.video-step-prev"),
+    stepHotkey("video-step", -1),
+    stepOptions,
+  );
+  useHotkey(
+    bindingKeys(shortcuts, "viewer.video-step-next"),
+    stepHotkey("video-step", 1),
+    stepOptions,
+  );
   useHotkey(bindingKeys(shortcuts, "viewer.prev-save"), () => step(-1, false), {
     enabled: open,
     ignoreInputs: true,

@@ -138,18 +138,20 @@ it("composes one top video toolbar and one bottom playback toolbar", async () =>
   if (video) video.currentTime = 20;
   await act(async () => {
     document.dispatchEvent(
-      new KeyboardEvent("keydown", {
-        key: "ArrowLeft",
-        shiftKey: true,
-        bubbles: true,
-      }),
+      new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true }),
     );
   });
   expect(video?.currentTime).toBe(10);
   await act(async () => {
     document.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }),
+    );
+  });
+  expect(video?.currentTime).toBe(20);
+  await act(async () => {
+    document.dispatchEvent(
       new KeyboardEvent("keydown", {
-        key: "ArrowRight",
+        key: "ArrowLeft",
         shiftKey: true,
         bubbles: true,
       }),
@@ -229,6 +231,50 @@ it("seeks to the pressed point on the seek track", async () => {
   });
 
   expect(video.currentTime).toBe(30);
+});
+
+it("keeps one scrub preview open across the timeline and closes it on leave", async () => {
+  await act(async () => {
+    root.render(<TestVideoPlayer />);
+  });
+  const video = host.querySelector("video");
+  const seek = host.querySelector<HTMLElement>('[aria-label="Seek"]');
+  if (!video || !seek) throw new Error("Missing seek bar");
+  Object.defineProperty(video, "duration", { configurable: true, value: 60 });
+  await act(async () => video.dispatchEvent(new Event("durationchange")));
+  seek.getBoundingClientRect = () => new DOMRect(0, 0, 200, 24);
+  const move = (clientX: number) =>
+    act(async () => {
+      seek.dispatchEvent(
+        new PointerEvent("pointermove", { bubbles: true, clientX }),
+      );
+    });
+  const preview = () =>
+    seek.querySelector("video")?.parentElement?.parentElement;
+
+  await move(50);
+  const opened = preview();
+  expect(opened?.hasAttribute("data-open")).toBe(true);
+  expect(opened?.textContent).toContain("0:15");
+
+  await move(150);
+  expect(preview()).toBe(opened);
+  expect(opened?.textContent).toContain("0:45");
+
+  await act(async () => {
+    seek.dispatchEvent(
+      new PointerEvent("pointerout", {
+        bubbles: true,
+        relatedTarget: document.body,
+      }),
+    );
+  });
+  expect(preview()).toBe(opened);
+  expect(opened?.hasAttribute("data-open")).toBe(false);
+
+  await move(100);
+  expect(preview()).toBe(opened);
+  expect(opened?.hasAttribute("data-open")).toBe(true);
 });
 
 it("always fits video inside the viewer", async () => {

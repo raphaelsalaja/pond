@@ -10,6 +10,7 @@ const rendererTypeScriptTests = [
   "src/renderer/src/shared/hooks/use-scroll-restoration.test.ts",
   "src/renderer/src/features/saves/lib/eagle-baseline-menu.test.ts",
   "src/renderer/src/features/saves/lib/menu.test.ts",
+  "src/renderer/src/features/saves/lib/preview-step.test.ts",
   "src/renderer/src/features/saves/lib/select.test.ts",
   "src/renderer/src/features/saves/lib/selection.test.ts",
   "src/renderer/src/features/saves/lib/viewer-memory.test.ts",
