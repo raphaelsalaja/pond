@@ -3,19 +3,23 @@ import { rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { app, type NativeImage, nativeImage } from "electron";
 import log from "electron-log/main.js";
+import type { Prefs } from "@pond/schema/db";
 import sharp from "sharp";
 import {
   DEFAULT_APP_ICON,
+  preferredAppIcon,
   resolveAppIconId,
   sortAppIconIds,
 } from "../../shared/app-icons";
 import { resolveMainOut } from "../lib/resolve-preload";
+import { libraryRoot } from "../paths";
 import { mainWindowState } from "../window-state";
 import {
   appBundlePath,
   hasCustomBundleIcon,
   setBundleIcon,
 } from "./bundle-icon";
+import { readLibraryIdentity } from "./library-identity";
 import { getPrefs } from "./prefs";
 
 const DOCK_CONTENT_SCALE = 0.8;
@@ -37,7 +41,7 @@ function tintsRoot(): string {
   return existsSync(fromOut) ? fromOut : packagedDev;
 }
 
-function iconFile(id: string): string | null {
+export function appIconFile(id: string): string | null {
   const path = join(tintsRoot(), id, "default.png");
   return existsSync(path) ? path : null;
 }
@@ -51,7 +55,7 @@ function availableIds(): string[] {
   const ids: string[] = [];
   for (const entry of readdirSync(root, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue;
-    if (iconFile(entry.name)) ids.push(entry.name);
+    if (appIconFile(entry.name)) ids.push(entry.name);
   }
   return sortAppIconIds(ids);
 }
@@ -59,7 +63,7 @@ function availableIds(): string[] {
 export function resolveAppIconPath(id: string): string | null {
   const available = new Set(availableIds());
   const resolved = resolveAppIconId(id, available);
-  return iconFile(resolved);
+  return appIconFile(resolved);
 }
 
 async function insetIcon(
@@ -102,7 +106,7 @@ function warmDockCache(): void {
   warming = true;
   void (async () => {
     for (const id of availableIds()) {
-      const path = iconFile(id);
+      const path = appIconFile(id);
       if (!path || dockCache.has(path)) continue;
       try {
         await dockImage(path);
@@ -144,6 +148,26 @@ export async function applyAppIcon(id?: string): Promise<void> {
   }
 }
 
+export async function applyPreferredAppIcon(
+  windowPrefs?: Prefs["window"],
+): Promise<void> {
+  const prefs = windowPrefs ?? (await getPrefs().catch(() => null))?.window;
+  if (!prefs) {
+    await applyAppIcon(DEFAULT_APP_ICON);
+    return;
+  }
+  const logo = prefs.appIconMatchesLibrary ? await openLibraryLogo() : null;
+  await applyAppIcon(preferredAppIcon(prefs, logo));
+}
+
+async function openLibraryLogo() {
+  try {
+    return await readLibraryIdentity(libraryRoot());
+  } catch {
+    return null;
+  }
+}
+
 async function applyBundleIcon(
   path: string,
   image: NativeImage,
@@ -156,7 +180,7 @@ async function applyBundleIcon(
   if (!bundle) return;
   const launching = !bundleIconChecked;
   bundleIconChecked = true;
-  if (path === iconFile(DEFAULT_APP_ICON)) {
+  if (path === appIconFile(DEFAULT_APP_ICON)) {
     await setBundleIcon(bundle, null).catch((err) =>
       log.warn("[pond] reset bundle icon failed", err),
     );

@@ -84,6 +84,12 @@
   line-height: 1;
 }
 
+.logo {
+  display: block;
+  width: 22px;
+  height: 22px;
+}
+
 /* Clip margin keeps selection and focus rings visible while the height animates. */
 .colors {
   overflow: clip;

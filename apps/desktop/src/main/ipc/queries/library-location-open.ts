@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { app, BrowserWindow, dialog, nativeImage, shell } from "electron";
 import { z } from "zod";
+import { PondTintSchema } from "../../../shared/library-mark";
 import type { QueryResult } from "../../../shared/query-contracts";
 import { createPondBundle } from "../../core/ensure-default-library";
 import { verifyLibraryBackup } from "../../core/library-backup";
@@ -26,6 +27,7 @@ import {
 import { type QueryHandlerMap, query, StringParam } from "./params";
 
 const PathParams = z.object({ path: StringParam });
+const LOGO_SIZE = 256;
 
 async function pickLibraryIcon() {
   const win = BrowserWindow.getFocusedWindow() ?? undefined;
@@ -54,7 +56,7 @@ async function pickLibraryIcon() {
   return {
     ok: true as const,
     icon: image
-      .resize({ width: 256, height: 256, quality: "best" })
+      .resize({ width: LOGO_SIZE, height: LOGO_SIZE, quality: "best" })
       .toDataURL(),
   };
 }
@@ -69,6 +71,25 @@ export const libraryLocationOpenQueries = {
   > {
     return pickLibraryIcon();
   },
+
+  "library.identity.pondLogo": query(
+    z.object({ tint: PondTintSchema }),
+    async (params): Promise<QueryResult<"library.identity.pondLogo">> => {
+      const { appIconFile } = await import("../../core/app-icon");
+      const file = appIconFile(params.tint);
+      if (!file) return { ok: false as const, reason: "missing" as const };
+      const image = nativeImage.createFromPath(file);
+      if (image.isEmpty()) {
+        return { ok: false as const, reason: "invalid_image" as const };
+      }
+      return {
+        ok: true as const,
+        icon: image
+          .resize({ width: LOGO_SIZE, height: LOGO_SIZE, quality: "best" })
+          .toDataURL(),
+      };
+    },
+  ),
 
   "library.recent.pickIcon": query(
     PathParams,

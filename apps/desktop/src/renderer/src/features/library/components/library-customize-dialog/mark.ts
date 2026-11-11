@@ -1,7 +1,9 @@
+import { DEFAULT_APP_ICON } from "@shared/app-icons";
 import type { LibraryIconId } from "./icons";
 
 export type LibraryMark =
   | { kind: "image"; src: string | null }
+  | { kind: "pond"; tint: string }
   | { kind: "emoji"; emoji: string }
   | { kind: "icon"; icon: LibraryIconId };
 
@@ -13,8 +15,15 @@ export const PREVIEW_EMOJI = 52;
 
 export function markKey(mark: LibraryMark): string {
   if (mark.kind === "image") return `image:${mark.src ?? "default"}`;
+  if (mark.kind === "pond") return `pond:${mark.tint}`;
   if (mark.kind === "emoji") return `emoji:${mark.emoji}`;
   return `icon:${mark.icon}`;
+}
+
+/** The default tint is what a Library without a stored logo already shows. */
+export function isDefaultMark(mark: LibraryMark): boolean {
+  if (mark.kind === "image") return mark.src === null;
+  return mark.kind === "pond" && mark.tint === DEFAULT_APP_ICON;
 }
 
 /** Library logos are stored as image data URLs, so emoji and icon marks are drawn into a PNG. */
@@ -22,7 +31,15 @@ export async function markToLogo(
   mark: LibraryMark,
   tile: HTMLElement | null,
 ): Promise<string | null> {
+  if (isDefaultMark(mark)) return null;
   if (mark.kind === "image") return mark.src;
+  if (mark.kind === "pond") {
+    const result = await window.pond.query("library.identity.pondLogo", {
+      tint: mark.tint,
+    });
+    if (!result.ok) throw new Error("Couldn't load the Pond logo. Try again.");
+    return result.icon;
+  }
   const canvas = document.createElement("canvas");
   canvas.width = SIZE;
   canvas.height = SIZE;

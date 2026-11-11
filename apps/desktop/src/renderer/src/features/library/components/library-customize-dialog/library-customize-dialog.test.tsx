@@ -6,6 +6,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { LibraryCustomizeDialog } from ".";
 
 const LOGO = "data:image/png;base64,bG9nbw==";
+const POND_LOGO = "data:image/png;base64,cG9uZA==";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -23,6 +24,9 @@ beforeEach(() => {
   vi.stubGlobal("pond", {
     query: vi.fn(async (name: string) => {
       if (name === "library.identity.pickIcon") return { ok: true, icon: LOGO };
+      if (name === "library.identity.pondLogo") {
+        return { ok: true, icon: POND_LOGO };
+      }
       return { ok: true };
     }),
   });
@@ -84,10 +88,63 @@ function save(): Promise<void> {
 it("offers emoji, icon, and image logos", async () => {
   await render();
   await openLogoMenu();
-  for (const label of ["Choose Emoji", "Choose Icon", "Upload Image"]) {
+  for (const label of [
+    "Choose Pond Logo",
+    "Choose Emoji",
+    "Choose Icon",
+    "Upload Image",
+  ]) {
     expect(menuItem(label)).toBeDefined();
   }
   expect(document.body.textContent).not.toContain("Reset Logo");
+});
+
+function pondTint(label: string): HTMLButtonElement {
+  const button = document.querySelector<HTMLButtonElement>(
+    `[aria-label="Choose Pond Logo"] button[aria-label="${label}"]`,
+  );
+  if (!button) throw new Error(`Missing ${label}`);
+  return button;
+}
+
+it("saves a Pond logo tint as the library logo", async () => {
+  await render();
+  await openLogoMenu();
+  await act(async () => menuItem("Choose Pond Logo").click());
+  await vi.waitFor(() =>
+    expect(pondTint("Aqua").getAttribute("aria-pressed")).toBe("true"),
+  );
+  await act(async () => pondTint("Grape").click());
+  expect(document.querySelector('[data-mark="pond:grape"]')).not.toBeNull();
+  expect(document.querySelector('[role="radiogroup"]')).toBeNull();
+  await save();
+  expect(window.pond.query).toHaveBeenCalledWith("library.identity.pondLogo", {
+    tint: "grape",
+  });
+  expect(window.pond.query).toHaveBeenCalledWith("library.identity.update", {
+    icon: POND_LOGO,
+    mark: { kind: "pond", tint: "grape" },
+  });
+});
+
+it("restores the original logo from the Pond logo picker", async () => {
+  await render({ kind: "pond", tint: "grape" });
+  expect(document.querySelector('[data-mark="pond:grape"]')).not.toBeNull();
+  await openLogoMenu();
+  await act(async () => menuItem("Choose Pond Logo").click());
+  await vi.waitFor(() =>
+    expect(pondTint("Grape").getAttribute("aria-pressed")).toBe("true"),
+  );
+  await act(async () => pondTint("Aqua").click());
+  await save();
+  expect(window.pond.query).not.toHaveBeenCalledWith(
+    "library.identity.pondLogo",
+    expect.anything(),
+  );
+  expect(window.pond.query).toHaveBeenCalledWith("library.identity.update", {
+    icon: null,
+    mark: null,
+  });
 });
 
 it("starts icon logos on the Pond mark", async () => {

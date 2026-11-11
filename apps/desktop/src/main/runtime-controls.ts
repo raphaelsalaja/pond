@@ -18,7 +18,7 @@ interface RuntimeDependencies {
   isPackaged: boolean;
   setLoginItemSettings(settings: { openAtLogin: boolean }): Promise<void>;
   setCloseToTray(enabled: boolean): void;
-  applyAppIcon(icon: Prefs["window"]["appIcon"]): Promise<void>;
+  applyAppIcon(windowPrefs: Prefs["window"]): Promise<void>;
   warn(message: string, error: Error): void;
 }
 
@@ -72,7 +72,7 @@ export function createRuntimeControls(deps: RuntimeDependencies) {
         });
       }
       deps.setCloseToTray(prefs.window.closeToTray === true);
-      await deps.applyAppIcon(prefs.window.appIcon);
+      await deps.applyAppIcon(prefs.window);
     },
     async applyWindowPrefsAtRuntime() {
       deps.invalidatePrefs();

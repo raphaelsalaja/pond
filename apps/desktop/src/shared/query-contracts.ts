@@ -256,6 +256,7 @@ export interface QueryInputs
     accent?: string | null;
   };
   "library.identity.pickIcon": EmptyInput;
+  "library.identity.pondLogo": { tint: string };
   "library.rename": {
     name: string;
     icon?: string | null;
@@ -404,6 +405,7 @@ export interface QueryResults
     accent?: string | null;
   }>;
   "library.identity.pickIcon": LibraryLocationResult<{ icon: string }>;
+  "library.identity.pondLogo": LibraryLocationResult<{ icon: string }>;
   "library.rename": OkResult<{ path: string }>;
   "library.recent.pickIcon": LibraryLocationResult<{ icon: string }>;
   "library.recent.removeIcon": OkResult;

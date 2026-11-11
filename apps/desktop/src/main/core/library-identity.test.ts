@@ -78,6 +78,13 @@ it("removes optional customization fields", async () => {
   });
 });
 
+it("remembers a Pond logo tint with its rendered logo", async () => {
+  const root = await createLibrary();
+  const mark = { kind: "pond", tint: "grape" } as const;
+  updateLibraryIdentity(root, { icon: "data:image/png;base64,aWNvbg==", mark });
+  await expect(readLibraryIdentity(root)).resolves.toMatchObject({ mark });
+});
+
 it("keeps the logo mark until the icon changes without one", async () => {
   const root = await createLibrary();
   const mark = { kind: "icon", icon: "pond", color: "red-bright" } as const;

@@ -33,9 +33,9 @@ export const runtimeControls = createRuntimeControls({
     );
   },
   setCloseToTray,
-  async applyAppIcon(icon) {
-    const { applyAppIcon } = await import("./core/app-icon");
-    await applyAppIcon(icon);
+  async applyAppIcon(windowPrefs) {
+    const { applyPreferredAppIcon } = await import("./core/app-icon");
+    await applyPreferredAppIcon(windowPrefs);
   },
   warn: (message, error) => log.warn(message, error),
 });

@@ -111,6 +111,7 @@ export const queryOperationAccess = {
   "library.backupTo": "review",
   "library.createAt": "hidden",
   "library.identity.pickIcon": "hidden",
+  "library.identity.pondLogo": "hidden",
   "library.identity.update": "hidden",
   "library.info": "read",
   "library.exportDebugReport": "review",

@@ -186,9 +186,12 @@ export const settingsQueries = {
     async (params): Promise<QueryResult<"settings.setPrefs">> => {
       const next = await setPrefs(params);
       if ("preferences" in params) await syncShellChrome();
-      if (params.window && "appIcon" in params.window) {
-        const { applyAppIcon } = await import("../../core/app-icon");
-        await applyAppIcon(params.window.appIcon);
+      if (
+        params.window &&
+        ("appIcon" in params.window || "appIconMatchesLibrary" in params.window)
+      ) {
+        const { applyPreferredAppIcon } = await import("../../core/app-icon");
+        await applyPreferredAppIcon(next.window);
       }
       return { ok: true, prefs: next };
     },

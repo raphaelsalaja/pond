@@ -37,8 +37,8 @@ function setup(isPackaged = false) {
     setCloseToTray(enabled) {
       events.push(`close-to-tray:${enabled}`);
     },
-    async applyAppIcon(icon) {
-      events.push(`icon:${icon}`);
+    async applyAppIcon(windowPrefs) {
+      events.push(`icon:${windowPrefs.appIcon}`);
     },
     warn() {
       events.push("warning");
