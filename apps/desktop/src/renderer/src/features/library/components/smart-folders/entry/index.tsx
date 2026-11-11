@@ -1,11 +1,11 @@
+import { useDndContext } from "@dnd-kit/core";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { IconChevronRight, IconDotsFill } from "@pond/icons";
 import type { SavedView } from "@pond/schema/db";
 import { Button, cssVars, Menu, type MenuItemSpec, Sidebar } from "@pond/ui";
-import { useId, useState } from "react";
-import {
-  groupMoveChoices,
-  selectedViewRoots,
-} from "@/features/library/lib/smart-folders";
+import { useReducedMotionConfig } from "motion/react";
+import { useId } from "react";
 import { savedViews } from "@/features/library/state/saved-views";
 import { InlineNameEditor } from "@/shared/components/inline-name-editor";
 import {
@@ -14,7 +14,8 @@ import {
 } from "@/shared/components/spec-context-menu";
 import { FolderIcon, folderColorCss } from "@/shared/lib/folder-icons";
 import type { useOrganizationTree } from "../../../hooks/use-organization-tree";
-import { ENTRY_TYPES, entryItems, runAction } from "../menu-items";
+import { ENTRY_TYPES, entryItems } from "../menu-items";
+import type { SmartFolderDrop } from "../reorder";
 import { selectionItems } from "../selection-items";
 import type { OpenEditor, SavedViewPresentation } from "../types";
 import styles from "./styles.module.css";
@@ -33,6 +34,9 @@ interface EntryProps {
   openEditor: OpenEditor;
   presentations: Record<string, SavedViewPresentation>;
   quickAccessIds: string[];
+  drop: SmartFolderDrop | null;
+  groupOpen: (id: string) => boolean;
+  onGroupOpenChange: (id: string, open: boolean) => void;
 }
 
 export function SmartFolderEntry({
@@ -49,12 +53,33 @@ export function SmartFolderEntry({
   openEditor,
   presentations,
   quickAccessIds,
+  drop,
+  groupOpen,
+  onGroupOpenChange,
 }: EntryProps) {
-  const [open, setOpen] = useState(true);
+  const open = groupOpen(view.id);
   const childrenId = useId();
+  const reduceMotion = useReducedMotionConfig();
+  const { activatorEvent } = useDndContext();
+  const keyboardDrag = activatorEvent?.type.startsWith("key") ?? false;
+  const {
+    attributes,
+    isDragging,
+    listeners,
+    setActivatorNodeRef,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({ id: view.id, disabled: editingViewId === view.id });
   const active = activeId === view.id;
   const isGroup = view.kind === "group";
   const renaming = editingViewId === view.id;
+  const rowProps = organization.rowProps(
+    view.id,
+    depth,
+    isGroup ? open : undefined,
+    () => onGroupOpenChange(view.id, !open),
+  );
   const children = childrenByParent.get(view.id) ?? [];
   const { label, icon: Icon } = ENTRY_TYPES[view.kind];
   const presentation = presentations[view.id] ?? {};
@@ -78,7 +103,7 @@ export function SmartFolderEntry({
           onRename: () => onStartRenaming(view.id),
           onStartRenaming,
           onCreated: () => {
-            setOpen(true);
+            onGroupOpenChange(view.id, true);
             onSelect();
           },
           presentation,
@@ -89,14 +114,25 @@ export function SmartFolderEntry({
     <Sidebar.CollapsibleGroup
       className={styles.branch}
       open={open}
-      onOpenChange={setOpen}
+      onOpenChange={(next) => onGroupOpenChange(view.id, next)}
     >
       <SpecContextMenu
         search
         searchLabel="Search Smart Folder operations"
         buildItems={items}
       >
-        <div className={styles.row} style={cssVars({ "--entry-depth": depth })}>
+        <div
+          className={styles.row}
+          data-dragging={isDragging || undefined}
+          data-drop={drop?.id === view.id ? drop.kind : undefined}
+          data-smart-folder-sortable={view.id}
+          ref={setNodeRef}
+          style={{
+            ...cssVars({ "--entry-depth": depth }),
+            transform: CSS.Transform.toString(transform),
+            transition: reduceMotion || keyboardDrag ? "none" : transition,
+          }}
+        >
           {isGroup ? (
             <Button
               icon
@@ -108,7 +144,7 @@ export function SmartFolderEntry({
               aria-controls={childrenId}
               tabIndex={-1}
               onClick={(event) => {
-                setOpen((value) => !value);
+                onGroupOpenChange(view.id, !open);
                 event.currentTarget.parentElement
                   ?.querySelector<HTMLElement>('[role="treeitem"]')
                   ?.focus();
@@ -145,59 +181,15 @@ export function SmartFolderEntry({
                   : undefined
               }
               aria-current={active ? "page" : undefined}
-              draggable
-              onDragStart={(event) => {
-                event.dataTransfer.setData(
-                  "application/x-pond-saved-views",
-                  (organization.selected.includes(view.id)
-                    ? organization.selected
-                    : [view.id]
-                  ).join("\n"),
-                );
-                event.dataTransfer.effectAllowed = "move";
+              {...attributes}
+              {...rowProps}
+              {...listeners}
+              ref={setActivatorNodeRef}
+              onKeyDown={(event) => {
+                listeners?.onKeyDown?.(event);
+                if (!keyboardDrag && !event.defaultPrevented)
+                  rowProps.onKeyDown?.(event);
               }}
-              onDragOver={(event) => {
-                if (
-                  isGroup &&
-                  event.dataTransfer.types.includes(
-                    "application/x-pond-saved-views",
-                  )
-                ) {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  event.dataTransfer.dropEffect = "move";
-                }
-              }}
-              onDrop={(event) => {
-                if (!isGroup) return;
-                const ids = event.dataTransfer
-                  .getData("application/x-pond-saved-views")
-                  .split("\n")
-                  .filter(Boolean);
-                if (!ids.length) return;
-                event.preventDefault();
-                event.stopPropagation();
-                const roots = selectedViewRoots(ids, views);
-                if (
-                  !roots.every((entry) =>
-                    groupMoveChoices(entry.id, views).some(
-                      (group) => group.id === view.id,
-                    ),
-                  )
-                )
-                  return;
-                void runAction(async () => {
-                  for (const entry of roots)
-                    await savedViews.move(entry.id, view.id);
-                  setOpen(true);
-                });
-              }}
-              {...organization.rowProps(
-                view.id,
-                depth,
-                isGroup ? open : undefined,
-                () => setOpen((value) => !value),
-              )}
             >
               <Sidebar.Icon>
                 <span style={color ? { color } : undefined}>
@@ -254,6 +246,9 @@ export function SmartFolderEntry({
               openEditor={openEditor}
               presentations={presentations}
               quickAccessIds={quickAccessIds}
+              drop={drop}
+              groupOpen={groupOpen}
+              onGroupOpenChange={onGroupOpenChange}
             />
           ))}
         </Sidebar.CollapsibleGroupContent>
