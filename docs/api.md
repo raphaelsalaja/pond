@@ -286,6 +286,8 @@ Pond also runs as a Model Context Protocol server over stdio, for agents like Cu
 
 A tool whose switch is off answers with an error that names the switch.
 
+Each MCP client starts its own server process. It quits when the client closes its stdin or exits, so restarting a host doesn't leave servers behind.
+
 ## Publishing the client
 
 The client is published to npm as [`pond-api`](https://www.npmjs.com/package/pond-api). It bundles the schemas from `@pond/schema` and depends only on `zod`.
