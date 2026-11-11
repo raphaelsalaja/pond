@@ -7,6 +7,7 @@ import { LibraryCustomizeDialog } from ".";
 
 const LOGO = "data:image/png;base64,bG9nbw==";
 const POND_LOGO = "data:image/png;base64,cG9uZA==";
+const SOURCE = "data:image/png;base64,c291cmNl";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -23,7 +24,10 @@ beforeEach(() => {
   );
   vi.stubGlobal("pond", {
     query: vi.fn(async (name: string) => {
-      if (name === "library.identity.pickIcon") return { ok: true, icon: LOGO };
+      if (name === "library.identity.pickIcon") {
+        return { ok: true, image: { src: SOURCE, width: 400, height: 200 } };
+      }
+      if (name === "library.identity.cropIcon") return { ok: true, icon: LOGO };
       if (name === "library.identity.pondLogo") {
         return { ok: true, icon: POND_LOGO };
       }
@@ -200,10 +204,36 @@ it("reopens a mark with a retired shade on its hue", async () => {
   ).toBe("true");
 });
 
-it("saves an uploaded image as the library logo", async () => {
-  await render();
+function cropDialog(): HTMLElement {
+  const dialog = [...document.querySelectorAll('[role="dialog"]')].find(
+    (entry) => entry.textContent?.includes("Crop Logo"),
+  );
+  if (!(dialog instanceof HTMLElement)) throw new Error("Missing Crop Logo");
+  return dialog;
+}
+
+function cropButton(label: string): HTMLButtonElement {
+  const button = [...cropDialog().querySelectorAll("button")].find(
+    (candidate) => candidate.textContent?.trim() === label,
+  );
+  if (!button) throw new Error(`Missing ${label}`);
+  return button;
+}
+
+async function uploadImage(): Promise<void> {
   await openLogoMenu();
   await act(async () => menuItem("Upload Image").click());
+  await vi.waitFor(() => expect(cropDialog()).toBeDefined());
+}
+
+it("crops an uploaded image before saving it as the library logo", async () => {
+  await render();
+  await uploadImage();
+  await act(async () => cropButton("Crop").click());
+  expect(window.pond.query).toHaveBeenCalledWith("library.identity.cropIcon", {
+    src: SOURCE,
+    crop: { x: 100, y: 0, size: 200 },
+  });
   await vi.waitFor(() =>
     expect(document.querySelector(`img[src="${LOGO}"]`)).not.toBeNull(),
   );
@@ -213,6 +243,44 @@ it("saves an uploaded image as the library logo", async () => {
     mark: null,
   });
   expect(onClose).toHaveBeenCalled();
+});
+
+it("moves the crop with the arrow keys", async () => {
+  await render();
+  await uploadImage();
+  const viewport = cropDialog().querySelector<HTMLElement>(
+    '[role="application"]',
+  );
+  if (!viewport) throw new Error("Missing crop area");
+  await act(async () =>
+    viewport.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }),
+    ),
+  );
+  await act(async () => cropButton("Crop").click());
+  expect(window.pond.query).toHaveBeenCalledWith("library.identity.cropIcon", {
+    src: SOURCE,
+    crop: { x: expect.closeTo(100 - (8 * 200) / 224, 5), y: 0, size: 200 },
+  });
+});
+
+it("keeps the current logo when the crop is cancelled", async () => {
+  await render();
+  await uploadImage();
+  await act(async () => cropButton("Cancel").click());
+  await vi.waitFor(() =>
+    expect(
+      [...document.querySelectorAll('[role="dialog"]')].some((entry) =>
+        entry.textContent?.includes("Crop Logo"),
+      ),
+    ).toBe(false),
+  );
+  expect(window.pond.query).not.toHaveBeenCalledWith(
+    "library.identity.cropIcon",
+    expect.anything(),
+  );
+  expect(document.querySelector(`img[src="${LOGO}"]`)).toBeNull();
+  expect(onClose).not.toHaveBeenCalled();
 });
 
 it("renames the library bundle when the name changes", async () => {

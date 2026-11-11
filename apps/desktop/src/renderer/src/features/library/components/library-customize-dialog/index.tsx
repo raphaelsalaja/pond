@@ -17,11 +17,13 @@ import {
 } from "@pond/ui";
 import { DEFAULT_APP_ICON } from "@shared/app-icons";
 import type { LibraryMarkSource } from "@shared/library-mark";
+import type { LogoSource } from "@shared/logo-crop";
 import { useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { type ReactNode, type RefObject, useRef, useState } from "react";
 import { listAppIconPreviews } from "@/features/settings";
 import defaultAppIcon from "@/generated/app-icon-previews/aqua.png";
+import { LogoCropDialog } from "@/shared/components/logo-crop-dialog";
 import { errorCopy } from "@/shared/lib/error-copy";
 import { gentleSpring } from "@/shared/lib/motion";
 import { LIBRARY_EMOJI } from "./emoji";
@@ -132,6 +134,7 @@ export function LibraryCustomizeDialog({
   const [markChanged, setMarkChanged] = useState(false);
   const [picker, setPicker] = useState<Picker>("emoji");
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [cropSource, setCropSource] = useState<LogoSource | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const reduceMotion = useReducedMotion();
@@ -158,7 +161,7 @@ export function LibraryCustomizeDialog({
     setError(null);
     try {
       const result = await window.pond.query("library.identity.pickIcon", {});
-      if (result.ok) changeMark({ kind: "image", src: result.icon });
+      if (result.ok) setCropSource(result.image);
       else if (result.reason !== "cancelled") {
         setError("Choose a supported image.");
       }
@@ -314,6 +317,16 @@ export function LibraryCustomizeDialog({
               </Dialog.Confirm>
             </Dialog.Footer>
           </form>
+          {cropSource ? (
+            <LogoCropDialog
+              source={cropSource}
+              onClose={() => setCropSource(null)}
+              onCrop={(icon) => {
+                changeMark({ kind: "image", src: icon });
+                setCropSource(null);
+              }}
+            />
+          ) : null}
         </Dialog.Popup>
       </Dialog.Portal>
     </Dialog.Root>

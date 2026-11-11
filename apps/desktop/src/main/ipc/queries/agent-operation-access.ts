@@ -112,6 +112,7 @@ export const queryOperationAccess = {
   "library.createAt": "hidden",
   "library.identity.pickIcon": "hidden",
   "library.identity.pondLogo": "hidden",
+  "library.identity.cropIcon": "hidden",
   "library.identity.update": "hidden",
   "library.info": "read",
   "library.exportDebugReport": "review",

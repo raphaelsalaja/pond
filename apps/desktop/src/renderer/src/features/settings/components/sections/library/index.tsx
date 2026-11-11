@@ -1,8 +1,10 @@
 import { Button, Input, Select, Settings, Tooltip } from "@pond/ui";
+import type { LogoSource } from "@shared/logo-crop";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import defaultAppIcon from "@/generated/app-icon-previews/aqua.png";
+import { LogoCropDialog } from "@/shared/components/logo-crop-dialog";
 import { errorCopy } from "@/shared/lib/error-copy";
 import styles from "./styles.module.css";
 
@@ -97,6 +99,7 @@ function LibraryIdentitySettings({ info }: { info?: LibraryInfo }) {
   const [name, setName] = useState(info?.name ?? "");
   const [logo, setLogo] = useState<string | null>(info?.icon ?? null);
   const [logoBusy, setLogoBusy] = useState(false);
+  const [cropSource, setCropSource] = useState<LogoSource | null>(null);
   const [nameBusy, setNameBusy] = useState(false);
   const [logoError, setLogoError] = useState<string | null>(null);
   const [nameError, setNameError] = useState<string | null>(null);
@@ -132,9 +135,22 @@ function LibraryIdentitySettings({ info }: { info?: LibraryInfo }) {
           setLogoError("Choose a supported image.");
         return;
       }
-      await updateLogo(result.icon);
+      setCropSource(result.image);
     } catch (error) {
       setLogoError(errorCopy(error, "Couldn't choose the logo. Try again."));
+    } finally {
+      setLogoBusy(false);
+    }
+  };
+
+  const saveCroppedLogo = async (icon: string) => {
+    setCropSource(null);
+    setLogoBusy(true);
+    setLogoError(null);
+    try {
+      await updateLogo(icon);
+    } catch (error) {
+      setLogoError(errorCopy(error, "Couldn't save the logo. Try again."));
     } finally {
       setLogoBusy(false);
     }
@@ -222,6 +238,13 @@ function LibraryIdentitySettings({ info }: { info?: LibraryInfo }) {
               <img src={logo ?? defaultAppIcon} alt="" />
             </Button>
           </Tooltip>
+          {cropSource ? (
+            <LogoCropDialog
+              source={cropSource}
+              onClose={() => setCropSource(null)}
+              onCrop={(icon) => void saveCroppedLogo(icon)}
+            />
+          ) : null}
         </Settings.ItemControl>
       </Settings.Item>
       <Settings.Item id="setting-library-name">

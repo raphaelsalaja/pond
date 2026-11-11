@@ -45,6 +45,7 @@ import type {
   InspectQueryResults,
 } from "./inspect-contracts";
 import type { LibraryMarkSource } from "./library-mark";
+import type { LogoCrop, LogoSource } from "./logo-crop";
 import type {
   LibraryRepairQueryInputs,
   LibraryRepairQueryResults,
@@ -257,6 +258,7 @@ export interface QueryInputs
   };
   "library.identity.pickIcon": EmptyInput;
   "library.identity.pondLogo": { tint: string };
+  "library.identity.cropIcon": { src: string; crop: LogoCrop };
   "library.rename": {
     name: string;
     icon?: string | null;
@@ -404,7 +406,8 @@ export interface QueryResults
     mark?: LibraryMarkSource | null;
     accent?: string | null;
   }>;
-  "library.identity.pickIcon": LibraryLocationResult<{ icon: string }>;
+  "library.identity.pickIcon": LibraryLocationResult<{ image: LogoSource }>;
+  "library.identity.cropIcon": LibraryLocationResult<{ icon: string }>;
   "library.identity.pondLogo": LibraryLocationResult<{ icon: string }>;
   "library.rename": OkResult<{ path: string }>;
   "library.recent.pickIcon": LibraryLocationResult<{ icon: string }>;

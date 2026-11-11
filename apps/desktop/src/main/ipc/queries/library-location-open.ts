@@ -1,8 +1,22 @@
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { app, BrowserWindow, dialog, nativeImage, shell } from "electron";
+import {
+  app,
+  BrowserWindow,
+  dialog,
+  type NativeImage,
+  nativeImage,
+  shell,
+} from "electron";
 import { z } from "zod";
 import { PondTintSchema } from "../../../shared/library-mark";
+import {
+  centeredFrame,
+  cropRect,
+  LOGO_SIZE,
+  type LogoCrop,
+  pixelCrop,
+} from "../../../shared/logo-crop";
 import type { QueryResult } from "../../../shared/query-contracts";
 import { createPondBundle } from "../../core/ensure-default-library";
 import { verifyLibraryBackup } from "../../core/library-backup";
@@ -27,9 +41,41 @@ import {
 import { type QueryHandlerMap, query, StringParam } from "./params";
 
 const PathParams = z.object({ path: StringParam });
-const LOGO_SIZE = 256;
+/** Caps the image sent to the renderer for cropping; the logo itself is only 256px. */
+const CROP_SOURCE_SIZE = 1024;
 
-async function pickLibraryIcon() {
+const CropIconParams = z.object({
+  src: z
+    .string()
+    .max(32_000_000)
+    .refine((value) => /^data:image\/[a-z0-9.+-]+;base64,/i.test(value)),
+  crop: z.object({
+    x: z.number().finite(),
+    y: z.number().finite(),
+    size: z.number().finite().positive(),
+  }),
+});
+
+function cropLogo(image: NativeImage, crop: LogoCrop): string {
+  const rect = pixelCrop(image.getSize(), crop);
+  return image
+    .crop({ x: rect.x, y: rect.y, width: rect.size, height: rect.size })
+    .resize({ width: LOGO_SIZE, height: LOGO_SIZE, quality: "best" })
+    .toDataURL();
+}
+
+function cropSource(image: NativeImage): NativeImage {
+  const { width, height } = image.getSize();
+  const scale = CROP_SOURCE_SIZE / Math.max(width, height);
+  if (scale >= 1) return image;
+  return image.resize({
+    width: Math.max(1, Math.round(width * scale)),
+    height: Math.max(1, Math.round(height * scale)),
+    quality: "best",
+  });
+}
+
+async function pickLibraryImage() {
   const win = BrowserWindow.getFocusedWindow() ?? undefined;
   const options = {
     title: "Choose Library Logo",
@@ -53,12 +99,7 @@ async function pickLibraryIcon() {
   if (image.isEmpty()) {
     return { ok: false as const, reason: "invalid_image" as const };
   }
-  return {
-    ok: true as const,
-    icon: image
-      .resize({ width: LOGO_SIZE, height: LOGO_SIZE, quality: "best" })
-      .toDataURL(),
-  };
+  return { ok: true as const, image };
 }
 
 export const libraryLocationOpenQueries = {
@@ -69,8 +110,25 @@ export const libraryLocationOpenQueries = {
   async "library.identity.pickIcon"(): Promise<
     QueryResult<"library.identity.pickIcon">
   > {
-    return pickLibraryIcon();
+    const result = await pickLibraryImage();
+    if (!result.ok) return result;
+    const source = cropSource(result.image);
+    return {
+      ok: true as const,
+      image: { src: source.toDataURL(), ...source.getSize() },
+    };
   },
+
+  "library.identity.cropIcon": query(
+    CropIconParams,
+    (params): QueryResult<"library.identity.cropIcon"> => {
+      const image = nativeImage.createFromDataURL(params.src);
+      if (image.isEmpty()) {
+        return { ok: false as const, reason: "invalid_image" as const };
+      }
+      return { ok: true as const, icon: cropLogo(image, params.crop) };
+    },
+  ),
 
   "library.identity.pondLogo": query(
     z.object({ tint: PondTintSchema }),
@@ -94,9 +152,10 @@ export const libraryLocationOpenQueries = {
   "library.recent.pickIcon": query(
     PathParams,
     async (params): Promise<QueryResult<"library.recent.pickIcon">> => {
-      const result = await pickLibraryIcon();
+      const result = await pickLibraryImage();
       if (!result.ok) return result;
-      const { icon } = result;
+      const size = result.image.getSize();
+      const icon = cropLogo(result.image, cropRect(size, centeredFrame(size)));
       updateLibraryIdentity(params.path, { icon });
       setRecentLibraryIcon(recentLibrariesFile(), params.path, icon);
       return { ok: true as const, icon };
