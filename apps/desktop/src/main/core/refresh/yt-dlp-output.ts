@@ -100,8 +100,52 @@ export async function pickProducedFiles(
       }),
   );
   const valid = sized.filter((e): e is ProducedFile => e !== null);
-  valid.sort((a, b) => playlistIndex(a) - playlistIndex(b));
-  return valid;
+  const playable = withoutSeparateStreams(valid);
+  playable.sort((a, b) => playlistIndex(a) - playlistIndex(b));
+  return playable;
+}
+
+/**
+ * DASH downloads land as `{id}.f{format_id}.{ext}` plus, after a merge, `{id}.{ext}`.
+ * The streams are not extra videos. An audio file with the merged video's name is
+ * the same leftover. Streams alone mean the merge never produced a file.
+ */
+const STREAM_SUFFIX = /\.f[A-Za-z0-9_-]*\d[A-Za-z0-9_-]*$/;
+const AUDIO_EXTENSIONS = new Set([
+  ".aac",
+  ".flac",
+  ".m4a",
+  ".mka",
+  ".mp3",
+  ".oga",
+  ".ogg",
+  ".opus",
+  ".wav",
+]);
+
+function withoutSeparateStreams(files: ProducedFile[]): ProducedFile[] {
+  const finished = files.filter((file) => !isSeparateStream(file.path));
+  const videoStems = new Set(
+    finished
+      .filter((file) => !isAudioExtension(file.path))
+      .map((file) => fileStem(file.path)),
+  );
+  return finished.filter(
+    (file) =>
+      !isAudioExtension(file.path) || !videoStems.has(fileStem(file.path)),
+  );
+}
+
+function isSeparateStream(filePath: string): boolean {
+  return STREAM_SUFFIX.test(fileStem(filePath));
+}
+
+function isAudioExtension(filePath: string): boolean {
+  return AUDIO_EXTENSIONS.has(extname(filePath).toLowerCase());
+}
+
+function fileStem(filePath: string): string {
+  return basename(filePath, extname(filePath));
 }
 
 function playlistIndex(file: ProducedFile): number {
