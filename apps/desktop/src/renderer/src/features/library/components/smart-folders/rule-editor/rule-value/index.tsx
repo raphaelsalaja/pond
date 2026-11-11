@@ -1,5 +1,6 @@
 import { FIELD_DESCRIPTORS } from "@pond/schema/filters/fields";
 import type { Predicate, PredicateValue } from "@pond/schema/filters/types";
+import { orderRuleChoices } from "../choices";
 import { FieldInput } from "../field-input";
 import {
   choicesFor,
@@ -21,10 +22,15 @@ interface ChoiceValueProps {
 function ChoiceValue({ rule, choices, onChange }: ChoiceValueProps) {
   const selected = listValueSchema.safeParse(rule.value);
   const values = selected.success ? selected.data.map(String) : [];
+  const known = new Set(choices.map((choice) => choice.value));
+  const ordered =
+    rule.field === "folder" || rule.field === "tags"
+      ? orderRuleChoices(choices)
+      : choices;
   const items = [
-    ...choices,
+    ...ordered,
     ...values
-      .filter((value) => !choices.some((choice) => choice.value === value))
+      .filter((value) => !known.has(value))
       .map((value) => ({ value, label: value })),
   ];
   return (

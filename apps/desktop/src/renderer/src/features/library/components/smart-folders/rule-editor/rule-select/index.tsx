@@ -1,5 +1,10 @@
 import { Select } from "@pond/ui";
+import type { RuleChoice } from "../types";
 import styles from "./styles.module.css";
+
+function choiceText(choice: RuleChoice): string {
+  return choice.crumb ? `${choice.crumb} › ${choice.label}` : choice.label;
+}
 
 interface SingleProps<T extends string> {
   value: T;
@@ -45,7 +50,7 @@ function Single<T extends string>({
 
 interface MultipleProps {
   value: string[];
-  items: { value: string; label: string }[];
+  items: readonly RuleChoice[];
   label: string;
   placeholder: string;
   onChange: (value: string[]) => void;
@@ -59,14 +64,47 @@ function Multiple({
   onChange,
 }: MultipleProps) {
   return (
-    <Select.Root multiple value={value} items={items} onValueChange={onChange}>
+    <Select.Root
+      multiple
+      value={value}
+      items={items.map((item) => ({
+        value: item.value,
+        label: choiceText(item),
+      }))}
+      onValueChange={onChange}
+    >
       <Select.Trigger size="sm" className={styles.trigger} aria-label={label}>
         <Select.Value placeholder={placeholder} />
       </Select.Trigger>
       <Select.Portal>
         <Select.Positioner>
           <Select.Popup>
-            <Select.Items items={items} />
+            <Select.List>
+              {items.map((item) => (
+                <Select.Item
+                  key={item.value}
+                  value={item.value}
+                  label={choiceText(item)}
+                >
+                  <Select.ItemText title={choiceText(item)}>
+                    {item.crumb ? (
+                      <>
+                        <span data-menu-breadcrumb="">{item.crumb}</span>
+                        <span aria-hidden data-menu-breadcrumb-separator="">
+                          ›
+                        </span>
+                        <span data-menu-breadcrumb-current="">
+                          {item.label}
+                        </span>
+                      </>
+                    ) : (
+                      item.label
+                    )}
+                  </Select.ItemText>
+                  <Select.ItemIndicator />
+                </Select.Item>
+              ))}
+            </Select.List>
           </Select.Popup>
         </Select.Positioner>
       </Select.Portal>
