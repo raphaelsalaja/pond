@@ -1,5 +1,4 @@
 import { isAuxiliaryKind } from "@shared/save-file-names";
-import { canSplitFiles } from "@shared/save-slides";
 import { isWebPageSave } from "@shared/web-page-save";
 import { resolveFileIndex } from "@/features/saves/lib/actions";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
@@ -8,6 +7,7 @@ import {
   hasVideoFile,
   needsVideoDownload,
 } from "@/features/saves/lib/media/video-download";
+import { saveCanSplit } from "@/features/saves/lib/split-save";
 import { isHttpUrl } from "@/features/saves/lib/url-list";
 import { pool } from "@/features/saves/state/pool";
 import { selection } from "@/features/saves/state/selection";
@@ -114,12 +114,7 @@ export function createSaveMenuContext(
       ),
     canResetThumbnail,
     canRename: !batch && save.source === "local",
-    canSplit: saves.some(
-      (item) =>
-        !item.deletedAt &&
-        item.status === "complete" &&
-        canSplitFiles(item.files),
-    ),
+    canSplit: saves.some(saveCanSplit),
     fontActivated,
   };
 }
