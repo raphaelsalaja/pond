@@ -24,6 +24,7 @@
     0 0 0 1px var(--ds-gray-a3), 0 1px 3px var(--ds-shadow-faint),
     0 10px 30px -8px var(--ds-shadow-soft);
 
+  container: canvas-board / inline-size;
   position: relative;
   flex: 1;
   min-width: 0;

@@ -57,7 +57,7 @@ import {
 } from "./text-style";
 
 export type MenuTarget =
-  | { kind: "pane" }
+  | { kind: "pane"; minimap: boolean }
   | { kind: "edge" }
   | {
       kind: "nodes";
@@ -156,6 +156,11 @@ export function boardItems(target: MenuTarget, run: Run): MenuItemSpec[] {
       { type: "separator" },
       item("Zoom to Fit", { type: "zoom", to: "fit" }, run),
       item("Zoom to 100%", { type: "zoom", to: "actual" }, run),
+      item(
+        target.minimap ? "Hide Minimap" : "Show Minimap",
+        { type: "minimap" },
+        run,
+      ),
       { type: "separator" },
       ...exportItems("board", run),
     ];

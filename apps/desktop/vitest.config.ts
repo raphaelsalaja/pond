@@ -22,6 +22,7 @@ const rendererTypeScriptTests = [
   "src/renderer/src/features/library/components/new-menu/spec.test.ts",
   "src/renderer/src/features/library/components/folder-sidebar/folder-cover.test.ts",
   "src/renderer/src/features/agent/state/chat-transport.test.ts",
+  "src/renderer/src/features/canvas/state/minimap.test.ts",
 ];
 
 export default defineConfig({

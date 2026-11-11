@@ -22,6 +22,7 @@ export type CanvasCommand =
       scope?: "board" | "selection";
     }
   | { type: "zoom"; to: "fit" | "actual" | "selection" }
+  | { type: "minimap" }
   | { type: "nudge"; x: number; y: number }
   | { type: "rotate"; delta: number }
   | { type: "flip"; axis: "horizontal" | "vertical" }
