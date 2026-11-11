@@ -1,9 +1,9 @@
 import { existsSync, readdirSync } from "node:fs";
 import { rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import type { Prefs } from "@pond/schema/db";
 import { app, type NativeImage, nativeImage } from "electron";
 import log from "electron-log/main.js";
-import type { Prefs } from "@pond/schema/db";
 import sharp from "sharp";
 import {
   DEFAULT_APP_ICON,

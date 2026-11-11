@@ -49,11 +49,11 @@ type Picker = "pond" | "emoji" | "icon";
 
 const POND_LOGOS = listAppIconPreviews();
 
-const PICKER_LABELS: Record<Picker, string> = {
+const PICKER_LABELS = {
   pond: "Choose Pond Logo",
   emoji: "Choose Emoji",
   icon: "Choose Icon",
-};
+} satisfies Record<Picker, string>;
 
 interface LibraryCustomizeDialogProps {
   library: {

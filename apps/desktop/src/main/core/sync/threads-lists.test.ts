@@ -33,18 +33,13 @@ const LIKED_PAGE: SavedHarvestResult = {
 
 function fakeThreads(
   pages: Partial<Record<ThreadsListKind, SavedHarvestResult>>,
-): {
-  harvest: ThreadsListHarvester;
-  calls: Array<{ kind: ThreadsListKind; args: SavedHarvestArgs }>;
-} {
+) {
   const calls: Array<{ kind: ThreadsListKind; args: SavedHarvestArgs }> = [];
-  return {
-    calls,
-    harvest: async (kind, args) => {
-      calls.push({ kind, args });
-      return pages[kind] ?? { ok: false, reason: "no_match" };
-    },
+  const harvest: ThreadsListHarvester = async (kind, args) => {
+    calls.push({ kind, args });
+    return pages[kind] ?? { ok: false, reason: "no_match" };
   };
+  return { calls, harvest };
 }
 
 const live = (): AbortSignal => new AbortController().signal;

@@ -40,6 +40,13 @@
   }
 }
 
+.view {
+  cursor: grab;
+  fill: var(--ds-accent-a3);
+  stroke: var(--ds-accent-9);
+  stroke-width: 1.5;
+}
+
 .map {
   display: block;
   touch-action: none;
@@ -72,11 +79,4 @@
     fill: var(--ds-accent-a3);
     stroke: var(--ds-accent-9);
   }
-}
-
-.view {
-  cursor: grab;
-  fill: var(--ds-accent-a3);
-  stroke: var(--ds-accent-9);
-  stroke-width: 1.5;
 }

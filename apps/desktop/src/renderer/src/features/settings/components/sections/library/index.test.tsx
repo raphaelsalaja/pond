@@ -28,7 +28,10 @@ const query = vi.fn(
     if (name === "library.info") return libraryInfo;
     if (name === "library.recent") return [];
     if (name === "library.identity.pickIcon") {
-      return { ok: true, image: { src: customSource, width: 300, height: 900 } };
+      return {
+        ok: true,
+        image: { src: customSource, width: 300, height: 900 },
+      };
     }
     if (name === "library.identity.cropIcon") {
       return { ok: true, icon: customLogo };

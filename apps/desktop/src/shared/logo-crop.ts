@@ -101,7 +101,7 @@ export function cropPlacement(
   image: ImageSize,
   crop: LogoCrop,
   viewport: number,
-): { width: number; height: number; x: number; y: number } {
+) {
   const scale = viewport / crop.size;
   return {
     width: image.width * scale,

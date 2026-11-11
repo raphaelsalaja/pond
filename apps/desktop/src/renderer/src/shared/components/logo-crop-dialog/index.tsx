@@ -25,12 +25,12 @@ const PREVIEWS = [88, 28] as const;
 const KEY_STEP = 8;
 const KEY_ZOOM = 1.1;
 
-const PAN_KEYS: Partial<Record<string, { x: number; y: number }>> = {
-  ArrowLeft: { x: -1, y: 0 },
-  ArrowRight: { x: 1, y: 0 },
-  ArrowUp: { x: 0, y: -1 },
-  ArrowDown: { x: 0, y: 1 },
-};
+const PAN_KEYS = new Map([
+  ["ArrowLeft", { x: -1, y: 0 }],
+  ["ArrowRight", { x: 1, y: 0 }],
+  ["ArrowUp", { x: 0, y: -1 }],
+  ["ArrowDown", { x: 0, y: 1 }],
+]);
 
 interface LogoCropDialogProps {
   source: LogoSource;
@@ -84,7 +84,7 @@ export function LogoCropDialog({
 
   function nudge(event: KeyboardEvent<HTMLDivElement>) {
     if (busy || event.nativeEvent.isComposing) return;
-    const direction = PAN_KEYS[event.key];
+    const direction = PAN_KEYS.get(event.key);
     if (direction) {
       event.preventDefault();
       const step = event.shiftKey ? KEY_STEP * 5 : KEY_STEP;
@@ -140,6 +140,7 @@ export function LogoCropDialog({
                 role="application"
                 aria-label="Logo Crop"
                 aria-describedby={instructionsId}
+                // biome-ignore lint/a11y/noNoninteractiveTabindex: Keyboard users pan and zoom the crop from this frame.
                 tabIndex={0}
                 data-dragging={dragging || undefined}
                 style={cssVars({ "--crop-size": `${VIEWPORT}px` })}

@@ -21,12 +21,12 @@
   width: var(--crop-size);
   height: var(--crop-size);
   overflow: hidden;
+  touch-action: none;
   cursor: grab;
+  user-select: none;
+  outline-offset: 2px;
   background: var(--ds-gray-a3);
   border-radius: var(--ds-radius-xl);
-  outline-offset: 2px;
-  touch-action: none;
-  user-select: none;
 
   &:focus-visible {
     outline: 2px solid var(--ds-focus-outline);

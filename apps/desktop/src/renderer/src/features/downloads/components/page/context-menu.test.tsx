@@ -111,9 +111,7 @@ it("opens the source link in the browser", () => {
     vi.unstubAllGlobals();
   }
   const local = { ...row("failed"), url: "pond:local/file" };
-  expect(visible([local]).map((item) => item.label)).not.toContain(
-    "Open Link",
-  );
+  expect(visible([local]).map((item) => item.label)).not.toContain("Open Link");
 });
 
 it("retries downloads that ran out of attempts but not canceled ones", () => {

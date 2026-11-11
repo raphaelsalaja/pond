@@ -86,11 +86,7 @@ export function matchesShortcut(
   event: KeyboardEvent,
   id: ShortcutKeyId,
 ): boolean {
-  return matchesBinding(
-    event,
-    resolveShortcuts(shortcutPreferences.state),
-    id,
-  );
+  return matchesBinding(event, resolveShortcuts(shortcutPreferences.state), id);
 }
 
 export function bindingSequence(

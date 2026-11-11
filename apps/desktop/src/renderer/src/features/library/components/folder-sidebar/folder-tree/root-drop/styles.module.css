@@ -6,8 +6,8 @@
 
   &[data-target]::before {
     position: absolute;
-    top: -1px;
     inset-inline: 6px;
+    top: -1px;
     height: 2px;
     pointer-events: none;
     content: "";

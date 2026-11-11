@@ -45,11 +45,11 @@ import type {
   InspectQueryResults,
 } from "./inspect-contracts";
 import type { LibraryMarkSource } from "./library-mark";
-import type { LogoCrop, LogoSource } from "./logo-crop";
 import type {
   LibraryRepairQueryInputs,
   LibraryRepairQueryResults,
 } from "./library-repair-contracts";
+import type { LogoCrop, LogoSource } from "./logo-crop";
 import type {
   MediaProcessingQueryInputs,
   MediaProcessingQueryResults,
