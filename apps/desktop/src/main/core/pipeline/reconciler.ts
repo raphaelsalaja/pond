@@ -506,6 +506,8 @@ async function dispatchTask(task: DueTask): Promise<void> {
               reportActivity: activity.report,
               leaseToken,
               cancellationFence: task.cancellationFence,
+              attempt: task.attempts + 1,
+              maxAttempts: task.maxAttempts,
             }),
           ),
         ),
