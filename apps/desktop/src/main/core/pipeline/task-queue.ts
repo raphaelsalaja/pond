@@ -110,6 +110,10 @@ export async function claimDueTasks(
                 WHEN 'interactive' THEN 0
                 ELSE 1
               END,
+              /* Never-attempted work first: retry backoff would otherwise let a
+                 few repeatedly failing tasks win every claim and starve the
+                 rest of the queue. */
+              tasks.attempts ASC,
               tasks.next_run_at ASC,
               tasks.created_at ASC
             LIMIT ?`,

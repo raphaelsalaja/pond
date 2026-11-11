@@ -11,7 +11,11 @@ import log from "electron-log/main.js";
 import { getDb } from "../../db";
 import { commitSaveIngestEvent, toErrorInfo } from "../../lib/wide-event";
 import { persistSave } from "../persist-save";
-import { RateLimitedError, TransientError } from "./extractors/errors";
+import {
+  CaptureIncompleteError,
+  RateLimitedError,
+  TransientError,
+} from "./extractors/errors";
 import {
   noteTransientFailure,
   setSourceCooldown,
@@ -94,6 +98,18 @@ export interface FailureResult {
   settled: boolean;
 }
 
+/**
+ * A capture that only missed a secondary field says nothing about source
+ * health. Counting it as a transient failure lets a handful of reply saves
+ * trip the breaker and park every other save for the same source.
+ */
+export function countsTowardSourceBreaker(cause: unknown): boolean {
+  if (cause instanceof CaptureIncompleteError) return false;
+  return (
+    cause instanceof TransientError || cause instanceof WorkerWatchdogError
+  );
+}
+
 export async function handleFailure(
   task: DueTask,
   cause: unknown,
@@ -138,10 +154,7 @@ export async function handleFailure(
     if (cause instanceof RateLimitedError) {
       const ms = (cause.retryAfterSec ?? 60) * 1000;
       setSourceCooldown(source, ms);
-    } else if (
-      cause instanceof TransientError ||
-      cause instanceof WorkerWatchdogError
-    ) {
+    } else if (countsTowardSourceBreaker(cause)) {
       noteTransientFailure(source);
     }
   }
