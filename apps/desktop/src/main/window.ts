@@ -7,14 +7,17 @@ import { SHELL_HINT_ARG, type ShellHint } from "../shared/shell-hint";
 import { attachEditableContextMenu } from "./context-menu";
 import { hardenArchiveWebviews } from "./core/archive-viewer";
 import { getPrefs, setPrefs, subscribePrefs } from "./core/prefs";
+import { openPreviewWindowCount } from "./core/preview-windows";
 import { consumePendingDeepLink } from "./deep-link";
 import { settleDockAfterClose, showDock } from "./dock";
+import { createHiddenLibraryRelease } from "./hidden-library-release";
 import { followInterfaceZoom } from "./lib/follow-interface-zoom";
 import { lockRendererZoom } from "./lib/lock-renderer-zoom";
 import { resolveMainOut, resolvePreload } from "./lib/resolve-preload";
+import { shouldStayResident } from "./lifecycle";
 import { markStartup } from "./startup-timing";
 import { resolveTheme } from "./theme";
-import { ensureTray, type TrayHandle } from "./tray";
+import { ensureTray, isTrayVisible, type TrayHandle } from "./tray";
 
 import { mainWindowState } from "./window-state";
 
@@ -23,6 +26,24 @@ let trayRefreshQueued = false;
 let closeToTrayEnabled = false;
 let isQuitting = false;
 let nativeThemeListenerAttached = false;
+
+const hiddenLibraryRelease = createHiddenLibraryRelease<BrowserWindow>({
+  isLibraryWindow: (win) => mainWindowState.current === win,
+  /** Preview windows ask the Library renderer for their next and previous Save. */
+  canRelease: () =>
+    !isQuitting &&
+    hasTray() &&
+    shouldStayResident({
+      platform: process.platform,
+      closeToTray: closeToTrayEnabled,
+      hasTray: hasTray(),
+    }) &&
+    openPreviewWindowCount() === 0,
+  release: (win) => {
+    log.info("[pond] releasing the hidden Library renderer");
+    win.destroy();
+  },
+});
 
 const MIN_WINDOW_WIDTH = 720;
 const MIN_WINDOW_HEIGHT = 480;
@@ -41,12 +62,14 @@ export function getMainWindow(): BrowserWindow | null {
   return mainWindowState.current;
 }
 
+/** The menu bar icon setting can remove the tray after it was created. */
 export function hasTray(): boolean {
-  return tray !== null;
+  return tray !== null && isTrayVisible();
 }
 
 export function beginQuit(): void {
   isQuitting = true;
+  hiddenLibraryRelease.stop();
 }
 
 export function isCloseToTrayEnabled(): boolean {
@@ -151,7 +174,10 @@ async function buildLibraryWindow(): Promise<BrowserWindow> {
     if (mainWindowState.current === win) mainWindowState.current = null;
     if (!isQuitting) void settleDockAfterClose();
   });
-  win.on("show", () => void showDock());
+  win.on("show", () => {
+    hiddenLibraryRelease.shown(win);
+    void showDock();
+  });
   /** On macOS, Logi Options+ and three-finger trackpad swipes send back and forward as swipes. */
   win.on("swipe", (_event, direction) => {
     if (direction === "left") win.webContents.send(IPC.navigationSwipe, "back");
@@ -196,11 +222,12 @@ async function buildLibraryWindow(): Promise<BrowserWindow> {
   win.on("close", (event) => {
     if (isQuitting) return;
     if (!closeToTrayEnabled) return;
-    if (!tray) return;
+    if (!hasTray()) return;
     if (win.isDestroyed()) return;
     if (mainWindowState.current !== win) return;
     event.preventDefault();
     win.hide();
+    hiddenLibraryRelease.hidden(win);
     void settleDockAfterClose();
   });
 

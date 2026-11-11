@@ -76,6 +76,15 @@ const fishOpen = createNavigationMailbox<FishOpen>();
 ipcRenderer.on(IPC.fishOpen, (_: IpcRendererEvent, open: FishOpen) =>
   fishOpen.receive(open),
 );
+/** Tray and app menu commands can recreate the window before the renderer subscribes. */
+const menuAction = createNavigationMailbox<MenuActionEvent>();
+ipcRenderer.on(IPC.menuAction, (_: IpcRendererEvent, action: MenuActionEvent) =>
+  menuAction.receive(action),
+);
+const menuOpenSave = createNavigationMailbox<string>();
+ipcRenderer.on(IPC.menuOpenSave, (_: IpcRendererEvent, id: string) =>
+  menuOpenSave.receive(id),
+);
 
 const query: QueryClient = (name, ...args) =>
   ipcRenderer.invoke(IPC.query, name, args[0]);
@@ -213,10 +222,7 @@ const api = {
   },
 
   onMenuAction(cb: (action: MenuActionEvent) => void): () => void {
-    const listener = (_: IpcRendererEvent, action: MenuActionEvent) =>
-      cb(action);
-    ipcRenderer.on(IPC.menuAction, listener);
-    return () => ipcRenderer.off(IPC.menuAction, listener);
+    return menuAction.subscribe(cb);
   },
 
   onNavigationSwipe(cb: (direction: NavigationDirection) => void): () => void {
@@ -237,9 +243,7 @@ const api = {
   },
 
   onMenuOpenSave(cb: (id: string) => void): () => void {
-    const listener = (_: IpcRendererEvent, id: string) => cb(id);
-    ipcRenderer.on(IPC.menuOpenSave, listener);
-    return () => ipcRenderer.off(IPC.menuOpenSave, listener);
+    return menuOpenSave.subscribe(cb);
   },
 
   onEagleImportProgress(

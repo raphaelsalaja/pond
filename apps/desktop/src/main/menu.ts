@@ -7,7 +7,7 @@ import { disableMenuActionImages } from "./lib/menu-action-images";
 
 interface AppMenuDeps {
   focusedOrMain: () => BrowserWindow | null;
-  openLibraryWindow: () => void;
+  openLibraryWindow: () => Promise<void>;
   shortcuts: ShortcutPreferences;
 }
 

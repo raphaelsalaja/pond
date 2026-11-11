@@ -22,7 +22,8 @@ import type { AppMenuContext } from "./types";
 
 export interface AppMenuRuntimeDeps {
   focusedOrMain: () => BrowserWindow | null;
-  openLibraryWindow: () => void;
+  /** Resolves after a recreated Library window finishes loading, so callers can send it IPC. */
+  openLibraryWindow: () => Promise<void>;
   shortcuts: ShortcutPreferences;
 }
 
@@ -82,8 +83,9 @@ export function createAppMenuContext(deps: AppMenuRuntimeDeps): AppMenuContext {
     openExternalUrl: (url: string) => () => {
       void shell.openExternal(url);
     },
-    openLibraryWindow: deps.openLibraryWindow,
-    openRecent: (id: string) => () => {
+    openLibraryWindow: () => void deps.openLibraryWindow(),
+    openRecent: (id: string) => async () => {
+      await deps.openLibraryWindow();
       deps.focusedOrMain()?.webContents.send(IPC.menuOpenSave, id);
     },
     rescanLibrary: () => {
