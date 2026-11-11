@@ -9,6 +9,9 @@ import { useMachineMotionPaused } from "@/shared/lib/use-machine-motion";
 import { usePrefs } from "@/shared/state/prefs";
 import styles from "./styles.module.css";
 
+/** Grace after leave so a quick re-hover reuses the decoder instead of refetching. */
+const RELEASE_DELAY_MS = 400;
+
 function seekToStart(el: HTMLVideoElement) {
   try {
     el.currentTime = 0;
@@ -42,6 +45,7 @@ export function HoverVideo({
   const motionPaused = useMachineMotionPaused();
   const hoverEnabled = prefs.hoverVideo !== false;
   const internalRef = useRef<HTMLVideoElement | null>(null);
+  const releaseTimer = useRef<number | undefined>(undefined);
   const [hoverPrimed, setHoverPrimed] = useState(false);
   const [active, setActive] = useState(false);
   const [videoReady, setVideoReady] = useState(false);
@@ -99,14 +103,32 @@ export function HoverVideo({
     };
   }, [active, primed, hoverEnabled, motionPaused]);
 
+  useEffect(() => {
+    if (primed) return;
+    const el = internalRef.current;
+    if (!el || el.networkState === HTMLMediaElement.NETWORK_EMPTY) return;
+    /** Dropping src alone keeps the decoder and buffers; load() with no source frees them. */
+    el.removeAttribute("src");
+    el.load();
+    setVideoReady(false);
+  }, [primed]);
+
+  useEffect(() => () => window.clearTimeout(releaseTimer.current), []);
+
   const onEnter = useCallback(() => {
     if (!hoverEnabled || document.body.dataset.saveDragging) return;
+    window.clearTimeout(releaseTimer.current);
     setActive(true);
     setHoverPrimed(true);
   }, [hoverEnabled]);
 
   const onLeave = useCallback(() => {
     setActive(false);
+    window.clearTimeout(releaseTimer.current);
+    releaseTimer.current = window.setTimeout(
+      () => setHoverPrimed(false),
+      RELEASE_DELAY_MS,
+    );
     const el = internalRef.current;
     if (!el) return;
     el.pause();
