@@ -16,10 +16,26 @@ export function buildPondUrl(saveId: string, file: SaveFile): string {
 /** Buckets hold the thumbnail cache to a few sizes per file rather than one per zoom step. */
 const THUMB_BUCKETS = [256, 384, 512, 768, 1024] as const;
 const THUMB_MAX = 1536;
+/** Main clamps `tw` to 2048, so the sharpest step stops there. */
+const SHARPER_BUCKETS = [...THUMB_BUCKETS, THUMB_MAX, 2048] as const;
 
 export function thumbUrlFor(url: string, cssWidth: number | undefined): string {
   const width = thumbnailWidth(cssWidth);
+  return width ? withThumbWidth(url, width) : url;
+}
+
+/** One bucket above `thumbUrlFor`, so Quality sharpens a card without decoding its original. */
+export function sharperThumbUrlFor(
+  url: string,
+  cssWidth: number | undefined,
+): string {
+  const width = thumbnailWidth(cssWidth);
   if (!width) return url;
+  const sharper = SHARPER_BUCKETS.find((bucket) => bucket > width) ?? width;
+  return withThumbWidth(url, sharper);
+}
+
+function withThumbWidth(url: string, width: number): string {
   return `${url}${url.includes("?") ? "&" : "?"}tw=${width}&tv=${THUMBNAIL_CACHE_VERSION}`;
 }
 

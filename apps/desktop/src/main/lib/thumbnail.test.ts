@@ -96,4 +96,49 @@ describe("thumbnail scheduler", () => {
 
     expect(peakBackground).toBe(2);
   });
+
+  it("runs visible cards after foreground work, newest first, ahead of background", async () => {
+    const scheduler = createThumbnailScheduler(1);
+    const release = Promise.withResolvers<void>();
+    const order: string[] = [];
+    const record = (label: string) => async () => {
+      order.push(label);
+    };
+    const first = scheduler.run("foreground", async () => {
+      await release.promise;
+    });
+    const queued = [
+      scheduler.run("background", record("background")),
+      scheduler.run("visible", record("scrolled-past")),
+      scheduler.run("visible", record("on-screen")),
+      scheduler.run("foreground", record("opened")),
+    ];
+
+    release.resolve();
+    await Promise.all([first, ...queued]);
+
+    expect(order).toEqual([
+      "opened",
+      "on-screen",
+      "scrolled-past",
+      "background",
+    ]);
+  });
+
+  it("gives visible cards every slot the background limit holds back", async () => {
+    const scheduler = createThumbnailScheduler(4);
+    let activeVisible = 0;
+    let peakVisible = 0;
+    const job = () =>
+      scheduler.run("visible", async () => {
+        activeVisible += 1;
+        peakVisible = Math.max(peakVisible, activeVisible);
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        activeVisible -= 1;
+      });
+
+    await Promise.all([job(), job(), job(), job()]);
+
+    expect(peakVisible).toBe(4);
+  });
 });

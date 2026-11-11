@@ -3,27 +3,27 @@ import { qualityDecodeBudget } from "@/features/saves/lib/quality-decode-budget"
 
 export function useQualityImage(
   thumbnail: string,
-  original: string,
+  sharper: string,
   enabled: boolean,
 ): string {
   const [source, setSource] = useState(thumbnail);
 
   useEffect(() => {
     setSource(thumbnail);
-    if (!enabled || thumbnail === original) return;
+    if (!enabled || thumbnail === sharper) return;
     let current = true;
     const cancel = qualityDecodeBudget.schedule(async () => {
       const image = new Image();
       image.decoding = "async";
-      image.src = original;
+      image.src = sharper;
       await image.decode();
-      if (current) setSource(original);
+      if (current) setSource(sharper);
     });
     return () => {
       current = false;
       cancel();
     };
-  }, [enabled, original, thumbnail]);
+  }, [enabled, sharper, thumbnail]);
 
   return source;
 }

@@ -8,6 +8,7 @@ import type {
 } from "@/features/saves/lib/media/units";
 import {
   previewThumbUrlFor,
+  sharperThumbUrlFor,
   thumbUrlFor,
 } from "@/features/saves/lib/media/url";
 import {
@@ -89,7 +90,7 @@ function GallerySlide({
     : thumbUrlFor(unit.url, width);
   const src = useQualityImage(
     thumbnail,
-    unit.url,
+    sharperThumbUrlFor(unit.url, width),
     active &&
       viewer.thumbnailQuality === "quality" &&
       (width ?? 0) >= 384 &&

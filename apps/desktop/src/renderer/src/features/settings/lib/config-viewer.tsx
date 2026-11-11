@@ -154,7 +154,7 @@ export const viewerSection = defineCustomSection({
           control: "select",
           key: "thumbnailQuality",
           title: "Thumbnail Quality",
-          description: "Loads the original when enlarged.",
+          description: "Quality loads a sharper thumbnail on large cards.",
           options: [
             { value: "fast", label: "Fast" },
             { value: "balanced", label: "Balanced" },

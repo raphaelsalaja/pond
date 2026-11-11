@@ -4,7 +4,8 @@ import { isThumbnailFileExtension } from "../../shared/media-index";
 const MIN_WIDTH = 32;
 const MAX_WIDTH = 2048;
 
-export type ThumbnailPriority = "foreground" | "background";
+/** `foreground` is one item the user opened, `visible` an on-screen card, `background` work nobody waits on. */
+export type ThumbnailPriority = "foreground" | "visible" | "background";
 
 export const NATIVE_RASTER_EXT: ReadonlySet<string> = new Set([
   ".heic",
@@ -62,14 +63,21 @@ export function createThumbnailScheduler(
 ) {
   let active = 0;
   let backgroundActive = 0;
-  const foreground: Array<() => void> = [];
-  const background: Array<() => void> = [];
+  const queues: Record<ThumbnailPriority, Array<() => void>> = {
+    foreground: [],
+    visible: [],
+    background: [],
+  };
 
   function drain(): void {
     while (active < maxConcurrent) {
+      /** Visible work runs newest first: while the grid scrolls, the latest requests are the cards still on screen. */
       const next =
-        foreground.shift() ??
-        (backgroundActive < maxBackground ? background.shift() : undefined);
+        queues.foreground.shift() ??
+        queues.visible.pop() ??
+        (backgroundActive < maxBackground
+          ? queues.background.shift()
+          : undefined);
       if (!next) return;
       next();
     }
@@ -85,7 +93,7 @@ export function createThumbnailScheduler(
         if (priority === "background") backgroundActive += 1;
         resolve();
       };
-      (priority === "foreground" ? foreground : background).push(start);
+      queues[priority].push(start);
       drain();
     });
     try {
