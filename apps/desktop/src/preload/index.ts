@@ -78,10 +78,8 @@ ipcRenderer.on(IPC.fishOpen, (_: IpcRendererEvent, open: FishOpen) =>
 );
 /** Tray and app menu commands can recreate the window before the renderer subscribes. */
 const menuAction = createNavigationMailbox<MenuActionEvent>();
-ipcRenderer.on(
-  IPC.menuAction,
-  (_: IpcRendererEvent, action: MenuActionEvent) =>
-    menuAction.receive(action),
+ipcRenderer.on(IPC.menuAction, (_: IpcRendererEvent, action: MenuActionEvent) =>
+  menuAction.receive(action),
 );
 const menuOpenSave = createNavigationMailbox<string>();
 ipcRenderer.on(IPC.menuOpenSave, (_: IpcRendererEvent, id: string) =>
