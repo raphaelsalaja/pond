@@ -217,6 +217,18 @@ export const viewerSection = defineCustomSection({
         },
         {
           control: "select",
+          key: "videoSeekSeconds",
+          title: "Seek Interval",
+          description: "How far the arrow keys skip in a video.",
+          options: [
+            { value: 5, label: "5 Seconds" },
+            { value: 10, label: "10 Seconds" },
+            { value: 15, label: "15 Seconds" },
+            { value: 30, label: "30 Seconds" },
+          ],
+        },
+        {
+          control: "select",
           key: "videoWheelBehavior",
           title: "Video Scrolling",
           description: "Seek, change volume, or ignore the wheel.",

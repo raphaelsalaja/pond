@@ -346,13 +346,23 @@ export const SHORTCUTS = {
     group: "Preview",
   },
   "viewer.seek-back": {
-    keys: "Shift+ArrowLeft",
+    keys: "ArrowLeft",
     label: "Seek Back",
     group: "Preview",
   },
   "viewer.seek-forward": {
-    keys: "Shift+ArrowRight",
+    keys: "ArrowRight",
     label: "Seek Forward",
+    group: "Preview",
+  },
+  "viewer.video-step-prev": {
+    keys: "Shift+ArrowLeft",
+    label: "Previous Image or Save from Video",
+    group: "Preview",
+  },
+  "viewer.video-step-next": {
+    keys: "Shift+ArrowRight",
+    label: "Next Image or Save from Video",
     group: "Preview",
   },
   "viewer.speed-up": {

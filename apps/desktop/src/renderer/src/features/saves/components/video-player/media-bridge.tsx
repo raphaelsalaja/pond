@@ -3,6 +3,7 @@ import { useHotkey } from "@tanstack/react-hotkeys";
 import { useEffect, useRef } from "react";
 import { useMediaSession } from "@/features/saves/hooks/use-media-session";
 import { viewerMemory } from "@/features/saves/lib/viewer-memory";
+import { useActiveVideo } from "@/features/saves/state/active-video";
 import { bindingKeys, useShortcutBindings } from "@/shared/lib/shortcuts";
 import { usePrefs } from "@/shared/state/prefs";
 
@@ -115,14 +116,17 @@ export function MediaBridge({
     () => actions.stepFrame(10),
     { enabled: active, ignoreInputs: true },
   );
-  useHotkey(bindingKeys(shortcuts, "viewer.seek-back"), () => seekBy(-10), {
-    enabled: active,
-    ignoreInputs: true,
-  });
-  useHotkey(bindingKeys(shortcuts, "viewer.seek-forward"), () => seekBy(10), {
-    enabled: active,
-    ignoreInputs: true,
-  });
+  useActiveVideo(active);
+  useHotkey(
+    bindingKeys(shortcuts, "viewer.seek-back"),
+    () => seekBy(-prefs.videoSeekSeconds),
+    { enabled: active, ignoreInputs: true, conflictBehavior: "allow" },
+  );
+  useHotkey(
+    bindingKeys(shortcuts, "viewer.seek-forward"),
+    () => seekBy(prefs.videoSeekSeconds),
+    { enabled: active, ignoreInputs: true, conflictBehavior: "allow" },
+  );
   const videoHotkeys = { enabled: active, ignoreInputs: true };
   useHotkey(
     bindingKeys(shortcuts, "viewer.speed-up"),
