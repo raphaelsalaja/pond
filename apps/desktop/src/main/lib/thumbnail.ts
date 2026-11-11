@@ -63,21 +63,21 @@ export function createThumbnailScheduler(
 ) {
   let active = 0;
   let backgroundActive = 0;
-  const queues: Record<ThumbnailPriority, Array<() => void>> = {
-    foreground: [],
-    visible: [],
-    background: [],
-  };
+  const foreground: Array<() => void> = [];
+  const visible: Array<() => void> = [];
+  const background: Array<() => void> = [];
+  const queues = { foreground, visible, background } satisfies Record<
+    ThumbnailPriority,
+    Array<() => void>
+  >;
 
   function drain(): void {
     while (active < maxConcurrent) {
       /** Visible work runs newest first: while the grid scrolls, the latest requests are the cards still on screen. */
       const next =
-        queues.foreground.shift() ??
-        queues.visible.pop() ??
-        (backgroundActive < maxBackground
-          ? queues.background.shift()
-          : undefined);
+        foreground.shift() ??
+        visible.pop() ??
+        (backgroundActive < maxBackground ? background.shift() : undefined);
       if (!next) return;
       next();
     }
