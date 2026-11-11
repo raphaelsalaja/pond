@@ -7,6 +7,14 @@
   vertical-align: top;
 }
 
+/* Page titles render here. The status swap truncates only the heading. */
+.description {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  -webkit-line-clamp: 3;
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .swap[data-updated] {
     animation: swap var(--ds-duration-snap) var(--ds-easing-standard);
