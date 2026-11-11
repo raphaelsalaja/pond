@@ -1,4 +1,5 @@
 import { addSavesToCanvas, canvases, createCanvas } from "@/features/canvas";
+import { selectLibraryNav } from "@/features/library/components/folder-sidebar/navigation";
 import {
   lastUsedFolderId,
   rememberFolderDestinations,
@@ -22,6 +23,7 @@ registerSaveLibraryBridge({
   getNav: () => libraryChrome.getState().nav,
   setNav: (nav) => libraryChrome.setNav(nav),
   resetFilters,
+  openTaggedItems: (name) => selectLibraryNav({ kind: "tag", name }),
   closeDetails: () => libraryChrome.setDetailsOpen(false),
   openFolderPicker,
   openRename: openRenameDialog,

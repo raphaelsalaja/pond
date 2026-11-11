@@ -19,6 +19,7 @@
   &[data-index] {
     min-height: 34px;
     padding: 0 4px;
+    cursor: pointer;
     background: transparent;
     border-radius: var(--ds-radius-md);
   }

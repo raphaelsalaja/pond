@@ -1,13 +1,27 @@
 import "@/app/effects/save-library-bridge";
+import { EMPTY_QUERY } from "@pond/schema/filters/types";
 import { mediaEmbeddingVersion } from "@shared/embeddings";
+import {
+  createMemoryHistory,
+  createRootRoute,
+  createRoute,
+  createRouter,
+} from "@tanstack/react-router";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { z } from "zod";
+import { libraryChrome } from "@/features/library";
+import {
+  getViewState,
+  resetFilters,
+  setQuery,
+} from "@/features/library/state/view-store";
 import { normalise, SavePatchSchema } from "@/features/saves/lib/reconcile";
 import { pool } from "@/features/saves/state/pool";
 import { setSaveViewerFileIndex } from "@/features/saves/state/save-viewer";
 import { primarySelection } from "@/features/saves/state/selection";
+import { setAppRouter } from "@/shared/lib/app-router";
 import { SaveInspector } from ".";
 
 let host: HTMLDivElement;
@@ -81,6 +95,8 @@ afterEach(async () => {
   host.remove();
   pool.clear();
   setSaveViewerFileIndex(null);
+  libraryChrome.setNav({ kind: "all" });
+  resetFilters();
   vi.unstubAllGlobals();
 });
 
@@ -606,6 +622,58 @@ it("loads Related Saves only when its tab opens and opens a selected Save", asyn
   expect(related).not.toBeNull();
   await act(async () => related?.click());
   expect(primarySelection.get()).toBe("related");
+});
+
+it("opens tagged saves from a tag chip without removing the tag", async () => {
+  const rootRoute = createRootRoute();
+  const indexRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/",
+    component: () => null,
+  });
+  const saveRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/save/$id",
+    component: () => null,
+  });
+  const router = createRouter({
+    routeTree: rootRoute.addChildren([indexRoute, saveRoute]),
+    history: createMemoryHistory({ initialEntries: ["/save/a"] }),
+  });
+  await router.load();
+  setAppRouter(router);
+  libraryChrome.setNav({ kind: "all" });
+  setQuery({
+    combinator: "and",
+    rules: [{ field: "tags", operator: "some", value: ["Other"] }],
+  });
+
+  await act(async () => root.render(<SaveInspector saveId="a" />));
+  const remove = host.querySelector<HTMLButtonElement>(
+    '[aria-label="Remove tag One"]',
+  );
+  const tag = [...host.querySelectorAll("span")].find(
+    (node) => node.textContent === "One" && node.children.length === 0,
+  );
+  if (!remove || !tag) throw new Error("Missing tag One");
+
+  await act(async () => remove.click());
+  expect(requests).toContainEqual({
+    name: "saves.bulkEdit",
+    input: {
+      ids: ["a"],
+      operation: { kind: "tags", tags: ["One"], mode: "remove" },
+    },
+  });
+  expect(libraryChrome.getState().nav).toEqual({ kind: "all" });
+  expect(router.state.location.pathname).toBe("/save/a");
+
+  const callsBeforeOpen = requests.length;
+  await act(async () => tag.click());
+  expect(requests).toHaveLength(callsBeforeOpen);
+  expect(libraryChrome.getState().nav).toEqual({ kind: "tag", name: "One" });
+  expect(router.history.location.pathname).toBe("/");
+  expect(getViewState().query).toEqual(EMPTY_QUERY);
 });
 
 it("clamps a long source description behind Read More and sizes the source icon", async () => {
