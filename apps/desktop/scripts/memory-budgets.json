@@ -1,23 +1,23 @@
 {
   "idle-window-open": {
-    "browser": 500,
+    "browser": 600,
     "renderer": 600,
     "gpu": 500,
     "utility": 300,
     "total": 1200
   },
   "seeded-window-open": {
-    "browser": 600,
+    "browser": 700,
     "renderer": 700,
     "gpu": 500,
     "utility": 300,
     "total": 1400
   },
   "window-closed": {
-    "browser": 500,
+    "browser": 600,
     "renderer": 300,
     "gpu": 400,
     "utility": 300,
-    "total": 700
+    "total": 800
   }
 }
