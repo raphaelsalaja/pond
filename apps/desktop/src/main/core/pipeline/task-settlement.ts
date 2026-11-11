@@ -6,12 +6,19 @@ import {
   tasks,
 } from "@pond/schema/db";
 import type { PipelineTaskEvent } from "@pond/schema/events";
+import { sourceLabel } from "@pond/schema/sources";
 import { and, eq, inArray } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../../db";
 import { commitSaveIngestEvent, toErrorInfo } from "../../lib/wide-event";
 import { persistSave } from "../persist-save";
-import { RateLimitedError, TransientError } from "./extractors/errors";
+import { listAccountsForSource, patchAccountSync } from "../sync/accounts";
+import { emit } from "../sync/sync-status";
+import {
+  AuthRequiredError,
+  RateLimitedError,
+  TransientError,
+} from "./extractors/errors";
 import {
   noteTransientFailure,
   setSourceCooldown,
@@ -25,6 +32,7 @@ import {
   WorkerWatchdogError,
 } from "./reconciler-config";
 import { classifyError } from "./retry-policy";
+import { stopSourceForSignIn } from "./source-admission";
 import { FinalizeIncompleteError } from "./workers/finalize";
 
 export async function enrichTaskEventWithSave(
@@ -135,7 +143,16 @@ export async function handleFailure(
 
   if (isSourceTask(task.op)) {
     const source = task.source;
-    if (cause instanceof RateLimitedError) {
+    if (cause instanceof AuthRequiredError) {
+      if (await stopSourceForSignIn(source)) {
+        log.warn(
+          `[pond pipeline] ${source} needs sign-in; parked its queued requests`,
+        );
+        await markSignInNeeded(source, task.saveId).catch((error) =>
+          log.warn("[pond pipeline] sign-in status update failed", error),
+        );
+      }
+    } else if (cause instanceof RateLimitedError) {
       const ms = (cause.retryAfterSec ?? 60) * 1000;
       setSourceCooldown(source, ms);
     } else if (
@@ -292,6 +309,28 @@ export async function handleFailure(
     recordedAttempts,
     settled: true,
   };
+}
+
+async function markSignInNeeded(source: Source, saveId: string): Promise<void> {
+  const db = await getDb();
+  const owner = db
+    .select({ accountId: saves.accountId })
+    .from(saves)
+    .where(eq(saves.id, saveId))
+    .get()?.accountId;
+  const accounts = await listAccountsForSource(source);
+  /** Matches partitionForIngest: a Save without its own Account harvests through the source's first Account. */
+  const account =
+    accounts.find((candidate) => candidate.id === owner) ?? accounts[0];
+  if (!account) return;
+  await patchAccountSync(account.id, { lastError: "auth_required" });
+  emit({
+    accountId: account.id,
+    source,
+    state: "auth_required",
+    message: `Sign in to ${sourceLabel(source)} again to resume downloads.`,
+    lastError: "auth_required",
+  });
 }
 
 export async function maybeFinalizeSave(saveId: string): Promise<void> {

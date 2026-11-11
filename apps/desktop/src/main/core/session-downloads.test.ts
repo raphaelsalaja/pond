@@ -22,6 +22,7 @@ import {
 } from "vitest";
 import { closeDb, getDb, getGlobalDb } from "../db";
 import { invalidatePaths, resolvePaths } from "../paths";
+import { stopSourceForSignIn } from "./pipeline/source-admission";
 import { invalidatePrefs } from "./prefs";
 import { resumeSessionDownloads } from "./session-downloads";
 import { createAccount } from "./sync/accounts";
@@ -73,7 +74,7 @@ describe.skipIf(!nativeSqliteAvailable())("session download recovery", () => {
 
   beforeEach(async () => {
     (await getDb()).$raw.exec(
-      "DELETE FROM saves; DELETE FROM queue_generations",
+      "DELETE FROM saves; DELETE FROM queue_generations; DELETE FROM source_gates",
     );
   });
 
@@ -230,6 +231,46 @@ describe.skipIf(!nativeSqliteAvailable())("session download recovery", () => {
     );
     blockAgain();
     expect(await resumeSessionDownloads(primary)).toBe(1);
+  });
+
+  it("lifts a sign-in stop when you reconnect, but not for credentials it already tried", async () => {
+    await seed("parked", {
+      taskStatus: "pending",
+      error: "TransientError: Network failed",
+    });
+    const { $raw } = await getDb();
+    const state = () => ({
+      gate: $raw
+        .prepare(
+          "SELECT state, reason FROM source_gates WHERE source = 'twitter'",
+        )
+        .get(),
+      task: $raw.prepare("SELECT status, deferred_reason FROM tasks").get(),
+    });
+    const stopped = {
+      gate: { state: "open", reason: "auth_required" },
+      task: { status: "deferred", deferred_reason: "auth_required" },
+    };
+    const resumed = {
+      gate: { state: "closed", reason: null },
+      task: { status: "pending", deferred_reason: null },
+    };
+    const tried = credentials("tried");
+
+    await stopSourceForSignIn("twitter");
+    expect(state()).toEqual(stopped);
+    await resumeSessionDownloads(primary, tried);
+    expect(state()).toEqual(resumed);
+
+    await stopSourceForSignIn("twitter");
+    await resumeSessionDownloads(primary, tried);
+    expect(state()).toEqual(stopped);
+    await resumeSessionDownloads(primary, credentials("reconnected"));
+    expect(state()).toEqual(resumed);
+
+    await stopSourceForSignIn("twitter");
+    await resumeSessionDownloads(primary);
+    expect(state()).toEqual(resumed);
   });
 
   it("does not consume credentials when no authentication block matches", async () => {

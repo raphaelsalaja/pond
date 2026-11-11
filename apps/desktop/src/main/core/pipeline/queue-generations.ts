@@ -9,6 +9,7 @@ import type { JsonValue } from "@pond/schema/json";
 import { ulid } from "ulid";
 import { z } from "zod";
 import { getDb } from "../../db";
+import { liftAuthStopSync } from "./source-admission";
 
 const RetryCandidateSchema = z.object({
   id: z.string(),
@@ -64,6 +65,7 @@ export interface RetryGenerationResult {
 
 export async function createRetryGeneration(
   ids?: readonly string[],
+  { liftAuthStop = true }: { liftAuthStop?: boolean } = {},
 ): Promise<RetryGenerationResult> {
   const db = await getDb();
   const at = Date.now();
@@ -138,6 +140,11 @@ export async function createRetryGeneration(
       );
       for (const row of rows) {
         retry.run(generationId, at, at, row.id, CANCEL_REASON);
+      }
+      if (liftAuthStop) {
+        for (const source of new Set(rows.map((row) => row.source))) {
+          liftAuthStopSync(db.$raw, source, at);
+        }
       }
       return { generationId, queued: rows.length, sources };
     })
