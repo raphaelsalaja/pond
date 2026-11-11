@@ -8,6 +8,7 @@ import { IconPlus } from "@pond/icons";
 import type { SavedView } from "@pond/schema/db";
 import { EMPTY_QUERY, type Query } from "@pond/schema/filters/types";
 import { Menu, Sidebar } from "@pond/ui";
+import { useRouterState } from "@tanstack/react-router";
 import { useSelector } from "@tanstack/react-store";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -30,6 +31,7 @@ import {
 } from "@/features/settings";
 import { useTagGroups, useTags } from "@/features/tags";
 import { SIDEBAR_SORTABLE_SCREEN_READER_INSTRUCTIONS } from "@/shared/lib/dnd-kit";
+import { activeLibraryDestination } from "@/shared/lib/library-nav";
 import { usePrefs } from "@/shared/state/prefs";
 import { useOrganizationTree } from "../../hooks/use-organization-tree";
 import { resetFilters, setQuery } from "../../state/view-store";
@@ -57,6 +59,10 @@ export function SmartFoldersSection({
 }) {
   const views = useSavedViews();
   const nav = useLibraryNav();
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  });
+  const destination = activeLibraryDestination(pathname, nav);
   const { activeViewId } = useViewStore();
   const [presentations] = usePrefs("savedViewViews");
   const [sidebar] = usePrefs("sidebar");
@@ -127,7 +133,7 @@ export function SmartFoldersSection({
         onSelect();
       }
     },
-    nav,
+    destination,
   );
   const rows = useMemo(
     () => smartFolderRows(childrenByParent),

@@ -22,6 +22,7 @@ import {
 } from "@pond/icons";
 import { DEFAULT_FISH_ID } from "@shared/fish-contracts";
 import { fishPath } from "@/features/fish";
+import { selectLibraryNav } from "@/features/library/components/folder-sidebar/navigation";
 import {
   importClipboard,
   importEagle,
@@ -30,7 +31,6 @@ import {
   newTag,
   runNewAction,
 } from "@/features/library/components/new-menu/actions";
-import { libraryChrome } from "@/features/library/state/library-chrome";
 import { resetFilters } from "@/features/library/state/view-store";
 import { openSources, pickWatchedFolder } from "@/features/sources";
 import { getAppRouter } from "@/shared/lib/app-router";
@@ -41,7 +41,7 @@ import { setupFlow } from "@/shared/state/setup";
 import { supportDialog } from "@/shared/state/support";
 import type { CommandSpec } from "./types";
 
-export function navigateTo(path: string): void {
+function navigateTo(path: string): void {
   getAppRouter()?.history.push(path);
 }
 
@@ -142,8 +142,7 @@ export const COMMANDS: readonly CommandSpec[] = [
     shortcut: "nav.library",
     run: () => {
       resetFilters();
-      libraryChrome.setNav({ kind: "all" });
-      navigateTo("/");
+      selectLibraryNav({ kind: "all" });
     },
   },
   {
@@ -153,11 +152,7 @@ export const COMMANDS: readonly CommandSpec[] = [
     detail: "Saves that aren't in a folder",
     icon: IconFolderBan,
     keywords: "unfiled inbox no folder",
-    run: () => {
-      resetFilters();
-      libraryChrome.setNav({ kind: "uncategorized" });
-      navigateTo("/");
-    },
+    run: () => selectLibraryNav({ kind: "uncategorized" }),
   },
   {
     id: "untagged",
@@ -166,11 +161,7 @@ export const COMMANDS: readonly CommandSpec[] = [
     detail: "Saves without tags",
     icon: IconBookmarkSlash,
     keywords: "no tags labels",
-    run: () => {
-      resetFilters();
-      libraryChrome.setNav({ kind: "all" });
-      navigateTo("/untagged");
-    },
+    run: () => selectLibraryNav({ kind: "untagged" }),
   },
   {
     id: "sources",
@@ -180,7 +171,7 @@ export const COMMANDS: readonly CommandSpec[] = [
     icon: IconNodes3,
     keywords: "accounts connect watches",
     shortcut: "nav.sources",
-    run: () => navigateTo("/sources"),
+    run: () => selectLibraryNav({ kind: "sources" }),
   },
   {
     id: "downloads",
@@ -190,7 +181,7 @@ export const COMMANDS: readonly CommandSpec[] = [
     icon: IconWindowDownload,
     keywords: "transfers queue",
     shortcut: "nav.downloads",
-    run: () => navigateTo("/downloads"),
+    run: () => selectLibraryNav({ kind: "downloads" }),
   },
   {
     id: "tags",
@@ -199,7 +190,7 @@ export const COMMANDS: readonly CommandSpec[] = [
     detail: "Organize your library",
     icon: IconBookmark,
     keywords: "labels organize",
-    run: () => navigateTo("/tags"),
+    run: () => selectLibraryNav({ kind: "tags" }),
   },
   {
     id: "fish",
@@ -218,10 +209,7 @@ export const COMMANDS: readonly CommandSpec[] = [
     icon: IconTrashXmark,
     keywords: "deleted bin",
     shortcut: "nav.trash",
-    run: () => {
-      libraryChrome.setNav({ kind: "trash" });
-      navigateTo("/trash");
-    },
+    run: () => selectLibraryNav({ kind: "trash" }),
   },
   {
     id: "settings",
