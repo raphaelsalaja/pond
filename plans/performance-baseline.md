@@ -97,7 +97,7 @@ restart or switch the shared runtime.” These microbenchmark targets use the Ap
 M4 baseline above; no stable CI runner or CI timing gate was approved. UI capture
 permission remains withheld. Plan 004 still requires its own spike approval gate.
 
-## Whole-app memory baselines (pending)
+## Whole-app memory baselines
 
 `pnpm --filter @pond/desktop smoke:memory` now measures per-process memory
 (browser, GPU, renderer, utility, total) in an isolated synthetic Library for
@@ -108,10 +108,41 @@ CI runs it on Ubuntu, Windows, and macOS after the desktop smoke test, against
 loose ceilings in `apps/desktop/scripts/memory-budgets.json`. Those ceilings are
 regression tripwires, not approved targets.
 
-No numbers are recorded yet. Record baselines here, one table per OS, from the
-JSON report of at least three CI runs on `main`. Include commit, runner image,
-Electron version, and the median MB per scenario and process type. Propose
-tightened ceilings only from those runs, and record the approval as above.
+Recorded 2026-11-11 from CI run
+[43032849527](https://github.com/raphaelsalaja/pond/actions/runs/43032849527)
+on `main` at `470ba96a2`, Electron 44.4.0. Values are the median working set in
+MB across attempts 2 to 5, each itself the median of three samples. One macOS
+attempt is excluded because app logs interleaved with its JSON report. No
+attempt exceeded a ceiling.
+
+Ubuntu, `ubuntu-26.04` 20261101.186.1, x64 under xvfb, four runs:
+
+| Scenario | Main | Renderer | GPU | Utility | Total |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Idle, window open | 296.9 | 334.0 | 182.4 | 93.0 | 905.6 |
+| After seeding 50 Saves | 235.3 | 576.1 | 207.9 | 92.8 | 1,107.9 |
+| Window closed | 234.9 | 0 | 140.3 | 92.8 | 467.6 |
+
+Windows, `windows-2025-vs2026` 20261103.298.1, x64, four runs:
+
+| Scenario | Main | Renderer | GPU | Utility | Total |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Idle, window open | 163.3 | 189.3 | 72.0 | 50.3 | 475.8 |
+| After seeding 50 Saves | 148.9 | 243.3 | 82.3 | 45.2 | 520.3 |
+| Window closed | 148.9 | 0 | 63.2 | 39.1 | 251.4 |
+
+macOS, `macos-26-arm64` 20261102.0473.1, arm64, three runs:
+
+| Scenario | Main | Renderer | GPU | Utility | Total |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Idle, window open | 395.3 | 194.0 | 92.0 | 46.5 | 736.4 |
+| After seeding 50 Saves | 412.3 | 215.0 | 93.9 | 46.5 | 779.6 |
+| Window closed | 395.9 | 0 | 93.9 | 46.6 | 536.3 |
+
+The widest spread across runs was the Windows seeded renderer, 243.3 to 287.9
+MB. Linux software rendering under xvfb accounts for its larger GPU and
+renderer figures. Propose tightened ceilings only from these runs, and record
+the approval as above.
 
 ## Verification
 
