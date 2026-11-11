@@ -8,6 +8,7 @@ import {
 } from "@/features/saves/lib/start-drag";
 import { selection } from "@/features/saves/navigation";
 import { toastManager } from "@/shared/lib/toast";
+import { FOLDER_NEST_DWELL_MS } from "./folder-drop";
 import {
   createFolderSidebarHarness,
   fireDrag,
@@ -37,8 +38,41 @@ function toastText(): string {
   return document.body.querySelector("[data-slot='toasts']")?.textContent ?? "";
 }
 
+function folderRow(host: HTMLElement, id: string): HTMLElement {
+  const row = host.querySelector<HTMLElement>(`[data-folder-sortable="${id}"]`);
+  if (!row) throw new Error(`Missing folder row: ${id}`);
+  return row;
+}
+
+function layoutFolderRows(host: HTMLElement): void {
+  const rows = [
+    ...host.querySelectorAll<HTMLElement>("[data-folder-sortable]"),
+  ];
+  rows.forEach((row, index) => {
+    vi.spyOn(row, "getBoundingClientRect").mockReturnValue(
+      DOMRect.fromRect({ x: 0, y: index * 40, width: 220, height: 40 }),
+    );
+  });
+  const rootDrop = host.querySelector<HTMLElement>("[data-folder-root-drop]");
+  if (!rootDrop) throw new Error("Missing top-level drop space");
+  vi.spyOn(rootDrop, "getBoundingClientRect").mockReturnValue(
+    DOMRect.fromRect({ x: 0, y: rows.length * 40, width: 220, height: 120 }),
+  );
+}
+
 describe("folder sidebar drag and drop", () => {
   const harness = createFolderSidebarHarness();
+
+  async function drag(label: string, startY: number, moves: number[]) {
+    await act(async () => {
+      harness.button(label).dispatchEvent(pointer("pointerdown", startY));
+    });
+    for (const y of moves) {
+      await act(async () => {
+        document.dispatchEvent(pointer("pointermove", y));
+      });
+    }
+  }
 
   beforeEach(() => harness.setup());
   afterEach(async () => {
@@ -47,27 +81,22 @@ describe("folder sidebar drag and drop", () => {
     await harness.cleanup();
   });
 
-  it("nests a folder with the dnd-kit organization path", async () => {
+  it("nests a folder once the pointer rests on a row's middle", async () => {
     folderList.current = [folder("Travel"), folder("Shots")];
     await folders.refresh();
     await harness.mount();
-    const rows = [
-      ...harness.host.querySelectorAll<HTMLElement>("[data-folder-sortable]"),
-    ];
-    rows.forEach((row, index) => {
-      vi.spyOn(row, "getBoundingClientRect").mockReturnValue(
-        DOMRect.fromRect({ x: 0, y: index * 40, width: 220, height: 40 }),
+    layoutFolderRows(harness.host);
+    await drag("Shots", 60, [50, 20]);
+    const travel = folderRow(harness.host, "Travel");
+    expect(travel.hasAttribute("data-drop")).toBe(false);
+
+    await act(async () => {
+      await new Promise((resolve) =>
+        setTimeout(resolve, FOLDER_NEST_DWELL_MS + 20),
       );
     });
-    await act(async () => {
-      harness.button("Shots").dispatchEvent(pointer("pointerdown", 60));
-    });
-    await act(async () => {
-      document.dispatchEvent(pointer("pointermove", 50));
-    });
-    await act(async () => {
-      document.dispatchEvent(pointer("pointermove", 20));
-    });
+    expect(travel.getAttribute("data-drop")).toBe("into");
+
     await act(async () => {
       document.dispatchEvent(pointer("pointerup", 20));
     });
@@ -80,6 +109,74 @@ describe("folder sidebar drag and drop", () => {
     expect(pondQuery).not.toHaveBeenCalledWith(
       "folders.addSaves",
       expect.anything(),
+    );
+  });
+
+  it("places a folder beside a row when released before nesting arms", async () => {
+    folderList.current = [folder("Travel"), folder("Shots"), folder("Archive")];
+    await folders.refresh();
+    await harness.mount();
+    layoutFolderRows(harness.host);
+    await drag("Archive", 100, [90, 15]);
+    const travel = folderRow(harness.host, "Travel");
+    expect(travel.getAttribute("data-drop")).toBe("before");
+
+    await act(async () => {
+      document.dispatchEvent(pointer("pointerup", 15));
+    });
+    await vi.waitFor(() =>
+      expect(pondQuery).toHaveBeenCalledWith("folders.move", {
+        id: "Archive",
+        parentId: null,
+        beforeId: "Travel",
+      }),
+    );
+  });
+
+  it("drops after an expanded folder as its first child", async () => {
+    folderList.current = [
+      folder("Travel"),
+      folder("Tickets", "Travel"),
+      folder("Shots"),
+    ];
+    await folders.refresh();
+    await harness.mount();
+    layoutFolderRows(harness.host);
+    await drag("Shots", 100, [90, 35]);
+    const tickets = folderRow(harness.host, "Tickets");
+    const travel = folderRow(harness.host, "Travel");
+    expect(tickets.getAttribute("data-drop")).toBe("before");
+    expect(travel.hasAttribute("data-drop")).toBe(false);
+
+    await act(async () => {
+      document.dispatchEvent(pointer("pointerup", 35));
+    });
+    await vi.waitFor(() =>
+      expect(pondQuery).toHaveBeenCalledWith("folders.move", {
+        id: "Shots",
+        parentId: "Travel",
+        beforeId: "Tickets",
+      }),
+    );
+  });
+
+  it("moves a nested folder to the end of the top level below the list", async () => {
+    folderList.current = [folder("Travel"), folder("Tickets", "Travel")];
+    await folders.refresh();
+    await harness.mount();
+    layoutFolderRows(harness.host);
+    await drag("Tickets", 60, [70, 150]);
+    const rootDrop = harness.host.querySelector("[data-folder-root-drop]");
+    expect(rootDrop?.hasAttribute("data-target")).toBe(true);
+
+    await act(async () => {
+      document.dispatchEvent(pointer("pointerup", 150));
+    });
+    await vi.waitFor(() =>
+      expect(pondQuery).toHaveBeenCalledWith("folders.move", {
+        id: "Tickets",
+        parentId: null,
+      }),
     );
   });
 

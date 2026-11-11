@@ -1,3 +1,5 @@
+import { prefersReducedMotion } from "./reduced-motion";
+
 const POP_ID = "pond-pop";
 const SWING = "cubic-bezier(0.37, 0, 0.63, 1)";
 
@@ -10,15 +12,8 @@ const POP_FRAMES: Keyframe[] = [
   { scale: 1 },
 ];
 
-function reducedMotion(): boolean {
-  if (document.documentElement.dataset.reduceMotion === "true") return true;
-  return (
-    window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false
-  );
-}
-
 export function pop(element: Element | null | undefined): void {
-  if (!element || !("animate" in element) || reducedMotion()) {
+  if (!element || !("animate" in element) || prefersReducedMotion()) {
     return;
   }
   for (const animation of element.getAnimations()) {

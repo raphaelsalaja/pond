@@ -31,11 +31,6 @@
   }
 
   &[data-drop="into"] .row {
-    color: var(--ds-gray-12);
-    background: var(--ds-gray-a4);
-  }
-
-  &[data-save-drop] .row {
     color: var(--ds-accent-12);
     background: var(--ds-accent-a3);
     box-shadow: inset 0 0 0 1px var(--ds-accent-a7);

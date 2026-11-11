@@ -11,7 +11,11 @@ import {
 import { errorCopy } from "@/shared/lib/error-copy";
 import { formatPlural } from "@/shared/lib/format";
 import { notify } from "@/shared/lib/toast";
-import { type FolderDropKind, planFolderSidebarDrop } from "./folder-drop";
+import {
+  type FolderDropKind,
+  type FolderDropTarget,
+  planFolderDrop,
+} from "./folder-drop";
 
 export interface FolderDropState {
   id: string;
@@ -74,33 +78,36 @@ export function useFolderDragDrop({
 
   function folderMoveTarget(
     draggedId: string,
-    folder: Folder,
-    kind: FolderDropKind,
+    drop: FolderDropTarget,
   ): FolderDropState | null {
     const ids = selectedIds.includes(draggedId) ? selectedIds : [draggedId];
     const allowed =
-      !ids.includes(folder.id) &&
-      ids.every((id) => planFolderSidebarDrop(id, folder, kind, folderRows));
-    return allowed ? { id: folder.id, kind } : null;
+      !ids.includes(drop.id) &&
+      ids.every((id) => planFolderDrop(id, drop, folderRows));
+    return allowed ? { id: drop.id, kind: drop.kind } : null;
   }
 
   function previewFolderMove(
     draggedId: string,
-    folder: Folder,
-    kind: FolderDropKind,
+    drop: FolderDropTarget,
   ): FolderDropState | null {
-    const target = folderMoveTarget(draggedId, folder, kind);
-    setFolderDrop(target);
+    const target = folderMoveTarget(draggedId, drop);
+    setFolderDrop((current) =>
+      current?.id === target?.id &&
+      current?.kind === target?.kind &&
+      current?.saveCount === undefined
+        ? current
+        : target,
+    );
     return target;
   }
 
   async function moveFolder(
     draggedId: string,
-    folder: Folder,
-    kind: FolderDropKind,
+    drop: FolderDropTarget,
   ): Promise<void> {
-    if (!folderMoveTarget(draggedId, folder, kind)) return;
-    const move = planFolderSidebarDrop(draggedId, folder, kind, folderRows);
+    if (!folderMoveTarget(draggedId, drop)) return;
+    const move = planFolderDrop(draggedId, drop, folderRows);
     if (!move) return;
     try {
       const ids = selectedIds.includes(draggedId) ? selectedIds : [draggedId];
