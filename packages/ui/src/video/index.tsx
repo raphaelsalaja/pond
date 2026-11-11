@@ -27,6 +27,8 @@ interface RootProps extends React.ComponentPropsWithoutRef<"div"> {
   chrome?: boolean;
   /** Element that enters full screen in place of the root, for controls rendered outside it. */
   fullscreenTarget?: HTMLElement | null;
+  /** Mute at mount. Later changes stay on the element so the control can move first. */
+  initialMuted?: boolean;
 }
 
 function Root({
@@ -35,15 +37,17 @@ function Root({
   frameRate,
   chrome,
   fullscreenTarget,
+  initialMuted = false,
   ...props
 }: RootProps) {
   const {
     state,
     actions: mediaActions,
     videoRef,
+    video,
     rootRef,
     registerVideo,
-  } = useMediaState(frameRate, fullscreenTarget);
+  } = useMediaState(frameRate, fullscreenTarget, initialMuted);
   const { controlsVisible, showControls } = useAutoHide({
     rootRef,
     videoRef,
@@ -61,10 +65,10 @@ function Root({
     () => ({
       state: { ...state, controlsVisible: visible },
       actions,
-      meta: { videoRef, rootRef, registerVideo },
+      meta: { videoRef, video, rootRef, registerVideo },
       chrome: !!chrome,
     }),
-    [state, visible, actions, videoRef, rootRef, registerVideo, chrome],
+    [state, visible, actions, videoRef, video, rootRef, registerVideo, chrome],
   );
 
   return (

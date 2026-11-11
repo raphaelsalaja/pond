@@ -55,6 +55,7 @@ describe("preview window contracts", () => {
       thumbnailQuality: "balanced",
       hoverZoom: false,
       videoWheelBehavior: "progress",
+      videoMuted: false,
       doubleClickAction: "open",
       middleClickAction: "open",
       spaceAction: "preview",
@@ -129,6 +130,7 @@ describe("preview window contracts", () => {
         grayscale: false,
         size: "fit",
         zoom: null,
+        videoMuted: false,
       }).success,
     ).toBe(true);
   });

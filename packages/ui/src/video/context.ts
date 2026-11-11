@@ -31,6 +31,7 @@ export interface VideoActions {
 
 interface VideoMeta {
   videoRef: React.RefObject<HTMLVideoElement | null>;
+  video: HTMLVideoElement | null;
   rootRef: React.RefObject<HTMLDivElement | null>;
   registerVideo: (el: HTMLVideoElement | null) => void;
 }

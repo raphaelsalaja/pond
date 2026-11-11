@@ -59,6 +59,7 @@ export interface MediaStateApi {
   state: MediaState;
   actions: MediaActions;
   videoRef: React.RefObject<HTMLVideoElement | null>;
+  video: HTMLVideoElement | null;
   rootRef: React.RefObject<HTMLDivElement | null>;
   registerVideo: (el: HTMLVideoElement | null) => void;
 }
@@ -66,13 +67,17 @@ export interface MediaStateApi {
 export function useMediaState(
   frameRate?: number | null,
   fullscreenTarget?: HTMLElement | null,
+  initialMuted = false,
 ): MediaStateApi {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const fullscreenTargetRef = useRef(fullscreenTarget);
   fullscreenTargetRef.current = fullscreenTarget;
   const [videoEl, setVideoEl] = useState<HTMLVideoElement | null>(null);
-  const [state, setState] = useState<MediaState>(INITIAL);
+  const [state, setState] = useState<MediaState>(() => ({
+    ...INITIAL,
+    muted: initialMuted,
+  }));
 
   const registerVideo = useCallback((el: HTMLVideoElement | null) => {
     videoRef.current = el;
@@ -193,5 +198,5 @@ export function useMediaState(
     [seek, setVolume, frameRate],
   );
 
-  return { state, actions, videoRef, rootRef, registerVideo };
+  return { state, actions, videoRef, video: videoEl, rootRef, registerVideo };
 }

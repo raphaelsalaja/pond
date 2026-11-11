@@ -45,6 +45,7 @@ function previewState(
     grayscale: false,
     size: "fit",
     zoom: null,
+    videoMuted: false,
     ...patch,
   };
 }

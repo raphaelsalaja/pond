@@ -25,6 +25,7 @@ export const PreviewWindowConfigureSchema = z.object({
   grayscale: z.boolean().optional(),
   size: z.enum(["fit", "actual", "fill"]).optional(),
   zoom: z.number().min(0.05).max(8).nullable().optional(),
+  videoMuted: z.boolean().optional(),
 });
 export type PreviewWindowConfigure = z.infer<
   typeof PreviewWindowConfigureSchema
@@ -79,6 +80,7 @@ export const PreviewWindowStateSchema = z.object({
   grayscale: z.boolean(),
   size: z.enum(["fit", "actual", "fill"]),
   zoom: z.number().min(0.05).max(8).nullable(),
+  videoMuted: z.boolean(),
 });
 export type PreviewWindowState = z.infer<typeof PreviewWindowStateSchema>;
 

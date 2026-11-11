@@ -1,11 +1,11 @@
 import { stepPlaybackRate, stepVolume, useVideo } from "@pond/ui";
 import { useHotkey } from "@tanstack/react-hotkeys";
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import { useMediaSession } from "@/features/saves/hooks/use-media-session";
 import { viewerMemory } from "@/features/saves/lib/viewer-memory";
 import { useActiveVideo } from "@/features/saves/state/active-video";
 import { bindingKeys, useShortcutBindings } from "@/shared/lib/shortcuts";
-import { usePrefs } from "@/shared/state/prefs";
+import { patchPrefsSection, usePrefs } from "@/shared/state/prefs";
 
 export function MediaBridge({
   src,
@@ -24,7 +24,10 @@ export function MediaBridge({
   loopRange: [number, number] | null;
   loopOverride: boolean | null;
 }) {
-  const [prefs] = usePrefs("viewer");
+  const [prefs, , prefsReady] = usePrefs("viewer");
+  const applyingMute = useRef(false);
+  const videoMutedRef = useRef(prefs.videoMuted);
+  videoMutedRef.current = prefs.videoMuted;
   const shortcuts = useShortcutBindings();
   const lastSavedSecond = useRef(-1);
   const restored = useRef(false);
@@ -155,10 +158,31 @@ export function MediaBridge({
     { play, pause, seek, seekBy },
   );
 
+  // One viewer preference for every preview. Volume stays on the element.
+  // The M shortcut writes `muted` directly, so `volumechange` records it.
+  useLayoutEffect(() => {
+    const video = meta.video;
+    if (!prefsReady || !video || video.muted === prefs.videoMuted) return;
+    applyingMute.current = true;
+    video.muted = prefs.videoMuted;
+    applyingMute.current = false;
+  }, [meta.video, prefs.videoMuted, prefsReady]);
   useEffect(() => {
+    const video = meta.video;
+    if (!video) return;
+    const onVolumeChange = () => {
+      if (applyingMute.current || video.muted === videoMutedRef.current) return;
+      void patchPrefsSection("viewer", { videoMuted: video.muted });
+    };
+    video.addEventListener("volumechange", onVolumeChange);
+    return () => video.removeEventListener("volumechange", onVolumeChange);
+  }, [meta.video]);
+
+  useEffect(() => {
+    if (!prefsReady || !meta.video) return;
     if (active && prefs.autoplayVideo !== false) play();
     else pause();
-  }, [active, play, pause, prefs.autoplayVideo]);
+  }, [active, meta.video, play, pause, prefs.autoplayVideo, prefsReady]);
 
   return null;
 }

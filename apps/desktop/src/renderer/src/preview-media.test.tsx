@@ -51,6 +51,59 @@ describe("detached preview media lifecycle", () => {
     media.dispose();
   });
 
+  it("applies the shared mute preference without changing volume", () => {
+    const onMuted = vi.fn();
+    const image = document.createElement("img");
+    const video = document.createElement("video");
+    const error = document.createElement("div");
+    const retry = document.createElement("button");
+    video.pause = vi.fn();
+    video.load = vi.fn();
+    let muted = false;
+    Object.defineProperty(video, "muted", {
+      configurable: true,
+      get: () => muted,
+      set(value: boolean) {
+        muted = value;
+        video.dispatchEvent(new Event("volumechange"));
+      },
+    });
+    video.volume = 0.4;
+    document.body.append(image, video, error, retry);
+    const media = createPreviewMedia({
+      image,
+      video,
+      error,
+      retry,
+      onMuted,
+    });
+    const target = {
+      title: "Video",
+      url: "pond://save/movie.mp4",
+      mediaType: "video" as const,
+      source: "original" as const,
+    };
+
+    media.show(target);
+    media.setMuted(true);
+
+    expect(video.muted).toBe(true);
+    expect(video.volume).toBe(0.4);
+    expect(onMuted).not.toHaveBeenCalled();
+
+    video.muted = false;
+    expect(onMuted).toHaveBeenCalledWith(false);
+    expect(video.volume).toBe(0.4);
+
+    onMuted.mockClear();
+    media.show({ ...target, url: "pond://save/next.mp4" });
+    media.setMuted(true);
+    expect(video.muted).toBe(true);
+    expect(video.volume).toBe(0.4);
+    expect(onMuted).not.toHaveBeenCalled();
+    media.dispose();
+  });
+
   it("pauses and releases video when its window closes", () => {
     const { media, video } = setup();
     media.show({
