@@ -1,24 +1,44 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { CANCEL_REASON } from "@pond/schema/db";
+import {
+  CANCEL_REASON,
+  type ConnectedAccount,
+  type Source,
+} from "@pond/schema/db";
 import { syncConfigFor } from "@pond/schema/sources";
 import Database from "better-sqlite3";
 import { app } from "electron";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { closeDb, getDb } from "../../db";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
+import { closeDb, getDb, getGlobalDb } from "../../db";
 import { invalidatePaths, resolvePaths } from "../../paths";
+import { invalidatePrefs } from "../prefs";
+import { createAccount, getAccountSync } from "../sync/accounts";
+import { AuthRequiredError } from "./extractors/errors";
 import {
   createRetryGeneration,
   setQueueGenerationPaused,
 } from "./queue-generations";
+import { acquire } from "./rate-governor";
 import {
   claimSourceProbe,
+  noteDurableSourceFailure,
   recordSourceRequest,
+  stopSourceForSignIn,
+  transitionSourceGate,
   withSourceTaskLease,
 } from "./source-admission";
 import { claimDueTasks, sweepOrphanTasks } from "./task-queue";
-import { markDone } from "./task-settlement";
+import { handleFailure, markDone } from "./task-settlement";
 
 function nativeSqliteAvailable(): boolean {
   try {
@@ -294,5 +314,181 @@ describe.skipIf(!nativeSqliteAvailable())("download recovery", () => {
     expect(
       await withSourceTaskLease("probe", () => recordSourceRequest("twitter")),
     ).toMatchObject({ admitted: false, reason: "source_budget" });
+  });
+});
+
+describe.skipIf(!nativeSqliteAvailable())("source sign-in stop", () => {
+  let directory = "";
+  let account: ConnectedAccount;
+
+  beforeAll(async () => {
+    directory = mkdtempSync(join(tmpdir(), "pond-sign-in-stop-"));
+    vi.spyOn(app, "getPath").mockReturnValue(directory);
+    invalidatePaths();
+    invalidatePrefs();
+    resolvePaths(join(directory, "Sign In Stop.pond"));
+    account = await createAccount({ source: "instagram", id: "instagram" });
+  });
+
+  beforeEach(async () => {
+    (await getDb()).$raw.exec(
+      `DELETE FROM saves;
+      DELETE FROM queue_generations;
+      DELETE FROM source_gates;
+      DELETE FROM source_request_ledger;`,
+    );
+  });
+
+  afterAll(async () => {
+    closeDb();
+    (await getGlobalDb()).$raw.close();
+    vi.restoreAllMocks();
+    invalidatePaths();
+    invalidatePrefs();
+    rmSync(directory, { recursive: true, force: true });
+  });
+
+  async function seed(id: string, source: Source, order: number) {
+    const { $raw } = await getDb();
+    $raw
+      .prepare(
+        `INSERT INTO saves (id, source, source_id, url, status, account_id)
+      VALUES (?, ?, ?, ?, 'ingesting', ?)`,
+      )
+      .run(
+        id,
+        source,
+        id,
+        `https://example.com/${id}`,
+        source === "instagram" ? account.id : null,
+      );
+    $raw
+      .prepare(
+        `INSERT INTO tasks (
+        id, save_id, source, op, status, max_attempts, next_run_at, created_at
+      ) VALUES (?, ?, ?, 'harvest_metadata', 'pending', 5, 0, ?)`,
+      )
+      .run(`task-${id}`, id, source, order);
+  }
+
+  function claim(limit: number) {
+    return claimDueTasks({
+      owner: "test",
+      limit,
+      availableInteractive: 0,
+      availableBackground: limit,
+      availableByOp: { harvest_metadata: limit },
+    });
+  }
+
+  async function gate(source: Source) {
+    return (await getDb()).$raw
+      .prepare("SELECT state, reason FROM source_gates WHERE source = ?")
+      .get(source);
+  }
+
+  async function failFirstInstagramHarvest() {
+    await seed("instagram-1", "instagram", 1);
+    await seed("instagram-2", "instagram", 2);
+    await seed("instagram-3", "instagram", 3);
+    await seed("twitter-1", "twitter", 4);
+    const [first] = await claim(1);
+    if (!first) throw new Error("no harvest was claimed");
+    expect(first.saveId).toBe("instagram-1");
+    return handleFailure(
+      first,
+      new AuthRequiredError(
+        "Connect Instagram with the Pond extension",
+        "instagram",
+      ),
+    );
+  }
+
+  it("parks every queued request for the source after one sign-in failure while other sources keep running", async () => {
+    expect((await failFirstInstagramHarvest()).outcome).toBe("blocked");
+
+    expect((await claim(4)).map((task) => task.saveId)).toEqual(["twitter-1"]);
+    expect(
+      (await getDb()).$raw
+        .prepare(
+          "SELECT save_id, status, deferred_reason FROM tasks WHERE source = 'instagram' ORDER BY save_id",
+        )
+        .all(),
+    ).toEqual([
+      { save_id: "instagram-1", status: "blocked", deferred_reason: null },
+      {
+        save_id: "instagram-2",
+        status: "deferred",
+        deferred_reason: "auth_required",
+      },
+      {
+        save_id: "instagram-3",
+        status: "deferred",
+        deferred_reason: "auth_required",
+      },
+    ]);
+    expect(await gate("instagram")).toEqual({
+      state: "open",
+      reason: "auth_required",
+    });
+    expect((await getAccountSync(account.id)).lastError).toBe("auth_required");
+  });
+
+  it("keeps the stop through successes and backoffs, and refuses requests without waiting", async () => {
+    await stopSourceForSignIn("instagram");
+    await transitionSourceGate({
+      source: "instagram",
+      state: "closed",
+      reason: null,
+      retryAt: null,
+      resetFailures: true,
+    });
+    await noteDurableSourceFailure("instagram", {
+      threshold: 3,
+      windowMs: 60_000,
+      openMs: 600_000,
+    });
+    await transitionSourceGate({
+      source: "instagram",
+      state: "open",
+      reason: "rate_limit",
+      retryAt: Date.now() + 60_000,
+    });
+
+    expect(await gate("instagram")).toEqual({
+      state: "open",
+      reason: "auth_required",
+    });
+    expect(await recordSourceRequest("instagram")).toMatchObject({
+      admitted: false,
+      reason: "auth_required",
+    });
+    await expect(acquire("instagram")).rejects.toBeInstanceOf(
+      AuthRequiredError,
+    );
+  });
+
+  it("lifts the stop and requeues parked requests when you retry", async () => {
+    await failFirstInstagramHarvest();
+
+    expect((await createRetryGeneration(["instagram-1"])).queued).toBe(1);
+    expect(await gate("instagram")).toEqual({ state: "closed", reason: null });
+    expect((await claim(4)).map((task) => task.saveId).sort()).toEqual([
+      "instagram-1",
+      "instagram-2",
+      "instagram-3",
+      "twitter-1",
+    ]);
+  });
+
+  it("keeps the stop for a retry that leaves sign-in to the session", async () => {
+    await failFirstInstagramHarvest();
+
+    await createRetryGeneration(["instagram-1"], { liftAuthStop: false });
+    expect(await gate("instagram")).toEqual({
+      state: "open",
+      reason: "auth_required",
+    });
+    expect((await claim(4)).map((task) => task.saveId)).toEqual(["twitter-1"]);
   });
 });

@@ -47,6 +47,11 @@ screenshot navigation — is gated by one shared governor in
   so a crash/relaunch loop can't re-hammer a penalised account.
 - **Danger detection.** A login/challenge/checkpoint/captcha redirect mid-harvest
   marks the source "at risk" and hard-stops it with honest UX copy.
+- **Sign-in stop.** The first queued task that fails with `AuthRequiredError`
+  opens the source gate with reason `auth_required` for 24 hours, parks the
+  source's other queued requests, and marks its Account as needing sign-in.
+  Successes, backoffs, and global pauses never lift it; reconnecting with new
+  credentials, retrying, a manual sync, or resuming the source does.
 
 The per-source pacing profile + sync strategy are declared **once** in the source
 descriptor (`packages/schema/src/sources/registry.ts`) with conservative safe

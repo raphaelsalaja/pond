@@ -1,4 +1,4 @@
-import { SOURCES } from "@pond/schema/db";
+import { SOURCE_GATE_REASONS, SOURCES } from "@pond/schema/db";
 import { syncConfigFor } from "@pond/schema/sources";
 import { z } from "zod";
 import type { OkFailure } from "../../../shared/query-contracts-shared";
@@ -17,15 +17,7 @@ import { type QueryHandlerMap, query } from "./params";
 const GateRowSchema = z.object({
   source: z.enum(SOURCES),
   state: z.enum(["closed", "open", "half_open", "paused"]),
-  reason: z
-    .enum([
-      "rate_limit",
-      "transient_failures",
-      "at_risk",
-      "manual",
-      "global_pause",
-    ])
-    .nullable(),
+  reason: z.enum(SOURCE_GATE_REASONS).nullable(),
   retryAt: z.number().nullable(),
   probeLeaseToken: z.string().nullable(),
 });

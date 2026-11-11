@@ -5,10 +5,15 @@ import type {
   WatchedAccount,
 } from "@pond/schema/db";
 import type { SyncRunEvent } from "@pond/schema/events";
+import { sourceLabel } from "@pond/schema/sources";
 import log from "electron-log/main.js";
 import { isSourceFetchDue } from "../../../shared/sync-schedule";
 import { commitEvent, startSyncEvent, toErrorInfo } from "../../lib/wide-event";
 import { isMymindConnecting } from "../mymind/connect";
+import {
+  liftSourceAuthStop,
+  sourceNeedsSignIn,
+} from "../pipeline/source-admission";
 import { isAccountConnected } from "../refresh/harvest-window";
 import { isSyncBlockedByStorageGuard } from "../storage-watcher";
 import { watchNow } from "../watch/run";
@@ -139,6 +144,7 @@ export async function syncAllSources(opts: SyncOptions = {}): Promise<void> {
           log.warn("[pond sync] syncAccount threw", account.id, err),
         );
       }
+      if (opts.trigger === "cron" && (await sourceNeedsSignIn(source))) return;
       await runWatches(
         watches.filter((watch) => watch.source === source),
         opts,
@@ -226,6 +232,21 @@ export async function syncAccount(
       lastError: "storage_cap_exceeded",
     });
     return;
+  }
+  if (opts.trigger === "cron") {
+    if (await sourceNeedsSignIn(source)) {
+      log.info(`[pond sync] ${source} needs sign-in, skipping ${accountId}`);
+      emit({
+        accountId,
+        source,
+        state: "auth_required",
+        message: `Sign in to ${sourceLabel(source)} again to resume syncing.`,
+        lastError: "auth_required",
+      });
+      return;
+    }
+  } else {
+    await liftSourceAuthStop(source);
   }
   const controller = new AbortController();
   let watchdogTripped = false;

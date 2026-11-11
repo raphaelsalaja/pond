@@ -1,5 +1,7 @@
 import type { Source } from "@pond/schema/db";
+import { sourceLabel } from "@pond/schema/sources";
 import log from "electron-log/main.js";
+import { AuthRequiredError } from "./extractors/errors";
 import {
   AT_RISK_PARK_MS,
   type AtRiskKind,
@@ -26,6 +28,7 @@ import {
 } from "./rate-governor-state";
 import { type HeaderBag, parseRateSignal } from "./rate-headers";
 import {
+  liftSourceAuthStop,
   noteDurableSourceFailure,
   recordSourceRequest,
   transitionSourceGate,
@@ -163,7 +166,9 @@ export function resumeSource(source: Source): void {
     reason: null,
     retryAt: null,
     resetFailures: true,
+    overrideAuthStop: true,
   });
+  void liftSourceAuthStop(source);
   schedulePersist(true);
 }
 
@@ -174,6 +179,7 @@ export function pauseSource(source: Source): void {
     state: "paused",
     reason: "manual",
     retryAt: null,
+    overrideAuthStop: true,
   });
   schedulePersist(true);
 }
@@ -295,6 +301,12 @@ export async function acquire(
   for (;;) {
     const admission = await recordSourceRequest(source);
     if (admission.admitted) break;
+    if (admission.reason === "auth_required") {
+      throw new AuthRequiredError(
+        `Connect ${sourceLabel(source)} with the Pond extension`,
+        source,
+      );
+    }
     const remaining = deadline - now();
     if (remaining <= 0) throw new GovernorAbortError();
     const gateWait =
