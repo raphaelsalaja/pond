@@ -69,6 +69,7 @@ import { readLibraryPointer } from "./lib/library-pointer";
 import { disableMenuActionImages } from "./lib/menu-action-images";
 import { killTrackedProcessTrees } from "./lib/process-tree";
 import { RELAUNCH_ARG } from "./lib/relaunch";
+import { limitSharpMemory } from "./lib/sharp-memory";
 import {
   recoverMissingLibrary,
   recoverUnreadableLibrary,
@@ -122,6 +123,7 @@ markStartup("modules-loaded");
 /** Force app.name before any menu/dock work; dev falls back to "Electron" otherwise. */
 app.setName("Pond");
 disableMenuActionImages();
+limitSharpMemory();
 
 if (process.env.POND_SANDBOX) {
   const sandbox = resolvePath(process.env.POND_SANDBOX);
