@@ -180,7 +180,9 @@ describe("bounded pool", () => {
       const kept = [saves[0], ...saves.slice(excess + 1)];
       expect(publications).toEqual([POOL_TRIM_TARGET]);
       expect(savesStore.state.revision).toBe(revision + 1);
-      expect(dirty).toEqual([saves.slice(1, excess + 1).map((save) => save.id)]);
+      expect(dirty).toEqual([
+        saves.slice(1, excess + 1).map((save) => save.id),
+      ]);
       expect(pool.snapshot()).toEqual([...kept].reverse());
       expect(new Set(pool.ids())).toEqual(
         new Set(kept.map((save) => save?.id)),

@@ -112,8 +112,7 @@ export function protectSaves(guard: PoolGuard): () => void {
 }
 
 function scheduleTrim(): void {
-  if (trimTimer !== null || savesStore.state.byId.size <= POOL_SOFT_CAP)
-    return;
+  if (trimTimer !== null || savesStore.state.byId.size <= POOL_SOFT_CAP) return;
   trimTimer = setTimeout(() => {
     trimTimer = null;
     trimPool();
