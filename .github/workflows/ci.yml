@@ -56,6 +56,9 @@ jobs:
           sudo chmod 4755 "$SANDBOX"
           xvfb-run -a pnpm --filter @pond/desktop smoke:desktop
 
+      - name: Desktop memory budgets
+        run: xvfb-run -a pnpm --filter @pond/desktop smoke:memory
+
   windows:
     runs-on: windows-latest
 
@@ -101,6 +104,9 @@ jobs:
       - name: Desktop end-to-end smoke
         run: pnpm --filter @pond/desktop smoke:desktop
 
+      - name: Desktop memory budgets
+        run: pnpm --filter @pond/desktop smoke:memory
+
   # Platform-specific code (native modules, window chrome, the native host)
   # is what differs on macOS. Lint, types, and generic tests already run on
   # Ubuntu, so this job only covers what the other jobs cannot.
@@ -136,3 +142,6 @@ jobs:
 
       - name: Desktop end-to-end smoke
         run: pnpm --filter @pond/desktop smoke:desktop
+
+      - name: Desktop memory budgets
+        run: pnpm --filter @pond/desktop smoke:memory

@@ -97,6 +97,22 @@ restart or switch the shared runtime.” These microbenchmark targets use the Ap
 M4 baseline above; no stable CI runner or CI timing gate was approved. UI capture
 permission remains withheld. Plan 004 still requires its own spike approval gate.
 
+## Whole-app memory baselines (pending)
+
+`pnpm --filter @pond/desktop smoke:memory` now measures per-process memory
+(browser, GPU, renderer, utility, total) in an isolated synthetic Library for
+three scenarios: idle with the window open, after seeding 50 synthetic image
+Saves, and after closing the window. The procedure is in the
+[performance runbook](../docs/contributing/performance.md#whole-app-memory-budgets).
+CI runs it on Ubuntu, Windows, and macOS after the desktop smoke test, against
+loose ceilings in `apps/desktop/scripts/memory-budgets.json`. Those ceilings are
+regression tripwires, not approved targets.
+
+No numbers are recorded yet. Record baselines here, one table per OS, from the
+JSON report of at least three CI runs on `main`. Include commit, runner image,
+Electron version, and the median MB per scenario and process type. Propose
+tightened ceilings only from those runs, and record the approval as above.
+
 ## Verification
 
 - Ordinary focused invocation: exit 0, 2 files / 39 opt-in tests skipped cleanly.

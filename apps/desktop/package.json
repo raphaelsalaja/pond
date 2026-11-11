@@ -46,6 +46,7 @@
     "test:setup": "node --test ./scripts/postinstall.test.mjs ./scripts/verify-binaries.test.mjs ./scripts/verify-binaries.test.cjs ./scripts/verify-runtime-packages.test.mjs ./scripts/with-electron-node.test.mjs",
     "sandbox:import-scope": "pnpm run build && electron ./scripts/sandbox-import-scope/index.cjs",
     "smoke:desktop": "electron ./scripts/smoke-desktop.cjs",
+    "smoke:memory": "electron ./scripts/measure-memory.cjs",
     "smoke:safari-extension": "electron ./scripts/smoke-safari-extension.cjs",
     "smoke:folder-tags": "electron ./scripts/smoke-folder-tags.cjs",
     "smoke:library-trust": "electron ./scripts/smoke-library-trust.cjs",
