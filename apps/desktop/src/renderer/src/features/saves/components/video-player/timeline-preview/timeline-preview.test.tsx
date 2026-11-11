@@ -26,11 +26,14 @@ it("keeps a stable frame for portrait video", async () => {
 });
 
 it("stays visible and coalesces seeks while the time changes", async () => {
-  const render = (time: number) =>
-    act(async () => {
+  const render = async (time: number) => {
+    await act(async () => {
       root.render(<TimelinePreview src="pond://test/clip.mp4" time={time} />);
-      await new Promise((resolve) => requestAnimationFrame(resolve));
     });
+    await act(
+      () => new Promise((resolve) => requestAnimationFrame(() => resolve(0))),
+    );
+  };
   await render(4);
   const video = host.querySelector("video");
   if (!video) throw new Error("Missing preview video");

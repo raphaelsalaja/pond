@@ -38,7 +38,7 @@ export function centeredFrame(image: ImageSize): LogoFrame {
 }
 
 /** Keeps the crop square inside the image so the logo never shows empty space. */
-export function clampFrame(image: ImageSize, frame: LogoFrame): LogoFrame {
+function clampFrame(image: ImageSize, frame: LogoFrame): LogoFrame {
   const zoom = clamp(
     Number.isFinite(frame.zoom) ? frame.zoom : 1,
     1,

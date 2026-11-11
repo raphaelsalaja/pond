@@ -14,8 +14,9 @@ import { z } from "zod";
 import { getDb } from "../../db";
 import { persistSave } from "../persist-save";
 import { isInteractiveTask, TaskPayloadSchema } from "./priority";
-import { type DueTask, isSourceTask } from "./reconciler-config";
+import type { DueTask } from "./reconciler-config";
 import { claimSourceProbe, inspectSourceAdmission } from "./source-admission";
+import { isSourceTask } from "./source-tasks";
 import { maxAttemptsFor, planOps } from "./specs";
 
 const ClaimCandidateSchema = z.object({

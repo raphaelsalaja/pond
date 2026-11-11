@@ -8,7 +8,7 @@ import { syncConfigFor } from "@pond/schema/sources";
 import type Database from "better-sqlite3";
 import { z } from "zod";
 import { getDb } from "../../db";
-import { SOURCE_TASK_OPS } from "./reconciler-config";
+import { SOURCE_TASK_OPS } from "./source-tasks";
 
 const GateRowSchema = z.object({
   state: z.enum(["closed", "open", "half_open", "paused"]),

@@ -27,13 +27,13 @@ import {
 } from "./rate-governor";
 import {
   type DueTask,
-  isSourceTask,
   metrics,
   NON_FATAL_OPS,
   WorkerWatchdogError,
 } from "./reconciler-config";
 import { classifyError } from "./retry-policy";
 import { stopSourceForSignIn } from "./source-admission";
+import { isSourceTask } from "./source-tasks";
 import { FinalizeIncompleteError } from "./workers/finalize";
 
 export async function enrichTaskEventWithSave(
