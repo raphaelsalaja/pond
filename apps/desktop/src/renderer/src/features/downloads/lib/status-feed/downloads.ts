@@ -1,4 +1,10 @@
-import { OPS, type Op, SOURCES, type Source } from "@pond/schema/db";
+import {
+  OPS,
+  type Op,
+  SOURCES,
+  type Source,
+  type TaskDeferredReason,
+} from "@pond/schema/db";
 import { INGEST_OUTCOMES } from "@pond/schema/events";
 import { hostToSource } from "@pond/schema/sources";
 import type { WireTask } from "@shared/wire";
@@ -51,6 +57,12 @@ export type StatusFilter =
   | "skipped"
   | "complete";
 
+interface DownloadTaskState {
+  deferredReason: TaskDeferredReason | null;
+  attempts: number;
+  maxAttempts: number;
+}
+
 export interface DownloadRow {
   id: string;
   saveId: string;
@@ -63,6 +75,9 @@ export interface DownloadRow {
   progress: number | null;
   attempts: number;
   error: string | null;
+  /** Unformatted, so the status reason can read the error class main recorded. */
+  lastError?: string | null;
+  task?: DownloadTaskState | null;
   ts: number;
   durationMs: number | null;
   nextRunAt?: number | null;
@@ -149,16 +164,24 @@ function liveStatus(save: Save): DownloadStatus | null {
   return "waiting";
 }
 
-function currentOp(save: Save): Op | null {
+function currentTask(save: Save): WireTask | null {
   const tasks = save.tasks ?? [];
-  const running = tasks.find((t) => t.status === "running");
-  if (running) return running.op;
-  const failed = tasks.find((t) => t.status === "dead");
-  if (failed) return failed.op;
-  const blocked = tasks.find((t) => t.status === "blocked");
-  if (blocked) return blocked.op;
-  const next = tasks.find((t) => t.status !== "done");
-  return next?.op ?? null;
+  return (
+    tasks.find((t) => t.status === "running") ??
+    tasks.find((t) => t.status === "dead") ??
+    tasks.find((t) => t.status === "blocked") ??
+    tasks.find((t) => t.status !== "done") ??
+    null
+  );
+}
+
+function latestTaskError(save: Save): string | null {
+  let latest: WireTask | null = null;
+  for (const t of save.tasks ?? []) {
+    if (t.status === "done" || !t.lastError) continue;
+    if (!latest || t.updatedAt > latest.updatedAt) latest = t;
+  }
+  return latest?.lastError ?? null;
 }
 
 function rowError(save: Save): string | null {
@@ -198,7 +221,8 @@ export function projectLiveDownloads(saves: readonly Save[]): DownloadRow[] {
     if (!status) continue;
     const tasks = save.tasks ?? [];
     const done = tasks.filter((t) => t.status === "done").length;
-    const op = currentOp(save);
+    const task = currentTask(save);
+    const op = task?.op ?? null;
     const attempts = tasks.reduce((max, t) => Math.max(max, t.attempts), 0);
     const ts = save.ingestStartedAt ?? save.savedAt ?? save.createdAt;
     const rawError = rowError(save);
@@ -214,6 +238,14 @@ export function projectLiveDownloads(saves: readonly Save[]): DownloadRow[] {
       progress: tasks.length > 0 ? done / tasks.length : 0,
       attempts,
       error: rawError ? humanizeError(rawError) : null,
+      lastError: rawError ?? latestTaskError(save),
+      task: task
+        ? {
+            deferredReason: task.deferredReason ?? null,
+            attempts: task.attempts,
+            maxAttempts: task.maxAttempts,
+          }
+        : null,
       ts,
       durationMs: null,
       nextRunAt:

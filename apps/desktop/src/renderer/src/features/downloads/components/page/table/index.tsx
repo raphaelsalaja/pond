@@ -1,5 +1,6 @@
 import { DataTable, type RenderRowArgs, useDataTable } from "@pond/ui";
 import type { DownloadActivity } from "@shared/download-activity";
+import type { QueueSourceGate } from "@shared/queue-contracts";
 import { type ReactNode, useCallback, useEffect, useMemo } from "react";
 import { DOWNLOAD_COLUMN_CATALOG } from "../../../lib/download-columns";
 import { downloadActivityForSave } from "../../../lib/download-progress";
@@ -37,24 +38,26 @@ export function DownloadTable({
   rows,
   paused,
   activities,
+  gates,
   height,
   extra,
 }: {
   rows: DownloadRow[];
   paused: boolean;
   activities: readonly DownloadActivity[];
+  gates: readonly QueueSourceGate[];
   height?: number;
   extra?: ReactNode;
 }) {
-  const viewRows = useMemo<DownloadViewRow[]>(
-    () =>
-      rows.map((row) => ({
-        ...row,
-        paused,
-        activity: downloadActivityForSave(activities, row.saveId),
-      })),
-    [rows, paused, activities],
-  );
+  const viewRows = useMemo<DownloadViewRow[]>(() => {
+    const gateBySource = new Map(gates.map((gate) => [gate.source, gate]));
+    return rows.map((row) => ({
+      ...row,
+      paused,
+      activity: downloadActivityForSave(activities, row.saveId),
+      gate: gateBySource.get(row.source),
+    }));
+  }, [rows, paused, activities, gates]);
   const rowsById = useMemo(
     () => new Map(rows.map((row) => [row.id, row])),
     [rows],

@@ -1,5 +1,4 @@
 import { SOURCES } from "@pond/schema/db";
-import { syncConfigFor } from "@pond/schema/sources";
 import { z } from "zod";
 import type { OkFailure } from "../../../shared/query-contracts-shared";
 import { QueueAttemptSchema } from "../../../shared/queue-contracts";
@@ -11,6 +10,7 @@ import {
 import { readQueueSummary } from "../../core/pipeline/queue-summary";
 import { pauseSource, resumeSource } from "../../core/pipeline/rate-governor";
 import { cancelGeneration } from "../../core/pipeline/reconciler-client";
+import { summarizeSourceGates } from "../../core/pipeline/source-gate-summary";
 import { getDb } from "../../db";
 import { type QueryHandlerMap, query } from "./params";
 
@@ -30,7 +30,8 @@ const GateRowSchema = z.object({
   probeLeaseToken: z.string().nullable(),
 });
 
-const CountRowSchema = z.object({
+const UsageRowSchema = z.object({
+  source: z.enum(SOURCES),
   hourly: z.number(),
   daily: z.number(),
 });
@@ -75,29 +76,20 @@ export const queueQueries = {
         )
         .all(),
     );
-    const count = db.$raw.prepare(
-      `SELECT
-        COALESCE(SUM(CASE WHEN requested_at >= ? THEN permits ELSE 0 END), 0) AS hourly,
-        COALESCE(SUM(permits), 0) AS daily
-      FROM source_request_ledger
-      WHERE source = ? AND requested_at >= ?`,
+    const usage = z.array(UsageRowSchema).parse(
+      db.$raw
+        .prepare(
+          `SELECT
+            source,
+            COALESCE(SUM(CASE WHEN requested_at >= ? THEN permits ELSE 0 END), 0) AS hourly,
+            COALESCE(SUM(permits), 0) AS daily
+          FROM source_request_ledger
+          WHERE requested_at >= ?
+          GROUP BY source`,
+        )
+        .all(at - 60 * 60_000, at - 24 * 60 * 60_000),
     );
-    return gates.map((gate) => {
-      const profile = syncConfigFor(gate.source).rate;
-      const counts = CountRowSchema.parse(
-        count.get(at - 60 * 60_000, gate.source, at - 24 * 60 * 60_000),
-      );
-      return {
-        source: gate.source,
-        state: gate.state,
-        reason: gate.reason,
-        retryAt: gate.retryAt,
-        remainingHourly: Math.max(0, profile.maxPerHour - counts.hourly),
-        remainingDaily: Math.max(0, profile.maxPerDay - counts.daily),
-        recoveryProbe:
-          gate.state === "half_open" && gate.probeLeaseToken != null,
-      };
-    });
+    return summarizeSourceGates(gates, usage);
   }),
 
   "queue.generations": query(z.object({}), () => listQueueGenerations()),
