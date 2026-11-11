@@ -150,7 +150,8 @@ The main process remains the sole database settlement authority. A small
 `utilityProcess` pool runs validated Node-compatible image processing, image
 probing, and poster extraction jobs. Each request and response carries its task
 lease token and cancellation fence. Worker timeout, exit, or malformed output
-fails the attempt in main, where the normal retry policy applies. Browser
+fails the attempt in main, where the normal retry policy applies. A worker
+with no job for thirty seconds exits, and the next job starts a new one. Browser
 session harvesting, page archives, tweet capture, text-card rendering, Library
 file writes, and every task-state transition remain main-owned. Library
 switches pause claims and drain accepted work before paths or database
