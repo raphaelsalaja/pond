@@ -157,8 +157,11 @@ log.info("[pond] main starting", {
 });
 
 const wantsMcp = process.argv.includes("--mcp");
-/** Each MCP client spawns its own headless process, and none of them ever opens a window. */
-if (wantsMcp) app.dock?.hide();
+/** Each MCP client spawns its own headless process, and none of them ever opens a window, so none needs a GPU process. */
+if (wantsMcp) {
+  app.disableHardwareAcceleration();
+  app.dock?.hide();
+}
 const initialDeepLink = deepLinkArg(process.argv);
 
 let nativeServer: NetServer | null = null;
@@ -258,7 +261,7 @@ app.whenReady().then(async () => {
   if (!(await singleInstanceLock) || quitPreparing) return;
   started = true;
   markStartup("app-ready");
-  if (process.platform === "darwin" && !app.isPackaged) {
+  if (process.platform === "darwin" && !app.isPackaged && !wantsMcp) {
     const { applyAppIcon } = await import("./core/app-icon");
     await applyAppIcon(DEFAULT_APP_ICON);
   }
