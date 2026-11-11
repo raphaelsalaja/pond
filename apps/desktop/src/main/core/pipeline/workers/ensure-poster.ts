@@ -18,6 +18,7 @@ import {
   youtubeThumbnailUrl,
 } from "../../../lib/poster-policy";
 import { probeVideoDims } from "../../../lib/video-dims";
+import { youtubeShortPosterPlan } from "../../../lib/youtube-thumbnail";
 import { saveDir } from "../../../paths";
 import { persistSave } from "../../persist-save";
 import { ensureSaveThumbnail } from "../../save-thumbnail";
@@ -226,8 +227,12 @@ export async function ensureRemotePoster(
 ): Promise<void> {
   if (!force && videoPosterSlots(save.files ?? []).posters.length > 0) return;
   const url = remotePosterUrl(save.rawJson, save.mediaUrl);
-  if (!url) return;
-  const poster = await posterFromUrl(url, 0, runtime.fetchAvatarToTxFile);
+  const poster = await loadPoster(
+    save.rawJson,
+    url,
+    0,
+    runtime.fetchAvatarToTxFile,
+  );
   if (!poster) return;
   const updated = await runtime.persistSave(
     saveId,
@@ -246,9 +251,41 @@ async function platformPosterFromSave(
   rawJson: RawJson | null,
   index: number,
 ): Promise<PosterWrite | null> {
-  const url = youtubeThumbnailUrl(rawJson);
-  if (!url) return null;
-  return posterFromUrl(url, index, fetchAvatarToTxFile);
+  return loadPoster(
+    rawJson,
+    youtubeThumbnailUrl(rawJson),
+    index,
+    fetchAvatarToTxFile,
+  );
+}
+
+async function loadPoster(
+  rawJson: RawJson | null,
+  fallbackUrl: string | null,
+  index: number,
+  fetchImage: typeof fetchAvatarToTxFile,
+): Promise<PosterWrite | null> {
+  const plan = youtubeShortPosterPlan(rawJson, fallbackUrl);
+  if (!plan) {
+    return fallbackUrl ? posterFromUrl(fallbackUrl, index, fetchImage) : null;
+  }
+  let fallback: PosterWrite | null = null;
+  for (const url of plan.attempts) {
+    const poster = await posterFromUrl(url, index, fetchImage);
+    if (!poster) continue;
+    if (isPortraitPoster(poster)) return poster;
+    if (url === plan.fallbackUrl) fallback = poster;
+  }
+  return fallback;
+}
+
+function isPortraitPoster(poster: PosterWrite): boolean {
+  return (
+    poster.width != null &&
+    poster.height != null &&
+    poster.width > 0 &&
+    poster.height > poster.width
+  );
 }
 
 async function posterFromUrl(

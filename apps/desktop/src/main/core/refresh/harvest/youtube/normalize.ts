@@ -3,6 +3,12 @@
 import type { MediaType } from "@pond/schema/db";
 import type { BrowserValidators } from "../lib/browser-validation";
 
+interface YoutubeThumbnail {
+  url?: string;
+  width?: number;
+  height?: number;
+}
+
 interface YoutubePlayerResponse {
   videoDetails?: {
     videoId?: string;
@@ -13,6 +19,10 @@ interface YoutubePlayerResponse {
   microformat?: {
     playerMicroformatRenderer?: {
       publishDate?: string;
+      thumbnail?: {
+        isOriginalAspectRatio?: boolean;
+        thumbnails?: YoutubeThumbnail[];
+      };
     };
   };
 }
@@ -133,17 +143,18 @@ export function inPageYoutubeNormalize(validators: BrowserValidators) {
       if (Number.isFinite(dur) && dur > 0) {
         meta.durationSec = Math.round(dur);
       }
-      out.mediaUrl = video.poster || undefined;
-      out.mediaType = "video";
     }
 
     const ogImage = document.querySelector<HTMLMetaElement>(
       'meta[property="og:image"]',
     );
-    if (!out.mediaUrl && ogImage?.content) {
-      out.mediaUrl = ogImage.content;
-      out.mediaType = "video";
-    }
+    const portrait = readPortraitThumbnail();
+    const landscape =
+      (video?.poster && video.poster.length > 0 ? video.poster : undefined) ||
+      ogImage?.content;
+    if (video || portrait || landscape) out.mediaType = "video";
+    if (portrait) out.mediaUrl = portrait;
+    else if (landscape) out.mediaUrl = landscape;
 
     if (out.mediaUrl) {
       out.mediaUrls = [{ url: out.mediaUrl, type: "video" }];
@@ -174,6 +185,33 @@ export function inPageYoutubeNormalize(validators: BrowserValidators) {
     const id = player?.videoDetails?.videoId;
     if (id && id !== extractVideoId(location.href)) return undefined;
     return player;
+  }
+
+  /** Shorts publish an upright original-aspect image beside the blurred 16:9 poster. */
+  function readPortraitThumbnail(): string | undefined {
+    const thumbnail =
+      currentPlayerResponse()?.microformat?.playerMicroformatRenderer
+        ?.thumbnail;
+    if (thumbnail?.isOriginalAspectRatio !== true) return undefined;
+    const thumbs = thumbnail.thumbnails;
+    if (!Array.isArray(thumbs)) return undefined;
+    let best: { url: string; height: number } | undefined;
+    for (const item of thumbs) {
+      const url = validators.text.safeParse(item?.url);
+      const width = validators.number.safeParse(item?.width);
+      const height = validators.number.safeParse(item?.height);
+      if (!url.success || !width.success || !height.success) continue;
+      if (
+        !url.data.startsWith("https://") ||
+        !(height.data > width.data && width.data > 0)
+      ) {
+        continue;
+      }
+      if (!best || height.data > best.height) {
+        best = { url: url.data, height: height.data };
+      }
+    }
+    return best?.url;
   }
 
   /** The `<video>` element reports the pre-roll ad's length while one plays, and the info line moves between layouts. */
