@@ -12,7 +12,14 @@ export type Db = BetterSQLite3Database<typeof combinedSchema> & {
   $raw: Database.Database;
 };
 
-export function openSqlite(file: string): Database.Database {
+/** Page cache per connection; reads mostly come through mmap, so a large cache only holds memory at idle. */
+const LIBRARY_CACHE_KIB = 16_384;
+export const GLOBAL_CACHE_KIB = 2_048;
+
+export function openSqlite(
+  file: string,
+  cacheKiB = LIBRARY_CACHE_KIB,
+): Database.Database {
   const sqlite = new Database(file);
   sqlite.pragma("journal_mode = WAL");
   sqlite.pragma("synchronous = NORMAL");
@@ -20,7 +27,7 @@ export function openSqlite(file: string): Database.Database {
   sqlite.pragma("temp_store = MEMORY");
   sqlite.pragma("mmap_size = 268435456");
   sqlite.pragma("busy_timeout = 5000");
-  sqlite.pragma("cache_size = -65536");
+  sqlite.pragma(`cache_size = -${cacheKiB}`);
   sqlite.pragma("wal_autocheckpoint = 2000");
   return sqlite;
 }

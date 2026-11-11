@@ -8,7 +8,7 @@ import { backfillVecBatch } from "../core/vec-index";
 import { readOrCreateLibraryId } from "../lib/library-id";
 import { pinOpenLibrary } from "../lib/library-placement";
 import { resolvePaths } from "../paths";
-import { type Db, openSqlite, wrapSqlite } from "./client";
+import { type Db, GLOBAL_CACHE_KIB, openSqlite, wrapSqlite } from "./client";
 import { migrateGlobal } from "./migrations";
 import { initializePondSchema } from "./pond-schema";
 
@@ -20,7 +20,7 @@ export async function getGlobalDb(): Promise<Db> {
   if (cachedGlobal) return cachedGlobal;
   const paths = resolvePaths();
   log.info("[pond db] opening global", paths.globalDb);
-  const sqlite = openSqlite(paths.globalDb);
+  const sqlite = openSqlite(paths.globalDb, GLOBAL_CACHE_KIB);
   migrateGlobal(sqlite);
   cachedGlobal = wrapSqlite(sqlite);
   return cachedGlobal;
