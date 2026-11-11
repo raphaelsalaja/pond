@@ -355,6 +355,7 @@ export function SaveInspector({
                   total={ids.length}
                   removeLabel={`Remove tag ${tag.name}`}
                   onRemove={() => void run(() => changeTag(tag.name, true))}
+                  onOpen={() => saveLibraryBridge.openTaggedItems(tag.name)}
                 />
               ))}
             </AssignmentChip.List>

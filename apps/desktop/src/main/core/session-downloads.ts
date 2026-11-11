@@ -11,6 +11,7 @@ import { and, eq, inArray, isNull, like, notExists, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { getDb } from "../db";
 import { retryFailedSaves } from "./pipeline/enqueue-scheduling";
+import { liftSourceAuthStop } from "./pipeline/source-admission";
 import { currentLibraryId } from "./prefs-scope";
 import { isAuthCookieName } from "./refresh/harvest-window";
 import { listAccountsForSource } from "./sync/accounts";
@@ -20,12 +21,37 @@ const resumedCredentials = new Map<
   string,
   { digest: string; saveIds: Set<string> }
 >();
+const seenCredentials = new Map<string, string>();
+
+function credentialDigest(
+  account: ConnectedAccount,
+  cookies: readonly ExtensionCookie[],
+): string {
+  const rotating = ROTATING_SESSIONS.get(account.source);
+  const values = cookies
+    .filter(
+      (cookie) =>
+        isAuthCookieName(account.source, cookie.name, cookie.value) ||
+        rotating?.rotates.includes(cookie.name),
+    )
+    .map((cookie) =>
+      JSON.stringify([cookie.name, cookie.domain, cookie.path, cookie.value]),
+    )
+    .sort();
+  return createHash("sha256").update(JSON.stringify(values)).digest("hex");
+}
 
 export async function resumeSessionDownloads(
   account: ConnectedAccount,
   cookies?: readonly ExtensionCookie[],
 ): Promise<number> {
   const credentialKey = `${currentLibraryId()}:${account.id}`;
+  const digest = cookies ? credentialDigest(account, cookies) : null;
+  /** Replaying the credentials that hit the sign-in wall would only hit it again. */
+  if (digest === null || seenCredentials.get(credentialKey) !== digest) {
+    if (digest !== null) seenCredentials.set(credentialKey, digest);
+    await liftSourceAuthStop(account.source);
+  }
   const accounts = await listAccountsForSource(account.source);
   const accountFilter =
     accounts[0]?.id === account.id
@@ -88,21 +114,7 @@ export async function resumeSessionDownloads(
     .all();
   if (rows.length === 0) return 0;
   let credentials: { digest: string; saveIds: Set<string> } | undefined;
-  if (cookies) {
-    const rotating = ROTATING_SESSIONS.get(account.source);
-    const values = cookies
-      .filter(
-        (cookie) =>
-          isAuthCookieName(account.source, cookie.name, cookie.value) ||
-          rotating?.rotates.includes(cookie.name),
-      )
-      .map((cookie) =>
-        JSON.stringify([cookie.name, cookie.domain, cookie.path, cookie.value]),
-      )
-      .sort();
-    const digest = createHash("sha256")
-      .update(JSON.stringify(values))
-      .digest("hex");
+  if (digest !== null) {
     const previous = resumedCredentials.get(credentialKey);
     credentials =
       previous?.digest === digest ? previous : { digest, saveIds: new Set() };
@@ -116,7 +128,7 @@ export async function resumeSessionDownloads(
     resumedCredentials.set(credentialKey, credentials);
   }
   try {
-    const queued = await retryFailedSaves(ids);
+    const queued = await retryFailedSaves(ids, { liftAuthStop: false });
     if (queued === 0) {
       for (const id of ids) credentials?.saveIds.delete(id);
     }

@@ -22,6 +22,7 @@ export {
   resolveShortcuts,
   SHORTCUT_PLATFORM,
   SHORTCUTS,
+  type ShortcutBindings,
   type ShortcutDef,
   type ShortcutId,
 } from "@shared/shortcuts";
@@ -65,11 +66,12 @@ export function bindingKeys(
   return keys;
 }
 
-export function matchesShortcut(
+export function matchesBinding(
   event: KeyboardEvent,
+  bindings: ShortcutBindings,
   id: ShortcutKeyId,
 ): boolean {
-  const keys = resolveShortcuts(shortcutPreferences.state)[id].keys;
+  const keys = bindings[id].keys;
   return (
     keys != null &&
     matchesKeyboardEvent(
@@ -78,6 +80,13 @@ export function matchesShortcut(
       SHORTCUT_PLATFORM,
     )
   );
+}
+
+export function matchesShortcut(
+  event: KeyboardEvent,
+  id: ShortcutKeyId,
+): boolean {
+  return matchesBinding(event, resolveShortcuts(shortcutPreferences.state), id);
 }
 
 export function bindingSequence(

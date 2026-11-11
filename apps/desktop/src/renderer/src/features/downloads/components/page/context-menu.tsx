@@ -1,5 +1,6 @@
 import {
   IconArrowRotateClockwise,
+  IconArrowUpRight,
   IconBan,
   IconCircleXmarkFill,
   IconCopy,
@@ -20,7 +21,11 @@ import {
   skipDownloadRows,
   trashDownloadRows,
 } from "@/features/downloads/components/lib/actions";
-import type { DownloadRow } from "@/features/downloads/lib/status-feed";
+import {
+  type DownloadRow,
+  statusFeed,
+} from "@/features/downloads/lib/status-feed";
+import { humanizeError } from "@/features/downloads/lib/status-feed/queue";
 import { downloadsSelection } from "@/features/downloads/state/downloads-selection";
 import { openSave } from "@/features/saves/navigation";
 import { SpecContextMenu } from "@/shared/components/spec-context-menu";
@@ -34,6 +39,24 @@ function copyText(text: string): void {
   void window.pond.query("clipboard.writeText", { text });
 }
 
+const WEB_LINK = /^https?:\/\//i;
+
+function openLink(url: string): void {
+  void window.pond.openExternal(url).then((result) => {
+    if (result.ok) return;
+    statusFeed.error(
+      "Open link",
+      "Couldn't open the link. Copy it and paste it into your browser.",
+    );
+  });
+}
+
+function downloadErrorText(row: DownloadRow): string {
+  const error = row.error?.trim();
+  if (error) return error;
+  return row.lastError?.trim() ? humanizeError(row.lastError) : "";
+}
+
 function menuTargets(row: DownloadRow): readonly DownloadRow[] {
   const selected = downloadsSelection.snapshot();
   return selected.some((item) => item.id === row.id) ? selected : [row];
@@ -45,7 +68,7 @@ export function buildDownloadMenuItems(
   const plural = rows.length > 1;
   const single = plural ? undefined : rows[0];
   const url = single?.url.trim() ?? "";
-  const error = single?.error?.trim() ?? "";
+  const error = single ? downloadErrorText(single) : "";
   const retryable = rows.some(canRetryDownload);
   const cancellable = rows.some(canCancelDownload);
   const skippable = rows.some(canSkipDownload);
@@ -79,6 +102,12 @@ export function buildDownloadMenuItems(
       onClick: () => void skipDownloadRows(rows),
     },
     { type: "separator" },
+    {
+      label: "Open Link",
+      icon: <IconArrowUpRight />,
+      hidden: !WEB_LINK.test(url),
+      onClick: () => openLink(url),
+    },
     {
       label: "Copy Link",
       icon: <IconLink2 />,

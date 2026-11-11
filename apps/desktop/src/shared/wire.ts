@@ -4,6 +4,7 @@ import type {
   Save,
   Source,
   SyncAction,
+  TaskDeferredReason,
   TaskStatus,
 } from "@pond/schema/db";
 
@@ -30,7 +31,7 @@ export interface WireTask {
   attempts: number;
   maxAttempts: number;
   generationId?: string | null;
-  deferredReason?: string | null;
+  deferredReason?: TaskDeferredReason | null;
   lastError: string | null;
   nextRunAt: number;
   leaseExpiresAt?: number | null;

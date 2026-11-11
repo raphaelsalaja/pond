@@ -156,15 +156,17 @@ export async function resetTasksForSave(
 
 export async function retryFailedSaves(
   ids?: readonly string[],
+  options?: Parameters<typeof createRetryGeneration>[1],
 ): Promise<number> {
-  const result = await retryFailedSavesGeneration(ids);
+  const result = await retryFailedSavesGeneration(ids, options);
   return result.queued;
 }
 
 async function retryFailedSavesGeneration(
   ids?: readonly string[],
+  options?: Parameters<typeof createRetryGeneration>[1],
 ): Promise<RetryGenerationResult> {
-  const result = await createRetryGeneration(ids);
+  const result = await createRetryGeneration(ids, options);
   log.info("[pond pipeline:enqueue] retry failed generation", {
     generationId: result.generationId,
     requeued: result.queued,

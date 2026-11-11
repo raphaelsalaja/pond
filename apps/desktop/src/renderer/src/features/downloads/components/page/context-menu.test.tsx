@@ -1,4 +1,4 @@
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 import type { DownloadRow } from "@/features/downloads/lib/status-feed";
 import { buildDownloadMenuItems } from "./context-menu";
 
@@ -42,6 +42,7 @@ it("keeps download actions in the row context menu", () => {
     "Retry Download",
     "Cancel Download",
     "Skip Download",
+    "Open Link",
     "Copy Link",
     "Copy Error",
     "Move to Trash",
@@ -55,6 +56,7 @@ it("keeps download actions in the row context menu", () => {
     false,
     false,
     false,
+    false,
   ]);
 
   const running = visible([row("running")]);
@@ -62,11 +64,54 @@ it("keeps download actions in the row context menu", () => {
     "Retry Download",
     "Cancel Download",
     "Skip Download",
+    "Open Link",
     "Copy Link",
     "Move to Trash",
     "Clear Selection",
   ]);
-  expect(disabled(running)).toEqual([true, false, false, false, false, false]);
+  expect(disabled(running)).toEqual([
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+  ]);
+});
+
+function click(rows: DownloadRow[], label: string) {
+  const item = visible(rows).find((entry) => entry.label === label);
+  if (item && "onClick" in item) item.onClick?.();
+}
+
+it("offers Copy Error whenever the download recorded an error", () => {
+  const query = vi.fn(async () => ({ ok: true }));
+  vi.stubGlobal("pond", { query });
+  try {
+    click(
+      [{ ...row("retrying"), lastError: "TransientError: scrape timeout" }],
+      "Copy Error",
+    );
+    expect(query).toHaveBeenCalledWith("clipboard.writeText", {
+      text: "Scrape timeout",
+    });
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});
+
+it("opens the source link in the browser", () => {
+  const openExternal = vi.fn(async () => ({ ok: true }));
+  vi.stubGlobal("pond", { openExternal });
+  try {
+    click([row("dead")], "Open Link");
+    expect(openExternal).toHaveBeenCalledWith("https://example.com/dead");
+  } finally {
+    vi.unstubAllGlobals();
+  }
+  const local = { ...row("failed"), url: "pond:local/file" };
+  expect(visible([local]).map((item) => item.label)).not.toContain("Open Link");
 });
 
 it("retries downloads that ran out of attempts but not canceled ones", () => {

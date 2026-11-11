@@ -253,7 +253,7 @@ function AppearancePicker({
       <Popover.Portal>
         <Popover.Positioner side="bottom" sideOffset={8}>
           <Popover.Popup className={styles.picker} aria-label="Icon and Color">
-            <div className={styles.grid}>
+            <div className={styles.grid} data-scroll-fade="vertical">
               {FOLDER_ICONS.map(({ id, label, Icon }) => (
                 <Tooltip key={id} label={label}>
                   <Button

@@ -20,6 +20,7 @@ const SOURCE_LIST_KIND_LABELS = new Map<Source, ListKindCopy>([
   ["youtube", { saved: "Saved Videos", liked: "Liked Videos" }],
   ["tiktok", { saved: "Favorites", liked: "Liked Videos" }],
   ["reddit", { saved: "Saved Posts", liked: "Upvoted Posts" }],
+  ["threads", { saved: "Saved Posts", liked: "Liked Posts" }],
   ["twitter", { saved: "Bookmarks", liked: "Likes" }],
   [
     "substack",
@@ -60,6 +61,13 @@ const SOURCE_LIST_KIND_DESCRIPTIONS = new Map<Source, ListKindCopy>([
     {
       saved: "Posts you've saved on Reddit.",
       liked: "Posts you've upvoted on Reddit.",
+    },
+  ],
+  [
+    "threads",
+    {
+      saved: "Posts you've saved on Threads.",
+      liked: "Posts you've liked on Threads.",
     },
   ],
   [

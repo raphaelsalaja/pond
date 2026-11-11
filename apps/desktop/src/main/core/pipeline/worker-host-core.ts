@@ -20,6 +20,12 @@ export interface QueueWorkerHostDependencies {
   createJobId: () => string;
   validateSourcePath: (path: string) => Promise<boolean>;
   onStopped: () => void;
+  /**
+   * Runs jobs in this process instead of a utility process. Linux Electron
+   * crashes (SIGSEGV) when sharp decodes an image in a utility process, so the
+   * host uses this fallback there.
+   */
+  execute?: (request: QueueWorkerRequest) => Promise<QueueWorkerResponse>;
 }
 
 export type QueueWorkerResult = Extract<
@@ -110,9 +116,21 @@ export function createQueueWorkerHost(deps: QueueWorkerHostDependencies) {
       slot.current = null;
       if (current) {
         detachAbort(current);
-        current.reject(
-          new Error(`Queue worker exited before completing its job (${code}).`),
-        );
+        /**
+         * A broken image must not freeze its Save: keep the original bytes
+         * and retry the rest without dimensions.
+         */
+        if (
+          current.request.operation === "process_image" ||
+          current.request.operation === "probe_image"
+        )
+          current.resolve(null);
+        else
+          current.reject(
+            new Error(
+              `Queue worker exited before completing its job (${code}).`,
+            ),
+          );
       }
       if (!disposed && queue.length > 0) {
         try {
@@ -168,6 +186,14 @@ export function createQueueWorkerHost(deps: QueueWorkerHostDependencies) {
       ...job,
       jobId: deps.createJobId(),
     });
+    if (deps.execute) {
+      if (options.signal?.aborted) throw new Error("Queue worker job aborted.");
+      const response = await deps.execute(request);
+      if (response.ok) return response.result;
+      const error = new Error(response.error.message);
+      error.name = response.error.name;
+      throw error;
+    }
     return new Promise<QueueWorkerResult>((resolve, reject) => {
       const pending: PendingJob = {
         request,

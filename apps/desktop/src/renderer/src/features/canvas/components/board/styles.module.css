@@ -23,11 +23,12 @@
   --canvas-shadow-float:
     0 0 0 1px var(--ds-gray-a3), 0 1px 3px var(--ds-shadow-faint),
     0 10px 30px -8px var(--ds-shadow-soft);
-
   position: relative;
   flex: 1;
   min-width: 0;
   min-height: 0;
+
+  container: canvas-board / inline-size;
   overflow: hidden;
   outline: none;
   background: var(--ds-gray-2);

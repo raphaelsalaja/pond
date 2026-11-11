@@ -120,7 +120,6 @@ export function FolderTreeRow(props: FolderTreeRowProps) {
           props.folderDrop?.id === folder.id ? props.folderDrop.kind : undefined
         }
         data-dragging={props.dragging || undefined}
-        data-save-drop={saveDropCount ? "true" : undefined}
         ref={setNodeRef}
         style={{
           ...cssVars({ "--folder-depth": props.depth }),

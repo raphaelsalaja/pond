@@ -15,7 +15,10 @@ import { probeImageDims, processImage } from "../../../lib/image-process";
 import { persistSave } from "../../persist-save";
 import { getImageDownloadPrefs, getVideoDownloadPrefs } from "../../prefs";
 import { isGithubGeneratedOpenGraph } from "../../refresh/harvest/github/open-graph";
-import { ensureSaveThumbnail } from "../../save-thumbnail";
+import {
+  ensureSaveThumbnail,
+  repairMismatchedThumbnail,
+} from "../../save-thumbnail";
 import { TerminalError, TransientError } from "../extractors/errors";
 import {
   QueueWorkerImageDimsSchema,
@@ -70,9 +73,10 @@ async function fetchMissingMedia(
   const missing = missingMediaUrls(urls, existingFiles);
   if (missing.length === 0) {
     log.debug(
-      "[pond pipeline:fetch-blobs] all media already on disk, skipping",
+      "[pond pipeline:fetch-blobs] all media already on disk, checking thumbnail",
       saveId,
     );
+    await repairMismatchedThumbnail(saveId, save);
     return;
   }
 
@@ -207,7 +211,8 @@ async function fetchMissingMedia(
     },
   );
   const saved = await readSave(saveId);
-  await ensureSaveThumbnail(saveId, saved, { force: replaceStale });
+  if (replaceStale) await ensureSaveThumbnail(saveId, saved, { force: true });
+  await repairMismatchedThumbnail(saveId, saved);
   log.info("[pond pipeline:fetch-blobs] wrote", {
     saveId,
     count: newFiles.length,

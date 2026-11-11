@@ -12,6 +12,8 @@ const DEFAULT_WIDTH = 550;
 const IMAGE_WAIT_MS = 6000;
 
 const params = new URLSearchParams(location.search);
+document.documentElement.dataset.card = params.get("card") ?? "";
+delete document.documentElement.dataset.ready;
 const kindParam = params.get("kind");
 const KIND =
   kindParam === "text" ? "text" : kindParam === "threads" ? "threads" : "tweet";
@@ -63,7 +65,14 @@ function CaptureCard() {
         if (document.fonts?.ready) await document.fonts.ready;
       } catch {}
       if (ref.current) await waitForImages(ref.current);
-      await new Promise((r) => requestAnimationFrame(() => r(null)));
+      /** A hidden window can stop delivering frames, so rAF alone may never fire and the capture waits to time out. */
+      await new Promise((resolve) => {
+        const timer = setTimeout(resolve, 250);
+        requestAnimationFrame(() => {
+          clearTimeout(timer);
+          resolve(null);
+        });
+      });
       if (!cancelled) document.documentElement.dataset.ready = "1";
     };
     void run();

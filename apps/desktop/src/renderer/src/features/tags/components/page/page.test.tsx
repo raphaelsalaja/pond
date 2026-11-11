@@ -1,3 +1,4 @@
+import { EMPTY_QUERY } from "@pond/schema/filters/types";
 import {
   createMemoryHistory,
   createRootRoute,
@@ -8,9 +9,16 @@ import {
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { libraryChrome } from "@/features/library";
+import {
+  getViewState,
+  resetFilters,
+  setQuery,
+} from "@/features/library/state/view-store";
 import { tagCreation } from "@/features/tags/state/creation";
 import type { TagGroupRow } from "@/features/tags/state/tag-groups";
 import type { TagRow } from "@/features/tags/state/tags";
+import { setAppRouter } from "@/shared/lib/app-router";
 import { TagsPage } from "./";
 
 const fixtures = {
@@ -41,9 +49,18 @@ const fixtures = {
 describe("library Tags page", () => {
   let host: HTMLDivElement;
   let root: Root;
-  const query = vi.fn(async (name: string) => {
+  const createdTags = new Set(["animation", "typography"]);
+  const query = vi.fn(async (name: string, params?: { name?: string }) => {
     if (name === "tags.list") return fixtures.tags;
     if (name === "tagGroups.list") return fixtures.groups;
+    if (name === "tags.create") {
+      const tagName = (params?.name ?? "").toLowerCase();
+      if (createdTags.has(tagName)) {
+        throw new Error("UNIQUE constraint failed: tags.name");
+      }
+      createdTags.add(tagName);
+      return { ok: true };
+    }
     return { ok: true };
   });
 
@@ -66,6 +83,9 @@ describe("library Tags page", () => {
       },
     );
     query.mockClear();
+    createdTags.clear();
+    createdTags.add("animation");
+    createdTags.add("typography");
     host = document.createElement("div");
     document.body.append(host);
     root = createRoot(host);
@@ -74,25 +94,34 @@ describe("library Tags page", () => {
   afterEach(async () => {
     await act(async () => root.unmount());
     host.remove();
+    libraryChrome.setNav({ kind: "all" });
+    resetFilters();
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
 
   async function mount() {
     const rootRoute = createRootRoute();
+    const indexRoute = createRoute({
+      getParentRoute: () => rootRoute,
+      path: "/",
+      component: () => null,
+    });
     const tagsRoute = createRoute({
       getParentRoute: () => rootRoute,
       path: "/tags",
       component: TagsPage,
     });
     const router = createRouter({
-      routeTree: rootRoute.addChildren([tagsRoute]),
+      routeTree: rootRoute.addChildren([indexRoute, tagsRoute]),
       history: createMemoryHistory({ initialEntries: ["/tags"] }),
     });
+    setAppRouter(router);
     await act(async () => {
       await router.load();
       root.render(<RouterProvider router={router} />);
     });
+    return router;
   }
 
   async function fill(input: HTMLInputElement, value: string) {
@@ -114,7 +143,7 @@ describe("library Tags page", () => {
     expect(host.textContent).toContain("Typography");
     expect(host.textContent).toContain("Starred");
     expect(host.querySelector('[aria-label="New Group"]')).not.toBeNull();
-    expect(host.textContent).not.toContain("New Tag");
+    expect(host.querySelector("h1")?.textContent).toContain("All Tags");
   });
 
   it("filters tags using the existing manager", async () => {
@@ -177,6 +206,51 @@ describe("library Tags page", () => {
     });
   });
 
+  it("opens tagged saves from a tag click", async () => {
+    const router = await mount();
+    libraryChrome.setNav({ kind: "all" });
+    setQuery({
+      combinator: "and",
+      rules: [{ field: "tags", operator: "some", value: ["Other"] }],
+    });
+    const row = host.querySelector('[role="option"][title="Typography"]');
+    const more = row?.querySelector('[aria-label="More Actions"]');
+    if (!(row instanceof HTMLElement) || !(more instanceof HTMLElement)) {
+      throw new Error("Missing Typography");
+    }
+
+    await act(async () => more.click());
+    expect(libraryChrome.getState().nav).toEqual({ kind: "all" });
+    expect(router.state.location.pathname).toBe("/tags");
+
+    await act(async () => row.click());
+    expect(row.getAttribute("aria-selected")).toBe("false");
+    expect(libraryChrome.getState().nav).toEqual({
+      kind: "tag",
+      name: "Typography",
+    });
+    expect(router.state.location.pathname).toBe("/");
+    expect(getViewState().query).toEqual(EMPTY_QUERY);
+  });
+
+  it("opens tagged saves from the keyboard", async () => {
+    const router = await mount();
+    libraryChrome.setNav({ kind: "all" });
+    const row = host.querySelector('[role="option"][title="Animation"]');
+    if (!(row instanceof HTMLElement)) throw new Error("Missing Animation");
+    await act(async () => {
+      row.focus();
+      row.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+      );
+    });
+    expect(libraryChrome.getState().nav).toEqual({
+      kind: "tag",
+      name: "Animation",
+    });
+    expect(router.state.location.pathname).toBe("/");
+  });
+
   it("selects a tag only with Shift-click and shows no checkbox", async () => {
     await mount();
     const row = host.querySelector('[role="option"]');
@@ -185,15 +259,15 @@ describe("library Tags page", () => {
 
     expect(checkbox).toBeNull();
     expect(row.firstElementChild?.textContent).toContain("Animation");
-    await act(async () => row.click());
-    expect(row.getAttribute("aria-selected")).toBe("false");
-
+    libraryChrome.setNav({ kind: "all" });
     await act(async () => {
       row.dispatchEvent(
         new MouseEvent("click", { bubbles: true, shiftKey: true }),
       );
     });
     expect(row.getAttribute("aria-selected")).toBe("true");
+    expect(libraryChrome.getState().nav).toEqual({ kind: "all" });
+    expect(host.querySelector('[role="option"][title="Animation"]')).toBe(row);
   });
 
   it("supports New Group on the library page", async () => {
@@ -221,5 +295,125 @@ describe("library Tags page", () => {
     await mount();
     expect(host.querySelector('input[aria-label="Tag name"]')).not.toBeNull();
     expect(host.querySelector('[role="dialog"]')).toBeNull();
+  });
+
+  it("adds a tag created from a group's picker to that group", async () => {
+    await mount();
+    const group = [...host.querySelectorAll("button")].find(
+      (node) => node.textContent?.trim() === "Design1",
+    );
+    if (!group) throw new Error("Missing Design group");
+    await act(async () => group.click());
+
+    const trigger = host.querySelector('[aria-label="Add Tags to Design"]');
+    if (!(trigger instanceof HTMLElement)) {
+      throw new Error("Missing Add Tags trigger");
+    }
+    await act(async () => trigger.click());
+
+    const picker = document.body.querySelector('input[placeholder="Search…"]');
+    if (!(picker instanceof HTMLInputElement)) {
+      throw new Error("Missing tag picker");
+    }
+    await fill(picker, "Brand");
+    await act(async () => {
+      picker.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+      );
+    });
+
+    expect(query.mock.calls.filter(([name]) => name === "tags.create")).toEqual(
+      [["tags.create", { name: "Brand" }]],
+    );
+    expect(query).toHaveBeenCalledWith("tagGroups.addTags", {
+      tags: ["Brand"],
+      group: "Design",
+    });
+    expect(host.querySelector("h1")?.textContent).toContain("Design");
+  });
+
+  it("creates a new tag inside the group you are viewing", async () => {
+    await mount();
+    const group = [...host.querySelectorAll("button")].find(
+      (node) => node.textContent?.trim() === "Design1",
+    );
+    if (!group) throw new Error("Missing Design group");
+    await act(async () => group.click());
+
+    await act(async () => tagCreation.request("tag"));
+
+    const draft = host.querySelector('input[placeholder="Tag name"]');
+    if (!(draft instanceof HTMLInputElement)) {
+      throw new Error("Missing tag draft");
+    }
+    await fill(draft, "Motion");
+    await act(async () => {
+      draft.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+      );
+    });
+
+    expect(query).toHaveBeenCalledWith("tags.create", { name: "Motion" });
+    expect(query).toHaveBeenCalledWith("tagGroups.addTags", {
+      tags: ["Motion"],
+      group: "Design",
+    });
+    expect(host.querySelector("h1")?.textContent).toContain("Design");
+  });
+
+  it("offers New Tag in All and creates the tag without leaving it", async () => {
+    await mount();
+    const newTag = [...host.querySelectorAll("button")].find(
+      (node) => node.textContent?.trim() === "New Tag",
+    );
+    if (!newTag) throw new Error("Missing New Tag in All");
+
+    await act(async () => newTag.click());
+    const draft = host.querySelector('input[placeholder="Tag name"]');
+    if (!(draft instanceof HTMLInputElement)) {
+      throw new Error("Missing tag draft");
+    }
+    await fill(draft, "Reading");
+    await act(async () => {
+      draft.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+      );
+    });
+
+    expect(query).toHaveBeenCalledWith("tags.create", { name: "Reading" });
+    expect(query).not.toHaveBeenCalledWith(
+      "tagGroups.addTags",
+      expect.anything(),
+    );
+    expect(host.querySelector("h1")?.textContent).toContain("All Tags");
+  });
+
+  it("offers New Tag on Uncategorized when it already has tags", async () => {
+    await mount();
+    const uncategorized = [...host.querySelectorAll("button")].find(
+      (node) => node.textContent?.trim() === "Uncategorized1",
+    );
+    if (!uncategorized) throw new Error("Missing Uncategorized");
+    await act(async () => uncategorized.click());
+
+    const newTag = [...host.querySelectorAll("button")].find(
+      (node) => node.textContent?.trim() === "New Tag",
+    );
+    if (!newTag) throw new Error("Missing New Tag");
+    await act(async () => newTag.click());
+
+    const draft = host.querySelector('input[placeholder="Tag name"]');
+    if (!(draft instanceof HTMLInputElement)) {
+      throw new Error("Missing tag draft");
+    }
+    await fill(draft, "Reading");
+    await act(async () => {
+      draft.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+      );
+    });
+
+    expect(query).toHaveBeenCalledWith("tags.create", { name: "Reading" });
+    expect(host.querySelector("h1")?.textContent).toContain("Uncategorized");
   });
 });

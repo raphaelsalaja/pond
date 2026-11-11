@@ -38,6 +38,7 @@ export {
   pasteImportOf,
   runPasteImport,
 } from "./lib/paste-import";
+export { type PreviewStepBinding, previewStepRuns } from "./lib/preview-step";
 export { normalise } from "./lib/reconcile";
 export {
   clearSaveSelection,
@@ -66,6 +67,7 @@ export {
 export { isTextOnlySave } from "./lib/text";
 export { asUrlList } from "./lib/url-list";
 export { previewFileIndex, runViewerAction } from "./lib/viewer-actions";
+export { activeVideoShown } from "./state/active-video";
 export {
   type DisplayPrefKey,
   type DisplayPrefs,

@@ -6,6 +6,7 @@ import { persistSave } from "../persist-save";
 import type { ImportableCookie } from "../refresh/harvest-window/session";
 import { restoreSave } from "../restore-save";
 import { listAccounts } from "../sync/accounts";
+import { fileIncomingSaves } from "../sync/incoming";
 import {
   type EnqueueCandidate,
   type EnqueueItem,
@@ -252,6 +253,12 @@ async function enqueueOne(
   );
   const insertedAction = persistence.insertBundle(bundle);
   if (insertedAction) broadcastSyncAction(insertedAction);
+  await fileIncomingSaves(
+    [bundle.save.id],
+    opts.accountId,
+    source,
+    opts.trigger ?? "pipeline:enqueue",
+  );
 
   log.info("[pond pipeline:enqueue] created save", {
     id: bundle.save.id,
@@ -333,6 +340,20 @@ async function enqueueMany(
   result.created = fresh.length;
   result.createdIds = bundles.map((bundle) => bundle.save.id);
   for (const action of insertedActions) broadcastSyncAction(action);
+  const idsBySource = new Map<Source, string[]>();
+  for (const bundle of bundles) {
+    const ids = idsBySource.get(bundle.save.source) ?? [];
+    ids.push(bundle.save.id);
+    idsBySource.set(bundle.save.source, ids);
+  }
+  for (const [itemSource, ids] of idsBySource) {
+    await fileIncomingSaves(
+      ids,
+      opts.accountId,
+      itemSource,
+      opts.trigger ?? "pipeline:enqueue",
+    );
+  }
   kickReconciler();
   log.info("[pond pipeline:enqueue] many", {
     created: result.created,

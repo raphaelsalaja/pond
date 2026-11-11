@@ -1,0 +1,17 @@
+.drop {
+  position: relative;
+  flex: 1 0 auto;
+  align-self: stretch;
+  min-height: 12px;
+
+  &[data-target]::before {
+    position: absolute;
+    inset-inline: 6px;
+    top: -1px;
+    height: 2px;
+    pointer-events: none;
+    content: "";
+    background: var(--ds-accent-9);
+    border-radius: var(--ds-radius-full);
+  }
+}

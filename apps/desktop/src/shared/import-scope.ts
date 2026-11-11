@@ -96,7 +96,13 @@ const IMPORT_SCOPE_OPTIONS = {
     mediaKinds: ALL_MEDIA,
     since: true,
   },
-  threads: { ...EVERYTHING_ONLY, mediaKinds: ALL_MEDIA, since: true },
+  threads: {
+    listKinds: SAVED_AND_LIKED,
+    collections: null,
+    fileEveryCollection: false,
+    mediaKinds: ALL_MEDIA,
+    since: true,
+  },
   github: {
     ...EVERYTHING_ONLY,
     since: true,

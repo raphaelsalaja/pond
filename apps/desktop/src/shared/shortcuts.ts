@@ -213,6 +213,7 @@ export const SHORTCUTS = {
   },
   "save.export": { keys: "Mod+E", label: "Export", group: "Saves" },
   "save.refresh": { keys: "R", label: "Refresh from Source", group: "Saves" },
+  "save.split": { keys: "S", label: "Split Into Saves", group: "Saves" },
   "save.add-tag": { keys: "A", label: "Add Tags", group: "Saves" },
   "save.rate-0": { keys: "Alt+0", label: "Clear Rating", group: "Saves" },
   "save.rate-1": { keys: "Alt+1", label: "Rate 1 Star", group: "Saves" },
@@ -346,13 +347,23 @@ export const SHORTCUTS = {
     group: "Preview",
   },
   "viewer.seek-back": {
-    keys: "Shift+ArrowLeft",
+    keys: "ArrowLeft",
     label: "Seek Back",
     group: "Preview",
   },
   "viewer.seek-forward": {
-    keys: "Shift+ArrowRight",
+    keys: "ArrowRight",
     label: "Seek Forward",
+    group: "Preview",
+  },
+  "viewer.video-step-prev": {
+    keys: "Shift+ArrowLeft",
+    label: "Previous Image or Save from Video",
+    group: "Preview",
+  },
+  "viewer.video-step-next": {
+    keys: "Shift+ArrowRight",
+    label: "Next Image or Save from Video",
     group: "Preview",
   },
   "viewer.speed-up": {

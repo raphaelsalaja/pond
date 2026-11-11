@@ -202,6 +202,19 @@ export async function runArchivePage(
     reportActivity: ctx.reportActivity,
   });
   if (result.pages.length === 0 || result.warcBytes.byteLength === 0) {
+    /**
+     * A login wall is not a transient failure: retrying cannot get past it
+     * without credentials. Finish the Save with the metadata and media it
+     * already has instead of leaving it ingesting and hidden from folders.
+     */
+    if (result.authWalled) {
+      log.info("[pond pipeline:archive-page] login wall, skipping archive", {
+        saveId,
+        url: rootUrl.href,
+      });
+      dropPageCookies(saveId);
+      return;
+    }
     throw new TransientError("archive_page: no pages captured");
   }
 
@@ -246,6 +259,8 @@ export async function runArchivePage(
 interface CrawlResult {
   pages: ArchiveManifestPage[];
   warcBytes: Buffer;
+  /** The root page redirected to a login screen, so no page can be archived. */
+  authWalled: boolean;
 }
 
 async function crawlSite(
@@ -283,6 +298,7 @@ async function crawlSite(
   const queue: Array<{ url: string; depth: number }> = [
     { url: rootUrl.href, depth: 0 },
   ];
+  let authWalled = false;
 
   let recorder: WarcRecorder | null = null;
   let navAttempts = 0;
@@ -354,7 +370,14 @@ async function crawlSite(
       const finalUrl = wc.getURL();
       const finalKey = dedupeKey(finalUrl);
       if (capturedKeys.has(finalKey)) continue;
-      if (looksLikeAuthWall(finalUrl)) continue;
+      if (looksLikeAuthWall(finalUrl)) {
+        if (next.depth === 0) authWalled = true;
+        log.info("[pond pipeline:archive-page] login wall", {
+          url: finalUrl,
+          ms: elapsed(),
+        });
+        continue;
+      }
 
       const harvest = await harvestPage(wc);
       if (!harvest) {
@@ -406,7 +429,7 @@ async function crawlSite(
   } finally {
     void rm(tmpDir, { recursive: true, force: true }).catch(() => {});
   }
-  return { pages, warcBytes };
+  return { pages, warcBytes, authWalled };
 }
 
 async function preloadImages(wc: WebContents): Promise<void> {

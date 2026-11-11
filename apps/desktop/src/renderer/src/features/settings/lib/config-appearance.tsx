@@ -126,6 +126,13 @@ export const appearanceSection = defineCustomSection({
           ],
           render: (b) => <AppIconRow binding={b} />,
         },
+        {
+          control: "switch",
+          key: "appIconMatchesLibrary",
+          title: "Match Library Logo",
+          description: "Use the color of the open Library's Pond logo instead.",
+          keywords: ["library", "logo", "follow", "sync", "dock"],
+        },
       ],
     }),
     group.prefs("preferences", {

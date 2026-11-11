@@ -47,6 +47,9 @@ describe("downloadStatusLabel", () => {
     vi.restoreAllMocks();
     expect(downloadStatusLabel(row("blocked"), false)).toBe("Failed");
     expect(downloadStatusLabel(row("failed"), false)).toBe("Failed");
+    expect(downloadStatusLabel(row("dead", { attempts: 1 }), false)).toBe(
+      "Failed",
+    );
     expect(downloadStatusLabel(row("complete"), false)).toBe("Completed");
     expect(downloadStatusLabel(row("cancelled"), false)).toBe("Canceled");
     expect(downloadStatusLabel(row("skipped"), false)).toBe("Skipped");

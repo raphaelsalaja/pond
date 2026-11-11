@@ -19,7 +19,6 @@ import {
 import { noteSuccess } from "./rate-governor";
 import {
   type DueTask,
-  isSourceTask,
   MAX_BACKGROUND_INFLIGHT,
   MAX_GLOBAL_INFLIGHT,
   MAX_INTERACTIVE_INFLIGHT,
@@ -37,6 +36,7 @@ import {
   untrackRunningIngest,
 } from "./running-ingest";
 import { withSourceTaskLease } from "./source-admission";
+import { isSourceTask } from "./source-tasks";
 import {
   claimDueTasks,
   extendOwnedLeasesSync,

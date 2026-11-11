@@ -182,7 +182,12 @@ export function pauseAll(): void {
         probe_lease_token = NULL,
         probe_lease_expires_at = NULL,
         version = source_gates.version + 1,
-        updated_at = excluded.updated_at`,
+        updated_at = excluded.updated_at
+      WHERE NOT (
+        source_gates.state = 'open'
+        AND source_gates.reason = 'auth_required'
+        AND COALESCE(source_gates.retry_at, 0) > excluded.updated_at
+      )`,
     );
     db.$raw
       .transaction(() => {

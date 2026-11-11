@@ -45,11 +45,17 @@
   padding: 8px;
 }
 
+/* Padding inside the scroller keeps the selected and focus rings from clipping. */
 .grid {
   display: grid;
   grid-template-columns: repeat(8, 1fr);
   gap: 2px;
   justify-items: center;
+  max-height: 240px;
+  padding: 4px;
+  margin: -4px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .swatches {

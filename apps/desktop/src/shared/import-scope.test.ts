@@ -25,6 +25,30 @@ describe("normalizeImportScope", () => {
     ).toEqual({ ok: true, scope: { listKinds: ["liked"] } });
   });
 
+  it("lets Threads import Saved Posts, Liked Posts, or both", () => {
+    expect(
+      normalizeImportScope("threads", { listKinds: ["saved", "liked"] }),
+    ).toEqual({ ok: true, scope: {} });
+    expect(normalizeImportScope("threads", { listKinds: ["liked"] })).toEqual({
+      ok: true,
+      scope: { listKinds: ["liked"] },
+    });
+    expect(
+      normalizeImportScope("threads", {
+        listKinds: ["saved"],
+        mediaKinds: ["image"],
+      }),
+    ).toEqual({
+      ok: true,
+      scope: { listKinds: ["saved"], mediaKinds: ["image"] },
+    });
+    expect(
+      sourcesSkippingLikes([
+        { source: "threads", sync: { importScope: { listKinds: ["saved"] } } },
+      ]),
+    ).toEqual(new Set(["threads"]));
+  });
+
   it("keeps an empty list selection so every switch can stay off", () => {
     expect(normalizeImportScope("twitter", { listKinds: [] })).toEqual({
       ok: true,

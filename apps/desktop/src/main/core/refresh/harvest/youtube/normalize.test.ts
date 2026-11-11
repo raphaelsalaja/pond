@@ -26,7 +26,15 @@ interface PlayerResponse {
     viewCount?: string;
     lengthSeconds?: string;
   };
-  microformat?: { playerMicroformatRenderer: { publishDate: string } };
+  microformat?: {
+    playerMicroformatRenderer: {
+      publishDate?: string;
+      thumbnail?: {
+        isOriginalAspectRatio?: boolean;
+        thumbnails?: Array<{ url?: string; width?: number; height?: number }>;
+      };
+    };
+  };
 }
 
 async function harvest(html: string, player?: PlayerResponse) {
@@ -95,6 +103,40 @@ describe("youtube watch metadata", () => {
       publishedAt: "2023-12-07T16:00:10-08:00",
       durationSec: 234,
     });
+  });
+
+  it("uses the player's portrait thumbnail instead of the landscape poster", async () => {
+    const page = await harvest(
+      `${descriptionBox}<video poster="https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg"></video>`,
+      {
+        videoDetails: {
+          videoId: "dQw4w9WgXcQ",
+          lengthSeconds: "39",
+        },
+        microformat: {
+          playerMicroformatRenderer: {
+            thumbnail: {
+              isOriginalAspectRatio: true,
+              thumbnails: [
+                {
+                  url: "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
+                  width: 480,
+                  height: 360,
+                },
+                {
+                  url: "https://i.ytimg.com/vi/dQw4w9WgXcQ/oardefault.jpg?sqp=1",
+                  width: 405,
+                  height: 720,
+                },
+              ],
+            },
+          },
+        },
+      },
+    );
+    expect(page?.mediaUrl).toBe(
+      "https://i.ytimg.com/vi/dQw4w9WgXcQ/oardefault.jpg?sqp=1",
+    );
   });
 
   it("ignores a player response left over from another video", async () => {

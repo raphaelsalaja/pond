@@ -27,7 +27,7 @@ export {
   harvestYoutubeLikedList,
   listSourceCollections,
 } from "./harvest-list";
-export { harvestThreadsLikes, harvestThreadsSaved } from "./harvest-saved";
+export { harvestThreadsList } from "./harvest-saved";
 
 export interface HarvestArgs {
   url: string;

@@ -1,4 +1,4 @@
-import type { SaveFile } from "@pond/schema/db";
+import type { SaveFile, Source } from "@pond/schema/db";
 import type { Capture, RawJson } from "@pond/schema/raw";
 import {
   isAuxiliaryKind,
@@ -18,10 +18,32 @@ import { persistSave } from "../../persist-save";
 import { type RenderedCard, renderTextCardPng } from "../../render-card";
 import { readSave } from "./apply";
 
-function needsTextCover(
-  save: NonNullable<Awaited<ReturnType<typeof readSave>>>,
-  imageFallback = false,
-): boolean {
+/** The fields a text cover needs; the full save row satisfies it. */
+export interface TextCoverSave {
+  id: string;
+  source: Source;
+  sourceId: string | null;
+  url: string;
+  title: string | null;
+  description: string | null;
+  mediaType: string | null;
+  files: readonly SaveFile[] | null;
+  rawJson: RawJson | null;
+}
+
+export interface RenderTextCoverRuntime {
+  readSave: (saveId: string) => Promise<TextCoverSave | null>;
+  persistSave: typeof persistSave;
+  renderCard: typeof renderTextCardPng;
+}
+
+const defaultRuntime: RenderTextCoverRuntime = {
+  readSave,
+  persistSave,
+  renderCard: renderTextCardPng,
+};
+
+function needsTextCover(save: TextCoverSave, imageFallback = false): boolean {
   const hasProse =
     Boolean(save.description?.trim()) || save.mediaType === "text";
   if (!hasProse) return false;
@@ -50,12 +72,13 @@ function needsTextCover(
 }
 
 async function writeCover(
+  runtime: RenderTextCoverRuntime,
   saveId: string,
   kind: SaveFile["kind"],
   filename: string,
   card: RenderedCard,
 ): Promise<void> {
-  await persistSave(
+  await runtime.persistSave(
     saveId,
     {},
     {
@@ -75,9 +98,7 @@ async function writeCover(
   );
 }
 
-function stubCapture(
-  save: NonNullable<Awaited<ReturnType<typeof readSave>>>,
-): Capture {
+function stubCapture(save: TextCoverSave): Capture {
   return {
     id: save.sourceId || save.id,
     source: save.source,
@@ -87,7 +108,8 @@ function stubCapture(
 }
 
 async function stampVersion(
-  save: NonNullable<Awaited<ReturnType<typeof readSave>>>,
+  runtime: RenderTextCoverRuntime,
+  save: TextCoverSave,
 ): Promise<void> {
   const base = save.rawJson;
   const capture = base?.capture ?? stubCapture(save);
@@ -98,18 +120,36 @@ async function stampVersion(
     renderTextCoverVersion: RENDER_TEXT_COVER_VERSION,
   };
   if (base?.ytdlp) rawJson.ytdlp = base.ytdlp;
-  await persistSave(
+  await runtime.persistSave(
     save.id,
     { rawJson },
     { actorReason: "pipeline:render-text-cover:stamp" },
   );
 }
 
-export async function runRenderTextCover(
+const inFlight = new Map<string, Promise<number>>();
+
+export function runRenderTextCover(
   saveId: string,
   opts: { force?: boolean; imageFallback?: boolean } = {},
+  runtime: RenderTextCoverRuntime = defaultRuntime,
 ): Promise<number> {
-  const save = await readSave(saveId);
+  /** The pipeline task and the library card both ask for a cover; one render must serve both. */
+  const pending = inFlight.get(saveId);
+  if (pending) return pending;
+  const run = renderTextCover(saveId, opts, runtime).finally(() => {
+    inFlight.delete(saveId);
+  });
+  inFlight.set(saveId, run);
+  return run;
+}
+
+async function renderTextCover(
+  saveId: string,
+  opts: { force?: boolean; imageFallback?: boolean },
+  runtime: RenderTextCoverRuntime,
+): Promise<number> {
+  const save = await runtime.readSave(saveId);
   if (!save) return 0;
   if (save.source === "twitter") return 0;
   if (!needsTextCover(save, opts.imageFallback === true)) return 0;
@@ -131,14 +171,20 @@ export async function runRenderTextCover(
   }
 
   const body = textBodyFromFields(save.description, save.title);
-  const light = await renderTextCardPng(body, "light");
+  const light = await runtime.renderCard(body, "light");
   if (!light) return 0;
-  const dark = await renderTextCardPng(body, "dark");
+  const dark = await runtime.renderCard(body, "dark");
   if (!dark) return 0;
 
-  await writeCover(saveId, THUMBNAIL_KIND, TEXT_THUMBNAIL_FILE, light);
-  await writeCover(saveId, THUMBNAIL_DARK_KIND, THUMBNAIL_DARK_FILE, dark);
-  await stampVersion(save);
+  await writeCover(runtime, saveId, THUMBNAIL_KIND, TEXT_THUMBNAIL_FILE, light);
+  await writeCover(
+    runtime,
+    saveId,
+    THUMBNAIL_DARK_KIND,
+    THUMBNAIL_DARK_FILE,
+    dark,
+  );
+  await stampVersion(runtime, save);
 
   log.info("[pond pipeline:render-text-cover] done", { saveId });
   return 2;

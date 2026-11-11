@@ -1,0 +1,76 @@
+.popup {
+  --width: 400px;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.stage {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.viewport {
+  position: relative;
+  flex: none;
+  width: var(--crop-size);
+  height: var(--crop-size);
+  overflow: hidden;
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+  outline-offset: 2px;
+  background: var(--ds-gray-a3);
+  border-radius: var(--ds-radius-xl);
+
+  &:focus-visible {
+    outline: 2px solid var(--ds-focus-outline);
+  }
+
+  &[data-dragging] {
+    cursor: grabbing;
+  }
+}
+
+.previews {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+
+.preview {
+  position: relative;
+  width: var(--crop-size);
+  height: var(--crop-size);
+  overflow: hidden;
+  background: var(--ds-gray-a3);
+  border-radius: var(--ds-radius-2xl);
+
+  &[data-size="small"] {
+    border-radius: var(--ds-radius-md);
+  }
+}
+
+.image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  max-width: none;
+  pointer-events: none;
+}
+
+.zoom {
+  color: var(--ds-gray-10);
+}
+
+.error {
+  margin: 0;
+  font-size: var(--ds-text-sm);
+  color: var(--ds-red-11);
+}

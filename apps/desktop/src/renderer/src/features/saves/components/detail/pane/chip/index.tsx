@@ -17,6 +17,7 @@ interface ItemProps extends Omit<ComponentPropsWithoutRef<"span">, "children"> {
   total: number;
   removeLabel: string;
   onRemove: () => void;
+  onOpen?: () => void;
 }
 
 function Item({
@@ -26,35 +27,50 @@ function Item({
   total,
   removeLabel,
   onRemove,
+  onOpen,
   className,
   ...props
 }: ItemProps) {
   const mixed = count !== total;
+  const title = props.title ?? (crumb ? `${crumb} › ${label}` : label);
+  const content = (
+    <>
+      {crumb ? (
+        <>
+          <span className={styles.crumb}>{crumb}</span>
+          <span aria-hidden className={styles.separator}>
+            ›
+          </span>
+        </>
+      ) : null}
+      <span className={styles.name}>{label}</span>
+      {mixed ? (
+        <span className={styles.count}>
+          {count}/{total}
+        </span>
+      ) : null}
+    </>
+  );
   return (
     <span
       className={cn(styles.item, className)}
       data-mixed={mixed || undefined}
       {...props}
     >
-      <span
-        className={styles.label}
-        title={props.title ?? (crumb ? `${crumb} › ${label}` : label)}
-      >
-        {crumb ? (
-          <>
-            <span className={styles.crumb}>{crumb}</span>
-            <span aria-hidden className={styles.separator}>
-              ›
-            </span>
-          </>
-        ) : null}
-        <span className={styles.name}>{label}</span>
-        {mixed ? (
-          <span className={styles.count}>
-            {count}/{total}
-          </span>
-        ) : null}
-      </span>
+      {onOpen ? (
+        <button
+          type="button"
+          className={styles.label}
+          title={title}
+          onClick={onOpen}
+        >
+          {content}
+        </button>
+      ) : (
+        <span className={styles.label} title={title}>
+          {content}
+        </span>
+      )}
       <Button
         icon
         size="xs"

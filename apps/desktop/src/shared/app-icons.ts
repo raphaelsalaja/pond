@@ -1,4 +1,5 @@
 import { DEFAULT_APP_ICON } from "@pond/schema/db";
+import type { LibraryMarkSource } from "./library-mark";
 
 export { DEFAULT_APP_ICON };
 
@@ -51,6 +52,26 @@ export function appIconLabel(id: string): string {
     .split("-")
     .map((part) => (part ? part.charAt(0).toUpperCase() + part.slice(1) : part))
     .join(" ");
+}
+
+interface AppIconPrefs {
+  appIcon: string;
+  appIconMatchesLibrary: boolean;
+}
+
+interface LibraryLogo {
+  icon: string | null;
+  mark: LibraryMarkSource | null;
+}
+
+/** A Library without a logo shows the default Pond logo, so matching it means the default tint. */
+export function preferredAppIcon(
+  prefs: AppIconPrefs,
+  logo: LibraryLogo | null,
+): string {
+  if (!prefs.appIconMatchesLibrary || !logo) return prefs.appIcon;
+  if (logo.icon === null) return DEFAULT_APP_ICON;
+  return logo.mark?.kind === "pond" ? logo.mark.tint : prefs.appIcon;
 }
 
 export function resolveAppIconId(

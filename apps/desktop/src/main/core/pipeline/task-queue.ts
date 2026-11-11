@@ -14,8 +14,9 @@ import { z } from "zod";
 import { getDb } from "../../db";
 import { persistSave } from "../persist-save";
 import { isInteractiveTask, TaskPayloadSchema } from "./priority";
-import { type DueTask, isSourceTask } from "./reconciler-config";
+import type { DueTask } from "./reconciler-config";
 import { claimSourceProbe, inspectSourceAdmission } from "./source-admission";
+import { isSourceTask } from "./source-tasks";
 import { maxAttemptsFor, planOps } from "./specs";
 
 const ClaimCandidateSchema = z.object({
@@ -110,6 +111,10 @@ export async function claimDueTasks(
                 WHEN 'interactive' THEN 0
                 ELSE 1
               END,
+              /* Never-attempted work first: retry backoff would otherwise let a
+                 few repeatedly failing tasks win every claim and starve the
+                 rest of the queue. */
+              tasks.attempts ASC,
               tasks.next_run_at ASC,
               tasks.created_at ASC
             LIMIT ?`,

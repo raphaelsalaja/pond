@@ -10,8 +10,8 @@ import { buildSavedApiExpression } from "../harvest/threads/api";
 import { parseSavedResponses } from "../harvest/threads/graphql";
 import {
   buildThreadsListExpression,
-  THREADS_LIKES_URLS,
-  THREADS_LIST_URL,
+  THREADS_LIST_PAGES,
+  type ThreadsListKind,
 } from "../harvest/threads/list";
 import type {
   SavedEntry,
@@ -144,17 +144,8 @@ function readStats(raw: string): z.infer<typeof SavedStatsSchema> {
   }
 }
 
-export async function harvestThreadsSaved(
-  args: SavedHarvestArgs,
-  opts: {
-    onProgress?: (p: SavedHarvestProgress) => void;
-    partition?: string;
-  } = {},
-): Promise<SavedHarvestResult> {
-  return harvestThreadsFeed(THREADS_LIST_URL, args, opts);
-}
-
-export async function harvestThreadsLikes(
+export async function harvestThreadsList(
+  kind: ThreadsListKind,
   args: SavedHarvestArgs,
   opts: {
     onProgress?: (p: SavedHarvestProgress) => void;
@@ -162,7 +153,7 @@ export async function harvestThreadsLikes(
   } = {},
 ): Promise<SavedHarvestResult> {
   let last: SavedHarvestResult = { ok: false, reason: "no_match" };
-  for (const url of THREADS_LIKES_URLS) {
+  for (const url of THREADS_LIST_PAGES[kind]) {
     last = await harvestThreadsFeed(url, args, opts);
     if (
       last.ok ||

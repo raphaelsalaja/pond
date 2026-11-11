@@ -79,19 +79,19 @@ describe("accounts.setImportScope", () => {
   });
 
   it("stores everything for options the Source can't honor", async () => {
-    const patchAccountSync = vi.fn(async () => account("threads").sync);
+    const patchAccountSync = vi.fn(async () => account("tumblr").sync);
     const releaseFilteredSaves = vi.fn(async () => 0);
     const operation = createSetImportScopeQuery({
-      getAccount: vi.fn(async () => account("threads")),
+      getAccount: vi.fn(async () => account("tumblr")),
       patchAccountSync,
       releaseFilteredSaves,
     });
 
     await operation({
-      accountId: "threads:123",
+      accountId: "tumblr:123",
       scope: { listKinds: ["saved"] },
     });
-    expect(patchAccountSync).toHaveBeenCalledWith("threads:123", {
+    expect(patchAccountSync).toHaveBeenCalledWith("tumblr:123", {
       importScope: undefined,
       importPending: false,
     });

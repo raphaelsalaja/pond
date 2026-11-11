@@ -10,6 +10,7 @@ const rendererTypeScriptTests = [
   "src/renderer/src/shared/hooks/use-scroll-restoration.test.ts",
   "src/renderer/src/features/saves/lib/eagle-baseline-menu.test.ts",
   "src/renderer/src/features/saves/lib/menu.test.ts",
+  "src/renderer/src/features/saves/lib/preview-step.test.ts",
   "src/renderer/src/features/saves/lib/select.test.ts",
   "src/renderer/src/features/saves/lib/selection.test.ts",
   "src/renderer/src/features/saves/lib/viewer-memory.test.ts",
@@ -22,6 +23,7 @@ const rendererTypeScriptTests = [
   "src/renderer/src/features/library/components/new-menu/spec.test.ts",
   "src/renderer/src/features/library/components/folder-sidebar/folder-cover.test.ts",
   "src/renderer/src/features/agent/state/chat-transport.test.ts",
+  "src/renderer/src/features/canvas/state/minimap.test.ts",
 ];
 
 export default defineConfig({
@@ -49,6 +51,10 @@ export default defineConfig({
           include: ["src/**/*.test.tsx", ...rendererTypeScriptTests],
           environment: "jsdom",
           setupFiles: ["./test/renderer-setup.ts"],
+          // The first jsdom test in a file pays for a cold module graph; the
+          // Windows runner is roughly four times slower than Linux.
+          testTimeout: 20_000,
+          hookTimeout: 20_000,
         },
       },
     ],

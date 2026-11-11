@@ -116,7 +116,7 @@ function Content({
   }, [target, liveGroup]);
 
   const toggle = useCallback(
-    async (rawName: string) => {
+    async (rawName: string, options?: { created?: boolean }) => {
       const cleaned = rawName.trim();
       if (!cleaned) return;
       const lower = cleaned.toLowerCase();
@@ -136,7 +136,7 @@ function Content({
         await tagOperations.removeFromGroup(cleaned, groupName);
         return;
       }
-      if (!tagsByLowerName.has(lower)) {
+      if (!options?.created && !tagsByLowerName.has(lower)) {
         await tagOperations.create("tag", cleaned);
       }
       await tagOperations.addToGroup(cleaned, groupName);

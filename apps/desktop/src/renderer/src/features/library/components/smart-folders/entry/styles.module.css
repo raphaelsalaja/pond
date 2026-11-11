@@ -9,7 +9,29 @@
   align-items: center;
   width: 100%;
   padding-inline-start: calc(var(--entry-depth) * var(--folder-indent));
+  touch-action: none;
   animation: appear var(--ds-duration-fast) var(--ds-easing-standard);
+
+  &[data-drop="before"]::before,
+  &[data-drop="after"]::after {
+    position: absolute;
+    inset-inline-start: calc(var(--entry-depth) * var(--folder-indent) + 6px);
+    inset-inline-end: 6px;
+    z-index: 3;
+    height: 2px;
+    pointer-events: none;
+    content: "";
+    background: var(--ds-accent-9);
+    border-radius: var(--ds-radius-full);
+  }
+
+  &[data-drop="before"]::before {
+    top: -1px;
+  }
+
+  &[data-drop="after"]::after {
+    bottom: -1px;
+  }
 }
 
 .disclosure {
@@ -41,6 +63,11 @@
   flex: 1;
   min-width: 0;
   padding-right: 24px;
+}
+
+.row[data-drop="into"] .item {
+  color: var(--ds-gray-12);
+  background: var(--ds-gray-a4);
 }
 
 .editor {

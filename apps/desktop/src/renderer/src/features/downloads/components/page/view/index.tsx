@@ -1,5 +1,6 @@
 import { Button } from "@pond/ui";
 import type { DownloadActivity } from "@shared/download-activity";
+import type { QueueSourceGate } from "@shared/queue-contracts";
 import { type ReactNode, useEffect, useRef } from "react";
 import { useClientHeight } from "@/shared/hooks/use-client-height";
 import { type DownloadRow, mergeDownloadRows } from "../../../lib/status-feed";
@@ -12,6 +13,7 @@ export interface DownloadsViewProps {
   rows: DownloadRow[];
   completed: DownloadRow[];
   activities: readonly DownloadActivity[];
+  gates: readonly QueueSourceGate[];
   paused: boolean;
   historyLoading: boolean;
   historyError: boolean;
@@ -81,6 +83,7 @@ export function DownloadsView(props: DownloadsViewProps) {
           rows={tableRows}
           paused={props.paused}
           activities={props.activities}
+          gates={props.gates}
           height={tableMeasured ? height - 40 : undefined}
           extra={extra}
         />

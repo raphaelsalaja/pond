@@ -22,6 +22,16 @@
   color: var(--ds-white-a12);
   white-space: nowrap;
   pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--ds-duration-fast) var(--ds-easing-standard);
+
+  &[data-open] {
+    opacity: 1;
+
+    @starting-style {
+      opacity: 0;
+    }
+  }
 }
 
 .preview-media {

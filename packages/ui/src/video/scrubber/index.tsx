@@ -12,7 +12,11 @@ interface ScrubberProps {
 
 export function Scrubber({ className, renderPreview }: ScrubberProps) {
   const { state, actions, chrome } = useVideo();
-  const [hover, setHover] = useState<number | null>(null);
+  const [pointer, setPointer] = useState<{
+    at: number;
+    inside: boolean;
+  } | null>(null);
+  const hover = pointer?.inside ? pointer.at : null;
   const max = state.duration > 0 ? state.duration : 1;
   const current = Math.min(state.currentTime, max);
   const hasDuration = state.duration > 0;
@@ -20,7 +24,10 @@ export function Scrubber({ className, renderPreview }: ScrubberProps) {
   const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
     if (rect.width === 0) return;
-    setHover(clamp((event.clientX - rect.left) / rect.width, 0, 1));
+    setPointer({
+      at: clamp((event.clientX - rect.left) / rect.width, 0, 1),
+      inside: true,
+    });
   };
 
   const onPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -44,25 +51,28 @@ export function Scrubber({ className, renderPreview }: ScrubberProps) {
       onValueChange={(v) => actions.seek(Array.isArray(v) ? (v[0] ?? 0) : v)}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
-      onPointerLeave={() => setHover(null)}
+      onPointerLeave={() =>
+        setPointer((previous) => previous && { ...previous, inside: false })
+      }
       aria-label="Seek"
     >
-      {hover !== null && hasDuration ? (
+      {pointer && hasDuration ? (
         <span
           className={styles.preview}
+          data-open={pointer.inside || undefined}
           style={{
-            left: `${hover * 100}%`,
+            left: `${pointer.at * 100}%`,
             transform: "translateX(-50%)",
           }}
           aria-hidden
         >
           {renderPreview ? (
             <span className={styles["preview-media"]}>
-              {renderPreview(hover * max)}
+              {renderPreview(pointer.at * max)}
             </span>
           ) : null}
           <span className={styles["preview-time"]}>
-            {formatTime(hover * max)}
+            {formatTime(pointer.at * max)}
           </span>
           <span className={styles["preview-line"]} />
         </span>

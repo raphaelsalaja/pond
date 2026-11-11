@@ -3,6 +3,7 @@ import {
   appIconLabel,
   appIconTint,
   DEFAULT_APP_ICON,
+  preferredAppIcon,
   resolveAppIconId,
   sortAppIconIds,
 } from "./app-icons";
@@ -25,6 +26,28 @@ describe("app icons", () => {
       "tangerine",
       "plum",
     ]);
+  });
+
+  it("follows the open Library's Pond logo only when asked to", () => {
+    const grape = {
+      icon: "data:image/png;base64,bG9nbw==",
+      mark: { kind: "pond", tint: "grape" },
+    } as const;
+    const prefs = { appIcon: "tangerine", appIconMatchesLibrary: true };
+    expect(preferredAppIcon(prefs, grape)).toBe("grape");
+    expect(
+      preferredAppIcon({ ...prefs, appIconMatchesLibrary: false }, grape),
+    ).toBe("tangerine");
+    expect(preferredAppIcon(prefs, { icon: null, mark: null })).toBe(
+      DEFAULT_APP_ICON,
+    );
+    expect(
+      preferredAppIcon(prefs, {
+        icon: "data:image/png;base64,bG9nbw==",
+        mark: { kind: "emoji", emoji: "🐳", color: "blue" },
+      }),
+    ).toBe("tangerine");
+    expect(preferredAppIcon(prefs, null)).toBe("tangerine");
   });
 
   it("returns a crayon hex for known tints", () => {

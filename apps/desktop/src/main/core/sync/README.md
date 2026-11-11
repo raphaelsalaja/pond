@@ -64,7 +64,9 @@ behavior. `listHarvestPlan` (`import-scope.ts`) turns the scope into the walks
 a run makes: excluded lists are never requested, rather than harvested and
 filtered afterward.
 
-- Instagram, X, and YouTube: Saved and Liked, each on its own walk. X Likes
+- Instagram, Threads, X, and YouTube: Saved and Liked, each on its own walk.
+  Threads reads each list by replaying the feed query its page fires
+  (`THREADS_LIST_PAGES` in `harvest/threads/list.ts`). X Likes
   used to be the `syncLikes` switch; `accountImportScope` (`shared/import-scope.ts`)
   reads an old `syncLikes: false` as Bookmarks only.
 - Reddit and TikTok: Saved and Liked come from one walk, which reads
@@ -75,7 +77,7 @@ filtered afterward.
   walk; Liked Videos still comes from that walk.
   `listSourceCollections` and `harvestSourceCollections`
   (`harvest-window/harvest-list.ts`) load and walk them.
-- Cosmos, Are.na, and Threads import every list.
+- Cosmos and Are.na import every list.
 - GitHub walks your Stars tab in the signed-in window, 30 repos a page
   (`harvest/github/list.ts`). Stars show no date, but each page's Next cursor
   holds its last star's time, so the `since` limit (`sinceDate: "saved"`) ends

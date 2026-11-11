@@ -1,6 +1,5 @@
 import { sourceLabel } from "@pond/schema/sources";
 import type { DownloadRow } from "@/features/downloads/lib/status-feed";
-import { formatPlural } from "@/shared/lib/format";
 
 export type DownloadTableStatus =
   | "progress"
@@ -72,7 +71,5 @@ export function downloadStatusLabel(row: DownloadRow, paused: boolean): string {
     if (minutes < 60) return `Retrying in ${minutes}m`;
     return `Retrying in ${Math.ceil(minutes / 60)}h`;
   }
-  if (row.status === "dead")
-    return `Stopped after ${formatPlural(row.attempts, { one: "attempt", other: "attempts" })}`;
   return STATUS_LABELS[downloadTableStatus(row, paused)];
 }

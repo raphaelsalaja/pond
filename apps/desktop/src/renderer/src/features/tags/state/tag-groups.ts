@@ -73,7 +73,11 @@ function scheduleRefetch(): void {
   queueMicrotask(() => {
     refetchScheduled = false;
     void (async () => {
-      tagGroupsStore.setState(() => ({ rows: [], loaded: false }));
+      // Keep the current rows until the refetched ones arrive. Membership
+      // changes (adding a tag to a group) refetch the list, and clearing it
+      // here made every view that keys off a group id think the group was
+      // gone and fall back to All.
+      tagGroupsStore.setState((state) => ({ ...state, loaded: false }));
       inflight = null;
       await load();
     })();

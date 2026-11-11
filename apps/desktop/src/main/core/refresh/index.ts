@@ -125,6 +125,22 @@ export async function refreshSave(
         ),
       )
       .run();
+    /**
+     * A finished card can still be the previous save's picture. Render this
+     * save's card again from the capture already stored with it.
+     */
+    db.update(tasks)
+      .set({
+        payload: withInteractivePriority({ force: true }),
+        status: "pending",
+        attempts: 0,
+        generationId,
+        lastError: null,
+        nextRunAt: now,
+        updatedAt: now,
+      })
+      .where(and(eq(tasks.saveId, saveId), eq(tasks.op, "capture_tweet")))
+      .run();
 
     /** Tasks live only in the local index, so Saves read back from the library folder have no task rows. */
     const existingOps = new Set(

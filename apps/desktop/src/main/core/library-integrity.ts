@@ -10,7 +10,6 @@ import {
   thumbnailFilename,
 } from "@shared/save-file-names";
 import { eq, isNull } from "drizzle-orm";
-import sharp from "sharp";
 import { z } from "zod";
 import type {
   LibraryRepairIssue,
@@ -18,7 +17,11 @@ import type {
 } from "../../shared/library-repair-contracts";
 import { getDb } from "../db";
 import { libraryRoot, saveDirIn } from "../paths";
-import { renderThumbnail, thumbnailSource } from "./save-thumbnail-file";
+import {
+  renderThumbnail,
+  thumbnailLooksLikeSource,
+  thumbnailSource,
+} from "./save-thumbnail-file";
 import {
   libraryMediaMetadata,
   readLibraryMedia,
@@ -62,55 +65,16 @@ export interface LibraryIntegrityRuntime {
   readInfo(path: string): Promise<InfoInspection>;
 }
 
-/** Out of 64 bits; a resized copy of the same image lands under 10, an unrelated image near 32. */
-const THUMBNAIL_MISMATCH_BITS = 20;
-
-async function differenceHash(input: string | Buffer): Promise<bigint | null> {
-  try {
-    const pixels = await sharp(input, { failOn: "none", pages: 1 })
-      .rotate()
-      .greyscale()
-      .resize(9, 8, { fit: "fill" })
-      .raw()
-      .toBuffer();
-    let hash = 0n;
-    for (let row = 0; row < 8; row += 1) {
-      for (let column = 0; column < 8; column += 1) {
-        const left = pixels[row * 9 + column] ?? 0;
-        const right = pixels[row * 9 + column + 1] ?? 0;
-        hash = (hash << 1n) | (left > right ? 1n : 0n);
-      }
-    }
-    return hash;
-  } catch {
-    return null;
-  }
-}
-
-function hammingDistance(a: bigint, b: bigint): number {
-  let value = a ^ b;
-  let count = 0;
-  while (value > 0n) {
-    count += Number(value & 1n);
-    value >>= 1n;
-  }
-  return count;
-}
-
 async function thumbnailMatchesSource(
   thumbnailPath: string,
   sourcePath: string,
 ): Promise<boolean | null> {
   const [thumbnail, source] = await Promise.all([
-    readLibraryMedia(thumbnailPath)
-      .then(differenceHash)
-      .catch(() => null),
-    readLibraryMedia(sourcePath)
-      .then(differenceHash)
-      .catch(() => null),
+    readLibraryMedia(thumbnailPath).catch(() => null),
+    readLibraryMedia(sourcePath).catch(() => null),
   ]);
-  if (thumbnail === null || source === null) return null;
-  return hammingDistance(thumbnail, source) <= THUMBNAIL_MISMATCH_BITS;
+  if (!thumbnail || !source) return null;
+  return thumbnailLooksLikeSource(thumbnail, source);
 }
 
 export interface PayloadInspection {

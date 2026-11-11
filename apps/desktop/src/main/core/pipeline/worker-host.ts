@@ -8,10 +8,13 @@ import { binariesAvailable, FFMPEG_PATH_ENV } from "../refresh/binaries";
 import { QueueWorkerResponseSchema } from "./worker-contract";
 import {
   createQueueWorkerHost,
+  type QueueWorkerHostDependencies,
   type QueueWorkerResult,
 } from "./worker-host-core";
+import { runsQueueWorkerInProcess } from "./worker-mode";
+import { executeQueueWorkerRequest } from "./worker-operations";
 
-const host = createQueueWorkerHost({
+const dependencies: QueueWorkerHostDependencies = {
   spawn: () => {
     if (!app.isReady()) {
       throw new Error("Queue workers require Electron to be ready.");
@@ -46,7 +49,12 @@ const host = createQueueWorkerHost({
     return info.isFile();
   },
   onStopped: () => log.info("[pond queue workers] stopped"),
-});
+};
+
+if (runsQueueWorkerInProcess())
+  dependencies.execute = executeQueueWorkerRequest;
+
+const host = createQueueWorkerHost(dependencies);
 
 export type { QueueWorkerResult } from "./worker-host-core";
 
