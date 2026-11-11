@@ -11,7 +11,8 @@ competing processes yourself.
 
 The local baseline and pending approvals are in
 [performance-baseline.md](../../plans/performance-baseline.md).
-Bundle byte budgets remain in `scripts/check-performance-budgets.mjs`; these
+Bundle byte budgets remain in `scripts/check-performance-budgets.mjs` and
+whole-app memory ceilings in `apps/desktop/scripts/memory-budgets.json`; these
 benchmarks neither replace them nor introduce CI latency thresholds.
 
 ## Repeatable offline microbenchmarks
@@ -97,11 +98,41 @@ test worker do not represent the complete Electron app, GPU, or all native memor
    model as part of these baseline microbenchmarks.
 
 Until real captures are attached, startup, scroll/filter response, bulk-renderer
-long tasks, post-idle app memory, and encoder cold/warm execution remain
-**not measured**. Isolated native retrieval SQL was measured in the
+long tasks, and encoder cold/warm execution remain **not measured**. Isolated native retrieval SQL was measured in the
 [vector retrieval decision](../../plans/vector-retrieval-decision.md); that report
 also records incomplete benchmark phases and the rejected prototype. Those SQL
 measurements are not end-to-end semantic search latency.
+
+## Whole-app memory budgets
+
+After `pnpm build`, from a desktop session (`xvfb-run -a` on headless Linux):
+
+```sh
+pnpm --filter @pond/desktop smoke:memory
+```
+
+This launches the built app against a temporary isolated Library, the same way
+`smoke:desktop` does, and never opens a personal Library. After renderer-ready it
+samples `app.getAppMetrics()` three times, one second apart, in three scenarios,
+in this order:
+
+- `idle-window-open`: 15 seconds idle with the Library window open.
+- `seeded-window-open`: 15 seconds after importing 50 synthetic 256×256 PNG
+  Saves through `saves.createManual`. Enrichments stay off, as in a fresh Library.
+- `window-closed`: 15 seconds after closing the Library window. On Windows and
+  Linux the harness keeps Pond running, as a tray would.
+
+Each scenario reports the median working set in MB for the browser (main), GPU,
+renderer (Tab), utility, and other processes, plus their total. It also reports
+each process and the main process's `process.getProcessMemoryInfo()`. GC is not
+forced. Working set counts shared pages, so totals overstate unique memory.
+
+The JSON report goes to stdout and to `POND_MEMORY_REPORT`, which defaults to
+`pond-memory-report.json` under the OS temporary directory. The command exits
+non-zero and names each exceeded ceiling. Ceilings live in
+`apps/desktop/scripts/memory-budgets.json`. They are loose regression tripwires
+for Ubuntu, Windows, and macOS CI, not approved targets. Tighten them only from
+recorded CI baselines.
 
 ## Budgets and approval
 
