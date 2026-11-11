@@ -20,6 +20,7 @@ import type { ChapterCue } from "@/features/saves/lib/media/chapters-vtt";
 import { buildPondUrl } from "@/features/saves/lib/media/url";
 import { viewerMemory } from "@/features/saves/lib/viewer-memory";
 import { cardThumbnailFor } from "@/features/saves/state/card-thumbnails";
+import { usePrefs } from "@/shared/state/prefs";
 import { videoScaleForRotation } from "./geometry";
 import { MediaBridge } from "./media-bridge";
 import { Poster } from "./poster";
@@ -163,6 +164,7 @@ export function VideoPlayer({
   renderToolbar,
 }: VideoPlayerProps) {
   const save = useSave(saveId);
+  const [viewer] = usePrefs("viewer");
   const chromeRoot = useViewerChromeRoot();
   const trackUrl = useChaptersTrackUrl(chapters);
   const subtitle = save?.files.find((file) => file.kind === "subtitle");
@@ -225,7 +227,12 @@ export function VideoPlayer({
   );
 
   return (
-    <Video.Root frameRate={frameRate} fullscreenTarget={chromeRoot} chrome>
+    <Video.Root
+      frameRate={frameRate}
+      fullscreenTarget={chromeRoot}
+      initialMuted={viewer.videoMuted}
+      chrome
+    >
       <MediaBridge
         key={src}
         src={src}

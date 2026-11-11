@@ -24,6 +24,7 @@ const state: PreviewWindowState = {
   grayscale: false,
   size: "fit",
   zoom: null,
+  videoMuted: false,
 };
 
 describe("preview context menu", () => {

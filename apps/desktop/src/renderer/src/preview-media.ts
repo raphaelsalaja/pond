@@ -6,6 +6,8 @@ interface PreviewMediaElements {
   video: HTMLVideoElement;
   error: HTMLElement;
   retry: HTMLButtonElement;
+  /** Native controls write `muted` on the element. Volume is left unchanged. */
+  onMuted?: (muted: boolean) => void;
 }
 
 type PreviewMediaTarget = Pick<
@@ -24,8 +26,20 @@ export function createPreviewMedia({
   video,
   error,
   retry,
+  onMuted,
 }: PreviewMediaElements) {
   let current: (PreviewMediaTarget & { displayUrl: string }) | null = null;
+  let applyingMute = false;
+  const setMuted = (muted: boolean) => {
+    if (video.muted === muted) return;
+    applyingMute = true;
+    video.muted = muted;
+    applyingMute = false;
+  };
+  const onVolumeChange = () => {
+    if (applyingMute) return;
+    onMuted?.(video.muted);
+  };
   const clearVideo = () => {
     video.pause();
     video.removeAttribute("src");
@@ -55,8 +69,10 @@ export function createPreviewMedia({
   image.addEventListener("load", loaded);
   video.addEventListener("error", failed);
   video.addEventListener("loadeddata", loaded);
+  video.addEventListener("volumechange", onVolumeChange);
   retry.addEventListener("click", reload);
   return {
+    setMuted,
     show(next: PreviewMediaTarget) {
       const displayUrl = displayPreviewUrl(next);
       const changed =
@@ -81,6 +97,7 @@ export function createPreviewMedia({
       image.removeEventListener("load", loaded);
       video.removeEventListener("error", failed);
       video.removeEventListener("loadeddata", loaded);
+      video.removeEventListener("volumechange", onVolumeChange);
       retry.removeEventListener("click", reload);
       if (current?.mediaType === "video") clearVideo();
       current = null;

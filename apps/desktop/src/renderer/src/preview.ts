@@ -25,7 +25,6 @@ const previewUi = document.querySelector<HTMLElement>("#preview-ui");
 if (!image || !preview || !video || !error || !retry || !previewUi)
   throw new Error("Preview surface is missing.");
 
-const media = createPreviewMedia({ image, video, error, retry });
 const uiRoot = createRoot(previewUi);
 
 let state: PreviewWindowState | null = null;
@@ -126,11 +125,23 @@ function refreshSlideshow(): void {
   renderPreviewUi();
 }
 
+const media = createPreviewMedia({
+  image,
+  video,
+  error,
+  retry,
+  onMuted(muted) {
+    if (state?.mediaType !== "video" || state.videoMuted === muted) return;
+    configure({ videoMuted: muted });
+  },
+});
+
 const unsubscribe = window.pondPreview.onState((next) => {
   state = next;
   const title = `${next.title} · Pond`;
   document.title = title;
   media.show(next);
+  if (next.mediaType === "video") media.setMuted(next.videoMuted);
   preview.dataset.mediaType = next.mediaType;
   document.body.dataset.mediaType = next.mediaType;
   document.body.dataset.reduceMotion = next.reduceMotion;

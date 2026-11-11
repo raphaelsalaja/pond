@@ -11,6 +11,7 @@ import {
   type MenuItemConstructorOptions,
   shell,
 } from "electron";
+import log from "electron-log/main.js";
 import { z } from "zod";
 import { IPC } from "../../shared/constants";
 import {
@@ -41,7 +42,7 @@ import { openSavedFile } from "../lib/open-saved-file";
 import { resolveMainOut, resolvePreload } from "../lib/resolve-preload";
 import { mainWindowState } from "../window-state";
 import { copyExportFile } from "./export-files";
-import { getPrefs, subscribePrefs } from "./prefs";
+import { getPrefs, setPrefs, subscribePrefs } from "./prefs";
 
 interface PreviewEntry {
   window: BrowserWindow;
@@ -258,6 +259,7 @@ async function createPreviewWindow(
     grayscale: false,
     size: "fit",
     zoom: null,
+    videoMuted: prefs.viewer.videoMuted,
   };
   const entry = { window, state };
   entries.set(window.id, entry);
@@ -295,7 +297,9 @@ function configurePreviewWindow(input: PreviewWindowConfigure): void {
   const entry = entries.get(input.windowId);
   if (!entry || entry.window.isDestroyed())
     throw userError("The preview window closed.");
-  entry.state = { ...entry.state, ...input };
+  const { videoMuted, ...appearance } = input;
+  const previousMuted = entry.state.videoMuted;
+  entry.state = { ...entry.state, ...appearance };
   if (input.fullscreen !== undefined)
     entry.window.setFullScreen(input.fullscreen);
   if (input.opacity !== undefined) entry.window.setOpacity(input.opacity);
@@ -303,6 +307,12 @@ function configurePreviewWindow(input: PreviewWindowConfigure): void {
     entry.window.setAlwaysOnTop(input.alwaysOnTop);
   if (input.zoom !== undefined) {
     entry.state.size = input.zoom === null ? "fit" : "actual";
+  }
+  if (videoMuted !== undefined && videoMuted !== previousMuted) {
+    entry.state = { ...entry.state, videoMuted };
+    void setPrefs({ viewer: { videoMuted } }).catch(() => {
+      log.warn("[pond preview] could not save mute");
+    });
   }
   sendState(entry);
 }
@@ -477,6 +487,7 @@ export function registerPreviewWindowHandlers(bus: IpcMain): void {
       entry.state = {
         ...entry.state,
         reduceMotion: prefs.preferences.reduceMotion,
+        videoMuted: prefs.viewer.videoMuted,
       };
       sendState(entry);
     }

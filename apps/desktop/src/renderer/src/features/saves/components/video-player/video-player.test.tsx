@@ -1,4 +1,4 @@
-import { PrefsSchema } from "@pond/schema";
+import { type Prefs, PrefsSchema } from "@pond/schema";
 import { act, type ComponentProps } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -8,12 +8,32 @@ import {
   ViewerChrome,
 } from "@/features/saves/components/viewers/media-viewer/chrome";
 import { ViewerToolbarGroups } from "@/features/saves/components/viewers/viewer-toolbar-groups";
+import { loadPrefs } from "@/shared/state/prefs";
 import { VideoPlayer } from "./";
+
+const prefsListeners = new Set<(prefs: Prefs) => void>();
+let savedPrefs = PrefsSchema.parse({});
+
+function emitPrefs(next: Prefs): void {
+  savedPrefs = next;
+  const snapshot = structuredClone(savedPrefs);
+  for (const listener of prefsListeners) listener(snapshot);
+}
+
+function seedViewer(patch: Partial<Prefs["viewer"]>): void {
+  emitPrefs(
+    PrefsSchema.parse({
+      ...savedPrefs,
+      viewer: { ...savedPrefs.viewer, ...patch },
+    }),
+  );
+}
 
 let host: HTMLDivElement;
 let root: Root;
 
-beforeEach(() => {
+beforeEach(async () => {
+  savedPrefs = PrefsSchema.parse({});
   vi.stubGlobal(
     "ResizeObserver",
     class {
@@ -23,12 +43,27 @@ beforeEach(() => {
     },
   );
   vi.stubGlobal("pond", {
-    query: async (name: string) => {
+    onPrefsChanged(listener: (prefs: Prefs) => void) {
+      prefsListeners.add(listener);
+      return () => prefsListeners.delete(listener);
+    },
+    query: async (name: string, params?: Partial<Prefs>) => {
       if (name === "saves.mediaTiming") return { frameRate: 24 };
-      return PrefsSchema.parse({});
+      if (name === "settings.getPrefs") return structuredClone(savedPrefs);
+      if (name === "settings.setPrefs") {
+        savedPrefs = PrefsSchema.parse({
+          ...savedPrefs,
+          ...params,
+          viewer: { ...savedPrefs.viewer, ...params?.viewer },
+        });
+        return { ok: true, prefs: structuredClone(savedPrefs) };
+      }
+      return structuredClone(savedPrefs);
     },
     tx: async () => ({ ok: true }),
   });
+  if (prefsListeners.size === 0) await loadPrefs();
+  else emitPrefs(savedPrefs);
   Object.defineProperty(HTMLMediaElement.prototype, "play", {
     configurable: true,
     value: () => Promise.resolve(),
@@ -490,4 +525,55 @@ it("fits the video and its poster before first paint", async () => {
   expect(
     frame?.querySelector('img[src="pond://test/poster.jpg"]'),
   ).not.toBeNull();
+});
+
+it("carries mute to the next preview and keeps volume", async () => {
+  await act(async () => {
+    root.render(<TestVideoPlayer />);
+  });
+  const first = host.querySelector("video");
+  const mute = host.querySelector<HTMLButtonElement>(
+    'button[aria-label="Mute"]',
+  );
+  if (!first || !mute) throw new Error("Missing video mute control");
+  first.volume = 0.4;
+
+  await act(async () => mute.click());
+  expect(first.muted).toBe(true);
+  expect(first.volume).toBe(0.4);
+  await act(async () => first.dispatchEvent(new Event("volumechange")));
+
+  expect(savedPrefs.viewer.videoMuted).toBe(true);
+  expect(first.volume).toBe(0.4);
+  await act(async () => root.render(null));
+  await act(async () => {
+    root.render(<TestVideoPlayer />);
+  });
+
+  const second = host.querySelector("video");
+  if (!second) throw new Error("Missing reopened video");
+  expect(second).not.toBe(first);
+  expect(second.muted).toBe(true);
+  expect(second.volume).toBe(1);
+  expect(host.querySelector('button[aria-label="Unmute"]')).not.toBeNull();
+
+  const unmute = host.querySelector<HTMLButtonElement>(
+    'button[aria-label="Unmute"]',
+  );
+  await act(async () => unmute?.click());
+  expect(second.muted).toBe(false);
+  expect(second.volume).toBe(1);
+  await act(async () => second.dispatchEvent(new Event("volumechange")));
+  expect(savedPrefs.viewer.videoMuted).toBe(false);
+});
+
+it("opens a preview muted when the preference was saved", async () => {
+  seedViewer({ videoMuted: true });
+  await act(async () => {
+    root.render(<TestVideoPlayer />);
+  });
+  const video = host.querySelector("video");
+  expect(video?.muted).toBe(true);
+  expect(video?.volume).toBe(1);
+  expect(host.querySelector('button[aria-label="Unmute"]')).not.toBeNull();
 });

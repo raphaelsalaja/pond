@@ -33,6 +33,8 @@ export const ViewerPrefsSchema = z.object({
   hoverVideo: z.boolean().catch(true),
   rememberPlayback: z.boolean().catch(true),
   loopShortVideos: z.boolean().catch(true),
+  /** Shared by every preview video. Volume stays on the element. */
+  videoMuted: z.boolean().catch(false),
   videoWheelBehavior: z.enum(["none", "progress", "volume"]).catch("progress"),
   videoSeekSeconds: z
     .union([z.literal(5), z.literal(10), z.literal(15), z.literal(30)])
