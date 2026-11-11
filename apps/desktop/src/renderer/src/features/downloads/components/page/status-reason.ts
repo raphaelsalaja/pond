@@ -165,6 +165,9 @@ function breakerReason(
   if (gate?.state === "half_open") {
     return `Pond is testing ${source} with one download before resuming the rest.`;
   }
+  if (gate?.reason === "auth_required") {
+    return `${source} needs you to sign in again. Reconnect it in Sources to resume.`;
+  }
   const resumeAt = gate?.retryAt ?? row.nextRunAt;
   if (gate?.reason === "rate_limit") {
     return withResume(`${source} is limiting requests.`, resumeAt, now);
