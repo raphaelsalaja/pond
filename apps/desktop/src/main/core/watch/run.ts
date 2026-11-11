@@ -10,7 +10,7 @@ import { enqueue } from "../pipeline/enqueue";
 import { enqueueCandidateKey } from "../pipeline/enqueue-input";
 import { isSyncBlockedByStorageGuard } from "../storage-watcher";
 import { listAccountsForSource, partitionForAccount } from "../sync/accounts";
-import { organizeIncoming } from "../sync/incoming";
+import { fileIncomingSaves } from "../sync/incoming";
 import { emit, inFlight } from "../sync/sync-status";
 import { getWatch, getWatchSync, patchWatchSync } from "../sync/watches";
 import { listArenaWatch } from "./arena";
@@ -255,11 +255,7 @@ async function runWatch(
     ev.outcome = "aborted";
     return;
   }
-  await organizeIncoming(
-    bulk.createdIds,
-    watch.sync.incoming,
-    `watch:${source}`,
-  );
+  await fileIncomingSaves(bulk.createdIds, watchId, source, `watch:${source}`);
 
   const lastSyncedAt = await persistWatchWatermark(watchId, {
     firstCheck,
