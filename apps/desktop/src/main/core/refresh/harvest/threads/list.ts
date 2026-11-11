@@ -1,16 +1,23 @@
 /// <reference lib="dom" />
 
-import type { MediaType } from "@pond/schema/db";
+import type { ListKind, MediaType } from "@pond/schema/db";
 import { buildScrollListExpression } from "../lib/expression";
 import type { inPageScrollCollect } from "../lib/scroll";
 import type { ListHarvestArgs, ListHarvestResult } from "../list-types";
 import { inPageThreadsNormalize } from "./normalize";
 
-export const THREADS_LIST_URL = "https://www.threads.com/saved";
-export const THREADS_LIKES_URLS = [
-  "https://www.threads.com/liked",
-  "https://www.threads.com/activity",
-] as const;
+export type ThreadsListKind = Extract<ListKind, "saved" | "liked">;
+
+/**
+ * Threads has no public list API, so each list replays the feed query its page fires.
+ * @see THREADS_HOOK in `src/preload/scrape.cjs.ts`, which picks that query.
+ */
+export const THREADS_LIST_PAGES = {
+  saved: ["https://www.threads.com/saved"],
+  liked: ["https://www.threads.com/liked", "https://www.threads.com/activity"],
+} as const satisfies Record<ThreadsListKind, readonly string[]>;
+
+export const THREADS_LIST_URL = THREADS_LIST_PAGES.saved[0];
 
 interface ThreadsListMedia {
   url: string;

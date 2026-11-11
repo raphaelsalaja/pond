@@ -265,38 +265,45 @@ const THREADS_HOOK = `
       }
     };
 
-    const looksNamedSaved = (url, body, headers) => {
+    /** Each list page and the feed query it fires. @see THREADS_LIST_PAGES in core/refresh/harvest/threads/list.ts */
+    const LIST_QUERIES = [
+      { page: /^\\/saved/i, query: /saved|bookmark|favorit/i },
+      { page: /^\\/(liked|activity)/i, query: /liked|BarcelonaLike|activity/i },
+    ];
+
+    const currentList = () => {
+      try {
+        const path = (typeof location !== "undefined" && location.pathname) || "";
+        return LIST_QUERIES.find((list) => list.page.test(path)) || null;
+      } catch (e) {
+        return null;
+      }
+    };
+
+    /** A query named for the open page beats one named for another list, which beats an unnamed query on a list page. */
+    const requestRank = (url, body, headers) => {
       try {
         const friendly =
           (headers && headers["x-fb-friendly-name"]) || "";
         const blob = String(url || "") + "\\n" + String(body || "") + "\\n" + String(friendly);
-        return /saved|bookmark|favorit|liked|activity/i.test(blob) || /BarcelonaSaved|BarcelonaLike/i.test(blob);
+        const list = currentList();
+        if (list && list.query.test(blob)) return 3;
+        if (LIST_QUERIES.some((other) => other.query.test(blob))) return 2;
+        return list ? 1 : 0;
       } catch (e) {
-        return false;
-      }
-    };
-
-    const onSavedPage = () => {
-      try {
-        return /\\/(saved|liked|activity)/i.test((typeof location !== "undefined" && location.pathname) || "");
-      } catch (e) {
-        return false;
+        return 0;
       }
     };
 
     const captureRequest = (url, method, headers, body) => {
       try {
-        const named = looksNamedSaved(url, body, headers);
+        const rank = requestRank(url, body, headers);
+        if (rank === 0) return;
         const existing = globalThis.__pondThreadsSavedRequest;
-        if (existing) {
-          if (!named) return;
-          const existingNamed = looksNamedSaved(
-            existing.url,
-            existing.body,
-            existing.headers,
-          );
-          if (existingNamed) return;
-        } else if (!named && !onSavedPage()) {
+        if (
+          existing &&
+          requestRank(existing.url, existing.body, existing.headers) >= rank
+        ) {
           return;
         }
         globalThis.__pondThreadsSavedRequest = {

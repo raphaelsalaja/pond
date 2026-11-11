@@ -99,6 +99,44 @@ describe("parseSavedResponses", () => {
     expect(rich.has("QuotedCode01")).toBe(false);
   });
 
+  it("reads every page of a paged saved feed and skips a broken one", () => {
+    const nextPage = {
+      data: {
+        mediaData: {
+          edges: [
+            {
+              node: {
+                thread_items: [
+                  { post: { ...quotedNode, code: "SecondPage1" } },
+                ],
+              },
+            },
+          ],
+          page_info: { has_next_page: false, end_cursor: null },
+        },
+      },
+    };
+    const rich = parseSavedResponses([
+      {
+        url: "https://www.threads.com/graphql/query",
+        body: JSON.stringify(savedPayload),
+        status: 200,
+      },
+      {
+        url: "https://www.threads.com/graphql/query",
+        body: "<html>Something went wrong</html>",
+        status: 200,
+      },
+      {
+        url: "https://www.threads.com/graphql/query",
+        body: JSON.stringify(nextPage),
+        status: 200,
+      },
+    ]);
+    expect([...rich.keys()]).toEqual(["ParentCode01", "SecondPage1"]);
+    expect(rich.get("SecondPage1")?.author.handle).toBe("carol");
+  });
+
   it("parses bodies with an anti-hijack prefix", () => {
     const rich = parseSavedResponses([
       {

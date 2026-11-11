@@ -242,6 +242,42 @@ it("starts the first import with only the lists you keep", async () => {
   expect(syncRunNow).toHaveBeenCalledWith("acc-instagram");
 });
 
+it("starts a Threads import with Saved Posts and Liked Posts on", async () => {
+  await renderFor({
+    id: "acc-threads",
+    source: "threads",
+    sync: { importPending: true },
+  });
+  expect(toggle("Saved Posts").getAttribute("aria-checked")).toBe("true");
+  expect(toggle("Liked Posts").getAttribute("aria-checked")).toBe("true");
+  await act(async () => toggle("Liked Posts").click());
+  await act(async () => button("Start Import").click());
+
+  expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
+    accountId: "acc-threads",
+    scope: { listKinds: ["saved"] },
+    start: true,
+  });
+});
+
+it("keeps both Threads lists on for an Account connected before list choices", async () => {
+  await renderFor({ id: "acc-threads", source: "threads", sync: {} });
+  expect(toggle("Saved Posts").getAttribute("aria-checked")).toBe("true");
+  expect(toggle("Liked Posts").getAttribute("aria-checked")).toBe("true");
+  expect(query).not.toHaveBeenCalledWith(
+    "accounts.setImportScope",
+    expect.anything(),
+  );
+  await act(async () => toggle("Saved Posts").click());
+  await vi.waitFor(() =>
+    expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
+      accountId: "acc-threads",
+      scope: { listKinds: ["liked"] },
+      start: false,
+    }),
+  );
+});
+
 it("won't start an import that would bring in nothing", async () => {
   await renderFor({
     id: "acc-youtube",

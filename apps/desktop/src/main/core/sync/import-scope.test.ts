@@ -55,6 +55,25 @@ describe("listHarvestPlan", () => {
     });
   });
 
+  it("walks Threads Saved Posts and Liked Posts separately", () => {
+    expect(listHarvestPlan("threads", undefined)).toEqual({
+      primary: true,
+      liked: true,
+      subscriptions: false,
+      listKinds: [],
+      collections: null,
+      fileEveryCollection: false,
+    });
+    expect(listHarvestPlan("threads", { listKinds: ["liked"] })).toMatchObject({
+      primary: false,
+      liked: true,
+    });
+    expect(listHarvestPlan("threads", { listKinds: ["saved"] })).toMatchObject({
+      primary: true,
+      liked: false,
+    });
+  });
+
   it("walks chosen collections instead of the whole saved list", () => {
     expect(listHarvestPlan("pinterest", { collections: [BOARD] })).toEqual({
       primary: false,

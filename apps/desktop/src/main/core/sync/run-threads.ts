@@ -2,16 +2,15 @@ import { type ConnectedAccount, type Source, saves } from "@pond/schema/db";
 import type { SyncRunEvent } from "@pond/schema/events";
 import { and, eq } from "drizzle-orm";
 import log from "electron-log/main.js";
+import { accountImportScope } from "../../../shared/import-scope";
 import { getDb } from "../../db";
 import { type EnqueueItem, enqueue } from "../pipeline/enqueue";
 import { mergeListKindsOntoExisting } from "../pipeline/list-kinds";
 import { createQueueGeneration } from "../pipeline/queue-generations";
-import {
-  harvestThreadsLikes,
-  harvestThreadsSaved,
-} from "../refresh/harvest-window";
+import type { ThreadsListKind } from "../refresh/harvest/threads/list";
+import { harvestThreadsList } from "../refresh/harvest-window";
 import { partitionForAccount } from "./accounts";
-import { mergeEntryListKinds, stampListKind, unionById } from "./harvest-union";
+import { listHarvestPlan } from "./import-scope";
 import { fileIncomingSaves } from "./incoming";
 import {
   loadSyncBaseline,
@@ -19,7 +18,18 @@ import {
   persistWatermark,
 } from "./sync-baseline";
 import { emit, listGapNote } from "./sync-status";
+import { harvestThreadsLists, threadsListKinds } from "./threads-lists";
 import { buildThreadsSavedSeed } from "./threads-seed";
+
+const LIST_NAMES = {
+  saved: "saved posts",
+  liked: "liked posts",
+} satisfies Record<ThreadsListKind, string>;
+
+const GAP_LABELS = {
+  saved: "Saved posts",
+  liked: "Likes",
+} satisfies Record<ThreadsListKind, string>;
 
 export async function syncThreads(
   account: ConnectedAccount,
@@ -49,23 +59,29 @@ export async function syncThreads(
     message: "Reading",
   });
 
-  const harvest = await harvestThreadsSaved(
-    {
-      knownIds: baseline.full ? [] : Array.from(knownIds),
-    },
-    {
-      partition: partitionForAccount(accountId),
-      onProgress: (p) => {
-        if (signal.aborted) return;
-        const message =
-          p.phase === "hydrate"
-            ? "Loading"
-            : p.fresh > 0
-              ? "Found"
-              : "Scanning";
-        emit({ accountId, source, state: "running", message });
-      },
-    },
+  const plan = listHarvestPlan(
+    source,
+    accountImportScope(source, account.sync),
+  );
+  const partition = partitionForAccount(accountId);
+  const harvest = await harvestThreadsLists(
+    threadsListKinds(plan),
+    { knownIds: baseline.full ? [] : Array.from(knownIds) },
+    (kind, args) =>
+      harvestThreadsList(kind, args, {
+        partition,
+        onProgress: (p) => {
+          if (signal.aborted) return;
+          const message =
+            p.phase === "hydrate"
+              ? "Loading"
+              : p.fresh > 0
+                ? "Found"
+                : "Scanning";
+          emit({ accountId, source, state: "running", message });
+        },
+      }),
+    signal,
   );
   if (signal.aborted) {
     ev.outcome = "aborted";
@@ -107,7 +123,7 @@ export async function syncThreads(
       accountId,
       source,
       state: "error",
-      message: `Couldn't read saved posts: ${harvest.reason}.`,
+      message: `Couldn't read ${LIST_NAMES[harvest.kind]}: ${harvest.reason}.`,
       lastError: harvest.reason,
     });
     ev.outcome = "error";
@@ -115,25 +131,11 @@ export async function syncThreads(
     return;
   }
 
-  const likes = await harvestThreadsLikes(
-    {
-      knownIds: baseline.full ? [] : Array.from(knownIds),
-    },
-    { partition: partitionForAccount(accountId) },
-  );
-  const gaps: string[] = [];
-  if (!likes.ok) {
-    log.warn(`[pond sync:threads] likes harvest failed: ${likes.reason}`);
-    gaps.push(listGapNote("Likes", likes.reason));
-  }
-  const entries = likes.ok
-    ? unionById(
-        stampListKind(harvest.entries, "saved"),
-        stampListKind(likes.entries, "liked"),
-        (e) => e.postId,
-        mergeEntryListKinds,
-      )
-    : stampListKind(harvest.entries, "saved");
+  const gaps = harvest.gaps.map((gap) => {
+    log.warn(`[pond sync:threads] ${gap.kind} harvest failed: ${gap.reason}`);
+    return listGapNote(GAP_LABELS[gap.kind], gap.reason);
+  });
+  const { entries } = harvest;
 
   const relisted = await mergeListKindsOntoExisting(
     source,

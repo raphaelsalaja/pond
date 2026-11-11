@@ -15,6 +15,7 @@ import {
 /** Sources whose Account sync walks Likes as a second list beside the main saved list. */
 const SEPARATE_LIKED_LISTS: ReadonlySet<Source> = new Set([
   "instagram",
+  "threads",
   "twitter",
   "youtube",
 ]);
