@@ -77,6 +77,7 @@ async function defaultQuery(name: string) {
   if (name === "pipeline.inflight") return [];
   if (name === "downloads.ingestingOrFailed") return [];
   if (name === "saves.getMany") return [];
+  if (name === "queue.sourceGates") return [];
   throw new Error(`Unexpected query: ${name}`);
 }
 const pipelinePause = vi.fn(async (paused: boolean) => ({ ok: true, paused }));
@@ -607,10 +608,11 @@ it("keeps status out of the name and shows the normalized source", async () => {
   expect(host.querySelector('[data-status="waiting"]')?.textContent).toContain(
     "Waiting",
   );
-  expect(host.textContent).toContain("Stopped after 1 attempt");
+  expect(host.textContent).not.toContain("Stopped after");
   const youtubeRow = host
     .querySelector('[title="https://www.youtube.com/"]')
     ?.closest('[role="row"]');
+  expect(youtubeRow?.textContent).toContain("Failed");
   expect(youtubeRow?.textContent).toContain("YouTube");
 });
 
@@ -643,7 +645,7 @@ it("explains why a download failed from its status", async () => {
   )?.parentElement;
   expect(failedRow?.textContent).toContain("Failed");
   expect(document.body.textContent).not.toContain(
-    "Connect Instagram with the Pond extension",
+    "Instagram needs you to sign in again.",
   );
 
   await act(async () => {
@@ -653,7 +655,66 @@ it("explains why a download failed from its status", async () => {
     await new Promise((resolve) => setTimeout(resolve, 800));
   });
   expect(document.body.textContent).toContain(
-    "Connect Instagram with the Pond extension",
+    "Instagram needs you to sign in again. Reconnect it in Sources to resume.",
+  );
+});
+
+it("explains a download waiting on its hourly limit", async () => {
+  const now = Date.now();
+  setSaves([
+    save("Queued clip", "ingesting", undefined, {
+      source: "twitter",
+      tasks: [
+        {
+          op: "harvest_metadata",
+          status: "deferred",
+          deferredReason: "source_budget",
+          attempts: 0,
+          maxAttempts: 5,
+          lastError: null,
+          nextRunAt: now + 12 * 60_000,
+          updatedAt: 1,
+        },
+      ],
+    }),
+  ]);
+  query.mockImplementation(async (name: string) => {
+    if (name === "queue.sourceGates")
+      return [
+        {
+          source: "twitter",
+          state: "closed",
+          reason: null,
+          retryAt: null,
+          remainingHourly: 0,
+          remainingDaily: 20,
+          maxPerHour: 40,
+          maxPerDay: 600,
+          recoveryProbe: false,
+        },
+      ];
+    return defaultQuery(name);
+  });
+  await render();
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+
+  const queuedRow = host
+    .querySelector('[title="Queued clip"]')
+    ?.closest('[role="row"]');
+  const status = queuedRow?.querySelector(
+    '[data-status="progress"]',
+  )?.parentElement;
+  expect(queuedRow?.textContent).toContain("Waiting for Twitter");
+  await act(async () => {
+    for (const type of ["pointerenter", "mouseenter", "mousemove"]) {
+      status?.dispatchEvent(new MouseEvent(type, { bubbles: true }));
+    }
+    await new Promise((resolve) => setTimeout(resolve, 800));
+  });
+  expect(document.body.textContent).toContain(
+    "Hourly download limit reached (40/hour). Resumes in 12 min.",
   );
 });
 

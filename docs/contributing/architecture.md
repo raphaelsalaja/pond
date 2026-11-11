@@ -129,6 +129,10 @@ the lease token plus cancellation fence as a compare-and-set guard. Source
 budgets, breaker state, generation state, and attempt history are durable.
 Downloads, the sidebar, and the tray project that shared state through typed
 queries. They never infer queue truth from renderer activity.
+`queue.sourceGates` lists every source that holds work back, including a
+closed gate whose hourly or daily request budget is spent, with that source's
+caps. Downloads combines it with each Save's task state, deferral reason, and
+recorded error class to explain a status in plain language.
 
 Retry batches can contain failed Saves and Saves that are still ingesting.
 A failed Save stays failed until a worker claims its next task. The orphan

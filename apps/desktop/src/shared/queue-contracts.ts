@@ -20,6 +20,8 @@ export const QueueSourceGateSchema = z.object({
   retryAt: z.number().nullable(),
   remainingHourly: z.number(),
   remainingDaily: z.number(),
+  maxPerHour: z.number(),
+  maxPerDay: z.number(),
   recoveryProbe: z.boolean(),
 });
 export type QueueSourceGate = z.infer<typeof QueueSourceGateSchema>;

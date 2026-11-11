@@ -1,6 +1,7 @@
 import { sourceLabel } from "@pond/schema/sources";
 import { type RenderRowArgs, type TableColumn, Tooltip } from "@pond/ui";
 import type { DownloadActivity } from "@shared/download-activity";
+import type { QueueSourceGate } from "@shared/queue-contracts";
 import { useDownloadClock } from "@/features/downloads/hooks/use-download-activity";
 import type { DownloadRow } from "@/features/downloads/lib/status-feed";
 import { BrandTile } from "@/features/sources";
@@ -16,11 +17,13 @@ import {
   isDownloadProcessing,
   isDownloadStopped,
 } from "../status";
+import { downloadStatusReason } from "../status-reason";
 import styles from "./styles.module.css";
 
 export interface DownloadViewRow extends DownloadRow {
   paused: boolean;
   activity?: DownloadActivity;
+  gate?: QueueSourceGate;
 }
 
 const RING = 100;
@@ -123,7 +126,11 @@ function SourceCell({ row }: { row: DownloadViewRow }) {
 function StatusCell({ row }: { row: DownloadViewRow }) {
   const status = downloadTableStatus(row, row.paused);
   const label = downloadStatusLabel(row, row.paused);
-  const reason = status === "failed" ? row.error?.trim() : undefined;
+  const reason = downloadStatusReason(row, {
+    paused: row.paused,
+    gate: row.gate,
+    now: Date.now(),
+  });
   const content = (
     <span className={styles.status}>
       <span className={styles.mark} data-status={status}>
