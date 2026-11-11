@@ -3,16 +3,16 @@
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
   "name": "@pond/repo",
-  "documentNamespace": "https://spdx.org/spdxdocs/-pond-repo-2.5.0-3c774d8e-3dfc-467c-931d-8cc1e3768804",
+  "documentNamespace": "https://spdx.org/spdxdocs/-pond-repo-2.6.0-ea8f8a4e-703f-4efc-b6af-5a0e5523921c",
   "creationInfo": {
-    "created": "2026-11-08T16:14:41Z",
+    "created": "2026-11-10T12:26:03Z",
     "creators": ["Tool: pnpm"]
   },
   "packages": [
     {
       "SPDXID": "SPDXRef-RootPackage",
       "name": "@pond/repo",
-      "versionInfo": "2.5.0",
+      "versionInfo": "2.6.0",
       "downloadLocation": "NOASSERTION",
       "filesAnalyzed": false,
       "primaryPackagePurpose": "LIBRARY",
@@ -20,7 +20,7 @@
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/%40pond/repo@2.5.0"
+          "referenceLocator": "pkg:npm/%40pond/repo@2.6.0"
         }
       ],
       "licenseConcluded": "MIT",
