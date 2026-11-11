@@ -11,4 +11,9 @@ export {
 } from "./lib/media/units";
 export { buildPondUrl, previewThumbUrlFor, thumbUrlFor } from "./lib/media/url";
 export { shouldBlurSensitiveThumbnail } from "./lib/sensitive-content";
-export { aspectFor, clampRatio, useAspectVersion } from "./state/aspect";
+export {
+  aspectFor,
+  clampRatio,
+  layoutAspectFor,
+  useAspectVersion,
+} from "./state/aspect";

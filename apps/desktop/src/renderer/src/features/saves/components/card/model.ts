@@ -2,6 +2,10 @@ import type { IconComponent } from "@pond/icons/types";
 import { useMemo } from "react";
 import { useMediaPickOptions } from "@/features/saves/hooks/use-media-pick-options";
 import {
+  orientAspectRatio,
+  orientedDimensions,
+} from "@/features/saves/lib/image-orientation";
+import {
   buildMediaUnits,
   deriveTypeKind,
   deriveTypeLabel,
@@ -94,8 +98,13 @@ export function buildSaveCardModel(
   const mediaUnits = buildMediaUnits(save, pickOptions);
   const typeKind = deriveTypeKind(primary, save);
   const dimensions = aspectDimsFor(save, pickOptions, unit);
-  const previewAspect =
-    dimensions.w && dimensions.h ? dimensions.w / dimensions.h : aspect;
+  const oriented =
+    dimensions.w && dimensions.h
+      ? orientedDimensions(dimensions.w, dimensions.h, save.rotate)
+      : null;
+  const previewAspect = oriented
+    ? oriented.width / oriented.height
+    : orientAspectRatio(aspect, save.rotate);
   const typeLabel = display.type ? deriveTypeLabel(primary, save) : null;
   const showSource = display.source && save.source !== "local";
   const sourceLabel = showSource ? getSourceLabel(save.source) : null;

@@ -7,7 +7,7 @@ import { useRetainedSaves, useSaves } from "@/features/saves/hooks/use-saves";
 import { ensureSaves } from "@/features/saves/lib/ensure-saves";
 import { openSave } from "@/features/saves/lib/save-nav";
 import { displayTitleForSave } from "@/features/saves/lib/text";
-import { aspectFor } from "@/features/saves/state/aspect";
+import { layoutAspectFor } from "@/features/saves/state/aspect";
 import type { Save } from "@/features/saves/types";
 import styles from "./styles.module.css";
 
@@ -24,7 +24,7 @@ interface FrameStyle extends CSSProperties {
 
 function RelatedCard({ item, save }: { item: RelatedItem; save: Save }) {
   const title = displayTitleForSave(save);
-  const aspect = aspectFor(save);
+  const aspect = layoutAspectFor(save);
   const frameStyle: FrameStyle = {
     "--frame-aspect": String(aspect),
     "--frame-width": `${Math.min(1, aspect) * 100}%`,
