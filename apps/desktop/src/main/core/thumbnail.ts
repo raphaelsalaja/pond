@@ -95,24 +95,17 @@ function lookupExactCachedThumbnail(req: {
   return existsSync(out) ? { path: out } : null;
 }
 
-/**
- * Sync cache probe for the protocol hot path. Never generates.
- * Exact width only: a different bucket must not stand in for the card thumb.
- */
-export function lookupCachedThumbnail(req: {
+/** A versionless URL can outlive its file, so only a versioned thumbnail is immutable. */
+export async function resolveCardThumbnail(req: {
   saveId: string;
   sourcePath: string;
   width: number;
   version: string | null;
-}): { path: string } | null {
-  return lookupExactCachedThumbnail(req);
-}
-
-export function ensureThumbnailInBackground(req: ThumbnailRequest): void {
-  void getOrCreateThumbnail({
-    ...req,
-    priority: req.priority ?? "background",
-  }).catch(() => {});
+}): Promise<{ path: string; immutable: boolean }> {
+  const thumb = await getOrCreateThumbnail({ ...req, priority: "visible" });
+  return thumb
+    ? { path: thumb.path, immutable: req.version !== null }
+    : { path: req.sourcePath, immutable: false };
 }
 
 async function generate(

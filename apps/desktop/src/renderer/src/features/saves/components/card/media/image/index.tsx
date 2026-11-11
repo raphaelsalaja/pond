@@ -8,6 +8,7 @@ import type {
 } from "@/features/saves/lib/media/units";
 import {
   previewThumbUrlFor,
+  sharperThumbUrlFor,
   thumbUrlFor,
 } from "@/features/saves/lib/media/url";
 import {
@@ -47,7 +48,7 @@ export function CardImage({
     : thumbUrlFor(unit.url, width);
   const qualitySrc = useQualityImage(
     thumbnail,
-    unit.url,
+    sharperThumbUrlFor(unit.url, width),
     viewer.thumbnailQuality === "quality" &&
       (width ?? 0) >= 384 &&
       !unit.requiresGeneratedPreview,
