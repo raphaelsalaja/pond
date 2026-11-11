@@ -20,3 +20,10 @@
   min-width: 40px;
   font-variant-numeric: tabular-nums;
 }
+
+.divider {
+  inline-size: 1px;
+  block-size: 12px;
+  margin-inline: 2px;
+  background: var(--ds-gray-a4);
+}

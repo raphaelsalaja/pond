@@ -1,0 +1,82 @@
+.minimap {
+  position: absolute;
+  inset-block-end: 16px;
+  inset-inline-end: 16px;
+  z-index: 10;
+  visibility: hidden;
+  overflow: hidden;
+  pointer-events: none;
+  background: var(--ds-gray-1);
+  border-radius: var(--ds-radius-lg);
+  box-shadow: var(--canvas-shadow-float);
+  opacity: 0;
+  transform-origin: bottom right;
+  scale: 0.96;
+  translate: 0 6px;
+  transition:
+    opacity var(--ds-duration-snap) var(--ds-easing-standard),
+    translate var(--ds-duration-snap) var(--ds-easing-standard),
+    scale var(--ds-duration-snap) var(--ds-easing-standard),
+    visibility 0s linear var(--ds-duration-snap),
+    inset-block-end var(--ds-duration-slow) var(--ds-easing-spring);
+
+  &[data-shown] {
+    visibility: visible;
+    pointer-events: auto;
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
+    transition:
+      opacity var(--ds-duration-snap) var(--ds-easing-decelerate),
+      translate var(--ds-duration-slow) var(--ds-easing-spring),
+      scale var(--ds-duration-slow) var(--ds-easing-spring),
+      visibility 0s,
+      inset-block-end var(--ds-duration-slow) var(--ds-easing-spring);
+  }
+
+  /* Below this width the map would cover the centered tools dock, so it sits above it. */
+  @container canvas-board (width < 880px) {
+    inset-block-end: 72px;
+  }
+}
+
+.map {
+  display: block;
+  touch-action: none;
+  cursor: pointer;
+  user-select: none;
+
+  &[data-dragging] {
+    cursor: grabbing;
+  }
+
+  &[data-dragging] .view {
+    cursor: grabbing;
+  }
+}
+
+.item {
+  fill: var(--ds-gray-a6);
+
+  &[data-kind="section"] {
+    fill: var(--ds-gray-a2);
+    stroke: var(--ds-gray-a6);
+    stroke-width: 1;
+  }
+
+  &[data-selected] {
+    fill: var(--ds-accent-9);
+  }
+
+  &[data-kind="section"][data-selected] {
+    fill: var(--ds-accent-a3);
+    stroke: var(--ds-accent-9);
+  }
+}
+
+.view {
+  cursor: grab;
+  fill: var(--ds-accent-a3);
+  stroke: var(--ds-accent-9);
+  stroke-width: 1.5;
+}
