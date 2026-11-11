@@ -7,6 +7,8 @@ import { QueueWorkerRequestSchema } from "./worker-contract";
 
 const POOL_SIZE = 2;
 const DEFAULT_TIMEOUT_MS = 2 * 60_000;
+/** Each idle worker holds its own Node runtime and libvips cache, so it exits between bursts of work. */
+const WORKER_IDLE_MS = 30_000;
 
 export interface QueueWorkerProcess {
   onMessage: (listener: (response: QueueWorkerResponse) => void) => void;
@@ -26,6 +28,13 @@ export interface QueueWorkerHostDependencies {
    * host uses this fallback there.
    */
   execute?: (request: QueueWorkerRequest) => Promise<QueueWorkerResponse>;
+  scheduleIdle?: (run: () => void, ms: number) => () => void;
+}
+
+function scheduleTimer(run: () => void, ms: number): () => void {
+  const timer = setTimeout(run, ms);
+  timer.unref();
+  return () => clearTimeout(timer);
 }
 
 export type QueueWorkerResult = Extract<
@@ -47,18 +56,36 @@ interface WorkerSlot {
   child: QueueWorkerProcess;
   current: PendingJob | null;
   timeout: NodeJS.Timeout | null;
+  cancelIdle: (() => void) | null;
   stopped: boolean;
 }
 
 export function createQueueWorkerHost(deps: QueueWorkerHostDependencies) {
   const slots = new Set<WorkerSlot>();
   const queue: PendingJob[] = [];
+  const scheduleIdle = deps.scheduleIdle ?? scheduleTimer;
   let disposed = false;
 
   function clearSlotTimeout(slot: WorkerSlot): void {
     if (!slot.timeout) return;
     clearTimeout(slot.timeout);
     slot.timeout = null;
+  }
+
+  function clearSlotIdle(slot: WorkerSlot): void {
+    slot.cancelIdle?.();
+    slot.cancelIdle = null;
+  }
+
+  function retireWhenIdle(slot: WorkerSlot): void {
+    if (slot.cancelIdle || slot.current || slot.stopped) return;
+    slot.cancelIdle = scheduleIdle(() => {
+      slot.cancelIdle = null;
+      if (disposed || slot.current || slot.stopped) return;
+      slot.stopped = true;
+      slots.delete(slot);
+      slot.child.kill();
+    }, WORKER_IDLE_MS);
   }
 
   function detachAbort(job: PendingJob): void {
@@ -104,6 +131,7 @@ export function createQueueWorkerHost(deps: QueueWorkerHostDependencies) {
       child,
       current: null,
       timeout: null,
+      cancelIdle: null,
       stopped: false,
     };
     slots.add(slot);
@@ -112,6 +140,7 @@ export function createQueueWorkerHost(deps: QueueWorkerHostDependencies) {
       slot.stopped = true;
       slots.delete(slot);
       clearSlotTimeout(slot);
+      clearSlotIdle(slot);
       const current = slot.current;
       slot.current = null;
       if (current) {
@@ -156,12 +185,17 @@ export function createQueueWorkerHost(deps: QueueWorkerHostDependencies) {
     for (const slot of slots) {
       if (slot.current || slot.stopped) continue;
       const job = queue.shift();
-      if (!job) return;
+      if (!job) {
+        retireWhenIdle(slot);
+        continue;
+      }
       if (job.signal?.aborted) {
         detachAbort(job);
         job.reject(new Error("Queue worker job aborted."));
+        retireWhenIdle(slot);
         continue;
       }
+      clearSlotIdle(slot);
       slot.current = job;
       job.slot = slot;
       slot.timeout = setTimeout(() => {
@@ -233,6 +267,7 @@ export function createQueueWorkerHost(deps: QueueWorkerHostDependencies) {
     for (const slot of slots) {
       slot.stopped = true;
       clearSlotTimeout(slot);
+      clearSlotIdle(slot);
       const current = slot.current;
       slot.current = null;
       if (current) {
