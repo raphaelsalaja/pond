@@ -2,6 +2,8 @@ import type { Save } from "@pond/schema/db";
 import { saves } from "@pond/schema/db";
 import {
   isOriginalImageKind,
+  isTextCardThumbnailPath,
+  isThumbnailKind,
   primaryOriginalPath,
   TEXT_THUMBNAIL_WEBP_FILE,
   THUMBNAIL_DARK_KIND,
@@ -15,7 +17,14 @@ import { getDb } from "../db";
 import { saveFile } from "../paths";
 import { persistSave } from "./persist-save";
 import type { WriteFileArgs } from "./pipeline/workers/apply";
-import { renderThumbnail, thumbnailToRender } from "./save-thumbnail-file";
+import {
+  planThumbnailRepair,
+  renderThumbnail,
+  thumbnailLooksLikeSource,
+  thumbnailSource,
+  thumbnailToRender,
+} from "./save-thumbnail-file";
+import { readLibraryMedia } from "./storage/library-media-storage";
 
 export { renderThumbnail };
 
@@ -74,6 +83,46 @@ export async function persistSaveThumbnail(
     },
   );
   return Boolean(updated);
+}
+
+/** Rebuilds a thumbnail that shows another image, including when the media is already on disk. */
+export async function repairMismatchedThumbnail(
+  saveId: string,
+  save?: Pick<Save, "files"> | null,
+): Promise<void> {
+  const files = save?.files ?? [];
+  const source = thumbnailSource(files);
+  const comparable = files.filter(
+    (file) =>
+      isThumbnailKind(file.kind) &&
+      file.custom !== true &&
+      !isTextCardThumbnailPath(file.path),
+  );
+  let matches: boolean | null = null;
+  if (source && comparable.length > 0) {
+    const sourceBytes = await readLibraryMedia(
+      saveFile(saveId, source.path),
+    ).catch(() => null);
+    if (sourceBytes) {
+      const compared = await Promise.all(
+        comparable.map(async (file) => {
+          const thumbnail = await readLibraryMedia(
+            saveFile(saveId, file.path),
+          ).catch(() => null);
+          if (!thumbnail) return null;
+          return thumbnailLooksLikeSource(thumbnail, sourceBytes);
+        }),
+      );
+      matches = compared.some((match) => match === false)
+        ? false
+        : compared.every((match) => match === true)
+          ? true
+          : null;
+    }
+  }
+  const plan = planThumbnailRepair(files, matches);
+  if (plan === "keep") return;
+  await ensureSaveThumbnail(saveId, save, { force: plan === "rebuild" });
 }
 
 export async function ensureSaveThumbnail(

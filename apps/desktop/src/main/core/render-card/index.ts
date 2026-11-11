@@ -7,6 +7,7 @@ import log from "electron-log/main.js";
 import sharp from "sharp";
 import { z } from "zod";
 import { resolveMainOut } from "../../lib/resolve-preload";
+import { captureDocumentTarget } from "./capture-target";
 
 export interface RenderedCard {
   bytes: Buffer;
@@ -100,35 +101,29 @@ function nextPaint(target: BrowserWindow): Promise<void> {
   });
 }
 
-function captureQuery(kind: CaptureKind, scheme: "light" | "dark"): string {
-  return `kind=${kind}&scheme=${scheme}&w=${CARD_WIDTH}`;
-}
-
-function captureHash(data: TweetCardData | TextCardData): string {
-  return Buffer.from(JSON.stringify(data), "utf8").toString("base64");
-}
-
 async function loadCapture(
   target: BrowserWindow,
   kind: CaptureKind,
   scheme: "light" | "dark",
   data: TweetCardData | TextCardData,
-): Promise<void> {
-  /**
-   * The light and dark cards differ only by scheme (and a card can repeat), so
-   * add a nonce: a hash-only change keeps the document and the reused window
-   * never commits another frame for capturePage.
-   */
-  const search = `${captureQuery(kind, scheme)}&v=${++loadSeq}`;
-  const hash = captureHash(data);
+): Promise<string> {
+  const documentTarget = captureDocumentTarget(
+    kind,
+    scheme,
+    CARD_WIDTH,
+    JSON.stringify(data),
+  );
+  /** A repeated card has the same token, so the nonce still forces a fresh document and frame. */
+  const search = `${documentTarget.search}&v=${++loadSeq}`;
   const devUrl = process.env.ELECTRON_RENDERER_URL;
   const load = devUrl
-    ? target.loadURL(`${devUrl}/capture.html?${search}#${hash}`)
+    ? target.loadURL(`${devUrl}/capture.html?${search}#${documentTarget.hash}`)
     : target.loadFile(resolveMainOut("../renderer/capture.html"), {
         search,
-        hash,
+        hash: documentTarget.hash,
       });
   await withTimeout(load, LOAD_TIMEOUT_MS, "capture load");
+  return documentTarget.token;
 }
 
 const CardRectSchema = z.object({
@@ -140,12 +135,18 @@ const CardRectSchema = z.object({
 
 type CardRect = z.infer<typeof CardRectSchema>;
 
-async function readCardRect(target: BrowserWindow): Promise<CardRect | null> {
+async function readCardRect(
+  target: BrowserWindow,
+  token: string,
+): Promise<CardRect | null> {
   const expr = `(async () => {
+    const token = ${JSON.stringify(token)};
     const deadline = Date.now() + ${READY_TIMEOUT_MS};
-    while (Date.now() < deadline && document.documentElement.dataset.ready !== "1") {
+    const root = () => document.documentElement;
+    while (Date.now() < deadline && (root().dataset.card !== token || root().dataset.ready !== "1")) {
       await new Promise((r) => setTimeout(r, 50));
     }
+    if (root().dataset.card !== token || root().dataset.ready !== "1") return null;
     const el = document.querySelector("[data-capture-card] > *");
     if (!el) return null;
     const r = el.getBoundingClientRect();
@@ -286,9 +287,13 @@ async function renderOne(
   radiusCss: number,
 ): Promise<RenderedCard | null> {
   const target = ensureWindow();
-  await loadCapture(target, kind, scheme, data);
+  /** Drop the previous card's ready flag before navigation so a fragment-only load cannot be captured. */
+  await target.webContents
+    .executeJavaScript("delete document.documentElement.dataset.ready", true)
+    .catch(() => undefined);
+  const token = await loadCapture(target, kind, scheme, data);
 
-  let rect = await readCardRect(target);
+  let rect = await readCardRect(target, token);
   if (!rect) {
     log.warn("[pond render-card] card not ready", kind, scheme);
     return null;
@@ -299,7 +304,7 @@ async function renderOne(
   if (needed > (contentHeight ?? INITIAL_HEIGHT)) {
     target.setContentSize(CARD_WIDTH + 2, Math.min(needed, MAX_HEIGHT));
     await sleep(150);
-    rect = (await readCardRect(target)) ?? rect;
+    rect = (await readCardRect(target, token)) ?? rect;
   }
 
   const image = await captureAtScale(target, rect);
