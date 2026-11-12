@@ -2,6 +2,7 @@ import { IconPlus } from "@pond/icons";
 import { Button, Chip, Menu } from "@pond/ui";
 import type { ReactNode } from "react";
 import { useMenuFilterQuery } from "@/shared/hooks/use-menu-filter-query";
+import { placeCreateOptionLast } from "@/shared/lib/picker-order";
 import styles from "./styles.module.css";
 
 export interface AssignOption {
@@ -48,10 +49,15 @@ export function AssignMenu({
   const rest = picks.length
     ? matches.filter((option) => !suggested?.has(option.key))
     : matches;
-  const creatable =
+  const creatable = Boolean(
     onCreate &&
-    needle &&
-    !options.some((option) => option.label.toLowerCase() === needle);
+      needle &&
+      !options.some((option) => option.label.toLowerCase() === needle),
+  );
+  const entries = placeCreateOptionLast(
+    rest.map((option) => ({ kind: "option" as const, option })),
+    creatable ? { kind: "create" as const, name: query.trim() } : null,
+  );
   const row = (option: AssignOption) => (
     <Menu.CheckboxItem
       key={option.key}
@@ -125,21 +131,24 @@ export function AssignMenu({
                     {rest.length ? <Menu.Separator /> : null}
                   </>
                 ) : null}
-                {rest.map(row)}
-                {creatable ? (
-                  <Menu.Item
-                    closeOnClick={false}
-                    onClick={() => {
-                      onCreate(query.trim());
-                      reset();
-                    }}
-                  >
-                    <Menu.ItemIcon>
-                      <IconPlus />
-                    </Menu.ItemIcon>
-                    <Menu.ItemLabel>{`Create “${query.trim()}”`}</Menu.ItemLabel>
-                  </Menu.Item>
-                ) : null}
+                {entries.map((entry) => {
+                  if (entry.kind === "option") return row(entry.option);
+                  return (
+                    <Menu.Item
+                      key="create"
+                      closeOnClick={false}
+                      onClick={() => {
+                        onCreate?.(entry.name);
+                        reset();
+                      }}
+                    >
+                      <Menu.ItemIcon>
+                        <IconPlus />
+                      </Menu.ItemIcon>
+                      <Menu.ItemLabel>{`Create “${entry.name}”`}</Menu.ItemLabel>
+                    </Menu.Item>
+                  );
+                })}
                 {!matches.length && !creatable ? (
                   <Menu.Item disabled>
                     <Menu.ItemLabel>

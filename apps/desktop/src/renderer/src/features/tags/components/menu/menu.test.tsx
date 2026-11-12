@@ -227,3 +227,105 @@ it("lists tag groups as expandable parents with their tags nested under them", a
     vi.unstubAllGlobals();
   }
 });
+
+it("puts Create after matching tags and keeps Enter on the first match", async () => {
+  vi.stubGlobal(
+    "ResizeObserver",
+    class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    },
+  );
+  const created: string[] = [];
+  vi.stubGlobal("pond", {
+    onSyncAction: () => () => {},
+    query: async (name: string, input: { name?: string }) => {
+      if (name === "tags.create") {
+        created.push(input.name ?? "");
+        return { id: "new", name: input.name };
+      }
+      throw new Error(`Unexpected query ${name}`);
+    },
+  });
+  const tag = (id: string, name: string) => ({
+    id,
+    name,
+    starred: false,
+    description: null,
+    lastUsedAt: null,
+    usageCount: 0,
+    createdAt: null,
+  });
+  const applied: string[] = [];
+  const host = document.createElement("div");
+  document.body.append(host);
+  const root = createRoot(host);
+  try {
+    await act(async () =>
+      root.render(
+        <PickerPanel.Root open>
+          <PickerPanel.Portal>
+            <PickerPanel.Positioner>
+              <PickerPanel.Popup>
+                <TagMenuView
+                  tags={[tag("desk", "Desk"), tag("design", "Design")]}
+                  groups={[]}
+                  allowCreate
+                  onToggle={(name) => {
+                    applied.push(name);
+                  }}
+                />
+              </PickerPanel.Popup>
+            </PickerPanel.Positioner>
+          </PickerPanel.Portal>
+        </PickerPanel.Root>,
+      ),
+    );
+    const input = document.querySelector("input");
+    if (!input) throw new Error("Missing tag search");
+    const setQuery = (value: string) => {
+      Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype,
+        "value",
+      )?.set?.call(input, value);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    };
+    const options = () =>
+      [...document.querySelectorAll('[role="listbox"] [role="option"]')].map(
+        (option) =>
+          option.getAttribute("aria-label") ?? option.textContent?.trim() ?? "",
+      );
+    const active = () => {
+      const id = input.getAttribute("aria-activedescendant");
+      return id ? document.getElementById(id) : null;
+    };
+
+    await act(async () => setQuery("de"));
+    expect(options()).toEqual(["Design", "Desk", "Create “de”"]);
+    expect(active()?.getAttribute("aria-label")).toBe("Design");
+    expect(active()?.hasAttribute("data-create")).toBe(false);
+    await act(async () =>
+      input.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+      ),
+    );
+    expect(applied).toEqual(["Design"]);
+    expect(created).toEqual([]);
+
+    await act(async () => setQuery("Quartz"));
+    expect(options()).toEqual(["Create “Quartz”"]);
+    expect(active()?.hasAttribute("data-create")).toBe(true);
+    await act(async () =>
+      input.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+      ),
+    );
+    expect(created).toEqual(["Quartz"]);
+    expect(applied).toEqual(["Design", "Quartz"]);
+  } finally {
+    await act(() => root.unmount());
+    host.remove();
+    vi.unstubAllGlobals();
+  }
+});
