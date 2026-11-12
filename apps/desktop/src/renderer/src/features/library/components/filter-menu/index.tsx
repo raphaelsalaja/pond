@@ -8,9 +8,9 @@ import {
   setSemanticQuery,
   setVisualProbe,
   updateLocalFilters,
+  useActiveViewId,
   useFilterQuery,
   useSemanticQuery,
-  useViewStore,
   useVisualProbe,
 } from "@/features/library/state/view-store";
 import { useNlFacets } from "@/features/search";
@@ -192,7 +192,7 @@ export function FilterBarView(data: FilterBarData) {
   const query = useFilterQuery();
   const semantic = useSemanticQuery();
   const visual = useVisualProbe();
-  const activeViewId = useViewStore().activeViewId;
+  const activeViewId = useActiveViewId();
   const rows = query.rules.filter(isPredicate);
   const activeFields = rows.map((row) =>
     row.field === "height" ? "width" : row.field,
