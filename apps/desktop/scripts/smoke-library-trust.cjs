@@ -49,11 +49,21 @@ app.on("web-contents-created", (_, contents) => {
           quickAccess: [],
         }),
       );
+      // index.html loads before startup finishes writing the new library
+      // (scan, sidecar backfill, reconciler). Backup refuses a library that
+      // changes mid-copy, and no query reports when those writes have stopped.
       const result = await contents.executeJavaScript(`(async () => {
         const q = (name, input = {}) => window.pond.query(name, input);
-        const backup = await q("library.backupTo", {
-          path: ${JSON.stringify(backupPath)},
-        });
+        const changed = "The library changed during backup. Try again when imports and edits finish.";
+        const deadline = Date.now() + 20000;
+        let backup;
+        do {
+          backup = await q("library.backupTo", {
+            path: ${JSON.stringify(backupPath)},
+          });
+          if (backup.ok || backup.error !== changed || Date.now() >= deadline) break;
+          await new Promise((resolve) => setTimeout(resolve, 200));
+        } while (true);
         const eagle = await q("saves.importEagleLibrary", {
           path: ${JSON.stringify(eaglePath)},
           dryRun: true,
