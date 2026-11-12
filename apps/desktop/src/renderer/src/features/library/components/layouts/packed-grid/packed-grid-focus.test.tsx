@@ -138,6 +138,63 @@ it("keeps a virtual cursor mounted and reveals it on focus return without changi
   }
 });
 
+it("keeps the scroll position when focus returns after the cursor save leaves", async () => {
+  const items = Array.from({ length: 40 }, (_, index) => ({
+    id: String(index),
+    left: 0,
+    top: index * 100,
+    width: 100,
+    height: 100,
+    mediaHeight: 100,
+  }));
+  selection.setCursor("25");
+  const host = document.createElement("div");
+  host.style.overflowY = "auto";
+  Object.defineProperties(host, {
+    offsetHeight: { value: 600 },
+    offsetWidth: { value: 600 },
+    clientHeight: { value: 600 },
+    clientWidth: { value: 600 },
+  });
+  host.scrollTo = () => {};
+  document.body.append(host);
+  const root = createRoot(host);
+  const render = (rows: typeof items) =>
+    root.render(
+      <PackedGrid
+        layout="grid"
+        totalHeight={4000}
+        items={rows}
+        renderItem={(item) => (
+          <span
+            key={item.id}
+            id={`save-option-${item.id}`}
+            role="option"
+            tabIndex={-1}
+            aria-selected={false}
+          >
+            {item.id}
+          </span>
+        )}
+      />,
+    );
+  try {
+    await act(() => render(items));
+    await act(() => render(items.filter((item) => item.id !== "25")));
+    host.scrollTop = 2500;
+    const collection = host.querySelector<HTMLElement>(
+      "[data-save-collection]",
+    );
+    if (!collection) throw new Error("Missing collection");
+    await act(() => collection.focus());
+    expect(host.scrollTop).toBe(2500);
+    expect(selection.getCursor()).not.toBe("0");
+  } finally {
+    await act(() => root.unmount());
+    host.remove();
+  }
+});
+
 it("moves the cursor without re-rendering mounted cards", async () => {
   const items = ["a", "b"].map((id, index) => ({
     id,

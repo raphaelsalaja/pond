@@ -22,6 +22,7 @@ import {
   useIsPrimary,
   useIsSelected,
 } from "@/features/saves/state/selection";
+import { useIsDepartingSave } from "@/features/saves/state/tag-picker";
 import { useIsTumbling } from "@/features/saves/state/trash-tumble";
 import type { Save } from "@/features/saves/types";
 
@@ -61,6 +62,7 @@ export const SaveCard = memo(function SaveCard({
   const isMulti = useIsSelected(id);
   const isPrimary = useIsPrimary(id);
   const isCursor = useIsCursor(id);
+  const departing = useIsDepartingSave(id);
   const tumbling = useIsTumbling(id);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUrl = useMemo(() => {
@@ -158,6 +160,7 @@ export const SaveCard = memo(function SaveCard({
     role: "presentation",
     selected: isPrimary,
     multi: isMulti,
+    dimmed: departing,
     "data-library-card": "",
     "data-save-id": id,
     "data-view": view,
