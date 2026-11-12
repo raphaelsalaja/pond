@@ -180,7 +180,9 @@ for (const operation of operations) {
             ? []
             : operation.kind === "rating"
               ? ["2", "0"]
-              : ["2", "0", "1"];
+              : operation.kind === "untrash"
+                ? ["1"]
+                : ["2", "0", "1"];
         expect(dirty).toEqual(changes);
         expect(publications).toBe(changes.length ? 1 : 0);
         expect(batches).toEqual(changes.length ? [changes] : []);

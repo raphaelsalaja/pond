@@ -2,6 +2,7 @@ import type {
   LibraryQueryPage,
   LibraryQueryRequest,
 } from "@shared/library-query";
+import { dequal } from "dequal/lite";
 import { errorCopy } from "@/shared/lib/error-copy";
 export interface QuerySessionState {
   page: LibraryQueryPage | null;
@@ -60,16 +61,16 @@ export function createQuerySession(
       }
       await runtime.refresh(result.ids);
       if (!current()) return;
+      const page = {
+        ...result,
+        ids:
+          append && previous
+            ? [...new Set([...previous.ids, ...result.ids])]
+            : result.ids,
+      };
       pageKey = capturedKey;
-      update({
-        page: {
-          ...result,
-          ids:
-            append && previous
-              ? [...new Set([...previous.ids, ...result.ids])]
-              : result.ids,
-        },
-      });
+      /** Sync actions reload the page; an identical result must not rebuild the grid. */
+      if (!dequal(previous, page)) update({ page });
     } catch (cause) {
       if (!current()) return;
       if (append) {
