@@ -1,18 +1,21 @@
 import { IconCircleCheck, IconCircleWarning, IconPowerOff } from "@pond/icons";
-import { Button, Loader, Settings, Tooltip } from "@pond/ui";
-import { useEffect, useState } from "react";
+import { Button, Loader, Reveal, Settings, Tooltip } from "@pond/ui";
+import { useEffect, useId, useState } from "react";
 import {
   type EnrichmentFailure,
   type MissingOriginal,
   useEnrichmentStatus,
 } from "@/features/enrichment/status";
 import { openLibraryRepair } from "@/features/library/repair";
-import { formatPlural } from "@/shared/lib/format";
+import { formatNumber, formatPlural } from "@/shared/lib/format";
 import { THIS_DEVICE } from "@/shared/lib/platform";
 import { usePrefs } from "@/shared/state/prefs";
 import styles from "./styles.module.css";
 
 const TASKS = { one: "task", other: "tasks" };
+const FAILURE_SAMPLE = 5;
+const FAILURE_PAGE = 20;
+const GENERIC_REASON = "Couldn't finish";
 
 const TASK_LABELS = new Map<string, string>([
   ["caption", "Image Captions"],
@@ -26,12 +29,26 @@ const TASK_LABELS = new Map<string, string>([
   ["textEmbedding", "Semantic Search"],
 ]);
 
+interface NamedSave {
+  id: string;
+  label: string;
+}
+
 interface TaskGroup {
+  task: string;
   label: string;
   left: number;
   failed: number;
-  saves: string[];
+  saves: NamedSave[];
 }
+
+interface FailureGroup {
+  task: string;
+  label: string;
+  rows: EnrichmentFailure[];
+}
+
+type FailureStep = "sample" | "more" | "all";
 
 function taskGroups(
   active: ReadonlySet<string>,
@@ -41,7 +58,8 @@ function taskGroups(
   const group = (task: string) => {
     const existing = groups.get(task);
     if (existing) return existing;
-    const next = {
+    const next: TaskGroup = {
+      task,
       label: TASK_LABELS.get(task) ?? task,
       left: 0,
       failed: 0,
@@ -56,17 +74,60 @@ function taskGroups(
   for (const failure of failed) {
     const entry = group(failure.task);
     entry.failed += 1;
-    entry.saves.push(saveLabel({ id: failure.saveId, title: failure.title }));
+    entry.saves.push({
+      id: failure.saveId,
+      label: saveLabel({ id: failure.saveId, title: failure.title }),
+    });
   }
   return [...groups.values()].sort((a, b) => a.label.localeCompare(b.label));
 }
 
-function groupStatus(group: TaskGroup): string {
+function groupFailures(rows: readonly EnrichmentFailure[]): FailureGroup[] {
+  const groups = new Map<string, FailureGroup>();
+  for (const row of rows) {
+    const existing = groups.get(row.task);
+    if (existing) {
+      existing.rows.push(row);
+      continue;
+    }
+    groups.set(row.task, {
+      task: row.task,
+      label: TASK_LABELS.get(row.task) ?? row.task,
+      rows: [row],
+    });
+  }
+  return [...groups.values()].sort((a, b) => a.label.localeCompare(b.label));
+}
+
+function groupCount(group: TaskGroup): string {
   const parts: string[] = [];
-  if (group.left) parts.push(`${group.left.toLocaleString()} left`);
-  if (group.failed) parts.push(`${group.failed.toLocaleString()} failed`);
-  if (group.saves.length > 0) parts.push(group.saves.join(", "));
+  if (group.left) parts.push(`${formatNumber(group.left)} left`);
+  if (group.failed) parts.push(`${formatNumber(group.failed)} failed`);
   return parts.join(", ");
+}
+
+function specificReason(reason: string): string | null {
+  const trimmed = reason.trim();
+  if (!trimmed || trimmed === GENERIC_REASON) return null;
+  return trimmed;
+}
+
+function failureAction(
+  total: number,
+  step: FailureStep,
+): { label: string; next: FailureStep } | null {
+  if (total <= FAILURE_SAMPLE) return null;
+  const shown =
+    step === "all"
+      ? total
+      : step === "more"
+        ? Math.min(total, FAILURE_SAMPLE + FAILURE_PAGE)
+        : FAILURE_SAMPLE;
+  if (shown >= total) return { label: "Show Less", next: "sample" };
+  if (step === "sample" && total > FAILURE_SAMPLE + FAILURE_PAGE) {
+    return { label: "Show More", next: "more" };
+  }
+  return { label: "Show All", next: "all" };
 }
 
 function saveLabel(save: { id: string; title: string | null }): string {
@@ -99,14 +160,130 @@ function missingDetail(missing: readonly MissingOriginal[]): string {
     : `Files missing for ${missing.length} saves: ${names}.`;
 }
 
-function failureDetail(rows: readonly EnrichmentFailure[]): string {
-  const described = rows
-    .map((row) => {
-      const task = TASK_LABELS.get(row.task) ?? row.task;
-      return `${saveLabel({ id: row.saveId, title: row.title })}: ${task}. ${row.reason}`;
-    })
-    .join(". ");
-  return `${formatPlural(rows.length, TASKS)} couldn't finish. ${described}`;
+function failureSummary(count: number): string {
+  return `${formatPlural(count, TASKS)} couldn't finish.`;
+}
+
+function FailureTitle({ row }: { row: EnrichmentFailure }) {
+  const label = saveLabel({ id: row.saveId, title: row.title });
+  const reason = specificReason(row.reason);
+  return (
+    <li className={styles.failureItem}>
+      <span className={styles.saveTitle} title={label}>
+        {label}
+      </span>
+      {reason ? <span className={styles.reason}>{reason}</span> : null}
+    </li>
+  );
+}
+
+function FailureSample({ group }: { group: FailureGroup }) {
+  const extraId = useId();
+  const [step, setStep] = useState<FailureStep>("sample");
+  const action = failureAction(group.rows.length, step);
+  const sample = group.rows.slice(0, FAILURE_SAMPLE);
+  const page = group.rows.slice(FAILURE_SAMPLE, FAILURE_SAMPLE + FAILURE_PAGE);
+  const rest = group.rows.slice(FAILURE_SAMPLE + FAILURE_PAGE);
+  return (
+    <li className={styles.failureGroup}>
+      <div className={styles.failureHead}>
+        <span className={styles.taskLabel}>{group.label}</span>
+        <span className={styles.failureCount}>
+          {formatPlural(group.rows.length, TASKS)} failed
+        </span>
+      </div>
+      <ul className={styles.failureItems}>
+        {sample.map((row) => (
+          <FailureTitle key={row.key} row={row} />
+        ))}
+      </ul>
+      {page.length > 0 ? (
+        <div id={extraId}>
+          <Reveal visible={step !== "sample"}>
+            <div className={styles.expanded}>
+              <ul className={styles.failureItems}>
+                {page.map((row) => (
+                  <FailureTitle key={row.key} row={row} />
+                ))}
+              </ul>
+              {rest.length > 0 ? (
+                <Reveal visible={step === "all"}>
+                  <ul className={styles.failureItems}>
+                    {rest.map((row) => (
+                      <FailureTitle key={row.key} row={row} />
+                    ))}
+                  </ul>
+                </Reveal>
+              ) : null}
+            </div>
+          </Reveal>
+        </div>
+      ) : null}
+      {action ? (
+        <Button
+          className={styles.more}
+          size="xs"
+          density="compact"
+          variant="text"
+          type="button"
+          aria-expanded={step !== "sample"}
+          aria-controls={page.length > 0 ? extraId : undefined}
+          onClick={() => setStep(action.next)}
+        >
+          {action.label}
+        </Button>
+      ) : null}
+    </li>
+  );
+}
+
+function FailureSamples({ rows }: { rows: readonly EnrichmentFailure[] }) {
+  const groups = groupFailures(rows);
+  if (groups.length === 0) return null;
+  return (
+    <ul className={styles.failures} aria-label="Failed tasks">
+      {groups.map((group) => (
+        <FailureSample key={group.task} group={group} />
+      ))}
+    </ul>
+  );
+}
+
+function TaskBreakdown({ groups }: { groups: readonly TaskGroup[] }) {
+  return (
+    <span className={styles.breakdown}>
+      {groups.map((group) => {
+        const saves = group.saves.slice(0, FAILURE_SAMPLE);
+        const extra = group.saves.length - saves.length;
+        return (
+          <span key={group.task} className={styles.group}>
+            <span className={styles.groupHead}>
+              <span className={styles.taskLabel}>{group.label}</span>
+              <span className={styles.value}>{groupCount(group)}</span>
+            </span>
+            {saves.length > 0 ? (
+              <span className={styles.saves}>
+                {saves.map((save) => (
+                  <span
+                    key={save.id}
+                    className={styles.saveTitle}
+                    title={save.label}
+                  >
+                    {save.label}
+                  </span>
+                ))}
+                {extra > 0 ? (
+                  <span className={styles.extra}>
+                    +{formatNumber(extra)} more
+                  </span>
+                ) : null}
+              </span>
+            ) : null}
+          </span>
+        );
+      })}
+    </span>
+  );
 }
 
 async function checkLibrary(): Promise<void> {
@@ -178,6 +355,12 @@ export function ProcessingStatusCard({
   const busy = checking || status.inflight > 0;
   const attention = rows.length > 0 || missing.length > 0;
   const groups = taskGroups(status.activeKeys, rows);
+  const showFailures =
+    loaded &&
+    !checking &&
+    status.inflight === 0 &&
+    !checkFailed &&
+    rows.length > 0;
   const state =
     !loaded || busy
       ? "processing"
@@ -210,7 +393,7 @@ export function ProcessingStatusCard({
           : attention
             ? [
                 missing.length > 0 ? missingDetail(missing) : null,
-                rows.length > 0 ? failureDetail(rows) : null,
+                showFailures ? failureSummary(rows.length) : null,
               ]
                 .filter((part) => part != null)
                 .join(" ")
@@ -247,31 +430,23 @@ export function ProcessingStatusCard({
             <IconCircleCheck />
           )}
         </span>
-        <div className={styles.copy} aria-live="polite" aria-atomic="true">
-          <Settings.ItemTitle className={styles.title}>
-            {title}
-          </Settings.ItemTitle>
-          <p className={styles.detail}>
-            <span>{detail}</span>
-            {groups.length > 0 ? (
-              <Tooltip.Info
-                side="top"
-                aria-label="Task Details"
-                label={
-                  <span className={styles.breakdown}>
-                    {groups.map((group) => (
-                      <span key={group.label} className={styles.group}>
-                        <span>{group.label}</span>
-                        <span className={styles.value}>
-                          {groupStatus(group)}
-                        </span>
-                      </span>
-                    ))}
-                  </span>
-                }
-              />
-            ) : null}
-          </p>
+        <div className={styles.copy}>
+          <div className={styles.summary} aria-live="polite" aria-atomic="true">
+            <Settings.ItemTitle className={styles.title}>
+              {title}
+            </Settings.ItemTitle>
+            <p className={styles.detail}>
+              <span>{detail}</span>
+              {groups.length > 0 ? (
+                <Tooltip.Info
+                  side="top"
+                  aria-label="Task Details"
+                  label={<TaskBreakdown groups={groups} />}
+                />
+              ) : null}
+            </p>
+          </div>
+          {showFailures ? <FailureSamples rows={rows} /> : null}
         </div>
         <Button
           className={styles.action}

@@ -47,6 +47,7 @@ interface HudProps {
   edits?: "full" | "none";
   endActions?: ReactNode;
   slideNavigation?: ViewerNavigation;
+  onSetImageThumbnail?: () => void;
   onActualSize: () => void;
   onApplyCrop: () => void;
   onCancelCrop: () => void;
@@ -73,6 +74,7 @@ function Hud({
   edits = "full",
   endActions,
   slideNavigation,
+  onSetImageThumbnail,
   onActualSize,
   onApplyCrop,
   onCancelCrop,
@@ -159,7 +161,20 @@ function Hud({
           start={<ViewerSaveNav saveId={saveId} />}
           center={
             <ViewerToolbarGroups
-              actions={endActions}
+              actions={
+                <>
+                  {onSetImageThumbnail ? (
+                    <ViewerHud.Tool
+                      label="Set Current Image as Thumbnail"
+                      disabled={busy}
+                      onClick={onSetImageThumbnail}
+                    >
+                      <IconImagePlus />
+                    </ViewerHud.Tool>
+                  ) : null}
+                  {endActions}
+                </>
+              }
               edits={
                 edits === "full" ? (
                   <>

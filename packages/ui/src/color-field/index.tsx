@@ -27,16 +27,18 @@ import styles from "./styles.module.css";
 const AREA_SIZE = 156;
 const TRACK_WIDTH = 12;
 
+/**
+ * A finished color is six hex digits. Three-digit shorthand is an unfinished
+ * edit (`#FCF` while replacing `#FCFBF8`, `#0A0` while replacing `#0A0A0A`).
+ * Expanding those digits commits a different color before the sixth exists.
+ */
 function defaultNormalize(input: string): string | null {
-  const trimmed = input.trim().replace(/^#/, "");
-  const expanded =
-    trimmed.length === 3
-      ? trimmed
-          .split("")
-          .map((ch) => ch + ch)
-          .join("")
-      : trimmed;
-  return /^[0-9a-f]{6}$/i.test(expanded) ? `#${expanded.toLowerCase()}` : null;
+  const hex = input.trim().replace(/^#/, "");
+  return /^[0-9a-f]{6}$/i.test(hex) ? `#${hex.toLowerCase()}` : null;
+}
+
+function sameHex(a: string, b: string): boolean {
+  return a.toLowerCase() === b.toLowerCase();
 }
 
 function toHsb(hex: string): Color {
@@ -68,17 +70,31 @@ function Root({
   className,
   ...props
 }: RootProps) {
-  /** A draft only applies while `value` still matches what the draft committed. */
-  const [draft, setDraft] = useState({ value, text: value });
-  const text = draft.value === value ? draft.text : value;
+  /**
+   * `draft` is the text in the field. It stays while `value` is unchanged or
+   * catches up to this draft, so selecting the whole value and replacing it
+   * is not overwritten before the applied color round-trips.
+   */
+  const [draft, setDraft] = useState(value);
+  const [seen, setSeen] = useState(value);
+  if (value !== seen) {
+    setSeen(value);
+    const committed = normalize(draft);
+    if (!committed || !sameHex(committed, value)) setDraft(value);
+  }
 
-  const handleChange = (next: string) => {
+  const applied = normalize(value);
+
+  const commit = (next: string, display: string) => {
+    setDraft(display);
     const normalized = normalize(next);
-    setDraft({ value: normalized ?? value, text: next });
-    if (normalized) onChange(normalized);
+    if (normalized && !sameHex(normalized, value)) onChange(normalized);
   };
 
-  const normalized = normalize(text);
+  const handleBlur = () => {
+    const normalized = normalize(draft);
+    if (!normalized || sameHex(normalized, value)) setDraft(value);
+  };
 
   return (
     <div className={cn(styles.root, className)} {...props}>
@@ -88,16 +104,16 @@ function Root({
           aria-label={`${ariaLabel} picker`}
           aria-describedby={ariaDescribedBy}
           className={styles.swatch}
-          data-empty={!normalized || undefined}
-          style={normalized ? { background: normalized } : undefined}
+          data-empty={!applied || undefined}
+          style={applied ? { background: applied } : undefined}
         />
         <Popover.Portal>
           <Popover.Positioner sideOffset={6} align="start">
             <Popover.Popup className={styles.popup}>
               <Picker
-                value={normalized ?? "#000000"}
+                value={applied ?? "#000000"}
                 ariaLabel={ariaLabel}
-                onChange={onChange}
+                onChange={(hex) => commit(hex, normalize(hex) ?? hex)}
               />
             </Popover.Popup>
           </Popover.Positioner>
@@ -111,8 +127,9 @@ function Root({
           spellCheck={false}
           autoCapitalize="off"
           autoCorrect="off"
-          value={text}
-          onChange={(e) => handleChange(e.target.value)}
+          value={draft}
+          onBlur={handleBlur}
+          onChange={(e) => commit(e.target.value, e.target.value)}
         />
       </Input.Root>
     </div>

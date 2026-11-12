@@ -2,7 +2,15 @@ import { Dialog } from "@pond/ui";
 import type { QueryResult } from "@shared/query-contracts";
 import { type UpdateNotice, UpdateNoticeSchema } from "@shared/update-notice";
 import { useEffect, useState } from "react";
-import { updateDialogCopy } from "./copy";
+import { updateDialogPrompt } from "./prompt";
+import {
+  dismissUpdateDialog,
+  presentUpdateNotice,
+  readUpdateDialog,
+  requestUpdateCheck,
+  type UpdateDialogView,
+} from "./session";
+import { useUpdateDialog } from "./use-update-dialog";
 
 type UpdateAction = "updates.download" | "updates.install";
 type UpdateActionResult = QueryResult<UpdateAction>;
@@ -27,49 +35,86 @@ const FALLBACK_ERRORS = {
   "updates.install": "Couldn't restart Pond. Try again.",
 } satisfies Record<UpdateAction, string>;
 
+function viewKey(view: UpdateDialogView | null): string {
+  if (!view) return "none";
+  switch (view.kind) {
+    case "checking":
+      return "checking";
+    case "current":
+      return `current:${view.version}`;
+    case "failed":
+      return `failed:${view.retry}:${view.message}`;
+    case "update":
+      return `update:${view.notice.phase}:${view.notice.version}:${
+        view.notice.phase === "available" ? view.notice.downloading : ""
+      }`;
+  }
+}
+
 export function UpdateDialog() {
-  const [notice, setNotice] = useState<UpdateNotice | null>(null);
-  const [open, setOpen] = useState(false);
+  const model = useUpdateDialog();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const key = viewKey(model.view);
+  const [trackedKey, setTrackedKey] = useState(key);
+  if (trackedKey !== key) {
+    setTrackedKey(key);
+    setBusy(false);
+    setError(null);
+  }
 
-  useEffect(
-    () =>
-      subscribeToUpdateNotices((next) => {
-        if (!updateDialogCopy(next)) return;
-        setNotice(next);
-        setBusy(false);
-        setError(null);
-        setOpen(true);
-      }),
-    [],
-  );
+  useEffect(() => subscribeToUpdateNotices(presentUpdateNotice), []);
 
-  const copy = notice ? updateDialogCopy(notice) : null;
+  const prompt = model.view ? updateDialogPrompt(model.view) : null;
+  const pending = Boolean(prompt?.pending || busy);
 
   async function confirm() {
-    if (!notice) return;
+    const current = readUpdateDialog();
+    const view = current.view;
+    if (!current.open || !view || view.kind === "checking") return;
+    if (view.kind === "current" || (view.kind === "failed" && !view.retry)) {
+      dismissUpdateDialog();
+      return;
+    }
+    if (view.kind === "failed") {
+      requestUpdateCheck();
+      return;
+    }
+    if (view.notice.phase === "available" && view.notice.downloading) return;
+    const started = viewKey(view);
     const action =
-      notice.phase === "downloaded" ? "updates.install" : "updates.download";
+      view.notice.phase === "downloaded"
+        ? "updates.install"
+        : "updates.download";
     setBusy(true);
     setError(null);
     const failure = await runUpdateAction(action);
+    if (
+      !readUpdateDialog().open ||
+      viewKey(readUpdateDialog().view) !== started
+    )
+      return;
     if (!failure && action === "updates.install") return;
     setError(failure);
     setBusy(false);
   }
 
   return (
-    <Dialog.Root open={open} onOpenChange={setOpen}>
-      {copy ? (
+    <Dialog.Root
+      open={model.open}
+      onOpenChange={(next) => {
+        if (!next) dismissUpdateDialog();
+      }}
+    >
+      {prompt ? (
         <Dialog.Portal>
           <Dialog.Backdrop />
-          <Dialog.Popup aria-busy={busy}>
+          <Dialog.Popup aria-busy={pending}>
             <Dialog.Header>
-              <Dialog.Title>{copy.title}</Dialog.Title>
+              <Dialog.Title>{prompt.title}</Dialog.Title>
             </Dialog.Header>
             <Dialog.Content>
-              <Dialog.Description>{copy.description}</Dialog.Description>
+              <Dialog.Description>{prompt.description}</Dialog.Description>
               {error ? (
                 <Dialog.Description role="alert" data-error>
                   {error}
@@ -77,13 +122,15 @@ export function UpdateDialog() {
               ) : null}
             </Dialog.Content>
             <Dialog.Footer>
-              <Dialog.Cancel>Later</Dialog.Cancel>
+              {prompt.cancel ? (
+                <Dialog.Cancel>{prompt.cancel}</Dialog.Cancel>
+              ) : null}
               <Dialog.Confirm
-                disabled={busy}
-                loading={busy}
+                disabled={pending}
+                loading={pending}
                 onClick={() => void confirm()}
               >
-                {copy.action}
+                {prompt.action}
               </Dialog.Confirm>
             </Dialog.Footer>
           </Dialog.Popup>

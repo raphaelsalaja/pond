@@ -35,6 +35,13 @@
 .copy {
   display: flex;
   flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.summary {
+  display: flex;
+  flex-direction: column;
   gap: 2px;
   min-width: 0;
 }
@@ -58,24 +65,139 @@
 }
 
 .action {
-  align-self: center;
+  align-self: start;
+}
+
+.failures {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.failureGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.failureHead {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  justify-content: space-between;
+  min-width: 0;
+  font-size: var(--ds-text-sm);
+  line-height: 20px;
+  color: var(--ds-gray-11);
+}
+
+.taskLabel {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.failureCount {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-10);
+}
+
+.failureItems {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.failureItem {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  min-width: 0;
+  font-size: var(--ds-text-sm);
+  line-height: 20px;
+  color: var(--ds-gray-10);
+}
+
+.saveTitle {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.failureItem .saveTitle {
+  flex: 1;
+}
+
+.reason {
+  flex: none;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--ds-gray-9);
+  white-space: nowrap;
+}
+
+.expanded {
+  min-width: 0;
+  max-height: 240px;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.more {
+  align-self: flex-start;
 }
 
 .breakdown {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  min-width: 200px;
+  gap: 8px;
+  width: min(280px, var(--available-width, 280px));
+  max-height: min(240px, calc(var(--available-height, 240px) - 10px));
+  overflow: auto;
+  overscroll-behavior: contain;
+  text-align: start;
+  text-wrap: wrap;
 }
 
 .group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.groupHead {
   display: flex;
   gap: 24px;
   justify-content: space-between;
 }
 
+.saves {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
 .value {
+  flex: none;
   font-variant-numeric: tabular-nums;
+  opacity: 0.7;
+}
+
+.extra {
   opacity: 0.7;
 }
 

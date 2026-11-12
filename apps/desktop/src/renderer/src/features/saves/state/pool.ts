@@ -1,4 +1,5 @@
 import { Store } from "@tanstack/store";
+import { dequal } from "dequal/lite";
 import type { Save } from "@/features/saves/types";
 
 interface SavesState {
@@ -200,18 +201,25 @@ export function upsertSave(save: Save): void {
 
 export function bulkUpsertSaves(list: ReadonlyArray<Save>): void {
   if (list.length === 0) return;
+  const held = savesStore.state.byId;
+  /** Every page load refetches its rows, so unchanged rows keep their identity and their cards stay put. */
+  const changed = list.filter((save) => {
+    const prev = held.get(save.id);
+    return !prev || (prev !== save && !dequal(prev, save));
+  });
+  for (const save of list) touch(save.id);
+  if (changed.length === 0) return;
   savesStore.setState((s) => {
-    const skipSort = canSkipFullSort(list, s.byId, s.sorted);
-    const sorted = skipSort ? sortedAfterSkip(list, s.byId, s.sorted) : null;
-    for (const save of list) s.byId.set(save.id, save);
+    const skipSort = canSkipFullSort(changed, s.byId, s.sorted);
+    const sorted = skipSort ? sortedAfterSkip(changed, s.byId, s.sorted) : null;
+    for (const save of changed) s.byId.set(save.id, save);
     return {
       byId: s.byId,
       sorted: sorted ?? sortByRecency(s.byId.values()),
       revision: s.revision + 1,
     };
   });
-  for (const save of list) touch(save.id);
-  emitDirty(list.map((s) => s.id));
+  emitDirty(changed.map((s) => s.id));
   scheduleTrim();
 }
 

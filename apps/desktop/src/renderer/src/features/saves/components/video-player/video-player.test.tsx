@@ -666,3 +666,143 @@ it("changes video volume with the arrow keys", async () => {
     slider.remove();
   }
 });
+
+it("toggles playback by clicking the video and ignores toolbar clicks", async () => {
+  let paused = true;
+  const play = vi.fn(function (this: HTMLMediaElement) {
+    paused = false;
+    this.dispatchEvent(new Event("play"));
+    return Promise.resolve();
+  });
+  const pause = vi.fn(function (this: HTMLMediaElement) {
+    paused = true;
+    this.dispatchEvent(new Event("pause"));
+  });
+  const previousPaused = Object.getOwnPropertyDescriptor(
+    HTMLMediaElement.prototype,
+    "paused",
+  );
+  Object.defineProperty(HTMLMediaElement.prototype, "paused", {
+    configurable: true,
+    get: () => paused,
+  });
+  Object.defineProperty(HTMLMediaElement.prototype, "play", {
+    configurable: true,
+    value: play,
+  });
+  Object.defineProperty(HTMLMediaElement.prototype, "pause", {
+    configurable: true,
+    value: pause,
+  });
+
+  const indicator = () =>
+    host.querySelector<HTMLElement>("[data-play-indicator]");
+  const video = () => {
+    const element = host.querySelector("video");
+    if (!element) throw new Error("Missing video");
+    return element;
+  };
+
+  try {
+    seedViewer({ autoplayVideo: false });
+    await act(async () => {
+      root.render(<TestVideoPlayer />);
+    });
+    expect(indicator()?.hasAttribute("data-paused")).toBe(true);
+    expect(video().parentElement?.contains(indicator() ?? null)).toBe(true);
+    expect(indicator()?.querySelector("svg")).not.toBeNull();
+
+    play.mockClear();
+    pause.mockClear();
+    await act(async () => video().click());
+    expect(play).toHaveBeenCalledTimes(1);
+    expect(pause).not.toHaveBeenCalled();
+    expect(indicator()?.hasAttribute("data-paused")).toBe(false);
+
+    play.mockClear();
+    pause.mockClear();
+    await act(async () => video().click());
+    expect(pause).toHaveBeenCalledTimes(1);
+    expect(play).not.toHaveBeenCalled();
+    expect(indicator()?.hasAttribute("data-paused")).toBe(true);
+
+    play.mockClear();
+    pause.mockClear();
+    await act(async () => {
+      (document.activeElement ?? document.body).dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: " ",
+          code: "Space",
+          bubbles: true,
+        }),
+      );
+    });
+    expect(play).toHaveBeenCalledTimes(1);
+    expect(pause).not.toHaveBeenCalled();
+    expect(indicator()?.hasAttribute("data-paused")).toBe(false);
+
+    play.mockClear();
+    pause.mockClear();
+    const playback = host.querySelector<HTMLButtonElement>(
+      'button[aria-label="Pause"]',
+    );
+    const seek = host.querySelector<HTMLElement>('[aria-label="Seek"]');
+    const rotate = host.querySelector<HTMLButtonElement>(
+      'button[aria-label="Rotate Video"]',
+    );
+    const mute = host.querySelector<HTMLButtonElement>(
+      'button[aria-label="Mute"]',
+    );
+    if (!playback || !seek || !rotate || !mute) {
+      throw new Error("Missing playback controls");
+    }
+    await act(async () => playback.click());
+    expect(pause).toHaveBeenCalledTimes(1);
+    expect(play).not.toHaveBeenCalled();
+    expect(indicator()?.hasAttribute("data-paused")).toBe(true);
+
+    play.mockClear();
+    pause.mockClear();
+    const overlay = document.createElement("button");
+    overlay.type = "button";
+    overlay.setAttribute("aria-label", "Overlay");
+    video().parentElement?.append(overlay);
+    await act(async () => {
+      seek.click();
+      rotate.click();
+      mute.click();
+      overlay.click();
+    });
+    overlay.remove();
+    expect(play).not.toHaveBeenCalled();
+    expect(pause).not.toHaveBeenCalled();
+    expect(indicator()?.hasAttribute("data-paused")).toBe(true);
+
+    await act(async () => root.render(null));
+    play.mockClear();
+    pause.mockClear();
+    await act(async () => {
+      root.render(
+        <ViewerChrome>
+          <VideoPlayer src="pond://test/clip.mp4" />
+        </ViewerChrome>,
+      );
+    });
+    expect(host.querySelector("[data-play-indicator]")).toBeNull();
+    play.mockClear();
+    pause.mockClear();
+    await act(async () => video().click());
+    expect(play).not.toHaveBeenCalled();
+    expect(pause).not.toHaveBeenCalled();
+  } finally {
+    if (previousPaused) {
+      Object.defineProperty(
+        HTMLMediaElement.prototype,
+        "paused",
+        previousPaused,
+      );
+    } else {
+      Reflect.deleteProperty(HTMLMediaElement.prototype, "paused");
+    }
+  }
+});

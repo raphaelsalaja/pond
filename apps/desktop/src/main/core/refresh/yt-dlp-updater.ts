@@ -4,6 +4,7 @@ import { existsSync } from "node:fs";
 import {
   chmod,
   mkdir,
+  open,
   readdir,
   readFile,
   rename,
@@ -74,7 +75,7 @@ export interface UpdaterDeps {
   smokeTest: (binaryPath: string) => Promise<boolean>;
   fetchLatestTag: () => Promise<string | null>;
   fetchExpectedSha: (tag: string, asset: string) => Promise<string | null>;
-  fetchBinary: (url: string) => Promise<Buffer>;
+  fetchBinary: (url: string) => Promise<AsyncIterable<Uint8Array>>;
 }
 
 function defaultDeps(): UpdaterDeps {
@@ -170,20 +171,27 @@ export async function runUpdate(
       return;
     }
 
-    const buf = await deps.fetchBinary(assetUrl(tag, asset));
-    const actualSha = createHash("sha256").update(buf).digest("hex");
+    await mkdir(dir, { recursive: true });
+    const tmp = join(dir, `${YTDLP_FILENAME}.${process.pid}.tmp`);
+    let actualSha: string;
+    try {
+      actualSha = await writeHashed(
+        await deps.fetchBinary(assetUrl(tag, asset)),
+        tmp,
+      );
+    } catch (err) {
+      await rm(tmp, { force: true });
+      throw err;
+    }
     if (actualSha !== expectedSha) {
       log.warn("[pond yt-dlp-update] sha256 mismatch, refusing", {
         asset,
         expected: expectedSha,
         actual: actualSha,
       });
+      await rm(tmp, { force: true });
       return;
     }
-
-    await mkdir(dir, { recursive: true });
-    const tmp = join(dir, `${YTDLP_FILENAME}.${process.pid}.tmp`);
-    await writeFile(tmp, buf);
     if (process.platform !== "win32") await chmod(tmp, 0o755);
 
     if (!(await deps.smokeTest(tmp))) {
@@ -348,20 +356,32 @@ async function fetchExpectedSha(
   return null;
 }
 
-async function fetchBinary(url: string): Promise<Buffer> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), DOWNLOAD_TIMEOUT_MS);
+async function fetchBinary(url: string): Promise<AsyncIterable<Uint8Array>> {
+  const res = await fetch(url, {
+    redirect: "follow",
+    headers: { "user-agent": "pond-desktop" },
+    signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS),
+  });
+  if (!res.ok || !res.body) throw new Error(`HTTP ${res.status} for ${url}`);
+  return res.body;
+}
+
+/** Streams to disk so the binary never sits in memory through the hash check and smoke test. */
+async function writeHashed(
+  chunks: AsyncIterable<Uint8Array>,
+  path: string,
+): Promise<string> {
+  const hash = createHash("sha256");
+  const file = await open(path, "w");
   try {
-    const res = await fetch(url, {
-      redirect: "follow",
-      headers: { "user-agent": "pond-desktop" },
-      signal: controller.signal,
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
-    return Buffer.from(await res.arrayBuffer());
+    for await (const chunk of chunks) {
+      hash.update(chunk);
+      await file.write(chunk);
+    }
   } finally {
-    clearTimeout(timer);
+    await file.close();
   }
+  return hash.digest("hex");
 }
 
 function assetUrl(tag: string, asset: string): string {

@@ -158,6 +158,25 @@ describe("query session", () => {
     expect(calls).toBe(2);
     expect(session.snapshot().page?.ids).toEqual(["x"]);
   });
+  it("keeps the same page when a reload returns identical results", async () => {
+    let next = page(["a", "b"]);
+    const session = createQuerySession(
+      {
+        page: async () => structuredClone(next),
+        ids: async () => ({ ids: [] }),
+        refresh: async () => {},
+      },
+      () => {},
+    );
+    session.setRequest({ query: EMPTY_QUERY });
+    await session.load();
+    const first = session.snapshot().page;
+    await session.load();
+    expect(session.snapshot().page).toBe(first);
+    next = page(["b", "a"]);
+    await session.load();
+    expect(session.snapshot().page?.ids).toEqual(["b", "a"]);
+  });
   it("surfaces a failed search instead of claiming there are no matches", async () => {
     const session = createQuerySession(
       {

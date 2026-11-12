@@ -115,6 +115,7 @@
     "calligraph": "^1.4.1",
     "chrono-node": "^2.10.1",
     "clsx": "catalog:",
+    "dequal": "^2.0.3",
     "drizzle-orm": "catalog:",
     "electron-log": "^5.4.4",
     "electron-updater": "^6.8.9",

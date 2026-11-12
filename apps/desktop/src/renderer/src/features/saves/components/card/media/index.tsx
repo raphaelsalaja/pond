@@ -20,9 +20,10 @@ import {
   pickPrimaryFile,
 } from "@/features/saves/lib/media/units";
 import { buildPondUrl } from "@/features/saves/lib/media/url";
-import { mediaTransformStyle } from "@/features/saves/lib/media-transform";
+import { orientedThumbStyle } from "@/features/saves/lib/media-transform";
 import { shouldBlurSensitiveThumbnail } from "@/features/saves/lib/sensitive-content";
 import { isTextOnlySave, textBodyForSave } from "@/features/saves/lib/text";
+import { aspectDimsFor, aspectFor } from "@/features/saves/state/aspect";
 import type { Save, SaveFile } from "@/features/saves/types";
 import { usePrefs } from "@/shared/state/prefs";
 import styles from "./styles.module.css";
@@ -179,6 +180,11 @@ export const PreparedCardThumb = memo(function PreparedCardThumb({
   const broken = brokenSrc !== null && brokenSrc === pickedSrc;
   const onBroken = useCallback(() => setBrokenSrc(pickedSrc), [pickedSrc]);
 
+  const pixel = aspectDimsFor(save, pickOptions, unit);
+  const pixelAspect =
+    pixel.w && pixel.h ? pixel.w / pixel.h : aspectFor(save, pickOptions);
+  const fitsOrientedTile =
+    view === "grid" || view === "waterfall" || view === "justified";
   const safeActive = slides ? Math.min(active, slides.length - 1) : 0;
   const showPlaceholder = (!unit || broken) && !richPreview;
   const textPreview =
@@ -198,7 +204,7 @@ export const PreparedCardThumb = memo(function PreparedCardThumb({
       data-multi-media={slides && !broken ? "true" : undefined}
       data-sensitive={blurSensitive || undefined}
       data-hover-zoom={viewer.hoverZoom || undefined}
-      style={mediaTransformStyle(save)}
+      style={orientedThumbStyle(save, fitsOrientedTile ? pixelAspect : null)}
       onPointerMove={onPointerMove}
       onPointerLeave={onPointerLeave}
     >

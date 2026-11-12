@@ -1,6 +1,6 @@
 import { Empty } from "@pond/ui";
 import { useRouterState } from "@tanstack/react-router";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useDeferredValue, useMemo } from "react";
 import {
   useFolderMemberships,
   useFolders,
@@ -39,44 +39,46 @@ export function SaveDetails() {
   const selected = useSelectedIds();
   const primary = usePrimarySelection();
   const cursor = useSelectionCursor();
-  const saveIds = inspectorSaveIds({
-    routeId,
-    selected,
-    primary,
-    cursor,
-  });
+  const currentIds = useMemo(
+    () => inspectorSaveIds({ routeId, selected, primary, cursor }),
+    [routeId, selected, primary, cursor],
+  );
+  /** The inspector renders after the selection paints, and a held arrow key skips the saves it passes. */
+  const saveIds = useDeferredValue(currentIds);
   const saveId = saveIds[0];
   const memberships = useFolderMemberships();
   const folders = useFolders();
   const [folderViews] = usePrefs("folderViews");
-  if (!saveId) {
+  return useMemo(() => {
+    if (!saveId) {
+      return (
+        <Empty.Root role="status">
+          <Empty.Title>No save selected</Empty.Title>
+          <Empty.Description>
+            Select a save to tag it or edit details.
+          </Empty.Description>
+        </Empty.Root>
+      );
+    }
     return (
-      <Empty.Root role="status">
-        <Empty.Title>No save selected</Empty.Title>
-        <Empty.Description>
-          Select a save to tag it or edit details.
-        </Empty.Description>
-      </Empty.Root>
+      <Suspense fallback={null}>
+        <SaveInspector
+          saveId={saveId}
+          saveIds={saveIds}
+          folders={folders.map((folder) => ({
+            id: folder.id,
+            name: folder.name,
+            parentId: folder.parentId,
+            icon: folderViews[folder.id]?.icon,
+            color: folder.color,
+            count: saveIds.reduce(
+              (total, id) =>
+                total + ((memberships[id] ?? []).includes(folder.id) ? 1 : 0),
+              0,
+            ),
+          }))}
+        />
+      </Suspense>
     );
-  }
-  return (
-    <Suspense fallback={null}>
-      <SaveInspector
-        saveId={saveId}
-        saveIds={saveIds}
-        folders={folders.map((folder) => ({
-          id: folder.id,
-          name: folder.name,
-          parentId: folder.parentId,
-          icon: folderViews[folder.id]?.icon,
-          color: folder.color,
-          count: saveIds.reduce(
-            (total, id) =>
-              total + ((memberships[id] ?? []).includes(folder.id) ? 1 : 0),
-            0,
-          ),
-        }))}
-      />
-    </Suspense>
-  );
+  }, [folderViews, folders, memberships, saveId, saveIds]);
 }

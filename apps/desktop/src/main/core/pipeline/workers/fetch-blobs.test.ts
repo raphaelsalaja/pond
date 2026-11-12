@@ -12,13 +12,33 @@ const previewFile = {
   bytes: new Uint8Array([1]),
 };
 
-it("does not retry when a GitHub star's generated card is unavailable", () => {
+it("retries a GitHub star's generated card, then uses the text cover", () => {
   const generated = "https://opengraph.githubassets.com/1/vercel/next.js";
   const missed = settleMediaFetches(
     [{ url: generated, file: null, miss: "transient" }],
     { optionalGeneratedCard: true },
   );
   expect(missed).toEqual({
+    fetched: [],
+    transientMisses: 1,
+    generatedCardMissed: false,
+  });
+
+  const last = settleMediaFetches(
+    [{ url: generated, file: null, miss: "transient" }],
+    { optionalGeneratedCard: true, finalAttempt: true },
+  );
+  expect(last).toEqual({
+    fetched: [],
+    transientMisses: 0,
+    generatedCardMissed: true,
+  });
+
+  const gone = settleMediaFetches(
+    [{ url: generated, file: null, miss: "permanent" }],
+    { optionalGeneratedCard: true },
+  );
+  expect(gone).toEqual({
     fetched: [],
     transientMisses: 0,
     generatedCardMissed: true,

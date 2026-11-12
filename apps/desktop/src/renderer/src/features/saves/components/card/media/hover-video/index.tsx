@@ -11,6 +11,8 @@ import styles from "./styles.module.css";
 
 /** Grace after leave so a quick re-hover reuses the decoder instead of refetching. */
 const RELEASE_DELAY_MS = 400;
+/** A pointer passing over a card on its way elsewhere should not open a decoder. */
+const HOVER_DELAY_MS = 450;
 
 function seekToStart(el: HTMLVideoElement) {
   try {
@@ -46,6 +48,7 @@ export function HoverVideo({
   const hoverEnabled = prefs.hoverVideo !== false;
   const internalRef = useRef<HTMLVideoElement | null>(null);
   const releaseTimer = useRef<number | undefined>(undefined);
+  const hoverTimer = useRef<number | undefined>(undefined);
   const [hoverPrimed, setHoverPrimed] = useState(false);
   const [active, setActive] = useState(false);
   const [videoReady, setVideoReady] = useState(false);
@@ -113,16 +116,30 @@ export function HoverVideo({
     setVideoReady(false);
   }, [primed]);
 
-  useEffect(() => () => window.clearTimeout(releaseTimer.current), []);
+  useEffect(
+    () => () => {
+      window.clearTimeout(releaseTimer.current);
+      window.clearTimeout(hoverTimer.current);
+    },
+    [],
+  );
 
-  const onEnter = useCallback(() => {
+  const activate = useCallback(() => {
     if (!hoverEnabled || document.body.dataset.saveDragging) return;
     window.clearTimeout(releaseTimer.current);
     setActive(true);
     setHoverPrimed(true);
   }, [hoverEnabled]);
 
+  const onPointerEnter = useCallback(() => {
+    if (!hoverEnabled) return;
+    window.clearTimeout(releaseTimer.current);
+    window.clearTimeout(hoverTimer.current);
+    hoverTimer.current = window.setTimeout(activate, HOVER_DELAY_MS);
+  }, [activate, hoverEnabled]);
+
   const onLeave = useCallback(() => {
+    window.clearTimeout(hoverTimer.current);
     setActive(false);
     window.clearTimeout(releaseTimer.current);
     releaseTimer.current = window.setTimeout(
@@ -195,9 +212,9 @@ export function HoverVideo({
         data-ready={videoReady ? "true" : undefined}
         data-resting={needsRestingVideo && videoReady ? "true" : undefined}
         aria-label={label}
-        onMouseEnter={onEnter}
+        onMouseEnter={onPointerEnter}
         onMouseLeave={onLeave}
-        onFocus={onEnter}
+        onFocus={activate}
         onBlur={onLeave}
         onError={onBroken}
         onLoadedMetadata={onLoadedMetadata}

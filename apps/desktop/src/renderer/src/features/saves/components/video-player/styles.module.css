@@ -3,6 +3,39 @@
   inset: 0;
 }
 
+.frame[data-toggle] {
+  cursor: var(--ds-cursor-interactive, pointer);
+}
+
+.indicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 2;
+  display: grid;
+  visibility: hidden;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  color: var(--ds-white-a12);
+  pointer-events: none;
+  background: var(--ds-black-a8);
+  border-radius: var(--ds-radius-full);
+  opacity: 0;
+  transform: translate(-50%, -50%);
+  transition:
+    opacity var(--ds-duration-fast) var(--ds-easing-standard),
+    visibility 0s linear var(--ds-duration-fast);
+}
+
+.indicator[data-paused] {
+  visibility: visible;
+  opacity: 1;
+  transition:
+    opacity var(--ds-duration-fast) var(--ds-easing-standard),
+    visibility 0s linear;
+}
+
 .media {
   position: relative;
   transition:

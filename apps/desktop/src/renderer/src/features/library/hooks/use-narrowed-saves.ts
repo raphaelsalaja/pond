@@ -23,9 +23,14 @@ import {
 import type { SaveListMode } from "@/features/saves";
 import { descendantFolderIds, useRecents } from "@/features/saves";
 import { reloadSaves, useSaves } from "@/features/saves/pool";
+import {
+  syncDepartingSaveIds,
+  useTagPickerIds,
+} from "@/features/saves/tag-picker";
 import type { Save } from "@/features/saves/types";
 import { keywordScopesFromPrefs, useRetrievalOverlay } from "@/features/search";
 import { usePrefs } from "@/shared/state/prefs";
+import { useRetainedTagPickerSaves } from "./retain-tag-picker-saves";
 
 /** Long enough to span a pause between keystrokes, so results swap once typing stops. */
 const KEYWORD_DEBOUNCE_MS = 250;
@@ -182,6 +187,16 @@ export function useNarrowedSaves(mode: SaveListMode, sourceFilter: string) {
     return rows;
   }, [page, saves, memberships, mode, recents]);
   const ranked = useRetrievalOverlay(filtered, request);
+  const heldIds = useTagPickerIds();
+  const retained = useRetainedTagPickerSaves(ranked, heldIds);
+  const departedKey = retained.departedIds.join("\0");
+  const departedRef = useRef(retained.departedIds);
+  departedRef.current = retained.departedIds;
+  useEffect(() => {
+    const ids = departedKey.length === 0 ? [] : departedKey.split("\0");
+    syncDepartingSaveIds(ids);
+    return () => syncDepartingSaveIds([]);
+  }, [departedKey]);
   const loadMore = useCallback(() => session.load(true), [session]);
   const allIds = useCallback(
     async () =>
@@ -190,12 +205,22 @@ export function useNarrowedSaves(mode: SaveListMode, sourceFilter: string) {
   );
   return {
     queryKey: JSON.stringify(request),
-    loadedIds: () => session.snapshot().page?.ids ?? [],
-    filtered: ranked,
+    loadedIds: () => {
+      const pageIds = session.snapshot().page?.ids ?? [];
+      const extra = departedRef.current;
+      if (extra.length === 0) return pageIds;
+      const seen = new Set(pageIds);
+      const missing = extra.filter((id) => !seen.has(id));
+      return missing.length === 0 ? pageIds : [...pageIds, ...missing];
+    },
+    filtered: retained.rows,
     loading,
     settledEmpty: page !== null && page.ids.length === 0,
     error,
-    total: ranked === filtered ? (page?.total ?? 0) : ranked.length,
+    total:
+      ranked === filtered
+        ? (page?.total ?? 0) + retained.departedIds.length
+        : retained.rows.length,
     hasMore: ranked === filtered && !!page?.nextCursor,
     loadMore,
     allIds,

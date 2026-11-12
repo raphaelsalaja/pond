@@ -52,6 +52,15 @@ const RESTORATION_SETTLE_MS = 750;
 const MISSING_ANCHOR_TIMEOUT_MS = 5000;
 const ANCHOR_RESTORE_TOLERANCE_PX = 2;
 
+function fallbackCursorId(
+  itemsByTop: readonly PackedItem[],
+  parent: HTMLElement | null,
+  scrollMargin: number,
+): string | undefined {
+  const localTop = parent ? Math.max(0, parent.scrollTop - scrollMargin) : 0;
+  return findScrollAnchor(itemsByTop, localTop)?.item.id;
+}
+
 export function findScrollAnchor(
   itemsByTop: ReadonlyArray<PackedItem>,
   localScrollTop: number,
@@ -116,16 +125,8 @@ export function PackedGrid({
   const cursor = useSelectionCursor();
   const activeId = items.some((item) => item.id === cursor)
     ? cursor
-    : items[0]?.id;
+    : undefined;
   useLayoutEffect(() => resultNavigation.setLayout(items), [items]);
-  useLayoutEffect(() => {
-    if (
-      document.activeElement === ref.current &&
-      activeId &&
-      cursor !== activeId
-    )
-      selection.setCursor(activeId);
-  }, [activeId, cursor]);
   useLibraryLayoutTransition(ref, items);
   const restoration = useContext(ScrollRestorationContext);
   const restorationKey = restoration?.key ?? null;
@@ -170,6 +171,13 @@ export function PackedGrid({
     [restoration],
   );
   const [scrollMargin, setScrollMargin] = useState(0);
+
+  useLayoutEffect(() => {
+    if (document.activeElement !== ref.current) return;
+    if (cursor && itemById.has(cursor)) return;
+    const next = fallbackCursorId(itemsByTop, getScrollElement(), scrollMargin);
+    if (next && next !== cursor) selection.setCursor(next);
+  }, [cursor, getScrollElement, itemById, itemsByTop, scrollMargin]);
 
   useLayoutEffect(() => {
     const node = ref.current;
@@ -343,6 +351,11 @@ export function PackedGrid({
       surroundingBandIndexes(virtualBandIndexes, bands.length),
     ).filter((index) => !mounted.has(index));
   }, [bands, onRunwayChange, virtualBandIndexes, visible]);
+  /** Cards subscribe to their own selection state, so a cursor move must not re-render every visible card. */
+  const cards = useMemo(
+    () => visible.map((i) => (items[i] ? renderItem(items[i]) : null)),
+    [items, renderItem, visible],
+  );
   const endReached = useRef(false);
 
   useEffect(() => {
@@ -373,13 +386,28 @@ export function PackedGrid({
       aria-activedescendant={activeId ? `save-option-${activeId}` : undefined}
       data-save-collection=""
       tabIndex={0}
+      onMouseDown={(event) => {
+        if (event.target !== event.currentTarget || event.button !== 0) return;
+        if (event.metaKey || event.ctrlKey || event.shiftKey) return;
+        // The list is as tall as the whole result. A gap click would focus it
+        // and the browser would scroll the top into view.
+        event.preventDefault();
+        event.currentTarget.focus({ preventScroll: true });
+      }}
       onFocus={(event) => {
         if (event.target !== event.currentTarget) return;
-        const cursor = selection.getCursor();
-        const next = cursor && itemById.has(cursor) ? cursor : items[0]?.id;
-        if (!next) return;
-        if (cursor !== next) selection.setCursor(next);
-        void resultNavigation.reveal(next);
+        const cursorId = selection.getCursor();
+        const present = cursorId !== null && itemById.has(cursorId);
+        if (!present) {
+          const next = fallbackCursorId(
+            itemsByTop,
+            getScrollElement(),
+            scrollMargin,
+          );
+          if (next && next !== cursorId) selection.setCursor(next);
+          return;
+        }
+        void resultNavigation.reveal(cursorId);
       }}
       onKeyDown={(event) => {
         if (
@@ -402,11 +430,7 @@ export function PackedGrid({
         );
       }}
     >
-      {visible.map((i) => {
-        const it = items[i];
-        if (!it) return null;
-        return renderItem(it);
-      })}
+      {cards}
     </LibraryGrid.Grid>
   );
 }
@@ -429,28 +453,33 @@ export function SavePackedGrid({
     () => new Map(items.map((item, index) => [item.id, index + 1])),
     [items],
   );
+  const setSize = Math.max(items.length, total);
+  const renderItem = useCallback(
+    (it: PackedItem) => (
+      <SaveCard
+        key={it.id}
+        id={it.id}
+        view={layout}
+        position={positions.get(it.id)}
+        total={setSize}
+        slot={{
+          width: it.width,
+          height: it.height,
+          previewHeight: it.mediaHeight,
+          top: it.top,
+          left: it.left,
+        }}
+      />
+    ),
+    [layout, positions, setSize],
+  );
   return (
     <PackedGrid
       layout={layout}
       items={items}
       totalHeight={totalHeight}
       onEndReached={onEndReached}
-      renderItem={(it) => (
-        <SaveCard
-          key={it.id}
-          id={it.id}
-          view={layout}
-          position={positions.get(it.id)}
-          total={Math.max(items.length, total)}
-          slot={{
-            width: it.width,
-            height: it.height,
-            previewHeight: it.mediaHeight,
-            top: it.top,
-            left: it.left,
-          }}
-        />
-      )}
+      renderItem={renderItem}
     />
   );
 }

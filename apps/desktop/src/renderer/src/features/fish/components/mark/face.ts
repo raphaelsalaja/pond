@@ -267,6 +267,15 @@ export function faceFor(task: Task | null): Mood {
   return task ? TASK_FACE[task] : "idle";
 }
 
+/** Milliseconds between frames; drift and sleep read the same at lower rates, and every display refresh wakes the GPU process. */
+export function frameGap(mood: Mood, pointerResting = false): number {
+  if (mood === "idle" || (mood === "attentive" && pointerResting))
+    return 1000 / 30;
+  if (mood === "sleepy") return 1000 / 20;
+  if (mood === "asleep") return 1000 / 8;
+  return 0;
+}
+
 /** The resting pose, for the first paint and for reduced motion. */
 export function restingEyes(head: Head, mood: Mood = "idle") {
   const face = FACES[mood];

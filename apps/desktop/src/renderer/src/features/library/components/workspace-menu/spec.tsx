@@ -19,8 +19,10 @@ const X_MARK_VIEW_BOX = "-4 -4 32 32";
 
 export function buildWorkspaceMenuItems({
   onBrowserExtension,
+  onCheckForUpdates,
 }: {
   onBrowserExtension: () => void;
+  onCheckForUpdates: () => void;
 }): MenuItemSpec[] {
   return [
     {
@@ -33,7 +35,7 @@ export function buildWorkspaceMenuItems({
     {
       label: "Check for Updates",
       icon: <IconRefresh />,
-      onClick: () => openSettings("general"),
+      onClick: onCheckForUpdates,
     },
     {
       label: "Browser Extension",
