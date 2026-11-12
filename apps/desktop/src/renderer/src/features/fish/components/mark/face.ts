@@ -270,7 +270,8 @@ export function faceFor(task: Task | null): Mood {
 /** Milliseconds between frames; drift and sleep read the same at lower rates, and every display refresh wakes the GPU process. */
 export function frameGap(mood: Mood): number {
   if (mood === "idle") return 1000 / 30;
-  if (mood === "sleepy" || mood === "asleep") return 1000 / 20;
+  if (mood === "sleepy") return 1000 / 20;
+  if (mood === "asleep") return 1000 / 8;
   return 0;
 }
 

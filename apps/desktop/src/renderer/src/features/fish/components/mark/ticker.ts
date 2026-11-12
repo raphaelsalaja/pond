@@ -11,6 +11,7 @@ interface State {
   rig: Rig;
   visible: boolean;
   near: boolean;
+  box: DOMRect | null;
 }
 
 /** Fish within this many CSS pixels of the pointer notice it and follow it. */
@@ -41,7 +42,8 @@ function tick(now: number) {
   let gap = Number.POSITIVE_INFINITY;
   active.forEach((state, index) => {
     const { rig } = state;
-    const box = boxes[index];
+    const box = boxes[index] ?? null;
+    state.box = box;
     const x = box && pointer ? pointer.x - (box.left + box.width / 2) : 0;
     const y = box && pointer ? pointer.y - (box.top + box.height / 2) : 0;
     if (box && Math.hypot(x, y) < NOTICE) {
@@ -95,9 +97,24 @@ function onMotionChange() {
   sync();
 }
 
+function approaching(state: State, at: { x: number; y: number }): boolean {
+  const { box } = state;
+  if (!state.visible || state.near || !box) return false;
+  const x = at.x - (box.left + box.width / 2);
+  const y = at.y - (box.top + box.height / 2);
+  return Math.hypot(x, y) < NOTICE;
+}
+
 function onPointerMove(event: PointerEvent) {
   if (event.pointerType === "touch") return;
-  pointer = { x: event.clientX, y: event.clientY };
+  const at = { x: event.clientX, y: event.clientY };
+  pointer = at;
+  /** A fish between slow frames notices an approaching pointer on the next frame, not the next slow one. */
+  if (timer && [...rigs.values()].some((state) => approaching(state, at))) {
+    clearTimeout(timer);
+    timer = null;
+    frame = requestAnimationFrame(tick);
+  }
 }
 
 function onPointerLeave() {
@@ -137,7 +154,7 @@ function stop() {
 export function animate(rig: Rig): () => void {
   if (!("IntersectionObserver" in globalThis)) return () => {};
   if (!observer) start();
-  rigs.set(rig.element, { rig, visible: false, near: false });
+  rigs.set(rig.element, { rig, visible: false, near: false, box: null });
   observer?.observe(rig.element);
   return () => {
     observer?.unobserve(rig.element);
