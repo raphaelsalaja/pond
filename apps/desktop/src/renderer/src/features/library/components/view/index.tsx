@@ -24,12 +24,12 @@ import {
   clearSaveSelection,
   isLibraryBackgroundTarget,
   libraryViewContext,
+  SaveCollectionContextMenu,
   useCardActions,
 } from "@/features/saves";
 import { resultNavigation } from "@/features/saves/navigation";
 import { useSavePaging } from "@/features/saves/pool";
 import { MatchesEmpty } from "@/shared/components/matches-empty";
-import { SpecContextMenu } from "@/shared/components/spec-context-menu";
 import { buildEmptyGalleryMenu } from "./empty-gallery-menu";
 
 function LibraryEmptyState({
@@ -123,15 +123,9 @@ export function LibraryView() {
   ]);
 
   return (
-    <SpecContextMenu
-      search
-      searchLabel="Search operations"
-      onOpen={(eventDetails) => {
-        if (!isLibraryBackgroundTarget(eventDetails.event?.target ?? null)) {
-          eventDetails.cancel();
-        }
-      }}
-      buildItems={buildEmptyGalleryMenu}
+    <SaveCollectionContextMenu
+      acceptsBackground={isLibraryBackgroundTarget}
+      buildBackgroundItems={buildEmptyGalleryMenu}
     >
       <LibraryGrid.Root
         data-library-grid=""
@@ -216,6 +210,6 @@ export function LibraryView() {
         ) : null}
         <HoverPreview />
       </LibraryGrid.Root>
-    </SpecContextMenu>
+    </SaveCollectionContextMenu>
   );
 }
