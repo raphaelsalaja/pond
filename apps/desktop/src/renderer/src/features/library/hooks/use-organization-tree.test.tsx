@@ -156,3 +156,148 @@ it("prunes deleted selected entries before a later toggle", async () => {
   await click("d", { metaKey: true });
   expect(selected()).toEqual(["c", "d"]);
 });
+
+/**
+ * Simulates the virtualized consumer: `orderedIds` is the full row order,
+ * but only some rows are mounted. Navigation and selection must work across
+ * unmounted rows from the data list.
+ */
+function VirtualFixture({
+  onSelection = () => {},
+  expose,
+  mounted = ["a", "b"],
+}: {
+  onSelection?: (ids: string[]) => void;
+  expose?: (cursor: string | null, selected: string[]) => void;
+  mounted?: string[];
+}) {
+  const [open, setOpen] = useState(true);
+  const tree = useOrganizationTree(
+    entries,
+    onSelection,
+    undefined,
+    entries.map((entry) => entry.id),
+  );
+  expose?.(tree.cursor, tree.selected);
+  return (
+    <div ref={tree.root} role="tree" aria-label="Folders" aria-multiselectable>
+      {entries
+        .filter(
+          (entry) => (open || entry.id !== "b") && mounted.includes(entry.id),
+        )
+        .map((entry) => (
+          <button
+            type="button"
+            key={entry.id}
+            {...tree.rowProps(
+              entry.id,
+              entry.parentId ? 1 : 0,
+              entry.id === "a" ? open : undefined,
+              () => setOpen((value) => !value),
+            )}
+          >
+            {entry.name}
+          </button>
+        ))}
+    </div>
+  );
+}
+
+it("navigates and range-selects across unmounted rows using the data list", async () => {
+  let cursor: string | null = null;
+  let chosen: string[] = [];
+  await act(async () =>
+    root.render(
+      <VirtualFixture
+        expose={(c, s) => {
+          cursor = c;
+          chosen = s;
+        }}
+      />,
+    ),
+  );
+  await click("a");
+  expect(cursor).toBe("a");
+  // "c" and "d" are not mounted, but the cursor can still move there, and
+  // the shift-range spans them from the data list.
+  await key("b", "ArrowDown", { shiftKey: true });
+  expect(cursor).toBe("c");
+  expect(chosen).toEqual(["a", "b", "c"]);
+  // The same key from the same mounted row lands on the same data row. In
+  // the real consumer the newly focused row is kept mounted and drives the
+  // next step, which the focus test below verifies.
+  await key("b", "ArrowDown", { shiftKey: true });
+  expect(cursor).toBe("c");
+  expect(chosen).toEqual(["a", "b", "c"]);
+});
+
+it("selects all rows and typeaheads to unmounted rows from the data list", async () => {
+  let cursor: string | null = null;
+  let chosen: string[] = [];
+  await act(async () =>
+    root.render(
+      <VirtualFixture
+        expose={(c, s) => {
+          cursor = c;
+          chosen = s;
+        }}
+      />,
+    ),
+  );
+  await click("a");
+  await key("a", "a", { metaKey: true });
+  expect(chosen).toEqual(["a", "b", "c", "d"]);
+  // Typeahead wraps from the cursor through unmounted rows.
+  await key("a", "d");
+  expect(cursor).toBe("d");
+  // Roving tabindex: an unmounted cursor leaves every mounted row at -1.
+  expect(
+    [...host.querySelectorAll('[tabindex="0"]')].map((el) =>
+      el.getAttribute("data-tree-id"),
+    ),
+  ).toEqual([]);
+});
+
+it("keeps focus on the row the consumer mounts for the data-driven cursor", async () => {
+  // The consumer keeps the cursor's row mounted (as the real virtual
+  // window does); focus must land on it after render.
+  const trackCursor = vi.fn();
+  function TrackingFixture() {
+    const tree = useOrganizationTree(
+      entries,
+      () => {},
+      undefined,
+      entries.map((entry) => entry.id),
+    );
+    trackCursor(tree.cursor);
+    const mounted =
+      tree.cursor && tree.cursor !== "a" && tree.cursor !== "b"
+        ? ["a", "b", tree.cursor]
+        : ["a", "b"];
+    return (
+      <div
+        ref={tree.root}
+        role="tree"
+        aria-label="Folders"
+        aria-multiselectable
+      >
+        {entries
+          .filter((entry) => mounted.includes(entry.id))
+          .map((entry) => (
+            <button
+              type="button"
+              key={entry.id}
+              {...tree.rowProps(entry.id, entry.parentId ? 1 : 0)}
+            >
+              {entry.name}
+            </button>
+          ))}
+      </div>
+    );
+  }
+  await act(async () => root.render(<TrackingFixture />));
+  await act(async () => row("a").focus());
+  await key("a", "End");
+  expect(trackCursor).toHaveBeenLastCalledWith("d");
+  expect(document.activeElement).toBe(row("d"));
+});

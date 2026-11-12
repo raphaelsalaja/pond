@@ -2,6 +2,33 @@ import type { LibrarySidebarCounts } from "@shared/sidebar-counts";
 import { useEffect, useState } from "react";
 import { useRecents } from "@/features/saves";
 
+/**
+ * Value comparison so unchanged refreshes return the previous object and
+ * React bails out of the re-render: sidebar counts refresh on every sync
+ * action, but most scans change nothing, and re-rendering the folder tree
+ * on a no-op refresh is what made large libraries laggy.
+ */
+function sameFolderMap(
+  a: Record<string, number>,
+  b: Record<string, number>,
+): boolean {
+  if (Object.keys(a).length !== Object.keys(b).length) return false;
+  for (const key of Object.keys(a)) if (a[key] !== b[key]) return false;
+  return true;
+}
+function sameCounts(a: LibrarySidebarCounts, b: LibrarySidebarCounts): boolean {
+  return (
+    a.library === b.library &&
+    a.uncategorized === b.uncategorized &&
+    a.untagged === b.untagged &&
+    a.recentlyAdded === b.recentlyAdded &&
+    a.recentlyUsed === b.recentlyUsed &&
+    a.trash === b.trash &&
+    sameFolderMap(a.folders, b.folders) &&
+    sameFolderMap(a.foldersDownloading, b.foldersDownloading)
+  );
+}
+
 const EMPTY: LibrarySidebarCounts = {
   library: 0,
   uncategorized: 0,
@@ -41,7 +68,8 @@ export function useSidebarCounts(): LibrarySidebarCounts {
         const next = await window.pond.query("saves.sidebarCounts", {
           recentIds,
         });
-        if (active && next) setCounts(next);
+        if (active && next)
+          setCounts((prev) => (sameCounts(prev, next) ? prev : next));
       } catch (error) {
         console.warn("[pond] sidebar counts failed", error);
       } finally {

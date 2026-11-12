@@ -5,6 +5,7 @@ import { IconChevronRight } from "@pond/icons";
 import type { Folder, SidebarBadgeStyle } from "@pond/schema/db";
 import { Button, cssVars, type MenuItemSpec } from "@pond/ui";
 import { useReducedMotionConfig } from "motion/react";
+import { memo } from "react";
 import { FolderContextMenu } from "@/features/library/components/folder-context-menu";
 import type { FolderTool } from "@/features/library/components/folder-tools";
 import { enterFolder } from "@/features/library/operations/enter-folder";
@@ -38,7 +39,12 @@ interface FolderTreeRowProps {
   depth: number;
   doubleClickBehavior: "open" | "expand-collapse";
   editing: boolean;
-  exportIds: string[];
+  /**
+   * Resolves the folder's export ids lazily, when the menu is built. Reads the
+   * latest rows from a shared ref, so a memoized row never resolves a stale
+   * snapshot.
+   */
+  exportIds: (includeSubfolders: boolean) => string[];
   folder: Folder;
   folderDrop: FolderDropState | null;
   folderIcon?: FolderIconId;
@@ -63,7 +69,7 @@ interface FolderTreeRowProps {
   onToggleSameLevel: (expanded: boolean) => void;
 }
 
-export function FolderTreeRow(props: FolderTreeRowProps) {
+function FolderTreeRowInner(props: FolderTreeRowProps) {
   const { folder } = props;
   const reduceMotion = useReducedMotionConfig();
   const { activatorEvent } = useDndContext();
@@ -91,7 +97,7 @@ export function FolderTreeRow(props: FolderTreeRowProps) {
         buildFolderRowMenuItems({
           collapsed: props.collapsed,
           creating: props.creating,
-          exportIds: props.exportIds,
+          exportIds: props.exportIds(props.includeSubfolders),
           folder,
           folderIcon: props.folderIcon,
           folderSortDir: props.folderSortDir,
@@ -209,3 +215,75 @@ export function FolderTreeRow(props: FolderTreeRowProps) {
     </FolderContextMenu>
   );
 }
+
+function sameNav(a: LibraryNav, b: LibraryNav): boolean {
+  if (a.kind !== b.kind) return false;
+  if (a.kind === "folder" && b.kind === "folder") return a.id === b.id;
+  if (a.kind === "tag" && b.kind === "tag") return a.name === b.name;
+  return true;
+}
+
+/**
+ * Value comparison for memoized rows. The tree has thousands of rows, so a
+ * row re-rendering on every parent render (new closure, new `folder` object)
+ * is what made large libraries laggy; the parent rebuilds all row props on
+ * every data change, and only the rows whose displayed values actually
+ * changed should render. Behavior-only props (closures, `dragHandlers`,
+ * `selectionItems`) are excluded: each is id-based and reads stable stores,
+ * so a retained closure stays correct until the row's data changes, which
+ * re-renders it with fresh props.
+ */
+function areFolderRowsEqual(
+  a: FolderTreeRowProps,
+  b: FolderTreeRowProps,
+): boolean {
+  const af = a.folder;
+  const bf = b.folder;
+  if (
+    af.id !== bf.id ||
+    af.name !== bf.name ||
+    af.color !== bf.color ||
+    a.depth !== b.depth ||
+    a.collapsed !== b.collapsed ||
+    a.count !== b.count ||
+    a.downloading !== b.downloading ||
+    a.badgeStyle !== b.badgeStyle ||
+    a.doubleClickBehavior !== b.doubleClickBehavior ||
+    a.creating !== b.creating ||
+    a.editing !== b.editing ||
+    a.hasChildren !== b.hasChildren ||
+    a.sameLevelHasChildren !== b.sameLevelHasChildren ||
+    a.viewing !== b.viewing ||
+    a.dragging !== b.dragging ||
+    a.quickAccess !== b.quickAccess ||
+    a.includeSubfolders !== b.includeSubfolders ||
+    a.coverSaveId !== b.coverSaveId ||
+    a.folderIcon !== b.folderIcon ||
+    a.folderSortDir !== b.folderSortDir ||
+    a.folderSortKey !== b.folderSortKey ||
+    a.quickAccessFolderIds !== b.quickAccessFolderIds ||
+    !sameNav(a.nav, b.nav)
+  ) {
+    return false;
+  }
+  if (
+    (a.folderDrop?.id ?? null) !== (b.folderDrop?.id ?? null) ||
+    a.folderDrop?.kind !== b.folderDrop?.kind ||
+    a.folderDrop?.saveCount !== b.folderDrop?.saveCount
+  ) {
+    return false;
+  }
+  const rpA = a.rowProps as unknown as Record<string, unknown> | undefined;
+  const rpB = b.rowProps as unknown as Record<string, unknown> | undefined;
+  return (
+    rpA?.["aria-label"] === rpB?.["aria-label"] &&
+    rpA?.["aria-level"] === rpB?.["aria-level"] &&
+    rpA?.["aria-setsize"] === rpB?.["aria-setsize"] &&
+    rpA?.["aria-posinset"] === rpB?.["aria-posinset"] &&
+    rpA?.["aria-expanded"] === rpB?.["aria-expanded"] &&
+    rpA?.["aria-selected"] === rpB?.["aria-selected"] &&
+    rpA?.tabIndex === rpB?.tabIndex
+  );
+}
+
+export const FolderTreeRow = memo(FolderTreeRowInner, areFolderRowsEqual);

@@ -1,4 +1,22 @@
-/* Fills the sidebar's spare height so the space under the last folder accepts a top-level drop. */
-.group {
-  flex-grow: 1;
+.panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow: visible;
+}
+
+.spacer {
+  flex: none;
+  width: 100%;
+}
+
+.window {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
 }
