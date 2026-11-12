@@ -9,7 +9,8 @@ import {
   IconTrashXmark,
   IconWindowShare,
 } from "@pond/icons";
-import { type MenuItemSpec, useDataTable } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
+import { useDataTable } from "@pond/ui/data-table";
 import type { ReactElement } from "react";
 import {
   canCancelDownload,

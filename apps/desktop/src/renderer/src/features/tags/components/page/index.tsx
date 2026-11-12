@@ -7,7 +7,8 @@ import {
   IconStarFill,
   IconTagFill,
 } from "@pond/icons";
-import { Button, DataTable, Empty, Input, Sidebar, Tooltip } from "@pond/ui";
+import { Button, Empty, Input, Sidebar, Tooltip } from "@pond/ui";
+import { DataTable } from "@pond/ui/data-table";
 import { defaultRangeExtractor, useVirtualizer } from "@tanstack/react-virtual";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { TagsBulkActionBar } from "@/features/tags/components/manager/bulk-actions";
