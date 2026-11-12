@@ -286,13 +286,14 @@
     }
   }
 
+  /* A looping animation keeps the compositor drawing every frame for as long as the toast is open. */
   @media (prefers-reduced-motion: no-preference) {
     & .actions [data-variant="primary"]::before {
-      animation: toast-glint 4s var(--ds-easing-standard) 1.2s infinite;
+      animation: toast-glint 4s var(--ds-easing-standard) 1.2s 2;
     }
 
     & .actions [data-variant="primary"] > svg {
-      animation: toast-twinkle 4s var(--ds-easing-decelerate) 1.2s infinite;
+      animation: toast-twinkle 4s var(--ds-easing-decelerate) 1.2s 2;
     }
   }
 }
