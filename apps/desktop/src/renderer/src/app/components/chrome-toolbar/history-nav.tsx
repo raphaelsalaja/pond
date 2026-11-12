@@ -3,7 +3,7 @@ import { Button } from "@pond/ui";
 import type { NavigationDirection } from "@shared/constants";
 import { useRouter, useRouterState } from "@tanstack/react-router";
 import { useEffect, useEffectEvent, useState } from "react";
-import { libraryChrome } from "@/features/library/state/library-chrome";
+import { restoreLibraryNav } from "@/features/library/components/folder-sidebar/navigation";
 import {
   navigationHistory,
   useNavigationHistory,
@@ -90,7 +90,7 @@ export function ChromeHistoryNav() {
       return;
     }
     const target = navigationHistory.back();
-    if (target) libraryChrome.setNav(target);
+    if (target) restoreLibraryNav(target);
     else router.history.back();
   };
 
@@ -100,7 +100,7 @@ export function ChromeHistoryNav() {
       return;
     }
     const target = navigationHistory.forward();
-    if (target) libraryChrome.setNav(target);
+    if (target) restoreLibraryNav(target);
     else if (!hasStaleSaveAhead) router.history.forward();
   };
 

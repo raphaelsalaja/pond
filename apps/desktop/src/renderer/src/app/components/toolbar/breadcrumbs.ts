@@ -63,9 +63,9 @@ function destinationCrumbs(
     case "/sources":
       return [{ label: "Sources", path: base, nav: { kind: "sources" } }];
     case "/tags":
-      return [{ label: "Tags", path: base }];
+      return [{ label: "Tags", path: base, nav: { kind: "tags" } }];
     case "/untagged":
-      return [{ label: "Untagged", path: base }];
+      return [{ label: "Untagged", path: base, nav: { kind: "untagged" } }];
     case "/recently-added":
       return [
         {

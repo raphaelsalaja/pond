@@ -275,7 +275,9 @@ export function createFolderSidebarHarness() {
         "/fish/$fishId",
         "/untagged",
         "/recents",
+        "/recently-added",
         "/downloads",
+        "/trash",
       ].map((routePath) =>
         createRoute({
           getParentRoute: () => rootRoute,

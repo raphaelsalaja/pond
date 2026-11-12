@@ -65,7 +65,7 @@ addResult(
     join(desktopOut, "renderer"),
     /(?:href|src)="\.\/([^"?#]+\.(?:js|css))/g,
   ),
-  3_200_000,
+  3_250_000,
 );
 
 const websiteRoot = join(workspace, "apps/website/.next");

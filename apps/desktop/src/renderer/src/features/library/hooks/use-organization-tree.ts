@@ -11,7 +11,7 @@ interface TreeEntry {
 export function useOrganizationTree(
   entries: readonly TreeEntry[],
   onSelection: (ids: string[]) => void,
-  navigation?: LibraryNav,
+  navigation?: LibraryNav | null,
 ) {
   const { byId, positions } = useMemo(() => {
     const byId = new Map(entries.map((entry) => [entry.id, entry]));
