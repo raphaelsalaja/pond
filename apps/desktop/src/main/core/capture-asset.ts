@@ -14,6 +14,32 @@ import { createManualSave, importedFilesComplete } from "./manual-import";
 import { writePartitionCookies } from "./refresh/harvest-window/session";
 import { restoreSave } from "./restore-save";
 
+/**
+ * Chromium's network service cancels any request whose Referer header
+ * violates the default referrer policy (strict-origin-when-cross-origin)
+ * with ERR_BLOCKED_BY_CLIENT, so the header must carry exactly what the
+ * browser itself would send when loading the image from that page:
+ * the full URL on same-origin requests, only its origin cross-origin,
+ * and nothing when a secure page references an insecure one.
+ */
+export function referrerFor(
+  originUrl: string,
+  targetUrl: string,
+): string | undefined {
+  let origin: URL;
+  let target: URL;
+  try {
+    origin = new URL(originUrl);
+    target = new URL(targetUrl);
+  } catch {
+    return undefined;
+  }
+  if (origin.origin === target.origin) return originUrl;
+  if (origin.protocol === "https:" && target.protocol === "http:")
+    return undefined;
+  return origin.origin;
+}
+
 export async function captureAsset(input: {
   url: string;
   title?: string;
@@ -46,9 +72,12 @@ export async function captureAsset(input: {
   try {
     if (input.cookies?.length)
       await writePartitionCookies({ partition, cookies: input.cookies });
+    const referrer = input.originUrl
+      ? referrerFor(input.originUrl, input.url)
+      : undefined;
     const response = await isolated.fetch(input.url, {
       signal: AbortSignal.timeout(60_000),
-      headers: input.originUrl ? { Referer: input.originUrl } : undefined,
+      headers: referrer ? { Referer: referrer } : undefined,
     });
     if (!response.ok)
       throw new Error(
