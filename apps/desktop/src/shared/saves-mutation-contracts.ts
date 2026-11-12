@@ -47,6 +47,10 @@ export interface SavesMutationQueryInputs {
     src: string;
     frameIndex: number;
   };
+  "saves.setImageThumbnail": {
+    id: string;
+    src: string;
+  };
   "saves.loadSubtitles": SavesIdInput;
   "saves.replaceFile": SavesIdInput;
   "saves.removeCustomThumbnail": SavesIdInput;
@@ -107,6 +111,7 @@ export interface SavesMutationQueryResults {
   "saves.setCustomThumbnail": CancellableResult;
   "saves.setThumbnailFromClipboard": OkResult;
   "saves.setGifThumbnail": OkResult;
+  "saves.setImageThumbnail": OkResult;
   "saves.loadSubtitles": CancellableResult;
   "saves.replaceFile": CancellableResult;
   "saves.removeCustomThumbnail": OkResult;
