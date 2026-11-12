@@ -1,4 +1,4 @@
-import type { TableColumn } from "@pond/ui";
+import type { TableColumn } from "@pond/ui/data-table";
 import type { TagsRowData } from "../types";
 
 export const tagsColumns: TableColumn<TagsRowData>[] = [

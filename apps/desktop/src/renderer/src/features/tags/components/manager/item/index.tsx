@@ -1,4 +1,4 @@
-import { useDataTable } from "@pond/ui";
+import { useDataTable } from "@pond/ui/data-table";
 import { useSelector } from "@tanstack/react-store";
 import type { KeyboardEvent, MouseEvent } from "react";
 import { TagContextMenu } from "@/features/tags/components/context-menu";

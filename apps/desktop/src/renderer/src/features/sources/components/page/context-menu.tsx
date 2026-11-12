@@ -1,4 +1,4 @@
-import { useDataTable } from "@pond/ui";
+import { useDataTable } from "@pond/ui/data-table";
 import { useQueryClient } from "@tanstack/react-query";
 import type { ReactElement } from "react";
 import { useAccounts } from "@/features/sources/hooks/use-accounts";

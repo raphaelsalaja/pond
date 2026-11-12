@@ -1,5 +1,5 @@
 import type { Source } from "@pond/schema/db";
-import type { TableColumn } from "@pond/ui";
+import type { TableColumn } from "@pond/ui/data-table";
 import { BrandTile } from "@/features/sources/components/sync-monitor-source-tile";
 import { formatNumber } from "@/shared/lib/format";
 import { relativeTime } from "@/shared/lib/relative-time";

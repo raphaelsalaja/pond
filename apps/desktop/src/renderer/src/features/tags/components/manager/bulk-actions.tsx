@@ -1,4 +1,5 @@
-import { Button, DataTable, Dialog, Input } from "@pond/ui";
+import { Button, Dialog, Input } from "@pond/ui";
+import { DataTable } from "@pond/ui/data-table";
 import { type MutableRefObject, useState } from "react";
 import { tagOperations } from "@/features/tags/operations/tag-client";
 import { errorCopy } from "@/shared/lib/error-copy";
