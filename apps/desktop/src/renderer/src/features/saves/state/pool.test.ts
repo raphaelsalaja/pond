@@ -132,6 +132,36 @@ it("keeps tied update order and prepends strictly newer Saves", () => {
   expect(pool.snapshot()).toEqual([newest, ...incoming]);
 });
 
+it("keeps held rows and stays quiet when a refetch returns them unchanged", () => {
+  const before = pool.snapshot();
+  const state = savesStore.state;
+  let publications = 0;
+  const dirty: string[][] = [];
+  const subscription = savesStore.subscribe(() => {
+    publications++;
+  });
+  const detach = onPoolDirty((ids) => dirty.push([...ids]));
+  try {
+    pool.bulkUpsert(before.map((save) => structuredClone(save)));
+    expect(savesStore.state).toBe(state);
+    expect(publications).toBe(0);
+    expect(dirty).toEqual([]);
+    for (const save of before) expect(pool.get(save.id)).toBe(save);
+
+    const target = before[1];
+    if (!target) throw new Error("Invalid fixture");
+    const retitled = { ...structuredClone(target), title: "Updated" };
+    pool.bulkUpsert([...before.map((save) => structuredClone(save)), retitled]);
+    expect(publications).toBe(1);
+    expect(dirty).toEqual([[retitled.id]]);
+    expect(pool.get(retitled.id)).toBe(retitled);
+    expect(pool.get("first")).toBe(before[0]);
+  } finally {
+    subscription.unsubscribe();
+    detach();
+  }
+});
+
 it("keeps single-delete behavior", () => {
   const revision = savesStore.state.revision;
   pool.delete("tie-a");
