@@ -343,6 +343,11 @@ export function PackedGrid({
       surroundingBandIndexes(virtualBandIndexes, bands.length),
     ).filter((index) => !mounted.has(index));
   }, [bands, onRunwayChange, virtualBandIndexes, visible]);
+  /** Cards subscribe to their own selection state, so a cursor move must not re-render every visible card. */
+  const cards = useMemo(
+    () => visible.map((i) => (items[i] ? renderItem(items[i]) : null)),
+    [items, renderItem, visible],
+  );
   const endReached = useRef(false);
 
   useEffect(() => {
@@ -402,11 +407,7 @@ export function PackedGrid({
         );
       }}
     >
-      {visible.map((i) => {
-        const it = items[i];
-        if (!it) return null;
-        return renderItem(it);
-      })}
+      {cards}
     </LibraryGrid.Grid>
   );
 }

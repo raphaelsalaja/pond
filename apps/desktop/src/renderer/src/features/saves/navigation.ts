@@ -9,7 +9,6 @@ export {
 export { resultNavigation, useResultTotal } from "./state/result-navigation";
 export {
   primarySelection,
-  primarySelectionStore,
   selection,
   useSelectionCursor,
   useSelectionSize,

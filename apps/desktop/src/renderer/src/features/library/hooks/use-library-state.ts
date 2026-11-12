@@ -1,5 +1,4 @@
 import { useLocation } from "@tanstack/react-router";
-import { useSelector } from "@tanstack/react-store";
 import { useMemo } from "react";
 import {
   useEffectiveFilterQuery,
@@ -12,7 +11,6 @@ import {
   parseMode,
   type SaveListMode,
 } from "@/features/saves";
-import { primarySelectionStore } from "@/features/saves/navigation";
 import { useBootReady, useSaves } from "@/features/saves/pool";
 import type { Save } from "@/features/saves/types";
 import { useStableStrings } from "../../../shared/hooks/use-stable-array";
@@ -28,7 +26,6 @@ interface LibraryState {
   hasActiveSearch: boolean;
   hasActiveFilter: boolean;
   searchText: string;
-  selectedId: string | null;
   viewMode: ViewMode;
   unknown: boolean;
   paging: ReturnType<typeof useNarrowedSaves>;
@@ -51,8 +48,6 @@ export function useLibraryState(): LibraryState {
   const hasActiveSearch = searchText.trim().length > 0;
   const hasActiveFilter = filterQuery.rules.length > 0;
 
-  const selectedId = useSelector(primarySelectionStore, (s) => s.id);
-
   const viewMode: ViewMode = layout;
 
   const paging = useNarrowedSaves(mode, sourceFilter);
@@ -70,7 +65,6 @@ export function useLibraryState(): LibraryState {
     hasActiveSearch,
     hasActiveFilter,
     searchText,
-    selectedId,
     viewMode,
     unknown,
     paging,
