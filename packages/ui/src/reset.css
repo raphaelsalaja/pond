@@ -105,6 +105,11 @@
     -webkit-app-region: no-drag;
   }
 
+  /* The button's own box already covers its contents; an inherited no-drag adds a region per descendant, recollected on every layout. */
+  button * {
+    -webkit-app-region: initial;
+  }
+
   button {
     padding: 0;
     font: inherit;
