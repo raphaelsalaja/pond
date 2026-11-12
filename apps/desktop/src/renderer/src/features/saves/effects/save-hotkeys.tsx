@@ -97,7 +97,7 @@ function canCopyPrimaryMedia(save: Save): boolean {
 
 export function SaveHotkeys() {
   const shortcuts = useShortcutBindings();
-  const hasPrimary = useSelector(primarySelectionStore, (s) => s.id) != null;
+  const hasPrimary = useSelector(primarySelectionStore, (s) => s.id != null);
   const hasMulti = useSelectionSize() > 0;
   const ratingQueue = useRef(Promise.resolve());
   const rate = (rating: number, advance: boolean) => {

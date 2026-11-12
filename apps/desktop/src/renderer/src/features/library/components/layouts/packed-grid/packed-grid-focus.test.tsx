@@ -137,3 +137,62 @@ it("keeps a virtual cursor mounted and reveals it on focus return without changi
     host.remove();
   }
 });
+
+it("moves the cursor without re-rendering mounted cards", async () => {
+  const items = ["a", "b"].map((id, index) => ({
+    id,
+    left: index * 100,
+    top: 0,
+    width: 100,
+    height: 100,
+    mediaHeight: 100,
+  }));
+  selection.setCursor("a");
+  const host = document.createElement("div");
+  host.style.overflowY = "auto";
+  Object.defineProperties(host, {
+    offsetHeight: { value: 600 },
+    offsetWidth: { value: 600 },
+  });
+  host.scrollTo = () => {};
+  document.body.append(host);
+  const root = createRoot(host);
+  let renders = 0;
+  const renderItem = (item: (typeof items)[number]) => {
+    renders++;
+    return (
+      <span
+        key={item.id}
+        id={`save-option-${item.id}`}
+        role="option"
+        tabIndex={-1}
+        aria-selected={false}
+      >
+        {item.id}
+      </span>
+    );
+  };
+  try {
+    await act(() =>
+      root.render(
+        <PackedGrid
+          layout="grid"
+          totalHeight={100}
+          items={items}
+          renderItem={renderItem}
+        />,
+      ),
+    );
+    const before = renders;
+    await act(() => selection.setCursor("b"));
+    expect(
+      host
+        .querySelector("[data-save-collection]")
+        ?.getAttribute("aria-activedescendant"),
+    ).toBe("save-option-b");
+    expect(renders).toBe(before);
+  } finally {
+    await act(() => root.unmount());
+    host.remove();
+  }
+});
