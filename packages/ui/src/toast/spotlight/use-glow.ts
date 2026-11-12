@@ -86,6 +86,9 @@ void main() {
 `;
 
 const EXCITER = '[data-variant="primary"]';
+/** Every WebGL frame holds hundreds of MB in the GPU process, so the glow only animates while new or under the pointer. */
+const INTRO_MS = 8000;
+const SETTLED = 0.005;
 
 function compile(gl: WebGLRenderingContext, type: number, source: string) {
   const shader = gl.createShader(type);
@@ -172,13 +175,20 @@ export function useGlow(canvas: RefObject<HTMLCanvasElement | null>): void {
       gl.drawArrays(gl.TRIANGLES, 0, 3);
     };
 
+    const live = (now: number) =>
+      now - born < INTRO_MS ||
+      pointer.inside ||
+      focused ||
+      hover > SETTLED ||
+      excite > SETTLED;
+
     const loop = (now: number) => {
       paint(now);
-      frame = reduced.matches ? 0 : requestAnimationFrame(loop);
+      frame = !reduced.matches && live(now) ? requestAnimationFrame(loop) : 0;
     };
 
     const start = () => {
-      if (frame) return;
+      if (frame || reduced.matches) return;
       last = performance.now();
       frame = requestAnimationFrame(loop);
     };
@@ -198,7 +208,7 @@ export function useGlow(canvas: RefObject<HTMLCanvasElement | null>): void {
 
     const refresh = () => {
       paint(performance.now());
-      if (!reduced.matches) start();
+      start();
     };
 
     const move = (event: PointerEvent) => {
@@ -207,6 +217,7 @@ export function useGlow(canvas: RefObject<HTMLCanvasElement | null>): void {
       pointer.y = rect.bottom - event.clientY;
       pointer.inside = true;
       hovering = exciting(event.target);
+      start();
     };
     const leave = () => {
       pointer.inside = false;
@@ -214,6 +225,7 @@ export function useGlow(canvas: RefObject<HTMLCanvasElement | null>): void {
     };
     const focusIn = (event: FocusEvent) => {
       focused = exciting(event.target);
+      start();
     };
     const focusOut = () => {
       focused = false;
