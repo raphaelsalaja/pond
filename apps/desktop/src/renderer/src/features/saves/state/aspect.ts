@@ -2,6 +2,7 @@ import { debounce } from "@tanstack/pacer";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { z } from "zod";
+import { orientAspectRatio } from "@/features/saves/lib/image-orientation";
 import {
   type MediaPickOptions,
   type MediaUnit,
@@ -147,6 +148,14 @@ const persistSoon = debounce(
 );
 
 hydrateFromStorage();
+
+/** Aspect of the tile after `rotate`, so a quarter turn no longer uses the pixel box. */
+export function layoutAspectFor(
+  save: Save,
+  opts: MediaPickOptions = {},
+): number {
+  return orientAspectRatio(aspectFor(save, opts), save.rotate);
+}
 
 export function aspectFor(save: Save, opts: MediaPickOptions = {}): number {
   const coverKey = coverKeyForSave(save, opts);

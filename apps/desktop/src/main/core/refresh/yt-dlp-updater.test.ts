@@ -11,6 +11,7 @@ import {
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { Readable } from "node:stream";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { YTDLP_FILENAME } from "./binaries";
 import {
@@ -139,7 +140,8 @@ describe("yt-dlp update lifecycle", () => {
       fetchLatestTag: async () => "v2",
       fetchExpectedSha: async () =>
         createHash("sha256").update(body).digest("hex"),
-      fetchBinary: async () => body,
+      fetchBinary: async () =>
+        Readable.from([body.subarray(0, 4), body.subarray(4)]),
     };
   }
 
@@ -165,6 +167,37 @@ describe("yt-dlp update lifecycle", () => {
     expect(await text(active())).toBe("good v2");
     expect(await text(previous())).toBe("good v1");
     expect(await text(join(dir, ".yt-dlp-version"))).toBe("v2");
+  });
+
+  it("refuses a download whose hash does not match, leaving no partial file", async () => {
+    await installV1();
+    await runUpdate(
+      {
+        ...onlineDeps(),
+        fetchBinary: async () => Readable.from([Buffer.from("good evil")]),
+      },
+      { force: true, install: true },
+    );
+    expect(await text(active())).toBe("good v1");
+    expect((await readdir(dir)).sort()).toEqual(
+      [".yt-dlp-version", YTDLP_FILENAME].sort(),
+    );
+  });
+
+  it("drops a download that fails partway, leaving no partial file", async () => {
+    await installV1();
+    async function* broken() {
+      yield Buffer.from("good");
+      throw new Error("connection reset");
+    }
+    await runUpdate(
+      { ...onlineDeps(), fetchBinary: async () => broken() },
+      { force: true, install: true },
+    );
+    expect(await text(active())).toBe("good v1");
+    expect((await readdir(dir)).sort()).toEqual(
+      [".yt-dlp-version", YTDLP_FILENAME].sort(),
+    );
   });
 
   it("leaves a missing binary alone when install is off", async () => {

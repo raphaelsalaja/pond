@@ -19,7 +19,7 @@ import { savedViews, useSavedViews } from "../../../../state/saved-views";
 import {
   resetFilters,
   setQuery,
-  useViewStore,
+  useActiveViewId,
 } from "../../../../state/view-store";
 import { folderIdsForExport } from "../../../folder-context-menu";
 import { buildQuickAccessFolderMenuItems } from "../../folder-row-menu";
@@ -56,7 +56,7 @@ export function QuickAccess({
 }: QuickAccessProps) {
   const [savedViewViews] = usePrefs("savedViewViews");
   const views = useSavedViews();
-  const { activeViewId } = useViewStore();
+  const activeViewId = useActiveViewId();
   const quickViews = quickAccessRows(views, savedViewViews);
   const quickViewIds = quickViews.map((view) => view.id);
   const quickEntries = [

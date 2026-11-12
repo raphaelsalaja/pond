@@ -8,7 +8,7 @@ import { WorkspaceMenu } from "@/features/library/components/workspace-menu";
 import { useFolders } from "@/features/library/state/folders";
 import { useLibraryNav } from "@/features/library/state/library-chrome";
 import { useHydrateSavedViews } from "@/features/library/state/saved-views";
-import { useViewStore } from "@/features/library/state/view-store";
+import { useActiveViewId } from "@/features/library/state/view-store";
 import { activeLibraryDestination } from "@/shared/lib/library-nav";
 import { LibraryDestinations } from "./destinations";
 import { FolderTree } from "./folder-tree";
@@ -28,7 +28,7 @@ function WorkspaceHeader() {
 
 export function FolderSidebar() {
   const nav = useLibraryNav();
-  const { activeViewId } = useViewStore();
+  const activeViewId = useActiveViewId();
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });

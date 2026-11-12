@@ -1,8 +1,14 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  createMemoryHistory,
+  createRootRoute,
+  createRouter,
+} from "@tanstack/react-router";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { libraryChrome } from "@/features/library/state/library-chrome";
+import { setAppRouter } from "@/shared/lib/app-router";
 import { WorkspaceMenu } from ".";
 
 const query = vi.fn(async (name: string) => {
@@ -60,7 +66,18 @@ describe("workspace menu", () => {
         disconnect() {}
       },
     );
-    vi.stubGlobal("pond", { query, openExternal });
+    vi.stubGlobal("pond", {
+      query,
+      openExternal,
+      appInfo: async () => ({
+        name: "Pond",
+        version: "1.0.0",
+        platform: "darwin",
+        arch: "arm64",
+        username: "rafa",
+        isPackaged: true,
+      }),
+    });
     query.mockClear();
     openExternal.mockClear();
     host = document.createElement("div");
@@ -224,6 +241,24 @@ describe("workspace menu", () => {
     expect(openExternal).toHaveBeenLastCalledWith(
       "https://addons.mozilla.org/firefox/addon/desktop%40pond.so/",
     );
+  });
+
+  it("checks for updates instead of opening Settings", async () => {
+    const history = createMemoryHistory({ initialEntries: ["/"] });
+    const router = createRouter({
+      routeTree: createRootRoute(),
+      history,
+    });
+    setAppRouter(router);
+    await openMenu();
+    const item = [...document.querySelectorAll('[role="menuitem"]')].find(
+      (entry) => entry.textContent?.includes("Check for Updates"),
+    );
+    if (!(item instanceof HTMLElement))
+      throw new Error("Missing Check for Updates action");
+    await act(async () => item.click());
+    expect(query).toHaveBeenCalledWith("updates.checkNow", {});
+    expect(history.location.href).not.toContain("/settings");
   });
 
   it("says so when a store page doesn't open", async () => {

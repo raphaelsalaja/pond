@@ -22,6 +22,7 @@ import {
   useIsPrimary,
   useIsSelected,
 } from "@/features/saves/state/selection";
+import { useIsDepartingSave } from "@/features/saves/state/tag-picker";
 import { useIsTumbling } from "@/features/saves/state/trash-tumble";
 import type { Save } from "@/features/saves/types";
 
@@ -61,6 +62,7 @@ export const SaveCard = memo(function SaveCard({
   const isMulti = useIsSelected(id);
   const isPrimary = useIsPrimary(id);
   const isCursor = useIsCursor(id);
+  const departing = useIsDepartingSave(id);
   const tumbling = useIsTumbling(id);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUrl = useMemo(() => {
@@ -105,7 +107,8 @@ export const SaveCard = memo(function SaveCard({
     base.position = "absolute";
     base.top = 0;
     base.left = 0;
-    base.transform = `translate3d(${slot.left}px, ${slot.top}px, 0)`;
+    /** A 3D translate gives every card its own GPU layer, which every frame on the page then pays to rebuild. */
+    base.transform = `translate(${slot.left}px, ${slot.top}px)`;
     return base;
   }, [slot]);
 
@@ -157,6 +160,7 @@ export const SaveCard = memo(function SaveCard({
     role: "presentation",
     selected: isPrimary,
     multi: isMulti,
+    dimmed: departing,
     "data-library-card": "",
     "data-save-id": id,
     "data-view": view,

@@ -237,6 +237,32 @@ export const savesImportPersistenceQueries = {
     },
   ),
 
+  "saves.setImageThumbnail": query(
+    z.object({
+      id: StringParam,
+      src: StringParam,
+    }),
+    async (params): Promise<QueryResult<"saves.setImageThumbnail">> => {
+      const resolved = resolvePondSavePath(params.src);
+      if (
+        !resolved ||
+        resolved.saveId.toLowerCase() !== params.id.toLowerCase()
+      ) {
+        return { ok: false, error: "missing_file" };
+      }
+      const rendered = await renderThumbnail(
+        await readLibraryMedia(resolved.path),
+      );
+      if (!rendered) return { ok: false, error: "not_an_image" };
+      const updated = await persistSaveThumbnail(
+        params.id,
+        rendered,
+        "user:set-image-thumbnail",
+      );
+      return updated ? { ok: true } : SAVE_NOT_FOUND;
+    },
+  ),
+
   "saves.loadSubtitles": query(
     z.object({ id: StringParam }),
     async (params): Promise<QueryResult<"saves.loadSubtitles">> => {

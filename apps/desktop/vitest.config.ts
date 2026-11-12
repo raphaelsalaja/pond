@@ -6,6 +6,7 @@ const stub = (p: string) =>
 
 const rendererTypeScriptTests = [
   "src/renderer/src/shared/lib/editable-target.test.ts",
+  "src/renderer/src/shared/lib/paint-theme.test.ts",
   "src/renderer/src/shared/lib/settled-resize.test.ts",
   "src/renderer/src/shared/hooks/use-scroll-restoration.test.ts",
   "src/renderer/src/features/saves/lib/eagle-baseline-menu.test.ts",

@@ -210,4 +210,25 @@ describe("buildSaveCardModel", () => {
 
     expect(model.aspect).toBe(0.1);
   });
+
+  it("swaps the grid aspect after a quarter turn", () => {
+    const model = buildSaveCardModel(
+      save({ id: "turned", rotate: 90 }),
+      {},
+      display,
+      1.5,
+    );
+
+    expect(model.aspect).toBeCloseTo(800 / 1200);
+  });
+
+  it("keeps the grid aspect after a half turn", () => {
+    const model = buildSaveCardModel(
+      save({ id: "half", rotate: 180 }),
+      {},
+      display,
+      1.5,
+    );
+    expect(model.aspect).toBe(1.5);
+  });
 });

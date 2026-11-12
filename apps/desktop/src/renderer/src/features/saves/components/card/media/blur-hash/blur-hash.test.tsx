@@ -26,8 +26,8 @@ describe("BlurHash", () => {
     });
 
     const canvas = container.querySelector("canvas");
-    expect(canvas?.getAttribute("width")).toBe("32");
-    expect(canvas?.getAttribute("height")).toBe("32");
+    expect(canvas?.getAttribute("width")).toBe("16");
+    expect(canvas?.getAttribute("height")).toBe("16");
     expect(canvas?.getAttribute("aria-hidden")).toBe("true");
   });
 });

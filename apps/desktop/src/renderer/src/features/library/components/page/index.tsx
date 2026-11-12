@@ -1,6 +1,6 @@
 import { Shell } from "@pond/ui";
 import { Outlet, useRouterState } from "@tanstack/react-router";
-import { useLayoutEffect } from "react";
+import { useLayoutEffect, useMemo } from "react";
 import { canvasIdFromPath } from "@/features/canvas";
 import { fishIdFromPath } from "@/features/fish";
 import { LibraryChrome } from "@/features/library/components/chrome";
@@ -44,6 +44,8 @@ export function Library() {
   const listPath = isSave ? getLastListPath() : pathname;
   const listSearch = isSave ? getLastListSearch() : search;
   const restoration = useScrollRestoration(`${listPath}${listSearch}`);
+  /** The grid stays mounted under an open Save, so a route change must not re-render it. */
+  const view = useMemo(() => <LibraryView />, []);
 
   return (
     <div className={styles.stage}>
@@ -63,7 +65,7 @@ export function Library() {
                   className={styles.main}
                   data-library-grid-viewport
                 >
-                  <LibraryView />
+                  {view}
                 </Shell.Main>
               </ScrollRestorationContext.Provider>
             </Shell.Body>

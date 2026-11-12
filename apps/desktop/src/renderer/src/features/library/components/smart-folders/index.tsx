@@ -23,7 +23,7 @@ import {
   useSavedViewEditorRequest,
   useSavedViews,
 } from "@/features/library/state/saved-views";
-import { useViewStore } from "@/features/library/state/view-store";
+import { useActiveViewId } from "@/features/library/state/view-store";
 import { savesStore } from "@/features/saves/pool";
 import {
   SidebarSectionMenu,
@@ -63,7 +63,7 @@ export function SmartFoldersSection({
     select: (state) => state.location.pathname,
   });
   const destination = activeLibraryDestination(pathname, nav);
-  const { activeViewId } = useViewStore();
+  const activeViewId = useActiveViewId();
   const [presentations] = usePrefs("savedViewViews");
   const [sidebar] = usePrefs("sidebar");
   const [open, setOpen] = useState(true);

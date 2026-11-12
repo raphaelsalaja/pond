@@ -141,6 +141,59 @@ describe("fetch_video_ytdlp download gate", () => {
 describe("fetch_video_ytdlp requested downloads", () => {
   const cleanup = vi.fn(async () => {});
 
+  it("recomputes the save size after a video is downloaded onto an existing save", async () => {
+    const posterSize = 2_560;
+    const subtitleSize = 400;
+    const saved: VideoDownloadSave = {
+      ...videoSave,
+      files: [
+        {
+          kind: "poster",
+          path: "poster.jpg",
+          sha256: "poster",
+          size: posterSize,
+        },
+        {
+          kind: "subtitle",
+          path: "captions.vtt",
+          sha256: "captions",
+          size: subtitleSize,
+        },
+      ],
+    };
+    const { runtime, downloadVideo, persistSave } = setup(false, saved);
+    const path = await producedFile("yt1.mp4");
+    const video = Buffer.alloc(10_240, 7);
+    await writeFile(path, video);
+    const posterPath = await producedFile("thumb.gif");
+    const poster = Buffer.from(
+      "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+      "base64",
+    );
+    await writeFile(posterPath, poster);
+    downloadVideo.mockResolvedValue({
+      items: [
+        {
+          path,
+          mimeType: "video/mp4",
+          size: video.byteLength,
+          infoJson: { width: 1280, height: 720 },
+          posterPath,
+          posterMimeType: "image/gif",
+          subtitles: [],
+        },
+      ],
+      cleanup,
+    });
+
+    await runFetchVideoYtdlp("yt1", { requested: true }, undefined, runtime);
+
+    const [, patch] = persistSave.mock.calls[0] ?? [];
+    expect(patch?.fileSize).toBe(
+      subtitleSize + video.byteLength + poster.byteLength,
+    );
+  });
+
   it("stores audio as an audio file and an audio save", async () => {
     const linkSave: VideoDownloadSave = { ...videoSave, mediaType: "link" };
     const { runtime, downloadVideo, persistSave } = setup(false, linkSave);
@@ -168,7 +221,7 @@ describe("fetch_video_ytdlp requested downloads", () => {
     );
 
     const [, patch, opts] = persistSave.mock.calls[0] ?? [];
-    expect(patch).toEqual({ mediaType: "audio" });
+    expect(patch).toEqual({ mediaType: "audio", fileSize: 5 });
     expect(opts?.replaceFilesWithKind).toEqual(["audio"]);
     expect(opts?.newFiles).toEqual([
       expect.objectContaining({
@@ -311,10 +364,15 @@ describe("fetch_video_ytdlp requested downloads", () => {
       expect.objectContaining({ lang: "en" }),
     );
     const [, patch, opts] = persistSave.mock.calls[0] ?? [];
+    const captionText =
+      "WEBVTT\n\n00:00:01.000 --> 00:00:02.000\nHello there\n";
     expect(patch).toEqual({
       transcript: "0:01 Hello there",
       transcriptModel: "captions",
       mediaType: "text",
+      fileSize:
+        Buffer.byteLength("0:01 Hello there\n") +
+        Buffer.byteLength(captionText),
     });
     expect(opts?.newFiles?.map((file) => file.filename)).toEqual([
       "transcript.txt",

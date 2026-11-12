@@ -74,6 +74,7 @@ export function TagMenuView({
     collapsedGroups,
     sections,
     createInfo,
+    createRow,
     recommendedRows,
     listRows,
     cursor,
@@ -156,17 +157,6 @@ export function TagMenuView({
         aria-label="Tags"
         aria-multiselectable="true"
       >
-        {createInfo ? (
-          <TagMenuRow.Create
-            {...cursor.getItemProps({
-              id: `create-${createInfo.label}`,
-              kind: "create",
-              create: createInfo,
-            })}
-            create={createInfo}
-          />
-        ) : null}
-
         {list ? (
           <>
             {recommendedRows.length ? (
@@ -224,6 +214,13 @@ export function TagMenuView({
                 </PickerPanel.Group>
               ) : null,
             )}
+
+        {createRow ? (
+          <TagMenuRow.Create
+            {...cursor.getItemProps(createRow)}
+            create={createRow.create}
+          />
+        ) : null}
 
         {error ? (
           <PickerPanel.Empty role="alert">{error}</PickerPanel.Empty>

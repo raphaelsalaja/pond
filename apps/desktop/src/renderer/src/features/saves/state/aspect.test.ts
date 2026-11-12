@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { Save } from "@/features/saves/types";
-import { aspectDimsFor, clampRatio } from "./aspect";
+import {
+  aspectDimsFor,
+  clampRatio,
+  layoutAspectFor,
+  recordAspect,
+} from "./aspect";
 
 function save(partial: Partial<Save> & { id: string }): Save {
   return {
@@ -115,6 +120,45 @@ describe("aspectDimsFor", () => {
       }),
     );
     expect(result).toEqual({ w: null, h: null });
+  });
+});
+
+describe("layoutAspectFor", () => {
+  it("swaps the stored pixel aspect after a 90 or 270 degree rotation", () => {
+    const rotated = save({
+      id: "quarter",
+      width: 400,
+      height: 200,
+      rotate: 90,
+      files: [
+        {
+          path: "wide.jpg",
+          kind: "media",
+          mimeType: "image/jpeg",
+          sha256: "",
+          size: 0,
+          width: 400,
+          height: 200,
+        },
+      ],
+    });
+    expect(layoutAspectFor(rotated)).toBeCloseTo(0.5);
+    expect(layoutAspectFor({ ...rotated, rotate: 270 })).toBeCloseTo(0.5);
+    expect(layoutAspectFor({ ...rotated, rotate: 180 })).toBeCloseTo(2);
+  });
+
+  it("inverts a measured pixel ratio instead of the file dimensions", () => {
+    recordAspect("measured-quarter", 400, 200);
+    expect(
+      layoutAspectFor(
+        save({
+          id: "measured-quarter",
+          rotate: 90,
+          width: 10,
+          height: 10,
+        }),
+      ),
+    ).toBeCloseTo(0.5);
   });
 });
 

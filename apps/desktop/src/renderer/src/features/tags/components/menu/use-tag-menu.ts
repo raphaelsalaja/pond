@@ -5,6 +5,7 @@ import { tagOperations } from "@/features/tags/operations/tag-client";
 import type { TagGroupRow } from "@/features/tags/state/tag-groups";
 import type { TagRow } from "@/features/tags/state/tags";
 import { errorCopy } from "@/shared/lib/error-copy";
+import { placeCreateOptionLast } from "@/shared/lib/picker-order";
 import { parseTagBatch, partitionPickerTags } from "./lib";
 import type { CreateInfo, TagPickerRow, TagSection } from "./types";
 
@@ -225,8 +226,8 @@ export function useTagMenu({
     return result;
   }, [collapsedGroups, groups, list, matching, needle, tags]);
 
-  const rows = useMemo<TagPickerRow[]>(() => {
-    const tagRows = list
+  const rows = useMemo<readonly TagPickerRow[]>(() => {
+    const tagRows: readonly TagPickerRow[] = list
       ? [...recommendedRows, ...listRows]
       : sections.flatMap((section) =>
           section.open
@@ -237,17 +238,19 @@ export function useTagMenu({
               }))
             : [],
         );
-    return createInfo
-      ? [
-          {
+    return placeCreateOptionLast(
+      tagRows,
+      createInfo
+        ? {
             id: `create-${createInfo.label}`,
-            kind: "create",
+            kind: "create" as const,
             create: createInfo,
-          },
-          ...tagRows,
-        ]
-      : tagRows;
+          }
+        : null,
+    );
   }, [createInfo, list, listRows, recommendedRows, sections]);
+  const lastRow = rows.at(-1);
+  const createRow = lastRow?.kind === "create" ? lastRow : null;
 
   async function commitCreate(info: CreateInfo) {
     if (creating) return;
@@ -335,6 +338,7 @@ export function useTagMenu({
     collapsedGroups,
     sections,
     createInfo,
+    createRow,
     recommendedRows,
     listRows,
     cursor,

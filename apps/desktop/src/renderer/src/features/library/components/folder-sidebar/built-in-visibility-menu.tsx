@@ -33,6 +33,8 @@ export function BuiltInVisibilityMenu({
   const [sidebar, patch] = usePrefs("sidebar");
   const recents = useRecents();
   const [customizing, setCustomizing] = useState(false);
+  /** Every destination row hosts this menu; the dialog mounts closed when the menu first opens so its entry transition still runs. */
+  const [dialogMounted, setDialogMounted] = useState(false);
 
   const setBadgeStyle = (style: SidebarBadgeStyle | "default") => {
     if (!destination) return;
@@ -130,11 +132,18 @@ export function BuiltInVisibilityMenu({
 
   return (
     <>
-      <SpecContextMenu buildItems={buildItems}>{children}</SpecContextMenu>
-      <SidebarCustomizationDialog
-        open={customizing}
-        onOpenChange={setCustomizing}
-      />
+      <SpecContextMenu
+        buildItems={buildItems}
+        onOpen={() => setDialogMounted(true)}
+      >
+        {children}
+      </SpecContextMenu>
+      {dialogMounted ? (
+        <SidebarCustomizationDialog
+          open={customizing}
+          onOpenChange={setCustomizing}
+        />
+      ) : null}
     </>
   );
 }

@@ -37,6 +37,9 @@ interface WorkerContext {
   reportActivity: ReportDownloadActivity;
   leaseToken: string;
   cancellationFence: number;
+  /** This run's 1-based attempt, and the task's limit. */
+  attempt: number;
+  maxAttempts: number;
 }
 
 type Worker = (

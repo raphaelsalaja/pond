@@ -55,6 +55,50 @@ describe("pickProducedFiles", () => {
       [],
     );
   });
+
+  it("keeps the merged video when the audio and video streams were also written", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "pond-ytdlp-out-"));
+    dirs.push(dir);
+    await writeFile(join(dir, "abc.f140.m4a"), Buffer.alloc(180));
+    await writeFile(join(dir, "abc.f299.mp4"), Buffer.alloc(90));
+    await writeFile(join(dir, "abc.mp4"), Buffer.alloc(400));
+    await writeFile(join(dir, "abc.jpg"), Buffer.alloc(10));
+    await writeFile(
+      join(dir, "abc.info.json"),
+      JSON.stringify({ id: "abc", playlist_index: 1 }),
+    );
+
+    const files = await pickProducedFiles(dir);
+    expect(files.map((file) => file.path)).toEqual([join(dir, "abc.mp4")]);
+  });
+
+  it("drops an audio file that shares the merged video name", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "pond-ytdlp-out-"));
+    dirs.push(dir);
+    await writeFile(join(dir, "abc.m4a"), Buffer.alloc(180));
+    await writeFile(join(dir, "abc.mp4"), Buffer.alloc(400));
+
+    const files = await pickProducedFiles(dir);
+    expect(files.map((file) => file.path)).toEqual([join(dir, "abc.mp4")]);
+  });
+
+  it("returns nothing when the audio and video streams were never merged", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "pond-ytdlp-out-"));
+    dirs.push(dir);
+    await writeFile(join(dir, "abc.f140.m4a"), Buffer.alloc(180));
+    await writeFile(join(dir, "abc.f299.mp4"), Buffer.alloc(90));
+
+    expect(await pickProducedFiles(dir)).toEqual([]);
+  });
+
+  it("keeps an audio download that has no video beside it", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "pond-ytdlp-out-"));
+    dirs.push(dir);
+    await writeFile(join(dir, "abc.m4a"), Buffer.alloc(80));
+
+    const files = await pickProducedFiles(dir);
+    expect(files.map((file) => file.path)).toEqual([join(dir, "abc.m4a")]);
+  });
 });
 
 describe("readCompletedFiles", () => {

@@ -57,6 +57,8 @@ button.label {
   max-width: 80px;
   overflow: hidden;
   text-overflow: ellipsis;
+  /* Beats the reset rule that sets text-wrap: pretty on every element. */
+  white-space: nowrap;
 }
 
 .name {

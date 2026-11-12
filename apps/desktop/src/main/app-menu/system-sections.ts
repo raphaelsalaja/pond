@@ -26,7 +26,7 @@ export function buildApplicationSections(
         { type: "separator" },
         {
           label: "Check for Updates",
-          click: context.navTo("/settings/general"),
+          click: context.sendMenuAction("updates.check"),
         },
         { type: "separator" },
         settingsItem,

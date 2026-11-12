@@ -10,7 +10,7 @@ import {
   useItemInfo,
   useMediaPickOptions,
 } from "@/features/saves";
-import { aspectFor, useAspectVersion } from "@/features/saves/media";
+import { layoutAspectFor, useAspectVersion } from "@/features/saves/media";
 import type { Save } from "@/features/saves/types";
 
 interface JustifiedViewProps {
@@ -33,7 +33,7 @@ export function JustifiedView({ saves, onEndReached }: JustifiedViewProps) {
     return packJustified(
       saves.map((save) => ({
         id: save.id,
-        aspect: aspectFor(save, pickOpts),
+        aspect: layoutAspectFor(save, pickOpts),
       })),
       width,
       targetHeight,

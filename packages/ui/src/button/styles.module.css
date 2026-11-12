@@ -80,6 +80,14 @@
       scale var(--ds-duration-fast) var(--ds-easing-decelerate);
   }
 
+  /* Popups anchor to the trigger's transformed box, so a press scale drags an open popup through subpixel snaps. */
+  &[aria-expanded="true"] {
+    scale: none;
+    transition:
+      box-shadow var(--ds-duration-medium) var(--ds-easing-standard),
+      opacity var(--ds-duration-medium) var(--ds-easing-standard);
+  }
+
   &:where([data-size="xs"]) {
     --button-height: var(--button-height-xs);
     --button-icon-size: 12px;

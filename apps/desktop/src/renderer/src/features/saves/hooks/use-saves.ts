@@ -1,4 +1,4 @@
-import { useSelector } from "@tanstack/react-store";
+import { shallow, useSelector } from "@tanstack/react-store";
 import { useEffect } from "react";
 import { pagingStore } from "@/features/saves/state/bootstrap";
 import { protectSaves, savesStore } from "@/features/saves/state/pool";
@@ -28,10 +28,14 @@ export function useBootReady(): boolean {
 }
 
 export function useSavePaging() {
-  return useSelector(pagingStore, (s) => ({
-    hasMore: s.hasMore,
-    loading: s.loading,
-    loaded: s.loaded,
-    total: s.total,
-  }));
+  return useSelector(
+    pagingStore,
+    (s) => ({
+      hasMore: s.hasMore,
+      loading: s.loading,
+      loaded: s.loaded,
+      total: s.total,
+    }),
+    { compare: shallow },
+  );
 }

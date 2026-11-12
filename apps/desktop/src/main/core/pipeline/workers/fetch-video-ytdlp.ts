@@ -179,9 +179,15 @@ export async function runFetchVideoYtdlp(
     }
     ctx?.signal?.throwIfAborted();
     ctx?.reportActivity?.({ phase: "saving" });
+    const replaceVideo = ["video", "poster"] as const;
+    patch.fileSize = fileSizeAfterMediaWrite(
+      save.files,
+      newFiles,
+      replaceVideo,
+    );
     await runtime.persistSave(saveId, patch, {
       actorReason: "pipeline:fetch-video-ytdlp",
-      replaceFilesWithKind: ["video", "poster"],
+      replaceFilesWithKind: [...replaceVideo],
       newFiles,
     });
     log.info("[pond pipeline:fetch-video-ytdlp] wrote", {
@@ -314,6 +320,7 @@ async function runRequestedDownload(
       : addsBeside || gif
         ? []
         : ["video", "poster"];
+    patch.fileSize = fileSizeAfterMediaWrite(save.files, newFiles, replace);
     await runtime.persistSave(saveId, patch, {
       actorReason: "pipeline:fetch-video-ytdlp",
       replaceFilesWithKind: replace,
@@ -388,6 +395,10 @@ async function runCaptionsDownload(
     if (!hasMedia) patch.mediaType = "text";
     applyYtdlpInfo(save, captions.infoJson, patch);
     ctx?.reportActivity?.({ phase: "saving" });
+    patch.fileSize = fileSizeAfterMediaWrite(save.files, newFiles, [
+      "text_file",
+      "subtitle",
+    ]);
     await runtime.persistSave(saveId, patch, {
       actorReason: "pipeline:fetch-video-ytdlp",
       replaceFilesWithKind: ["text_file", "subtitle"],
@@ -396,6 +407,27 @@ async function runCaptionsDownload(
   } finally {
     await captions.cleanup();
   }
+}
+
+/**
+ * Library views display `fileSize` instead of summing files. A download
+ * replaces some of those files, so the stored size has to match what remains.
+ */
+function fileSizeAfterMediaWrite(
+  existing: VideoDownloadSave["files"],
+  newFiles: readonly WriteFileArgs[],
+  replaceKinds: readonly WriteFileArgs["kind"][],
+): number {
+  const replaced = new Set<WriteFileArgs["kind"]>(replaceKinds);
+  const retained = (existing ?? []).reduce(
+    (total, file) => (replaced.has(file.kind) ? total : total + file.size),
+    0,
+  );
+  const added = newFiles.reduce((total, file) => {
+    const size = file.bytes?.byteLength ?? 0;
+    return size === 0 ? total : total + size;
+  }, 0);
+  return retained + added;
 }
 
 function applyYtdlpInfo(
