@@ -1,6 +1,7 @@
 import { IconBookmark, IconFilterOff } from "@pond/icons";
 import { isPredicate, type Predicate } from "@pond/schema/filters/types";
 import { Button, Tooltip } from "@pond/ui";
+import { useMemo } from "react";
 import { useFolders } from "@/features/library/state/folders";
 import { libraryHeader } from "@/features/library/state/library-header";
 import { savedViews } from "@/features/library/state/saved-views";
@@ -68,16 +69,19 @@ function useFilterBarData(): FilterBarData {
   const facets = useNlFacets();
   const [sync] = usePrefs("sync");
   const [folderViews] = usePrefs("folderViews");
-  return {
-    tags,
-    tagGroups,
-    folders: folders.map((folder) => ({
-      ...folder,
-      icon: folderViews[folder.id]?.icon,
-    })),
-    facets,
-    refs: accountRefsFromSync(sync),
-  };
+  return useMemo(
+    () => ({
+      tags,
+      tagGroups,
+      folders: folders.map((folder) => ({
+        ...folder,
+        icon: folderViews[folder.id]?.icon,
+      })),
+      facets,
+      refs: accountRefsFromSync(sync),
+    }),
+    [facets, folderViews, folders, sync, tagGroups, tags],
+  );
 }
 
 export function FilterToggle() {
@@ -93,11 +97,12 @@ export function FilterToggleView(data: FilterBarData) {
   const query = useFilterQuery();
   const semantic = useSemanticQuery();
   const visual = useVisualProbe();
-  const rows = query.rules.filter(isPredicate);
+  const rows = useMemo(() => query.rules.filter(isPredicate), [query.rules]);
+  const choices = useMemo(() => filterChoices(data, rows), [data, rows]);
   if (layout === "applied") {
     return (
       <AddFilter
-        choices={filterChoices(data, rows)}
+        choices={choices}
         rows={rows}
         onChange={updateLocalFilters}
         applied={[
@@ -193,7 +198,7 @@ export function FilterBarView(data: FilterBarData) {
   const semantic = useSemanticQuery();
   const visual = useVisualProbe();
   const activeViewId = useActiveViewId();
-  const rows = query.rules.filter(isPredicate);
+  const rows = useMemo(() => query.rules.filter(isPredicate), [query.rules]);
   const activeFields = rows.map((row) =>
     row.field === "height" ? "width" : row.field,
   );
@@ -223,7 +228,7 @@ export function FilterBarView(data: FilterBarData) {
         ...shownOverlays,
         ...fields.filter((field) => field !== "color"),
       ];
-  const choices = filterChoices(data, rows);
+  const choices = useMemo(() => filterChoices(data, rows), [data, rows]);
 
   const apply = (next: Predicate[]) => {
     updateLocalFilters(next);
