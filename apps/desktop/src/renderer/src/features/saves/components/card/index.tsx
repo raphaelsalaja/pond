@@ -105,7 +105,8 @@ export const SaveCard = memo(function SaveCard({
     base.position = "absolute";
     base.top = 0;
     base.left = 0;
-    base.transform = `translate3d(${slot.left}px, ${slot.top}px, 0)`;
+    /** A 3D translate gives every card its own GPU layer, which every frame on the page then pays to rebuild. */
+    base.transform = `translate(${slot.left}px, ${slot.top}px)`;
     return base;
   }, [slot]);
 
