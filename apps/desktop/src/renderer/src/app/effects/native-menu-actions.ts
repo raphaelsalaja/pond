@@ -39,6 +39,7 @@ import {
 } from "@/features/saves/lib/selection";
 import { pool } from "@/features/saves/state/pool";
 import { primarySelection, selection } from "@/features/saves/state/selection";
+import { requestUpdateCheck } from "@/features/settings/update-check";
 import { getAppRouter } from "@/shared/lib/app-router";
 import { isEditableTarget } from "@/shared/lib/editable-target";
 import { openSettings } from "@/shared/lib/open-settings";
@@ -338,6 +339,9 @@ export function handleNativeMenuAction(id: MenuActionId): boolean {
     }
     case "help.shortcuts":
       openSettings("shortcuts");
+      return true;
+    case "updates.check":
+      requestUpdateCheck();
       return true;
     case "help.whats-new":
       whatsNewDialog.open();

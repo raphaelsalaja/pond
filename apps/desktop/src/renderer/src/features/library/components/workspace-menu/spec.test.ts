@@ -17,7 +17,10 @@ function findItem(
 
 describe("workspace menu spec", () => {
   it("lists app, release, and contact actions without submenus", () => {
-    const items = buildWorkspaceMenuItems({ onBrowserExtension: () => {} });
+    const items = buildWorkspaceMenuItems({
+      onBrowserExtension: () => {},
+      onCheckForUpdates: () => {},
+    });
     const labels = [
       "Settings",
       "Check for Updates",
@@ -53,10 +56,28 @@ describe("workspace menu spec", () => {
     expect(labels.join(" ")).not.toContain("...");
   });
 
+  it("starts an update check instead of opening Settings", () => {
+    const onCheckForUpdates = vi.fn();
+    const item = findItem(
+      buildWorkspaceMenuItems({
+        onBrowserExtension: () => {},
+        onCheckForUpdates,
+      }),
+      "Check for Updates",
+    );
+    if (!item || !("onClick" in item) || !item.onClick)
+      throw new Error("Missing Check for Updates item");
+    item.onClick();
+    expect(onCheckForUpdates).toHaveBeenCalledOnce();
+  });
+
   it("opens the browser extension dialog", () => {
     const onBrowserExtension = vi.fn();
     const item = findItem(
-      buildWorkspaceMenuItems({ onBrowserExtension }),
+      buildWorkspaceMenuItems({
+        onBrowserExtension,
+        onCheckForUpdates: () => {},
+      }),
       "Browser Extension",
     );
     if (!item || !("onClick" in item) || !item.onClick)

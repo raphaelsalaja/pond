@@ -220,7 +220,8 @@ export type MenuActionId =
   | "view.subfolders.toggle"
   | "help.shortcuts"
   | "help.whats-new"
-  | "help.export-debug-report";
+  | "help.export-debug-report"
+  | "updates.check";
 
 export type MenuActionSource = "accelerator" | "menu" | "automation";
 

@@ -20,6 +20,7 @@ import {
   switchLibrary,
 } from "@/features/library/lib/library-location";
 import { useSidebarWidth } from "@/features/library/state/library-chrome";
+import { requestUpdateCheck } from "@/features/settings/update-check";
 import defaultAppIcon from "@/generated/app-icon-previews/aqua.png";
 import { BrowserExtensionDialog } from "@/shared/components/browser-extension-dialog";
 import { openSettings } from "@/shared/lib/open-settings";
@@ -165,6 +166,7 @@ export function WorkspaceMenu() {
   const [customizeOpen, setCustomizeOpen] = useState(false);
   const items = buildWorkspaceMenuItems({
     onBrowserExtension: () => setExtensionOpen(true),
+    onCheckForUpdates: () => requestUpdateCheck(),
   });
   const name = info?.name || "Pond";
 

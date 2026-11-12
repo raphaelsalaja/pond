@@ -182,8 +182,9 @@ Run these before announcing a release:
 - [ ] Website Download buttons (Mac, Intel Mac, Windows) hit the new artifacts
 - [ ] Open Pond once so it registers the native host (a manifest file on macOS; on Windows the installer writes the `HKCU` keys and Pond writes the manifests they point to)
 - [ ] Browser Extension dialog → **Download** next to Chrome → load the Downloads folder unpacked → click the Pond icon or right-click a page → save appears in Pond
-- [ ] Settings → **Check for Updates** → shows "You're on the latest version"
-- [ ] Windows: Settings → **Check for Updates** → shows "You're on the latest version"
+- [ ] Settings → **Check Now** opens the update dialog immediately. On the latest build it says Pond is up to date; it does not wait until Settings closes
+- [ ] Workspace menu and the macOS application menu → **Check for Updates** run that same check without opening Settings
+- [ ] Windows: Settings → **Check Now** opens the same up-to-date dialog
 - [ ] Optional: tag a patch on a fork and confirm auto-update downloads the new build on both platforms
 
 ## Notes
