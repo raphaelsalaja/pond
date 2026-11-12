@@ -113,8 +113,9 @@ pnpm --filter @pond/desktop smoke:memory
 
 This launches the built app against a temporary isolated Library, the same way
 `smoke:desktop` does, and never opens a personal Library. After renderer-ready it
-samples `app.getAppMetrics()` three times, one second apart, in three scenarios,
-in this order:
+records setup as finished and reloads the window, so the animated setup demo is
+not measured. It then samples `app.getAppMetrics()` three times, one second
+apart, in three scenarios, in this order:
 
 - `idle-window-open`: 15 seconds idle with the Library window open.
 - `seeded-window-open`: 15 seconds after importing 50 synthetic 256×256 PNG
@@ -126,6 +127,12 @@ Each scenario reports the median working set in MB for the browser (main), GPU,
 renderer (Tab), utility, and other processes, plus their total. It also reports
 each process and the main process's `process.getProcessMemoryInfo()`. GC is not
 forced. Working set counts shared pages, so totals overstate unique memory.
+
+On macOS, working set is resident memory: it includes shared framework code and
+pages the system can reclaim, and it leaves out GPU memory such as IOSurfaces.
+The report adds `footprintMB` per scenario and per process from
+`/usr/bin/footprint`, taken once after the last sample. That is the figure
+Activity Monitor shows. Ceilings still apply to working set.
 
 The JSON report goes to stdout and to `POND_MEMORY_REPORT`, which defaults to
 `pond-memory-report.json` under the OS temporary directory. The command exits

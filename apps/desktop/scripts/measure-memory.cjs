@@ -1,4 +1,5 @@
 const { app, BrowserWindow, ipcMain, nativeImage } = require("electron");
+const { execFileSync } = require("node:child_process");
 const {
   mkdirSync,
   mkdtempSync,
@@ -80,6 +81,47 @@ function snapshot() {
   return { totals, processes };
 }
 
+/** macOS working set is RSS, which counts shared framework pages and reclaimable memory; Activity Monitor shows the physical footprint. */
+function footprintTotals(processes) {
+  if (process.platform !== "darwin") return undefined;
+  const file = join(sandbox, "footprint.json");
+  try {
+    execFileSync(
+      "/usr/bin/footprint",
+      [
+        "-j",
+        file,
+        "--noCategories",
+        ...processes.flatMap((entry) => ["-p", String(entry.pid)]),
+      ],
+      { stdio: "ignore", timeout: 30000 },
+    );
+    const report = JSON.parse(readFileSync(file, "utf8"));
+    const byPid = new Map(
+      report.processes.map((entry) => [entry.pid, entry.footprint]),
+    );
+    const totals = Object.fromEntries(
+      [...new Set(Object.values(CATEGORIES)), "other", "total"].map((key) => [
+        key,
+        0,
+      ]),
+    );
+    for (const entry of processes) {
+      const bytes = byPid.get(entry.pid);
+      if (bytes === undefined) continue;
+      entry.footprintMB = toMB(bytes / 1024);
+      totals[CATEGORIES[entry.type] ?? "other"] += bytes / 1024;
+      totals.total += bytes / 1024;
+    }
+    return Object.fromEntries(
+      Object.entries(totals).map(([key, value]) => [key, toMB(value)]),
+    );
+  } catch (error) {
+    console.error("footprint unavailable", error);
+    return undefined;
+  }
+}
+
 async function sample() {
   const samples = [];
   for (let index = 0; index < SAMPLE_COUNT; index++) {
@@ -94,12 +136,14 @@ async function sample() {
     totalsMB[category] = toMB(values[Math.floor(values.length / 2)]);
   }
   const info = await process.getProcessMemoryInfo();
+  const processes = samples.at(-1).processes;
   return {
     totalsMB,
+    footprintMB: footprintTotals(processes),
     browserMemoryInfoMB: Object.fromEntries(
       Object.entries(info).map(([key, value]) => [key, toMB(value)]),
     ),
-    processes: samples.at(-1).processes,
+    processes,
   };
 }
 
@@ -135,6 +179,15 @@ async function measure() {
   );
   if (!info.path.startsWith(sandbox))
     throw new Error("Library is not isolated");
+  /** A fresh Library opens setup, whose animated demo would be measured instead of the idle Library. */
+  await contents.executeJavaScript(
+    'window.pond.query("settings.setPrefs", { setup: { version: Number.MAX_SAFE_INTEGER } })',
+  );
+  const reloaded = new Promise((resolve) => {
+    ipcMain.once("pond:renderer-ready", resolve);
+  });
+  contents.reload();
+  await reloaded;
   const scenarios = {};
 
   await sleep(IDLE_MS);
