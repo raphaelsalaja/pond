@@ -1,9 +1,14 @@
 import { act } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { folders } from "@/features/library/state/folders";
 import { libraryChrome } from "@/features/library/state/library-chrome";
+import { navigationHistory } from "@/features/library/state/navigation-history";
+import { restoreLibraryNav } from "./navigation";
 import {
   createFolderSidebarHarness,
   fishList,
+  folder,
+  folderList,
   queueSummary,
   sidebarCounts,
 } from "./test-harness";
@@ -160,6 +165,87 @@ describe("folder sidebar navigation", () => {
     expect(harness.button("Uncategorized").getAttribute("aria-current")).toBe(
       "page",
     );
+  });
+
+  function highlighted(): string[] {
+    const labels = [
+      ...harness.host.querySelectorAll(
+        'button[data-status="active"], button[aria-current="page"], button[aria-selected="true"]',
+      ),
+    ].map((node) => node.getAttribute("aria-label") ?? harness.rowLabel(node));
+    return [...new Set(labels.filter((label) => label.length > 0))];
+  }
+
+  it("follows the open destination across folders and built-in collections", async () => {
+    folderList.current = [folder("Repos"), folder("Design")];
+    await folders.refresh();
+    navigationHistory.clear();
+    libraryChrome.setNav({ kind: "all" });
+    const router = await harness.mount();
+
+    expect(highlighted()).toEqual(["All"]);
+
+    await act(async () => harness.button("Repos").click());
+    expect(router.state.location.pathname).toBe("/");
+    expect(highlighted()).toEqual(["Repos"]);
+
+    await act(async () => harness.button("Design").click());
+    expect(router.state.location.pathname).toBe("/");
+    expect(highlighted()).toEqual(["Design"]);
+
+    await act(async () => harness.button("Downloads").click());
+    expect(router.state.location.pathname).toBe("/downloads");
+    expect(highlighted()).toEqual(["Downloads"]);
+
+    await act(async () => harness.button("Repos").click());
+    expect(router.state.location.pathname).toBe("/");
+    expect(highlighted()).toEqual(["Repos"]);
+
+    await act(async () => harness.button("Sources").click());
+    expect(router.state.location.pathname).toBe("/sources");
+    expect(highlighted()).toEqual(["Sources"]);
+
+    await act(async () => harness.button("Design").click());
+    expect(highlighted()).toEqual(["Design"]);
+
+    await act(async () => harness.button("Recently Added").click());
+    expect(router.state.location.pathname).toBe("/recently-added");
+    expect(highlighted()).toEqual(["Recently Added"]);
+
+    await act(async () => harness.button("Trash").click());
+    expect(router.state.location.pathname).toBe("/trash");
+    expect(highlighted()).toEqual(["Trash"]);
+
+    await act(async () => harness.button("Uncategorized").click());
+    expect(router.state.location.pathname).toBe("/");
+    expect(highlighted()).toEqual(["Uncategorized"]);
+
+    await act(async () => harness.button("Tags").click());
+    expect(router.state.location.pathname).toBe("/tags");
+    expect(highlighted()).toEqual(["Tags"]);
+
+    await act(async () => harness.button("Untagged").click());
+    expect(router.state.location.pathname).toBe("/untagged");
+    expect(highlighted()).toEqual(["Untagged"]);
+
+    await act(async () => harness.button("All").click());
+    expect(router.state.location.pathname).toBe("/");
+    expect(highlighted()).toEqual(["All"]);
+
+    await act(async () => harness.button("Repos").click());
+    await act(async () => harness.button("Downloads").click());
+    expect(highlighted()).toEqual(["Downloads"]);
+    await act(async () => {
+      const previous = navigationHistory.back();
+      if (!previous) throw new Error("Expected to return to Repos");
+      restoreLibraryNav(previous);
+    });
+    expect(router.state.location.pathname).toBe("/");
+    expect(libraryChrome.getState().nav).toEqual({
+      kind: "folder",
+      id: "Repos",
+    });
+    expect(highlighted()).toEqual(["Repos"]);
   });
 
   it("groups library destinations", async () => {

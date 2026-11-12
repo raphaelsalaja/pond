@@ -41,8 +41,6 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
-import { canvasIdFromPath } from "@/features/canvas";
-import { fishIdFromPath } from "@/features/fish";
 import { useSidebarCounts } from "@/features/library/hooks/use-sidebar-counts";
 import type { LibraryNav } from "@/features/library/state/library-chrome";
 import {
@@ -66,15 +64,14 @@ import {
 } from "@/shared/lib/dnd-kit";
 import { usePrefs } from "@/shared/state/prefs";
 import { BuiltInVisibilityMenu } from "../built-in-visibility-menu";
-import { goToLibraryPath, selectLibraryNav } from "../navigation";
+import { selectLibraryNav } from "../navigation";
 import { Row } from "../sidebar-row";
 import { buildTrashMenuItems } from "../trash-menu";
 import styles from "./styles.module.css";
 
 interface LibraryDestinationsProps {
   activeViewId: string | null;
-  nav: LibraryNav;
-  pathname: string;
+  destination: LibraryNav | null;
 }
 
 const VERTICAL_SORT_MODIFIERS = [restrictToVerticalAxis];
@@ -154,8 +151,7 @@ function DestinationIcon({ destination }: { destination: SidebarDestination }) {
 
 export function LibraryDestinations({
   activeViewId,
-  nav,
-  pathname,
+  destination,
 }: LibraryDestinationsProps) {
   const tags = useTags();
   const { accounts } = useAccounts();
@@ -182,18 +178,6 @@ export function LibraryDestinations({
     }),
   );
   const destinations = sidebar.destinations;
-  const sourcesPage = pathname === "/sources";
-  const downloadsPage = pathname === "/downloads";
-  const tagsPage = pathname === "/tags";
-  const untaggedPage = pathname === "/untagged";
-  const featurePage =
-    canvasIdFromPath(pathname) !== null || fishIdFromPath(pathname) !== null;
-  const libraryPage =
-    !sourcesPage &&
-    !downloadsPage &&
-    !tagsPage &&
-    !untaggedPage &&
-    !featurePage;
   const downloadsCount = queueSummary.data?.actionable ?? 0;
   const downloadingCount = queueSummary.data?.running ?? 0;
 
@@ -204,28 +188,29 @@ export function LibraryDestinations({
     void patch({ order: next });
   };
 
-  const isDestinationActive = (destination: SidebarDestination): boolean => {
-    switch (destination) {
+  const isDestinationActive = (id: SidebarDestination): boolean => {
+    if (!destination) return false;
+    switch (id) {
       case "all":
-        return libraryPage && nav.kind === "all" && !activeViewId;
-      case "uncategorized":
-        return libraryPage && nav.kind === "uncategorized";
-      case "untagged":
-        return untaggedPage;
-      case "recentlyAdded":
-        return !featurePage && nav.kind === "recentlyAdded";
+        return destination.kind === "all" && !activeViewId;
       case "recentlyUsed":
-        return !featurePage && nav.kind === "recents";
+        return destination.kind === "recents";
+      case "uncategorized":
+        return destination.kind === "uncategorized";
+      case "untagged":
+        return destination.kind === "untagged";
+      case "recentlyAdded":
+        return destination.kind === "recentlyAdded";
       case "tags":
-        return tagsPage;
+        return destination.kind === "tags";
       case "random":
-        return libraryPage && nav.kind === "random";
+        return destination.kind === "random";
       case "trash":
-        return libraryPage && nav.kind === "trash";
+        return destination.kind === "trash";
       case "downloads":
-        return downloadsPage;
+        return destination.kind === "downloads";
       case "sources":
-        return sourcesPage;
+        return destination.kind === "sources";
     }
   };
 
@@ -306,11 +291,7 @@ export function LibraryDestinations({
               badgeStyle={badgeStyle}
               active={isDestinationActive(destination)}
               {...dragProps}
-              onClick={() => {
-                resetFilters();
-                selectLibraryNav({ kind: "all" });
-                goToLibraryPath("/untagged");
-              }}
+              onClick={() => selectLibraryNav({ kind: "untagged" })}
             />
           </BuiltInVisibilityMenu>
         );
@@ -355,7 +336,7 @@ export function LibraryDestinations({
               badgeStyle={badgeStyle}
               active={isDestinationActive(destination)}
               {...dragProps}
-              onClick={() => goToLibraryPath("/tags")}
+              onClick={() => selectLibraryNav({ kind: "tags" })}
             />
           </BuiltInVisibilityMenu>
         );
@@ -405,7 +386,7 @@ export function LibraryDestinations({
               badgeStyle={badgeStyle}
               active={isDestinationActive(destination)}
               {...dragProps}
-              onClick={() => goToLibraryPath("/downloads")}
+              onClick={() => selectLibraryNav({ kind: "downloads" })}
             />
           </BuiltInVisibilityMenu>
         );
@@ -419,7 +400,7 @@ export function LibraryDestinations({
               badgeStyle={badgeStyle}
               active={isDestinationActive(destination)}
               {...dragProps}
-              onClick={() => goToLibraryPath("/sources")}
+              onClick={() => selectLibraryNav({ kind: "sources" })}
             />
           </BuiltInVisibilityMenu>
         );

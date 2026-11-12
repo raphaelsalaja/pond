@@ -44,8 +44,8 @@ import { useFolderTreeActions } from "./use-folder-tree-actions";
 import { useFolderTreeDrag } from "./use-folder-tree-drag";
 
 interface FolderTreeProps {
+  destination: LibraryNav | null;
   folderRows: Folder[];
-  libraryPage: boolean;
   nav: LibraryNav;
 }
 
@@ -77,7 +77,7 @@ function folderGroupMenuItems(
   ];
 }
 
-export function FolderTree({ folderRows, libraryPage, nav }: FolderTreeProps) {
+export function FolderTree({ destination, folderRows, nav }: FolderTreeProps) {
   const editingFolderId = useEditingFolderId();
   const [foldersOpen, setFoldersOpen] = useState(true);
   const [folderViews] = usePrefs("folderViews");
@@ -105,7 +105,7 @@ export function FolderTree({ folderRows, libraryPage, nav }: FolderTreeProps) {
   const organization = useOrganizationTree(
     folderRows,
     openSelectedFolders,
-    nav,
+    destination,
   );
   const drag = useFolderDragDrop({
     selectedIds: organization.selected,
@@ -162,8 +162,7 @@ export function FolderTree({ folderRows, libraryPage, nav }: FolderTreeProps) {
         folderDownloading={counts.foldersDownloading}
         badgeStyle={sidebar.badgeStyle}
         includeSubfolders={includeSubfolders}
-        libraryPage={libraryPage}
-        nav={nav}
+        destination={destination}
       />
       {sidebar.sections.folders ? (
         <Sidebar.CollapsibleGroup
@@ -223,9 +222,8 @@ export function FolderTree({ folderRows, libraryPage, nav }: FolderTreeProps) {
               >
                 {tree.nested.map(({ folder, depth }) => {
                   const viewing =
-                    libraryPage &&
-                    nav.kind === "folder" &&
-                    nav.id === folder.id;
+                    destination?.kind === "folder" &&
+                    destination.id === folder.id;
                   const presentation = folderViews[folder.id];
                   const includeThisFolder = viewing
                     ? includeSubfolders
@@ -327,9 +325,8 @@ export function FolderTree({ folderRows, libraryPage, nav }: FolderTreeProps) {
                         : undefined
                     }
                     active={
-                      libraryPage &&
-                      nav.kind === "folder" &&
-                      nav.id === activeFolder.id
+                      destination?.kind === "folder" &&
+                      destination.id === activeFolder.id
                     }
                     badgeStyle={sidebar.badgeStyle}
                     count={

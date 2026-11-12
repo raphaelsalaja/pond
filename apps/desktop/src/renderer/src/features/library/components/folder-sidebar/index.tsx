@@ -9,6 +9,7 @@ import { useFolders } from "@/features/library/state/folders";
 import { useLibraryNav } from "@/features/library/state/library-chrome";
 import { useHydrateSavedViews } from "@/features/library/state/saved-views";
 import { useActiveViewId } from "@/features/library/state/view-store";
+import { activeLibraryDestination } from "@/shared/lib/library-nav";
 import { LibraryDestinations } from "./destinations";
 import { FolderTree } from "./folder-tree";
 import { selectLibraryNav } from "./navigation";
@@ -34,10 +35,7 @@ export function FolderSidebar() {
   const folderRows = useFolders();
   const activeCanvasId = canvasIdFromPath(pathname);
   const activeFishId = fishIdFromPath(pathname);
-  const libraryPage =
-    activeCanvasId === null &&
-    activeFishId === null &&
-    !["/downloads", "/sources", "/tags", "/untagged"].includes(pathname);
+  const destination = activeLibraryDestination(pathname, nav);
   useHydrateSavedViews();
 
   return (
@@ -51,18 +49,17 @@ export function FolderSidebar() {
       <Sidebar.Scroll className={styles.scroll}>
         <LibraryDestinations
           activeViewId={activeViewId}
-          nav={nav}
-          pathname={pathname}
+          destination={destination}
         />
         <SmartFoldersSection
-          active={pathname === "/" && nav.kind === "all"}
+          active={destination?.kind === "all"}
           onSelect={() => selectLibraryNav({ kind: "all" })}
         />
         <FishSection activeId={activeFishId} />
         <CanvasesSection activeId={activeCanvasId} />
         <FolderTree
+          destination={destination}
           folderRows={folderRows}
-          libraryPage={libraryPage}
           nav={nav}
         />
       </Sidebar.Scroll>
