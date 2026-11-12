@@ -31,6 +31,8 @@ import { fetchSourceIcon } from "./source-icon";
 interface FetchBlobsContext extends TransferOptions {
   leaseToken?: string;
   cancellationFence?: number;
+  attempt?: number;
+  maxAttempts?: number;
 }
 
 export async function runFetchBlobs(
@@ -88,6 +90,10 @@ async function fetchMissingMedia(
   const results = await fetchMediaBatch(missing, { imageMaxBytes, ...ctx });
   const settlement = settleMediaFetches(results, {
     optionalGeneratedCard: save.source === "github",
+    finalAttempt:
+      ctx.attempt != null &&
+      ctx.maxAttempts != null &&
+      ctx.attempt >= ctx.maxAttempts,
   });
   if (settlement.generatedCardMissed) {
     ctx.signal?.throwIfAborted();
@@ -108,6 +114,11 @@ async function fetchMissingMedia(
     return;
   }
   const { fetched, transientMisses } = settlement;
+  if (fetched.length === 0 && transientMisses > 0) {
+    throw new TransientError(
+      `fetch-blobs: ${transientMisses}/${missing.length} media still pending`,
+    );
+  }
 
   ctx.signal?.throwIfAborted();
   ctx.reportActivity?.({ phase: "processing" });
@@ -260,13 +271,13 @@ interface MediaFetchSettlement extends FetchedMediaSummary {
 }
 
 /**
- * A custom preview is required media. For a GitHub star, the generated card
- * is not: opengraph.githubassets.com answers 429 often enough that a retry
- * holds the save, and exhausts into a failed ingest.
+ * A custom preview is required media. GitHub's generated card is retried
+ * when opengraph.githubassets.com rate-limits, and the last miss renders
+ * the text cover instead of failing the save.
  */
 export function settleMediaFetches(
   results: MediaBatchResults,
-  opts: { optionalGeneratedCard?: boolean } = {},
+  opts: { optionalGeneratedCard?: boolean; finalAttempt?: boolean } = {},
 ): MediaFetchSettlement {
   const optional = opts.optionalGeneratedCard === true;
   const required = results.filter(
@@ -281,11 +292,20 @@ export function settleMediaFetches(
       const summary = requireFetchedMedia(results, results.length);
       return { ...summary, generatedCardMissed: false };
     }
-    return {
-      fetched: generatedFetched,
-      transientMisses: 0,
-      generatedCardMissed: generatedFetched.length === 0,
-    };
+    if (generatedFetched.length > 0) {
+      return {
+        fetched: generatedFetched,
+        transientMisses: 0,
+        generatedCardMissed: false,
+      };
+    }
+    const transientMisses = generated.filter(
+      (result) => result.miss === "transient",
+    ).length;
+    if (transientMisses > 0 && opts.finalAttempt !== true) {
+      return { fetched: [], transientMisses, generatedCardMissed: false };
+    }
+    return { fetched: [], transientMisses: 0, generatedCardMissed: true };
   }
   const summary = requireFetchedMedia(required, required.length);
   return {
