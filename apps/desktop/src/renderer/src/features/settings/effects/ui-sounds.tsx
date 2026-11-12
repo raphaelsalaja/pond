@@ -1,5 +1,13 @@
 import { useEffect } from "react";
-import { playUiSoft, playUiTap, playUiToggle } from "@/shared/lib/sounds";
+import {
+  playUiSoft,
+  playUiTap,
+  playUiToggle,
+  warmUiSounds,
+} from "@/shared/lib/sounds";
+
+const WARM_DELAY_MS = 2000;
+const WARM_IDLE_MS = 3000;
 
 const INTERACTIVE_SELECTOR = [
   "button",
@@ -108,9 +116,16 @@ export function UiSounds() {
 
     document.addEventListener("pointerdown", onPointerDown, true);
     document.addEventListener("click", onClick, true);
+    /** Stays clear of startup work, which the device open would otherwise stall. */
+    let idle: number | undefined;
+    const warm = setTimeout(() => {
+      idle = requestIdleCallback(warmUiSounds, { timeout: WARM_IDLE_MS });
+    }, WARM_DELAY_MS);
     return () => {
       document.removeEventListener("pointerdown", onPointerDown, true);
       document.removeEventListener("click", onClick, true);
+      clearTimeout(warm);
+      if (idle !== undefined) cancelIdleCallback(idle);
     };
   }, []);
 
