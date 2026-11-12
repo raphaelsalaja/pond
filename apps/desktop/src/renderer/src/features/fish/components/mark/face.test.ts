@@ -68,6 +68,17 @@ describe("fish frame pacing", () => {
     expect(frameGap(run(working, 1).mood)).toBe(0);
   });
 
+  it("drifts at the idle rate once the pointer it watches rests", () => {
+    const near = fish();
+    near.enter();
+    near.move(40, -10);
+    const watching = run(near, 0.5).mood;
+    expect(frameGap(watching, true)).toBe(frameGap("idle"));
+
+    near.hover(true);
+    expect(frameGap(run(near, 0.1).mood, true)).toBe(0);
+  });
+
   it("draws less often while it drifts or sleeps", () => {
     const avatar = fish();
     const idle = frameGap(run(avatar, 1).mood);

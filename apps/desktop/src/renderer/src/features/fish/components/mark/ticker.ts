@@ -16,6 +16,8 @@ interface State {
 
 /** Fish within this many CSS pixels of the pointer notice it and follow it. */
 const NOTICE = 240;
+/** Milliseconds a pointer rests before a watching fish drops to the drift rate; outlasts the spin it plays on arrival. */
+const REST = 1200;
 
 const rigs = new Map<Element, State>();
 let observer: IntersectionObserver | null = null;
@@ -24,6 +26,7 @@ let frame = 0;
 let timer: ReturnType<typeof setTimeout> | null = null;
 let last = 0;
 let pointer: { x: number; y: number } | null = null;
+let movedAt = 0;
 
 export const reducedMotion = () =>
   document.documentElement.hasAttribute("data-reduce-motion");
@@ -39,6 +42,7 @@ function tick(now: number) {
   const boxes = active.map(({ rig }) =>
     pointer ? rig.element.getBoundingClientRect() : null,
   );
+  const resting = now - movedAt > REST;
   let gap = Number.POSITIVE_INFINITY;
   active.forEach((state, index) => {
     const { rig } = state;
@@ -55,7 +59,7 @@ function tick(now: number) {
       rig.avatar.leave();
     }
     rig.write(rig.avatar.step(dt));
-    gap = Math.min(gap, frameGap(rig.avatar.mood));
+    gap = Math.min(gap, frameGap(rig.avatar.mood, resting));
   });
   schedule(Number.isFinite(gap) ? gap : 0);
 }
@@ -97,9 +101,9 @@ function onMotionChange() {
   sync();
 }
 
-function approaching(state: State, at: { x: number; y: number }): boolean {
+function within(state: State, at: { x: number; y: number }): boolean {
   const { box } = state;
-  if (!state.visible || state.near || !box) return false;
+  if (!state.visible || !box) return false;
   const x = at.x - (box.left + box.width / 2);
   const y = at.y - (box.top + box.height / 2);
   return Math.hypot(x, y) < NOTICE;
@@ -109,8 +113,9 @@ function onPointerMove(event: PointerEvent) {
   if (event.pointerType === "touch") return;
   const at = { x: event.clientX, y: event.clientY };
   pointer = at;
-  /** A fish between slow frames notices an approaching pointer on the next frame, not the next slow one. */
-  if (timer && [...rigs.values()].some((state) => approaching(state, at))) {
+  movedAt = event.timeStamp;
+  /** A fish between slow frames reacts to a pointer within reach on the next frame, not the next slow one. */
+  if (timer && [...rigs.values()].some((state) => within(state, at))) {
     clearTimeout(timer);
     timer = null;
     frame = requestAnimationFrame(tick);
