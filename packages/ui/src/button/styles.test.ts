@@ -19,3 +19,14 @@ it("uses gray 11 for primary icon buttons without changing primary text buttons"
   expect(primaryDefault).toContain("var(--ds-gray-12)");
   expect(iconDefault).toContain("var(--ds-gray-11)");
 });
+
+it("holds an expanded popup trigger still after the press scale", () => {
+  const active = css.indexOf("&:active {");
+  const expandedStart = css.indexOf('&[aria-expanded="true"] {');
+  expect(active).toBeGreaterThanOrEqual(0);
+  expect(expandedStart).toBeGreaterThan(active);
+
+  const expanded = css.slice(expandedStart, css.indexOf("}", expandedStart));
+  expect(expanded).toContain("scale: none;");
+  expect(expanded).not.toMatch(/transition:[^;]*\bscale\b/);
+});
