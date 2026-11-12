@@ -20,6 +20,8 @@ export const savesImportQueries = {
     savesImportPersistenceQueries["saves.setThumbnailFromClipboard"],
   "saves.setGifThumbnail":
     savesImportPersistenceQueries["saves.setGifThumbnail"],
+  "saves.setImageThumbnail":
+    savesImportPersistenceQueries["saves.setImageThumbnail"],
   "saves.loadSubtitles": savesImportPersistenceQueries["saves.loadSubtitles"],
   "saves.replaceFile": savesImportPersistenceQueries["saves.replaceFile"],
   "saves.removeCustomThumbnail":

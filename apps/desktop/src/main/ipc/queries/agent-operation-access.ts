@@ -255,6 +255,7 @@ export const queryOperationAccess = {
   "saves.setThumbnailFromClipboard": "review",
   "saves.setEmbedding": "hidden",
   "saves.setGifThumbnail": "review",
+  "saves.setImageThumbnail": "review",
   "saves.setPhash": "hidden",
   "saves.understandMedia": "hidden",
   "saves.share": "review",

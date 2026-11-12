@@ -21,6 +21,8 @@ import {
   flipPatch,
   rotatePatch,
 } from "@/features/saves/lib/inspect-actions";
+import { buildOriginalMediaUnits } from "@/features/saves/lib/media/units";
+import { pondFileUrl } from "@/features/saves/lib/media/url";
 import { mediaTransformStyle } from "@/features/saves/lib/media-transform";
 import { beginSaveDrag } from "@/features/saves/lib/start-drag";
 import { FIT_POSE, zoomImageAt } from "@/features/saves/lib/viewer-memory";
@@ -75,6 +77,13 @@ export function ImageInspector({
   const isGif =
     file?.mimeType === "image/gif" ||
     /\.gif(?:$|[?#])/i.test(file?.path ?? src);
+  const carouselImages = buildOriginalMediaUnits(save).filter(
+    (unit) => !unit.isVideo,
+  );
+  const canSetImageThumbnail =
+    !isGif &&
+    carouselImages.length > 1 &&
+    carouselImages.some((unit) => unit.key === file?.path);
   const [mode, setMode] = useState<InspectorMode>("view");
   const [gifFramesOpen, setGifFramesOpen] = useState(false);
   const [draft, setDraft] = useState<ImageCrop | null>(null);
@@ -188,6 +197,21 @@ export function ImageInspector({
           notify({
             id: "gif-thumb",
             title: "Couldn't set this GIF frame as the thumbnail.",
+          });
+      });
+  };
+  const setImageThumbnail = () => {
+    if (!file) return;
+    void window.pond
+      .query("saves.setImageThumbnail", {
+        id: save.id,
+        src: pondFileUrl(save.id, file.path),
+      })
+      .then((result) => {
+        if (!result.ok)
+          notify({
+            id: "image-thumb",
+            title: "Couldn't set this image as the thumbnail.",
           });
       });
   };
@@ -427,6 +451,9 @@ export function ImageInspector({
         edits={edits}
         endActions={endActions}
         slideNavigation={slideNavigation}
+        onSetImageThumbnail={
+          canSetImageThumbnail ? setImageThumbnail : undefined
+        }
         saveId={save.id}
         isGif={isGif}
         gifFramesOpen={gifFramesOpen}
