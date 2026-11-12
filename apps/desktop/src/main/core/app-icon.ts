@@ -23,6 +23,9 @@ import { readLibraryIdentity } from "./library-identity";
 import { getPrefs } from "./prefs";
 
 const DOCK_CONTENT_SCALE = 0.8;
+/** AppKit holds about 32 MB of decoded representations for a 1024 px Dock image and 8 MB at 512 px. */
+const DOCK_ICON_PX = 512;
+const BUNDLE_ICON_PX = 1024;
 
 let lastAppliedPath: string | null = null;
 let bundleIconQueue: Promise<void> = Promise.resolve();
@@ -64,19 +67,17 @@ export function resolveAppIconPath(id: string): string | null {
   return appIconFile(resolved);
 }
 
-async function insetIcon(
-  path: string,
-  contentScale: number,
-  canvas: number,
-): Promise<NativeImage> {
-  const contentSize = Math.max(1, Math.round(canvas * contentScale));
+async function insetIcon(path: string, maxCanvas: number): Promise<Buffer> {
+  const meta = await sharp(path).metadata();
+  const canvas = Math.min(meta.width ?? maxCanvas, maxCanvas);
+  const contentSize = Math.max(1, Math.round(canvas * DOCK_CONTENT_SCALE));
   const offset = Math.round((canvas - contentSize) / 2);
   const content = await sharp(path)
     .ensureAlpha()
     .resize(contentSize, contentSize)
     .png()
     .toBuffer();
-  const buf = await sharp({
+  return sharp({
     create: {
       width: canvas,
       height: canvas,
@@ -87,13 +88,11 @@ async function insetIcon(
     .composite([{ input: content, left: offset, top: offset }])
     .png()
     .toBuffer();
-  return nativeImage.createFromBuffer(buf);
 }
 
 /** Rendered on demand: each 1024 px tint decodes to megabytes, and only the applied one is ever shown. */
 async function dockImage(path: string): Promise<NativeImage> {
-  const meta = await sharp(path).metadata();
-  return insetIcon(path, DOCK_CONTENT_SCALE, meta.width ?? 1024);
+  return nativeImage.createFromBuffer(await insetIcon(path, DOCK_ICON_PX));
 }
 
 export async function applyAppIcon(id?: string): Promise<void> {
@@ -108,15 +107,19 @@ export async function applyAppIcon(id?: string): Promise<void> {
   if (path === lastAppliedPath) return;
   lastAppliedPath = path;
   try {
+    if (bundlePath() && path === appIconFile(DEFAULT_APP_ICON)) {
+      /** The bundle already draws the default icon, so the Dock needs no decoded copy of its own. */
+      app.dock?.setIcon(nativeImage.createEmpty());
+      bundleIconQueue = bundleIconQueue.then(() => applyBundleIcon(path));
+      return;
+    }
     const image = await dockImage(path);
     if (process.platform !== "darwin") {
       const win = mainWindowState.current;
       if (win && !win.isDestroyed()) win.setIcon(image);
     } else {
       app.dock?.setIcon(image);
-      bundleIconQueue = bundleIconQueue.then(() =>
-        applyBundleIcon(path, image),
-      );
+      bundleIconQueue = bundleIconQueue.then(() => applyBundleIcon(path));
     }
   } catch (err) {
     log.warn("[pond] apply app icon failed", err);
@@ -143,15 +146,16 @@ async function openLibraryLogo() {
   }
 }
 
-async function applyBundleIcon(
-  path: string,
-  image: NativeImage,
-): Promise<void> {
-  const bundle = appBundlePath({
+function bundlePath(): string | null {
+  return appBundlePath({
     platform: process.platform,
     packaged: app.isPackaged,
     exePath: app.getPath("exe"),
   });
+}
+
+async function applyBundleIcon(path: string): Promise<void> {
+  const bundle = bundlePath();
   if (!bundle) return;
   const launching = !bundleIconChecked;
   bundleIconChecked = true;
@@ -164,7 +168,7 @@ async function applyBundleIcon(
   if (launching && hasCustomBundleIcon(bundle)) return;
   const imagePath = join(app.getPath("temp"), "pond-bundle-icon.png");
   try {
-    await writeFile(imagePath, image.toPNG());
+    await writeFile(imagePath, await insetIcon(path, BUNDLE_ICON_PX));
     await setBundleIcon(bundle, imagePath);
   } catch (err) {
     log.warn("[pond] set bundle icon failed", err);
