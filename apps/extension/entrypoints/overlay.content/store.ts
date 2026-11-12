@@ -39,7 +39,25 @@ export function createOverlayStore() {
   };
   const listeners = new Set<() => void>();
   const toasts = Toast.createToastManager<ToastData>();
-  const live = new Set<string>();
+  /**
+   * The manager only notifies current subscribers. The overlay accepts the
+   * first capture message before the toast provider's effect subscribes, so
+   * hold the toast and replay it when that subscriber attaches.
+   */
+  const held = new Map<string, Parameters<typeof toasts.add>[0]>();
+  let subscribers = 0;
+  const listen = toasts[" subscribe"].bind(toasts);
+  toasts[" subscribe"] = (listener) => {
+    const stop = listen(listener);
+    subscribers += 1;
+    if (subscribers === 1) {
+      for (const options of held.values()) toasts.add(options);
+    }
+    return () => {
+      stop();
+      subscribers -= 1;
+    };
+  };
 
   const set = (next: Partial<OverlayState>) => {
     state = { ...state, ...next };
@@ -55,16 +73,22 @@ export function createOverlayStore() {
       timeout: input.status === "sending" ? 0 : TOAST_TIMEOUT_MS,
       data: { status: input.status, saveId: input.saveId },
     };
-    if (live.has(input.id)) {
-      toasts.update(input.id, options);
+    const current = held.get(input.id);
+    if (current) {
+      const next = { ...current, ...options };
+      held.set(input.id, next);
+      if (subscribers > 0) toasts.update(input.id, options);
       return;
     }
-    live.add(input.id);
-    toasts.add({
+    const created = {
       ...options,
       id: input.id,
-      onRemove: () => live.delete(input.id),
-    });
+      onRemove: () => {
+        held.delete(input.id);
+      },
+    };
+    held.set(input.id, created);
+    if (subscribers > 0) toasts.add(created);
   };
 
   return {
@@ -76,7 +100,8 @@ export function createOverlayStore() {
     },
     show(request: OverlayRequest, appearance: Appearance) {
       if (request.view === "clear") {
-        toasts.close();
+        held.clear();
+        if (subscribers > 0) toasts.close();
         set({ tool: null });
         return;
       }
