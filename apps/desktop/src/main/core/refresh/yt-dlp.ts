@@ -145,8 +145,13 @@ export async function downloadVideo(
           : undefined,
         VIDEO_WATCHDOG_MS,
       );
+      const completed = await readCompletedFiles(manifest);
       if (code === 0) {
-        outcome = { mediaDir, completed: undefined };
+        // after_move names the merged file, so leftover streams in the directory are ignored.
+        outcome = {
+          mediaDir,
+          completed: completed.size > 0 ? completed : undefined,
+        };
         break;
       }
       log.warn(
@@ -155,7 +160,6 @@ export async function downloadVideo(
         args.url,
         stderr.slice(-400),
       );
-      const completed = await readCompletedFiles(manifest);
       if (keepsPartialDownload(code, completed.size, args.expectedCount ?? 1)) {
         log.info(
           "[pond yt-dlp] keeping finished files despite a failed entry",
