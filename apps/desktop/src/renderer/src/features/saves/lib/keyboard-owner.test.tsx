@@ -29,6 +29,23 @@ it("limits collection commands to its own focused surface", () => {
   expect(saveOwnsKeyboard(key())).toBe(false);
 });
 
+it("keeps collection and Save keys working while a toast is showing", () => {
+  const toast = document.createElement("div");
+  toast.setAttribute("role", "dialog");
+  toast.setAttribute("aria-modal", "false");
+  document.body.append(toast);
+  nodes.push(toast);
+  surface("data-save-collection");
+  expect(collectionOwnsKeyboard()).toBe(true);
+  expect(saveOwnsKeyboard(key())).toBe(true);
+  const dialog = document.createElement("div");
+  dialog.setAttribute("role", "dialog");
+  document.body.append(dialog);
+  nodes.push(dialog);
+  expect(collectionOwnsKeyboard()).toBe(false);
+  expect(saveOwnsKeyboard(key())).toBe(false);
+});
+
 it("keeps the inspector bound to the displayed Save rather than a background batch", () => {
   primarySelection.set("a");
   selection.set(["a"]);

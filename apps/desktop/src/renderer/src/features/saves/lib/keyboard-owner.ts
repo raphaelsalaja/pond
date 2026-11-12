@@ -1,14 +1,13 @@
 import { primarySelection, selection } from "@/features/saves/state/selection";
 import { isEditableTarget } from "@/shared/lib/editable-target";
 
+/** Toasts are non-modal dialogs and never take keys from the surface that has focus. */
+const OVERLAY =
+  "[role='dialog']:not([aria-modal='false']), [role='alertdialog'], [role='menu']";
+
 export function collectionOwnsKeyboard(): boolean {
   const active = document.activeElement;
-  if (
-    document.querySelector(
-      "[role='dialog'], [role='alertdialog'], [role='menu']",
-    )
-  )
-    return false;
+  if (document.querySelector(OVERLAY)) return false;
   return (
     active instanceof HTMLElement &&
     !isEditableTarget(active) &&
@@ -26,17 +25,9 @@ export function saveOwnsKeyboard(event: KeyboardEvent): boolean {
   const active = document.activeElement;
   if (!(active instanceof HTMLElement) || isEditableTarget(active))
     return false;
-  const overlay = active.closest(
-    "[role='dialog'], [role='alertdialog'], [role='menu']",
-  );
+  const overlay = active.closest(OVERLAY);
   if (overlay && !overlay.matches("[data-quick-preview]")) return false;
-  if (
-    !overlay &&
-    document.querySelector(
-      "[role='dialog'], [role='alertdialog'], [role='menu']",
-    )
-  )
-    return false;
+  if (!overlay && document.querySelector(OVERLAY)) return false;
   const inspector = active.closest<HTMLElement>("[data-save-inspector]");
   if (inspector) {
     const id = inspector.dataset.saveInspector;
