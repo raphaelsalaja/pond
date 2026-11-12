@@ -19,7 +19,7 @@ describe("desktop shell edge motion", () => {
     expect(declarations(".shell")).toContain("--window-left-min: 0px;");
   });
 
-  it("moves the opaque sidebar surface with the animated column", () => {
+  it("animates the sidebar surface without animating the content track", () => {
     const left = declarations(
       '.shell[data-slot="window"] [data-slot="left"] > div',
     );
@@ -27,6 +27,12 @@ describe("desktop shell edge motion", () => {
     expect(left).toContain(
       "calc(var(--window-left-width) - var(--window-left-track))",
     );
-    expect(left).toContain("transition: none;");
+    expect(left).toContain("transition: transform");
+    expect(declarations('.shell[data-slot="window"]')).toContain(
+      "transition-property: --window-right-width;",
+    );
+    expect(
+      declarations('.shell[data-slot="window"] [data-slot="left"]'),
+    ).toContain("overflow: visible;");
   });
 });

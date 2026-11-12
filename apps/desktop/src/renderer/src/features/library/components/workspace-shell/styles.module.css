@@ -14,7 +14,15 @@
   transform: translateX(
     calc(var(--window-left-width) - var(--window-left-track))
   );
-  transition: none;
+  transition: transform var(--ds-duration-medium) var(--ds-easing-decelerate);
+}
+
+.shell[data-slot="window"] {
+  transition-property: --window-right-width;
+}
+
+.shell[data-slot="window"] [data-slot="left"] {
+  overflow: visible;
 }
 
 .shell[data-slot="window"] [data-slot="right"] > div {
@@ -22,6 +30,10 @@
   transform: translateX(
     calc(var(--window-right-track) - var(--window-right-width))
   );
+  transition: none;
+}
+
+.shell[data-slot="window"][data-resizing] [data-slot="left"] > div {
   transition: none;
 }
 

@@ -1,4 +1,4 @@
-import { useLayoutEffect, useState } from "react";
+import { useDeferredValue, useLayoutEffect, useState } from "react";
 import {
   useSidebarOpen,
   useSidebarWidth,
@@ -82,4 +82,9 @@ export function useGridWidth(): number {
     measurement.occupiedWidth,
     occupiedWidth,
   );
+}
+
+/** Keep width-driven card packing out of the urgent sidebar-toggle render. */
+export function useDeferredGridWidth(): number {
+  return useDeferredValue(useGridWidth());
 }

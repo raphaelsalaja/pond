@@ -4,7 +4,7 @@ import { packJustified } from "@/features/library/components/layouts/packing";
 import { useLibrarySaveGap } from "@/features/library/components/layouts/save-gap";
 import { useGridMin } from "@/features/library/hooks/use-grid-min";
 import { chromeHeightFor } from "@/features/library/lib/library-chrome";
-import { useGridWidth } from "@/features/library/state/shell-state";
+import { useDeferredGridWidth } from "@/features/library/state/shell-state";
 import {
   useDisplayPrefs,
   useItemInfo,
@@ -19,7 +19,7 @@ interface JustifiedViewProps {
 }
 
 export function JustifiedView({ saves, onEndReached }: JustifiedViewProps) {
-  const width = useGridWidth();
+  const width = useDeferredGridWidth();
   const targetHeight = useGridMin();
   const gap = useLibrarySaveGap();
   const prefs = useDisplayPrefs();

@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { ListHeader } from "@/features/library/components/layouts/list-header";
 import { SavePackedGrid } from "@/features/library/components/layouts/packed-grid";
 import { packList } from "@/features/library/components/layouts/packing";
-import { useGridWidth } from "@/features/library/state/shell-state";
+import { useDeferredGridWidth } from "@/features/library/state/shell-state";
 import type { Save } from "@/features/saves/types";
 
 const ROW = 64;
@@ -14,7 +14,7 @@ interface ListViewProps {
 }
 
 export function ListView({ saves, onEndReached }: ListViewProps) {
-  const width = useGridWidth();
+  const width = useDeferredGridWidth();
   const { items, totalHeight } = useMemo(
     () =>
       packList(
