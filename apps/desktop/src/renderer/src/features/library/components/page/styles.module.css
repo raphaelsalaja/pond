@@ -29,8 +29,6 @@
 .keep-alive[data-suppressed] {
   position: absolute;
   inset: 0;
-  /* Lay out under Details too, so closing the save leaves the grid at the width it already has. */
-  right: calc(-1 * var(--window-right-width, 0px));
   z-index: 0;
   pointer-events: none;
 }

@@ -206,6 +206,10 @@ export function useLayout(): LayoutValue {
   return useSelector(store, (s) => s.layout);
 }
 
+export function useActiveViewId(): string | null {
+  return useSelector(store, (s) => s.activeViewId);
+}
+
 export function useSearchText(): string {
   return useSelector(store, (s) => s.q);
 }

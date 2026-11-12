@@ -430,28 +430,33 @@ export function SavePackedGrid({
     () => new Map(items.map((item, index) => [item.id, index + 1])),
     [items],
   );
+  const setSize = Math.max(items.length, total);
+  const renderItem = useCallback(
+    (it: PackedItem) => (
+      <SaveCard
+        key={it.id}
+        id={it.id}
+        view={layout}
+        position={positions.get(it.id)}
+        total={setSize}
+        slot={{
+          width: it.width,
+          height: it.height,
+          previewHeight: it.mediaHeight,
+          top: it.top,
+          left: it.left,
+        }}
+      />
+    ),
+    [layout, positions, setSize],
+  );
   return (
     <PackedGrid
       layout={layout}
       items={items}
       totalHeight={totalHeight}
       onEndReached={onEndReached}
-      renderItem={(it) => (
-        <SaveCard
-          key={it.id}
-          id={it.id}
-          view={layout}
-          position={positions.get(it.id)}
-          total={Math.max(items.length, total)}
-          slot={{
-            width: it.width,
-            height: it.height,
-            previewHeight: it.mediaHeight,
-            top: it.top,
-            left: it.left,
-          }}
-        />
-      )}
+      renderItem={renderItem}
     />
   );
 }
