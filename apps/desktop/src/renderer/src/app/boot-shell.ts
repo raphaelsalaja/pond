@@ -1,3 +1,4 @@
+import { initScrollFade } from "@pond/ui/scroll-fade";
 import { type ShellHint, ShellHintSchema } from "@shared/shell-hint";
 import { libraryScopedKey } from "@/shared/lib/library-scope";
 import { displayGamut, paintTheme } from "@/shared/lib/paint-theme";
@@ -56,3 +57,6 @@ function armBootFailsafe(): void {
 
 paintShell();
 armBootFailsafe();
+
+/** Mirror scroller edge fades without scroll-driven animations (see @pond/ui/scroll-fade). */
+initScrollFade();

@@ -105,11 +105,6 @@
     -webkit-app-region: no-drag;
   }
 
-  /* The button's own box already covers its contents; an inherited no-drag adds a region per descendant, recollected on every layout. */
-  button * {
-    -webkit-app-region: initial;
-  }
-
   button {
     padding: 0;
     font: inherit;
@@ -157,14 +152,27 @@
     list-style: none;
   }
 
-  /* An inactive scroll timeline (no overflow) leaves both edges at 0, so nothing fades. */
-  /* Never on a Base UI popup or panel: they wait on the element's animations, and these never finish. */
+  /*
+   * The fade lengths (--sf-start / --sf-end) and data-fade-active are
+   * mirrored from the scroll position by scroll-fade.ts, which only writes
+   * when a value changes, so a settled scroller does no per-frame work.
+   * This was a scroll-driven animation (animation-timeline: scroll());
+   * those never finish, so the browser ticked them on the main thread
+   * every frame and kept the scroller's content in a masked offscreen
+   * surface — unaffordable on software rendering, and Base UI popups wait
+   * on element animations, so they hung.
+   */
   [data-scroll-fade] {
     --scroll-fade-size: 24px;
     --scroll-fade-start-size: var(--scroll-fade-size);
     --scroll-fade-end-size: var(--scroll-fade-size);
+    --scroll-fade-start: var(--sf-start, 0px);
+    --scroll-fade-end: var(--sf-end, 0px);
 
     overscroll-behavior: contain;
+  }
+
+  [data-scroll-fade][data-fade-active="on"] {
     mask-image: linear-gradient(
       to bottom,
       transparent,
@@ -172,17 +180,13 @@
       black calc(100% - var(--scroll-fade-end)),
       transparent
     );
-    animation:
-      scroll-fade-start linear both,
-      scroll-fade-end linear both;
-    animation-timeline: scroll(self block), scroll(self block);
-    animation-range:
-      0 var(--scroll-fade-start-size),
-      calc(100% - var(--scroll-fade-end-size)) 100%;
   }
 
   [data-scroll-fade="horizontal"] {
     overscroll-behavior: contain auto;
+  }
+
+  [data-scroll-fade="horizontal"][data-fade-active="on"] {
     mask-image: linear-gradient(
       to right,
       transparent,
@@ -190,26 +194,5 @@
       black calc(100% - var(--scroll-fade-end)),
       transparent
     );
-    animation-timeline: scroll(self inline), scroll(self inline);
-  }
-
-  @keyframes scroll-fade-start {
-    from {
-      --scroll-fade-start: 0px;
-    }
-
-    to {
-      --scroll-fade-start: var(--scroll-fade-start-size);
-    }
-  }
-
-  @keyframes scroll-fade-end {
-    from {
-      --scroll-fade-end: var(--scroll-fade-end-size);
-    }
-
-    to {
-      --scroll-fade-end: 0px;
-    }
   }
 }
