@@ -377,12 +377,12 @@ export const SHORTCUTS = {
     group: "Preview",
   },
   "viewer.volume-up": {
-    keys: "Shift+ArrowUp",
+    keys: "ArrowUp",
     label: "Volume Up",
     group: "Preview",
   },
   "viewer.volume-down": {
-    keys: "Shift+ArrowDown",
+    keys: "ArrowDown",
     label: "Volume Down",
     group: "Preview",
   },

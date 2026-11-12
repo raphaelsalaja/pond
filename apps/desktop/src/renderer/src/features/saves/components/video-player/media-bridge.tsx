@@ -7,6 +7,34 @@ import { useActiveVideo } from "@/features/saves/state/active-video";
 import { bindingKeys, useShortcutBindings } from "@/shared/lib/shortcuts";
 import { patchPrefsSection, usePrefs } from "@/shared/state/prefs";
 
+const ARROW_KEY_OWNER = [
+  "input",
+  "textarea",
+  "select",
+  "button",
+  "a[href]",
+  "[contenteditable]:not([contenteditable='false'])",
+  "[role='button']",
+  "[role='combobox']",
+  "[role='listbox']",
+  "[role='menu']",
+  "[role='menuitem']",
+  "[role='option']",
+  "[role='searchbox']",
+  "[role='slider']",
+  "[role='spinbutton']",
+  "[role='tab']",
+  "[role='textbox']",
+].join(", ");
+
+/** Focused fields, sliders, and other controls keep arrow keys for themselves. */
+function controlOwnsArrowKeys(event: KeyboardEvent): boolean {
+  const owns = (node: EventTarget | null) =>
+    node instanceof Element && node.closest(ARROW_KEY_OWNER) != null;
+  if (owns(document.activeElement) || owns(event.target)) return true;
+  return event.composedPath().some((node) => owns(node));
+}
+
 export function MediaBridge({
   src,
   active,
@@ -141,15 +169,39 @@ export function MediaBridge({
     () => actions.setRate(stepPlaybackRate(rate, -1)),
     videoHotkeys,
   );
+  const nudgeVolume = (delta: number) => {
+    const video = meta.videoRef.current;
+    if (!video) return;
+    const next = stepVolume(video.volume, delta);
+    // Raising the level while muted should be heard. Lowering it stays muted.
+    if (delta > 0 || !video.muted) actions.setVolume(next);
+    else video.volume = next;
+    actions.showControls();
+  };
+  const volumeHotkeys = {
+    enabled: active,
+    ignoreInputs: true,
+    conflictBehavior: "allow" as const,
+    preventDefault: false,
+    stopPropagation: false,
+  };
   useHotkey(
     bindingKeys(shortcuts, "viewer.volume-up"),
-    () => actions.setVolume(stepVolume(state.volume, 0.05)),
-    videoHotkeys,
+    (event) => {
+      if (event.defaultPrevented || controlOwnsArrowKeys(event)) return;
+      event.preventDefault();
+      nudgeVolume(0.05);
+    },
+    volumeHotkeys,
   );
   useHotkey(
     bindingKeys(shortcuts, "viewer.volume-down"),
-    () => actions.setVolume(stepVolume(state.volume, -0.05)),
-    videoHotkeys,
+    (event) => {
+      if (event.defaultPrevented || controlOwnsArrowKeys(event)) return;
+      event.preventDefault();
+      nudgeVolume(-0.05);
+    },
+    volumeHotkeys,
   );
 
   useMediaSession(
