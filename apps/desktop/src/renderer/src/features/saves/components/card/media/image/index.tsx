@@ -68,7 +68,7 @@ export function CardImage({
     },
     [onReady, opens, save.id, unit],
   );
-  const ready = useImageReady(src, reportReady);
+  const ready = useImageReady(src, reportReady, onBroken);
   useEffect(() => {
     const image = ready.ref.current;
     if (!animated || !image) return;
@@ -110,7 +110,7 @@ export function CardImage({
         data-fit={viewer.galleryFit}
         data-loaded={!save.blurhash || ready.loaded ? "true" : "false"}
         onLoad={ready.onLoad}
-        onError={onBroken}
+        onError={ready.onError}
       />
     </>
   );
