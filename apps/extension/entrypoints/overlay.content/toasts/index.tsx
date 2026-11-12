@@ -29,7 +29,9 @@ function List({ container }: { container: HTMLElement }) {
                     </span>
                   </Toast.Title>
                   {toast.description ? (
-                    <Toast.Description>{toast.description}</Toast.Description>
+                    <Toast.Description className={styles.description}>
+                      {toast.description}
+                    </Toast.Description>
                   ) : null}
                 </Toast.Header>
                 {saveId ? (
