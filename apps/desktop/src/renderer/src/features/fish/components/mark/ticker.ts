@@ -1,4 +1,4 @@
-import type { Avatar, Pose } from "./face";
+import { type Avatar, frameGap, type Pose } from "./face";
 
 export interface Rig {
   element: Element;
@@ -20,6 +20,7 @@ const rigs = new Map<Element, State>();
 let observer: IntersectionObserver | null = null;
 let watcher: MutationObserver | null = null;
 let frame = 0;
+let timer: ReturnType<typeof setTimeout> | null = null;
 let last = 0;
 let pointer: { x: number; y: number } | null = null;
 
@@ -29,6 +30,7 @@ const motionHeld = () =>
   document.documentElement.hasAttribute("data-motion-paused");
 
 function tick(now: number) {
+  frame = 0;
   const dt = last ? (now - last) / 1000 : 0;
   last = now;
   const active = [...rigs.values()].filter((state) => state.visible);
@@ -36,6 +38,7 @@ function tick(now: number) {
   const boxes = active.map(({ rig }) =>
     pointer ? rig.element.getBoundingClientRect() : null,
   );
+  let gap = Number.POSITIVE_INFINITY;
   active.forEach((state, index) => {
     const { rig } = state;
     const box = boxes[index];
@@ -50,8 +53,27 @@ function tick(now: number) {
       rig.avatar.leave();
     }
     rig.write(rig.avatar.step(dt));
+    gap = Math.min(gap, frameGap(rig.avatar.mood));
   });
-  frame = requestAnimationFrame(tick);
+  schedule(Number.isFinite(gap) ? gap : 0);
+}
+
+function schedule(gap: number) {
+  if (gap === 0) {
+    frame = requestAnimationFrame(tick);
+    return;
+  }
+  timer = setTimeout(() => {
+    timer = null;
+    frame = requestAnimationFrame(tick);
+  }, gap);
+}
+
+function cancel() {
+  cancelAnimationFrame(frame);
+  if (timer) clearTimeout(timer);
+  frame = 0;
+  timer = null;
 }
 
 function sync() {
@@ -59,12 +81,12 @@ function sync() {
     !reducedMotion() &&
     !motionHeld() &&
     [...rigs.values()].some((state) => state.visible);
-  if (run && !frame) {
+  const running = frame !== 0 || timer !== null;
+  if (run && !running) {
     last = 0;
-    frame = requestAnimationFrame(tick);
-  } else if (!run && frame) {
-    cancelAnimationFrame(frame);
-    frame = 0;
+    schedule(0);
+  } else if (!run && running) {
+    cancel();
   }
 }
 

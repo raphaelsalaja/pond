@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createAvatar } from "./face";
+import { createAvatar, frameGap } from "./face";
 
 const head = { x: 10, y: 8, rx: 4, ry: 3.4 };
 const pivot = { x: 10, y: 12 };
@@ -53,5 +53,26 @@ describe("fish face", () => {
     avatar.move(4000, 0);
     const [, front] = run(avatar, 3).eyes;
     expect(front.opacity).toBeGreaterThan(0);
+  });
+});
+
+describe("fish frame pacing", () => {
+  it("draws every frame while it reacts or works", () => {
+    const near = fish();
+    near.enter();
+    near.move(40, -10);
+    expect(frameGap(run(near, 0.5).mood)).toBe(0);
+
+    const working = fish();
+    working.task("writing");
+    expect(frameGap(run(working, 1).mood)).toBe(0);
+  });
+
+  it("draws less often while it drifts or sleeps", () => {
+    const avatar = fish();
+    const idle = frameGap(run(avatar, 1).mood);
+    const asleep = frameGap(run(avatar, 40).mood);
+    expect(idle).toBeGreaterThan(0);
+    expect(asleep).toBeGreaterThan(idle);
   });
 });
