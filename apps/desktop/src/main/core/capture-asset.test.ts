@@ -11,8 +11,6 @@ describe("referrerFor", () => {
   });
 
   it("reduces a cross-origin referrer to its origin", () => {
-    // A full page URL here is what Chromium's network service cancels
-    // with ERR_BLOCKED_BY_CLIENT (strict-origin-when-cross-origin).
     const referrer = referrerFor(
       "https://en.wikipedia.org/wiki/Main_Page",
       "https://upload.wikimedia.org/wikipedia/en/a/ab/Flag_of_the_United_States.png",

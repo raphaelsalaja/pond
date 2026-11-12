@@ -14,14 +14,7 @@ import { createManualSave, importedFilesComplete } from "./manual-import";
 import { writePartitionCookies } from "./refresh/harvest-window/session";
 import { restoreSave } from "./restore-save";
 
-/**
- * Chromium's network service cancels any request whose Referer header
- * violates the default referrer policy (strict-origin-when-cross-origin)
- * with ERR_BLOCKED_BY_CLIENT, so the header must carry exactly what the
- * browser itself would send when loading the image from that page:
- * the full URL on same-origin requests, only its origin cross-origin,
- * and nothing when a secure page references an insecure one.
- */
+/** Chromium cancels a Referer that breaks strict-origin-when-cross-origin with ERR_BLOCKED_BY_CLIENT. */
 export function referrerFor(
   originUrl: string,
   targetUrl: string,
