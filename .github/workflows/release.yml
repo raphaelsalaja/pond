@@ -423,53 +423,6 @@ jobs:
       contents: write
 
     steps:
-      - name: Merge Linux update manifests
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          # Each Linux job publishes a single-arch latest-linux.yml and the
-          # later upload overwrites the earlier one. electron-updater picks the
-          # entry whose URL contains its own architecture, so the release needs
-          # one manifest listing both. Rebuild it from the uploaded artifacts.
-          for name in \
-            "Pond-${VERSION}-x64.AppImage" \
-            "Pond-${VERSION}-arm64.AppImage" \
-            "Pond-${VERSION}-x64.AppImage.blockmap" \
-            "Pond-${VERSION}-arm64.AppImage.blockmap" \
-            "Pond-${VERSION}-x64.deb" \
-            "Pond-${VERSION}-arm64.deb"; do
-            gh release download "$GITHUB_REF_NAME" --pattern "$name"
-          done
-          sha512() { openssl dgst -sha512 -binary "$1" | base64 -w 0; }
-          size() { stat -c%s "$1"; }
-          cat > latest-linux.yml <<EOF
-          version: ${VERSION}
-          files:
-            - url: Pond-${VERSION}-x64.AppImage
-              sha512: $(sha512 "Pond-${VERSION}-x64.AppImage")
-              size: $(size "Pond-${VERSION}-x64.AppImage")
-              blockMapSize: $(size "Pond-${VERSION}-x64.AppImage.blockmap")
-            - url: Pond-${VERSION}-arm64.AppImage
-              sha512: $(sha512 "Pond-${VERSION}-arm64.AppImage")
-              size: $(size "Pond-${VERSION}-arm64.AppImage")
-              blockMapSize: $(size "Pond-${VERSION}-arm64.AppImage.blockmap")
-            - url: Pond-${VERSION}-x64.deb
-              sha512: $(sha512 "Pond-${VERSION}-x64.deb")
-              size: $(size "Pond-${VERSION}-x64.deb")
-            - url: Pond-${VERSION}-arm64.deb
-              sha512: $(sha512 "Pond-${VERSION}-arm64.deb")
-              size: $(size "Pond-${VERSION}-arm64.deb")
-          path: Pond-${VERSION}-x64.AppImage
-          sha512: $(sha512 "Pond-${VERSION}-x64.AppImage")
-          releaseDate: '$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)'
-          EOF
-          gh release upload "$GITHUB_REF_NAME" latest-linux.yml --clobber
-          gh release download "$GITHUB_REF_NAME" --pattern "latest-linux.yml" --dir merged-check
-          grep -q "Pond-${VERSION}-x64.AppImage" merged-check/latest-linux.yml
-          grep -q "Pond-${VERSION}-arm64.AppImage" merged-check/latest-linux.yml
-          echo "Merged latest-linux.yml lists both architectures"
       - name: Verify release assets
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -488,12 +441,11 @@ jobs:
             "Pond-${VERSION}-x64.exe.blockmap" \
             "latest.yml" \
             "Pond-${VERSION}-x64.AppImage" \
-            "Pond-${VERSION}-x64.AppImage.blockmap" \
             "Pond-${VERSION}-arm64.AppImage" \
-            "Pond-${VERSION}-arm64.AppImage.blockmap" \
             "Pond-${VERSION}-x64.deb" \
             "Pond-${VERSION}-arm64.deb" \
             "latest-linux.yml" \
+            "latest-linux-arm64.yml" \
             "pond-extension-${VERSION}-chrome.zip" \
             "pond-extension-${VERSION}-firefox.zip" \
             "pond-extension-${VERSION}-sources.zip"; do
