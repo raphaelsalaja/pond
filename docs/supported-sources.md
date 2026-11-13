@@ -22,7 +22,7 @@ have no capture extractor.
 | Twitter | `twitter` | `x.com`, `twitter.com` | `^https?:\/\/(?:www\.)?(?:x|twitter)\.com\/[^/]+\/status\/(\d+)`<br>`^https?:\/\/(?:www\.)?(?:x|twitter)\.com\/i\/web\/status\/(\d+)` | `cursor` | `session` |
 | Instagram | `instagram` | `instagram.com` | `^https?:\/\/(?:www\.)?instagram\.com\/(?:p|reels?|tv)\/([A-Za-z0-9_-]+)` | `cursor` | `session` |
 | Pinterest | `pinterest` | `pinterest.com`, `pin.it` | `^https?:\/\/(?:[a-z]+\.)?pinterest\.[a-z.]+\/pin\/(\d+)`<br>`^https?:\/\/pin\.it\/([A-Za-z0-9]+)` | `scroll` | `session` |
-| Are.na | `arena` | `are.na` | `^https?:\/\/(?:www\.)?are\.na\/block\/(\d+)`<br>`^https?:\/\/(?:www\.)?are\.na\/[^/]+\/[^/]+-(\d+)` | `scroll` | `session` |
+| Are.na | `arena` | `are.na` | `^https?:\/\/(?:www\.)?are\.na\/block\/(\d+)`<br>`^https?:\/\/(?:www\.)?are\.na\/[^/]+\/[^/]+-(\d+)` | `cursor` | `session` |
 | Cosmos | `cosmos` | `cosmos.so` | `^https?:\/\/(?:www\.)?cosmos\.so\/e\/([A-Za-z0-9_-]+)`<br>`^https?:\/\/(?:www\.)?cosmos\.so\/(.+?)\/?$` | `cursor` | `session` |
 | TikTok | `tiktok` | `tiktok.com` | `^https?:\/\/(?:[a-z]+\.)?tiktok\.com\/[^/]+\/video\/(\d+)`<br>`^https?:\/\/(?:[a-z]+\.)?tiktok\.com\/video\/(\d+)`<br>`^https?:\/\/(?:vm|vt)\.tiktok\.com\/[A-Za-z0-9]+` | `scroll` | `session` |
 | YouTube | `youtube` | `youtube.com`, `youtu.be` | `^https?:\/\/(?:www\.|m\.)?youtube\.com\/watch\?[^#]*v=([A-Za-z0-9_-]+)`<br>`^https?:\/\/(?:www\.|m\.)?youtube\.com\/shorts\/([A-Za-z0-9_-]+)`<br>`^https?:\/\/youtu\.be\/([A-Za-z0-9_-]+)` | `scroll` | `session` |

@@ -77,7 +77,10 @@ filtered afterward.
   walk; Liked Videos still comes from that walk.
   `listSourceCollections` and `harvestSourceCollections`
   (`harvest-window/harvest-list.ts`) load and walk them.
-- Cosmos and Are.na import every list.
+- Cosmos and Are.na import every list. Are.na pages the v3 contents
+  API (`per=100`, newest first) and resumes from the next page when a run
+  stops before `has_more_pages` is false, so the first page is not recorded
+  as a finished all-time sync.
 - GitHub walks your Stars tab in the signed-in window, 30 repos a page
   (`harvest/github/list.ts`). Stars show no date, but each page's Next cursor
   holds its last star's time, so the `since` limit (`sinceDate: "saved"`) ends
