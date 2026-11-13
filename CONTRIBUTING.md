@@ -72,7 +72,7 @@ Pond builds and runs on 64-bit Linux (x64 and ARM, such as Asahi Linux on Apple 
 pnpm dist:linux
 ```
 
-This builds the desktop app and extension, compiles the native host, and writes `Pond-X.Y.Z-<arch>.AppImage`, `Pond-X.Y.Z-<arch>.deb`, and `latest-linux.yml` to `apps/desktop/dist/`, where `<arch>` is the host architecture. The native dependencies (better-sqlite3, sqlite-vec, sharp, onnxruntime, ffmpeg-static) all ship linux-arm64 builds, so the same steps work on 64-bit ARM. Cross-arch packaging is not supported — build on the architecture you are packaging for.
+This builds the desktop app and extension, compiles the native host, and writes `Pond-X.Y.Z-<arch>.AppImage`, `Pond-X.Y.Z-<arch>.deb`, and `latest-linux.yml` to `apps/desktop/dist/`, where `<arch>` is the host architecture. The native dependencies (better-sqlite3, sqlite-vec, sharp, onnxruntime, ffmpeg-static) all ship linux-arm64 builds, so the same steps work on 64-bit ARM. Cross-arch packaging isn't supported. Build on the architecture you're packaging for.
 
 Pond keeps per-user files in the XDG directories: configuration in `$XDG_CONFIG_HOME/pond`, the native-host socket in `$XDG_RUNTIME_DIR/pond` when the session sets it (otherwise `$XDG_CONFIG_HOME/pond`), the copied native host in `$XDG_DATA_HOME/Pond/bin`, logs in Electron's logs directory, and the autostart entry at `$XDG_CONFIG_HOME/autostart/pond.desktop`.
 

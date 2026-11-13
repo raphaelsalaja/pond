@@ -198,22 +198,10 @@ nsis:
   # Removes the HKCU registrations Pond writes at runtime; keeps the Library.
   include: packaging/installer.nsh
 
-# Linux ships AppImage and deb packages for x64 and arm64 (the arm64 build is
-# for 64-bit ARM machines such as Asahi Linux on Apple Silicon). Each
-# architecture packages on its own runner: electron-builder rebuilds the native
-# modules (better-sqlite3, sharp, sqlite-vec, onnxruntime) for the build host,
-# so `scripts/dist-linux.mjs` always passes the host arch and a bare
-# `electron-builder --linux` must not be used. The targets intentionally carry
-# NO per-target arch list: an explicit list would override the CLI arch flag
-# and force cross-arch packaging (which ships host-arch native binaries into
-# the wrong package). The script also overrides `linux.artifactName` per
-# build, because the `${arch}` token expands to the packaging-convention name
-# (x86_64/amd64) on Linux while electron-updater matches `process.arch`
-# (x64/arm64) inside file URLs. Each build publishes its own single-arch
-# latest-linux.yml, and the release workflow merges them into one. The deb is
-# installed and upgraded by the system package manager (its package name stays
-# arch-agnostic: `pond`). `pond.desktop` also registers the `pond://` handler
-# and the tray/window class used by the menu and the CLI.
+# Package through `scripts/dist-linux.mjs`, which passes the host arch and an
+# arch-named artifact. A per-target arch list here would override that flag and
+# cross-package host-arch native modules. See RELEASING.md for the manifest merge.
+# `pond.desktop` also registers the `pond://` handler and the tray/window class.
 linux:
   artifactName: ${productName}-${version}-${arch}.${ext}
   category: Utility

@@ -4,15 +4,7 @@ import { spawnSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-/**
- * Packages the Linux app for the host architecture (x64 or arm64).
- *
- * electron-builder rebuilds the native modules (better-sqlite3, sharp,
- * sqlite-vec, onnxruntime) against the build host's toolchain, so cross-arch
- * packaging would ship the wrong binaries. Run this on the architecture you
- * are packaging for; the dist:linux scripts use it instead of passing a
- * hardcoded `--x64`.
- */
+/** Packages for the host arch only, because native modules rebuild against the build host's toolchain. */
 const appRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const publish = process.argv.includes("--publish");
 const arch =
@@ -27,9 +19,7 @@ if (!arch) {
 console.log(
   `[pond] packaging Linux ${arch} (publish: ${publish ? "always" : "never"})`,
 );
-// electron-builder's `${arch}` token expands to the packaging-convention name
-// on Linux (x86_64/amd64), but electron-updater matches `process.arch`
-// (x64/arm64) inside file URLs, so pass the host arch literally.
+/** On Linux `${arch}` expands to x86_64/amd64, but electron-updater matches `process.arch` in file URLs. */
 const artifactName =
   "--config.linux.artifactName=" +
   `\${productName}-\${version}-${arch}.\${ext}`;

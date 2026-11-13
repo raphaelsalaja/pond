@@ -12,8 +12,8 @@ const RELEASES_BASE = `${RELEASES_PAGE}/latest/download`;
  * the first version at or above this one.
  */
 const FIRST_LINUX_VERSION = "2.2.3";
-/** The first release that ships the arm64 Linux build; earlier ones are x64 only. */
-const FIRST_LINUX_ARM_VERSION = "2.6.0";
+/** The first release with arm64 Linux builds; earlier Linux assets are x64 only and carry no arch in the name. */
+const FIRST_LINUX_ARM_VERSION = "2.7.0";
 
 const LINUX_AVAILABLE = isAtLeast(POND_VERSION, FIRST_LINUX_VERSION);
 const LINUX_ARM_AVAILABLE = isAtLeast(POND_VERSION, FIRST_LINUX_ARM_VERSION);
@@ -41,11 +41,17 @@ function windowsInstallerUrl(): string {
 
 /** The x64 AppImage runs on every x86_64 distribution, so it is the default Linux build. */
 function linuxAppImageUrl(arch: "x64" | "arm64"): string {
-  return `${RELEASES_BASE}/Pond-${POND_VERSION}-${arch}.AppImage`;
+  return `${RELEASES_BASE}/${linuxAssetName(arch)}.AppImage`;
 }
 
 function linuxDebUrl(arch: "x64" | "arm64"): string {
-  return `${RELEASES_BASE}/Pond-${POND_VERSION}-${arch}.deb`;
+  return `${RELEASES_BASE}/${linuxAssetName(arch)}.deb`;
+}
+
+function linuxAssetName(arch: "x64" | "arm64"): string {
+  return LINUX_ARM_AVAILABLE
+    ? `Pond-${POND_VERSION}-${arch}`
+    : `Pond-${POND_VERSION}`;
 }
 
 /** Hardcoded because importing `CHROME_WEB_STORE_ID` from `@pond/schema/native` would pull zod into this client bundle. */

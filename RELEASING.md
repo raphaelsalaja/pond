@@ -131,7 +131,7 @@ pnpm dist:win   # on Windows
 pnpm dist:linux # on Linux (packages the host architecture, x64 or arm64)
 ```
 
-Artifacts land in `apps/desktop/dist/`. `dist:win` needs the Visual Studio C++ Build Tools; see [Windows development](CONTRIBUTING.md#windows-development). `dist:linux` needs a C compiler (for the native host), `fakeroot` (deb), and packages the architecture it runs on — to build for arm64, run it on an arm64 machine, such as Asahi Linux.
+Artifacts land in `apps/desktop/dist/`. `dist:win` needs the Visual Studio C++ Build Tools; see [Windows development](CONTRIBUTING.md#windows-development). `dist:linux` needs a C compiler (for the native host), `fakeroot` (deb), and packages the architecture it runs on. To build for arm64, run it on an arm64 machine, such as Asahi Linux.
 
 To try a pull request without building it, download the unsigned test installers that [`package.yml`](.github/workflows/package.yml) attaches to each run (`Pond-windows-x64`, `Pond-macos`). They are kept for 7 days, are not notarized, and cannot auto-update.
 
