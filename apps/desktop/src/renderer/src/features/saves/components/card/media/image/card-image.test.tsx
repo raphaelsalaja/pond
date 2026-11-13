@@ -115,3 +115,44 @@ it("keeps a Balanced card on the thumbnail that covers it", async () => {
     `${original}?tw=512&tv=${THUMBNAIL_CACHE_VERSION}`,
   );
 });
+
+it("delegates an image error to its existing broken-image handler", async () => {
+  const onBroken = vi.fn();
+  const save: Save = {
+    id: "broken",
+    source: "twitter",
+    sourceId: "broken",
+    url: "https://x.com/example/status/1",
+    title: null,
+    description: null,
+    author: null,
+    notes: null,
+    mediaUrl: null,
+    mediaType: "image",
+    files: [],
+    tags: [],
+    savedAt: 0,
+    createdAt: 0,
+    deletedAt: null,
+  };
+
+  await act(async () =>
+    root.render(
+      <CardImage
+        save={save}
+        unit={{
+          key: "tweet-light.png",
+          url: "pond://broken/tweet-light.png",
+          isVideo: false,
+        }}
+        pickOptions={{}}
+        onBroken={onBroken}
+      />,
+    ),
+  );
+  await act(async () =>
+    host.querySelector("img")?.dispatchEvent(new Event("error")),
+  );
+
+  expect(onBroken).toHaveBeenCalledOnce();
+});

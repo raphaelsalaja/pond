@@ -4,27 +4,36 @@ import { useCallback, useEffect, useRef, useState } from "react";
 export function useImageReady(
   src: string | null,
   onReady?: (image: HTMLImageElement) => void,
+  onBroken?: () => void,
 ) {
   const ref = useRef<HTMLImageElement>(null);
-  const reportedSrc = useRef<string | null>(null);
+  const settledSrc = useRef<string | null>(null);
   const [loadedSrc, setLoadedSrc] = useState<string | null>(null);
 
   const markReady = useCallback(
     (image: HTMLImageElement) => {
-      if (!src || image.naturalWidth <= 0 || reportedSrc.current === src) {
+      if (!src || image.naturalWidth <= 0 || settledSrc.current === src) {
         return;
       }
-      reportedSrc.current = src;
+      settledSrc.current = src;
       setLoadedSrc(src);
       onReady?.(image);
     },
     [onReady, src],
   );
 
+  const markBroken = useCallback(() => {
+    if (!src || settledSrc.current === src) return;
+    settledSrc.current = src;
+    onBroken?.();
+  }, [onBroken, src]);
+
   useEffect(() => {
     const image = ref.current;
-    if (image?.complete) markReady(image);
-  }, [markReady]);
+    if (!image?.complete) return;
+    if (image.naturalWidth > 0) markReady(image);
+    else markBroken();
+  }, [markBroken, markReady]);
 
   return {
     ref,
@@ -35,5 +44,6 @@ export function useImageReady(
       },
       [markReady],
     ),
+    onError: markBroken,
   };
 }
