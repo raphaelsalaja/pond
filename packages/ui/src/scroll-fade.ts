@@ -73,14 +73,14 @@ function schedule(el: HTMLElement): void {
 }
 
 function wire(el: HTMLElement): void {
-  if (wired.has(el) || typeof el.addEventListener !== "function") return;
+  if (wired.has(el)) return;
   wired.add(el);
   sizes.set(el, {
     start: readSize(el, "--scroll-fade-start-size"),
     end: readSize(el, "--scroll-fade-end-size"),
   });
   el.addEventListener("scroll", () => schedule(el), { passive: true });
-  if (typeof ResizeObserver === "function") {
+  if ("ResizeObserver" in globalThis) {
     const observer = new ResizeObserver(() => schedule(el));
     observer.observe(el);
     observers.set(el, observer);
@@ -97,6 +97,7 @@ function wireSubtree(root: ParentNode): void {
 /** Nearest wired scroller enclosing `node`, if any (content changing inside
  *  one changes its scrollable extent without a scroll or size event). */
 function scrollerOf(node: Node): HTMLElement | null {
+  /** SAFETY: nodeType === 1 (Node.ELEMENT_NODE) means node is an element. */
   let el = node.nodeType === 1 ? (node as HTMLElement) : node.parentElement;
   while (el) {
     if (el.hasAttribute("data-scroll-fade")) return el;
@@ -108,17 +109,18 @@ function scrollerOf(node: Node): HTMLElement | null {
 let started = false;
 
 export function initScrollFade(root?: ParentNode): void {
-  if (started || typeof document === "undefined") return;
+  if (started || !("document" in globalThis)) return;
   started = true;
 
   const scope = root ?? document;
   wireSubtree(scope);
-  if (typeof MutationObserver === "undefined") return;
+  if (!("MutationObserver" in globalThis)) return;
 
   const mutations = new MutationObserver((records) => {
     for (const record of records) {
       for (const node of record.addedNodes) {
         if (node.nodeType !== 1) continue;
+        /** SAFETY: guarded above: node.nodeType === 1. */
         const el = node as HTMLElement;
         if (el.hasAttribute?.("data-scroll-fade")) {
           wire(el);

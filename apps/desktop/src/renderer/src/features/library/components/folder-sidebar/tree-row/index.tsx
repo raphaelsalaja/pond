@@ -273,8 +273,8 @@ function areFolderRowsEqual(
   ) {
     return false;
   }
-  const rpA = a.rowProps as unknown as Record<string, unknown> | undefined;
-  const rpB = b.rowProps as unknown as Record<string, unknown> | undefined;
+  const rpA = a.rowProps;
+  const rpB = b.rowProps;
   return (
     rpA?.["aria-label"] === rpB?.["aria-label"] &&
     rpA?.["aria-level"] === rpB?.["aria-level"] &&

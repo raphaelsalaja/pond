@@ -129,8 +129,7 @@ export function useVirtualWindow<T extends HTMLElement>(
     if (!scroller) return;
     const observer = new ResizeObserver(schedule);
     observer.observe(scroller);
-    for (const child of Array.from(scroller.children))
-      observer.observe(child as Element);
+    for (const child of Array.from(scroller.children)) observer.observe(child);
     window.addEventListener("resize", schedule);
     scroller.addEventListener("scroll", schedule, { passive: true });
     apply();

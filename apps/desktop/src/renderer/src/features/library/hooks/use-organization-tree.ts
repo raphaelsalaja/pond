@@ -117,8 +117,8 @@ export function useOrganizationTree(
     ].filter((row) => !row.closest("[inert]"));
   /** Row ids in display order: the provided data list, or the mounted rows. */
   const rowIds = () =>
-    dataDriven
-      ? (orderedIds as string[])
+    orderedIds !== undefined
+      ? [...orderedIds]
       : visibleRows()
           .map((row) => row.dataset.treeId)
           .filter((id): id is string => !!id);
