@@ -2,7 +2,7 @@ import type { SyncSchedule } from "@shared/sync-schedule";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { ScheduleEditor } from "./";
+import { LaunchFetchControl, ScheduleEditor } from "./";
 
 let root: Root;
 let host: HTMLDivElement;
@@ -22,6 +22,9 @@ async function render(initial: SyncSchedule | null) {
   await act(async () =>
     root.render(<ScheduleEditor initial={initial} onSave={save} />),
   );
+}
+async function renderLaunch(initial: boolean | null) {
+  await act(async () => root.render(<LaunchFetchControl initial={initial} />));
 }
 async function choose(label: string, optionLabel: string) {
   const trigger = host.querySelector<HTMLButtonElement>(
@@ -67,6 +70,16 @@ it("shows a disabled shell while preferences load, then the saved schedule", asy
     host.querySelector('input[aria-label="Repeat interval"]'),
   ).toHaveProperty("value", "6");
   expect(save).not.toHaveBeenCalled();
+});
+it("shows Fetch on app launch only after preferences load", async () => {
+  await renderLaunch(null);
+  const toggle = host.querySelector('[role="switch"]');
+  expect(toggle?.hasAttribute("data-disabled")).toBe(true);
+  expect(host.textContent).toContain("Fetch on app launch");
+
+  await renderLaunch(true);
+  expect(toggle?.hasAttribute("data-disabled")).toBe(false);
+  expect(toggle?.getAttribute("aria-checked")).toBe("true");
 });
 it("loads a weekly schedule and prevents saving without weekdays", async () => {
   await render({

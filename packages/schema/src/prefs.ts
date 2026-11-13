@@ -331,6 +331,7 @@ const sync = z.object({
       return known;
     }),
   watches: z.custom<SyncWatches>().default({}),
+  launch: z.boolean().catch(false),
   cron: z
     .object({
       enabled: z.boolean().catch(true),

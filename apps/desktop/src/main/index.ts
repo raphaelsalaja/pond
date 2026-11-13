@@ -44,6 +44,7 @@ import {
   type SyncStatusUpdate,
   subscribeToSyncStatus,
 } from "./core/sync";
+import { startLaunchSync } from "./core/sync/launch";
 import { flushTagsDump, hydrateTagsFromBundle } from "./core/tags-bundle";
 import {
   registerSyncCron,
@@ -445,14 +446,17 @@ async function postLaunchInit(): Promise<void> {
     }
   }
 
-  void recoverInterruptedSyncs().catch((err) =>
+  await recoverInterruptedSyncs().catch((err) =>
     log.warn("[pond] interrupted-sync recovery failed", err),
   );
   registerTrashCron();
   registerYtDlpUpdateCron();
   registerSyncCron();
-  void startStorageWatcher().catch((err) =>
+  await startStorageWatcher().catch((err) =>
     log.warn("[pond] storage watcher failed to start", err),
+  );
+  void startLaunchSync().catch((err) =>
+    log.warn("[pond] launch sync failed to start", err),
   );
   void captures
     .recover()

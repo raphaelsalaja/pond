@@ -22,7 +22,7 @@ import type { WatchEntry, WatchHarvestResult } from "./types";
 import { listYtdlpWatch } from "./ytdlp-list";
 
 interface WatchOptions {
-  trigger?: "manual" | "cron";
+  trigger?: "manual" | "cron" | "launch";
 }
 
 const WATCH_WATCHDOG_MS = 10 * 60_000;

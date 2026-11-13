@@ -10,10 +10,42 @@ import styles from "./styles.module.css";
 export function ScheduleSection() {
   const [sync, , loaded] = usePrefs("sync");
   return (
-    <ScheduleEditor
-      initial={loaded ? (sync.cron ?? DEFAULT_SYNC_CRON) : null}
-      onSave={(cron) => savePrefsSection("sync", { cron })}
-    />
+    <>
+      <LaunchFetchControl initial={loaded ? sync.launch : null} />
+      <ScheduleEditor
+        initial={loaded ? (sync.cron ?? DEFAULT_SYNC_CRON) : null}
+        onSave={(cron) => savePrefsSection("sync", { cron })}
+      />
+    </>
+  );
+}
+
+export function LaunchFetchControl({ initial }: { initial: boolean | null }) {
+  const enabled = initial ?? false;
+  return (
+    <Settings.List>
+      <Settings.Item>
+        <Settings.ItemDetails>
+          <Settings.ItemTitle id="fetch-on-launch-title">
+            Fetch on app launch
+          </Settings.ItemTitle>
+          <Settings.ItemDescription id="fetch-on-launch-description">
+            Check eligible sources for new saves once when Pond starts.
+          </Settings.ItemDescription>
+        </Settings.ItemDetails>
+        <Settings.ItemControl>
+          <Switch.Root
+            aria-labelledby="fetch-on-launch-title"
+            aria-describedby="fetch-on-launch-description"
+            checked={enabled}
+            disabled={initial === null}
+            onCheckedChange={(launch) =>
+              void savePrefsSection("sync", { launch })
+            }
+          />
+        </Settings.ItemControl>
+      </Settings.Item>
+    </Settings.List>
   );
 }
 
