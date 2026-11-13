@@ -96,6 +96,9 @@ export function SaveInspector({
     message: string;
     retry(): Promise<void>;
   } | null>(null);
+  const [stagedFolderIds, setStagedFolderIds] =
+    useState<ReadonlySet<string> | null>(null);
+  const [applyingFolderBatch, setApplyingFolderBatch] = useState(false);
   const fileIndex = useSaveViewerFileIndex();
   const [tab, setTab] = useState<InspectorTab>("details");
   const byId = new Map(available.map((save) => [save.id, save]));
@@ -229,14 +232,53 @@ export function SaveInspector({
     const name = rawName.trim();
     let createdId: string | null = null;
     void run(async () => {
-      if (!createdId)
-        createdId = (await window.pond.query("folders.create", { name })).id;
-      await assignFolder(createdId, true);
+      const folderId =
+        createdId ?? (await window.pond.query("folders.create", { name })).id;
+      createdId = folderId;
+      if (stagedFolderIds) {
+        setStagedFolderIds((current) => new Set(current).add(folderId));
+      } else {
+        await assignFolder(folderId, true);
+      }
     });
   }
 
   function toggleFolder(option: InspectorFolder) {
     void run(() => assignFolder(option.id, option.count !== ids.length));
+  }
+
+  function toggleStagedFolder(option: AssignOption) {
+    if (option.state === "on") return;
+    setStagedFolderIds((current) => {
+      const next = new Set(current);
+      if (next.has(option.key)) next.delete(option.key);
+      else next.add(option.key);
+      return next;
+    });
+  }
+
+  async function applyStagedFolders() {
+    if (!stagedFolderIds?.size || applyingFolderBatch) return;
+    setFailure(null);
+    setApplyingFolderBatch(true);
+    try {
+      const addIds = [...stagedFolderIds];
+      await window.pond.query("folders.assign", {
+        saveIds: [...ids],
+        addIds,
+        removeIds: [],
+      });
+      saveLibraryBridge.rememberFolderDestinations(addIds);
+      await saveLibraryBridge.refreshFolders();
+      setStagedFolderIds(null);
+    } catch (error) {
+      setFailure({
+        message: errorCopy(error, "Couldn't update the selection."),
+        retry: applyStagedFolders,
+      });
+    } finally {
+      setApplyingFolderBatch(false);
+    }
   }
 
   const details = (
@@ -378,6 +420,18 @@ export function SaveInspector({
                   if (folder) toggleFolder(folder);
                 }}
                 onCreate={createFolder}
+                onStartBatch={() => setStagedFolderIds(new Set())}
+                batch={
+                  stagedFolderIds
+                    ? {
+                        staged: stagedFolderIds,
+                        onToggle: toggleStagedFolder,
+                        onApply: () => void applyStagedFolders(),
+                        onCancel: () => setStagedFolderIds(null),
+                        applying: applyingFolderBatch,
+                      }
+                    : undefined
+                }
               />
             }
           >

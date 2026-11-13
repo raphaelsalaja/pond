@@ -6,3 +6,11 @@
 .list {
   max-height: min(360px, calc(var(--available-height) - 72px));
 }
+
+.batchActions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  padding: 8px;
+  border-top: var(--ds-border-width) solid var(--ds-border-subtle);
+}
