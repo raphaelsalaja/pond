@@ -106,8 +106,51 @@ jobs:
         with:
           name: Pond-linux-x64
           path: |
-            apps/desktop/dist/Pond-*.AppImage
-            apps/desktop/dist/Pond-*.deb
+            apps/desktop/dist/Pond-*-x64.AppImage
+            apps/desktop/dist/Pond-*-x64.deb
+            apps/desktop/dist/latest-linux.yml
+          if-no-files-found: error
+          retention-days: 7
+
+  # Same job on an arm64 runner: the native dependencies rebuild for the build
+  # host, so the arm64 package is only built where its toolchain runs.
+  linux-arm64:
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Set up Turborepo Remote Cache
+        if: ${{ vars.TURBO_TEAM != '' }}
+        uses: vercel/setup-turborepo-remote-cache-action@v1.1.0
+        with:
+          team: ${{ vars.TURBO_TEAM }}
+
+      # AppImage and deb both need the Debian packaging tools and a C compiler
+      # for the browser native host.
+      - name: Install packaging tools
+        run: sudo apt-get update && sudo apt-get install --yes build-essential fakeroot
+
+      - name: Package Linux packages
+        run: pnpm dist:linux
+
+      - name: Upload packages
+        uses: actions/upload-artifact@v7
+        with:
+          name: Pond-linux-arm64
+          path: |
+            apps/desktop/dist/Pond-*-arm64.AppImage
+            apps/desktop/dist/Pond-*-arm64.deb
             apps/desktop/dist/latest-linux.yml
           if-no-files-found: error
           retention-days: 7

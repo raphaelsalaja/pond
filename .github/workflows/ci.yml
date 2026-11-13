@@ -145,3 +145,47 @@ jobs:
 
       - name: Desktop memory budgets
         run: pnpm --filter @pond/desktop smoke:memory
+
+  # Same platform-specific coverage on an arm64 runner: the native dependency
+  # set (better-sqlite3 rebuild, sqlite-vec, sharp, onnxruntime, ffmpeg-static)
+  # resolves to linux-arm64 builds only here, so this is the job that catches
+  # an arm64 break in any of them.
+  linux-arm64:
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install test tools
+        run: sudo apt-get update && sudo apt-get install --yes xvfb
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Set up Turborepo Remote Cache
+        if: ${{ vars.TURBO_TEAM != '' }}
+        uses: vercel/setup-turborepo-remote-cache-action@v1.1.0
+        with:
+          team: ${{ vars.TURBO_TEAM }}
+
+      - name: Native database tests
+        env:
+          ELECTRON_RUN_AS_NODE: "1"
+        run: pnpm --filter @pond/desktop exec electron node_modules/vitest/vitest.mjs run src/main/db.test.ts src/main/core/vec-index.test.ts src/main/core/pipeline/task-recovery.test.ts src/main/core/pipeline/enqueue-scheduling.test.ts src/main/core/refresh/archive-backfill.test.ts src/main/core/session-downloads.test.ts
+
+      - name: Build
+        run: pnpm build
+
+      - name: Desktop end-to-end smoke
+        run: |
+          SANDBOX="$(dirname "$(cd apps/desktop && node -p "require('electron')")")/chrome-sandbox"
+          sudo chown root:root "$SANDBOX"
+          sudo chmod 4755 "$SANDBOX"
+          xvfb-run -a pnpm --filter @pond/desktop smoke:desktop

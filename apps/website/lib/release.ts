@@ -12,8 +12,11 @@ const RELEASES_BASE = `${RELEASES_PAGE}/latest/download`;
  * the first version at or above this one.
  */
 const FIRST_LINUX_VERSION = "2.2.3";
+/** The first release with arm64 Linux builds; earlier Linux assets are x64 only and carry no arch in the name. */
+const FIRST_LINUX_ARM_VERSION = "2.7.0";
 
 const LINUX_AVAILABLE = isAtLeast(POND_VERSION, FIRST_LINUX_VERSION);
+const LINUX_ARM_AVAILABLE = isAtLeast(POND_VERSION, FIRST_LINUX_ARM_VERSION);
 
 function isAtLeast(version: string, minimum: string): boolean {
   const parse = (value: string) =>
@@ -36,13 +39,19 @@ function windowsInstallerUrl(): string {
   return `${RELEASES_BASE}/Pond-${POND_VERSION}-x64.exe`;
 }
 
-/** The AppImage runs on every distribution, so it is the default Linux build. */
-function linuxAppImageUrl(): string {
-  return `${RELEASES_BASE}/Pond-${POND_VERSION}.AppImage`;
+/** The x64 AppImage runs on every x86_64 distribution, so it is the default Linux build. */
+function linuxAppImageUrl(arch: "x64" | "arm64"): string {
+  return `${RELEASES_BASE}/${linuxAssetName(arch)}.AppImage`;
 }
 
-function linuxDebUrl(): string {
-  return `${RELEASES_BASE}/Pond-${POND_VERSION}.deb`;
+function linuxDebUrl(arch: "x64" | "arm64"): string {
+  return `${RELEASES_BASE}/${linuxAssetName(arch)}.deb`;
+}
+
+function linuxAssetName(arch: "x64" | "arm64"): string {
+  return LINUX_ARM_AVAILABLE
+    ? `Pond-${POND_VERSION}-${arch}`
+    : `Pond-${POND_VERSION}`;
 }
 
 /** Hardcoded because importing `CHROME_WEB_STORE_ID` from `@pond/schema/native` would pull zod into this client bundle. */
@@ -67,7 +76,7 @@ export function primaryDownload(platform: Platform): Download {
   }
   if (platform === "linux") {
     return LINUX_AVAILABLE
-      ? { label: "Download for Linux", href: linuxAppImageUrl() }
+      ? { label: "Download for Linux", href: linuxAppImageUrl("x64") }
       : { label: "Linux build coming soon", href: RELEASES_PAGE };
   }
   return { label: "Download for Mac", href: dmgUrl("arm64") };
@@ -82,19 +91,29 @@ export function otherDownloads(platform: Platform): Download[] {
     href: windowsInstallerUrl(),
   };
   const linux: Download[] = LINUX_AVAILABLE
-    ? [{ label: "Linux", href: linuxAppImageUrl() }]
+    ? [{ label: "Linux", href: linuxAppImageUrl("x64") }]
     : [];
+  const linuxArm: Download[] =
+    LINUX_ARM_AVAILABLE && platform !== "linux"
+      ? [{ label: "Linux (ARM)", href: linuxAppImageUrl("arm64") }]
+      : [];
 
-  if (platform === "windows") return [mac, intelMac, ...linux];
+  if (platform === "windows") return [mac, intelMac, ...linux, ...linuxArm];
   if (platform === "linux") {
     return [
       mac,
       intelMac,
       windows,
       ...(LINUX_AVAILABLE
-        ? [{ label: "Debian package", href: linuxDebUrl() }]
+        ? [{ label: "Debian package", href: linuxDebUrl("x64") }]
+        : []),
+      ...(LINUX_ARM_AVAILABLE
+        ? [
+            { label: "Linux (ARM)", href: linuxAppImageUrl("arm64") },
+            { label: "Debian package (ARM)", href: linuxDebUrl("arm64") },
+          ]
         : []),
     ];
   }
-  return [intelMac, windows, ...linux];
+  return [intelMac, windows, ...linux, ...linuxArm];
 }
