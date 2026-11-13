@@ -220,6 +220,32 @@ describe("Sources page selection", () => {
     expect(selectedIds()).toEqual([]);
   });
 
+  it("disables Fetch All until the global run finishes", async () => {
+    let finish: ((result: { ok: true }) => void) | null = null;
+    const syncRunAll = vi.fn(
+      () =>
+        new Promise<{ ok: true }>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    vi.stubGlobal("pond", { query, syncRunAll });
+    await render();
+
+    const fetch = host.querySelector<HTMLButtonElement>(
+      'button[aria-label="Fetch All"]',
+    );
+    if (!fetch) throw new Error("Missing Fetch All");
+    await act(async () => fetch.click());
+    await act(async () => fetch.click());
+
+    expect(syncRunAll).toHaveBeenCalledTimes(1);
+    expect(fetch.disabled).toBe(true);
+    expect(fetch.getAttribute("aria-busy")).toBe("true");
+
+    await act(async () => finish?.({ ok: true }));
+    expect(fetch.disabled).toBe(false);
+  });
+
   it("extends and toggles with Shift and Cmd click", async () => {
     await render();
     const first = rowWith("@oluwa.rafa");

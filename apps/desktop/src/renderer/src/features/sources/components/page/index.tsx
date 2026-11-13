@@ -1,6 +1,12 @@
-import { IconCircleCheck, IconFile, IconLink2 } from "@pond/icons";
+import {
+  IconArrowRotateClockwise,
+  IconCircleCheck,
+  IconFile,
+  IconLink2,
+} from "@pond/icons";
+import { Button } from "@pond/ui";
 import { DataTable } from "@pond/ui/data-table";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SourcesEmpty } from "@/features/sources/components/empty";
 import { NewSourceMenu } from "@/features/sources/components/new-menu";
 import { cardModel } from "@/features/sources/components/sync-monitor/lib/helpers";
@@ -34,6 +40,7 @@ import {
 import { uniqueFilterOptions } from "@/shared/components/table-filters/chip-label";
 import { TableSelectionSync } from "@/shared/components/table-selection-sync";
 import { useClientHeight } from "@/shared/hooks/use-client-height";
+import { notify, updateNotification } from "@/shared/lib/toast";
 import { sourcesColumns } from "./columns";
 import { SourcesContextMenu } from "./context-menu";
 import {
@@ -76,6 +83,8 @@ export function SourcesPage() {
   const filters = useSourcesFilters();
   const columnLayout = useSourcesColumnLayout();
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [fetchingAll, setFetchingAll] = useState(false);
+  const fetchingAllRef = useRef(false);
   const { ref: tableRef, height: tableHeight } = useClientHeight();
 
   const tableRows = useMemo<SourceTableRow[]>(() => {
@@ -161,10 +170,60 @@ export function SourcesPage() {
   const onRowClick = useCallback((row: SourceTableRow) => {
     openEntry(row.entry);
   }, []);
+  const fetchAll = useCallback(async () => {
+    if (fetchingAllRef.current) return;
+    fetchingAllRef.current = true;
+    setFetchingAll(true);
+    const notificationId = notify({
+      id: "sources-fetch-all",
+      title: "Fetching sources",
+      description: "Checking eligible sources for new saves.",
+      timeout: 0,
+    });
+    try {
+      const result = await window.pond.syncRunAll();
+      if (!result.ok) {
+        updateNotification({
+          id: notificationId,
+          title: "Sources are already fetching",
+          description: "Check the source rows for progress.",
+          timeout: 5000,
+        });
+        return;
+      }
+      updateNotification({
+        id: notificationId,
+        title: "Finished fetching sources",
+        description: "Check a source row if it needs attention.",
+        timeout: 5000,
+      });
+    } catch {
+      updateNotification({
+        id: notificationId,
+        title: "Couldn't fetch sources",
+        description: "Try again in a moment.",
+        timeout: 8000,
+      });
+    } finally {
+      fetchingAllRef.current = false;
+      setFetchingAll(false);
+    }
+  }, []);
   const toolbar = (
     <SearchChrome.Root
       actions={
         <>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            icon
+            loading={fetchingAll}
+            aria-label="Fetch All"
+            onClick={() => void fetchAll()}
+          >
+            <IconArrowRotateClockwise />
+          </Button>
           <NewSourceMenu controlled />
           <SourceOptionsMenu />
           <TableFilterToggle

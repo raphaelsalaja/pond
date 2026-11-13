@@ -377,7 +377,9 @@ const api = {
     return ipcRenderer.invoke(IPC.syncStatus, accountId);
   },
 
-  syncRunAll(opts?: { forceFull?: boolean }): Promise<{ ok: true }> {
+  syncRunAll(opts?: {
+    forceFull?: boolean;
+  }): Promise<{ ok: true } | { ok: false; reason: "already_running" }> {
     return ipcRenderer.invoke(IPC.syncRunAll, opts);
   },
 
