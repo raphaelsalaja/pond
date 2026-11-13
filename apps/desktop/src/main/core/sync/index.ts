@@ -101,11 +101,28 @@ const SYNCABLE_SOURCES: readonly Source[] = [
   "marked",
 ];
 
+/** A global run is shared by menu, shortcut, IPC, and scheduled callers. */
+let allSourcesRun: Promise<void> | null = null;
+
 function isSyncableSource(source: Source): boolean {
   return SYNCABLE_SOURCES.includes(source);
 }
 
-export async function syncAllSources(opts: SyncOptions = {}): Promise<void> {
+export function isSyncAllSourcesRunning(): boolean {
+  return allSourcesRun !== null;
+}
+
+export function syncAllSources(opts: SyncOptions = {}): Promise<void> {
+  if (allSourcesRun) return allSourcesRun;
+  const run = syncAllSourcesImpl(opts);
+  const tracked = run.finally(() => {
+    if (allSourcesRun === tracked) allSourcesRun = null;
+  });
+  allSourcesRun = tracked;
+  return tracked;
+}
+
+async function syncAllSourcesImpl(opts: SyncOptions): Promise<void> {
   const now = Date.now();
   const wanted = (row: { id: string; sync: SourceSyncPrefs }) =>
     opts.globalDue === undefined ||

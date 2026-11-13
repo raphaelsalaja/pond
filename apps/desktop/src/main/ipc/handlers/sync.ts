@@ -9,6 +9,7 @@ import {
 import {
   cancelSync,
   getAccountSync,
+  isSyncAllSourcesRunning,
   isSyncing,
   syncAccount,
   syncAllSources,
@@ -51,7 +52,10 @@ export function registerSyncHandlers(): void {
   });
 
   safeHandle(IPC.syncRunAll, async (_, opts?: { forceFull?: boolean }) => {
-    void syncAllSources({
+    if (isSyncAllSourcesRunning()) {
+      return { ok: false as const, reason: "already_running" as const };
+    }
+    await syncAllSources({
       trigger: "manual",
       forceFull: opts?.forceFull ?? false,
     });
