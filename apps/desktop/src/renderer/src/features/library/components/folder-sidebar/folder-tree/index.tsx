@@ -5,7 +5,7 @@ import { IconPlus, IconSortArrows } from "@pond/icons";
 import type { Folder } from "@pond/schema/db";
 import { Button, type MenuItemSpec, Sidebar } from "@pond/ui";
 import { useReducedMotionConfig } from "motion/react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { enterFolders } from "@/features/library/operations/enter-folder";
 import {
@@ -42,6 +42,7 @@ import { FolderRootDrop } from "./root-drop";
 import styles from "./styles.module.css";
 import { useFolderTreeActions } from "./use-folder-tree-actions";
 import { useFolderTreeDrag } from "./use-folder-tree-drag";
+import { FOLDER_ROW_SLOT, useVirtualWindow } from "./use-virtual-window";
 
 interface FolderTreeProps {
   destination: LibraryNav | null;
@@ -102,10 +103,26 @@ export function FolderTree({ destination, folderRows, nav }: FolderTreeProps) {
   function openSelectedFolders(ids: string[]) {
     enterFolders(ids, includeSubfolders);
   }
+  /** Keyboard navigation walks this list instead of the DOM, so it reaches unmounted rows. */
+  const orderedFolderIds = useMemo(
+    () => tree.nested.map(({ folder }) => folder.id),
+    [tree.nested],
+  );
+  const indexOfRow = useMemo(() => {
+    const indexById = new Map<string, number>();
+    for (const [index, { folder }] of tree.nested.entries())
+      indexById.set(folder.id, index);
+    return (id: string) => indexById.get(id);
+  }, [tree.nested]);
+  const folderById = useMemo(
+    () => new Map(folderRows.map((folder) => [folder.id, folder])),
+    [folderRows],
+  );
   const organization = useOrganizationTree(
     folderRows,
     openSelectedFolders,
     destination,
+    orderedFolderIds,
   );
   const drag = useFolderDragDrop({
     selectedIds: organization.selected,
@@ -120,10 +137,10 @@ export function FolderTree({ destination, folderRows, nav }: FolderTreeProps) {
   });
   const activeFolderId = treeDrag.activeFolderId;
   const activeFolder = activeFolderId
-    ? folderRows.find((folder) => folder.id === activeFolderId)
+    ? folderById.get(activeFolderId)
     : undefined;
   const activeFolderDepth = activeFolderId
-    ? tree.nested.find(({ folder }) => folder.id === activeFolderId)?.depth
+    ? tree.nested[indexOfRow(activeFolderId) ?? -1]?.depth
     : undefined;
   const activeFolderPresentation = activeFolder
     ? folderViews[activeFolder.id]
@@ -148,9 +165,80 @@ export function FolderTree({ destination, folderRows, nav }: FolderTreeProps) {
   useRevealSidebarSection("folders", editingFolderId !== null);
 
   const customizingFolder = customizingFolderId
-    ? folderRows.find((folder) => folder.id === customizingFolderId)
+    ? folderById.get(customizingFolderId)
     : undefined;
-  const quickFolders = quickAccessRows(folderRows, folderViews);
+  const quickFolders = useMemo(
+    () => quickAccessRows(folderRows, folderViews),
+    [folderRows, folderViews],
+  );
+  const parentsWithChildFolders = useMemo(() => {
+    const set = new Set<string | null>();
+    for (const row of folderRows)
+      if (tree.parentIds.has(row.id)) set.add(row.parentId);
+    return set;
+  }, [folderRows, tree.parentIds]);
+
+  /** Memoized rows skip closure props, so closures read this render's state through refs. */
+  const latest = useRef({
+    folderRows,
+    selected: organization.selected,
+    selectionItems,
+    toggleAllFolders: tree.toggleAllFolders,
+  });
+  latest.current = {
+    folderRows,
+    selected: organization.selected,
+    selectionItems,
+    toggleAllFolders: tree.toggleAllFolders,
+  };
+  const selectionMenu = useCallback(
+    () => latest.current.selectionItems(latest.current.selected),
+    [],
+  );
+  const toggleAllFolders = useCallback(
+    () => latest.current.toggleAllFolders(),
+    [],
+  );
+  const exportIdsCache = useRef(
+    new Map<string, (include: boolean) => string[]>(),
+  );
+  if (exportIdsCache.current.size > folderRows.length * 4)
+    exportIdsCache.current.clear();
+  const exportIdsFor = (id: string) => {
+    let fn = exportIdsCache.current.get(id);
+    if (!fn) {
+      fn = (include: boolean) =>
+        folderIdsForExport(id, latest.current.folderRows, include);
+      exportIdsCache.current.set(id, fn);
+    }
+    return fn;
+  };
+
+  const quickIdsKey = useMemo(
+    () => quickFolders.map((entry) => entry.id).join("\n"),
+    [quickFolders],
+  );
+  // biome-ignore lint/correctness/useExhaustiveDependencies: keyed by quickIdsKey.
+  const quickAccessFolderIds = useMemo(
+    () => quickFolders.map((entry) => entry.id),
+    [quickIdsKey],
+  );
+
+  /** The cursor and dragged rows stay mounted so focus and drops can land outside the viewport. */
+  const totalRows = tree.nested.length;
+  const virtualFocusIds = useMemo(
+    () =>
+      [organization.cursor, activeFolderId].filter(
+        (id): id is string => id !== null && id !== undefined,
+      ),
+    [organization.cursor, activeFolderId],
+  );
+  const rowWindow = useVirtualWindow(
+    organization.root,
+    totalRows,
+    virtualFocusIds,
+    indexOfRow,
+  );
 
   return (
     <>
@@ -207,7 +295,7 @@ export function FolderTree({ destination, folderRows, nav }: FolderTreeProps) {
             {...treeDrag.handlers}
           >
             <SortableContext
-              items={tree.nested.map(({ folder }) => folder.id)}
+              items={orderedFolderIds}
               strategy={staticFolderSorting}
             >
               <Sidebar.CollapsibleGroupContent
@@ -219,82 +307,99 @@ export function FolderTree({ destination, folderRows, nav }: FolderTreeProps) {
                 aria-hidden={!foldersOpen}
                 data-folder-drag={activeFolderId || undefined}
                 onPointerDownCapture={treeDrag.trackPointer}
+                className={styles.panel}
               >
-                {tree.nested.map(({ folder, depth }) => {
-                  const viewing =
-                    destination?.kind === "folder" &&
-                    destination.id === folder.id;
-                  const presentation = folderViews[folder.id];
-                  const includeThisFolder = viewing
-                    ? includeSubfolders
-                    : (presentation?.includeSubfolders ?? true);
-                  return (
-                    <FolderTreeRow
-                      key={folder.id}
-                      rowProps={organization.rowProps(
-                        folder.id,
-                        depth,
-                        tree.parentIds.has(folder.id)
-                          ? !tree.collapsed.has(folder.id)
-                          : undefined,
-                        () => tree.toggleFolder(folder.id),
-                      )}
-                      selectionItems={
-                        organization.selected.includes(folder.id) &&
-                        organization.selected.length > 1
-                          ? () => selectionItems(organization.selected)
-                          : undefined
-                      }
-                      collapsed={tree.collapsed.has(folder.id)}
-                      count={counts.folders[folder.id] ?? 0}
-                      downloading={counts.foldersDownloading[folder.id] ?? 0}
-                      badgeStyle={sidebar.badgeStyle}
-                      creating={creatingFolder}
-                      depth={depth}
-                      editing={editingFolderId === folder.id}
-                      exportIds={folderIdsForExport(
-                        folder.id,
-                        folderRows,
-                        includeThisFolder,
-                      )}
-                      folder={folder}
-                      folderDrop={drag.folderDrop}
-                      folderIcon={presentation?.icon}
-                      folderSortDir={presentation?.sortDir ?? "desc"}
-                      folderSortKey={presentation?.sortKey ?? "savedAt"}
-                      hasChildren={tree.parentIds.has(folder.id)}
-                      includeSubfolders={includeThisFolder}
-                      nav={nav}
-                      quickAccess={presentation?.quickAccess ?? false}
-                      quickAccessFolderIds={quickFolders.map(
-                        (entry) => entry.id,
-                      )}
-                      sameLevelHasChildren={folderRows.some(
-                        (row) =>
-                          row.parentId === folder.parentId &&
-                          tree.parentIds.has(row.id),
-                      )}
-                      viewing={viewing}
-                      dragHandlers={drag.handlersFor(folder)}
-                      dragging={
-                        activeFolderId === folder.id ||
-                        treeDrag.movingFolderId === folder.id
-                      }
-                      coverSaveId={presentation?.coverSaveId}
-                      onCreateFolder={(parentId) => void createFolder(parentId)}
-                      onCustomize={() => setCustomizingFolderId(folder.id)}
-                      onFinishEditing={() => folders.finishEditing(folder.id)}
-                      onOpenTool={setFolderTool}
-                      onStartEditing={folders.startEditing}
-                      onToggleAll={tree.toggleAllFolders}
-                      onToggleFolder={() => tree.toggleFolder(folder.id)}
-                      doubleClickBehavior={sidebar.doubleClickBehavior}
-                      onToggleSameLevel={(expanded) =>
-                        tree.toggleSameLevel(folder.parentId, expanded)
-                      }
-                    />
-                  );
-                })}
+                <div
+                  role="none"
+                  aria-hidden
+                  className={styles.spacer}
+                  style={{
+                    height: Math.max(0, totalRows * FOLDER_ROW_SLOT - 1),
+                  }}
+                />
+                <div
+                  role="none"
+                  className={styles.window}
+                  style={{
+                    transform: `translateY(${rowWindow.first * FOLDER_ROW_SLOT}px)`,
+                  }}
+                >
+                  {tree.nested
+                    .slice(rowWindow.first, rowWindow.last)
+                    .map(({ folder, depth }) => {
+                      const viewing =
+                        destination?.kind === "folder" &&
+                        destination.id === folder.id;
+                      const presentation = folderViews[folder.id];
+                      const includeThisFolder = viewing
+                        ? includeSubfolders
+                        : (presentation?.includeSubfolders ?? true);
+                      return (
+                        <FolderTreeRow
+                          key={folder.id}
+                          rowProps={organization.rowProps(
+                            folder.id,
+                            depth,
+                            tree.parentIds.has(folder.id)
+                              ? !tree.collapsed.has(folder.id)
+                              : undefined,
+                            () => tree.toggleFolder(folder.id),
+                          )}
+                          selectionItems={
+                            organization.selected.includes(folder.id) &&
+                            organization.selected.length > 1
+                              ? selectionMenu
+                              : undefined
+                          }
+                          collapsed={tree.collapsed.has(folder.id)}
+                          count={counts.folders[folder.id] ?? 0}
+                          downloading={
+                            counts.foldersDownloading[folder.id] ?? 0
+                          }
+                          badgeStyle={sidebar.badgeStyle}
+                          creating={creatingFolder}
+                          depth={depth}
+                          editing={editingFolderId === folder.id}
+                          exportIds={exportIdsFor(folder.id)}
+                          folder={folder}
+                          folderDrop={drag.folderDrop}
+                          folderIcon={presentation?.icon}
+                          folderSortDir={presentation?.sortDir ?? "desc"}
+                          folderSortKey={presentation?.sortKey ?? "savedAt"}
+                          hasChildren={tree.parentIds.has(folder.id)}
+                          includeSubfolders={includeThisFolder}
+                          nav={nav}
+                          quickAccess={presentation?.quickAccess ?? false}
+                          quickAccessFolderIds={quickAccessFolderIds}
+                          sameLevelHasChildren={parentsWithChildFolders.has(
+                            folder.parentId,
+                          )}
+                          viewing={viewing}
+                          dragHandlers={drag.handlersFor(folder)}
+                          dragging={
+                            activeFolderId === folder.id ||
+                            treeDrag.movingFolderId === folder.id
+                          }
+                          coverSaveId={presentation?.coverSaveId}
+                          onCreateFolder={(parentId) =>
+                            void createFolder(parentId)
+                          }
+                          onCustomize={() => setCustomizingFolderId(folder.id)}
+                          onFinishEditing={() =>
+                            folders.finishEditing(folder.id)
+                          }
+                          onOpenTool={setFolderTool}
+                          onStartEditing={folders.startEditing}
+                          onToggleAll={toggleAllFolders}
+                          onToggleFolder={() => tree.toggleFolder(folder.id)}
+                          doubleClickBehavior={sidebar.doubleClickBehavior}
+                          onToggleSameLevel={(expanded) =>
+                            tree.toggleSameLevel(folder.parentId, expanded)
+                          }
+                        />
+                      );
+                    })}
+                </div>
               </Sidebar.CollapsibleGroupContent>
             </SortableContext>
             <FolderRootDrop

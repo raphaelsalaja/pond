@@ -30,6 +30,7 @@
     "./tab": "./src/tab/index.tsx",
     "./tabs": "./src/tabs/index.tsx",
     "./reset.css": "./src/reset.css",
+    "./scroll-fade": "./src/scroll-fade.ts",
     "./agent-header": "./src/agent-header/index.tsx",
     "./code-block": "./src/code-block/index.tsx",
     "./composer": "./src/composer/index.tsx",

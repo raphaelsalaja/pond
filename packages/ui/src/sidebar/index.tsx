@@ -297,7 +297,6 @@ function CollapsibleGroupContent({
       animate={{
         height: open ? "auto" : 0,
         opacity: open ? 1 : 0,
-        filter: open ? "blur(0px)" : "blur(2px)",
       }}
       {...props}
     >
