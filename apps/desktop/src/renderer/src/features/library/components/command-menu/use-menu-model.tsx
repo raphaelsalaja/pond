@@ -13,10 +13,7 @@ import { addSavesToChat } from "@/features/agent";
 import { selectLibraryNav } from "@/features/library/components/folder-sidebar/navigation";
 import { newFolder } from "@/features/library/components/new-menu/actions";
 import { useFolders } from "@/features/library/state/folders";
-import {
-  libraryChrome,
-  useLibraryNav,
-} from "@/features/library/state/library-chrome";
+import { useLibraryNav } from "@/features/library/state/library-chrome";
 import { libraryHeader } from "@/features/library/state/library-header";
 import {
   savedViews,
@@ -35,7 +32,7 @@ import {
 import { selection, useSelectionSize } from "@/features/saves/navigation";
 import type { Save } from "@/features/saves/types";
 import type { SaveLookup } from "@/features/search";
-import { COMMANDS, navigateTo } from "./commands";
+import { COMMANDS } from "./commands";
 import { buildModel, rankEntries } from "./rank";
 import { addToFolder, folderPage, saveActions } from "./save-actions";
 import { SaveThumb } from "./save-thumb";
@@ -114,8 +111,7 @@ function searchLibraryEntry(query: string): MenuEntry {
     run: () => {
       resetFilters();
       setSearchInput([], query, query);
-      libraryChrome.setNav({ kind: "all" });
-      navigateTo("/");
+      selectLibraryNav({ kind: "all" });
       libraryHeader.focusSearch();
     },
   };

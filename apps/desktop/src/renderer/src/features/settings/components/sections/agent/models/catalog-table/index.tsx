@@ -1,5 +1,6 @@
 import { IconChevronDown } from "@pond/icons";
-import { Accordion, Button, DataTable, Input, Settings } from "@pond/ui";
+import { Accordion, Button, Input, Settings } from "@pond/ui";
+import { DataTable } from "@pond/ui/data-table";
 import type { AssistantProvider } from "@shared/assistant";
 import { useState } from "react";
 import { openSettings } from "@/shared/lib/open-settings";

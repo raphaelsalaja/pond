@@ -1,4 +1,8 @@
-import { DataTable, type RenderRowArgs, useDataTable } from "@pond/ui";
+import {
+  DataTable,
+  type RenderRowArgs,
+  useDataTable,
+} from "@pond/ui/data-table";
 import type { DownloadActivity } from "@shared/download-activity";
 import type { QueueSourceGate } from "@shared/queue-contracts";
 import { type ReactNode, useCallback, useEffect, useMemo } from "react";

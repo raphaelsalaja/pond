@@ -1,5 +1,6 @@
 import { IconTagFill, IconMagnifier as Magnifier } from "@pond/icons";
-import { Accordion, Button, DataTable, Empty, Input, Settings } from "@pond/ui";
+import { Accordion, Button, Empty, Input, Settings } from "@pond/ui";
+import { DataTable } from "@pond/ui/data-table";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useCallback, useMemo, useRef } from "react";
 import { useTagCreation } from "@/features/tags/hooks/use-tag-creation";

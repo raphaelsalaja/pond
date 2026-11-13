@@ -5,6 +5,7 @@ import { type MenuItemSpec, Sidebar } from "@pond/ui";
 import { enterFolder } from "@/features/library/operations/enter-folder";
 import { SpecContextMenu } from "@/shared/components/spec-context-menu";
 import { FolderIcon, folderColorCss } from "@/shared/lib/folder-icons";
+import type { LibraryNav } from "@/shared/lib/library-nav";
 import { usePrefs } from "@/shared/state/prefs";
 import { useOrganizationTree } from "../../../../hooks/use-organization-tree";
 import {
@@ -12,7 +13,6 @@ import {
   inheritedQueryFor,
 } from "../../../../lib/smart-folders";
 import { saveFolderPresentation } from "../../../../state/folder-presentation";
-import type { LibraryNav } from "../../../../state/library-chrome";
 import { openOrganizationRenameDialog } from "../../../../state/organization-rename-dialog";
 import { saveSavedViewPresentation } from "../../../../state/saved-view-presentation";
 import { savedViews, useSavedViews } from "../../../../state/saved-views";
@@ -40,9 +40,8 @@ interface QuickAccessProps {
   folderCounts: Record<string, number>;
   folderDownloading: Record<string, number>;
   badgeStyle: Prefs["sidebar"]["badgeStyle"];
+  destination: LibraryNav | null;
   includeSubfolders: boolean;
-  libraryPage: boolean;
-  nav: LibraryNav;
 }
 
 export function QuickAccess({
@@ -52,9 +51,8 @@ export function QuickAccess({
   folderCounts,
   folderDownloading,
   badgeStyle,
+  destination,
   includeSubfolders,
-  libraryPage,
-  nav,
 }: QuickAccessProps) {
   const [savedViewViews] = usePrefs("savedViewViews");
   const views = useSavedViews();
@@ -116,7 +114,7 @@ export function QuickAccess({
   const quickOrganization = useOrganizationTree(
     quickEntries,
     openQuickSelection,
-    nav,
+    destination,
   );
   function quickSelectionItems(): MenuItemSpec[] {
     const ids = quickOrganization.selected;
@@ -268,7 +266,7 @@ export function QuickAccess({
             downloading={folderDownloading[folder.id] ?? 0}
             badgeStyle={badgeStyle}
             active={
-              libraryPage && nav.kind === "folder" && nav.id === folder.id
+              destination?.kind === "folder" && destination.id === folder.id
             }
             {...quickOrganization.rowProps(`folder:${folder.id}`, 0)}
           />

@@ -35,6 +35,7 @@
     "./code-block": "./src/code-block/index.tsx",
     "./composer": "./src/composer/index.tsx",
     "./context-picker": "./src/context-picker/index.tsx",
+    "./data-table": "./src/data-table/index.tsx",
     "./error-notice": "./src/error-notice/index.tsx",
     "./message": "./src/message/index.tsx",
     "./loader": "./src/loader/index.tsx",

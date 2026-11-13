@@ -22,7 +22,7 @@ interface TreeEntry {
 export function useOrganizationTree(
   entries: readonly TreeEntry[],
   onSelection: (ids: string[]) => void,
-  navigation?: LibraryNav,
+  navigation?: LibraryNav | null,
   orderedIds?: readonly string[],
 ) {
   const dataDriven = orderedIds !== undefined;

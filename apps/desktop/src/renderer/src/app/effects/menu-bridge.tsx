@@ -5,6 +5,7 @@ import { DEFAULT_FISH_ID } from "@shared/fish-contracts";
 import { useEffect } from "react";
 import { downloadDialog } from "@/features/downloads";
 import { fishPath } from "@/features/fish";
+import { selectLibraryNav } from "@/features/library/components/folder-sidebar/navigation";
 import {
   createBlankDocument,
   createNote,
@@ -151,32 +152,27 @@ export function MenuBridge() {
 
         case "nav.library":
           resetFilters();
-          libraryChrome.setNav({ kind: "all" });
-          getAppRouter()?.history.push("/");
+          selectLibraryNav({ kind: "all" });
           return;
 
         case "nav.uncategorized":
-          resetFilters();
-          libraryChrome.setNav({ kind: "uncategorized" });
-          getAppRouter()?.history.push("/");
+          selectLibraryNav({ kind: "uncategorized" });
           return;
 
         case "nav.untagged":
-          resetFilters();
-          libraryChrome.setNav({ kind: "all" });
-          getAppRouter()?.history.push("/untagged");
+          selectLibraryNav({ kind: "untagged" });
           return;
 
         case "nav.sources":
-          getAppRouter()?.history.push("/sources");
+          selectLibraryNav({ kind: "sources" });
           return;
 
         case "nav.downloads":
-          getAppRouter()?.history.push("/downloads");
+          selectLibraryNav({ kind: "downloads" });
           return;
 
         case "nav.tags":
-          getAppRouter()?.history.push("/tags");
+          selectLibraryNav({ kind: "tags" });
           return;
 
         case "nav.agent":
@@ -184,8 +180,7 @@ export function MenuBridge() {
           return;
 
         case "nav.trash":
-          libraryChrome.setNav({ kind: "trash" });
-          getAppRouter()?.history.push("/trash");
+          selectLibraryNav({ kind: "trash" });
           return;
 
         case "nav.settings":

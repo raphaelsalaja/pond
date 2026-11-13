@@ -578,6 +578,95 @@ it("opens a preview muted when the preference was saved", async () => {
   expect(host.querySelector('button[aria-label="Unmute"]')).not.toBeNull();
 });
 
+function pressKey(key: string, target: EventTarget = document): void {
+  target.dispatchEvent(
+    new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true }),
+  );
+}
+
+it("changes video volume with the arrow keys", async () => {
+  await act(async () => {
+    root.render(<TestVideoPlayer />);
+  });
+  const video = host.querySelector("video");
+  if (!video) throw new Error("Missing video");
+  video.volume = 0.5;
+
+  await act(async () => {
+    pressKey("ArrowUp");
+    pressKey("ArrowUp");
+  });
+  expect(video.volume).toBe(0.6);
+  await act(async () => pressKey("ArrowDown"));
+  expect(video.volume).toBe(0.55);
+  expect(host.querySelector('button[aria-label="Mute"]')).not.toBeNull();
+
+  video.volume = 1;
+  await act(async () => pressKey("ArrowUp"));
+  expect(video.volume).toBe(1);
+
+  video.volume = 0.02;
+  await act(async () => pressKey("ArrowDown"));
+  expect(video.volume).toBe(0);
+  await act(async () => video.dispatchEvent(new Event("volumechange")));
+  expect(host.querySelector('button[aria-label="Unmute"]')).not.toBeNull();
+
+  await act(async () => pressKey("ArrowUp"));
+  expect(video.volume).toBe(0.05);
+  await act(async () => video.dispatchEvent(new Event("volumechange")));
+  expect(host.querySelector('button[aria-label="Mute"]')).not.toBeNull();
+
+  video.volume = 0.4;
+  video.muted = true;
+  await act(async () => video.dispatchEvent(new Event("volumechange")));
+  expect(savedPrefs.viewer.videoMuted).toBe(true);
+  expect(host.querySelector('button[aria-label="Unmute"]')).not.toBeNull();
+
+  await act(async () => pressKey("ArrowDown"));
+  expect(video.muted).toBe(true);
+  expect(video.volume).toBe(0.35);
+  expect(savedPrefs.viewer.videoMuted).toBe(true);
+
+  await act(async () => pressKey("ArrowUp"));
+  expect(video.muted).toBe(false);
+  expect(video.volume).toBe(0.4);
+  await act(async () => video.dispatchEvent(new Event("volumechange")));
+  expect(savedPrefs.viewer.videoMuted).toBe(false);
+  expect(host.querySelector('button[aria-label="Mute"]')).not.toBeNull();
+
+  Object.defineProperty(video, "duration", { configurable: true, value: 60 });
+  video.currentTime = 20;
+  await act(async () => pressKey("ArrowLeft"));
+  expect(video.currentTime).toBe(10);
+  await act(async () => pressKey("ArrowRight"));
+  expect(video.currentTime).toBe(20);
+
+  const held = video.volume;
+  const field = document.createElement("textarea");
+  const range = document.createElement("input");
+  range.type = "range";
+  const slider = document.createElement("div");
+  slider.tabIndex = 0;
+  slider.setAttribute("role", "slider");
+  document.body.append(field, range, slider);
+  const seek = host.querySelector('[aria-label="Seek"] input');
+  const mute = host.querySelector('button[aria-label="Mute"]');
+  try {
+    for (const control of [field, range, slider, seek, mute]) {
+      if (!(control instanceof HTMLElement)) {
+        throw new Error("Missing interactive control");
+      }
+      control.focus();
+      await act(async () => pressKey("ArrowUp", control));
+      expect(video.volume).toBe(held);
+    }
+  } finally {
+    field.remove();
+    range.remove();
+    slider.remove();
+  }
+});
+
 it("toggles playback by clicking the video and ignores toolbar clicks", async () => {
   let paused = true;
   const play = vi.fn(function (this: HTMLMediaElement) {

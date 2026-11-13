@@ -1,5 +1,6 @@
 import { sourceLabel } from "@pond/schema/sources";
-import { type RenderRowArgs, type TableColumn, Tooltip } from "@pond/ui";
+import { Tooltip } from "@pond/ui";
+import type { RenderRowArgs, TableColumn } from "@pond/ui/data-table";
 import type { DownloadActivity } from "@shared/download-activity";
 import type { QueueSourceGate } from "@shared/queue-contracts";
 import { useDownloadClock } from "@/features/downloads/hooks/use-download-activity";
