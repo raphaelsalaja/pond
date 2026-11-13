@@ -47,7 +47,7 @@ function measuredOccupiedPaneWidth(viewport: HTMLElement): number {
   );
 }
 
-export function useGridWidth(): number {
+function useGridWidth(): number {
   const sidebarOpen = useSidebarOpen();
   const sidebarWidth = useSidebarWidth();
   const occupiedWidth = occupiedPaneWidth({ sidebarOpen, sidebarWidth });
