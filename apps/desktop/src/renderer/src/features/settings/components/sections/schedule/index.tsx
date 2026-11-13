@@ -27,10 +27,11 @@ export function LaunchFetchControl({ initial }: { initial: boolean | null }) {
       <Settings.Item>
         <Settings.ItemDetails>
           <Settings.ItemTitle id="fetch-on-launch-title">
-            Fetch on app launch
+            Fetch on Launch
           </Settings.ItemTitle>
           <Settings.ItemDescription id="fetch-on-launch-description">
-            Check eligible sources for new saves once when Pond starts.
+            Checks every unpaused source for new saves once each time Pond
+            opens.
           </Settings.ItemDescription>
         </Settings.ItemDetails>
         <Settings.ItemControl>
