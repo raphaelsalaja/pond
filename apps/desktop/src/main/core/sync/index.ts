@@ -43,7 +43,7 @@ export {
 const IMPORT_PENDING_MESSAGE = "Choose what to import to start syncing.";
 
 interface SyncOptions {
-  trigger?: "manual" | "cron";
+  trigger?: "manual" | "cron" | "launch";
   maxItems?: number;
   forceFull?: boolean;
   /** Set by the cron, which then runs only sources whose schedule is due. */
@@ -125,13 +125,15 @@ export function syncAllSources(opts: SyncOptions = {}): Promise<void> {
 async function syncAllSourcesImpl(opts: SyncOptions): Promise<void> {
   const now = Date.now();
   const wanted = (row: { id: string; sync: SourceSyncPrefs }) =>
-    opts.globalDue === undefined ||
-    isSourceFetchDue(
-      row.sync,
-      opts.globalDue,
-      now,
-      lastScheduledAt.get(row.id),
-    );
+    opts.trigger === "launch"
+      ? !row.sync.paused
+      : opts.globalDue === undefined ||
+        isSourceFetchDue(
+          row.sync,
+          opts.globalDue,
+          now,
+          lastScheduledAt.get(row.id),
+        );
   const accounts = (await listAccounts()).filter(
     (a) => isSyncableSource(a.source) && wanted(a),
   );
@@ -161,7 +163,11 @@ async function syncAllSourcesImpl(opts: SyncOptions): Promise<void> {
           log.warn("[pond sync] syncAccount threw", account.id, err),
         );
       }
-      if (opts.trigger === "cron" && (await sourceNeedsSignIn(source))) return;
+      if (
+        (opts.trigger === "cron" || opts.trigger === "launch") &&
+        (await sourceNeedsSignIn(source))
+      )
+        return;
       await runWatches(
         watches.filter((watch) => watch.source === source),
         opts,
@@ -250,7 +256,7 @@ export async function syncAccount(
     });
     return;
   }
-  if (opts.trigger === "cron") {
+  if (opts.trigger === "cron" || opts.trigger === "launch") {
     if (await sourceNeedsSignIn(source)) {
       log.info(`[pond sync] ${source} needs sign-in, skipping ${accountId}`);
       emit({
