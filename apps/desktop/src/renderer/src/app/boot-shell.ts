@@ -57,6 +57,4 @@ function armBootFailsafe(): void {
 
 paintShell();
 armBootFailsafe();
-
-/** Mirror scroller edge fades without scroll-driven animations (see @pond/ui/scroll-fade). */
 initScrollFade();

@@ -31,18 +31,8 @@ function findScroller(element: HTMLElement | null): HTMLElement | null {
 }
 
 /**
- * Fixed-size virtual window for the flat folder tree.
- *
- * The tree can hold thousands of rows, but the sidebar viewport only shows a
- * few dozen at a time, and every dnd-kit node re-measure (scroll,
- * occlusion, re-sort, resize) is expensive under software rendering. This
- * hook reports which slice of the row list is mounted: the rows intersecting
- * the surrounding scroll container (the sidebar's `Sidebar.Scroll`) plus
- * overscan, and always the `focusIds` (keyboard cursor, dragged row) so
- * focus and dragging can land on rows outside the visible range.
- *
- * The consumer renders an in-flow spacer the height of the full list and an
- * absolutely positioned window translated to `first * FOLDER_ROW_SLOT`.
+ * Mounts only the rows inside the surrounding scroller plus overscan, because each dnd-kit re-measure scales with mounted rows.
+ * @remarks `focusIds` always stay in the window so focus and drags can land outside the viewport.
  */
 export function useVirtualWindow<T extends HTMLElement>(
   containerRef: RefObject<T | null>,
@@ -65,8 +55,6 @@ export function useVirtualWindow<T extends HTMLElement>(
       scrollerRef.current = scroller;
     }
     if (!scroller) {
-      // No measurable scroll container (jsdom, headless): there is no
-      // viewport to virtualize against, so mount the whole list.
       setRange((previous) =>
         previous.first === 0 && previous.last === count
           ? previous
@@ -111,16 +99,11 @@ export function useVirtualWindow<T extends HTMLElement>(
     });
   }, []);
 
-  // Re-measure before paint whenever the row list or the focus rows change
-  // (mount, re-sort, count update, cursor move) so the first frame after a
-  // change already shows the right window.
   useLayoutEffect(() => {
     apply();
   }, [apply]);
 
-  // Track the surrounding scroll container: scroll ticks plus size changes
-  // of the scroller and of its direct children (the sidebar sections,
-  // including the animated group).
+  /** The scroller's direct children include the animated group, whose height changes without a scroll. */
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;

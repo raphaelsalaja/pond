@@ -39,11 +39,7 @@ interface FolderTreeRowProps {
   depth: number;
   doubleClickBehavior: "open" | "expand-collapse";
   editing: boolean;
-  /**
-   * Resolves the folder's export ids lazily, when the menu is built. Reads the
-   * latest rows from a shared ref, so a memoized row never resolves a stale
-   * snapshot.
-   */
+  /** Resolved when the menu opens, since walking descendants per row on every render is O(N). */
   exportIds: (includeSubfolders: boolean) => string[];
   folder: Folder;
   folderDrop: FolderDropState | null;
@@ -224,14 +220,8 @@ function sameNav(a: LibraryNav, b: LibraryNav): boolean {
 }
 
 /**
- * Value comparison for memoized rows. The tree has thousands of rows, so a
- * row re-rendering on every parent render (new closure, new `folder` object)
- * is what made large libraries laggy; the parent rebuilds all row props on
- * every data change, and only the rows whose displayed values actually
- * changed should render. Behavior-only props (closures, `dragHandlers`,
- * `selectionItems`) are excluded: each is id-based and reads stable stores,
- * so a retained closure stays correct until the row's data changes, which
- * re-renders it with fresh props.
+ * Skips closure props, so every callback the tree passes must be id-based or read its state through a ref.
+ * @see FolderTree
  */
 function areFolderRowsEqual(
   a: FolderTreeRowProps,
@@ -242,6 +232,7 @@ function areFolderRowsEqual(
   if (
     af.id !== bf.id ||
     af.name !== bf.name ||
+    af.parentId !== bf.parentId ||
     af.color !== bf.color ||
     a.depth !== b.depth ||
     a.collapsed !== b.collapsed ||
@@ -262,6 +253,7 @@ function areFolderRowsEqual(
     a.folderSortDir !== b.folderSortDir ||
     a.folderSortKey !== b.folderSortKey ||
     a.quickAccessFolderIds !== b.quickAccessFolderIds ||
+    a.selectionItems !== b.selectionItems ||
     !sameNav(a.nav, b.nav)
   ) {
     return false;

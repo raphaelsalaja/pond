@@ -8,16 +8,8 @@ interface TreeEntry {
 }
 
 /**
- * A change to `navigation` that this tree's own selection didn't cause
- * clears the selection.
- *
- * `orderedIds` (optional) is the row ids in display order. When provided
- * (the virtualized folder tree) row ordering, keyboard navigation, and
- * range selection come from this list instead of the mounted DOM, so they
- * work across rows that are not currently mounted; the consumer must keep
- * the cursor's row mounted so focus can land on it. When omitted, row
- * ordering comes from the mounted `[role="treeitem"]` elements (fully
- * rendered lists).
+ * A change to `navigation` that this tree's own selection didn't cause clears the selection.
+ * @remarks With `orderedIds`, order comes from data so unmounted rows navigate; keep the cursor's row mounted.
  */
 export function useOrganizationTree(
   entries: readonly TreeEntry[],
@@ -83,9 +75,6 @@ export function useOrganizationTree(
             document.activeElement?.closest("[inert]"))
         ) {
           if (dataDriven) {
-            // The row may not be mounted yet; the consumer keeps the
-            // cursor's row mounted and the focus block below lands focus
-            // after render.
             pendingFocus.current = next;
           } else if (next !== null) {
             rows.find((row) => row.dataset.treeId === next)?.focus();
@@ -102,9 +91,6 @@ export function useOrganizationTree(
           pendingFocus.current = null;
         }
       } else if (!ids.includes(pendingFocus.current)) {
-        // The cursor moved on; the pending row is gone. A pending id that
-        // is still in the list was just scheduled for the upcoming cursor
-        // commit, so it stays.
         pendingFocus.current = null;
       }
     }
@@ -237,8 +223,6 @@ export function useOrganizationTree(
     if (nextId) {
       setCursor(nextId);
       if (dataDriven) {
-        // The next row may be outside the mounted window; the consumer
-        // keeps it mounted and the layout effect lands focus after render.
         pendingFocus.current = nextId;
       } else {
         const next = rows.find((row) => row.dataset.treeId === nextId);
@@ -251,6 +235,9 @@ export function useOrganizationTree(
       }
     }
   }
+  /** Memoized rows keep old row props, so their handlers must reach this render's selection. */
+  const latest = useRef({ select, keyDown });
+  latest.current = { select, keyDown };
   return {
     root,
     selected,
@@ -290,12 +277,12 @@ export function useOrganizationTree(
           )
             hadFocus.current = false;
         },
-        onClick: (event: React.MouseEvent) => select(id, event),
+        onClick: (event: React.MouseEvent) => latest.current.select(id, event),
         onContextMenu: (event: React.MouseEvent<HTMLElement>) => {
           event.currentTarget.focus();
         },
         onKeyDown: (event: React.KeyboardEvent) =>
-          keyDown(event, id, expanded, toggle),
+          latest.current.keyDown(event, id, expanded, toggle),
       };
     },
   };

@@ -294,10 +294,6 @@ function CollapsibleGroupContent({
         duration: 0.18,
         ease: [0.25, 0.1, 0.25, 1],
       }}
-      /* No blur here: a filter forces the whole group into an offscreen
-         surface for its entire lifetime, and a group can hold thousands of
-         rows — unaffordable on software rendering. The opacity fade covers
-         the transition on its own. */
       animate={{
         height: open ? "auto" : 0,
         opacity: open ? 1 : 0,

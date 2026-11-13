@@ -2,12 +2,7 @@ import type { LibrarySidebarCounts } from "@shared/sidebar-counts";
 import { useEffect, useState } from "react";
 import { useRecents } from "@/features/saves";
 
-/**
- * Value comparison so unchanged refreshes return the previous object and
- * React bails out of the re-render: sidebar counts refresh on every sync
- * action, but most scans change nothing, and re-rendering the folder tree
- * on a no-op refresh is what made large libraries laggy.
- */
+/** Counts refresh on every sync action, so an unchanged result keeps the old object and skips the tree render. */
 function sameFolderMap(
   a: Record<string, number>,
   b: Record<string, number>,

@@ -105,6 +105,11 @@
     -webkit-app-region: no-drag;
   }
 
+  /* The button's own box already covers its contents; an inherited no-drag adds a region per descendant, recollected on every layout. */
+  button * {
+    -webkit-app-region: initial;
+  }
+
   button {
     padding: 0;
     font: inherit;
@@ -152,16 +157,7 @@
     list-style: none;
   }
 
-  /*
-   * The fade lengths (--sf-start / --sf-end) and data-fade-active are
-   * mirrored from the scroll position by scroll-fade.ts, which only writes
-   * when a value changes, so a settled scroller does no per-frame work.
-   * This was a scroll-driven animation (animation-timeline: scroll());
-   * those never finish, so the browser ticked them on the main thread
-   * every frame and kept the scroller's content in a masked offscreen
-   * surface — unaffordable on software rendering, and Base UI popups wait
-   * on element animations, so they hung.
-   */
+  /* scroll-fade.ts writes --sf-start, --sf-end and data-fade-active; without it no edge fades. */
   [data-scroll-fade] {
     --scroll-fade-size: 24px;
     --scroll-fade-start-size: var(--scroll-fade-size);

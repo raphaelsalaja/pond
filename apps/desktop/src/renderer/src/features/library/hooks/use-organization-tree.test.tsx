@@ -1,4 +1,4 @@
-import { act, useState } from "react";
+import { act, type ComponentProps, memo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, expect, it, vi } from "vitest";
 import type { LibraryNav } from "@/shared/lib/library-nav";
@@ -157,11 +157,6 @@ it("prunes deleted selected entries before a later toggle", async () => {
   expect(selected()).toEqual(["c", "d"]);
 });
 
-/**
- * Simulates the virtualized consumer: `orderedIds` is the full row order,
- * but only some rows are mounted. Navigation and selection must work across
- * unmounted rows from the data list.
- */
 function VirtualFixture({
   onSelection = () => {},
   expose,
@@ -218,14 +213,9 @@ it("navigates and range-selects across unmounted rows using the data list", asyn
   );
   await click("a");
   expect(cursor).toBe("a");
-  // "c" and "d" are not mounted, but the cursor can still move there, and
-  // the shift-range spans them from the data list.
   await key("b", "ArrowDown", { shiftKey: true });
   expect(cursor).toBe("c");
   expect(chosen).toEqual(["a", "b", "c"]);
-  // The same key from the same mounted row lands on the same data row. In
-  // the real consumer the newly focused row is kept mounted and drives the
-  // next step, which the focus test below verifies.
   await key("b", "ArrowDown", { shiftKey: true });
   expect(cursor).toBe("c");
   expect(chosen).toEqual(["a", "b", "c"]);
@@ -247,10 +237,8 @@ it("selects all rows and typeaheads to unmounted rows from the data list", async
   await click("a");
   await key("a", "a", { metaKey: true });
   expect(chosen).toEqual(["a", "b", "c", "d"]);
-  // Typeahead wraps from the cursor through unmounted rows.
   await key("a", "d");
   expect(cursor).toBe("d");
-  // Roving tabindex: an unmounted cursor leaves every mounted row at -1.
   expect(
     [...host.querySelectorAll('[tabindex="0"]')].map((el) =>
       el.getAttribute("data-tree-id"),
@@ -259,8 +247,6 @@ it("selects all rows and typeaheads to unmounted rows from the data list", async
 });
 
 it("keeps focus on the row the consumer mounts for the data-driven cursor", async () => {
-  // The consumer keeps the cursor's row mounted (as the real virtual
-  // window does); focus must land on it after render.
   const trackCursor = vi.fn();
   function TrackingFixture() {
     const tree = useOrganizationTree(
@@ -300,4 +286,39 @@ it("keeps focus on the row the consumer mounts for the data-driven cursor", asyn
   await key("a", "End");
   expect(trackCursor).toHaveBeenLastCalledWith("d");
   expect(document.activeElement).toBe(row("d"));
+});
+
+const FrozenRow = memo(
+  function FrozenRow(props: ComponentProps<"button">) {
+    return <button type="button" {...props} />;
+  },
+  () => true,
+);
+
+it("Cmd-click adds to the current selection from a row that never re-rendered", async () => {
+  const onSelection = vi.fn();
+  function FrozenFixture() {
+    const tree = useOrganizationTree(entries, onSelection);
+    return (
+      <div
+        ref={tree.root}
+        role="tree"
+        aria-label="Folders"
+        aria-multiselectable
+      >
+        {entries.map((entry) => (
+          <FrozenRow
+            key={entry.id}
+            {...tree.rowProps(entry.id, entry.parentId ? 1 : 0)}
+          >
+            {entry.name}
+          </FrozenRow>
+        ))}
+      </div>
+    );
+  }
+  await act(async () => root.render(<FrozenFixture />));
+  await click("c");
+  await click("a", { metaKey: true });
+  expect(onSelection).toHaveBeenLastCalledWith(["c", "a"]);
 });

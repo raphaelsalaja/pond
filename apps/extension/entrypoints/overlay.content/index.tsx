@@ -1,5 +1,6 @@
 import "./shadow.css";
 
+import { initScrollFade } from "@pond/ui/scroll-fade";
 import { createRoot } from "react-dom/client";
 import { onOverlayMessage } from "@/utils/overlay-messaging";
 import { Layer } from "./layer";
@@ -33,6 +34,7 @@ export default defineContentScript({
       position: "inline",
       anchor: "html",
       onMount(container) {
+        initScrollFade(container);
         const root = createRoot(container);
         root.render(<Layer store={store} container={container} />);
         return root;

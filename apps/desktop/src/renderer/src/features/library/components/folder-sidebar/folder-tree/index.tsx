@@ -5,7 +5,7 @@ import { IconPlus, IconSortArrows } from "@pond/icons";
 import type { Folder } from "@pond/schema/db";
 import { Button, type MenuItemSpec, Sidebar } from "@pond/ui";
 import { useReducedMotionConfig } from "motion/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { enterFolders } from "@/features/library/operations/enter-folder";
 import {
@@ -103,17 +103,11 @@ export function FolderTree({ destination, folderRows, nav }: FolderTreeProps) {
   function openSelectedFolders(ids: string[]) {
     enterFolders(ids, includeSubfolders);
   }
-  // Reference-stable ordered id list: dnd-kit derives per-node data from the
-  // SortableContext `items` array, and the tree's keyboard navigation walks
-  // it (instead of querying the DOM), so arrow keys, End, and typeahead work
-  // across rows that are not currently mounted. `tree.nested` only changes
-  // reference when its content changes, which is exactly when the ids must.
+  /** Keyboard navigation walks this list instead of the DOM, so it reaches unmounted rows. */
   const orderedFolderIds = useMemo(
     () => tree.nested.map(({ folder }) => folder.id),
     [tree.nested],
   );
-  // O(1) id -> position lookups for keyboard navigation and the virtual
-  // window, instead of an O(N) scan per row.
   const indexOfRow = useMemo(() => {
     const indexById = new Map<string, number>();
     for (const [index, { folder }] of tree.nested.entries())
@@ -177,8 +171,6 @@ export function FolderTree({ destination, folderRows, nav }: FolderTreeProps) {
     () => quickAccessRows(folderRows, folderViews),
     [folderRows, folderViews],
   );
-  // One pass over the rows, so each row's "same level" check is a Set lookup
-  // instead of an O(N) scan per row (thousands of rows × thousands of rows).
   const parentsWithChildFolders = useMemo(() => {
     const set = new Set<string | null>();
     for (const row of folderRows)
@@ -186,11 +178,27 @@ export function FolderTree({ destination, folderRows, nav }: FolderTreeProps) {
     return set;
   }, [folderRows, tree.parentIds]);
 
-  // Rows are memoized, so per-row closures must be reference-stable or the
-  // memo can never skip them. These read the latest rows through a ref, so a
-  // cached closure is never stale.
-  const folderRowsRef = useRef(folderRows);
-  folderRowsRef.current = folderRows;
+  /** Memoized rows skip closure props, so closures read this render's state through refs. */
+  const latest = useRef({
+    folderRows,
+    selected: organization.selected,
+    selectionItems,
+    toggleAllFolders: tree.toggleAllFolders,
+  });
+  latest.current = {
+    folderRows,
+    selected: organization.selected,
+    selectionItems,
+    toggleAllFolders: tree.toggleAllFolders,
+  };
+  const selectionMenu = useCallback(
+    () => latest.current.selectionItems(latest.current.selected),
+    [],
+  );
+  const toggleAllFolders = useCallback(
+    () => latest.current.toggleAllFolders(),
+    [],
+  );
   const exportIdsCache = useRef(
     new Map<string, (include: boolean) => string[]>(),
   );
@@ -200,27 +208,12 @@ export function FolderTree({ destination, folderRows, nav }: FolderTreeProps) {
     let fn = exportIdsCache.current.get(id);
     if (!fn) {
       fn = (include: boolean) =>
-        folderIdsForExport(id, folderRowsRef.current, include);
+        folderIdsForExport(id, latest.current.folderRows, include);
       exportIdsCache.current.set(id, fn);
     }
     return fn;
   };
-  const dragHandlersCache = useRef(
-    new Map<string, ReturnType<(typeof drag)["handlersFor"]>>(),
-  );
-  if (dragHandlersCache.current.size > folderRows.length * 2)
-    dragHandlersCache.current.clear();
-  const dragHandlersFor = (folder: Folder) => {
-    let handlers = dragHandlersCache.current.get(folder.id);
-    if (!handlers) {
-      handlers = drag.handlersFor(folder);
-      dragHandlersCache.current.set(folder.id, handlers);
-    }
-    return handlers;
-  };
 
-  // Reference-stable quick-access id list, keyed by content: the memoized
-  // rows compare it by reference.
   const quickIdsKey = useMemo(
     () => quickFolders.map((entry) => entry.id).join("\n"),
     [quickFolders],
@@ -231,13 +224,7 @@ export function FolderTree({ destination, folderRows, nav }: FolderTreeProps) {
     [quickIdsKey],
   );
 
-  // The tree can hold thousands of rows, but the sidebar only shows a few
-  // dozen at a time. Mounting every row froze startup and turned each
-  // dnd-kit re-measure (scroll, occlusion, re-sort) into a multi-second
-  // cascade. Only the visible slice plus overscan is mounted — and always
-  // the keyboard cursor's row and the dragged row, so focus and dragging
-  // can land on rows outside the viewport. The in-flow spacer below keeps
-  // the scroll height real.
+  /** The cursor and dragged rows stay mounted so focus and drops can land outside the viewport. */
   const totalRows = tree.nested.length;
   const virtualFocusIds = useMemo(
     () =>
@@ -361,7 +348,7 @@ export function FolderTree({ destination, folderRows, nav }: FolderTreeProps) {
                           selectionItems={
                             organization.selected.includes(folder.id) &&
                             organization.selected.length > 1
-                              ? () => selectionItems(organization.selected)
+                              ? selectionMenu
                               : undefined
                           }
                           collapsed={tree.collapsed.has(folder.id)}
@@ -373,9 +360,6 @@ export function FolderTree({ destination, folderRows, nav }: FolderTreeProps) {
                           creating={creatingFolder}
                           depth={depth}
                           editing={editingFolderId === folder.id}
-                          // Lazy: resolving descendants is O(N) per folder, so it
-                          // must not run for every row on every render; the
-                          // cached closure reads the latest rows through a ref.
                           exportIds={exportIdsFor(folder.id)}
                           folder={folder}
                           folderDrop={drag.folderDrop}
@@ -391,7 +375,7 @@ export function FolderTree({ destination, folderRows, nav }: FolderTreeProps) {
                             folder.parentId,
                           )}
                           viewing={viewing}
-                          dragHandlers={dragHandlersFor(folder)}
+                          dragHandlers={drag.handlersFor(folder)}
                           dragging={
                             activeFolderId === folder.id ||
                             treeDrag.movingFolderId === folder.id
@@ -406,7 +390,7 @@ export function FolderTree({ destination, folderRows, nav }: FolderTreeProps) {
                           }
                           onOpenTool={setFolderTool}
                           onStartEditing={folders.startEditing}
-                          onToggleAll={tree.toggleAllFolders}
+                          onToggleAll={toggleAllFolders}
                           onToggleFolder={() => tree.toggleFolder(folder.id)}
                           doubleClickBehavior={sidebar.doubleClickBehavior}
                           onToggleSameLevel={(expanded) =>

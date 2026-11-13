@@ -1,20 +1,6 @@
 /**
- * Drives the `[data-scroll-fade]` edge fades declared in `reset.css`.
- *
- * This used to be pure CSS with scroll-driven animations
- * (`animation-timeline: scroll(self)`). Those animations never finish, so
- * the browser ticks them on the main thread every frame and keeps each
- * scroller's content in a masked offscreen surface — an unaffordable cost
- * on software rendering, where a library sidebar or grid can span hundreds
- * of thousands of pixels. Base UI waits on an element's animations before
- * opening popups, so the never-finished fades also hung popup mounts.
- *
- * This module reproduces the same fade from a passive scroll handler: it
- * mirrors the scroll position into `--sf-start` / `--sf-end` (only writing
- * when the rounded value changes, so a settled scroller does zero work)
- * and toggles `data-fade-active` so the mask exists only while a fade is
- * visible. Call `initScrollFade()` once per document (or pass the shadow
- * root it should watch).
+ * Drives the `[data-scroll-fade]` edge fades in `reset.css`; call `initScrollFade()` once per document or shadow root.
+ * @remarks Scroll-driven CSS animations never finish, so they tick every frame and stall Base UI popups that wait on them.
  */
 
 const DEFAULT_SIZE = 24;
@@ -94,8 +80,7 @@ function wireSubtree(root: ParentNode): void {
   }
 }
 
-/** Nearest wired scroller enclosing `node`, if any (content changing inside
- *  one changes its scrollable extent without a scroll or size event). */
+/** Content changes resize a scroller's extent without firing a scroll or resize event. */
 function scrollerOf(node: Node): HTMLElement | null {
   /** SAFETY: nodeType === 1 (Node.ELEMENT_NODE) means node is an element. */
   let el = node.nodeType === 1 ? (node as HTMLElement) : node.parentElement;
