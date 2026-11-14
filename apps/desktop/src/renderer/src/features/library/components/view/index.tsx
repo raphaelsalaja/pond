@@ -177,6 +177,7 @@ export function LibraryView() {
                 saves={data.filtered}
                 multiSelectActive={actions.multiSelectActive}
                 onClick={actions.handleCardClick}
+                onPick={actions.handleCardPick}
                 onAuxClick={actions.handleCardAuxClick}
                 onDoubleClick={actions.focus}
                 onEndReached={canLoadAnotherPage ? onEndReached : undefined}
@@ -189,6 +190,7 @@ export function LibraryView() {
             saves={data.filtered}
             multiSelectActive={actions.multiSelectActive}
             onClick={actions.handleCardClick}
+            onPick={actions.handleCardPick}
             onAuxClick={actions.handleCardAuxClick}
             onDoubleClick={actions.focus}
             onEndReached={canLoadAnotherPage ? onEndReached : undefined}

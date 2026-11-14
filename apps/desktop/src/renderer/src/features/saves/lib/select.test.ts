@@ -4,6 +4,7 @@ import {
   clearSaveSelection,
   clickSave,
   isLibraryBackgroundTarget,
+  pickSave,
   selectOnlySave,
 } from "./select";
 
@@ -54,6 +55,28 @@ describe("clickSave", () => {
     expect(selection.snapshot()).toEqual(["a", "b", "c"]);
     expect(selection.getAnchor()).toBe("a");
     expect(primarySelection.get()).toBe("c");
+  });
+});
+
+describe("pickSave", () => {
+  const ids = ["a", "b", "c", "d"];
+
+  it("adds and removes Saves without a modifier key", () => {
+    clickSave("a", { meta: false, shift: false }, ids);
+    pickSave("c", { shift: false }, ids);
+    expect(selection.snapshot()).toEqual(["a", "c"]);
+    expect(primarySelection.get()).toBe("c");
+
+    pickSave("a", { shift: false }, ids);
+    expect(selection.snapshot()).toEqual(["c"]);
+    expect(primarySelection.get()).toBe("c");
+  });
+
+  it("selects a range from the last picked Save with Shift", () => {
+    pickSave("b", { shift: false }, ids);
+    pickSave("d", { shift: true }, ids);
+    expect(selection.snapshot()).toEqual(["b", "c", "d"]);
+    expect(selection.getAnchor()).toBe("b");
   });
 });
 

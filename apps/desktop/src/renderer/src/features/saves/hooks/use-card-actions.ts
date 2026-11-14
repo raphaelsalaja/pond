@@ -4,16 +4,24 @@ import {
   pasteImportOf,
   runPasteImport,
 } from "@/features/saves/lib/paste-import";
-import { clearSaveSelection, clickSave } from "@/features/saves/lib/select";
+import {
+  clearSaveSelection,
+  clickSave,
+  pickSave,
+} from "@/features/saves/lib/select";
 import { isLibrarySaveDrag } from "@/features/saves/lib/start-drag";
 import { runViewerAction } from "@/features/saves/lib/viewer-actions";
-import { useSelectionSize } from "@/features/saves/state/selection";
+import {
+  useSelectionActive,
+  useSelectionSize,
+} from "@/features/saves/state/selection";
 import { usePrefs } from "@/shared/state/prefs";
 
 interface CardActions {
   selectionSize: number;
   multiSelectActive: boolean;
   handleCardClick: (id: string, e: React.MouseEvent) => void;
+  handleCardPick: (id: string, e: React.MouseEvent) => void;
   handleCardAuxClick: (id: string, e: React.MouseEvent) => void;
   focus: (id: string) => void;
   onDragOver: (e: React.DragEvent) => void;
@@ -27,7 +35,7 @@ export function useCardActions(
 ): CardActions {
   const [viewer] = usePrefs("viewer");
   const selectionSize = useSelectionSize();
-  const multiSelectActive = selectionSize > 0;
+  const multiSelectActive = useSelectionActive();
 
   const focus = useCallback(
     (id: string) => {
@@ -51,6 +59,13 @@ export function useCardActions(
       const shift = e.shiftKey;
       if (meta || shift) e.preventDefault();
       clickSave(id, { meta, shift }, filteredIds);
+    },
+    [filteredIds],
+  );
+
+  const handleCardPick = useCallback(
+    (id: string, e: React.MouseEvent) => {
+      pickSave(id, { shift: e.shiftKey }, filteredIds);
     },
     [filteredIds],
   );
@@ -111,6 +126,7 @@ export function useCardActions(
     selectionSize,
     multiSelectActive,
     handleCardClick,
+    handleCardPick,
     handleCardAuxClick,
     focus,
     onDragOver,

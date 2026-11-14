@@ -57,7 +57,8 @@ export const SaveCard = memo(function SaveCard({
   position,
   total,
 }: SaveCardProps) {
-  const { onClick, onAuxClick, onDoubleClick } = useLibraryCardCallbacks();
+  const { onClick, onAuxClick, onDoubleClick, onPick } =
+    useLibraryCardCallbacks();
   const save = useSave(id);
   const isMulti = useIsSelected(id);
   const isPrimary = useIsPrimary(id);
@@ -136,24 +137,42 @@ export const SaveCard = memo(function SaveCard({
     () => onDoubleClick(id),
     [onDoubleClick, id],
   );
+  const onPickClick = useCallback(
+    (e: React.MouseEvent<HTMLElement>) => {
+      onPick?.(id, e);
+      e.currentTarget
+        .closest<HTMLElement>("[data-save-collection]")
+        ?.focus({ preventScroll: true });
+    },
+    [onPick, id],
+  );
 
   if (!save) return null;
 
   const children = (
-    <Card.Select
-      id={`save-option-${id}`}
-      role="option"
-      aria-label={displayTitleForSave(save)}
-      aria-selected={isMulti}
-      aria-posinset={position}
-      aria-setsize={total}
-      tabIndex={-1}
-      onClick={onSelectClick}
-      onAuxClick={onSelectAuxClick}
-      onDoubleClick={onSelectDoubleClick}
-    >
-      <SaveCardBody save={save} view={view} width={slot.width} />
-    </Card.Select>
+    <>
+      <Card.Select
+        id={`save-option-${id}`}
+        role="option"
+        aria-label={displayTitleForSave(save)}
+        aria-selected={isMulti}
+        aria-posinset={position}
+        aria-setsize={total}
+        tabIndex={-1}
+        onClick={onSelectClick}
+        onAuxClick={onSelectAuxClick}
+        onDoubleClick={onSelectDoubleClick}
+      >
+        <SaveCardBody save={save} view={view} width={slot.width} />
+      </Card.Select>
+      {onPick ? (
+        <Card.Pick
+          checked={isMulti}
+          size={view === "list" ? "sm" : "md"}
+          onClick={onPickClick}
+        />
+      ) : null}
+    </>
   );
 
   const rootProps = {
@@ -165,6 +184,7 @@ export const SaveCard = memo(function SaveCard({
     "data-save-id": id,
     "data-view": view,
     "data-cursor": isCursor || undefined,
+    "data-pickable": onPick ? "" : undefined,
     style,
     draggable: true,
     onNativeDragStart: onDragStart,
