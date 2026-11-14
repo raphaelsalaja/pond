@@ -19,7 +19,11 @@ import {
   StringListParam,
   StringParam,
 } from "./params";
-import { renderSaveDragIcon, SAVE_DRAG_ICON_SCALE } from "./save-drag-icon";
+import {
+  renderSaveDragIcon,
+  SAVE_DRAG_ICON_SCALE,
+  saveDragFileIconSize,
+} from "./save-drag-icon";
 
 export const savesImportTransferQueries = {
   "saves.reviewImportDuplicates": query(
@@ -218,7 +222,9 @@ export const savesImportTransferQueries = {
         /** macOS rejects `startDrag` with an empty icon, which is what a video file decodes to. */
         if (icon.isEmpty())
           icon = await app
-            .getFileIcon(first, { size: "large" })
+            .getFileIcon(first, {
+              size: saveDragFileIconSize(process.platform),
+            })
             .catch(() => icon);
         if (icon.isEmpty())
           return { ok: false, error: "Pond couldn't draw a drag preview." };

@@ -70,3 +70,10 @@ export async function renderSaveDragIcon(
 }
 
 export const SAVE_DRAG_ICON_SCALE = ICON_SCALE;
+
+/** Chromium has no `large` file icon on macOS and aborts the main process when asked for one. */
+export function saveDragFileIconSize(
+  platform: NodeJS.Platform,
+): "normal" | "large" {
+  return platform === "darwin" ? "normal" : "large";
+}

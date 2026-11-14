@@ -200,7 +200,7 @@ nsis:
 
 # Package through `scripts/dist-linux.mjs`, which passes the host arch and an
 # arch-named artifact. A per-target arch list here would override that flag and
-# cross-package host-arch native modules. See RELEASING.md for the manifest merge.
+# cross-package host-arch native modules.
 # `pond.desktop` also registers the `pond://` handler and the tray/window class.
 linux:
   artifactName: ${productName}-${version}-${arch}.${ext}

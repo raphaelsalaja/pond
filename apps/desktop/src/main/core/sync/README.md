@@ -45,10 +45,10 @@ ids, so the post isn't fetched again while any slide survives.
 
 Deleting a Save keeps that Source ID known to automatic fetching. Trash still
 holds the row, and permanently removing it records the Source ID in
-`deleted_source_ids`. Scheduled fetches and Fetch New Saves skip those ids, so
-a bookmark or collection item you deleted is not downloaded again. Fetch Older
-Saves (`forceFull`) leaves them out of the known set, and that explicit walk
-can import them again. A purge that releases an import-filtered Save, rolls
+`deleted_source_ids`. Scheduled fetches, Fetch New Saves, and Watches skip
+those ids, so a bookmark, collection item, or watched post you deleted is not
+downloaded again. Fetch Older Saves (`forceFull`) leaves them out of the known
+set, and that explicit walk can import them again. A purge that releases an import-filtered Save, rolls
 back a split, or rolls back an Eagle import does not record the id, because
 those deletes exist so a later fetch can import the source again.
 
