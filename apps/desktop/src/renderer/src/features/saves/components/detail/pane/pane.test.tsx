@@ -470,6 +470,138 @@ it("assigns a mixed folder immediately from the inspector menu", async () => {
   });
 });
 
+it("stages multiple folders and assigns them together from the inspector menu", async () => {
+  await act(async () =>
+    root.render(
+      <SaveInspector
+        saveId="a"
+        folders={[
+          { id: "inspiration", name: "Inspiration", count: 0 },
+          { id: "reference", name: "Reference", count: 0 },
+        ]}
+      />,
+    ),
+  );
+  const trigger = host.querySelector<HTMLButtonElement>(
+    '[aria-label="Add Folder"]',
+  );
+  if (!trigger) throw new Error("Missing Add Folder");
+  await act(async () => trigger.click());
+  const multiple = [
+    ...document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
+  ].find((item) => item.textContent === "Select Multiple");
+  if (!multiple) throw new Error("Missing Select Multiple action");
+  await act(async () => multiple.click());
+
+  const folderRow = (name: string) =>
+    [
+      ...document.querySelectorAll<HTMLElement>('[role="menuitemcheckbox"]'),
+    ].find((item) => item.textContent?.includes(name));
+  const inspiration = folderRow("Inspiration");
+  const reference = folderRow("Reference");
+  if (!inspiration || !reference) throw new Error("Missing folder rows");
+  await act(async () => inspiration.click());
+  await act(async () => reference.click());
+
+  expect(requests.some((request) => request.name === "folders.assign")).toBe(
+    false,
+  );
+  const apply = document.querySelector<HTMLButtonElement>(
+    '[aria-label="Add to 2 Folders"]',
+  );
+  if (!apply) throw new Error("Missing Add to Folders action");
+  expect(apply.disabled).toBe(false);
+  await act(async () => apply.click());
+  expect(requests).toContainEqual({
+    name: "folders.assign",
+    input: {
+      saveIds: ["a"],
+      addIds: ["inspiration", "reference"],
+      removeIds: [],
+    },
+  });
+});
+
+it("cancels staged folder assignment without mutating the Save", async () => {
+  await act(async () =>
+    root.render(
+      <SaveInspector
+        saveId="a"
+        folders={[{ id: "inspiration", name: "Inspiration", count: 0 }]}
+      />,
+    ),
+  );
+  const trigger = host.querySelector<HTMLButtonElement>(
+    '[aria-label="Add Folder"]',
+  );
+  if (!trigger) throw new Error("Missing Add Folder");
+  await act(async () => trigger.click());
+  const multiple = [
+    ...document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
+  ].find((item) => item.textContent === "Select Multiple");
+  if (!multiple) throw new Error("Missing Select Multiple action");
+  await act(async () => multiple.click());
+  const inspiration = [
+    ...document.querySelectorAll<HTMLElement>('[role="menuitemcheckbox"]'),
+  ].find((item) => item.textContent?.includes("Inspiration"));
+  if (!inspiration) throw new Error("Missing Inspiration folder");
+  await act(async () => inspiration.click());
+  const cancel = [
+    ...document.querySelectorAll<HTMLButtonElement>("button"),
+  ].find((button) => button.textContent === "Cancel");
+  if (!cancel) throw new Error("Missing Cancel action");
+  await act(async () => cancel.click());
+
+  expect(requests.some((request) => request.name === "folders.assign")).toBe(
+    false,
+  );
+  expect(document.querySelector('[aria-label="Add to 1 Folder"]')).toBeNull();
+});
+
+it("stages a folder created while selecting multiple folders", async () => {
+  await act(async () => root.render(<SaveInspector saveId="a" folders={[]} />));
+  const trigger = host.querySelector<HTMLButtonElement>(
+    '[aria-label="Add Folder"]',
+  );
+  if (!trigger) throw new Error("Missing Add Folder");
+  await act(async () => trigger.click());
+  const multiple = [
+    ...document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
+  ].find((item) => item.textContent === "Select Multiple");
+  if (!multiple) throw new Error("Missing Select Multiple action");
+  await act(async () => multiple.click());
+  const search = document.querySelector<HTMLInputElement>(
+    '[aria-label="Search Folders"]',
+  );
+  if (!search) throw new Error("Missing folder search");
+  await act(async () => setInput(search, "Moodboard"));
+  const create = [
+    ...document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
+  ].find((item) => item.textContent === "Create “Moodboard”");
+  if (!create) throw new Error("Missing create row");
+  await act(async () => create.click());
+
+  expect(requests).toContainEqual({
+    name: "folders.create",
+    input: { name: "Moodboard" },
+  });
+  const apply = await vi.waitFor(() => {
+    const button = document.querySelector<HTMLButtonElement>(
+      '[aria-label="Add to 1 Folder"]',
+    );
+    if (!button) throw new Error("Missing Add to Folder action");
+    return button;
+  });
+  expect(requests.some((request) => request.name === "folders.assign")).toBe(
+    false,
+  );
+  await act(async () => apply.click());
+  expect(requests).toContainEqual({
+    name: "folders.assign",
+    input: { saveIds: ["a"], addIds: ["created"], removeIds: [] },
+  });
+});
+
 it("shows an assigned nested folder as one breadcrumb with its full path", async () => {
   await act(async () =>
     root.render(
