@@ -24,6 +24,7 @@ import {
   IconClockPlus,
   IconFolderBan,
   IconHistory,
+  IconImages,
   IconNodes3,
   IconShuffle,
   IconTrashXmark,
@@ -140,6 +141,8 @@ function DestinationIcon({ destination }: { destination: SidebarDestination }) {
       return <IconBookmark />;
     case "random":
       return <IconShuffle />;
+    case "splitPosts":
+      return <IconImages />;
     case "trash":
       return <IconTrashXmark />;
     case "downloads":
@@ -205,6 +208,8 @@ export function LibraryDestinations({
         return destination.kind === "tags";
       case "random":
         return destination.kind === "random";
+      case "splitPosts":
+        return destination.kind === "splitPosts" || destination.kind === "post";
       case "trash":
         return destination.kind === "trash";
       case "downloads":
@@ -236,6 +241,8 @@ export function LibraryDestinations({
         return counts.recentlyAdded;
       case "recentlyUsed":
         return counts.recentlyUsed;
+      case "splitPosts":
+        return counts.splitPosts;
       case "random":
         return undefined;
     }
@@ -354,6 +361,20 @@ export function LibraryDestinations({
                 reseedRandomSort();
                 selectLibraryNav({ kind: "random" });
               }}
+            />
+          </BuiltInVisibilityMenu>
+        );
+      case "splitPosts":
+        return (
+          <BuiltInVisibilityMenu destination={destination} key={destination}>
+            <Row
+              label="Split Posts"
+              icon={<IconImages />}
+              count={counts.splitPosts}
+              badgeStyle={badgeStyle}
+              active={isDestinationActive(destination)}
+              {...dragProps}
+              onClick={() => selectLibraryNav({ kind: "splitPosts" })}
             />
           </BuiltInVisibilityMenu>
         );

@@ -1,6 +1,8 @@
+import { splitPostPredicate } from "@pond/schema/filters/fields";
 import type { LibraryQueryRequest } from "@shared/library-query";
 import { recentlyAddedSince } from "@shared/recently-added";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { combineQueries } from "@/features/library/lib/smart-folders";
 import {
   useFolderMemberships,
   useFolders,
@@ -53,6 +55,8 @@ export function useNarrowedSaves(mode: SaveListMode, sourceFilter: string) {
   const folderId = nav.kind === "folder" ? nav.id : null;
   const searchEverywhere = searchScope === "all" && keywords.trim().length > 0;
   const recentlyAdded = !searchEverywhere && mode === "recentlyAdded";
+  const postKey = !searchEverywhere && nav.kind === "post" ? nav.key : null;
+  const ascending = postKey !== null || (!recentlyAdded && sortDir === "asc");
   // A visit rewrites recents for every collection. Only Recents queries by those ids.
   const recentSaveIds = useMemo(
     () => (mode === "recents" ? recents.map((entry) => entry.saveId) : null),
@@ -73,13 +77,18 @@ export function useNarrowedSaves(mode: SaveListMode, sourceFilter: string) {
   }, [folderId, folderViews, viewsReady]);
   const request = useMemo<LibraryQueryRequest>(
     () => ({
-      query,
+      query: postKey
+        ? combineQueries([
+            query,
+            { combinator: "and", rules: [splitPostPredicate(postKey)] },
+          ])
+        : query,
       keywords,
       keywordScopes: keywordScopesFromPrefs(searchPrefs.scopes),
-      sortKey: recentlyAdded ? "savedAt" : sortKey,
+      sortKey: recentlyAdded ? "savedAt" : postKey ? "post" : sortKey,
       randomSeed,
       orderFolderId: searchEverywhere ? undefined : (folderId ?? undefined),
-      sortDir: !recentlyAdded && sortDir === "asc" ? "asc" : "desc",
+      sortDir: ascending ? "asc" : "desc",
       scope: {
         savedSince:
           recentlyAdded && addedSince !== null ? addedSince : undefined,
@@ -108,10 +117,11 @@ export function useNarrowedSaves(mode: SaveListMode, sourceFilter: string) {
       searchPrefs.scopes,
       searchEverywhere,
       recentlyAdded,
+      postKey,
       sortKey,
       randomSeed,
       folderId,
-      sortDir,
+      ascending,
       mode,
       sourceFilter,
       nav,

@@ -4,6 +4,7 @@ export interface LibrarySidebarCounts {
   untagged: number;
   recentlyAdded: number;
   recentlyUsed: number;
+  splitPosts: number;
   trash: number;
   folders: Record<string, number>;
   foldersDownloading: Record<string, number>;

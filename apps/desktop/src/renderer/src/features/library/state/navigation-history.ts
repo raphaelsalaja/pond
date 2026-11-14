@@ -18,6 +18,8 @@ function sameNav(left: LibraryNav, right: LibraryNav): boolean {
     return left.id === right.id;
   if (left.kind === "tag" && right.kind === "tag")
     return left.name === right.name;
+  if (left.kind === "post" && right.kind === "post")
+    return left.key === right.key;
   return true;
 }
 

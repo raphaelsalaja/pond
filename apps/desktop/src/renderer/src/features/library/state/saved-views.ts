@@ -1,4 +1,5 @@
 import type { SavedView } from "@pond/schema/db";
+import { splitPostPredicate } from "@pond/schema/filters/fields";
 import { EMPTY_QUERY, type Query } from "@pond/schema/filters/types";
 import type { QueryInput } from "@shared/query-contracts";
 import { useSelector } from "@tanstack/react-store";
@@ -65,6 +66,8 @@ function currentQuery(): Query {
       combinator: "and",
       rules: [{ field: "folder", operator: "empty", value: null }],
     };
+  } else if (nav.kind === "post") {
+    scope = { combinator: "and", rules: [splitPostPredicate(nav.key)] };
   }
   return combineQueries([inheritedQuery, query, scope]);
 }

@@ -83,6 +83,7 @@ export type FieldId =
   | "folder"
   | "list"
   | "source"
+  | "post"
   | "importedFrom"
   | "type"
   | "format"

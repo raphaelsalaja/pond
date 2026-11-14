@@ -221,6 +221,7 @@ export const queryOperationAccess = {
   "saves.split": "review",
   "saves.splitAll": "hidden",
   "saves.splitAllStatus": "hidden",
+  "saves.splitPosts": "read",
   "saves.splittableCount": "hidden",
   "saves.openWith": "review",
   "saves.quickLook": "review",

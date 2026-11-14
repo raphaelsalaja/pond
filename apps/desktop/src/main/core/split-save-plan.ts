@@ -6,6 +6,7 @@ import {
   type RawJson,
   walkCaptureMedia,
 } from "@pond/schema/raw";
+import { storedAsRawJson } from "@pond/schema/raw-schema";
 import { isVideoFile } from "@shared/media-index";
 import {
   isThumbnailKind,
@@ -151,15 +152,14 @@ export function narrowToSplit(
   };
 }
 
-function splitRaw(
-  raw: RawJson | null,
-  post: string,
-  media: number[],
-): RawJson | null {
-  if (!raw) return null;
+/** Local and imported Saves carry no capture, but still record the split so the post can be found again. */
+const CAPTURELESS = storedAsRawJson({ capture: {} });
+
+function splitRaw(raw: RawJson | null, post: string, media: number[]): RawJson {
+  const base = raw ?? CAPTURELESS;
   return {
-    ...raw,
-    capture: retainCaptureMedia(raw.capture, media),
+    ...base,
+    capture: retainCaptureMedia(base.capture, media),
     split: { sourceId: post, media },
   };
 }
@@ -286,8 +286,7 @@ export function buildOriginalPatch(
       dominantColors: [],
       primaryColor: null,
     } satisfies Partial<NewSave>);
-  if (save.rawJson)
-    patch.rawJson = splitRaw(save.rawJson, plan.postSourceId, plan.keepMedia);
+  patch.rawJson = splitRaw(save.rawJson, plan.postSourceId, plan.keepMedia);
   if (primaryChanged)
     Object.assign(patch, {
       embedding: null,

@@ -40,6 +40,7 @@ it("completes saved destination order", () => {
     "recentlyUsed",
     "tags",
     "random",
+    "splitPosts",
   ]);
 });
 

@@ -41,6 +41,12 @@ function settingsCrumbs(path: string): Breadcrumb[] {
     : [crumb];
 }
 
+const SPLIT_POSTS_CRUMB: Breadcrumb = {
+  label: "Split Posts",
+  path: "/split-posts",
+  nav: { kind: "splitPosts" },
+};
+
 type DestinationLabels = Pick<
   BreadcrumbInput,
   "canvasLabel" | "fishLabel" | "sourceLabel"
@@ -80,6 +86,8 @@ function destinationCrumbs(
       return [{ label: "Downloads", path: base, nav: { kind: "downloads" } }];
     case "/trash":
       return [{ label: "Trash", path: base, nav: { kind: "trash" } }];
+    case "/split-posts":
+      return [SPLIT_POSTS_CRUMB];
     default:
       break;
   }
@@ -157,6 +165,9 @@ export function buildBreadcrumbs({
     crumbs.push({ label: nav.name, path: "/", nav });
   } else if (base === "/" && nav.kind === "random") {
     crumbs[0] = { label: "Random", path: "/", nav };
+  } else if (base === "/" && nav.kind === "post") {
+    crumbs[0] = SPLIT_POSTS_CRUMB;
+    crumbs.push({ label: nav.title || "Post", path: "/", nav });
   }
   if (searchCrumb) crumbs.push(searchCrumb);
   if (isSave) crumbs.push({ label: saveLabel || "Save", path: pathname });

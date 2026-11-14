@@ -56,6 +56,7 @@ export {
   revealFilesForSelection,
   trashSelection,
 } from "./lib/selection";
+export { getSourceLabel } from "./lib/source-labels";
 export type { ResultDirection } from "./lib/spatial-navigation";
 export {
   announceSaveDragTarget,
