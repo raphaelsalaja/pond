@@ -1,26 +1,19 @@
-import { IconDots } from "@pond/icons";
-import {
-  Button,
-  Chip,
-  cssVars,
-  Dialog,
-  Field,
-  Input,
-  Popover,
-  Tooltip,
-} from "@pond/ui";
+import { cssVars, Dialog, Field, Input } from "@pond/ui";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
+import {
+  rememberFolderColor,
+  rememberFolderIcon,
+} from "@/features/library/state/folder-appearance";
 import { saveFolderPresentation } from "@/features/library/state/folder-presentation";
 import { folders } from "@/features/library/state/folders";
 import {
-  FOLDER_ICONS,
-  FOLDER_SWATCHES,
   FolderIcon,
   type FolderIconId,
   folderColorCss,
 } from "@/shared/lib/folder-icons";
 import { gentleSpring } from "@/shared/lib/motion";
+import { AppearancePicker } from "./appearance-picker";
 import styles from "./styles.module.css";
 
 interface FolderCustomizeDialogProps {
@@ -111,6 +104,8 @@ export function FolderCustomizeDialog({
       if (results.some((result) => !result.ok)) {
         throw new Error("Folder changes were rejected.");
       }
+      if (icon !== initialIcon) void rememberFolderIcon(icon);
+      if (color !== folder.color) void rememberFolderColor(color);
       await folders.refresh();
       onClose();
     } catch {
@@ -212,87 +207,5 @@ export function FolderCustomizeDialog({
         </Dialog.Popup>
       </Dialog.Portal>
     </Dialog.Root>
-  );
-}
-
-interface AppearancePickerProps {
-  icon: FolderIconId;
-  color: string | null;
-  disabled: boolean;
-  onIconChange: (icon: FolderIconId) => void;
-  onColorChange: (color: string | null) => void;
-}
-
-function AppearancePicker({
-  icon,
-  color,
-  disabled,
-  onIconChange,
-  onColorChange,
-}: AppearancePickerProps) {
-  return (
-    <Popover.Root>
-      <Tooltip label="Icon and Color">
-        <Popover.Trigger
-          render={
-            <Button
-              type="button"
-              icon
-              size="sm"
-              variant="secondary"
-              rounding="full"
-              className={styles.edit}
-              disabled={disabled}
-            />
-          }
-          aria-label="Icon and Color"
-        >
-          <IconDots size={12} />
-        </Popover.Trigger>
-      </Tooltip>
-      <Popover.Portal>
-        <Popover.Positioner side="bottom" sideOffset={8}>
-          <Popover.Popup className={styles.picker} aria-label="Icon and Color">
-            <div className={styles.grid} data-scroll-fade="vertical">
-              {FOLDER_ICONS.map(({ id, label, Icon }) => (
-                <Tooltip key={id} label={label}>
-                  <Button
-                    type="button"
-                    icon
-                    size="md"
-                    variant={icon === id ? "tertiary" : "ghost"}
-                    aria-label={label}
-                    aria-pressed={icon === id}
-                    onClick={() => onIconChange(id)}
-                  >
-                    <Icon />
-                  </Button>
-                </Tooltip>
-              ))}
-            </div>
-            <div className={styles.swatches}>
-              {FOLDER_SWATCHES.map((swatch) => (
-                <Tooltip key={swatch.label} label={swatch.label}>
-                  <Button
-                    type="button"
-                    icon
-                    size="md"
-                    variant="ghost"
-                    aria-label={swatch.label}
-                    aria-pressed={color === swatch.id}
-                    onClick={() => onColorChange(swatch.id)}
-                  >
-                    <Chip.Swatch
-                      color={swatch.css}
-                      selected={color === swatch.id}
-                    />
-                  </Button>
-                </Tooltip>
-              ))}
-            </div>
-          </Popover.Popup>
-        </Popover.Positioner>
-      </Popover.Portal>
-    </Popover.Root>
   );
 }

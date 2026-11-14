@@ -18,11 +18,12 @@ import { canvasIdFromPath, useCanvas } from "@/features/canvas";
 import { fishIdFromPath } from "@/features/fish";
 import { FolderCustomizeDialog } from "@/features/library/components/folder-customize-dialog";
 import { SidebarToggle } from "@/features/library/components/sidebar-toggle";
-import { saveFolderPresentation } from "@/features/library/state/folder-presentation";
 import {
-  folders as folderStore,
-  useFolders,
-} from "@/features/library/state/folders";
+  folderColorMenuItems,
+  folderIconMenuItems,
+} from "@/features/library/lib/folder-appearance-menu";
+import { saveFolderPresentation } from "@/features/library/state/folder-presentation";
+import { useFolders } from "@/features/library/state/folders";
 import {
   libraryChrome,
   useDetailsOpen,
@@ -46,7 +47,6 @@ import {
 import { useViewFilteredCount } from "@/features/saves/state/view-context";
 import { useSourceDetailName } from "@/features/sources/state/source-detail";
 import { SpecContextMenu } from "@/shared/components/spec-context-menu";
-import { FOLDER_MENU_ICONS, FOLDER_SWATCHES } from "@/shared/lib/folder-icons";
 import { usePrefs } from "@/shared/state/prefs";
 import { type Breadcrumb, buildBreadcrumbs } from "./breadcrumbs";
 import { computeLabel } from "./labels";
@@ -146,29 +146,16 @@ function Breadcrumbs() {
         {
           type: "submenu" as const,
           label: "Icon",
-          items: FOLDER_MENU_ICONS.map((option) => ({
-            type: "checkbox" as const,
-            label: option.label,
-            checked: (presentation?.icon ?? "folder") === option.id,
-            onCheckedChange: () =>
-              void saveFolderPresentation(folder.id, { icon: option.id }),
-          })),
+          items: folderIconMenuItems({
+            folderId: folder.id,
+            icon: presentation?.icon,
+            glyphs: false,
+          }),
         },
         {
           type: "submenu" as const,
           label: "Color",
-          items: FOLDER_SWATCHES.map((option) => ({
-            type: "checkbox" as const,
-            label: option.label,
-            checked: folder.color === option.id,
-            onCheckedChange: () =>
-              void window.pond
-                .query("folders.setColor", {
-                  id: folder.id,
-                  color: option.id,
-                })
-                .then(() => folderStore.refresh()),
-          })),
+          items: folderColorMenuItems({ folder, glyphs: false }),
         },
         {
           type: "submenu" as const,

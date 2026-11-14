@@ -4,6 +4,10 @@ import type { FolderSummary } from "@shared/folder-contracts";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { FolderCustomizeDialog } from "@/features/library/components/folder-customize-dialog";
 import { useLibrarySaveGap } from "@/features/library/components/layouts/save-gap";
+import {
+  folderColorMenuItems,
+  folderIconMenuItems,
+} from "@/features/library/lib/folder-appearance-menu";
 import { folderCoverUrl } from "@/features/library/lib/folder-cover";
 import { buildMoveFolderItems } from "@/features/library/lib/move-folders-menu";
 import {
@@ -11,7 +15,7 @@ import {
   enterFolders,
 } from "@/features/library/operations/enter-folder";
 import { saveFolderPresentation } from "@/features/library/state/folder-presentation";
-import { folders, useFolders } from "@/features/library/state/folders";
+import { useFolders } from "@/features/library/state/folders";
 import { Card, useDisplayPrefs, useItemInfo } from "@/features/saves";
 import { ensureSaves, useSave } from "@/features/saves/pool";
 import { ButtonLink } from "@/shared/components/button-link";
@@ -20,12 +24,7 @@ import {
   SpecMenu,
 } from "@/shared/components/spec-context-menu";
 import { useResolvedTheme } from "@/shared/hooks/use-resolved-theme";
-import {
-  FOLDER_MENU_ICONS,
-  FOLDER_SWATCHES,
-  FolderIcon,
-  type FolderIconId,
-} from "@/shared/lib/folder-icons";
+import { FolderIcon, type FolderIconId } from "@/shared/lib/folder-icons";
 import { formatNumber, formatPlural } from "@/shared/lib/format";
 import { usePrefs } from "@/shared/state/prefs";
 import { useOrganizationTree } from "../../hooks/use-organization-tree";
@@ -130,29 +129,16 @@ function FolderCard({
           {
             type: "submenu",
             label: "Icon",
-            items: FOLDER_MENU_ICONS.map((option) => ({
-              type: "checkbox",
-              label: option.label,
-              checked: (presentation.icon ?? "folder") === option.id,
-              onCheckedChange: () =>
-                void saveFolderPresentation(folder.id, { icon: option.id }),
-            })),
+            items: folderIconMenuItems({
+              folderId: folder.id,
+              icon: presentation.icon,
+              glyphs: false,
+            }),
           },
           {
             type: "submenu",
             label: "Color",
-            items: FOLDER_SWATCHES.map((option) => ({
-              type: "checkbox",
-              label: option.label,
-              checked: folder.color === option.id,
-              onCheckedChange: () =>
-                void window.pond
-                  .query("folders.setColor", {
-                    id: folder.id,
-                    color: option.id,
-                  })
-                  .then(() => folders.refresh()),
-            })),
+            items: folderColorMenuItems({ folder, glyphs: false }),
           },
           {
             type: "submenu",

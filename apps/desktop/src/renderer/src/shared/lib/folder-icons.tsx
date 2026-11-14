@@ -100,106 +100,584 @@ import type { FOLDER_ICON_IDS } from "@pond/schema/folder-presentation";
 
 export type FolderIconId = (typeof FOLDER_ICON_IDS)[number];
 
-export const FOLDER_ICONS: readonly {
+export interface FolderIconOption {
   id: FolderIconId;
   label: string;
   Icon: IconComponent;
-}[] = [
-  { id: "folder", label: "Folder", Icon: IconFolder },
-  { id: "bookmark", label: "Bookmark", Icon: IconBookmark },
-  { id: "album", label: "Album", Icon: IconAlbum2 },
-  { id: "tag", label: "Tag", Icon: IconHashtag },
-  { id: "download", label: "Download", Icon: IconDownload },
-  { id: "code", label: "Code", Icon: IconCode2 },
-  { id: "star", label: "Star", Icon: IconStar },
-  { id: "heart", label: "Heart", Icon: IconHeart },
-  { id: "sparkle", label: "Sparkle", Icon: IconSparkle },
-  { id: "image", label: "Image", Icon: IconImage },
-  { id: "camera", label: "Camera", Icon: IconCamera },
-  { id: "video", label: "Video", Icon: IconVideo },
-  { id: "music", label: "Music", Icon: IconMusicNote },
-  { id: "book", label: "Book", Icon: IconBook },
-  { id: "note", label: "Note", Icon: IconNote },
-  { id: "palette", label: "Palette", Icon: IconPalette },
-  { id: "brush", label: "Brush", Icon: IconPaintbrush },
-  { id: "typography", label: "Typography", Icon: IconTypography },
-  { id: "layers", label: "Layers", Icon: IconLayers },
-  { id: "cube", label: "Cube", Icon: IconCube },
-  { id: "globe", label: "Globe", Icon: IconGlobe },
-  { id: "pin", label: "Pin", Icon: IconLocation },
-  { id: "plane", label: "Plane", Icon: IconPlane },
-  { id: "house", label: "House", Icon: IconHouse },
-  { id: "inbox", label: "Inbox", Icon: IconInbox },
-  { id: "lightbulb", label: "Lightbulb", Icon: IconLightbulb },
-  { id: "flag", label: "Flag", Icon: IconFlag },
-  { id: "trophy", label: "Trophy", Icon: IconTrophy },
-  { id: "rocket", label: "Rocket", Icon: IconRocket },
-  { id: "gamepad", label: "Gamepad", Icon: IconGamepad },
-  { id: "leaf", label: "Leaf", Icon: IconLeaf },
-  { id: "shopping", label: "Shopping", Icon: IconBagShopping },
-  { id: "briefcase", label: "Briefcase", Icon: IconBriefcase },
-  { id: "office", label: "Office", Icon: IconBuilding },
-  { id: "calendar", label: "Calendar", Icon: IconCalendar },
-  { id: "checklist", label: "Checklist", Icon: IconCheckList },
-  { id: "clipboard", label: "Clipboard", Icon: IconClipboard },
-  { id: "mail", label: "Mail", Icon: IconEnvelope },
-  { id: "chat", label: "Chat", Icon: IconChatBubble },
-  { id: "bell", label: "Bell", Icon: IconBell },
-  { id: "mind-map", label: "Mind Map", Icon: IconMindMap },
-  { id: "stopwatch", label: "Stopwatch", Icon: IconStopwatch },
-  { id: "person", label: "Person", Icon: IconUser },
-  { id: "pencil", label: "Pencil", Icon: IconPencil },
-  { id: "paperclip", label: "Paperclip", Icon: IconPaperclip },
-  { id: "wallet", label: "Wallet", Icon: IconWallet },
-  { id: "credit-card", label: "Credit Card", Icon: IconCreditCard },
-  { id: "coins", label: "Coins", Icon: IconCoins },
-  { id: "receipt", label: "Receipt", Icon: IconReceipt },
-  { id: "chart", label: "Chart", Icon: IconChartBar },
-  { id: "cart", label: "Cart", Icon: IconCart },
-  { id: "gift", label: "Gift", Icon: IconGift },
-  { id: "diamond", label: "Diamond", Icon: IconDiamond },
-  { id: "computer", label: "Computer", Icon: IconComputer },
-  { id: "phone", label: "Phone", Icon: IconPhone },
-  { id: "terminal", label: "Terminal", Icon: IconTerminal },
-  { id: "bug", label: "Bug", Icon: IconBug },
-  { id: "chip", label: "Chip", Icon: IconChip },
-  { id: "server", label: "Server", Icon: IconServer },
-  { id: "database", label: "Database", Icon: IconCylinder },
-  { id: "settings", label: "Settings", Icon: IconGear3 },
-  { id: "tools", label: "Tools", Icon: IconSettingsWrench },
-  { id: "lock", label: "Lock", Icon: IconLock },
-  { id: "shield", label: "Shield", Icon: IconShieldCheck },
-  { id: "key", label: "Key", Icon: IconKey },
-  { id: "link", label: "Link", Icon: IconLink2 },
-  { id: "map", label: "Map", Icon: IconMap },
-  { id: "compass", label: "Compass", Icon: IconCompass },
-  { id: "car", label: "Car", Icon: IconCar },
-  { id: "suitcase", label: "Suitcase", Icon: IconSuitcase },
-  { id: "mountain", label: "Mountain", Icon: IconMountain },
-  { id: "sun", label: "Sun", Icon: IconSun },
-  { id: "moon", label: "Moon", Icon: IconMoon },
-  { id: "graduation-cap", label: "Graduation Cap", Icon: IconGraduationCap },
-  { id: "flask", label: "Flask", Icon: IconFlask },
-  { id: "atom", label: "Atom", Icon: IconAtom },
-  { id: "calculator", label: "Calculator", Icon: IconCalculator },
-  { id: "research", label: "Research", Icon: IconMagnifier },
-  { id: "coffee", label: "Coffee", Icon: IconCoffee },
-  { id: "food", label: "Food", Icon: IconForkKnife },
-  { id: "dumbbell", label: "Dumbbell", Icon: IconDumbbell },
-  { id: "paw", label: "Paw", Icon: IconPaw },
-  { id: "headphones", label: "Headphones", Icon: IconHeadphones },
-  { id: "microphone", label: "Microphone", Icon: IconMicrophone },
-  { id: "movie", label: "Movie", Icon: IconMovie },
-  { id: "tv", label: "TV", Icon: IconTv },
-  { id: "ticket", label: "Ticket", Icon: IconTicket },
-  { id: "dice", label: "Dice", Icon: IconDice },
-  { id: "smile", label: "Smile", Icon: IconFaceSmile },
-  { id: "flame", label: "Flame", Icon: IconFlame },
-  { id: "archive", label: "Archive", Icon: IconArchive },
-  { id: "package", label: "Package", Icon: IconPackage },
-  { id: "shapes", label: "Shapes", Icon: IconFigures },
-  { id: "document", label: "Document", Icon: IconFile },
-  { id: "magic", label: "Magic Wand", Icon: IconMagicWand },
+  keywords: string;
+}
+
+export const FOLDER_ICONS: readonly FolderIconOption[] = [
+  {
+    id: "folder",
+    label: "Folder",
+    Icon: IconFolder,
+    keywords: "directory files default",
+  },
+  {
+    id: "bookmark",
+    label: "Bookmark",
+    Icon: IconBookmark,
+    keywords: "saved favorite reading later",
+  },
+  {
+    id: "album",
+    label: "Album",
+    Icon: IconAlbum2,
+    keywords: "photos collection gallery",
+  },
+  {
+    id: "tag",
+    label: "Tag",
+    Icon: IconHashtag,
+    keywords: "hashtag label topic",
+  },
+  {
+    id: "download",
+    label: "Download",
+    Icon: IconDownload,
+    keywords: "downloads saved arrow",
+  },
+  {
+    id: "code",
+    label: "Code",
+    Icon: IconCode2,
+    keywords: "developer programming brackets",
+  },
+  {
+    id: "star",
+    label: "Star",
+    Icon: IconStar,
+    keywords: "favorite starred important",
+  },
+  {
+    id: "heart",
+    label: "Heart",
+    Icon: IconHeart,
+    keywords: "love like favorite",
+  },
+  {
+    id: "sparkle",
+    label: "Sparkle",
+    Icon: IconSparkle,
+    keywords: "magic new shine ai",
+  },
+  {
+    id: "image",
+    label: "Image",
+    Icon: IconImage,
+    keywords: "photo picture gallery",
+  },
+  {
+    id: "camera",
+    label: "Camera",
+    Icon: IconCamera,
+    keywords: "photo photography shoot",
+  },
+  {
+    id: "video",
+    label: "Video",
+    Icon: IconVideo,
+    keywords: "film clip recording",
+  },
+  {
+    id: "music",
+    label: "Music",
+    Icon: IconMusicNote,
+    keywords: "song audio sound",
+  },
+  {
+    id: "book",
+    label: "Book",
+    Icon: IconBook,
+    keywords: "reading library novel",
+  },
+  {
+    id: "note",
+    label: "Note",
+    Icon: IconNote,
+    keywords: "notes writing memo",
+  },
+  {
+    id: "palette",
+    label: "Palette",
+    Icon: IconPalette,
+    keywords: "color art design paint",
+  },
+  {
+    id: "brush",
+    label: "Brush",
+    Icon: IconPaintbrush,
+    keywords: "paint art drawing illustration",
+  },
+  {
+    id: "typography",
+    label: "Typography",
+    Icon: IconTypography,
+    keywords: "font type text lettering",
+  },
+  {
+    id: "layers",
+    label: "Layers",
+    Icon: IconLayers,
+    keywords: "stack design layout",
+  },
+  {
+    id: "cube",
+    label: "Cube",
+    Icon: IconCube,
+    keywords: "3d box model object",
+  },
+  {
+    id: "globe",
+    label: "Globe",
+    Icon: IconGlobe,
+    keywords: "world web internet earth",
+  },
+  {
+    id: "pin",
+    label: "Pin",
+    Icon: IconLocation,
+    keywords: "location place map marker",
+  },
+  {
+    id: "plane",
+    label: "Plane",
+    Icon: IconPlane,
+    keywords: "travel flight trip airport",
+  },
+  {
+    id: "house",
+    label: "House",
+    Icon: IconHouse,
+    keywords: "home living place",
+  },
+  {
+    id: "inbox",
+    label: "Inbox",
+    Icon: IconInbox,
+    keywords: "tray incoming unsorted",
+  },
+  {
+    id: "lightbulb",
+    label: "Lightbulb",
+    Icon: IconLightbulb,
+    keywords: "idea inspiration bulb",
+  },
+  {
+    id: "flag",
+    label: "Flag",
+    Icon: IconFlag,
+    keywords: "milestone goal report",
+  },
+  {
+    id: "trophy",
+    label: "Trophy",
+    Icon: IconTrophy,
+    keywords: "award win achievement",
+  },
+  {
+    id: "rocket",
+    label: "Rocket",
+    Icon: IconRocket,
+    keywords: "launch startup space",
+  },
+  {
+    id: "gamepad",
+    label: "Gamepad",
+    Icon: IconGamepad,
+    keywords: "games gaming controller play",
+  },
+  {
+    id: "leaf",
+    label: "Leaf",
+    Icon: IconLeaf,
+    keywords: "nature plant garden green",
+  },
+  {
+    id: "shopping",
+    label: "Shopping",
+    Icon: IconBagShopping,
+    keywords: "bag store buy",
+  },
+  {
+    id: "briefcase",
+    label: "Briefcase",
+    Icon: IconBriefcase,
+    keywords: "work job business",
+  },
+  {
+    id: "office",
+    label: "Office",
+    Icon: IconBuilding,
+    keywords: "building work company",
+  },
+  {
+    id: "calendar",
+    label: "Calendar",
+    Icon: IconCalendar,
+    keywords: "date schedule event",
+  },
+  {
+    id: "checklist",
+    label: "Checklist",
+    Icon: IconCheckList,
+    keywords: "todo tasks list",
+  },
+  {
+    id: "clipboard",
+    label: "Clipboard",
+    Icon: IconClipboard,
+    keywords: "copy tasks board",
+  },
+  {
+    id: "mail",
+    label: "Mail",
+    Icon: IconEnvelope,
+    keywords: "email envelope letter",
+  },
+  {
+    id: "chat",
+    label: "Chat",
+    Icon: IconChatBubble,
+    keywords: "message conversation talk",
+  },
+  {
+    id: "bell",
+    label: "Bell",
+    Icon: IconBell,
+    keywords: "notification alert reminder",
+  },
+  {
+    id: "mind-map",
+    label: "Mind Map",
+    Icon: IconMindMap,
+    keywords: "diagram brainstorm ideas",
+  },
+  {
+    id: "stopwatch",
+    label: "Stopwatch",
+    Icon: IconStopwatch,
+    keywords: "timer time clock",
+  },
+  {
+    id: "person",
+    label: "Person",
+    Icon: IconUser,
+    keywords: "user people profile",
+  },
+  {
+    id: "pencil",
+    label: "Pencil",
+    Icon: IconPencil,
+    keywords: "edit write draw",
+  },
+  {
+    id: "paperclip",
+    label: "Paperclip",
+    Icon: IconPaperclip,
+    keywords: "attachment clip",
+  },
+  {
+    id: "wallet",
+    label: "Wallet",
+    Icon: IconWallet,
+    keywords: "money finance budget",
+  },
+  {
+    id: "credit-card",
+    label: "Credit Card",
+    Icon: IconCreditCard,
+    keywords: "payment money finance",
+  },
+  {
+    id: "coins",
+    label: "Coins",
+    Icon: IconCoins,
+    keywords: "money finance savings",
+  },
+  {
+    id: "receipt",
+    label: "Receipt",
+    Icon: IconReceipt,
+    keywords: "invoice expense bill",
+  },
+  {
+    id: "chart",
+    label: "Chart",
+    Icon: IconChartBar,
+    keywords: "graph stats analytics",
+  },
+  {
+    id: "cart",
+    label: "Cart",
+    Icon: IconCart,
+    keywords: "shopping store buy",
+  },
+  {
+    id: "gift",
+    label: "Gift",
+    Icon: IconGift,
+    keywords: "present birthday wishlist",
+  },
+  {
+    id: "diamond",
+    label: "Diamond",
+    Icon: IconDiamond,
+    keywords: "gem jewel premium",
+  },
+  {
+    id: "computer",
+    label: "Computer",
+    Icon: IconComputer,
+    keywords: "desktop mac laptop screen",
+  },
+  {
+    id: "phone",
+    label: "Phone",
+    Icon: IconPhone,
+    keywords: "mobile iphone call",
+  },
+  {
+    id: "terminal",
+    label: "Terminal",
+    Icon: IconTerminal,
+    keywords: "command line shell code",
+  },
+  {
+    id: "bug",
+    label: "Bug",
+    Icon: IconBug,
+    keywords: "debug issue insect",
+  },
+  {
+    id: "chip",
+    label: "Chip",
+    Icon: IconChip,
+    keywords: "hardware processor electronics",
+  },
+  {
+    id: "server",
+    label: "Server",
+    Icon: IconServer,
+    keywords: "hosting backend infrastructure",
+  },
+  {
+    id: "database",
+    label: "Database",
+    Icon: IconCylinder,
+    keywords: "data storage sql",
+  },
+  {
+    id: "settings",
+    label: "Settings",
+    Icon: IconGear3,
+    keywords: "gear preferences config",
+  },
+  {
+    id: "tools",
+    label: "Tools",
+    Icon: IconSettingsWrench,
+    keywords: "wrench repair fix",
+  },
+  {
+    id: "lock",
+    label: "Lock",
+    Icon: IconLock,
+    keywords: "private secure password",
+  },
+  {
+    id: "shield",
+    label: "Shield",
+    Icon: IconShieldCheck,
+    keywords: "security safe protection",
+  },
+  {
+    id: "key",
+    label: "Key",
+    Icon: IconKey,
+    keywords: "password access unlock",
+  },
+  {
+    id: "link",
+    label: "Link",
+    Icon: IconLink2,
+    keywords: "url chain web",
+  },
+  {
+    id: "map",
+    label: "Map",
+    Icon: IconMap,
+    keywords: "travel directions atlas",
+  },
+  {
+    id: "compass",
+    label: "Compass",
+    Icon: IconCompass,
+    keywords: "explore navigation direction",
+  },
+  {
+    id: "car",
+    label: "Car",
+    Icon: IconCar,
+    keywords: "drive vehicle auto",
+  },
+  {
+    id: "suitcase",
+    label: "Suitcase",
+    Icon: IconSuitcase,
+    keywords: "travel luggage trip",
+  },
+  {
+    id: "mountain",
+    label: "Mountain",
+    Icon: IconMountain,
+    keywords: "hike outdoors landscape nature",
+  },
+  {
+    id: "sun",
+    label: "Sun",
+    Icon: IconSun,
+    keywords: "day summer weather light",
+  },
+  {
+    id: "moon",
+    label: "Moon",
+    Icon: IconMoon,
+    keywords: "night dark sleep",
+  },
+  {
+    id: "graduation-cap",
+    label: "Graduation Cap",
+    Icon: IconGraduationCap,
+    keywords: "school education study university",
+  },
+  {
+    id: "flask",
+    label: "Flask",
+    Icon: IconFlask,
+    keywords: "science lab experiment chemistry",
+  },
+  {
+    id: "atom",
+    label: "Atom",
+    Icon: IconAtom,
+    keywords: "science physics",
+  },
+  {
+    id: "calculator",
+    label: "Calculator",
+    Icon: IconCalculator,
+    keywords: "math numbers finance",
+  },
+  {
+    id: "research",
+    label: "Research",
+    Icon: IconMagnifier,
+    keywords: "search magnifier find",
+  },
+  {
+    id: "coffee",
+    label: "Coffee",
+    Icon: IconCoffee,
+    keywords: "cafe drink cup",
+  },
+  {
+    id: "food",
+    label: "Food",
+    Icon: IconForkKnife,
+    keywords: "recipes cooking restaurant fork knife",
+  },
+  {
+    id: "dumbbell",
+    label: "Dumbbell",
+    Icon: IconDumbbell,
+    keywords: "fitness gym workout",
+  },
+  {
+    id: "paw",
+    label: "Paw",
+    Icon: IconPaw,
+    keywords: "pets animal dog cat",
+  },
+  {
+    id: "headphones",
+    label: "Headphones",
+    Icon: IconHeadphones,
+    keywords: "audio music podcast",
+  },
+  {
+    id: "microphone",
+    label: "Microphone",
+    Icon: IconMicrophone,
+    keywords: "podcast audio recording voice",
+  },
+  {
+    id: "movie",
+    label: "Movie",
+    Icon: IconMovie,
+    keywords: "film cinema clapperboard",
+  },
+  {
+    id: "tv",
+    label: "TV",
+    Icon: IconTv,
+    keywords: "television shows series",
+  },
+  {
+    id: "ticket",
+    label: "Ticket",
+    Icon: IconTicket,
+    keywords: "event concert pass",
+  },
+  {
+    id: "dice",
+    label: "Dice",
+    Icon: IconDice,
+    keywords: "games random luck",
+  },
+  {
+    id: "smile",
+    label: "Smile",
+    Icon: IconFaceSmile,
+    keywords: "happy emoji face fun",
+  },
+  {
+    id: "flame",
+    label: "Flame",
+    Icon: IconFlame,
+    keywords: "fire hot trending",
+  },
+  {
+    id: "archive",
+    label: "Archive",
+    Icon: IconArchive,
+    keywords: "box storage old",
+  },
+  {
+    id: "package",
+    label: "Package",
+    Icon: IconPackage,
+    keywords: "box delivery parcel",
+  },
+  {
+    id: "shapes",
+    label: "Shapes",
+    Icon: IconFigures,
+    keywords: "figures geometry design",
+  },
+  {
+    id: "document",
+    label: "Document",
+    Icon: IconFile,
+    keywords: "file paper page",
+  },
+  {
+    id: "magic",
+    label: "Magic Wand",
+    Icon: IconMagicWand,
+    keywords: "wand spell sparkle",
+  },
 ];
 
 /** Context menus list only the first icons; the full set lives in Customize Folder. */
@@ -232,11 +710,44 @@ export const FOLDER_SWATCHES = [
   { id: "pink", label: "Pink", css: "var(--ds-pink-9)" },
 ] as const;
 
-export function folderColorCss(
+function searchTerms(icon: FolderIconOption): string[] {
+  return `${icon.label} ${icon.id.replaceAll("-", " ")} ${icon.keywords}`
+    .toLowerCase()
+    .split(/\s+/);
+}
+
+/** Every query word must start a word in the icon's name or keywords; name matches sort first. */
+export function searchFolderIcons(query: string): readonly FolderIconOption[] {
+  const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  if (!words.length) return FOLDER_ICONS;
+  const named = (icon: FolderIconOption) =>
+    words.every((word) =>
+      icon.label
+        .toLowerCase()
+        .split(/\s+/)
+        .some((term) => term.startsWith(word)),
+    );
+  return FOLDER_ICONS.filter((icon) => {
+    const terms = searchTerms(icon);
+    return words.every((word) => terms.some((term) => term.startsWith(word)));
+  }).sort((left, right) => Number(named(right)) - Number(named(left)));
+}
+
+/** The color as stored, for swatches that preview exactly what was picked. */
+export function folderSwatchCss(
   color: string | null | undefined,
 ): string | undefined {
   if (!color) return undefined;
   const swatch = FOLDER_SWATCHES.find((item) => item.id === color);
   if (swatch) return swatch.css;
   return color.startsWith("#") ? color : undefined;
+}
+
+/** Custom colors keep their hue but clamp lightness to the theme's band, so a near-white or near-black pick stays visible. */
+export function folderColorCss(
+  color: string | null | undefined,
+): string | undefined {
+  const css = folderSwatchCss(color);
+  if (!css || !color?.startsWith("#")) return css;
+  return `oklch(from ${css} clamp(var(--folder-ink-min, 0), l, var(--folder-ink-max, 1)) c h)`;
 }
