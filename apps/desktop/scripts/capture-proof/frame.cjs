@@ -136,12 +136,12 @@ async function layers(frame, options) {
     .removeAlpha()
     .toBuffer();
   const shadow = (dy, blur, opacity, id) => {
-    const shape = roundedRect(
+    const silhouette = roundedRect(
       { ...rect, y: rect.y + dy * unit },
       radius,
       `fill="#000" fill-opacity="${opacity}" filter="url(#${id})"`,
     );
-    return `<filter id="${id}" filterUnits="userSpaceOnUse" x="0" y="0" width="${canvas.width}" height="${canvas.height}"><feGaussianBlur stdDeviation="${blur * unit}"/></filter>${shape}`;
+    return `<filter id="${id}" filterUnits="userSpaceOnUse" x="0" y="0" width="${canvas.width}" height="${canvas.height}"><feGaussianBlur stdDeviation="${blur * unit}"/></filter>${silhouette}`;
   };
   const background = await sharp(softened)
     .composite([
