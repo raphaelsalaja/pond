@@ -1,5 +1,5 @@
 .root {
-  width: min(360px, var(--available-width));
+  width: min(480px, var(--available-width));
   max-height: min(420px, var(--available-height));
 }
 
