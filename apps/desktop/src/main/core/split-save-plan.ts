@@ -232,6 +232,8 @@ export function buildSlideRows(
       files: [],
       coverIndex: 0,
       rating: save.rating,
+      inboxState: save.inboxState,
+      inboxUntil: save.inboxUntil,
       ...keptSensitivity(save),
       status: "ingesting",
       ingestStartedAt: now,

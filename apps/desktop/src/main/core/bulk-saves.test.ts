@@ -176,4 +176,42 @@ describe.skipIf(!nativeAvailable())("complete bulk selections", () => {
     ).rejects.toThrow("Disk full");
     expect(f.undo).toEqual([]);
   });
+  it("moves Saves through Inbox states with undo snapshots and clears the snooze time", async () => {
+    const f = fixture();
+    const ids = f.ids.slice(0, 3);
+    f.raw.exec("update saves set deleted_at=1 where id='save-2'");
+    await bulkEditSaves(
+      { ids, operation: { kind: "inbox", state: "snoozed", until: 5000 } },
+      f.db,
+      f.commit,
+      f.recordUndo,
+    );
+    expect(f.undo[0]).toHaveLength(2);
+    expect(f.undo[0]?.[0]).toMatchObject({
+      before: { inboxState: null, inboxUntil: null },
+      patch: { inboxState: "snoozed", inboxUntil: 5000 },
+    });
+    f.raw.exec(
+      "update saves set inbox_state='snoozed', inbox_until=5000 where id in ('save-0','save-1')",
+    );
+    await bulkEditSaves(
+      { ids, operation: { kind: "inbox", state: "processed", until: 9000 } },
+      f.db,
+      f.commit,
+      f.recordUndo,
+    );
+    expect(f.undo[1]?.[0]).toMatchObject({
+      before: { inboxState: "snoozed", inboxUntil: 5000 },
+      patch: { inboxState: "processed", inboxUntil: null },
+    });
+    await expect(
+      bulkEditSaves(
+        { ids, operation: { kind: "inbox", state: "snoozed" } },
+        f.db,
+        f.commit,
+        f.recordUndo,
+      ),
+    ).rejects.toThrow("snoozed");
+    expect(f.batches).toHaveLength(2);
+  });
 });

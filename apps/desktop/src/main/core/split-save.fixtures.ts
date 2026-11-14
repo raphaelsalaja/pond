@@ -110,6 +110,8 @@ export function carousel(overrides: Partial<Save> = {}): Save {
     crop: null,
     dominantColors: ["#112233"],
     primaryColor: "#112233",
+    inboxState: null,
+    inboxUntil: null,
     status: "complete",
     ingestStartedAt: savedAt,
     ingestCompletedAt: savedAt,

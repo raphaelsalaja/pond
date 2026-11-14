@@ -57,6 +57,7 @@ function emptyQueueSummary(): QueueSummary {
 function emptySidebarCounts(): LibrarySidebarCounts {
   return {
     library: 0,
+    inbox: 0,
     uncategorized: 0,
     untagged: 0,
     recentlyAdded: 0,

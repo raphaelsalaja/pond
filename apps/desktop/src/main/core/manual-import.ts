@@ -9,6 +9,7 @@ import {
   saves,
 } from "@pond/schema/db";
 import type { ImportOrigin } from "@pond/schema/import-origin";
+import type { InboxIntake } from "@pond/schema/inbox";
 import {
   classifyLibraryFileFromHeader,
   type LibraryFileFormat,
@@ -29,6 +30,7 @@ import { saveDir } from "../paths";
 import { executeBatch, withMutationScope } from "./executor";
 import { extractFontMetadata, metadataFromOpenType } from "./font-metadata";
 import { extractImageMetadata, type ImageMetadata } from "./image-metadata";
+import { inboxIntakeForOrigin, inboxStateForIntake } from "./inbox";
 import { extractMediaMetadata } from "./media-metadata";
 import { persistSave } from "./persist-save";
 import type { WriteFileArgs } from "./pipeline/workers/apply";
@@ -53,6 +55,8 @@ export interface ManualSaveInput {
   source?: Source;
   accountId?: string;
   importedFrom?: ImportOrigin;
+  /** Falls back to `importedFrom`; derived Saves like crops pass neither and stay out of the Inbox. */
+  inboxIntake?: InboxIntake;
   savedAt?: Date;
   createdAt?: Date;
   publishedAt?: Date;
@@ -321,6 +325,10 @@ async function importManualSave(
     savedAt: input.savedAt ?? now,
     createdAt: input.createdAt ?? now,
     publishedAt: input.publishedAt,
+    inboxState: await inboxStateForIntake(
+      input.inboxIntake ??
+        (input.importedFrom ? inboxIntakeForOrigin(input.importedFrom) : null),
+    ),
   };
   if (input.width != null) insertValues.width = input.width;
   if (input.height != null) insertValues.height = input.height;

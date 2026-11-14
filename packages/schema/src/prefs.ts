@@ -209,6 +209,15 @@ const trash = z.object({
   confirmBeforeEmpty: z.boolean().catch(true),
 });
 
+/** One-off captures feed the Inbox by default; bulk paths stay out so a sync never floods it. */
+const inbox = z.object({
+  enabled: z.boolean().catch(true),
+  captures: z.boolean().catch(true),
+  imports: z.boolean().catch(false),
+  syncs: z.boolean().catch(false),
+  watches: z.boolean().catch(false),
+});
+
 const windowSlice = z.object({
   closeToTray: z.boolean().catch(false),
   launchHidden: z.boolean().catch(false),
@@ -476,6 +485,7 @@ const PrefsObject = z.object({
   sidebar: sidebar.catch(sidebar.parse({})),
   feedback: feedback.catch(feedback.parse({})),
   trash: trash.catch(trash.parse({})),
+  inbox: inbox.catch(inbox.parse({})),
   window: windowSlice.catch(windowSlice.parse({})),
   system: system.catch(system.parse({})),
   quickCapture: quickCapture.catch(quickCapture.parse({})),

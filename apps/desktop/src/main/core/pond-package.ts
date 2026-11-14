@@ -18,6 +18,7 @@ import {
 } from "node:path";
 import { MEDIA_TYPES, type NewSave, SOURCES, saves } from "@pond/schema/db";
 import { IMPORT_ORIGINS } from "@pond/schema/import-origin";
+import { INBOX_STATES, inboxFields } from "@pond/schema/inbox";
 import { StoredRawJsonSchema, storedAsRawJson } from "@pond/schema/raw-schema";
 import { and, eq } from "drizzle-orm";
 import { ulid } from "ulid";
@@ -29,6 +30,7 @@ import { writeEnrichmentSidecar } from "./enrichment-sidecar";
 import { executeBatch, withMutationScope } from "./executor";
 import { exportSavesToDirectory } from "./export-saves";
 import { importFolderTree, setSaveFolders } from "./folders";
+import { inboxIntakeForOrigin, inboxStateForIntake } from "./inbox";
 import { runLibraryTransfer } from "./library-transfers";
 import {
   importPackageOrganization,
@@ -57,6 +59,9 @@ const PackageSaveSchema = z.object({
   source: z.enum(SOURCES).optional(),
   sourceId: z.string().optional(),
   importedFrom: z.enum(IMPORT_ORIGINS).optional().catch(undefined),
+  /** Absent in packages from before the Inbox; null means the Save was never in it. */
+  inboxState: z.enum(INBOX_STATES).nullable().optional().catch(undefined),
+  inboxUntil: z.number().nullable().optional().catch(undefined),
   tags: z.array(z.string()),
   notes: z.string().nullable(),
   rawJson: StoredRawJsonSchema.nullable().optional(),
@@ -149,6 +154,12 @@ const runtime: PackageImportRuntime = {
     return existing?.id ?? null;
   },
   async commit(id, save, folderIds) {
+    const inbox =
+      save.inboxState === undefined
+        ? inboxFields(
+            await inboxStateForIntake(inboxIntakeForOrigin("pond-package")),
+          )
+        : inboxFields(save.inboxState, save.inboxUntil);
     return withMutationScope(async () => {
       const data: NewSave = {
         id,
@@ -182,6 +193,7 @@ const runtime: PackageImportRuntime = {
         flipX: save.flipX,
         flipY: save.flipY,
         crop: save.crop,
+        ...inbox,
         files: save.files,
         fileSize: save.files.reduce((size, file) => size + file.size, 0),
         savedAt: save.savedAt ? new Date(save.savedAt) : new Date(),

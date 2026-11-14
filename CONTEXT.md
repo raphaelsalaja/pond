@@ -30,6 +30,10 @@ _Avoid_: ScrapedHarvest, harvest meta, extras, raw scrape, DTO
 A Capture supplied when a Save is enqueued, so harvest can skip a fresh scrape while it is still fresh.
 _Avoid_: prefill, stub, partial capture
 
+**Inbox**:
+Saves waiting for you to review them. Each Save carries its own Inbox state: Needs Review, Snoozed until a time, or Processed. A Save that never entered the Inbox has none. Folders, tags, and views do not change it; only an Inbox action does.
+_Avoid_: queue, triage folder, unread
+
 **Tag**:
 A label you attach to Saves, optionally in a group.
 

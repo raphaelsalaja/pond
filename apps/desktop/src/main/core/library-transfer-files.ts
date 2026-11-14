@@ -11,6 +11,7 @@ import { hostname } from "node:os";
 import { join, resolve } from "node:path";
 import { MEDIA_TYPES, SOURCES } from "@pond/schema/db";
 import { legacyImportOrigin, toImportOrigin } from "@pond/schema/import-origin";
+import { inboxFields } from "@pond/schema/inbox";
 import { StoredRawJsonSchema, storedAsRawJson } from "@pond/schema/raw-schema";
 import { ulid } from "ulid";
 import { z } from "zod";
@@ -278,6 +279,7 @@ export function copyPackageToLibrary(packagePath: string, libraryPath: string) {
               flipX: save.flipX ?? false,
               flipY: save.flipY ?? false,
               crop: save.crop ?? null,
+              ...inboxFields(save.inboxState ?? null, save.inboxUntil),
             },
           };
           const directory = join(root, "items", `${id}.info`);

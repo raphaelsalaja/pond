@@ -129,7 +129,7 @@ Counts leave out trashed and skipped Saves.
 ```
 
 - `query` takes a filter group, the same shape a saved view stores.
-- `scope` narrows by source, folders, tag, untagged, uncategorized, Trash (`deletedOnly`), Save ids, or `savedSince` (epoch ms).
+- `scope` narrows by source, folders, tag, untagged, uncategorized, Trash (`deletedOnly`), Save ids, `savedSince` (epoch ms), or Inbox state (`inbox`: `needs_review`, `snoozed`, or `processed`).
 - `keywordScopes` limits keyword matching to fields like `title`, `tags`, or `notes`.
 - `limit` is 1 to 500.
 

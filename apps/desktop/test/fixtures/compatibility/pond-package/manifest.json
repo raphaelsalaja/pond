@@ -14,6 +14,7 @@
     "Validate every original before creating folders or Saves.",
     "Reject duplicate identities, unsafe paths, and invalid folder ancestry.",
     "Preserve nested folder membership and supported organization metadata.",
-    "Continue reading plaintext version 1 packages after encrypted packages ship."
+    "Continue reading plaintext version 1 packages after encrypted packages ship.",
+    "Keep a Save's inboxState and inboxUntil when present; packages without them follow the importing Library's Inbox setting for imports."
   ]
 }

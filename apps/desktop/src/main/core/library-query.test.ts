@@ -163,10 +163,11 @@ describe.skipIf(!nativeAvailable())("authoritative library query", () => {
   it("counts the full library and folder membership beyond the renderer page", () => {
     const { db, sqlite } = setup();
     sqlite.exec(
-      "insert into folders(id,name) values ('all','All');insert into save_folders(save_id,folder_id) select id,'all' from saves;update saves set deleted_at=1 where id='0000'",
+      "insert into folders(id,name) values ('all','All');insert into save_folders(save_id,folder_id) select id,'all' from saves;update saves set deleted_at=1 where id='0000';update saves set inbox_state='needs_review' where id in ('0000','0001');update saves set inbox_state='snoozed', inbox_until=1 where id='0002'",
     );
     expect(querySidebarCounts(db)).toEqual({
       library: 1199,
+      inbox: 1,
       uncategorized: 0,
       untagged: 1199,
       recentlyAdded: 0,

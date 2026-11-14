@@ -36,7 +36,7 @@ export interface FilterOption {
 export const FILTER_SECTIONS = [
   {
     label: "Organize",
-    fields: ["tags", "folder", "source", "importedFrom", "list"],
+    fields: ["tags", "folder", "source", "importedFrom", "inbox", "list"],
   },
   {
     label: "Media",
@@ -111,6 +111,7 @@ export const FILTER_MENU: readonly (readonly FilterMenuEntry[])[] = [
     "folder",
     "source",
     "importedFrom",
+    "inbox",
     "list",
     "type",
     "format",

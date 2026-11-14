@@ -1,5 +1,7 @@
 export interface LibrarySidebarCounts {
   library: number;
+  /** Needs Review only; snoozed and processed Saves are not actionable yet. */
+  inbox: number;
   uncategorized: number;
   untagged: number;
   recentlyAdded: number;

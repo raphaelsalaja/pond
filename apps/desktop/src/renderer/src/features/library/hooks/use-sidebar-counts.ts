@@ -14,6 +14,7 @@ function sameFolderMap(
 function sameCounts(a: LibrarySidebarCounts, b: LibrarySidebarCounts): boolean {
   return (
     a.library === b.library &&
+    a.inbox === b.inbox &&
     a.uncategorized === b.uncategorized &&
     a.untagged === b.untagged &&
     a.recentlyAdded === b.recentlyAdded &&
@@ -26,6 +27,7 @@ function sameCounts(a: LibrarySidebarCounts, b: LibrarySidebarCounts): boolean {
 
 const EMPTY: LibrarySidebarCounts = {
   library: 0,
+  inbox: 0,
   uncategorized: 0,
   untagged: 0,
   recentlyAdded: 0,

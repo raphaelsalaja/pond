@@ -17,6 +17,7 @@
     "Open the Library without requiring encryption metadata.",
     "Preserve original bytes and Save identity during encryption migration.",
     "Create an untouched verified backup before committing a new disk format.",
-    "Keep the external index and thumbnail cache rebuildable from Library data."
+    "Keep the external index and thumbnail cache rebuildable from Library data.",
+    "Read Inbox state from optional userData.inboxState and userData.inboxUntil; a Save without them is not in the Inbox."
   ]
 }

@@ -6,6 +6,7 @@ import {
   TASK_STATUSES,
 } from "@pond/schema/db";
 import { IMPORT_ORIGINS } from "@pond/schema/import-origin";
+import { INBOX_STATES } from "@pond/schema/inbox";
 import { LIST_KINDS } from "@pond/schema/list-kinds";
 import { StoredRawJsonSchema, storedAsRawJson } from "@pond/schema/raw-schema";
 import { toMs } from "@shared/to-ms";
@@ -92,6 +93,8 @@ export const SavePatchSchema = z.object({
     .catch(null),
   dominantColors: Texts,
   primaryColor: Text,
+  inboxState: z.enum(INBOX_STATES).nullish().catch(null),
+  inboxUntil: Num,
   tags: Texts,
   listKinds: z.array(z.enum(LIST_KINDS)).nullish().catch(null),
   rawJson: StoredRawJsonSchema.transform(storedAsRawJson).nullish().catch(null),
@@ -206,6 +209,8 @@ export function normalise(
     crop: raw.crop ?? null,
     dominantColors: raw.dominantColors ?? [],
     primaryColor: raw.primaryColor ?? null,
+    inboxState: raw.inboxState ?? null,
+    inboxUntil: raw.inboxUntil ?? null,
     tags: raw.tags ?? [],
     listKinds: raw.listKinds ?? [],
     rawJson: raw.rawJson ?? undefined,

@@ -30,6 +30,7 @@ export function querySidebarCounts(
         untagged: sql<number>`sum(case when json_array_length(coalesce(${saves.tags},'[]'))=0 then 1 else 0 end)`,
         uncategorized: sql<number>`sum(case when not exists(select 1 from save_folders where save_id=${saves.id}) then 1 else 0 end)`,
         recentlyAdded: sql<number>`sum(case when ${saves.savedAt} >= ${recentlyAddedSince(now)} then 1 else 0 end)`,
+        inbox: sql<number>`sum(case when ${saves.inboxState} = 'needs_review' then 1 else 0 end)`,
       })
       .from(saves)
       .where(live)
@@ -58,6 +59,7 @@ export function querySidebarCounts(
     );
     return {
       library: rows?.library ?? 0,
+      inbox: rows?.inbox ?? 0,
       untagged: rows?.untagged ?? 0,
       uncategorized: rows?.uncategorized ?? 0,
       recentlyAdded: rows?.recentlyAdded ?? 0,

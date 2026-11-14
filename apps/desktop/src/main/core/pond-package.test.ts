@@ -61,6 +61,8 @@ async function fixture(extra: [string, string][] = []) {
           tags: ["Print"],
           files,
           rating: 4,
+          inboxState: "snoozed",
+          inboxUntil: 1_900_000_000_000,
           savedAt: new Date("2020-01-01T00:00:00.000Z"),
         },
       },
@@ -127,6 +129,10 @@ describe("Pond package transfer", () => {
       await readFile(join(root, row?.id ?? "missing", "metadata.json"), "utf8"),
     );
     expect(metadata.rating).toBe(4);
+    expect(metadata).toMatchObject({
+      inboxState: "snoozed",
+      inboxUntil: 1_900_000_000_000,
+    });
     expect(
       JSON.parse(
         await readFile(
@@ -140,6 +146,21 @@ describe("Pond package transfer", () => {
       imported: 0,
       skipped: 1,
     });
+  });
+  it("leaves Inbox state unset for a package written before the Inbox", async () => {
+    const { root, directory } = await fixture();
+    const manifestPath = join(directory, "pond-export.json");
+    const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+    delete manifest.saves[0].inboxState;
+    delete manifest.saves[0].inboxUntil;
+    await writeFile(manifestPath, JSON.stringify(manifest));
+    const target = destination(root);
+    await importPondPackage(directory, target.dependencies);
+    const row = target.imported.get("local-source");
+    const metadata = JSON.parse(
+      await readFile(join(root, row?.id ?? "missing", "metadata.json"), "utf8"),
+    );
+    expect(metadata).not.toHaveProperty("inboxState");
   });
   it("retains nested archive paths and zero-byte attachments", async () => {
     const { root, directory } = await fixture([

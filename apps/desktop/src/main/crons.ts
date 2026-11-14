@@ -1,6 +1,7 @@
 import { net } from "electron";
 import log from "electron-log/main.js";
 import { isSyncScheduleDue } from "../shared/sync-schedule";
+import { returnDueSnoozes } from "./core/inbox";
 import { emptyTrashOlderThan } from "./core/library-ops";
 import { getPrefs } from "./core/prefs";
 import { maybeUpdateYtDlp, recoverYtDlp } from "./core/refresh/yt-dlp-updater";
@@ -23,6 +24,19 @@ export function registerTrashCron() {
           `[pond trash-cron] purged ${purged} items older than ${days}d`,
         );
       }
+    },
+  });
+}
+
+export function registerInboxSnoozeCron() {
+  schedule({
+    name: "inbox-snooze",
+    every: 60_000,
+    initialDelay: 15_000,
+    fn: async () => {
+      const returned = await returnDueSnoozes();
+      if (returned > 0)
+        log.info(`[pond inbox-cron] returned ${returned} snoozed saves`);
     },
   });
 }

@@ -1,3 +1,4 @@
+import { INBOX_STATES } from "@pond/schema/inbox";
 import { z } from "zod";
 
 export const BulkEditSchema = z.object({
@@ -16,6 +17,12 @@ export const BulkEditSchema = z.object({
     z.object({
       kind: z.literal("notes"),
       notes: z.string().max(8192).nullable(),
+    }),
+    z.object({
+      kind: z.literal("inbox"),
+      state: z.enum(INBOX_STATES),
+      /** Epoch ms; required when `state` is `snoozed`. */
+      until: z.number().int().positive().optional(),
     }),
     z.object({ kind: z.literal("suggested-tags") }),
     z.object({ kind: z.literal("trash") }),

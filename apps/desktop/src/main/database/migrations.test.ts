@@ -122,6 +122,31 @@ describe.skipIf(!nativeSqliteAvailable())("pond database migrations", () => {
     }
   });
 
+  it("adds Inbox columns to an existing index without moving any Save into the Inbox", () => {
+    const db = new Database(":memory:");
+    try {
+      migratePond(db);
+      db.exec("DROP INDEX saves_inbox_idx");
+      db.exec("ALTER TABLE saves DROP COLUMN inbox_state");
+      db.exec("ALTER TABLE saves DROP COLUMN inbox_until");
+      db.prepare(
+        "INSERT INTO saves (id, source, source_id, url) VALUES (?, ?, ?, ?)",
+      ).run("old", "local", "old", "pond:local/old");
+
+      migratePond(db);
+      expect(
+        db.prepare("SELECT inbox_state, inbox_until FROM saves").all(),
+      ).toEqual([{ inbox_state: null, inbox_until: null }]);
+      const indexes = db
+        .prepare("PRAGMA index_list(saves)")
+        .all()
+        .map((row) => z.object({ name: z.string() }).parse(row).name);
+      expect(indexes).toContain("saves_inbox_idx");
+    } finally {
+      db.close();
+    }
+  });
+
   it("keeps source ids that were deleted after the save row is gone", () => {
     const db = new Database(":memory:");
     try {

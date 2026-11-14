@@ -98,6 +98,7 @@ export function libraryQueryWhere(
     scope.savedSince !== undefined
       ? sql`${saves.savedAt} >= ${scope.savedSince}`
       : undefined,
+    scope.inbox ? sql`${saves.inboxState} = ${scope.inbox}` : undefined,
     hiddenFolderIds.length > 0
       ? sql`not exists (select 1 from save_folders locked_sf where locked_sf.save_id = ${saves.id} and locked_sf.folder_id in (select value from json_each(${JSON.stringify(hiddenFolderIds)})))`
       : undefined,

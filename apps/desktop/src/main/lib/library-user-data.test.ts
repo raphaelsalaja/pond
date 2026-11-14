@@ -34,6 +34,43 @@ describe("portable save metadata", () => {
     expect(patchTouchesInfo({ rating: 1 })).toBe(true);
   });
 
+  it("stores Inbox state in userData and keeps it through other user edits", () => {
+    const legacy = StoredInfoDocSchema.parse({
+      id: "save",
+      userData: {
+        rating: null,
+        dominantColors: [],
+        rotate: 0,
+        flipX: false,
+        flipY: false,
+        crop: null,
+      },
+    });
+    expect(legacy.userData).toMatchObject({
+      inboxState: null,
+      inboxUntil: null,
+    });
+    expect(patchTouchesInfo({ inboxState: "processed" })).toBe(true);
+    const snoozed = applyPatchToInfo(legacy, {
+      inboxState: "snoozed",
+      inboxUntil: 1_900_000_000_000,
+    });
+    const rated = applyPatchToInfo(StoredInfoDocSchema.parse(snoozed), {
+      rating: 3,
+    });
+    expect(StoredInfoDocSchema.parse(rated).userData).toMatchObject({
+      rating: 3,
+      inboxState: "snoozed",
+      inboxUntil: 1_900_000_000_000,
+    });
+    expect(
+      StoredInfoDocSchema.parse({
+        id: "save",
+        userData: { ...rated.userData, inboxState: "archived" },
+      }).userData?.inboxState,
+    ).toBeNull();
+  });
+
   it("keeps where an imported save came from across later edits", () => {
     const info = StoredInfoDocSchema.parse({ id: "save", source: "web" });
     expect(info.importedFrom).toBeUndefined();

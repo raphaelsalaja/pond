@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { DEFAULT_SOURCE_SYNC_PREFS, saveFolders } from "@pond/schema/db";
+import { DEFAULT_SOURCE_SYNC_PREFS, saveFolders, saves } from "@pond/schema/db";
 import Database from "better-sqlite3";
 import { eq } from "drizzle-orm";
 import { app } from "electron";
@@ -30,6 +30,15 @@ async function folderIds(saveId: string): Promise<string[]> {
     .from(saveFolders)
     .where(eq(saveFolders.saveId, saveId));
   return rows.map((row) => row.folderId);
+}
+
+async function inboxState(saveId: string): Promise<string | null> {
+  const db = await getDb();
+  const [row] = await db
+    .select({ inboxState: saves.inboxState })
+    .from(saves)
+    .where(eq(saves.id, saveId));
+  return row?.inboxState ?? null;
 }
 
 describe.skipIf(!nativeSqliteAvailable())("incoming folder assignment", () => {
@@ -93,6 +102,7 @@ describe.skipIf(!nativeSqliteAvailable())("incoming folder assignment", () => {
 
     expect(created.created).toBe(true);
     expect(await folderIds(created.id)).toEqual(["starred-repos"]);
+    expect(await inboxState(created.id)).toBeNull();
   });
 
   it("files an extension capture when that source has one folder rule", async () => {
@@ -102,6 +112,7 @@ describe.skipIf(!nativeSqliteAvailable())("incoming folder assignment", () => {
 
     expect(created.created).toBe(true);
     expect(await folderIds(created.id)).toEqual(["starred-repos"]);
+    expect(await inboxState(created.id)).toBe("needs_review");
   });
 
   it("keeps a saved folder rule and still files the next sync", async () => {
@@ -125,6 +136,7 @@ describe.skipIf(!nativeSqliteAvailable())("incoming folder assignment", () => {
 
     expect(bulk.created).toBe(1);
     expect(await folderIds(bulk.createdIds[0] ?? "")).toEqual(["kept"]);
+    expect(await inboxState(bulk.createdIds[0] ?? "")).toBeNull();
   });
 
   it("files a capture into the only watched source folder", async () => {

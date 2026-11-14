@@ -36,6 +36,8 @@ type ExportSave = Pick<
       | "flipX"
       | "flipY"
       | "crop"
+      | "inboxState"
+      | "inboxUntil"
       | "lang"
       | "siteName"
       | "rawJson"
@@ -306,6 +308,8 @@ export async function exportFiles(input: {
             flipX: save.flipX,
             flipY: save.flipY,
             crop: save.crop,
+            inboxState: save.inboxState ?? null,
+            inboxUntil: save.inboxUntil ?? null,
             lang: input.includeDerived ? save.lang : undefined,
             siteName: input.includeDerived ? save.siteName : undefined,
             rawJson: input.includeDerived ? save.rawJson : undefined,

@@ -1,4 +1,5 @@
 import { saves, tags } from "@pond/schema/db";
+import { inboxFields } from "@pond/schema/inbox";
 import type { Transaction } from "@pond/schema/tx";
 import { inArray } from "drizzle-orm";
 import type { BulkEdit } from "../../shared/bulk-contracts";
@@ -12,6 +13,12 @@ export async function bulkEditSaves(
   recordUndo: (transactions: Transaction[]) => void,
 ): Promise<{ changed: number }> {
   const ids = [...new Set(input.ids)];
+  if (
+    input.operation.kind === "inbox" &&
+    input.operation.state === "snoozed" &&
+    !input.operation.until
+  )
+    throw new Error("Choose when the snoozed Saves return to the Inbox.");
   const transactions: Transaction[] = [];
   const meta = {
     actor: "user",
@@ -47,6 +54,8 @@ export async function bulkEditSaves(
         rating: saves.rating,
         notes: saves.notes,
         suggestedTags: saves.suggestedTags,
+        inboxState: saves.inboxState,
+        inboxUntil: saves.inboxUntil,
         deletedAt: saves.deletedAt,
       })
       .from(saves)
@@ -102,6 +111,21 @@ export async function bulkEditSaves(
             id: row.id,
             before: { rating: row.rating },
             patch: { rating: next },
+            meta,
+          });
+      } else if (operation.kind === "inbox") {
+        const next = inboxFields(operation.state, operation.until);
+        if (
+          !row.deletedAt &&
+          (next.inboxState !== row.inboxState ||
+            next.inboxUntil !== row.inboxUntil)
+        )
+          transactions.push({
+            kind: "update",
+            model: "save",
+            id: row.id,
+            before: { inboxState: row.inboxState, inboxUntil: row.inboxUntil },
+            patch: next,
             meta,
           });
       } else if ((operation.kind === "trash") !== Boolean(row.deletedAt))

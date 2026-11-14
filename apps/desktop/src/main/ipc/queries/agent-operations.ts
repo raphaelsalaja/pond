@@ -15,7 +15,7 @@ const descriptions = new Map<string, string>(
     "agent.listAvailableModels":
       "List available models from configured AI providers.",
     "saves.bulkEdit":
-      "Edit rating or tags, trash, restore, or permanently delete explicitly selected Saves. Pass exact IDs and an operation. Purge is permanent; trash is recoverable.",
+      "Edit rating or tags, set Inbox state (needs_review, snoozed with an until time, processed), trash, restore, or permanently delete explicitly selected Saves. Pass exact IDs and an operation. Purge is permanent; trash is recoverable.",
     "saves.createManual":
       "Create a Save from a title, URL, note, tags, and optional local files.",
     "saves.createBlankDocument":

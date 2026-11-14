@@ -7,6 +7,7 @@ import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { afterEach, describe, expect, it } from "vitest";
 import * as database from "../db";
+import { applyPatchToInfo, StoredInfoDocSchema } from "../lib/library-format";
 import { createMutationQueue } from "./mutation-queue";
 import { reconcileLibraryIndex } from "./scan";
 
@@ -81,7 +82,7 @@ async function fixture() {
   const path = join(directory, "info.json");
   await writeFile(path, JSON.stringify(metadata));
   await writeFile(join(directory, "photo.png"), "data");
-  return { db, raw, directory, path, metadata, scan };
+  return { root, db, raw, directory, path, metadata, scan };
 }
 describe.skipIf(!nativeAvailable())("portable index reconciliation", () => {
   it("rebuilds attachment metadata, organization, notes and readiness into a fresh index", async () => {
@@ -100,6 +101,50 @@ describe.skipIf(!nativeAvailable())("portable index reconciliation", () => {
       { saveId: "image", folderId: "folder" },
     ]);
     expect(await f.scan()).toMatchObject({ updated: 0, total: 1 });
+  });
+  it("restores Inbox state from info.json into a rebuilt index", async () => {
+    const f = await fixture();
+    await f.scan();
+    expect(f.db.select().from(schema.saves).get()).toMatchObject({
+      inboxState: null,
+      inboxUntil: null,
+    });
+    await writeFile(
+      f.path,
+      JSON.stringify(
+        applyPatchToInfo(StoredInfoDocSchema.parse(f.metadata), {
+          inboxState: "snoozed",
+          inboxUntil: 1_900_000_000_000,
+        }),
+      ),
+    );
+    const future = new Date(Date.now() + 1000);
+    await utimes(f.path, future, future);
+    expect((await f.scan()).updated).toBe(1);
+    expect(f.db.select().from(schema.saves).get()).toMatchObject({
+      inboxState: "snoozed",
+      inboxUntil: 1_900_000_000_000,
+      rating: 4,
+    });
+
+    const raw = new Database(":memory:");
+    opened.push(raw);
+    database.initializePondSchema(raw, () => false);
+    raw.exec("insert into folders(id,name) values('folder','References')");
+    const rebuilt = Object.assign(
+      drizzle(raw, { schema: { ...schema, ...events } }),
+      { $raw: raw },
+    );
+    await reconcileLibraryIndex({
+      root: f.root,
+      db: rebuilt,
+      mutate: createMutationQueue().run,
+      changed() {},
+    });
+    expect(rebuilt.select().from(schema.saves).get()).toMatchObject({
+      inboxState: "snoozed",
+      inboxUntil: 1_900_000_000_000,
+    });
   });
   it("detects in-place metadata edits even when the item directory timestamp does not change", async () => {
     const f = await fixture();

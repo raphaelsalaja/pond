@@ -606,6 +606,7 @@ describe("folder sidebar tree", () => {
     ];
     sidebarCounts.current = {
       library: 6006,
+      inbox: 0,
       uncategorized: 0,
       untagged: 0,
       recentlyAdded: 0,
@@ -651,6 +652,7 @@ describe("folder sidebar tree", () => {
     ];
     sidebarCounts.current = {
       library: 3,
+      inbox: 0,
       uncategorized: 0,
       untagged: 0,
       recentlyAdded: 0,

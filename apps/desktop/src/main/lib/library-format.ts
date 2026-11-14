@@ -1,4 +1,5 @@
 import type { Save } from "@pond/schema/db";
+import { INBOX_STATES } from "@pond/schema/inbox";
 import { z } from "zod";
 
 export const INFO_FILE = "info.json";
@@ -25,6 +26,8 @@ export type SaveUserData = Pick<
   | "flipX"
   | "flipY"
   | "crop"
+  | "inboxState"
+  | "inboxUntil"
 >;
 
 export interface InfoDoc {
@@ -72,6 +75,16 @@ export const StoredInfoDocSchema = z.object({
       crop: z
         .object({ x: z.number(), y: z.number(), w: z.number(), h: z.number() })
         .nullable(),
+      inboxState: z
+        .enum(INBOX_STATES)
+        .nullish()
+        .catch(null)
+        .transform((value) => value ?? null),
+      inboxUntil: z
+        .number()
+        .nullish()
+        .catch(null)
+        .transform((value) => value ?? null),
     })
     .optional(),
   schema: z.number().int().optional(),
@@ -145,6 +158,8 @@ export function infoDocFromSave(
       flipX: save.flipX ?? false,
       flipY: save.flipY ?? false,
       crop: save.crop ?? null,
+      inboxState: save.inboxState ?? null,
+      inboxUntil: save.inboxUntil ?? null,
     },
     schema: INFO_SCHEMA,
     id: save.id,
@@ -181,6 +196,8 @@ const EXPORTED_SAVE_FIELDS = [
   "flipX",
   "flipY",
   "crop",
+  "inboxState",
+  "inboxUntil",
   "importedFrom",
   "url",
   "title",
@@ -223,6 +240,8 @@ export function applyPatchToInfo(
     "flipX",
     "flipY",
     "crop",
+    "inboxState",
+    "inboxUntil",
   ] as const;
   if (userFields.some((key) => patch[key] !== undefined)) {
     next.userData = {
@@ -233,6 +252,8 @@ export function applyPatchToInfo(
       flipX: info.userData?.flipX ?? false,
       flipY: info.userData?.flipY ?? false,
       crop: info.userData?.crop ?? null,
+      inboxState: info.userData?.inboxState ?? null,
+      inboxUntil: info.userData?.inboxUntil ?? null,
     };
     if (patch.rating !== undefined) next.userData.rating = patch.rating;
     if (patch.dominantColors !== undefined)
@@ -243,6 +264,10 @@ export function applyPatchToInfo(
     if (patch.flipX !== undefined) next.userData.flipX = patch.flipX ?? false;
     if (patch.flipY !== undefined) next.userData.flipY = patch.flipY ?? false;
     if (patch.crop !== undefined) next.userData.crop = patch.crop;
+    if (patch.inboxState !== undefined)
+      next.userData.inboxState = patch.inboxState;
+    if (patch.inboxUntil !== undefined)
+      next.userData.inboxUntil = patch.inboxUntil;
   }
 
   if (patch.files !== undefined) next.files = infoFilesFromSave(patch.files);

@@ -10,6 +10,7 @@ import {
   tasks,
 } from "@pond/schema/db";
 import { domainFromUrl } from "@pond/schema/domain";
+import type { InboxState } from "@pond/schema/inbox";
 import { listKindsEqual, mergeListKinds } from "@pond/schema/list-kinds";
 import { and, eq, inArray } from "drizzle-orm";
 import { ulid } from "ulid";
@@ -140,6 +141,7 @@ export function createEnqueueBundle(
   opts: Pick<EnqueueOptions, "accountId" | "generationId" | "trigger">,
   now: Date,
   actorReason: string,
+  inboxState: InboxState | null = null,
 ): EnqueueBundle {
   const id = ulid();
   const save: NewSave = {
@@ -149,6 +151,7 @@ export function createEnqueueBundle(
     accountId: opts.accountId ?? null,
     url: candidate.url,
     siteName: domainFromUrl(candidate.url),
+    inboxState,
     status: "ingesting",
     ingestStartedAt: now,
     tags: [],

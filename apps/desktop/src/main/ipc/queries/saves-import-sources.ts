@@ -149,7 +149,12 @@ export const savesImportSourceQueries = {
       const { url, note, tags } = normalizeQuickAddInput(params);
 
       if (!url) {
-        const result = await createManualSave({ title: note, note, tags });
+        const result = await createManualSave({
+          title: note,
+          note,
+          tags,
+          inboxIntake: "captures",
+        });
         return result.ok
           ? { ok: true, id: result.id }
           : { ok: false, error: result.error };
@@ -172,6 +177,7 @@ export const savesImportSourceQueries = {
             title: note ?? url,
             note,
             tags,
+            inboxIntake: "captures",
           });
           return result.ok
             ? { ok: true, id: result.id }

@@ -115,6 +115,7 @@ export const captures = createCaptureQueue({
           filePaths: filePath ? [filePath] : [],
           tags: metadata.tags,
           rating: metadata.rating,
+          inboxIntake: "captures",
         });
         if (!result.ok) throw new Error(result.error);
         id = result.id;
