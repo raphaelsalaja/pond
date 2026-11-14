@@ -3,6 +3,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type { MediaUnit } from "@/features/saves/lib/media/units";
+import { cardThumbnailFor } from "@/features/saves/state/card-thumbnails";
 import type { Save } from "@/features/saves/types";
 import { loadPrefs } from "@/shared/state/prefs";
 import { PreparedCardThumb } from "./";
@@ -39,6 +40,7 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
+  vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
 
@@ -124,6 +126,61 @@ it("scrubs gallery thumbnails with the pointer when scrub on hover is selected",
   expect(
     host.querySelector("img[data-active='true']")?.getAttribute("src"),
   ).toContain("second.jpg");
+});
+
+it("keeps a post screenshot cover out of the viewer placeholder for the post's media", async () => {
+  vi.spyOn(HTMLImageElement.prototype, "naturalWidth", "get").mockReturnValue(
+    100,
+  );
+  const post: Save = {
+    ...save,
+    id: "post",
+    source: "twitter",
+    files: [
+      {
+        kind: "image",
+        path: "media-1.jpg",
+        sha256: "a",
+        size: 1,
+        width: 800,
+        height: 600,
+      },
+      {
+        kind: "tweet_screenshot_light",
+        path: "tweet-light.png",
+        sha256: "b",
+        size: 1,
+      },
+    ],
+  };
+  const media: MediaUnit = {
+    key: "media-1.jpg",
+    url: "pond://post/media-1.jpg",
+    isVideo: false,
+  };
+  const cover: MediaUnit = {
+    key: "tweet-light.png",
+    url: "pond://post/tweet-light.png",
+    isVideo: false,
+  };
+
+  await loadPrefs();
+  await act(async () => {
+    root.render(
+      <PreparedCardThumb
+        save={post}
+        mediaUnits={[media]}
+        pickOptions={{ tweetCover: "screenshot" }}
+        unit={cover}
+        primary={post.files[0] ?? null}
+      />,
+    );
+  });
+  const image = host.querySelector("img");
+  await act(async () => image?.dispatchEvent(new Event("load")));
+
+  expect(cardThumbnailFor(cover.url)).toBe(image?.src);
+  expect(cardThumbnailFor(media.url)).toBeNull();
 });
 
 it("keeps gallery thumbnails on the first image when thumbnail behavior is still", async () => {

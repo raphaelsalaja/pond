@@ -287,10 +287,7 @@ async function renderOne(
   radiusCss: number,
 ): Promise<RenderedCard | null> {
   const target = ensureWindow();
-  /** Drop the previous card's ready flag before navigation so a fragment-only load cannot be captured. */
-  await target.webContents
-    .executeJavaScript("delete document.documentElement.dataset.ready", true)
-    .catch(() => undefined);
+  /** Run no script before this load: Electron holds executeJavaScript on a window that has never loaded a page, so it never settles. */
   const token = await loadCapture(target, kind, scheme, data);
 
   let rect = await readCardRect(target, token);

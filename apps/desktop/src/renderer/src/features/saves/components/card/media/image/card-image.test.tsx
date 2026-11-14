@@ -3,7 +3,6 @@ import { THUMBNAIL_CACHE_VERSION } from "@shared/media-index";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { cardThumbnailFor } from "@/features/saves/state/card-thumbnails";
 import type { Save } from "@/features/saves/types";
 import { loadPrefs } from "@/shared/state/prefs";
 import { CardImage } from ".";
@@ -32,50 +31,6 @@ afterEach(async () => {
   host.remove();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
-});
-
-it("lends its thumbnail to the media the viewer opens first", async () => {
-  const save: Save = {
-    id: "thumbnailed",
-    source: "local",
-    sourceId: "thumbnailed",
-    url: "https://example.test/thumbnailed",
-    title: "Thumbnailed",
-    description: null,
-    author: null,
-    notes: null,
-    mediaUrl: null,
-    mediaType: "image",
-    files: [],
-    tags: [],
-    savedAt: 0,
-    createdAt: 0,
-    deletedAt: null,
-  };
-  const thumbnail = "pond://thumbnailed/photo.png_thumbnail.webp";
-  const original = "pond://thumbnailed/photo.png";
-
-  await act(async () =>
-    root.render(
-      <CardImage
-        save={save}
-        unit={{
-          key: "photo.png_thumbnail.webp",
-          url: thumbnail,
-          isVideo: false,
-        }}
-        pickOptions={{}}
-        opens={original}
-        onBroken={() => {}}
-      />,
-    ),
-  );
-  await act(async () =>
-    host.querySelector("img")?.dispatchEvent(new Event("load")),
-  );
-
-  expect(cardThumbnailFor(original)).toBe(host.querySelector("img")?.src);
-  expect(cardThumbnailFor(thumbnail)).toBe(host.querySelector("img")?.src);
 });
 
 it("keeps a Balanced card on the thumbnail that covers it", async () => {

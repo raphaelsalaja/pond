@@ -1,4 +1,4 @@
-/** Maps an original image URL to the thumbnail a card last decoded, so the viewer can paint it first. */
+/** Maps a media URL to the card thumbnail decoded from that same file, so the viewer never paints a cover that shows other media. */
 const LIMIT = 512;
 const thumbnails = new Map<string, string>();
 

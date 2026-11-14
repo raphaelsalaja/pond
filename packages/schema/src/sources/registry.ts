@@ -75,7 +75,7 @@ export const SOURCE_DESCRIPTORS = [
       /^https?:\/\/(?:www\.)?are\.na\/block\/(\d+)/i,
       /^https?:\/\/(?:www\.)?are\.na\/[^/]+\/[^/]+-(\d+)/i,
     ],
-    sync: { strategy: "scroll" },
+    sync: { strategy: "cursor" },
   },
   {
     id: "cosmos",
