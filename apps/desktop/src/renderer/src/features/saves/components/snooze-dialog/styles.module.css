@@ -1,0 +1,17 @@
+.presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.error {
+  margin: 0;
+  font-size: var(--ds-text-sm);
+  color: var(--ds-red-11);
+}

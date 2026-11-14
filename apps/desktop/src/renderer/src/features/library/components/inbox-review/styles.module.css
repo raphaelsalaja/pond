@@ -1,0 +1,64 @@
+.stage {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 16px;
+  padding: 16px 20px 24px;
+  outline: none;
+  background: light-dark(var(--ds-black-a5), var(--ds-black-a7));
+  backdrop-filter: blur(12px);
+}
+
+.instructions {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+.bar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.progress {
+  padding: 4px 10px;
+  margin: 0;
+  font-size: var(--ds-text-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-12);
+  background: var(--ds-gray-1);
+  border-radius: var(--ds-radius-full);
+  box-shadow: var(--ds-shadow-sm);
+}
+
+.tools {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.deck {
+  display: grid;
+  grid-template-columns: 1fr auto minmax(0, 420px) auto 1fr;
+  gap: 16px;
+  align-items: center;
+  justify-items: center;
+  min-height: 0;
+}
+
+.finished {
+  grid-row: 2 / -1;
+  place-self: center;
+  padding: 32px;
+  background: var(--ds-gray-1);
+  border-radius: var(--ds-radius-xl);
+  box-shadow: var(--ds-shadow-lg);
+}

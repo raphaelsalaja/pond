@@ -24,6 +24,7 @@ import {
   IconClockPlus,
   IconFolderBan,
   IconHistory,
+  IconInbox,
   IconNodes3,
   IconShuffle,
   IconTrashXmark,
@@ -126,6 +127,8 @@ function SortableDestination({
 
 function DestinationIcon({ destination }: { destination: SidebarDestination }) {
   switch (destination) {
+    case "inbox":
+      return <IconInbox />;
     case "all":
       return <IconAlbum2 />;
     case "uncategorized":
@@ -191,6 +194,8 @@ export function LibraryDestinations({
   const isDestinationActive = (id: SidebarDestination): boolean => {
     if (!destination) return false;
     switch (id) {
+      case "inbox":
+        return destination.kind === "inbox";
       case "all":
         return destination.kind === "all" && !activeViewId;
       case "recentlyUsed":
@@ -218,6 +223,8 @@ export function LibraryDestinations({
     destination: SidebarDestination,
   ): number | undefined => {
     switch (destination) {
+      case "inbox":
+        return counts.inbox;
       case "all":
         return counts.library;
       case "uncategorized":
@@ -247,6 +254,20 @@ export function LibraryDestinations({
   ): ReactElement => {
     const badgeStyle = resolveSidebarBadgeStyle(sidebar, destination);
     switch (destination) {
+      case "inbox":
+        return (
+          <BuiltInVisibilityMenu destination={destination} key={destination}>
+            <Row
+              label="Inbox"
+              icon={<IconInbox />}
+              count={counts.inbox}
+              badgeStyle={badgeStyle}
+              active={isDestinationActive(destination)}
+              {...dragProps}
+              onClick={() => selectLibraryNav({ kind: "inbox" })}
+            />
+          </BuiltInVisibilityMenu>
+        );
       case "all":
         return (
           <BuiltInVisibilityMenu destination={destination} key={destination}>

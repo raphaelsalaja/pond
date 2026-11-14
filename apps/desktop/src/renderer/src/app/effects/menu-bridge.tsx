@@ -155,6 +155,10 @@ export function MenuBridge() {
           selectLibraryNav({ kind: "all" });
           return;
 
+        case "nav.inbox":
+          selectLibraryNav({ kind: "inbox" });
+          return;
+
         case "nav.uncategorized":
           selectLibraryNav({ kind: "uncategorized" });
           return;

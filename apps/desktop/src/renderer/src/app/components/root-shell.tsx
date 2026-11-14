@@ -10,12 +10,14 @@ import { UndoRedoBridge } from "@/app/effects/undo-redo-bridge";
 import { useDownloadDialog } from "@/features/downloads/state/download-dialog";
 import { fishIdFromPath } from "@/features/fish";
 import { FolderSidebar } from "@/features/library/components/folder-sidebar";
+import { selectLibraryNav } from "@/features/library/components/folder-sidebar/navigation";
 import { NewMenuDialogHost } from "@/features/library/components/new-menu";
 import { OrganizationRenameDialogHost } from "@/features/library/components/organization-rename-dialog";
 import { AppShell } from "@/features/library/components/workspace-shell";
 import { enterFolder } from "@/features/library/operations/enter-folder";
 import { savedViews } from "@/features/library/state/saved-views";
 import { DuplicateImportReviewHost } from "@/features/saves/components/duplicate-import-review";
+import { SnoozeDialogHost } from "@/features/saves/components/snooze-dialog";
 import { SaveTagPickerHost } from "@/features/saves/components/tag-picker-host";
 import { SaveHotkeys } from "@/features/saves/effects/save-hotkeys";
 import { ViewerPreload } from "@/features/saves/effects/viewer-preload";
@@ -86,6 +88,10 @@ export function RootShell() {
         enterFolder(folderId);
         return;
       }
+      if (pathname === "/" && params.has("inbox")) {
+        selectLibraryNav({ kind: "inbox" });
+        return;
+      }
       if (pathname === "/" && viewId) {
         savedViews.select(viewId);
         getAppRouter()?.history.push("/");
@@ -116,6 +122,7 @@ export function RootShell() {
       <OrganizationRenameDialogHost />
       <DuplicateImportReviewHost />
       <SaveTagPickerHost />
+      <SnoozeDialogHost />
       <AppShell.Root
         header={<Toolbar />}
         right={

@@ -17,7 +17,11 @@ export { MediaViewer, type ViewerNav } from "./components/viewers/media-viewer";
 export { useCardActions } from "./hooks/use-card-actions";
 export { useMediaPickOptions } from "./hooks/use-media-pick-options";
 export { confirmEmptyTrash } from "./lib/empty-trash";
-export { notifyUndoableFolderChange } from "./lib/folder-actions";
+export {
+  assignSavesToFolder,
+  notifyUndoableFolderChange,
+} from "./lib/folder-actions";
+export { markProcessed, trashWithUndo } from "./lib/inbox-actions";
 export { collectionOwnsKeyboard, saveOwnsKeyboard } from "./lib/keyboard-owner";
 export { parseMode, type SaveListMode } from "./lib/list";
 export {
@@ -65,7 +69,7 @@ export {
   type SaveDragDataTransfer,
   saveDropIds,
 } from "./lib/start-drag";
-export { isTextOnlySave } from "./lib/text";
+export { displayTitleForSave, isTextOnlySave } from "./lib/text";
 export { asUrlList } from "./lib/url-list";
 export { previewFileIndex, runViewerAction } from "./lib/viewer-actions";
 export { activeVideoShown } from "./state/active-video";

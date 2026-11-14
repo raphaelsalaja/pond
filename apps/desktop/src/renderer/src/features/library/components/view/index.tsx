@@ -2,6 +2,7 @@ import { Button } from "@pond/ui";
 import { useCallback, useEffect, useRef } from "react";
 import {
   FolderEmpty,
+  InboxEmpty,
   LibraryEmpty,
   LibraryLoading,
   LibrarySectionEmpty,
@@ -11,6 +12,7 @@ import {
 import { libraryEmptyKind } from "@/features/library/components/empty/kind";
 import { FolderBrowser } from "@/features/library/components/folder-browser";
 import { HoverPreview } from "@/features/library/components/hover-preview";
+import { InboxHeader } from "@/features/library/components/inbox-header";
 import { LibraryGrid } from "@/features/library/components/layouts/grid";
 import { LayoutSwitcher } from "@/features/library/components/layouts/switcher";
 import { useFolderDownloading } from "@/features/library/hooks/use-folder-downloading";
@@ -58,6 +60,7 @@ function LibraryEmptyState({
   if (kind === "folder") return <FolderEmpty downloading={downloading} />;
   if (kind === "library") return <LibraryEmpty />;
   if (kind === "uncategorized") return <UncategorizedEmpty />;
+  if (kind === "inbox") return <InboxEmpty />;
   if (kind === "section" && mode !== "library" && mode !== "trash") {
     return <LibrarySectionEmpty mode={mode} />;
   }
@@ -139,6 +142,9 @@ export function LibraryView() {
         onDragOver={actions.onDragOver}
         onDrop={(e) => void actions.onDrop(e)}
       >
+        {nav.kind === "inbox" ? (
+          <InboxHeader snoozed={nav.snoozed ?? false} />
+        ) : null}
         {data.paging.error ? (
           <div role="alert">
             {data.paging.error}{" "}

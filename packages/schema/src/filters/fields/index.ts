@@ -23,6 +23,7 @@ import { fontActivated } from "./font-activated";
 import { fontFamily } from "./font-family";
 import { format } from "./format";
 import { importedFrom } from "./imported-from";
+import { inbox } from "./inbox";
 import { list } from "./list";
 import { modifiedAt } from "./modified-at";
 import { note } from "./note";
@@ -61,6 +62,7 @@ export const FIELD_DESCRIPTORS = {
   list,
   source,
   importedFrom,
+  inbox,
   type: typeField,
   format,
   fileCount,

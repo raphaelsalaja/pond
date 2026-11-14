@@ -4,8 +4,10 @@ import { useLayoutEffect, useMemo } from "react";
 import { canvasIdFromPath } from "@/features/canvas";
 import { fishIdFromPath } from "@/features/fish";
 import { LibraryChrome } from "@/features/library/components/chrome";
+import { InboxReview } from "@/features/library/components/inbox-review";
 import { LibraryView } from "@/features/library/components/view";
 import { AppShell } from "@/features/library/components/workspace-shell";
+import { useInboxReview } from "@/features/library/state/inbox-review";
 import {
   getLastListPath,
   getLastListSearch,
@@ -46,6 +48,8 @@ export function Library() {
   const restoration = useScrollRestoration(`${listPath}${listSearch}`);
   /** The grid stays mounted under an open Save, so a route change must not re-render it. */
   const view = useMemo(() => <LibraryView />, []);
+  const reviewing = useInboxReview() !== null;
+  const covered = isSave || reviewing;
 
   return (
     <div className={styles.stage}>
@@ -53,8 +57,8 @@ export function Library() {
         <div
           className={styles["keep-alive"]}
           data-suppressed={isSave || undefined}
-          inert={isSave || undefined}
-          aria-hidden={isSave || undefined}
+          inert={covered || undefined}
+          aria-hidden={covered || undefined}
         >
           <AppShell.Content>
             <Shell.Body className={styles.body}>
@@ -73,6 +77,7 @@ export function Library() {
         </div>
       ) : null}
 
+      {showLibraryGrid && !isSave ? <InboxReview /> : null}
       {isSave ? (
         <div className={styles.overlay}>
           <Outlet />

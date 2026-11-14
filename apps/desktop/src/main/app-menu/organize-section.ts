@@ -62,6 +62,19 @@ export function buildOrganizeSection(context: AppMenuContext): AppMenuItem {
         registerAccelerator: false,
         click: sendMenuAction("organize.paste-tags"),
       },
+      { type: "separator" },
+      {
+        label: "Mark Processed",
+        accelerator: accelerator("save.mark-processed"),
+        registerAccelerator: false,
+        click: sendMenuAction("organize.mark-processed"),
+      },
+      {
+        label: "Snooze",
+        accelerator: accelerator("save.snooze"),
+        registerAccelerator: false,
+        click: sendMenuAction("organize.snooze"),
+      },
     ],
   };
 }

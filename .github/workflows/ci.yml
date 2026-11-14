@@ -44,7 +44,7 @@ jobs:
         run: pnpm check
 
       - name: Native database tests
-        run: ELECTRON_RUN_AS_NODE=1 pnpm --filter @pond/desktop exec electron node_modules/vitest/vitest.mjs run src/main/db.test.ts src/main/core/vec-index.test.ts src/main/core/pipeline/task-recovery.test.ts src/main/core/pipeline/enqueue-scheduling.test.ts src/main/core/refresh/archive-backfill.test.ts src/main/core/session-downloads.test.ts
+        run: ELECTRON_RUN_AS_NODE=1 pnpm --filter @pond/desktop exec electron node_modules/vitest/vitest.mjs run src/main/db.test.ts src/main/core/vec-index.test.ts src/main/core/pipeline/task-recovery.test.ts src/main/core/pipeline/enqueue-scheduling.test.ts src/main/core/refresh/archive-backfill.test.ts src/main/core/session-downloads.test.ts src/main/core/inbox/inbox.test.ts
 
       - name: Build
         run: pnpm build
@@ -95,7 +95,7 @@ jobs:
       - name: Native database tests
         env:
           ELECTRON_RUN_AS_NODE: "1"
-        run: pnpm --filter @pond/desktop exec electron node_modules/vitest/vitest.mjs run src/main/db.test.ts src/main/core/vec-index.test.ts src/main/core/pipeline/task-recovery.test.ts src/main/core/pipeline/enqueue-scheduling.test.ts src/main/core/refresh/archive-backfill.test.ts src/main/core/session-downloads.test.ts
+        run: pnpm --filter @pond/desktop exec electron node_modules/vitest/vitest.mjs run src/main/db.test.ts src/main/core/vec-index.test.ts src/main/core/pipeline/task-recovery.test.ts src/main/core/pipeline/enqueue-scheduling.test.ts src/main/core/refresh/archive-backfill.test.ts src/main/core/session-downloads.test.ts src/main/core/inbox/inbox.test.ts
 
       - name: Build
         run: pnpm build
@@ -135,7 +135,7 @@ jobs:
       - name: Native database tests
         env:
           ELECTRON_RUN_AS_NODE: "1"
-        run: pnpm --filter @pond/desktop exec electron node_modules/vitest/vitest.mjs run src/main/db.test.ts src/main/core/vec-index.test.ts src/main/core/pipeline/task-recovery.test.ts src/main/core/pipeline/enqueue-scheduling.test.ts src/main/core/refresh/archive-backfill.test.ts src/main/core/session-downloads.test.ts
+        run: pnpm --filter @pond/desktop exec electron node_modules/vitest/vitest.mjs run src/main/db.test.ts src/main/core/vec-index.test.ts src/main/core/pipeline/task-recovery.test.ts src/main/core/pipeline/enqueue-scheduling.test.ts src/main/core/refresh/archive-backfill.test.ts src/main/core/session-downloads.test.ts src/main/core/inbox/inbox.test.ts
 
       - name: Build
         run: pnpm build
@@ -178,7 +178,7 @@ jobs:
       - name: Native database tests
         env:
           ELECTRON_RUN_AS_NODE: "1"
-        run: pnpm --filter @pond/desktop exec electron node_modules/vitest/vitest.mjs run src/main/db.test.ts src/main/core/vec-index.test.ts src/main/core/pipeline/task-recovery.test.ts src/main/core/pipeline/enqueue-scheduling.test.ts src/main/core/refresh/archive-backfill.test.ts src/main/core/session-downloads.test.ts
+        run: pnpm --filter @pond/desktop exec electron node_modules/vitest/vitest.mjs run src/main/db.test.ts src/main/core/vec-index.test.ts src/main/core/pipeline/task-recovery.test.ts src/main/core/pipeline/enqueue-scheduling.test.ts src/main/core/refresh/archive-backfill.test.ts src/main/core/session-downloads.test.ts src/main/core/inbox/inbox.test.ts
 
       - name: Build
         run: pnpm build

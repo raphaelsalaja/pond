@@ -26,7 +26,7 @@ it("places a newly added destination in its default relative position", () => {
       "downloads",
       "sources",
     ]),
-  ).toEqual([...LIBRARY_DESTINATIONS, "downloads", "sources"]);
+  ).toEqual(["inbox", ...LIBRARY_DESTINATIONS, "downloads", "sources"]);
 });
 
 it("reorders visible sidebar destinations while preserving hidden slots", () => {
