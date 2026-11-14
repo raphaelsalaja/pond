@@ -17,7 +17,7 @@ export interface FolderMembershipChange {
   folders: readonly Pick<SaveFolderReference, "name">[];
 }
 
-export function folderChangeTitle(change: FolderMembershipChange): string {
+function folderChangeTitle(change: FolderMembershipChange): string {
   const [only] = change.folders;
   const target =
     change.folders.length === 1 && only
