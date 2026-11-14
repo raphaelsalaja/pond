@@ -27,7 +27,6 @@ export function CardImage({
   unit,
   pickOptions,
   width,
-  opens,
   onBroken,
   onReady,
 }: {
@@ -35,8 +34,6 @@ export function CardImage({
   unit: MediaUnit;
   pickOptions: MediaPickOptions;
   width?: number;
-  /** URL of the media the viewer opens first, when the card shows a stand-in such as a generated thumbnail. */
-  opens?: string;
   onBroken: () => void;
   onReady?: () => void;
 }) {
@@ -61,12 +58,10 @@ export function CardImage({
       recordAspect(save.id, image.naturalWidth, image.naturalHeight, {
         coverKey: aspectCoverKey(unit),
       });
-      const shown = image.currentSrc || image.src;
-      rememberCardThumbnail(unit.url, shown);
-      if (opens && opens !== unit.url) rememberCardThumbnail(opens, shown);
+      rememberCardThumbnail(unit.url, image.currentSrc || image.src);
       onReady?.();
     },
-    [onReady, opens, save.id, unit],
+    [onReady, save.id, unit],
   );
   const ready = useImageReady(src, reportReady, onBroken);
   useEffect(() => {
