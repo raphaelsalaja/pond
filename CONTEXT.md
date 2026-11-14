@@ -30,6 +30,14 @@ _Avoid_: ScrapedHarvest, harvest meta, extras, raw scrape, DTO
 A Capture supplied when a Save is enqueued, so harvest can skip a fresh scrape while it is still fresh.
 _Avoid_: prefill, stub, partial capture
 
+**Inbox**:
+Where new Saves wait for you to process them. Each Save records its own Inbox state: needs review, snoozed until a time, or processed. A Save with no state was never sent to the Inbox. The state is independent of Folders, so filing a Save doesn't process it. Settings choose which capture paths send new Saves here.
+_Avoid_: queue, triage folder, unread, Uncategorized (that's Saves with no Folder)
+
+**Snooze**:
+Hiding a Save from the Inbox until a time, when it needs review again.
+_Avoid_: remind, defer, later
+
 **Tag**:
 A label you attach to Saves, optionally in a group.
 
@@ -51,7 +59,7 @@ A chat character stored in the Library's `fish.json`, with a name, color, instru
 _Avoid_: Assistant, agent, bot, fishes
 
 **Routine**:
-Standing work a fish runs when new Saves arrive or on a schedule. Each run opens its own chat.
+Standing work a fish runs when new Saves arrive, when Saves arrive in the Inbox, or on a schedule. Each run opens its own chat.
 _Avoid_: job, automation, cron
 
 ### Sources

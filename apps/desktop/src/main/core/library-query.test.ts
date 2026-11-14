@@ -171,6 +171,8 @@ describe.skipIf(!nativeAvailable())("authoritative library query", () => {
       untagged: 1199,
       recentlyAdded: 0,
       recentlyUsed: 0,
+      inbox: 0,
+      inboxSnoozed: 0,
       trash: 1,
       folders: { all: 1199 },
       foldersDownloading: {},

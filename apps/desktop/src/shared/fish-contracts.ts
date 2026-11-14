@@ -76,6 +76,7 @@ export const FISH_ROUTINE_CAP = 50;
 /** Days use `Date.getDay()` numbering, so 0 is Sunday. */
 export const FishWhenSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("newSaves") }),
+  z.object({ kind: z.literal("inbox") }),
   z.object({
     kind: z.literal("every"),
     hours: z.number().int().min(1).max(168),

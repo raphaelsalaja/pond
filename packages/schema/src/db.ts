@@ -9,6 +9,7 @@ import {
 } from "drizzle-orm/sqlite-core";
 import type { Query } from "./filters/types";
 import type { ImportOrigin } from "./import-origin";
+import type { InboxState } from "./inbox";
 import type { JsonObject } from "./json";
 import type { ListKind } from "./list-kinds";
 import {
@@ -227,6 +228,8 @@ export const saves = sqliteTable(
     suggestedTags: text("suggested_tags", { mode: "json" }).$type<string[]>(),
     suggestedTagsModel: text("suggested_tags_model"),
     rating: integer("rating"),
+    inboxState: text("inbox_state").$type<InboxState>(),
+    inboxUntil: integer("inbox_until"),
     rotate: integer("rotate").notNull().default(0),
     flipX: integer("flip_x", { mode: "boolean" }).notNull().default(false),
     flipY: integer("flip_y", { mode: "boolean" }).notNull().default(false),
@@ -265,6 +268,7 @@ export const saves = sqliteTable(
     dimsIdx: index("saves_dims_idx").on(t.width, t.height),
     deletedIdx: index("saves_deleted_idx").on(t.deletedAt),
     statusIdx: index("saves_status_idx").on(t.status),
+    inboxIdx: index("saves_inbox_idx").on(t.inboxState, t.inboxUntil),
   }),
 );
 

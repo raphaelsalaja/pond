@@ -6,6 +6,7 @@ import type { Folder, Save } from "@pond/schema/db";
 import { isAuxiliaryKind } from "@shared/save-file-names";
 import { z } from "zod";
 import { readBundleJson } from "../lib/library-config";
+import { infoInbox } from "../lib/library-format";
 import type { PackageOrganization } from "./package-organization";
 import { exportLibraryMedia } from "./storage/library-media-storage";
 import {
@@ -48,6 +49,8 @@ type ExportSave = Pick<
       | "author"
       | "description"
       | "rating"
+      | "inboxState"
+      | "inboxUntil"
       | "savedAt"
       | "createdAt"
     >
@@ -321,6 +324,7 @@ export async function exportFiles(input: {
             author: save.author,
             description: save.description,
             rating: save.rating,
+            inbox: infoInbox(save.inboxState, save.inboxUntil),
             savedAt: save.savedAt,
             createdAt: save.createdAt,
             files: save.files,

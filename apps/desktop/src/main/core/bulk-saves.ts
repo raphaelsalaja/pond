@@ -1,4 +1,5 @@
 import { saves, tags } from "@pond/schema/db";
+import { applyInboxChange } from "@pond/schema/inbox";
 import type { Transaction } from "@pond/schema/tx";
 import { inArray } from "drizzle-orm";
 import type { BulkEdit } from "../../shared/bulk-contracts";
@@ -47,6 +48,8 @@ export async function bulkEditSaves(
         rating: saves.rating,
         notes: saves.notes,
         suggestedTags: saves.suggestedTags,
+        inboxState: saves.inboxState,
+        inboxUntil: saves.inboxUntil,
         deletedAt: saves.deletedAt,
       })
       .from(saves)
@@ -102,6 +105,17 @@ export async function bulkEditSaves(
             id: row.id,
             before: { rating: row.rating },
             patch: { rating: next },
+            meta,
+          });
+      } else if (operation.kind === "inbox" || operation.kind === "snooze") {
+        const next = applyInboxChange(operation, row);
+        if (next)
+          transactions.push({
+            kind: "update",
+            model: "save",
+            id: row.id,
+            before: { inboxState: row.inboxState, inboxUntil: row.inboxUntil },
+            patch: next,
             meta,
           });
       } else if ((operation.kind === "trash") !== Boolean(row.deletedAt))

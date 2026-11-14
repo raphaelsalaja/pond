@@ -17,6 +17,14 @@ export const BulkEditSchema = z.object({
       kind: z.literal("notes"),
       notes: z.string().max(8192).nullable(),
     }),
+    z.object({
+      kind: z.literal("inbox"),
+      state: z.enum(["review", "processed"]).nullable(),
+    }),
+    z.object({
+      kind: z.literal("snooze"),
+      until: z.number().int().positive(),
+    }),
     z.object({ kind: z.literal("suggested-tags") }),
     z.object({ kind: z.literal("trash") }),
     z.object({ kind: z.literal("untrash") }),

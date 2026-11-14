@@ -12,6 +12,7 @@ import { eq } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { type Db, getDb } from "../db";
 import { readSaveMetadata, scanLibrary } from "../lib/library";
+import { inboxFromInfo } from "../lib/library-format";
 import { withRawSlim } from "../lib/raw-slim";
 import { libraryRoot } from "../paths";
 import { readEnrichmentSidecar } from "./enrichment-sidecar";
@@ -90,9 +91,11 @@ export async function reconcileLibraryIndex(
       try {
         const present = await originalsPresent(root, id, files);
         const enrichment = (await readEnrichmentSidecar(id, root)) ?? {};
+        const inbox = inboxFromInfo(metadata.pond.inbox);
         const insertValues: typeof saves.$inferInsert = {
           ...enrichment,
           ...metadata.pond.userData,
+          ...inbox,
           id,
           status: present ? "complete" : "failed",
           source: metadata.source,
@@ -129,6 +132,7 @@ export async function reconcileLibraryIndex(
         const updateSet = {
           ...enrichment,
           ...metadata.pond.userData,
+          ...inbox,
           importedFrom: metadata.importedFrom,
           title: metadata.name,
           description: metadata.pond.description ?? null,

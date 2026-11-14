@@ -61,6 +61,8 @@ async function fixture(extra: [string, string][] = []) {
           tags: ["Print"],
           files,
           rating: 4,
+          inboxState: "snoozed",
+          inboxUntil: Date.parse("2030-01-01T00:00:00.000Z"),
           savedAt: new Date("2020-01-01T00:00:00.000Z"),
         },
       },
@@ -127,6 +129,10 @@ describe("Pond package transfer", () => {
       await readFile(join(root, row?.id ?? "missing", "metadata.json"), "utf8"),
     );
     expect(metadata.rating).toBe(4);
+    expect(metadata.inbox).toEqual({
+      state: "snoozed",
+      until: "2030-01-01T00:00:00.000Z",
+    });
     expect(
       JSON.parse(
         await readFile(

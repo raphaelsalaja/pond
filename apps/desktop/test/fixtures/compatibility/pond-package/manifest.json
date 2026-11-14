@@ -8,12 +8,14 @@
     "manifestPath": "pond-export.json",
     "packageVersion": 1,
     "requiredSections": ["saves", "folders", "exportedFiles"],
-    "optionalSections": ["organization"]
+    "optionalSections": ["organization"],
+    "optionalSaveFields": ["inbox"]
   },
   "compatibilityAssertions": [
     "Validate every original before creating folders or Saves.",
     "Reject duplicate identities, unsafe paths, and invalid folder ancestry.",
     "Preserve nested folder membership and supported organization metadata.",
-    "Continue reading plaintext version 1 packages after encrypted packages ship."
+    "Continue reading plaintext version 1 packages after encrypted packages ship.",
+    "Keep each Save's `inbox` state; a Save without it follows the Library's imports Inbox setting."
   ]
 }

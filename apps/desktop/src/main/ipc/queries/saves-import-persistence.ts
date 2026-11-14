@@ -395,7 +395,10 @@ export const savesImportPersistenceQueries = {
   "saves.createManual": query(
     CreateManualParamsSchema,
     async (params): Promise<QueryResult<"saves.createManual">> =>
-      createManualSave(normalizeManualSaveInput(params)),
+      createManualSave({
+        ...normalizeManualSaveInput(params),
+        inboxChannel: "captures",
+      }),
   ),
 
   "saves.listBlankDocuments": query(z.object({}), listBlankDocuments),

@@ -1,4 +1,9 @@
 import type { Save } from "@pond/schema/db";
+import {
+  type InboxFields,
+  type InboxState,
+  InboxStateSchema,
+} from "@pond/schema/inbox";
 import { z } from "zod";
 
 export const INFO_FILE = "info.json";
@@ -27,8 +32,15 @@ export type SaveUserData = Pick<
   | "crop"
 >;
 
+/** Absent means the Save was never sent to the Inbox. */
+export interface InfoInbox {
+  state: InboxState;
+  until?: string;
+}
+
 export interface InfoDoc {
   userData?: SaveUserData;
+  inbox?: InfoInbox;
   schema: typeof INFO_SCHEMA;
   id: string;
   source: string;
@@ -74,6 +86,10 @@ export const StoredInfoDocSchema = z.object({
         .nullable(),
     })
     .optional(),
+  inbox: z
+    .object({ state: InboxStateSchema, until: z.string().optional() })
+    .optional()
+    .catch(undefined),
   schema: z.number().int().optional(),
   id: z.string().catch(""),
   source: z.string().catch(""),
@@ -131,6 +147,25 @@ function toIso(value: Date | null | undefined): string | null {
   return value ? value.toISOString() : null;
 }
 
+export function infoInbox(
+  state: InboxState | null | undefined,
+  until: number | null | undefined,
+): InfoInbox | undefined {
+  if (!state) return undefined;
+  return state === "snoozed" && until != null
+    ? { state, until: new Date(until).toISOString() }
+    : { state };
+}
+
+export function inboxFromInfo(inbox: InfoInbox | undefined): InboxFields {
+  const until = inbox?.until ? Date.parse(inbox.until) : Number.NaN;
+  return {
+    inboxState: inbox?.state ?? null,
+    inboxUntil:
+      inbox?.state === "snoozed" && Number.isFinite(until) ? until : null,
+  };
+}
+
 export function infoDocFromSave(
   save: Save,
   files: InfoFile[],
@@ -146,6 +181,7 @@ export function infoDocFromSave(
       flipY: save.flipY ?? false,
       crop: save.crop ?? null,
     },
+    inbox: infoInbox(save.inboxState, save.inboxUntil),
     schema: INFO_SCHEMA,
     id: save.id,
     source: save.source,
@@ -181,6 +217,8 @@ const EXPORTED_SAVE_FIELDS = [
   "flipX",
   "flipY",
   "crop",
+  "inboxState",
+  "inboxUntil",
   "importedFrom",
   "url",
   "title",
@@ -245,6 +283,13 @@ export function applyPatchToInfo(
     if (patch.crop !== undefined) next.userData.crop = patch.crop;
   }
 
+  if (patch.inboxState !== undefined || patch.inboxUntil !== undefined) {
+    const current = inboxFromInfo(info.inbox);
+    next.inbox = infoInbox(
+      patch.inboxState !== undefined ? patch.inboxState : current.inboxState,
+      patch.inboxUntil !== undefined ? patch.inboxUntil : current.inboxUntil,
+    );
+  }
   if (patch.files !== undefined) next.files = infoFilesFromSave(patch.files);
   if (patch.importedFrom !== undefined)
     next.importedFrom = patch.importedFrom ?? undefined;

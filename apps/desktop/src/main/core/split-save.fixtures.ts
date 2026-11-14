@@ -114,6 +114,8 @@ export function carousel(overrides: Partial<Save> = {}): Save {
     ingestStartedAt: savedAt,
     ingestCompletedAt: savedAt,
     deletedAt: null,
+    inboxState: null,
+    inboxUntil: null,
     savedAt,
     createdAt: savedAt,
     ...overrides,

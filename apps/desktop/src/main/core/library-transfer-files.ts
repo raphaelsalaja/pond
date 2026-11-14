@@ -279,6 +279,7 @@ export function copyPackageToLibrary(packagePath: string, libraryPath: string) {
               flipY: save.flipY ?? false,
               crop: save.crop ?? null,
             },
+            inbox: save.inbox,
           };
           const directory = join(root, "items", `${id}.info`);
           if (save.rawJson) {
