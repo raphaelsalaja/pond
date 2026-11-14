@@ -12,6 +12,7 @@ export {
   FolderMenu,
   type FolderMenuItem,
 } from "./components/detail/folder-menu";
+export { SaveSelectionBar } from "./components/selection-bar";
 export { StoredFileViewer } from "./components/viewers/file-viewer";
 export { MediaViewer, type ViewerNav } from "./components/viewers/media-viewer";
 export { useCardActions } from "./hooks/use-card-actions";

@@ -28,6 +28,10 @@ export const libraryViewContext = {
   },
 };
 
+export function useViewMode(): SaveListMode {
+  return useSelector(store, (s) => s.mode);
+}
+
 export function useViewFilteredCount(): number {
   return useSelector(store, (s) => s.filteredIds.length);
 }
