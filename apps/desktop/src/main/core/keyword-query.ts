@@ -244,7 +244,8 @@ export function compileKeywordWhere(
       ? sql`(${compile(node.left)}) and (${compile(node.right)})`
       : sql`(${compile(node.left)}) or (${compile(node.right)})`;
   }
-  return tree ? compile(tree) : undefined;
+  /** Drizzle's and() does not parenthesize its parts, so a bare top-level OR would escape the caller's scope. */
+  return tree ? sql`(${compile(tree)})` : undefined;
 }
 
 interface Literal {

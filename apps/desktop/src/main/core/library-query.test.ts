@@ -278,6 +278,29 @@ describe.skipIf(!nativeAvailable())("authoritative library query", () => {
     expect(result.ids).toEqual(["0001"]);
     expect(result.total).toBe(1);
   });
+  it("keeps a single keyword inside folder and Trash scope", async () => {
+    const { db, sqlite } = setup();
+    sqlite.exec(`
+      insert into folders(id,name) values ('older','Older');
+      insert into save_folders(save_id,folder_id) values ('0001','older'),('0002','older');
+      update saves set deleted_at=1 where id='0002';
+    `);
+    const result = await queryLibraryPage(db, "library", {
+      query: EMPTY_QUERY,
+      keywords: "reference",
+      scope: { folderIds: ["older"] },
+      limit: 10,
+    });
+    expect(result.ids).toEqual(["0001"]);
+    expect(result.total).toBe(1);
+    const trash = await queryLibraryPage(db, "library", {
+      query: EMPTY_QUERY,
+      keywords: "older",
+      scope: { deletedOnly: true },
+      limit: 10,
+    });
+    expect(trash.ids).toEqual(["0002"]);
+  });
   it("excludes every ingesting save from library results", async () => {
     const { db, sqlite } = setup();
     sqlite.exec(`
