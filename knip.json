@@ -11,6 +11,7 @@
         "src/renderer/src/preview.ts",
         "scripts/*.{mjs,cjs,ts}",
         "scripts/sandbox-import-scope/{index,preload}.cjs",
+        "scripts/proof-scenarios/*.cjs",
         "src/main/core/media-warm/service.ts",
         "src/main/core/enrichment-sidecar.ts"
       ],
