@@ -13,6 +13,7 @@ export const ViewerPrefsSchema = z.object({
   spaceAction: ViewerActionSchema.catch("preview"),
   doubleClickAction: ViewerActionSchema.catch("open"),
   middleClickAction: ViewerActionSchema.catch("open"),
+  dragToFile: z.boolean().catch(true),
   wheelBehavior: z.enum(["scroll", "zoom", "navigate"]).catch("scroll"),
   defaultImageSize: z.enum(["fit", "actual"]).catch("fit"),
   rememberImagePosition: z.boolean().catch(true),

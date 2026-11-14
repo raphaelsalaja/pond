@@ -17,7 +17,11 @@ export { MediaViewer, type ViewerNav } from "./components/viewers/media-viewer";
 export { useCardActions } from "./hooks/use-card-actions";
 export { useMediaPickOptions } from "./hooks/use-media-pick-options";
 export { confirmEmptyTrash } from "./lib/empty-trash";
-export { notifyUndoableFolderChange } from "./lib/folder-actions";
+export {
+  assignSavesToFolder,
+  createFolderWithSaves,
+  notifyUndoableFolderChange,
+} from "./lib/folder-actions";
 export { collectionOwnsKeyboard, saveOwnsKeyboard } from "./lib/keyboard-owner";
 export { parseMode, type SaveListMode } from "./lib/list";
 export {
@@ -79,6 +83,11 @@ export {
   useDisplayPrefs,
   useItemInfo,
 } from "./state/display-prefs";
+export {
+  currentSaveDragSession,
+  type SaveDragSession,
+  useSaveDragSession,
+} from "./state/drag-session";
 export { importFilesWithDuplicateReview } from "./state/duplicate-import-review";
 export { inspect, useInspect } from "./state/inspect";
 export {
