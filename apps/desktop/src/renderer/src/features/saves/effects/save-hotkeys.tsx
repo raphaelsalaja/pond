@@ -96,10 +96,12 @@ function withSelection(
   };
 }
 
+/** The viewer moves the primary Save without clearing the grid selection, so one selected id may be stale. */
 function targetIds(): readonly string[] {
   const selected = selection.snapshot();
   const primary = primarySelectionStore.state.id;
-  return selected.length ? selected : primary ? [primary] : [];
+  if (selected.length > 1) return selected;
+  return primary ? [primary] : [];
 }
 
 function canCopyPrimaryMedia(save: Save): boolean {

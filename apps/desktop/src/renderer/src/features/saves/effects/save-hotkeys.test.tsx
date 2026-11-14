@@ -304,6 +304,17 @@ describe("Inbox hotkeys", () => {
     ]);
   });
 
+  it("follows the primary Save when the viewer has moved past the selection", async () => {
+    await act(async () => {
+      selection.set(["library"]);
+      primarySelection.set("waiting");
+    });
+    await press("p");
+    expect(edits).toEqual([
+      { ids: ["waiting"], operation: { kind: "inbox", state: "processed" } },
+    ]);
+  });
+
   it("opens the snooze picker for a waiting Save", async () => {
     await act(async () => selectOnlySave("library"));
     await press("h");
