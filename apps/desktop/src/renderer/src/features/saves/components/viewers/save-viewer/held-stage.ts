@@ -48,34 +48,47 @@ export function stageLayers<T>(
   ];
 }
 
+interface Tracked<T> {
+  target: StageEntry<T> | null;
+  stage: Stage<T>;
+}
+
+function restage<T>(
+  tracked: Tracked<T>,
+  change: (stage: Stage<T>) => Stage<T>,
+): Tracked<T> {
+  const stage = change(tracked.stage);
+  return stage === tracked.stage ? tracked : { target: tracked.target, stage };
+}
+
 /**
  * Keeps the shown media on screen until the target reports ready, or until `HOLD_MS` passes.
  * @remarks The cap runs from the first step away, so a fast sweep never pins stale pixels.
  */
 export function useHeldStage<T>(target: StageEntry<T> | null) {
-  const [stage, setStage] = useState<Stage<T>>({
-    shown: target,
-    pending: null,
-  });
-  const [seen, setSeen] = useState(target);
-  let current = stage;
-  if (seen !== target) {
-    current = retarget(stage, target);
-    setSeen(target);
-    setStage(current);
+  /** One state, so when React rebases away the render-phase update, target and stage rewind together. */
+  const [tracked, setTracked] = useState<Tracked<T>>(() => ({
+    target,
+    stage: { shown: target, pending: null },
+  }));
+  let { stage } = tracked;
+  if (tracked.target !== target) {
+    stage = retarget(stage, target);
+    setTracked({ target, stage });
   }
 
-  const holding = current.pending !== null;
+  const holding = stage.pending !== null;
   useEffect(() => {
     if (!holding) return;
-    const timer = window.setTimeout(() => setStage(expire), HOLD_MS);
+    const timer = window.setTimeout(() => {
+      setTracked((previous) => restage(previous, expire));
+    }, HOLD_MS);
     return () => window.clearTimeout(timer);
   }, [holding]);
 
-  const ready = useCallback(
-    (key: string) => setStage((previous) => settle(previous, key)),
-    [],
-  );
+  const ready = useCallback((key: string) => {
+    setTracked((previous) => restage(previous, (now) => settle(now, key)));
+  }, []);
 
-  return { layers: stageLayers(current), ready };
+  return { layers: stageLayers(stage), ready };
 }
