@@ -50,7 +50,8 @@ function compilePredicate(p: Predicate): SQL {
   }
   const sqlExpr = compileForField(p.field, p.operator, p.value);
   if (!sqlExpr) throw new Error(`Invalid filter: ${p.field} ${p.operator}`);
-  const boolean = sql`coalesce((${sqlExpr}), 0)`;
+  const boolean =
+    p.field === "post" ? sqlExpr : sql`coalesce((${sqlExpr}), 0)`;
   return p.negate ? sql`not (${boolean})` : boolean;
 }
 

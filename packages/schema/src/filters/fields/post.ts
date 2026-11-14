@@ -38,15 +38,19 @@ function readSplitPost(raw: PredicateValue): SplitPostRef | null {
   return key.success ? parseSplitPostKey(key.data) : null;
 }
 
-/** Source IDs are case-sensitive, so posts compare exactly instead of through the lowercased enum path. */
+/**
+ * Source IDs are case-sensitive, so posts compare exactly instead of through the lowercased enum path.
+ * @remarks The `is not null` term keeps the result 0 or 1, so it can skip the `coalesce` that hides the index.
+ */
 export function splitPostClause(
   operator: ComparatorId,
   raw: PredicateValue,
 ): SQL | null {
   const ref = readSplitPost(raw);
   if (!ref || (operator !== "eq" && operator !== "neq")) return null;
-  const match = sql`(${saves.source} = ${ref.source} and ${splitPostSourceIdSql()} = ${ref.sourceId})`;
-  return operator === "eq" ? match : sql`not coalesce(${match}, 0)`;
+  const sourceId = splitPostSourceIdSql();
+  const match = sql`(${saves.source} = ${ref.source} and ${sourceId} is not null and ${sourceId} = ${ref.sourceId})`;
+  return operator === "eq" ? match : sql`not ${match}`;
 }
 
 export function matchesSplitPost(
