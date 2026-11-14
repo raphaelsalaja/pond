@@ -45,6 +45,9 @@ export interface MenuEntry {
   keywords?: string;
   icon: ReactNode;
   shortcut?: ShortcutId;
+  /** Key glyphs for entries that come from a menu spec rather than a shortcut id. */
+  keys?: readonly string[];
+  checked?: boolean;
   /** Lowest score while a query is active, for entries matched on text the label doesn't show. */
   scoreFloor?: number;
   /** Multiplies the label score, so near ties go to commands. */

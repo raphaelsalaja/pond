@@ -1,0 +1,16 @@
+.trigger {
+  min-width: 0;
+  max-width: 180px;
+
+  /* Fades in through the Button's own opacity transition when you enter a narrower view. */
+  @starting-style {
+    opacity: 0;
+  }
+}
+
+.label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

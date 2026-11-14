@@ -13,6 +13,7 @@ import { activeLibraryDestination } from "@/shared/lib/library-nav";
 import { LibraryDestinations } from "./destinations";
 import { FolderTree } from "./folder-tree";
 import { selectLibraryNav } from "./navigation";
+import { SearchButton } from "./search-button";
 import styles from "./styles.module.css";
 
 function WorkspaceHeader() {
@@ -46,6 +47,7 @@ export function FolderSidebar() {
       aria-label="Library"
     >
       <WorkspaceHeader />
+      <SearchButton />
       <Sidebar.Scroll className={styles.scroll}>
         <LibraryDestinations
           activeViewId={activeViewId}

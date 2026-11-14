@@ -14,7 +14,7 @@ import {
 } from "@/features/library/state/library-header";
 import {
   getViewState,
-  setSearchScope,
+  searchAllSaves,
 } from "@/features/library/state/view-store";
 import type { ShortcutId } from "../../../../shared/shortcuts";
 import { AppHotkeys } from "./app-hotkeys";
@@ -195,7 +195,7 @@ describe("app hotkeys in text fields", () => {
 
   it("focuses current-view search on Mod+F", async () => {
     const focusSearch = vi.spyOn(libraryHeader, "focusSearch");
-    setSearchScope("all");
+    searchAllSaves({ kind: "folder", id: "design" });
     await mount();
     await act(async () => {
       document.dispatchEvent(
@@ -208,7 +208,7 @@ describe("app hotkeys in text fields", () => {
       );
     });
     expect(focusSearch).toHaveBeenCalledOnce();
-    expect(getViewState().searchScope).toBe("current");
+    expect(getViewState().searchAllView).toBeNull();
     expect(attr("search")).toBe("closed");
     focusSearch.mockRestore();
   });

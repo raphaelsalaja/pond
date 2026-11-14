@@ -1,6 +1,7 @@
 import type { LibraryQueryRequest } from "@shared/library-query";
 import { recentlyAddedSince } from "@shared/recently-added";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { searchViewFor } from "@/features/library/lib/search-view";
 import {
   useFolderMemberships,
   useFolders,
@@ -40,14 +41,14 @@ export function useNarrowedSaves(mode: SaveListMode, sourceFilter: string) {
   const recents = useRecents();
   const query = useEffectiveFilterQuery();
   const keywords = useSearchText();
-  const searchScope = useSearchScope();
+  const nav = useLibraryNav();
+  const searchScope = useSearchScope(searchViewFor(mode, nav));
   const sortKey = useSortKey();
   const sortDir = useSortDir();
   const randomSeed = useRandomSeed();
   const [folderViews, , viewsReady] = usePrefs("folderViews");
   const [searchPrefs] = usePrefs("search");
   const includeSubfolders = useIncludeSubfolders();
-  const nav = useLibraryNav();
   const memberships = useFolderMemberships();
   const folders = useFolders();
   const folderId = nav.kind === "folder" ? nav.id : null;
