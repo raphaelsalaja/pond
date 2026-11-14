@@ -155,8 +155,8 @@
 
 .count {
   position: absolute;
-  top: 0px;
-  right: 0px;
+  bottom: 0;
+  left: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -195,7 +195,7 @@
 .item .pick {
   position: absolute;
   top: 6px;
-  left: 6px;
+  right: 6px;
   z-index: 4;
   pointer-events: none;
   opacity: 0;
@@ -204,6 +204,7 @@
 
 .item[data-view="list"] .pick {
   top: 10px;
+  right: auto;
   left: 2px;
 }
 
@@ -216,11 +217,6 @@
 /* Keyboard selection reveals every circle at once; only pointer hover fades one in. */
 :global(html[data-focus-source="keyboard"]) .item .pick {
   transition: none;
-}
-
-.item[data-pickable]:hover .type,
-:global([data-multi-select]) .item[data-pickable] .type {
-  translate: 22px 0;
 }
 
 .item[data-pickable][data-view="list"]:hover .type,
