@@ -19,43 +19,17 @@ import {
 } from "@/features/saves/lib/actions";
 import {
   assignSavesToFolder,
-  notifyUndoableFolderChange,
+  createFolderWithSaves,
   removeSavesFromFolder,
 } from "@/features/saves/lib/folder-actions";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
 import { pasteTagsForSelection } from "@/features/saves/lib/selection";
-import { errorCopy } from "@/shared/lib/error-copy";
 import { buildFolderTreeMenu } from "@/shared/lib/folder-tree-menu";
 import { formatPlural } from "@/shared/lib/format";
 import { shortcutGlyphs } from "@/shared/lib/shortcuts";
 import { notify } from "@/shared/lib/toast";
 import { glyph } from "./shared";
 import type { SaveMenuContext } from "./types";
-
-function createFolderWithSaves(ids: string[]): void {
-  void (async () => {
-    try {
-      const folder = await window.pond.query("folders.createWithSaves", {
-        name: "Untitled",
-        parentId: null,
-        saveIds: ids,
-      });
-      saveLibraryBridge.rememberFolderDestinations([folder.id]);
-      await saveLibraryBridge.refreshFolders();
-      saveLibraryBridge.startEditingFolder(folder.id);
-      notifyUndoableFolderChange(
-        "create-folder-with-saves",
-        `Created "${folder.name}" with ${formatPlural(ids.length, { one: "save", other: "saves" })}`,
-      );
-    } catch (error) {
-      notify({
-        id: "create-folder-with-saves",
-        title: "Couldn't create folder",
-        description: errorCopy(error, "Try again."),
-      });
-    }
-  })();
-}
 
 function buildFolderItems(ids: string[], batch: boolean): MenuItemSpec[] {
   const counts = new Map<string, number>();

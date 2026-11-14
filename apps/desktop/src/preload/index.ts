@@ -20,6 +20,7 @@ import {
   type NavigationDirection,
   type RecentMenuEntry,
 } from "../shared/constants";
+import { FILE_RING_OVERLAY_IPC } from "../shared/file-ring-overlay-contracts";
 import { FilterQuery } from "../shared/filter-query";
 import type { FishEvent, FishOpen } from "../shared/fish-contracts";
 import {
@@ -119,6 +120,9 @@ let cachedLibraryId: string | null = null;
 const api = {
   openCombineImagesWindow(input: CombineImagesWindowOpen): Promise<void> {
     return ipcRenderer.invoke(COMBINE_IMAGES_WINDOW_IPC.open, input);
+  },
+  openFileRing(): Promise<void> {
+    return ipcRenderer.invoke(FILE_RING_OVERLAY_IPC.open);
   },
   onFullScreenChange(callback: (fullScreen: boolean) => void): () => void {
     return fullScreen.subscribe(callback);

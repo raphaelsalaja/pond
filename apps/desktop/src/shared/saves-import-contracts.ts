@@ -91,12 +91,17 @@ export interface SavesImportQueryInputs {
     progressId?: string;
   };
   "saves.pickEagleLibrary": EmptyInput;
-  "saves.importClipboard": EmptyInput;
+  "saves.importClipboard": { folderId?: string | null };
   "saves.importBookmarks": EmptyInput;
   "saves.importMymind": EmptyInput;
   "saves.importDataExport": EmptyInput;
   "saves.extractPageAssets": { url: string };
-  "saves.quickAdd": { url?: string; note?: string | null; tags?: string[] };
+  "saves.quickAdd": {
+    url?: string;
+    note?: string | null;
+    tags?: string[];
+    folderId?: string | null;
+  };
   "saves.startDrag": {
     id?: string;
     path?: string;

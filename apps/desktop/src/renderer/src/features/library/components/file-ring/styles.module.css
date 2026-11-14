@@ -1,0 +1,32 @@
+.root {
+  --ring-delay: 400ms;
+
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  visibility: hidden;
+  place-items: center;
+  container-type: size;
+  pointer-events: none;
+  transition: visibility 0s var(--ds-duration-snap);
+
+  &[data-open] {
+    visibility: visible;
+    transition: none;
+  }
+}
+
+.scrim {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--ds-gray-1) 55%, transparent);
+  opacity: 0;
+  backdrop-filter: blur(6px);
+  transition: opacity var(--ds-duration-snap) var(--ds-easing-snap);
+
+  &[data-open] {
+    opacity: 1;
+    transition-duration: var(--ds-duration-medium);
+  }
+}

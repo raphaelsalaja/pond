@@ -455,6 +455,11 @@ export function isValidShortcut(chord: string): boolean {
   return result.valid && result.warnings.length === 0;
 }
 
+/** Sequences are fixed; every other shortcut takes recorded keys, even one that ships unbound. */
+export function isRecordable(definition: ShortcutDef): boolean {
+  return !definition.sequence;
+}
+
 export function isShortcutId(id: string): id is ShortcutId {
   return Object.hasOwn(SHORTCUTS, id);
 }
@@ -508,7 +513,7 @@ export function resolveShortcuts(
   }
   for (const id of Object.keys(resolved).filter(isShortcutId)) {
     const override = preferences.overrides[id];
-    if (override && resolved[id].keys && isValidShortcut(override))
+    if (override && isRecordable(resolved[id]) && isValidShortcut(override))
       resolved[id] = {
         ...resolved[id],
         keys: normalizeHotkey(override, SHORTCUT_PLATFORM),

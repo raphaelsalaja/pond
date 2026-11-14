@@ -105,6 +105,43 @@ describe("splitPrefsPatch", () => {
       "arena-links-web-pages",
     ]);
   });
+
+  it("keeps the drag to file ring with the library, since folder IDs belong to one library", () => {
+    expect(PrefsSchema.parse({}).fileRing.items).toBeNull();
+    const items = [{ kind: "folder" as const, folderId: "moodboard" }];
+    const { app, pond } = splitPrefsPatch({ fileRing: { items } });
+    expect(app).toEqual({});
+    expect(mergePondSlice({}, pond).fileRing.items).toEqual(items);
+    expect(
+      mergePondSlice(pond, { fileRing: { items: null } }).fileRing,
+    ).toEqual({ items: null });
+  });
+
+  it("drops ring items this build doesn't know without resetting the rest", () => {
+    const { fileRing } = PrefsSchema.parse({
+      fileRing: {
+        items: [
+          { kind: "action", action: "new-folder" },
+          { kind: "action", action: "retired" },
+          { kind: "folder", folderId: "a" },
+          { kind: "folder", folderId: "a" },
+          { kind: "folder", folderId: "b" },
+          { kind: "folder", folderId: "c" },
+          { kind: "folder", folderId: "d" },
+          { kind: "folder", folderId: "e" },
+          { kind: "folder", folderId: "f" },
+        ],
+      },
+    });
+    expect(fileRing.items).toEqual([
+      { kind: "action", action: "new-folder" },
+      { kind: "folder", folderId: "a" },
+      { kind: "folder", folderId: "b" },
+      { kind: "folder", folderId: "c" },
+      { kind: "folder", folderId: "d" },
+      { kind: "folder", folderId: "e" },
+    ]);
+  });
 });
 
 describe("normalizeStoredPrefs", () => {

@@ -13,6 +13,7 @@ export function resolvePreload(
   name:
     | "index.cjs"
     | "combine-images.cjs"
+    | "file-ring.cjs"
     | "preview.cjs"
     | "settings.cjs"
     | "scrape.cjs",

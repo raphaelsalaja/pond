@@ -16,6 +16,7 @@ import {
 } from "./core/combine-images-window";
 import { ensureDefaultLibrary } from "./core/ensure-default-library";
 import { registerSyncActionListener } from "./core/executor";
+import { closeFileRingOverlay } from "./core/file-ring-overlay";
 import { startFishRoutines } from "./core/fish";
 import {
   startGlobalShortcuts,
@@ -61,6 +62,10 @@ import {
 import { markSaveLinksReady } from "./deep-link-save";
 import { settleDockAfterClose } from "./dock";
 import { registerIpc } from "./ipc";
+import {
+  registerFileRingOverlayIpc,
+  toggleFileRing,
+} from "./ipc/file-ring-overlay";
 import { waitForLibraryLocationChanges } from "./ipc/queries/library-locations";
 import { ensureIngestToken } from "./keychain";
 import { broadcast } from "./lib/broadcast";
@@ -294,6 +299,7 @@ app.whenReady().then(async () => {
   if (!process.env.POND_SANDBOX) registerAutoUpdater();
   subscribePrefs((prefs) => broadcast(IPC.prefsChanged, prefs));
   registerCombineImagesWindowIpc();
+  registerFileRingOverlayIpc();
   const menuPrefs = await getPrefs();
   installAppMenu({
     shortcuts: menuPrefs.shortcuts,
@@ -564,6 +570,7 @@ async function registerSummonHotkey() {
         }
         await summonMainWindow();
       }),
+      "app.file-ring": run(toggleFileRing),
     },
     (await getPrefs()).shortcuts.overrides,
   );
@@ -668,6 +675,7 @@ async function shutdownForQuit(): Promise<void> {
   killTrackedProcessTrees();
   closePreviewWindows();
   closeCombineImagesWindow();
+  closeFileRingOverlay();
   try {
     await withDeadline(
       Promise.all([
