@@ -602,7 +602,10 @@ function downloadsCategory(input: HealthInput): HealthCategory {
         attempts > 0
           ? { count: attempts, max: row.task?.maxAttempts ?? null }
           : null,
-      nextAttemptAt: row.nextRunAt ?? null,
+      nextAttemptAt:
+        row.status === "failed" || row.status === "dead"
+          ? null
+          : (row.nextRunAt ?? null),
       repair: null,
       openable: true,
     });

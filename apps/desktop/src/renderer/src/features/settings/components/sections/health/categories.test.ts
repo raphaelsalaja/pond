@@ -318,6 +318,16 @@ describe("Library Health categories", () => {
     }
   });
 
+  it("shows no next attempt for a download Pond stopped", () => {
+    const { entries } = category(
+      buildHealthCategories(
+        input({ downloads: [download("dead", { nextRunAt: 99 })] }),
+      ),
+      "downloads",
+    );
+    expect(entries[0]?.nextAttemptAt).toBeNull();
+  });
+
   it("leaves processing failures for missing originals to the repair row", () => {
     const processing = category(
       buildHealthCategories(
