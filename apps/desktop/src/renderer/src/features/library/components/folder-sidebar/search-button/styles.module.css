@@ -1,5 +1,7 @@
 .button {
-  min-width: clamp(160px, 36cqi, 320px);
+  flex: none;
+  width: auto;
+  margin: 4px 0 4px 18px;
 }
 
 .label {
@@ -13,14 +15,4 @@
 .shortcut {
   display: inline-flex;
   flex: none;
-}
-
-@container toolbar-main (max-width: 560px) {
-  .button {
-    min-width: 0;
-  }
-
-  .shortcut {
-    display: none;
-  }
 }
