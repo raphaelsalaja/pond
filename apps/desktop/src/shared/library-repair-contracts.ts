@@ -55,6 +55,11 @@ export interface LibraryRepairJob {
 
 export const LibraryRepairPreviewRequestSchema = z.object({
   kind: LibraryRepairKindSchema,
+  saveIds: z
+    .array(z.string().trim().min(1).max(500))
+    .min(1)
+    .max(5000)
+    .optional(),
 });
 
 export const LibraryRepairApplyRequestSchema = z.object({

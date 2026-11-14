@@ -88,8 +88,12 @@ export function NewMenuDialogHost() {
     return (
       <LibraryRepairDialog
         kind={kind.repair}
+        saveIds={kind.saveIds}
         open={presentation.open}
-        onClose={() => newMenuDialog.close()}
+        onClose={() => {
+          kind.onClosed?.();
+          newMenuDialog.close();
+        }}
       />
     );
   }

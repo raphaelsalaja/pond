@@ -4,7 +4,12 @@ import { Store } from "@tanstack/store";
 
 export type NewMenuDialog =
   | { kind: "links" }
-  | { kind: "repair"; repair: LibraryRepairKind };
+  | {
+      kind: "repair";
+      repair: LibraryRepairKind;
+      saveIds?: readonly string[];
+      onClosed?: () => void;
+    };
 
 const store = new Store<NewMenuDialog | null>(null);
 

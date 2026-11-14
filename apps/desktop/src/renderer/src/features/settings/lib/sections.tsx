@@ -9,6 +9,7 @@ import {
   scheduleSection,
   sourcesSection,
 } from "@/features/settings/lib/config-harvesting";
+import { healthSection } from "@/features/settings/lib/config-health";
 import { imagesSection } from "@/features/settings/lib/config-images";
 import { librarySection } from "@/features/settings/lib/config-library";
 import { localApiSection } from "@/features/settings/lib/config-local-api";
@@ -139,6 +140,7 @@ export const SECTION_CONFIGS = new Map<string, SectionConfig>([
     },
   ],
   ["library", librarySection],
+  ["health", healthSection],
   ["storage", storageSection],
   ["backups", backupsSection],
   ["processing", processingSection],
