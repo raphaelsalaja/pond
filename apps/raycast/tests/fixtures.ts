@@ -13,6 +13,7 @@ export const SAVE: ApiSave = {
   folderIds: [],
   note: null,
   rating: null,
+  favorite: false,
   kind: "image",
   status: "complete",
   savedAt: Date.UTC(2026, 9, 20, 12),

@@ -3,7 +3,7 @@ import { QuerySchema } from "./filters/schema";
 import { EMPTY_QUERY } from "./filters/types";
 
 /** Bumped on every change to the HTTP contract: minor for additions, major for breaks. */
-export const API_VERSION = "2.2.0";
+export const API_VERSION = "2.3.0";
 
 export const API_ERROR_CODES = [
   "invalid_json",
@@ -170,6 +170,8 @@ export const ApiSaveSchema = z.object({
   folderIds: z.array(z.string()),
   note: z.string().nullable(),
   rating: z.number().int().nullable(),
+  /** Pond versions before favorites omit it, so clients read that as not favorite. */
+  favorite: z.boolean().default(false),
   /** One of image, video, audio, document, font, file, link or text. */
   kind: z.string().nullable(),
   status: z.enum(API_SAVE_STATUSES),
@@ -327,6 +329,12 @@ export const ApiRatingRequestSchema = z.object({
   rating: z.number().int().min(0).max(5),
 });
 
+export const ApiFavoriteRequestSchema = z.object({
+  libraryId: z.string().optional(),
+  ids: SaveIdsSchema,
+  favorite: z.boolean(),
+});
+
 export const ApiEditResultSchema = z.object({
   changed: z.number().int(),
 });
@@ -403,6 +411,7 @@ export type ApiEditFoldersRequest = z.input<typeof ApiEditFoldersRequestSchema>;
 export type ApiSaveIdsRequest = z.input<typeof ApiSaveIdsRequestSchema>;
 export type ApiNoteRequest = z.input<typeof ApiNoteRequestSchema>;
 export type ApiRatingRequest = z.input<typeof ApiRatingRequestSchema>;
+export type ApiFavoriteRequest = z.input<typeof ApiFavoriteRequestSchema>;
 export type ApiSwitchLibraryRequest = z.input<
   typeof ApiSwitchLibraryRequestSchema
 >;

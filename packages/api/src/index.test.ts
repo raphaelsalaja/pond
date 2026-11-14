@@ -22,6 +22,7 @@ const SAVE: ApiSave = {
   folderIds: [],
   note: null,
   rating: null,
+  favorite: true,
   kind: "image",
   status: "complete",
   savedAt: 1_700_000_000_000,
@@ -244,6 +245,25 @@ describe("PondApi", () => {
     });
   });
 
+  it("reads a Save from a Pond without favorites as not favorite", async () => {
+    const older = Object.fromEntries(
+      Object.entries(SAVE).filter(([key]) => key !== "favorite"),
+    );
+    const { client } = recorder({
+      ids: ["save-1"],
+      saves: [older],
+      total: 1,
+      nextCursor: null,
+      libraryId: "lib-1",
+      revision: 3,
+    });
+    const page = await client.query({
+      query: { combinator: "and", rules: [] },
+      include: ["saves"],
+    });
+    expect(page.saves?.[0]).toEqual({ ...SAVE, favorite: false });
+  });
+
   it("rejects saves that miss the public shape", async () => {
     const { client } = recorder([{ id: "save-1", savedAt: "yesterday" }]);
     await expect(client.saves({})).rejects.toMatchObject({ kind: "response" });
@@ -267,6 +287,7 @@ describe("PondApi", () => {
     await client.restore(["a"]);
     await client.setNote("a", null);
     await expect(client.setRating(["a"], 4)).resolves.toEqual({ changed: 1 });
+    await client.setFavorite(["a"], true);
     expect(
       calls.map((call) => [
         call.url.replace("http://127.0.0.1:41610/api/v2", ""),
@@ -280,6 +301,7 @@ describe("PondApi", () => {
       ["/saves/restore", "POST", { ids: ["a"] }],
       ["/saves/note", "POST", { id: "a", note: null }],
       ["/saves/rating", "POST", { ids: ["a"], rating: 4 }],
+      ["/saves/favorite", "POST", { ids: ["a"], favorite: true }],
     ]);
   });
 
@@ -289,9 +311,10 @@ describe("PondApi", () => {
     await client.restore(["a"], "lib");
     await client.setNote("a", "hi", "lib");
     await client.setRating(["a"], 2, "lib");
+    await client.setFavorite(["a"], false, "lib");
     expect(
       calls.map((call) => JSON.parse(String(call.init.body)).libraryId),
-    ).toEqual(["lib", "lib", "lib", "lib"]);
+    ).toEqual(["lib", "lib", "lib", "lib", "lib"]);
   });
 
   it("reads Library lists", async () => {

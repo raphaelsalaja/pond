@@ -18,7 +18,11 @@ const ROUTES: ReadonlyArray<
     "export",
   ],
   ["POST", /^\/enqueue$/, "write"],
-  ["POST", /^\/saves\/(tags|folders|trash|restore|note|rating)$/, "write"],
+  [
+    "POST",
+    /^\/saves\/(tags|folders|trash|restore|note|rating|favorite)$/,
+    "write",
+  ],
 ];
 
 /** Unlisted routes stay limited to the Local API Token, so new routes are private until they're added here. */
