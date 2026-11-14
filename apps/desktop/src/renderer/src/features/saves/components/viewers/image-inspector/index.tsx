@@ -12,6 +12,7 @@ import {
 import { BlurHash } from "@/features/saves/components/card/media/blur-hash";
 import type { ViewerNavigation } from "@/features/saves/components/viewers/viewer-toolbar-groups";
 import { useGifPlayer } from "@/features/saves/hooks/use-gif-player";
+import { useReportMediaReady } from "@/features/saves/hooks/use-media-ready";
 import { useMediaReveal } from "@/features/saves/hooks/use-media-reveal";
 import {
   fullImageCrop,
@@ -137,6 +138,7 @@ export function ImageInspector({
       ? save.blurhash
       : null;
   const shown = useMediaReveal(decoded || gif.ready, src);
+  useReportMediaReady(shown);
 
   const run = async (action: () => Promise<void>) => {
     if (pending.current) return;

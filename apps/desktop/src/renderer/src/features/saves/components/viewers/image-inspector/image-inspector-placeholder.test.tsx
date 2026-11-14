@@ -85,7 +85,7 @@ it("paints the save's blurhash only under the file the card shows", async () => 
   expect(hash()).not.toBeNull();
 });
 
-it("keeps the card's original under the viewer image until it fades in", async () => {
+it("keeps the card's original under the viewer image until it shows", async () => {
   rememberCardThumbnail(ORIGINAL, ORIGINAL);
   await inspector.render(undefined, ORIGINAL);
   const placeholder = () =>

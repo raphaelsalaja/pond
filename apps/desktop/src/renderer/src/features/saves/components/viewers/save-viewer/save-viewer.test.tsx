@@ -160,6 +160,91 @@ describe("SaveViewer", () => {
     await findToolbar(host, "Font");
   });
 
+  describe("stepping between images", () => {
+    /** jsdom has no image decoding, so each test settles `decode()` explicitly. */
+    let decodes: Array<{ src: string; resolve: () => void }> = [];
+
+    beforeEach(() => {
+      decodes = [];
+      Object.defineProperty(HTMLImageElement.prototype, "decode", {
+        configurable: true,
+        value(this: HTMLImageElement) {
+          return new Promise<void>((resolve) => {
+            decodes.push({ src: this.src, resolve });
+          });
+        },
+      });
+    });
+
+    afterEach(() => {
+      Reflect.deleteProperty(HTMLImageElement.prototype, "decode");
+    });
+
+    const VIEWER_IMAGE = 'img[alt="Mixed viewer"]';
+    const decode = (name: string) =>
+      act(async () => {
+        for (const pending of decodes) {
+          if (pending.src.includes(name)) pending.resolve();
+        }
+      });
+    const heldImage = () =>
+      host.querySelector("[data-held]")?.querySelector(VIEWER_IMAGE);
+    const pendingImage = () =>
+      host.querySelector("div[data-pending]")?.querySelector(VIEWER_IMAGE);
+
+    it("keeps the shown image on screen until the next one decodes", async () => {
+      const save = mixedSave([
+        file("first.jpg", "image", "image/jpeg"),
+        file("second.jpg", "image", "image/jpeg"),
+      ]);
+      pool.upsert(save);
+      resultNavigation.setSource({ ids: [save.id], total: 1 });
+
+      await act(async () => root.render(<SaveViewer save={save} />));
+      await decode("first.jpg");
+      await click(host, "Next Slide");
+
+      expect(heldImage()?.getAttribute("src")).toContain("first.jpg");
+      expect(pendingImage()?.getAttribute("src")).toContain("second.jpg");
+      expect(labeledButton(host, "Previous Slide").disabled).toBe(false);
+      expect(labeledButton(host, "Next Slide").disabled).toBe(true);
+
+      await decode("second.jpg");
+
+      expect(host.querySelector("[data-held]")).toBeNull();
+      expect(host.querySelector("div[data-pending]")).toBeNull();
+      const second = host.querySelector('img[src*="second.jpg"]');
+      expect(second?.hasAttribute("data-pending")).toBe(false);
+      expect(host.querySelector('img[src*="first.jpg"]')).toBeNull();
+    });
+
+    it("abandons a skipped image and holds the shown one for the newest", async () => {
+      const save = mixedSave([
+        file("first.jpg", "image", "image/jpeg"),
+        file("second.jpg", "image", "image/jpeg"),
+        file("third.jpg", "image", "image/jpeg"),
+      ]);
+      pool.upsert(save);
+      resultNavigation.setSource({ ids: [save.id], total: 1 });
+
+      await act(async () => root.render(<SaveViewer save={save} />));
+      await decode("first.jpg");
+      await click(host, "Next Slide");
+      await click(host, "Next Slide");
+
+      expect(heldImage()?.getAttribute("src")).toContain("first.jpg");
+      expect(pendingImage()?.getAttribute("src")).toContain("third.jpg");
+      expect(host.querySelector('img[src*="second.jpg"]')).toBeNull();
+
+      await decode("second.jpg");
+      expect(heldImage()?.getAttribute("src")).toContain("first.jpg");
+
+      await decode("third.jpg");
+      expect(host.querySelector("[data-held]")).toBeNull();
+      expect(host.querySelector('img[src*="third.jpg"]')).not.toBeNull();
+    });
+  });
+
   it("offers Download Video until the video file arrives", async () => {
     vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
     vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => {});

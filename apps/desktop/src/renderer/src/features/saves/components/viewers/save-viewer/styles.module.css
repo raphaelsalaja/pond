@@ -1,0 +1,21 @@
+.layers {
+  display: grid;
+  grid-template: "layer" minmax(0, 1fr) / minmax(0, 1fr);
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+}
+
+.layer {
+  position: relative;
+  grid-area: layer;
+  min-width: 0;
+  min-height: 0;
+
+  /* Opacity rather than visibility, so a waiting video still presents and reports its first frame. */
+  &[data-pending] {
+    pointer-events: none;
+    opacity: 0;
+  }
+}

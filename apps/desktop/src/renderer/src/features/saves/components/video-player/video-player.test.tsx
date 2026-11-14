@@ -433,7 +433,7 @@ it("puts the whole viewer, playback toolbar included, in full screen", async () 
   }
 });
 
-it("fades the video in over the poster once the first frame loads", async () => {
+it("shows the video over the poster once the first frame loads", async () => {
   await act(async () => {
     root.render(
       <ViewerChrome>
