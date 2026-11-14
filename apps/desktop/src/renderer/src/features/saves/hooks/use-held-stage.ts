@@ -15,7 +15,7 @@ export interface Stage<T> {
   pending: StageEntry<T> | null;
 }
 
-type StageRole = "held" | "pending" | "current";
+export type StageRole = "held" | "pending" | "current";
 
 export function retarget<T>(
   stage: Stage<T>,

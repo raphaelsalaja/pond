@@ -18,6 +18,10 @@ import {
   Slide,
 } from "@/features/saves/components/viewers/media-viewer/slide";
 import type { ViewerNavigation } from "@/features/saves/components/viewers/viewer-toolbar-groups";
+import {
+  type StageEntry,
+  useHeldStage,
+} from "@/features/saves/hooks/use-held-stage";
 import { MediaReadyContext } from "@/features/saves/hooks/use-media-ready";
 import {
   type ChapterCue,
@@ -37,7 +41,6 @@ import { openSave } from "@/features/saves/lib/save-nav";
 import type { Save } from "@/features/saves/types";
 import { useResolvedTheme } from "@/shared/hooks/use-resolved-theme";
 import { bindingKeys, useShortcutBindings } from "@/shared/lib/shortcuts";
-import { type StageEntry, useHeldStage } from "./held-stage";
 import styles from "./styles.module.css";
 import { VideoDownload } from "./video-download";
 
