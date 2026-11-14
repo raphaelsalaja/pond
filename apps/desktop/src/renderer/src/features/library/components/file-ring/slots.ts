@@ -89,20 +89,21 @@ export function acceptsDrop<Folder>(
   return target.kind === "folder" || !target.disabled;
 }
 
-export interface RingDropHandlers<Folder> {
-  addToFolder: (ids: readonly string[], folder: Folder) => void;
-  createFolder: (ids: readonly string[]) => void;
-  exportFiles: (ids: readonly string[]) => void;
+export interface RingDropHandlers<Folder, Payload> {
+  addToFolder: (payload: Payload, folder: Folder) => void;
+  createFolder: (payload: Payload) => void;
+  exportFiles?: (payload: Payload) => void;
 }
 
-export function dropOnRing<Folder>(
+export function dropOnRing<Folder, Payload>(
   target: RingTarget<Folder> | undefined,
-  ids: readonly string[],
-  handlers: RingDropHandlers<Folder>,
+  payload: Payload,
+  handlers: RingDropHandlers<Folder, Payload>,
 ): boolean {
-  if (!acceptsDrop(target) || ids.length === 0) return false;
-  if (target.kind === "folder") handlers.addToFolder(ids, target.folder);
-  else if (target.action === "new-folder") handlers.createFolder(ids);
-  else handlers.exportFiles(ids);
+  if (!acceptsDrop(target)) return false;
+  if (target.kind === "folder") handlers.addToFolder(payload, target.folder);
+  else if (target.action === "new-folder") handlers.createFolder(payload);
+  else if (handlers.exportFiles) handlers.exportFiles(payload);
+  else return false;
   return true;
 }

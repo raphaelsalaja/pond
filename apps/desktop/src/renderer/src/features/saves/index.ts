@@ -22,6 +22,7 @@ export {
   createFolderWithSaves,
   notifyUndoableFolderChange,
 } from "./lib/folder-actions";
+export { canImportDrop } from "./lib/import-feedback";
 export { collectionOwnsKeyboard, saveOwnsKeyboard } from "./lib/keyboard-owner";
 export { parseMode, type SaveListMode } from "./lib/list";
 export {
@@ -39,6 +40,7 @@ export {
 } from "./lib/menu";
 export { applyNavFilter, descendantFolderIds } from "./lib/nav-filter";
 export {
+  notifyUnsupportedDrop,
   type PasteImport,
   pasteImportOf,
   runPasteImport,

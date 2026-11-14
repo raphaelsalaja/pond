@@ -8,11 +8,16 @@ import { useFolders } from "@/features/library/state/folders";
 import {
   announceSaveDragTarget,
   assignSavesToFolder,
+  canImportDrop,
   createFolderWithSaves,
   currentSaveDragSession,
   endSaveDrag,
   exportSelectionFiles,
   isLibrarySaveDrag,
+  notifyUnsupportedDrop,
+  type PasteImport,
+  pasteImportOf,
+  runPasteImport,
   type SaveDragSession,
   saveDropIds,
   useSaveDragSession,
@@ -64,14 +69,28 @@ const ACTIONS = {
   "export-files": { label: "Export Files", Icon: IconExport },
 } satisfies Record<RingAction, ActionCopy>;
 
-const DROP_HANDLERS: RingDropHandlers<Folder> = {
+const SAVE_DROPS: RingDropHandlers<Folder, readonly string[]> = {
   addToFolder: (ids, folder) => void assignSavesToFolder(ids, folder),
   createFolder: (ids) => createFolderWithSaves(ids),
   exportFiles: (ids) => void exportSelectionFiles(ids),
 };
 
+const IMPORT_DROPS: RingDropHandlers<Folder, PasteImport> = {
+  addToFolder: (plan, folder) =>
+    void runPasteImport(plan, { id: folder.id, name: folder.name }),
+  createFolder: (plan) => {
+    void runPasteImport(plan).then((ids) => {
+      if (ids.length > 0) createFolderWithSaves(ids);
+    });
+  },
+};
+
+type RingSource =
+  | { kind: "saves"; session: SaveDragSession }
+  | { kind: "import" };
+
 interface RingSession {
-  drag: SaveDragSession;
+  source: RingSource;
   folderIds: string[];
 }
 
@@ -83,13 +102,13 @@ interface HubCopy {
 function hubCopy(
   target: RingTarget<Folder> | undefined,
   counts: Record<string, number> | null,
-  saveCount: number,
+  saveCount: number | null,
 ): HubCopy {
   if (!target) return { title: "File To" };
   if (target.kind === "action")
     return {
       title: ACTIONS[target.action].label,
-      detail: formatPlural(saveCount, SAVES),
+      detail: saveCount === null ? undefined : formatPlural(saveCount, SAVES),
     };
   const count = counts?.[target.folder.id];
   return {
@@ -176,13 +195,14 @@ function FolderSlot({
   );
 }
 
-/** Library-only drop targets that open over the grid while a Save drag that started in it is in flight. */
+/** Library drop targets that open over the grid during a Save drag that started in it, or a drag in from another app. */
 export function FileRing() {
   const [viewer] = usePrefs("viewer");
   const [folderViews] = usePrefs("folderViews");
   const folderRows = useFolders();
   const drag = useSaveDragSession();
   const [ring, setRing] = useState<RingSession | null>(null);
+  const [importing, setImporting] = useState(false);
   const [inside, setInside] = useState(true);
   const [hovered, setHovered] = useState<RingSlot | null>(null);
   const [held, setHeld] = useState<RingSlot | null>(null);
@@ -190,24 +210,21 @@ export function FileRing() {
   const [previews, setPreviews] = useState<Record<string, string[]>>({});
   const discRef = useRef<HTMLFieldSetElement>(null);
   const announcedRef = useRef<RingSlot | null>(null);
+  const importingRef = useRef(false);
   const latest = useRef({ folderRows, folderViews });
   latest.current = { folderRows, folderViews };
 
   const enabled = viewer.dragToFile;
-  const live = enabled && ring !== null && drag === ring.drag;
+  const source = ring?.source;
+  const live =
+    enabled &&
+    (source?.kind === "import" ? importing : source?.session === drag);
   const open = (live && inside) || held !== null;
 
   useEffect(() => {
     if (!enabled) return;
-    /** Runs after the card's own handler, so the session it started is already current. */
-    const onDragStart = (event: DragEvent) => {
-      const session = currentSaveDragSession();
-      if (
-        !session ||
-        !(event.target instanceof Element) ||
-        !event.target.closest("[data-library-grid]")
-      )
-        return;
+    let internal = false;
+    const start = (next: RingSource) => {
       const { folderRows, folderViews } = latest.current;
       const folderIds = pickRingFolders(
         folderRows,
@@ -216,19 +233,55 @@ export function FileRing() {
       ).map((folder) => folder.id);
       if (folderIds.length === 0) return;
       announcedRef.current = null;
-      setRing({ drag: session, folderIds });
+      importingRef.current = next.kind === "import";
+      setImporting(next.kind === "import");
+      setRing({ source: next, folderIds });
       setInside(true);
       setHovered(null);
       setHeld(null);
     };
+    /** Runs after the card's own handler, so the session it started is already current and a cancelled HTML5 drag shows as prevented. */
+    const onDragStart = (event: DragEvent) => {
+      internal = !event.defaultPrevented;
+      const session = currentSaveDragSession();
+      if (
+        session &&
+        event.target instanceof Element &&
+        event.target.closest("[data-library-grid]")
+      )
+        start({ kind: "saves", session });
+    };
+    const onDragEnd = () => {
+      internal = false;
+    };
+    /** A drag from another app fires no `dragstart` here, so it is the one that enters with no drag of ours in flight. */
+    const onDragEnter = (event: DragEvent) => {
+      if (internal || importingRef.current || currentSaveDragSession()) return;
+      if (!event.dataTransfer || !canImportDrop(event.dataTransfer.types))
+        return;
+      start({ kind: "import" });
+    };
     window.addEventListener("dragstart", onDragStart);
-    return () => window.removeEventListener("dragstart", onDragStart);
+    window.addEventListener("dragend", onDragEnd, true);
+    window.addEventListener("drop", onDragEnd, true);
+    window.addEventListener("dragenter", onDragEnter, true);
+    return () => {
+      window.removeEventListener("dragstart", onDragStart);
+      window.removeEventListener("dragend", onDragEnd, true);
+      window.removeEventListener("drop", onDragEnd, true);
+      window.removeEventListener("dragenter", onDragEnter, true);
+    };
   }, [enabled]);
 
   /** Native drags report no `relatedTarget`, so leaving the window shows up as enter and leave events no longer balancing. */
   useEffect(() => {
     if (!live) return;
     let depth = 1;
+    const endImport = () => {
+      if (!importingRef.current) return;
+      importingRef.current = false;
+      setImporting(false);
+    };
     const over = (event: DragEvent) => {
       depth = 1;
       setInside(true);
@@ -250,14 +303,17 @@ export function FileRing() {
       depth = 0;
       setInside(false);
       setHovered(null);
+      endImport();
     };
     window.addEventListener("dragover", over, true);
     window.addEventListener("dragenter", enter, true);
     window.addEventListener("dragleave", leave, true);
+    window.addEventListener("drop", endImport);
     return () => {
       window.removeEventListener("dragover", over, true);
       window.removeEventListener("dragenter", enter, true);
       window.removeEventListener("dragleave", leave, true);
+      window.removeEventListener("drop", endImport);
     };
   }, [live]);
 
@@ -300,7 +356,9 @@ export function FileRing() {
     const byId = new Map(folderRows.map((folder) => [folder.id, folder]));
     const ids = ring?.folderIds ?? [];
     const folders = ids.flatMap((id) => byId.get(id) ?? []);
-    return layoutRing(folders, ring?.drag.hasFiles ?? false);
+    const exportable =
+      ring?.source.kind === "saves" && ring.source.session.hasFiles;
+    return layoutRing(folders, exportable);
   }, [folderRows, ring]);
 
   function targetAt(event: React.DragEvent) {
@@ -316,36 +374,61 @@ export function FileRing() {
     return acceptsDrop(target) ? { slot: hit, target } : null;
   }
 
+  function accepts(data: DataTransfer): boolean {
+    if (source?.kind === "import")
+      return !isLibrarySaveDrag(data) && canImportDrop(data.types);
+    return isLibrarySaveDrag(data);
+  }
+
   function onDragOver(event: React.DragEvent) {
-    if (!live || !isLibrarySaveDrag(event.dataTransfer)) return;
+    if (!live || !accepts(event.dataTransfer)) return;
     const hit = targetAt(event);
     setHovered(hit?.slot ?? null);
     if (announcedRef.current !== (hit?.slot ?? null)) {
       announcedRef.current = hit?.slot ?? null;
-      if (hit?.target.kind === "folder" && ring)
-        announceSaveDragTarget(hit.target.folder.name, ring.drag.ids.length);
+      if (hit?.target.kind === "folder" && source?.kind === "saves")
+        announceSaveDragTarget(
+          hit.target.folder.name,
+          source.session.ids.length,
+        );
     }
     if (!hit) return;
     event.preventDefault();
     event.dataTransfer.dropEffect = "copy";
   }
 
+  function dropSaves(event: React.DragEvent, target: RingTarget<Folder>) {
+    const ids = saveDropIds(event.dataTransfer);
+    const dropped = ids.length > 0 && dropOnRing(target, ids, SAVE_DROPS);
+    endSaveDrag();
+    return dropped;
+  }
+
+  function dropImport(event: React.DragEvent, target: RingTarget<Folder>) {
+    const plan = pasteImportOf(event.dataTransfer);
+    if (plan && plan.kind !== "clipboard")
+      return dropOnRing(target, plan, IMPORT_DROPS);
+    notifyUnsupportedDrop();
+    return false;
+  }
+
   function onDrop(event: React.DragEvent) {
     const hit = live ? targetAt(event) : null;
     if (!hit) return;
     event.preventDefault();
-    const ids = saveDropIds(event.dataTransfer);
-    const dropped = dropOnRing(hit.target, ids, DROP_HANDLERS);
+    const dropped =
+      source?.kind === "import"
+        ? dropImport(event, hit.target)
+        : dropSaves(event, hit.target);
     setHovered(null);
     if (dropped) setHeld(hit.slot);
-    endSaveDrag();
   }
 
   const shown = held ?? hovered;
   const copy = hubCopy(
     shown ? layout[shown] : undefined,
     counts,
-    ring?.drag.ids.length ?? 0,
+    source?.kind === "saves" ? source.session.ids.length : null,
   );
 
   return (
