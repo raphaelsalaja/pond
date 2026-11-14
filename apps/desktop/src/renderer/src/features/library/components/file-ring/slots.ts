@@ -88,11 +88,19 @@ export function autoRingItems<Row extends RingFolderRow>(
   ];
 }
 
+export type ActionAvailable = (action: RingAction) => boolean;
+
+/** A drag can only make a folder from its Saves or export their files; the rest of the actions are for clicking. */
+export function dragActions(hasFiles: boolean): ActionAvailable {
+  return (action) =>
+    action === "new-folder" || (action === "export-files" && hasFiles);
+}
+
 /** A folder that no longer exists leaves its sector empty, so the rest of the ring stays where you learned it. */
 export function layoutRing<Folder extends { id: string }>(
   items: readonly FileRingItem[],
   folders: readonly Folder[],
-  hasFiles: boolean,
+  available: ActionAvailable,
 ): RingLayout<Folder> {
   const byId = new Map(folders.map((folder) => [folder.id, folder]));
   const layout: RingLayout<Folder> = {};
@@ -103,7 +111,7 @@ export function layoutRing<Folder extends { id: string }>(
       layout[slot] = {
         kind: "action",
         action: item.action,
-        disabled: item.action === "export-files" && !hasFiles,
+        disabled: !available(item.action),
       };
       continue;
     }

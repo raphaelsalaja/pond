@@ -1,6 +1,5 @@
 import type { Folder } from "@pond/schema/db";
 import type { FileRingItem } from "@pond/schema/file-ring";
-import { clsx as cn } from "clsx";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { folderCoverUrl } from "@/features/library/lib/folder-cover";
 import { recentFolderIds } from "@/features/library/lib/recent-folders";
@@ -28,18 +27,13 @@ import { FolderIcon } from "@/shared/lib/folder-icons";
 import { formatPlural } from "@/shared/lib/format";
 import { usePrefs } from "@/shared/state/prefs";
 import { RING_ACTIONS } from "./actions";
-import {
-  HUB_RADIUS,
-  RING_SIZE,
-  RING_SLOTS,
-  type RingSlot,
-  ringHitAt,
-  sectorPath,
-  slotAnchor,
-} from "./geometry";
+import { Disc } from "./disc";
+import { RING_SLOTS, type RingSlot, ringHitAt } from "./geometry";
+import { hubCopy, ITEMS } from "./hub";
 import {
   acceptsDrop,
   autoRingItems,
+  dragActions,
   dropOnRing,
   layoutRing,
   type RingAction,
@@ -53,13 +47,7 @@ import styles from "./styles.module.css";
 /** Long enough to read the folder name on drop, short enough to stay out of the next drag. */
 const HOLD_MS = 320;
 const PREVIEW_COUNT = 2;
-const SAVES = { one: "Save", other: "Saves" };
-const ITEMS = { one: "Item", other: "Items" };
-const SECTOR_PATHS = new Map(
-  RING_SLOTS.map((slot) => [slot, sectorPath(slot)]),
-);
 const EMPTY_LAYOUT: RingLayout<Folder> = {};
-const HUB_STYLE = { width: `${((HUB_RADIUS * 2) / RING_SIZE) * 100}%` };
 
 const SAVE_DROPS: RingDropHandlers<Folder, readonly string[]> = {
   addToFolder: (ids, folder) => void assignSavesToFolder(ids, folder),
@@ -87,36 +75,8 @@ interface RingSession {
   folderIds: string[];
 }
 
-function canExport(source: RingSource): boolean {
-  return source.kind === "saves" && source.session.hasFiles;
-}
-
-interface HubCopy {
-  title: string;
-  detail?: string;
-}
-
-function hubCopy(
-  target: RingTarget<Folder> | undefined,
-  counts: Record<string, number> | null,
-  saveCount: number | null,
-): HubCopy {
-  if (!target) return { title: "File To" };
-  if (target.kind === "action")
-    return {
-      title: RING_ACTIONS[target.action].label,
-      detail: saveCount === null ? undefined : formatPlural(saveCount, SAVES),
-    };
-  const count = counts?.[target.folder.id];
-  return {
-    title: target.folder.name,
-    detail: count === undefined ? undefined : formatPlural(count, ITEMS),
-  };
-}
-
-function anchorStyle(slot: RingSlot) {
-  const anchor = slotAnchor(slot);
-  return { left: `${anchor.left}%`, top: `${anchor.top}%` };
+function sourceActions(source: RingSource) {
+  return dragActions(source.kind === "saves" && source.session.hasFiles);
 }
 
 function ActionSlot({
@@ -130,17 +90,11 @@ function ActionSlot({
 }) {
   const { label, Icon } = RING_ACTIONS[action];
   return (
-    <li
-      className={cn(styles.slot, styles.action)}
-      data-disabled={disabled || undefined}
-      style={anchorStyle(slot)}
-    >
+    <Disc.Slot slot={slot} kind="action" disabled={disabled}>
       <Icon />
-      <span className={styles.label}>{label}</span>
-      {disabled ? (
-        <span className={styles.name}>, unavailable for these Saves</span>
-      ) : null}
-    </li>
+      <Disc.Label>{label}</Disc.Label>
+      {disabled ? <Disc.Name>, unavailable while dragging</Disc.Name> : null}
+    </Disc.Slot>
   );
 }
 
@@ -165,30 +119,22 @@ function FolderSlot({
     return save && src ? [{ id: save.id, src }] : [];
   });
   return (
-    <li className={styles.slot} style={anchorStyle(slot)}>
-      <span className={styles.thumbs}>
+    <Disc.Slot slot={slot} kind="folder">
+      <Disc.Thumbs>
         {thumbs.length > 0 ? (
-          thumbs.map((thumb) => (
-            <img
-              key={thumb.id}
-              className={styles.thumb}
-              src={thumb.src}
-              alt=""
-              draggable={false}
-            />
-          ))
+          thumbs.map((thumb) => <Disc.Thumb key={thumb.id} src={thumb.src} />)
         ) : (
-          <span className={styles.fallback}>
+          <Disc.Fallback>
             <FolderIcon name={icon} color={folder.color} />
-          </span>
+          </Disc.Fallback>
         )}
-      </span>
-      <span className={styles.name}>
+      </Disc.Thumbs>
+      <Disc.Name>
         {count === undefined
           ? folder.name
           : `${folder.name}, ${formatPlural(count, ITEMS)}`}
-      </span>
-    </li>
+      </Disc.Name>
+    </Disc.Slot>
   );
 }
 
@@ -227,7 +173,7 @@ export function FileRing() {
       const items =
         fileRing.items ??
         autoRingItems(folderRows, folderViews, recentFolderIds());
-      const layout = layoutRing(items, folderRows, canExport(next));
+      const layout = layoutRing(items, folderRows, sourceActions(next));
       if (!ringOpens(layout, fileRing.items !== null)) return;
       const folderIds = items.flatMap((item) =>
         item.kind === "folder" ? [item.folderId] : [],
@@ -355,7 +301,7 @@ export function FileRing() {
   const layout = useMemo(
     () =>
       ring
-        ? layoutRing(ring.items, folderRows, canExport(ring.source))
+        ? layoutRing(ring.items, folderRows, sourceActions(ring.source))
         : EMPTY_LAYOUT,
     [folderRows, ring],
   );
@@ -433,31 +379,16 @@ export function FileRing() {
   return (
     <div className={styles.root} data-open={open || undefined}>
       <div className={styles.scrim} data-open={open || undefined} />
-      <fieldset
+      <Disc.Root
         ref={discRef}
         aria-label="File To"
-        className={styles.disc}
-        data-open={open || undefined}
-        data-live={live || undefined}
+        open={open}
+        live={live}
         onDragOver={onDragOver}
         onDrop={onDrop}
       >
-        <svg
-          className={styles.sectors}
-          viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`}
-          aria-hidden="true"
-        >
-          {RING_SLOTS.map((slot) => (
-            <path
-              key={slot}
-              className={styles.sector}
-              d={SECTOR_PATHS.get(slot)}
-              data-kind={layout[slot]?.kind ?? "empty"}
-              data-hovered={shown === slot || undefined}
-            />
-          ))}
-        </svg>
-        <ul className={styles.slots}>
+        <Disc.Sectors layout={layout} active={shown} />
+        <Disc.Slots>
           {RING_SLOTS.map((slot) => {
             const target = layout[slot];
             if (!target) return null;
@@ -487,14 +418,9 @@ export function FileRing() {
               />
             );
           })}
-        </ul>
-        <div className={styles.hub} style={HUB_STYLE} aria-hidden="true">
-          <span className={styles.title}>{copy.title}</span>
-          {copy.detail ? (
-            <span className={styles.detail}>{copy.detail}</span>
-          ) : null}
-        </div>
-      </fieldset>
+        </Disc.Slots>
+        <Disc.Hub title={copy.title} detail={copy.detail} />
+      </Disc.Root>
     </div>
   );
 }

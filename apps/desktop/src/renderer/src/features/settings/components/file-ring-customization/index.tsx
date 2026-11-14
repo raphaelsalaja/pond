@@ -365,7 +365,7 @@ function FileRingDialog({
   );
 }
 
-export function FileRingSetting({ disabled }: { disabled: boolean }) {
+export function FileRingSetting() {
   const [, , loaded] = usePrefs("fileRing");
   const [customizing, setCustomizing] = useState(false);
   return (
@@ -380,7 +380,7 @@ export function FileRingSetting({ disabled }: { disabled: boolean }) {
         <Button
           size="sm"
           variant="secondary"
-          disabled={disabled || !loaded}
+          disabled={!loaded}
           onClick={() => setCustomizing(true)}
         >
           Customize

@@ -1,6 +1,13 @@
 import { z } from "zod";
 
-export const FILE_RING_ACTIONS = ["new-folder", "export-files"] as const;
+export const FILE_RING_ACTIONS = [
+  "new-folder",
+  "export-files",
+  "search",
+  "new-note",
+  "import-files",
+  "import-links",
+] as const;
 
 export type FileRingAction = (typeof FILE_RING_ACTIONS)[number];
 

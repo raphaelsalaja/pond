@@ -9,6 +9,7 @@ function fixture() {
   const blocked = new Set<string>();
   const actions = {
     "app.summon": vi.fn(),
+    "app.file-ring": vi.fn(),
   };
   const controller = new GlobalShortcutController(
     {
@@ -29,9 +30,21 @@ function fixture() {
 }
 
 describe("global shortcut registration", () => {
-  it("registers Show Pond", () => {
+  it("registers Show Pond and the File To ring", () => {
     const { callbacks } = fixture();
-    expect([...callbacks.keys()]).toEqual(["Command+Shift+L"]);
+    expect([...callbacks.keys()]).toEqual([
+      "Command+Shift+L",
+      "Command+Shift+K",
+    ]);
+  });
+  it("opens the ring on its own binding and releases it when cleared", () => {
+    const { controller, callbacks, actions } = fixture();
+    callbacks.get("Command+Shift+K")?.();
+    expect(actions["app.file-ring"]).toHaveBeenCalledOnce();
+    expect(actions["app.summon"]).not.toHaveBeenCalled();
+    controller.prepare({ "app.file-ring": "" }).commit();
+    expect(callbacks.has("Command+Shift+K")).toBe(false);
+    expect(callbacks.has("Command+Shift+L")).toBe(true);
   });
   it("keeps old dispatch until persisted and can roll back staged bindings", () => {
     const { controller, callbacks, actions } = fixture();
@@ -68,11 +81,12 @@ describe("global shortcut registration", () => {
       { register: () => false, unregister() {} },
       {
         "app.summon": vi.fn(),
+        "app.file-ring": vi.fn(),
       },
       true,
     );
     controller.start({});
-    expect(controller.status().errors).toHaveLength(1);
+    expect(controller.status().errors).toHaveLength(2);
   });
   it("allows changing a binding that failed at startup", () => {
     const callbacks = new Map<string, () => void>();
@@ -89,6 +103,7 @@ describe("global shortcut registration", () => {
       },
       {
         "app.summon": vi.fn(),
+        "app.file-ring": vi.fn(),
       },
       true,
     );

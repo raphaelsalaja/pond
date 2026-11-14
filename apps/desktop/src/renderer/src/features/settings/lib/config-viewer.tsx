@@ -1,4 +1,5 @@
 import { FileRingSetting } from "@/features/settings/components/file-ring-customization";
+import { FileRingShortcutSetting } from "@/features/settings/components/file-ring-shortcut";
 import { IS_MAC } from "@/shared/lib/platform";
 import { defineCustomSection, group } from "./engine-types";
 
@@ -81,10 +82,21 @@ export const viewerSection = defineCustomSection({
           key: "fileRingItems",
           title: "Ring Items",
           keywords: ["drag to file", "ring", "radial", "reorder", "pin"],
-          disabled: (values) => !values.dragToFile,
-          render: (binding) => (
-            <FileRingSetting disabled={!binding.values.dragToFile} />
-          ),
+          render: () => <FileRingSetting />,
+        },
+        {
+          control: "custom",
+          key: "fileRingShortcut",
+          title: "Ring Over Any App",
+          keywords: [
+            "drag to file",
+            "ring",
+            "global",
+            "shortcut",
+            "overlay",
+            "finder",
+          ],
+          render: () => <FileRingShortcutSetting />,
         },
         {
           control: "select",

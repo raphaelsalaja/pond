@@ -105,6 +105,7 @@ export default defineConfig({
         input: {
           index: resolve(__dirname, "src/preload/index.ts"),
           "combine-images": resolve(__dirname, "src/preload/combine-images.ts"),
+          "file-ring": resolve(__dirname, "src/preload/file-ring.ts"),
           preview: resolve(__dirname, "src/preload/preview.ts"),
           scrape: resolve(__dirname, "src/preload/scrape.cjs.ts"),
         },
@@ -205,6 +206,7 @@ export default defineConfig({
             __dirname,
             "src/renderer/combine-images.html",
           ),
+          "file-ring": resolve(__dirname, "src/renderer/file-ring.html"),
           preview: resolve(__dirname, "src/renderer/preview.html"),
         },
         preserveEntrySignatures: false,

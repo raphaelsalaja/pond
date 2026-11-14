@@ -35,7 +35,7 @@ it("shows editable shortcuts without profile controls or explanatory copy", asyn
     expect(host.querySelector('[aria-label="Shortcut Profile"]')).toBeNull();
     expect(host.textContent).toContain("Show Pond is unavailable.");
     const globalHeading = [...host.querySelectorAll("h2")].find((heading) =>
-      heading.textContent?.includes("Global (1)"),
+      heading.textContent?.includes("Global (2)"),
     );
     expect(globalHeading?.parentElement?.textContent).toContain("Show Pond");
     expect(host.textContent).toContain("Navigate (");

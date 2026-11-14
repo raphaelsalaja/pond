@@ -10,6 +10,11 @@ export const GLOBAL_SHORTCUTS = {
     label: "Show Pond",
     group: "Global",
   },
+  "app.file-ring": {
+    keys: "Mod+Shift+K",
+    label: "Open File To Ring",
+    group: "Global",
+  },
 } as const;
 
 export type GlobalShortcutId = keyof typeof GLOBAL_SHORTCUTS;
