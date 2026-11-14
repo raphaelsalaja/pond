@@ -55,6 +55,7 @@ const preferences = z.object({
 });
 
 export const SIDEBAR_DESTINATIONS = [
+  "inbox",
   "all",
   "uncategorized",
   "untagged",
@@ -147,6 +148,7 @@ const sidebar = z.object({
     .catch({ smartFolders: true, fish: true, canvases: true, folders: true }),
   destinations: z
     .object({
+      inbox: z.boolean().catch(true),
       all: z.boolean().catch(true),
       uncategorized: z.boolean().catch(true),
       untagged: z.boolean().catch(true),
@@ -159,6 +161,7 @@ const sidebar = z.object({
       sources: z.boolean().catch(true),
     })
     .catch({
+      inbox: true,
       all: true,
       uncategorized: true,
       untagged: true,

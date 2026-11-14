@@ -57,6 +57,8 @@ export function handleDeepLink(
     let route: string | null = null;
     if (parsed.hostname === "" || parsed.hostname === "library") {
       route = "/";
+    } else if (parsed.hostname === "inbox") {
+      route = "/?inbox=1";
     } else if (parsed.hostname === "item") {
       const id = parsed.pathname.replace(/^\//, "");
       if (id) route = `/save/${encodeURIComponent(id)}`;

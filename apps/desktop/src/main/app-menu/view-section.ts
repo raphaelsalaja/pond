@@ -7,6 +7,10 @@ export function buildViewSection(context: AppMenuContext): AppMenuItem {
     label: "View",
     submenu: [
       {
+        label: "Inbox",
+        click: sendMenuAction("nav.inbox"),
+      },
+      {
         label: "All Saves",
         accelerator: accelerator("nav.library"),
         registerAccelerator: false,

@@ -2501,6 +2501,20 @@ export const IconInboxFill = /* @__PURE__ */ createIcon("Inbox", "fill", [
     },
   ],
 ]);
+export const IconInboxMinus = /* @__PURE__ */ createIcon(
+  "InboxMinus",
+  "outline",
+  [
+    [
+      "path",
+      {
+        d: "M9.25 15.25H5.25A3 3 0 0 1 2.25 12.25V5.75A3 3 0 0 1 5.25 2.75H12.75A3 3 0 0 1 15.75 5.75V10",
+      },
+    ],
+    ["path", { d: "M2.25 10H5.6L6.7 11.75H11.3L12.4 10H15.75" }],
+    ["path", { d: "M11.75 13.75H15.75" }],
+  ],
+);
 export const IconInfo = /* @__PURE__ */ createIcon("Info", "outline", [
   ["path", { d: "M9 8L9 13.5" }],
   [

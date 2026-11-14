@@ -352,6 +352,55 @@ it("removes only the clicked folder immediately for every selected Save", async 
   expect(host.textContent).not.toContain("Apply");
 });
 
+it("marks an Inbox Save processed, while folder changes leave it in review", async () => {
+  const current = pool.get("a");
+  if (!current) throw new Error("Missing Save fixture");
+  pool.upsert({ ...current, inboxState: "review" });
+  await act(async () =>
+    root.render(
+      <SaveInspector
+        saveId="a"
+        folders={[{ id: "folder", name: "Inspiration", count: 1 }]}
+      />,
+    ),
+  );
+  expect(host.textContent).toContain("Needs review");
+  await act(async () =>
+    host
+      .querySelector<HTMLButtonElement>(
+        '[aria-label="Remove folder Inspiration"]',
+      )
+      ?.click(),
+  );
+  expect(requests.map((request) => request.name)).not.toContain(
+    "saves.bulkEdit",
+  );
+  const markProcessed = [...host.querySelectorAll("button")].find(
+    (button) => button.textContent === "Mark Processed",
+  );
+  await act(async () => markProcessed?.click());
+  expect(requests).toContainEqual({
+    name: "saves.bulkEdit",
+    input: { ids: ["a"], operation: { kind: "inbox", state: "processed" } },
+  });
+});
+
+it("removes an Inbox Save from the Inbox without marking it processed", async () => {
+  const current = pool.get("a");
+  if (!current) throw new Error("Missing Save fixture");
+  pool.upsert({ ...current, inboxState: "snoozed", inboxUntil: 4_000_000 });
+  await act(async () => root.render(<SaveInspector saveId="a" />));
+  await act(async () =>
+    host
+      .querySelector<HTMLButtonElement>('[aria-label="Remove from Inbox"]')
+      ?.click(),
+  );
+  expect(requests).toContainEqual({
+    name: "saves.bulkEdit",
+    input: { ids: ["a"], operation: { kind: "inbox", state: null } },
+  });
+});
+
 it("does not expose a local Save's internal identity as a source link", async () => {
   const current = pool.get("a");
   if (!current) throw new Error("Missing Save fixture");

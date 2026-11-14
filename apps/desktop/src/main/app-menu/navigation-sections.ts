@@ -21,6 +21,10 @@ export function buildGoSection(context: AppMenuContext): AppMenuItem {
       },
       { type: "separator" },
       {
+        label: "Inbox",
+        click: sendMenuAction("nav.inbox"),
+      },
+      {
         label: "Library",
         accelerator: accelerator("nav.library"),
         registerAccelerator: false,

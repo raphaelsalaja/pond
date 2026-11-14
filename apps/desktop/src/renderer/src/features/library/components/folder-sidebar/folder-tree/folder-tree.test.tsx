@@ -185,6 +185,7 @@ describe("folder sidebar tree", () => {
         row.getAttribute("data-sidebar-sortable"),
       ),
     ).toEqual([
+      "inbox",
       "all",
       "uncategorized",
       "untagged",
@@ -248,18 +249,18 @@ describe("folder sidebar tree", () => {
     };
 
     await act(async () => {
-      all.dispatchEvent(pointer("pointerdown", 20));
+      all.dispatchEvent(pointer("pointerdown", 60));
     });
     await act(async () => {
-      document.dispatchEvent(pointer("pointermove", 30));
+      document.dispatchEvent(pointer("pointermove", 70));
     });
     expect(allRow?.hasAttribute("data-dragging")).toBe(true);
     await act(async () => {
-      document.dispatchEvent(pointer("pointermove", 180));
+      document.dispatchEvent(pointer("pointermove", 240));
     });
     expect(allRow?.style.transform).toContain("120");
     await act(async () => {
-      document.dispatchEvent(pointer("pointerup", 180));
+      document.dispatchEvent(pointer("pointerup", 240));
     });
     observer.disconnect();
 
@@ -268,6 +269,7 @@ describe("folder sidebar tree", () => {
         row.getAttribute("data-sidebar-sortable"),
       ),
     ).toEqual([
+      "inbox",
       "uncategorized",
       "untagged",
       "recentlyAdded",

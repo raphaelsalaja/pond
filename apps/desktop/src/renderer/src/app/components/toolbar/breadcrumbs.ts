@@ -151,6 +151,9 @@ export function buildBreadcrumbs({
     crumbs.push(
       ...(ancestors.length ? ancestors : [{ label: "Folder", path: "/", nav }]),
     );
+  } else if (base === "/" && nav.kind === "inbox") {
+    crumbs[0] = { label: "Inbox", path: "/", nav: { kind: "inbox" } };
+    if (nav.snoozed) crumbs.push({ label: "Snoozed", path: "/", nav });
   } else if (base === "/" && nav.kind === "uncategorized") {
     crumbs.push({ label: "Uncategorized", path: "/", nav });
   } else if (base === "/" && nav.kind === "tag") {

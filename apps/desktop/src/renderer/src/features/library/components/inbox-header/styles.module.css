@@ -1,0 +1,12 @@
+.header {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.count {
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-9);
+}

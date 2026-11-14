@@ -1,0 +1,17 @@
+.inbox {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.status {
+  margin: 0;
+  font-size: var(--ds-text-sm);
+  color: var(--ds-gray-11);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}

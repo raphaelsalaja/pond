@@ -1,4 +1,7 @@
+import type { InboxState } from "@pond/schema/inbox";
+
 export type LibraryNav =
+  | { kind: "inbox"; snoozed?: boolean }
   | { kind: "all" }
   | { kind: "recentlyAdded" }
   | { kind: "recents" }
@@ -48,6 +51,7 @@ export function pathForLibraryNav(nav: LibraryNav): string {
       return "/tags";
     case "untagged":
       return "/untagged";
+    case "inbox":
     case "all":
     case "random":
     case "uncategorized":
@@ -55,6 +59,13 @@ export function pathForLibraryNav(nav: LibraryNav): string {
     case "tag":
       return "/";
   }
+}
+
+/** The Inbox lists the Saves waiting for review, or the snoozed ones on their own. */
+export function inboxScope(
+  nav: Extract<LibraryNav, { kind: "inbox" }>,
+): Exclude<InboxState, "processed"> {
+  return nav.snoozed ? "snoozed" : "review";
 }
 
 export function isLibraryCollectionPath(pathname: string): boolean {
@@ -93,6 +104,7 @@ export function activeLibraryDestination(
       break;
   }
   switch (nav.kind) {
+    case "inbox":
     case "all":
     case "folder":
     case "uncategorized":

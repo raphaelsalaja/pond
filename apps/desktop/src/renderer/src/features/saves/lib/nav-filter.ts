@@ -1,6 +1,6 @@
 import type { Folder } from "@pond/schema/db";
 import type { Save } from "@/features/saves/types";
-import type { LibraryNav } from "@/shared/lib/library-nav";
+import { inboxScope, type LibraryNav } from "@/shared/lib/library-nav";
 
 export function descendantFolderIds(
   id: string,
@@ -19,7 +19,9 @@ export function descendantFolderIds(
   return ids;
 }
 
-export function applyNavFilter<T extends Pick<Save, "id" | "tags">>(
+export function applyNavFilter<
+  T extends Pick<Save, "id" | "tags" | "inboxState">,
+>(
   saves: readonly T[],
   nav: LibraryNav,
   memberships: Record<string, string[]>,
@@ -36,6 +38,10 @@ export function applyNavFilter<T extends Pick<Save, "id" | "tags">>(
     nav.kind === "sources"
   ) {
     return [...saves];
+  }
+  if (nav.kind === "inbox") {
+    const state = inboxScope(nav);
+    return saves.filter((save) => save.inboxState === state);
   }
   if (nav.kind === "uncategorized") {
     return saves.filter((save) => (memberships[save.id] ?? []).length === 0);

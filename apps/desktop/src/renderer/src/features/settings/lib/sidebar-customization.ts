@@ -37,6 +37,11 @@ export function useRevealSidebarSection(
 
 export const SIDEBAR_DESTINATION_GROUPS = [
   {
+    label: "Inbox",
+    heading: false,
+    destinations: ["inbox"],
+  },
+  {
     label: "Library",
     heading: false,
     destinations: [
@@ -62,6 +67,7 @@ export const SIDEBAR_DESTINATION_GROUPS = [
 }[];
 
 export const SIDEBAR_DESTINATION_LABELS = {
+  inbox: "Inbox",
   all: "All",
   uncategorized: "Uncategorized",
   untagged: "Untagged",

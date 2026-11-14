@@ -21,6 +21,10 @@ import {
 } from "@/features/saves/lib/actions";
 import { ensureSaves } from "@/features/saves/lib/ensure-saves";
 import { addSavesToLastUsedFolder } from "@/features/saves/lib/folder-actions";
+import {
+  markProcessed,
+  waitingInInbox,
+} from "@/features/saves/lib/inbox-actions";
 import { saveOwnsKeyboard } from "@/features/saves/lib/keyboard-owner";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
 import { rateSaves } from "@/features/saves/lib/rating";
@@ -52,6 +56,7 @@ import {
   selection,
   useSelectionSize,
 } from "@/features/saves/state/selection";
+import { openSnoozeDialog } from "@/features/saves/state/snooze-dialog";
 import { tumbleToTrash } from "@/features/saves/state/trash-tumble";
 import type { Save } from "@/features/saves/types";
 import { getAppRouter } from "@/shared/lib/app-router";
@@ -89,6 +94,12 @@ function withSelection(
     const save = primarySave();
     if (save) single(save);
   };
+}
+
+function targetIds(): readonly string[] {
+  const selected = selection.snapshot();
+  const primary = primarySelectionStore.state.id;
+  return selected.length ? selected : primary ? [primary] : [];
 }
 
 function canCopyPrimaryMedia(save: Save): boolean {
@@ -311,6 +322,19 @@ export function SaveHotkeys() {
           (save) => void exportFile(save),
           exportSelectionFiles,
         ),
+        options: { enabled: hasPrimary || hasMulti, ignoreInputs: true },
+      },
+      {
+        hotkey: bindingKeys(shortcuts, "save.mark-processed"),
+        callback: () => void markProcessed(waitingInInbox(targetIds())),
+        options: { enabled: hasPrimary || hasMulti, ignoreInputs: true },
+      },
+      {
+        hotkey: bindingKeys(shortcuts, "save.snooze"),
+        callback: () => {
+          const ids = waitingInInbox(targetIds());
+          if (ids.length > 0) openSnoozeDialog(ids);
+        },
         options: { enabled: hasPrimary || hasMulti, ignoreInputs: true },
       },
       {

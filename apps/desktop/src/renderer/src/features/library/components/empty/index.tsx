@@ -5,12 +5,16 @@ import {
   IconClockPlusFill,
   IconFolderBanFill,
   IconFolderOpenFill,
+  IconInboxFill,
   IconNodes3Fill,
   IconTrashFill,
   IconWindowDownloadFill,
 } from "@pond/icons";
 import { Button, Empty } from "@pond/ui";
-import { libraryChrome } from "@/features/library/state/library-chrome";
+import {
+  libraryChrome,
+  useLibraryNav,
+} from "@/features/library/state/library-chrome";
 import type { SaveListMode } from "@/features/saves";
 import { openSources } from "@/features/sources";
 import { ButtonLink } from "@/shared/components/button-link";
@@ -80,6 +84,53 @@ export function UncategorizedEmpty() {
       <Empty.Title>No uncategorized saves</Empty.Title>
       <Empty.Description>
         Saves that aren't in a folder appear here.
+      </Empty.Description>
+      <Empty.Action>
+        <ButtonLink
+          to="/"
+          variant="primary"
+          size="sm"
+          onClick={() => libraryChrome.setNav({ kind: "all" })}
+        >
+          Open Library
+        </ButtonLink>
+      </Empty.Action>
+    </Empty.Root>
+  );
+}
+
+export function InboxEmpty() {
+  const nav = useLibraryNav();
+  if (nav.kind === "inbox" && nav.snoozed) {
+    return (
+      <Empty.Root role="status" aria-live="polite">
+        <Empty.Media>
+          <IconClockFill size={32} />
+        </Empty.Media>
+        <Empty.Title>Snoozed</Empty.Title>
+        <Empty.Description>
+          Saves you snooze wait here, then return to the Inbox on time.
+        </Empty.Description>
+        <Empty.Action>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => libraryChrome.setNav({ kind: "inbox" })}
+          >
+            Open Inbox
+          </Button>
+        </Empty.Action>
+      </Empty.Root>
+    );
+  }
+  return (
+    <Empty.Root role="status" aria-live="polite">
+      <Empty.Media>
+        <IconInboxFill size={32} />
+      </Empty.Media>
+      <Empty.Title>Inbox</Empty.Title>
+      <Empty.Description>
+        You're all caught up. New saves wait here until you process them.
       </Empty.Description>
       <Empty.Action>
         <ButtonLink

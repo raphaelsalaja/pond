@@ -30,6 +30,7 @@ it("completes saved destination order", () => {
 
   expect(prefs.sidebar.badgeStyle).toBe("count");
   expect(prefs.sidebar.order).toEqual([
+    "inbox",
     "trash",
     "sources",
     "downloads",
@@ -51,7 +52,11 @@ it("keeps a saved sidebar layout that names a retired destination", () => {
     },
   });
 
-  expect(prefs.sidebar.order.slice(0, 2)).toEqual(["trash", "sources"]);
+  expect(prefs.sidebar.order.slice(0, 3)).toEqual([
+    "inbox",
+    "trash",
+    "sources",
+  ]);
   expect(prefs.sidebar.order).not.toContain("assistant");
   expect(prefs.sidebar.badgeOverrides).toEqual({ trash: "none" });
 });
