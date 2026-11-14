@@ -37,6 +37,7 @@ import {
   pasteTagsForSelection,
   reverseImageSearchForSelection,
 } from "@/features/saves/lib/selection";
+import { toggleFavorite } from "@/features/saves/lib/triage";
 import { pool } from "@/features/saves/state/pool";
 import { primarySelection, selection } from "@/features/saves/state/selection";
 import { requestUpdateCheck } from "@/features/settings/update-check";
@@ -295,6 +296,21 @@ export function handleNativeMenuAction(id: MenuActionId): boolean {
     case "organize.add-to-folders": {
       const ids = requireSelection();
       if (ids.length > 0) saveLibraryBridge.openFolderPicker(ids);
+      return true;
+    }
+    case "organize.add-to-multiple-folders":
+    case "organize.add-to-recent-folder": {
+      const ids = requireSelection();
+      if (ids.length > 0)
+        saveLibraryBridge.openFolderPicker(
+          ids,
+          id === "organize.add-to-recent-folder" ? "recent" : "multiple",
+        );
+      return true;
+    }
+    case "organize.favorite": {
+      const ids = requireSelection();
+      if (ids.length > 0) void toggleFavorite(ids);
       return true;
     }
     case "find.add-to-last-folder":

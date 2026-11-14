@@ -65,6 +65,7 @@ export const FILTER_SECTIONS = [
     label: "Details",
     fields: [
       "rating",
+      "favorite",
       "sensitiveContent",
       "creator",
       "account",
@@ -116,6 +117,7 @@ export const FILTER_MENU: readonly (readonly FilterMenuEntry[])[] = [
     "format",
     "color",
     "rating",
+    "favorite",
     {
       label: "Dates",
       icon: IconCalendar,

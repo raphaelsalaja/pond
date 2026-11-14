@@ -62,6 +62,7 @@ export {
 import type {
   ApiEditFoldersRequest,
   ApiEditTagsRequest,
+  ApiFavoriteRequest,
   ApiLibraryQueryInput,
   ApiNoteRequest,
   ApiOperationRunRequest,
@@ -76,6 +77,7 @@ import type {
 type ApiRequestBody =
   | ApiEditFoldersRequest
   | ApiEditTagsRequest
+  | ApiFavoriteRequest
   | ApiLibraryQueryInput
   | ApiNoteRequest
   | ApiOperationRunRequest
@@ -434,6 +436,14 @@ export class PondApi {
     return this.post("/saves/rating", ApiEditResultSchema, {
       ids: [...ids],
       rating,
+      libraryId,
+    });
+  }
+
+  setFavorite(ids: readonly string[], favorite: boolean, libraryId?: string) {
+    return this.post("/saves/favorite", ApiEditResultSchema, {
+      ids: [...ids],
+      favorite,
       libraryId,
     });
   }

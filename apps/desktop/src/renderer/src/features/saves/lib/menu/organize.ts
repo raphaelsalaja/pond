@@ -4,6 +4,8 @@ import {
   IconFolderPlus,
   IconFolderSend,
   IconFolders,
+  IconHeart,
+  IconHeartFill,
   IconImage,
   IconPencil,
   IconPinTack,
@@ -24,6 +26,7 @@ import {
 } from "@/features/saves/lib/folder-actions";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
 import { pasteTagsForSelection } from "@/features/saves/lib/selection";
+import { toggleFavorite } from "@/features/saves/lib/triage";
 import { errorCopy } from "@/shared/lib/error-copy";
 import { buildFolderTreeMenu } from "@/shared/lib/folder-tree-menu";
 import { formatPlural } from "@/shared/lib/format";
@@ -46,6 +49,8 @@ function createFolderWithSaves(ids: string[]): void {
       notifyUndoableFolderChange(
         "create-folder-with-saves",
         `Created "${folder.name}" with ${formatPlural(ids.length, { one: "save", other: "saves" })}`,
+        folder.undoId,
+        "Folder creation undone",
       );
     } catch (error) {
       notify({
@@ -194,6 +199,7 @@ export function buildOrganizeItems(
 ): OrganizeMenuItems {
   const {
     save,
+    saves,
     ids,
     batch,
     clipboardEmpty,
@@ -204,9 +210,16 @@ export function buildOrganizeItems(
     resolvedPinned,
   } = context;
 
+  const favorited = saves.every((item) => item.favorite === true);
   return {
     destinations: buildAddItems(ids, batch),
     editing: [
+      {
+        label: favorited ? "Unfavorite" : "Favorite",
+        icon: glyph(favorited ? IconHeartFill : IconHeart),
+        shortcut: shortcutGlyphs("save.favorite"),
+        onClick: () => void toggleFavorite(ids),
+      },
       {
         label: "Rename",
         icon: glyph(IconPencil),

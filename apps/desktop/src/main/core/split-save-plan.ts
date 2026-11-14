@@ -232,6 +232,7 @@ export function buildSlideRows(
       files: [],
       coverIndex: 0,
       rating: save.rating,
+      favorite: save.favorite,
       ...keptSensitivity(save),
       status: "ingesting",
       ingestStartedAt: now,

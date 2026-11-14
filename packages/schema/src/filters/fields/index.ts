@@ -16,6 +16,7 @@ import { creator } from "./creator";
 import type { FieldDescriptor } from "./descriptor";
 import { aspect, orientation } from "./dims";
 import { duration } from "./duration";
+import { favorite } from "./favorite";
 import { fileCount } from "./file-count";
 import { fileSize } from "./file-size";
 import { folder } from "./folder";
@@ -88,6 +89,7 @@ export const FIELD_DESCRIPTORS = {
   takenAt,
   modifiedAt,
   rating,
+  favorite,
   fileSize,
   width,
   height,

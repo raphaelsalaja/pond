@@ -397,6 +397,23 @@ export const SHORTCUTS = {
     label: "Add to Last Used Folder",
     group: "Saves",
   },
+  "save.add-to-recent-folder": {
+    keys: "Alt+D",
+    label: "Add to Recent Folder",
+    group: "Saves",
+  },
+  "save.assign-multiple-folders": {
+    keys: "Alt+Shift+F",
+    label: "Add to Multiple Folders",
+    group: "Saves",
+  },
+  "save.favorite": { keys: "Shift+F", label: "Favorite", group: "Saves" },
+  "save.skip": { keys: "J", label: "Skip to Next Save", group: "Saves" },
+  "save.skip-back": {
+    keys: "K",
+    label: "Back to Previous Save",
+    group: "Saves",
+  },
 
   "tags.rename": { keys: "E", label: "Rename", group: "Tags" },
 

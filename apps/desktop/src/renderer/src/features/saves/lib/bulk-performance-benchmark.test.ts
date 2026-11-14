@@ -99,7 +99,7 @@ for (const size of [1_000, 10_000, 50_000]) {
               const optimisticCount = published;
               // Attach the rejection observer before rejecting the injected bridge.
               const settled = mutation.then(
-                (changed) => ({ changed, rejected: false }),
+                ({ changed }) => ({ changed, rejected: false }),
                 () => ({ changed: 0, rejected: true }),
               );
               if (kind === "rollback")

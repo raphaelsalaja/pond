@@ -45,6 +45,7 @@ const examples: SaveLike[] = [
     width: 1600,
     height: 900,
     sensitiveScore: 0.55,
+    favorite: true,
   },
   {
     id: "none",
@@ -92,7 +93,7 @@ const webExamples: SaveLike[] = [
 
 function fixture(rows: SaveLike[] = examples) {
   const db = new Database(":memory:");
-  db.exec(`CREATE TABLE saves (id TEXT, title TEXT, tags TEXT, width INTEGER, height INTEGER, dominant_colors TEXT, sensitive_score REAL, files TEXT, source TEXT, media_type TEXT, raw_json TEXT);
+  db.exec(`CREATE TABLE saves (id TEXT, title TEXT, tags TEXT, width INTEGER, height INTEGER, dominant_colors TEXT, sensitive_score REAL, files TEXT, source TEXT, media_type TEXT, raw_json TEXT, favorite INTEGER NOT NULL DEFAULT 0);
     CREATE TABLE folders (id TEXT PRIMARY KEY, name TEXT);
     CREATE TABLE folder_metadata (folder_id TEXT PRIMARY KEY, description TEXT);
     CREATE TABLE save_folders (save_id TEXT, folder_id TEXT);
@@ -110,7 +111,7 @@ function fixture(rows: SaveLike[] = examples) {
   db.prepare("INSERT INTO folders VALUES (?, ?)").run("FolderB", "Folder B");
   for (const save of rows) {
     db.prepare(
-      "INSERT INTO saves VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO saves VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     ).run(
       save.id,
       save.title,
@@ -123,6 +124,7 @@ function fixture(rows: SaveLike[] = examples) {
       save.source,
       save.mediaType ?? null,
       save.rawJson ? JSON.stringify(save.rawJson) : null,
+      save.favorite ? 1 : 0,
     );
     db.prepare("INSERT INTO saves_fts VALUES (?, ?)").run(save.id, save.title);
     for (const folder of save.folderIds ?? [])
@@ -218,6 +220,14 @@ describe.skipIf(!nativeSqliteAvailable())("filter engine parity", () => {
           value: "not-checked",
         },
       ],
+    },
+    {
+      combinator: "and",
+      rules: [{ field: "favorite", operator: "eq", value: true }],
+    },
+    {
+      combinator: "and",
+      rules: [{ field: "favorite", operator: "eq", value: false }],
     },
   ];
 

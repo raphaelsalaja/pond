@@ -29,7 +29,7 @@ const ACCESS = [
     name: "Add and Edit Saves",
     routes: [
       "POST /enqueue",
-      "POST /saves/tags, /saves/folders, /saves/trash, /saves/restore, /saves/note, /saves/rating",
+      "POST /saves/tags, /saves/folders, /saves/trash, /saves/restore, /saves/note, /saves/rating, /saves/favorite",
     ],
   },
 ];

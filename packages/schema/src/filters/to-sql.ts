@@ -288,6 +288,7 @@ function scalarClause(
 }
 
 const FiniteNumber = z.number().refine(Number.isFinite);
+const Flag = z.boolean();
 const Text = z.string();
 
 function escapeLike(value: string): string {
@@ -299,6 +300,8 @@ function scalarValue(
   raw: PredicateValue,
 ): string | number | null {
   if (raw == null) return null;
+  const flag = Flag.safeParse(raw);
+  if (flag.success) return flag.data ? 1 : 0;
   if (isDateField(field)) return numericValue(field, raw);
   const num = FiniteNumber.safeParse(raw);
   if (num.success) return num.data;
