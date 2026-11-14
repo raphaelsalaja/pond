@@ -147,7 +147,7 @@ export function SaveDetailPage() {
     })),
   );
 
-  return <SaveDetailSession key={id} save={save} viewerNav={viewerNav} />;
+  return <SaveDetailSession save={save} viewerNav={viewerNav} />;
 }
 
 function SaveDetailSession({
@@ -157,21 +157,37 @@ function SaveDetailSession({
   save: Save | undefined;
   viewerNav: RefObject<ViewerNav | null>;
 }) {
+  const saveId = save?.id;
   const pageRef = useRef<HTMLElement>(null);
   useEffect(() => {
-    pageRef.current?.focus({ preventScroll: true });
-  }, []);
-  const [activeFileIndex, setActiveFileIndex] = useState<number | null>(null);
-  const onActiveFileIndexChange = useCallback((fileIndex: number | null) => {
-    setActiveFileIndex(fileIndex);
-    setSaveViewerFileIndex(fileIndex);
-  }, []);
+    if (saveId) pageRef.current?.focus({ preventScroll: true });
+  }, [saveId]);
+  const [activeFile, setActiveFile] = useState<{
+    saveId?: string;
+    fileIndex: number | null;
+  }>({ fileIndex: null });
+  const activeFileIndex =
+    activeFile.saveId === saveId ? activeFile.fileIndex : null;
+  const onActiveFileIndexChange = useCallback(
+    (fileIndex: number | null) => {
+      setActiveFile({ saveId, fileIndex });
+      setSaveViewerFileIndex(fileIndex);
+    },
+    [saveId],
+  );
 
-  useEffect(() => () => setSaveViewerFileIndex(null), []);
+  useEffect(() => {
+    if (!saveId) return;
+    return () => setSaveViewerFileIndex(null);
+  }, [saveId]);
 
   const menuVideo = useRef<HTMLVideoElement | null>(null);
   const menuFileIndex = useRef<number | null>(null);
-  const [openWithApps, setOpenWithApps] = useState<OpenWithApp[]>([]);
+  const [openWith, setOpenWith] = useState<{
+    saveId?: string;
+    apps: OpenWithApp[];
+  }>({ apps: [] });
+  const openWithApps = openWith.saveId === saveId ? openWith.apps : [];
 
   if (!save) {
     return (
@@ -209,7 +225,7 @@ function SaveDetailSession({
             ids: [save.id],
             fileIndex: menuFileIndex.current,
             kind: openWithKind(save, menuFileIndex.current),
-            onApps: setOpenWithApps,
+            onApps: (apps) => setOpenWith({ saveId: save.id, apps }),
           });
         }}
       >
@@ -222,9 +238,9 @@ function SaveDetailSession({
         >
           <div className={styles.main}>
             {hasArchive(save) ? (
-              <SaveArchiveViewer save={save} />
+              <SaveArchiveViewer key={save.id} save={save} />
             ) : isTextOnlySave(save) ? (
-              <TextViewer save={save} />
+              <TextViewer key={save.id} save={save} />
             ) : (
               <SaveViewer
                 save={save}

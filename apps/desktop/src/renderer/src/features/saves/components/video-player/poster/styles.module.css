@@ -12,10 +12,8 @@
   z-index: 1;
 }
 
-/* Stays under the video until its fade-in ends, so the fade never shows the empty stage. */
 .placeholder {
   &[data-covered] {
     visibility: hidden;
-    transition: visibility 0s linear var(--ds-duration-snap);
   }
 }

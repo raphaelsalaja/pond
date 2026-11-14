@@ -6,6 +6,18 @@
   margin: 0;
 }
 
+.layer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+
+  &[data-pending] {
+    pointer-events: none;
+    opacity: 0;
+  }
+}
+
 .preview {
   position: relative;
   display: flex;
