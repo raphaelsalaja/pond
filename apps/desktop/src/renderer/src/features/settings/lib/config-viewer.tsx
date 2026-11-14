@@ -61,6 +61,21 @@ export const viewerSection = defineCustomSection({
           ],
         },
         {
+          control: "switch",
+          key: "dragToFile",
+          title: "Drag to File",
+          description:
+            "Shows your Quick Access and recent folders in a ring while you drag a Save, file or link.",
+          keywords: [
+            "drag",
+            "drop",
+            "ring",
+            "radial",
+            "folder",
+            "quick access",
+          ],
+        },
+        {
           control: "select",
           key: "wheelBehavior",
           title: "Image Scrolling",

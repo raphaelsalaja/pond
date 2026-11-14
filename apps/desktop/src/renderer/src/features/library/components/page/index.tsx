@@ -4,6 +4,7 @@ import { useLayoutEffect, useMemo } from "react";
 import { canvasIdFromPath } from "@/features/canvas";
 import { fishIdFromPath } from "@/features/fish";
 import { LibraryChrome } from "@/features/library/components/chrome";
+import { FileRing } from "@/features/library/components/file-ring";
 import { LibraryView } from "@/features/library/components/view";
 import { AppShell } from "@/features/library/components/workspace-shell";
 import {
@@ -68,6 +69,7 @@ export function Library() {
                   {view}
                 </Shell.Main>
               </ScrollRestorationContext.Provider>
+              {isSave ? null : <FileRing />}
             </Shell.Body>
           </AppShell.Content>
         </div>

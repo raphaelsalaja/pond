@@ -1,6 +1,8 @@
 import { useCallback, useEffect } from "react";
+import { canImportDrop } from "@/features/saves/lib/import-feedback";
 import type { SaveListMode } from "@/features/saves/lib/list";
 import {
+  notifyUnsupportedDrop,
   pasteImportOf,
   runPasteImport,
 } from "@/features/saves/lib/paste-import";
@@ -87,12 +89,7 @@ export function useCardActions(
 
   const onDragOver = useCallback((e: React.DragEvent) => {
     if (!e.dataTransfer || isLibrarySaveDrag(e.dataTransfer)) return;
-    const types = Array.from(e.dataTransfer.types ?? []);
-    if (
-      types.includes("text/uri-list") ||
-      types.includes("text/plain") ||
-      types.includes("Files")
-    ) {
+    if (canImportDrop(e.dataTransfer.types ?? [])) {
       e.preventDefault();
       e.dataTransfer.dropEffect = "copy";
     }
@@ -105,6 +102,7 @@ export function useCardActions(
 
     const plan = pasteImportOf(dt);
     if (plan && plan.kind !== "clipboard") await runPasteImport(plan);
+    else notifyUnsupportedDrop();
   }, []);
 
   return {
