@@ -53,7 +53,7 @@ After `pnpm build`, run the end-to-end smoke test from a normal desktop session 
 pnpm --filter @pond/desktop smoke:desktop
 ```
 
-Pull requests that touch the desktop app, extension, or packages also run [`package.yml`](.github/workflows/package.yml), which builds unsigned test installers. Reviewers can download `Pond-windows-x64` (the installer and `latest.yml`), `Pond-linux-x64` (the x64 AppImage, deb, and `latest-linux.yml`), `Pond-linux-arm64` (the arm64 AppImage, deb, and `latest-linux.yml`), and `Pond-macos` (Apple Silicon and Intel disk images) from the workflow run's artifacts; they are kept for 7 days and cannot auto-update. The same workflow can be started manually with `workflow_dispatch`.
+Pull requests that touch the desktop app, extension, or packages also run [`package.yml`](.github/workflows/package.yml), which builds unsigned test installers. Reviewers can download `Pond-windows-x64` (the installer and `latest.yml`), `Pond-linux-x64` (the x64 AppImage, deb, and `latest-linux.yml`), `Pond-linux-arm64` (the arm64 AppImage, deb, and `latest-linux-arm64.yml`), and `Pond-macos` (Apple Silicon and Intel disk images) from the workflow run's artifacts; they are kept for 7 days and cannot auto-update. The same workflow can be started manually with `workflow_dispatch`.
 
 Keep platform-specific code behind `process.platform` checks and add tests that pass the platform in as a parameter, so every platform's behavior is covered on every CI runner.
 
@@ -72,7 +72,7 @@ Pond builds and runs on 64-bit Linux (x64 and ARM, such as Asahi Linux on Apple 
 pnpm dist:linux
 ```
 
-This builds the desktop app and extension, compiles the native host, and writes `Pond-X.Y.Z-<arch>.AppImage`, `Pond-X.Y.Z-<arch>.deb`, and `latest-linux.yml` to `apps/desktop/dist/`, where `<arch>` is the host architecture. The native dependencies (better-sqlite3, sqlite-vec, sharp, onnxruntime, ffmpeg-static) all ship linux-arm64 builds, so the same steps work on 64-bit ARM. Cross-arch packaging isn't supported. Build on the architecture you're packaging for.
+This builds the desktop app and extension, compiles the native host, and writes `Pond-X.Y.Z-<arch>.AppImage`, `Pond-X.Y.Z-<arch>.deb`, and `latest-linux.yml` (`latest-linux-arm64.yml` on arm64) to `apps/desktop/dist/`, where `<arch>` is the host architecture. The native dependencies (better-sqlite3, sqlite-vec, sharp, onnxruntime, ffmpeg-static) all ship linux-arm64 builds, so the same steps work on 64-bit ARM. Cross-arch packaging isn't supported. Build on the architecture you're packaging for.
 
 Pond keeps per-user files in the XDG directories: configuration in `$XDG_CONFIG_HOME/pond`, the native-host socket in `$XDG_RUNTIME_DIR/pond` when the session sets it (otherwise `$XDG_CONFIG_HOME/pond`), the copied native host in `$XDG_DATA_HOME/Pond/bin`, logs in Electron's logs directory, and the autostart entry at `$XDG_CONFIG_HOME/autostart/pond.desktop`.
 

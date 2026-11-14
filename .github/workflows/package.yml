@@ -151,7 +151,7 @@ jobs:
           path: |
             apps/desktop/dist/Pond-*-arm64.AppImage
             apps/desktop/dist/Pond-*-arm64.deb
-            apps/desktop/dist/latest-linux.yml
+            apps/desktop/dist/latest-linux-arm64.yml
           if-no-files-found: error
           retention-days: 7
 
