@@ -29,7 +29,6 @@ const PAGE_STEP = 8;
 const PLACEHOLDERS = {
   root: "Search Pond or type a command…",
   actions: "Search actions…",
-  folders: "Search folders…",
   views: "Search saved views…",
 } satisfies Record<MenuPage["kind"] | "root", string>;
 

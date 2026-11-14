@@ -13,17 +13,19 @@ import {
   setSearchInput,
 } from "@/features/library/state/view-store";
 import { useRecents } from "@/features/saves";
+import { saveIdFromPath } from "@/features/saves/lib/save-nav";
 import type { Save } from "@/features/saves/types";
 import type { SaveLookup } from "@/features/search";
 import { COMMANDS } from "./commands";
 import { useContextEntries } from "./context-entries";
 import { buildModel, rankEntries } from "./rank";
-import { addToFolder, saveActions } from "./save-actions";
+import { saveActions } from "./save-actions";
 import { SaveThumb } from "./save-thumb";
 import { MIN_SCORE } from "./score";
 import { saveDetail, saveLabel } from "./search";
 import type { MenuEntry, MenuPage } from "./types";
 import { useSavesById } from "./use-saves-by-id";
+import { useViewLookup } from "./use-view-lookup";
 import { useViewScope, type ViewScope } from "./use-view-scope";
 
 const RECENT_LIMIT = 5;
@@ -70,6 +72,7 @@ function saveEntry(
     group: string;
     floor?: number;
     weight?: number;
+    openId: string | null;
     onOpenSave: (id: string) => void;
   },
 ): MenuEntry {
@@ -83,7 +86,7 @@ function saveEntry(
     icon: <SaveThumb save={save} />,
     scoreFloor: options.floor,
     scoreWeight: options.weight,
-    actions: () => saveActions(save, options.onOpenSave),
+    actions: () => saveActions(save, options),
     run: () => options.onOpenSave(save.id),
   };
 }
@@ -129,7 +132,10 @@ export function useMenuModel({
   const views = useSavedViews();
   const recents = useRecents();
   const contextEntries = useContextEntries(pathname, Boolean(query));
+  const openId = saveIdFromPath(pathname);
   const scope = useViewScope(pathname);
+  const viewLookup = useViewLookup(page ? "" : query, scope);
+  const viewSaves = useSavesById(viewLookup.ids, scope?.deleted);
 
   const recentIds = useMemo(
     () => recents.slice(0, RECENT_LIMIT * 2).map((entry) => entry.saveId),
@@ -170,13 +176,18 @@ export function useMenuModel({
 
   const saveEntries = useMemo<MenuEntry[]>(() => {
     const via = new Map(lookup.hits.map((hit) => [hit.id, hit.via]));
-    const inView = new Set(scope?.pick(hitSaves).map((save) => save.id));
-    return hitSaves.map((save, rank) => {
-      const local = inView.has(save.id);
-      const boost = local ? IN_VIEW_BOOST : 0;
-      return saveEntry(save, {
+    const local = new Map(
+      [...viewSaves, ...(scope?.pick(hitSaves) ?? [])].map((save) => [
+        save.id,
+        save,
+      ]),
+    );
+    const rest = hitSaves.filter((save) => !local.has(save.id));
+    const entry = (save: Save, rank: number, boost: number) =>
+      saveEntry(save, {
         id: `save:${save.id}`,
-        group: local && scope ? `In ${scope.name}` : "Saves",
+        group: boost && scope ? `In ${scope.name}` : "Saves",
+        openId,
         onOpenSave,
         ...(via.get(save.id) === "semantic"
           ? { floor: MIN_SCORE + 0.01 + boost - rank * 0.0005, weight: 0 }
@@ -185,8 +196,13 @@ export function useMenuModel({
               weight: KEYWORD_SAVE_WEIGHT + boost,
             }),
       });
-    });
-  }, [hitSaves, lookup.hits, onOpenSave, scope]);
+    return [
+      ...[...local.values()].map((save, rank) =>
+        entry(save, rank, IN_VIEW_BOOST),
+      ),
+      ...rest.map((save, rank) => entry(save, rank, 0)),
+    ];
+  }, [hitSaves, viewSaves, lookup.hits, openId, onOpenSave, scope]);
 
   const recentEntries = useMemo<MenuEntry[]>(
     () =>
@@ -194,26 +210,18 @@ export function useMenuModel({
         saveEntry(save, {
           id: `recent:${save.id}`,
           group: "Recent",
+          openId,
           onOpenSave,
         }),
       ),
-    [recentSaves, onOpenSave],
+    [recentSaves, openId, onOpenSave],
   );
 
   const pageEntries = useMemo<MenuEntry[]>(() => {
     if (!page) return [];
     if (page.kind === "actions") return [...page.entries];
-    if (page.kind === "views") {
-      return viewEntries.map((entry) => ({ ...entry, group: "" }));
-    }
-    return folderRows.map((folder) => ({
-      id: `add-to-folder:${folder.id}`,
-      group: "",
-      label: folder.name,
-      icon: <IconFolder aria-hidden />,
-      run: () => void addToFolder(page.saveIds, folder.id),
-    }));
-  }, [page, viewEntries, folderRows]);
+    return viewEntries.map((entry) => ({ ...entry, group: "" }));
+  }, [page, viewEntries]);
 
   const model = useMemo(() => {
     if (page) {
@@ -242,7 +250,8 @@ export function useMenuModel({
           ...(hasViews ? [APPLY_VIEW_ENTRY] : []),
         ];
     const ranked = rankEntries(entries, query);
-    const waiting = lookup.searching && saveEntries.length === 0;
+    const waiting =
+      (lookup.searching || viewLookup.searching) && saveEntries.length === 0;
     return buildModel({
       ranked,
       byScore: Boolean(query),
@@ -268,6 +277,7 @@ export function useMenuModel({
     viewEntries,
     saveEntries,
     lookup.searching,
+    viewLookup.searching,
     scope,
   ]);
 

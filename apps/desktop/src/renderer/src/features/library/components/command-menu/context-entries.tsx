@@ -1,7 +1,6 @@
 import {
   IconFolder,
   IconFolderTree,
-  IconLayers,
   IconTrashXmark,
   IconUpload,
 } from "@pond/icons";
@@ -30,6 +29,8 @@ import { useResultTotal } from "@/features/saves/state/result-navigation";
 import { useSelectedIds } from "@/features/saves/state/selection";
 import type { Save } from "@/features/saves/types";
 import { tagClipboard } from "@/features/tags";
+import { offerEntries } from "./offer-entries";
+import { usePageEntries } from "./page-entries";
 import { specEntries } from "./spec-entries";
 import type { MenuEntry } from "./types";
 
@@ -77,24 +78,13 @@ function saveEntries(
     clipboardEmpty: tagClipboard.get().length === 0,
     opened,
   });
-  const all = specEntries(items, group, "focus");
-  if (searching) return all;
-  return [
-    ...all.filter((entry) => SUGGESTED.has(entry.label)),
-    {
-      id: "focus:all-actions",
-      group,
-      label: "All Actions",
-      icon: <IconLayers aria-hidden />,
-      page: () => ({
-        kind: "actions",
-        key: "focus:all-actions",
-        title: "All Actions",
-        context: group,
-        entries: specEntries(items, "", "focus"),
-      }),
-    },
-  ];
+  return offerEntries({
+    group,
+    key: "focus",
+    entries: specEntries(items, group, "focus"),
+    suggested: SUGGESTED,
+    searching,
+  });
 }
 
 function folderEntries(
@@ -157,7 +147,7 @@ function folderEntries(
   return entries;
 }
 
-/** Actions for what you're looking at: the open Save or the selection first, then the current folder or Trash. */
+/** Actions for what you're looking at: the open Save or the selection first, then the current folder, Trash, or page. */
 export function useContextEntries(
   pathname: string,
   searching: boolean,
@@ -168,9 +158,11 @@ export function useContextEntries(
   const folderRows = useFolders();
   const includeSubfolders = useIncludeSubfolders();
   const trashCount = useResultTotal();
+  const pageEntries = usePageEntries(pathname, searching);
 
   return useMemo(() => {
     const entries = saveEntries(saves, opened, searching);
+    entries.push(...pageEntries);
     if (!onCollection) return entries;
     if (nav.kind === "folder") {
       const folder = folderRows.find((row) => row.id === nav.id);
@@ -191,5 +183,6 @@ export function useContextEntries(
     folderRows,
     includeSubfolders,
     trashCount,
+    pageEntries,
   ]);
 }

@@ -1,3 +1,4 @@
+import type { LibraryQueryRequest } from "@shared/library-query";
 import { recentlyAddedSince } from "@shared/recently-added";
 import { useMemo } from "react";
 import {
@@ -15,11 +16,18 @@ import {
   isSaveCollectionPath,
   listPathForLocation,
 } from "@/features/saves/lib/list-path";
-import { applyNavFilter } from "@/features/saves/lib/nav-filter";
+import {
+  applyNavFilter,
+  descendantFolderIds,
+} from "@/features/saves/lib/nav-filter";
 import type { Save } from "@/features/saves/types";
 
 export interface ViewScope {
   name: string;
+  /** Trash holds deleted Saves, which the Library lookup never returns. */
+  deleted: boolean;
+  /** The same scope the Library grid queries, so the menu can search inside the view. */
+  request: NonNullable<LibraryQueryRequest["scope"]>;
   /** The Saves from this list that the current view shows. */
   pick: (saves: readonly Save[]) => Save[];
 }
@@ -36,37 +44,56 @@ export function useViewScope(pathname: string): ViewScope | null {
     if (!isSaveCollectionPath(pathname)) return null;
     const mode = parseMode(listPathForLocation(pathname)) ?? "library";
     const view = searchViewFor(mode, nav);
-    if (view.kind === "library" || view.kind === "trash") return null;
+    if (view.kind === "library") return null;
     const name = searchViewName(view, folderRows);
+    const base = { name, deleted: false };
+    const navPick = (saves: readonly Save[]) =>
+      applyNavFilter(saves, nav, memberships, folderRows, includeSubfolders);
     switch (view.kind) {
+      case "trash":
+        return {
+          ...base,
+          deleted: true,
+          request: { deletedOnly: true },
+          pick: (saves) => saves.filter((save) => Boolean(save.deletedAt)),
+        };
       case "untagged":
         return {
-          name,
+          ...base,
+          request: { untagged: true },
           pick: (saves) => saves.filter((save) => save.tags.length === 0),
         };
       case "recentlyAdded": {
         const since = recentlyAddedSince();
         return {
-          name,
+          ...base,
+          request: { savedSince: since },
           pick: (saves) => saves.filter((save) => save.createdAt >= since),
         };
       }
       case "recents": {
-        const ids = new Set(recents.map((entry) => entry.saveId));
-        return { name, pick: (saves) => saves.filter((s) => ids.has(s.id)) };
-      }
-      default:
+        const ids = recents.map((entry) => entry.saveId);
+        const recent = new Set(ids);
         return {
-          name,
-          pick: (saves) =>
-            applyNavFilter(
-              saves,
-              nav,
-              memberships,
-              folderRows,
-              includeSubfolders,
-            ),
+          ...base,
+          request: { saveIds: ids },
+          pick: (saves) => saves.filter((save) => recent.has(save.id)),
         };
+      }
+      case "folder":
+        return {
+          ...base,
+          request: {
+            folderIds: includeSubfolders
+              ? [...descendantFolderIds(view.id, folderRows)]
+              : [view.id],
+          },
+          pick: navPick,
+        };
+      case "tag":
+        return { ...base, request: { tag: view.name }, pick: navPick };
+      case "uncategorized":
+        return { ...base, request: { uncategorized: true }, pick: navPick };
     }
   }, [pathname, nav, folderRows, memberships, includeSubfolders, recents]);
 }

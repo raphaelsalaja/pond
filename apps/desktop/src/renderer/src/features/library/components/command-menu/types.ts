@@ -24,12 +24,6 @@ export type MenuPage =
       context?: string;
       entries: readonly MenuEntry[];
     }
-  | {
-      kind: "folders";
-      key: string;
-      title: string;
-      saveIds: readonly string[];
-    }
   | { kind: "views"; key: string; title: string };
 
 export interface MenuEntry {

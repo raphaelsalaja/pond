@@ -19,6 +19,7 @@ import type { SourceTargetInput } from "@shared/account-contracts";
 import { useQueryClient } from "@tanstack/react-query";
 import Fuse from "fuse.js";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { useCommandContext } from "@/features/library";
 import { HeroAvatar } from "@/features/sources/components/flow/detail/hero-avatar";
 import {
   ImportScopeFilters,
@@ -59,6 +60,7 @@ import {
 import { getSourceDef } from "@/features/sources/lib/registry";
 import {
   accountMenuTarget,
+  buildSourceActionMenu,
   buildSourceActionRows,
   type SourceActionRow,
   type SourceActionSections,
@@ -425,6 +427,22 @@ function AccountData({
   const { accounts, loading, refetch } = useAccounts();
   const account = accounts.find((row) => row.id === id);
   const byAccount = useSyncByAccount();
+  useCommandContext(
+    "Current Source",
+    account
+      ? () =>
+          buildSourceActionMenu(
+            accountMenuTarget(account, cardModel(byAccount[account.id])),
+            {
+              accounts,
+              onChanged: () => {
+                void refetch();
+                sourceDetail.changed();
+              },
+            },
+          )
+      : null,
+  );
   if (!account) {
     return children({ status: loading ? "loading" : "missing" });
   }
@@ -519,6 +537,21 @@ function WatchData({
   const { accounts } = useAccounts();
   const watch = watches.find((row) => row.id === id);
   const byAccount = useSyncByAccount();
+  useCommandContext(
+    "Current Source",
+    watch
+      ? () =>
+          buildSourceActionMenu(
+            watchMenuTarget(watch, cardModel(byAccount[watch.id])),
+            {
+              onChanged: () => {
+                void refetch();
+                sourceDetail.changed();
+              },
+            },
+          )
+      : null,
+  );
   if (!watch) {
     return children({ status: loading ? "loading" : "missing" });
   }
