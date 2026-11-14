@@ -1,11 +1,24 @@
 <!--
 Thanks for contributing to pond! Please fill in the sections below.
 Keep PRs focused: one feature or fix per PR.
+Layout and proof rules: docs/contributing/pull-requests.md
+If this PR is stacked, start with: > Stacked on #123. Merge that first.
 -->
 
 ## Summary
 
-<!-- What does this PR do, and why? Link any related issue with `Closes #123`. -->
+<!-- Up to three sentences: what changes for the reader, then why. Link any related issue with `Closes #123`. -->
+
+## Proof
+
+<!--
+1. States table, at most four rows, overview first. UI: | State | Light | Dark |. Fix: | State | Before | After |.
+   Images in tables: <img src="…" width="400" alt="State, theme">
+2. Clip for motion or flows: its URL on its own line under a bold caption.
+3. Extra states inside <details><summary>More states</summary> … </details>.
+No UI change: a Before/After measurements table. Show each image once.
+Replace this section when the UI changes. Don't append updates.
+-->
 
 ## Changes
 
