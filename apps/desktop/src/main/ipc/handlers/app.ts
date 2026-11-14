@@ -89,12 +89,12 @@ export function registerAppHandlers(): void {
     return { ok, canUndo: canUndo(), canRedo: canRedo() };
   });
 
-  safeHandle(IPC.undoStep, async (_, step: unknown) => {
+  safeHandle(IPC.undoStep, async (_, step: string) => {
     const outcome = await undoStep(UndoStepIdSchema.parse(step));
     return { outcome, canUndo: canUndo(), canRedo: canRedo() };
   });
 
-  safeHandle(IPC.redoStep, async (_, step: unknown) => {
+  safeHandle(IPC.redoStep, async (_, step: string) => {
     const outcome = await redoStep(UndoStepIdSchema.parse(step));
     return { outcome, canUndo: canUndo(), canRedo: canRedo() };
   });
