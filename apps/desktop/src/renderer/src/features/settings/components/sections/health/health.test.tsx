@@ -67,6 +67,14 @@ let root: Root;
 let client: QueryClient;
 
 beforeEach(() => {
+  vi.stubGlobal(
+    "ResizeObserver",
+    class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    },
+  );
   query.mockReset();
   query.mockImplementation(async (name: string) => {
     switch (name) {
@@ -102,6 +110,7 @@ afterEach(async () => {
   await act(async () => root.unmount());
   client.clear();
   host.remove();
+  vi.unstubAllGlobals();
 });
 
 async function settle() {
