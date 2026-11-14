@@ -64,7 +64,7 @@ async function wallpaperSource(path) {
 }
 
 /** Window content size in DIP, optional crop in the same units, canvas in pixels. */
-function layout(canvas, content, crop, radius) {
+function frameLayout(canvas, content, crop, radius) {
   const area = {
     x: Math.round(canvas.width * AREA.x),
     y: Math.round(canvas.height * AREA.y),
@@ -224,7 +224,7 @@ function sourcePixels(frame, image) {
   };
 }
 
-async function still(image, frame, options) {
+async function composeStill(image, frame, options) {
   const { background, cover } = await layers(frame, options);
   const pixels = sourcePixels(frame, image);
   const window = await sharp(image.crop(pixels).toPNG())
@@ -242,7 +242,7 @@ async function still(image, frame, options) {
     .toBuffer();
 }
 
-async function sideBySide(left, right) {
+async function composePair(left, right) {
   const meta = await sharp(left).metadata();
   return sharp({
     create: {
@@ -261,7 +261,7 @@ async function sideBySide(left, right) {
 }
 
 /** Writes lossless window frames at a constant rate while capturing, then composites and encodes. */
-function recorder(frame, scratch, fps) {
+function startRecorder(frame, scratch, fps) {
   const ffmpeg = ffmpegPath();
   const raw = join(scratch, `raw-${Date.now()}.mkv`);
   const child = spawn(
@@ -370,8 +370,8 @@ module.exports = {
   FPS,
   STILL,
   VIDEO,
-  layout,
-  recorder,
-  sideBySide,
-  still,
+  composePair,
+  composeStill,
+  frameLayout,
+  startRecorder,
 };

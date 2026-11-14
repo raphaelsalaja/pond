@@ -6,7 +6,16 @@ const { tmpdir } = require("node:os");
 const { basename, isAbsolute, join } = require("node:path");
 const { setTimeout: sleep } = require("node:timers/promises");
 const sharp = require("sharp");
-const frames = require("./capture-proof/frame.cjs");
+const {
+  AREA,
+  FPS,
+  STILL,
+  VIDEO,
+  composePair,
+  composeStill,
+  frameLayout,
+  startRecorder,
+} = require("./capture-proof/frame.cjs");
 
 const arg = (name, fallback) =>
   process.argv
@@ -300,7 +309,7 @@ function context(main) {
     if (!r) throw new Error(`No element matches ${crop.selector}`);
     const pad = crop.padding ?? 48;
     const [contentWidth, contentHeight] = win.getContentSize();
-    const aspect = (frames.AREA.width * 16) / ((1 - frames.AREA.y) * 10);
+    const aspect = (AREA.width * 16) / ((1 - AREA.y) * 10);
     const cropWidth = Math.min(
       contentWidth,
       Math.max(r.width + 2 * pad, (r.height + 2 * pad) * aspect),
@@ -441,30 +450,30 @@ function context(main) {
         record({ kind: "still", name, file: basename(file), ...size });
         return file;
       }
-      const layout = frames.layout(
-        frames.STILL,
+      const layout = frameLayout(
+        STILL,
         contentSize(win),
         await cropFor(win, options.crop),
         radius,
       );
-      const png = await frames.still(image, layout, chrome(win));
+      const png = await composeStill(image, layout, chrome(win));
       writeFileSync(file, png);
       stills.set(name, png);
-      record({ kind: "still", name, file: basename(file), ...frames.STILL });
+      record({ kind: "still", name, file: basename(file), ...STILL });
       if (options.pair) {
         const before = stills.get(options.pair);
         if (!before) throw new Error(`No earlier shot named ${options.pair}`);
         const pairName = `${options.pair}-vs-${name}`;
         writeFileSync(
           join(out, `${pairName}.png`),
-          await frames.sideBySide(before, png),
+          await composePair(before, png),
         );
         record({
           kind: "pair",
           name: pairName,
           file: `${pairName}.png`,
-          width: frames.STILL.width * 2,
-          height: frames.STILL.height,
+          width: STILL.width * 2,
+          height: STILL.height,
           before: `${options.pair}.png`,
           after: `${name}.png`,
         });
@@ -473,14 +482,14 @@ function context(main) {
     },
     async record(name, action, options = {}) {
       const win = resolveWindow(options.window);
-      const fps = options.fps ?? frames.FPS;
-      const layout = frames.layout(
-        frames.VIDEO,
+      const fps = options.fps ?? FPS;
+      const layout = frameLayout(
+        VIDEO,
         contentSize(win),
         await cropFor(win, options.crop),
         radius,
       );
-      const recorder = frames.recorder(layout, scratch, fps);
+      const recorder = startRecorder(layout, scratch, fps);
       let written = 0;
       let unique = 0;
       let previous = null;
@@ -531,8 +540,8 @@ function context(main) {
         kind: "video",
         name,
         file: basename(file),
-        ...frames.VIDEO,
-        fps: frames.FPS,
+        ...VIDEO,
+        fps: FPS,
         durationMs: Math.round((written / fps) * 1000),
       });
       return file;
