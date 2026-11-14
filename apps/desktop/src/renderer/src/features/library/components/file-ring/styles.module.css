@@ -1,6 +1,4 @@
 .root {
-  --ring-delay: 400ms;
-
   position: absolute;
   inset: 0;
   z-index: 20;
@@ -14,20 +12,6 @@
   &[data-open] {
     visibility: visible;
     transition: none;
-  }
-}
-
-.scrim {
-  position: absolute;
-  inset: 0;
-  background: color-mix(in srgb, var(--ds-gray-1) 55%, transparent);
-  opacity: 0;
-  backdrop-filter: blur(6px);
-  transition: opacity var(--ds-duration-snap) var(--ds-easing-snap);
-
-  &[data-open] {
-    opacity: 1;
-    transition-duration: var(--ds-duration-medium);
   }
 }
 
@@ -59,9 +43,9 @@
     filter: none;
     scale: 1;
     transition:
-      opacity var(--ds-duration-medium) var(--ds-easing-snap) var(--ring-delay),
-      scale var(--ds-duration-medium) var(--ds-easing-snap) var(--ring-delay),
-      visibility 0s var(--ring-delay);
+      opacity var(--ds-duration-medium) var(--ds-easing-snap),
+      scale var(--ds-duration-medium) var(--ds-easing-snap),
+      visibility 0s;
   }
 
   &[data-live] {

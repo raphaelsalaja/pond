@@ -184,6 +184,7 @@ export function FileRing() {
   const drag = useSaveDragSession();
   const [ring, setRing] = useState<RingSession | null>(null);
   const [inside, setInside] = useState(true);
+  const [shift, setShift] = useState(false);
   const [hovered, setHovered] = useState<RingSlot | null>(null);
   const [held, setHeld] = useState<RingSlot | null>(null);
   const [counts, setCounts] = useState<Record<string, number> | null>(null);
@@ -195,7 +196,8 @@ export function FileRing() {
 
   const enabled = viewer.dragToFile;
   const live = enabled && ring !== null && drag === ring.drag;
-  const open = (live && inside) || held !== null;
+  /** Shift opens the ring so a plain drag still reaches the sidebar and other drop targets. */
+  const open = (live && inside && shift) || held !== null;
 
   useEffect(() => {
     if (!enabled) return;
@@ -218,6 +220,7 @@ export function FileRing() {
       announcedRef.current = null;
       setRing({ drag: session, folderIds });
       setInside(true);
+      setShift(false);
       setHovered(null);
       setHeld(null);
     };
@@ -229,9 +232,11 @@ export function FileRing() {
   useEffect(() => {
     if (!live) return;
     let depth = 1;
+    /** Key events don't fire during a native drag, so Shift is read off each `dragover`. */
     const over = (event: DragEvent) => {
       depth = 1;
       setInside(true);
+      setShift(event.shiftKey);
       const disc = discRef.current;
       if (
         !disc ||
@@ -317,7 +322,7 @@ export function FileRing() {
   }
 
   function onDragOver(event: React.DragEvent) {
-    if (!live || !isLibrarySaveDrag(event.dataTransfer)) return;
+    if (!live || !open || !isLibrarySaveDrag(event.dataTransfer)) return;
     const hit = targetAt(event);
     setHovered(hit?.slot ?? null);
     if (announcedRef.current !== (hit?.slot ?? null)) {
@@ -331,7 +336,7 @@ export function FileRing() {
   }
 
   function onDrop(event: React.DragEvent) {
-    const hit = live ? targetAt(event) : null;
+    const hit = live && open ? targetAt(event) : null;
     if (!hit) return;
     event.preventDefault();
     const ids = saveDropIds(event.dataTransfer);
@@ -350,7 +355,6 @@ export function FileRing() {
 
   return (
     <div className={styles.root} data-open={open || undefined}>
-      <div className={styles.scrim} data-open={open || undefined} />
       <fieldset
         ref={discRef}
         aria-label="File To"
