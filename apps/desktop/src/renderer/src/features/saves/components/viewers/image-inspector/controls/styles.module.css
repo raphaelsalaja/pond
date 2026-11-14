@@ -2,8 +2,11 @@
   opacity: 1;
   transition: opacity var(--ds-duration-snap) var(--ds-easing-snap);
 
-  @starting-style {
-    opacity: 0;
+  /* Only a view or crop switch fades in; a bar mounted by stepping to new media shows at once. */
+  &[data-switched] {
+    @starting-style {
+      opacity: 0;
+    }
   }
 }
 

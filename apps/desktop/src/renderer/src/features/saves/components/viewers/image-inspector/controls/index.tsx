@@ -16,7 +16,7 @@ import {
 } from "@pond/icons";
 import { stepPlaybackRate } from "@pond/ui";
 import { useHotkey } from "@tanstack/react-hotkeys";
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
 import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome";
 import { ViewerSaveNav } from "@/features/saves/components/viewers/viewer-save-nav";
@@ -97,6 +97,9 @@ function Hud({
     enabled: active && mode === "view",
     ignoreInputs: true,
   });
+  const [openedMode] = useState(mode);
+  const [switched, setSwitched] = useState(false);
+  if (!switched && mode !== openedMode) setSwitched(true);
 
   if (!active) return null;
   if (mode === "crop" && edits === "full")
@@ -106,6 +109,7 @@ function Hud({
           key="crop"
           className={styles["mode-bar"]}
           data-mode="crop"
+          data-switched={switched || undefined}
           label="Crop"
           end={
             <ViewerHud.Tools
@@ -157,6 +161,7 @@ function Hud({
           key="view"
           className={styles["mode-bar"]}
           data-mode="view"
+          data-switched={switched || undefined}
           label="Image"
           start={<ViewerSaveNav saveId={saveId} />}
           center={
