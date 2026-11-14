@@ -1,4 +1,5 @@
 import {
+  defaultGlobalKeys,
   GLOBAL_SHORTCUTS,
   type GlobalShortcutId,
   type GlobalShortcutStatus,
@@ -95,7 +96,7 @@ export class GlobalShortcutController {
   private desired(overrides: Bindings): Map<string, GlobalShortcutId> {
     const desired = new Map<string, GlobalShortcutId>();
     for (const id of ids) {
-      const chord = overrides[id] ?? GLOBAL_SHORTCUTS[id].keys;
+      const chord = overrides[id] ?? defaultGlobalKeys(id);
       if (!chord) continue;
       const key = accelerator(chord, this.isMac);
       const conflict = desired.get(key);

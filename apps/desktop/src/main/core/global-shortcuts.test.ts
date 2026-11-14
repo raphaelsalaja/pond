@@ -30,21 +30,29 @@ function fixture() {
 }
 
 describe("global shortcut registration", () => {
-  it("registers Show Pond and the File To ring", () => {
+  it("registers only Show Pond until the File To ring gets keys", () => {
     const { callbacks } = fixture();
-    expect([...callbacks.keys()]).toEqual([
-      "Command+Shift+L",
-      "Command+Shift+K",
-    ]);
+    expect([...callbacks.keys()]).toEqual(["Command+Shift+L"]);
   });
-  it("opens the ring on its own binding and releases it when cleared", () => {
+  it("opens the ring on its assigned binding and goes unbound when cleared", () => {
     const { controller, callbacks, actions } = fixture();
-    callbacks.get("Command+Shift+K")?.();
+    controller.prepare({ "app.file-ring": "Control+Alt+F12" }).commit();
+    callbacks.get("Alt+Control+F12")?.();
     expect(actions["app.file-ring"]).toHaveBeenCalledOnce();
     expect(actions["app.summon"]).not.toHaveBeenCalled();
+    controller.prepare({}).commit();
+    expect([...callbacks.keys()]).toEqual(["Command+Shift+L"]);
+    controller.prepare({ "app.file-ring": "Control+Alt+F12" }).commit();
     controller.prepare({ "app.file-ring": "" }).commit();
-    expect(callbacks.has("Command+Shift+K")).toBe(false);
-    expect(callbacks.has("Command+Shift+L")).toBe(true);
+    expect([...callbacks.keys()]).toEqual(["Command+Shift+L"]);
+    expect(controller.status().errors).toEqual([]);
+  });
+  it("refuses giving the ring Show Pond's keys", () => {
+    const { controller, callbacks } = fixture();
+    expect(() =>
+      controller.prepare({ "app.file-ring": "Mod+Shift+L" }),
+    ).toThrow("Open File To Ring shares a shortcut with Show Pond");
+    expect([...callbacks.keys()]).toEqual(["Command+Shift+L"]);
   });
   it("keeps old dispatch until persisted and can roll back staged bindings", () => {
     const { controller, callbacks, actions } = fixture();
@@ -86,7 +94,9 @@ describe("global shortcut registration", () => {
       true,
     );
     controller.start({});
-    expect(controller.status().errors).toHaveLength(2);
+    expect(controller.status().errors).toEqual([
+      "Show Pond (Command+Shift+L) is unavailable. Choose another shortcut.",
+    ]);
   });
   it("allows changing a binding that failed at startup", () => {
     const callbacks = new Map<string, () => void>();

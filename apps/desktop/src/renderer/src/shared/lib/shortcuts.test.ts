@@ -171,6 +171,45 @@ describe("shortcut profiles", () => {
       }),
     ).toBeNull();
   });
+
+  it("ships the File To ring unbound and takes recorded keys for it", () => {
+    for (const profile of ["pond", "eagle"] as const) {
+      expect(
+        resolveShortcuts({ profile, overrides: {} })["app.file-ring"].keys,
+      ).toBeUndefined();
+    }
+    expect(SHORTCUTS["app.summon"].keys).toBe("Mod+Shift+L");
+    expect(
+      resolveShortcuts({
+        profile: "pond",
+        overrides: { "app.file-ring": "Control+Alt+F12" },
+      })["app.file-ring"].keys,
+    ).toBe(normalizeHotkey("Control+Alt+F12", SHORTCUT_PLATFORM));
+    for (const override of ["", "DefinitelyNotAKey"]) {
+      expect(
+        resolveShortcuts({
+          profile: "pond",
+          overrides: { "app.file-ring": override },
+        })["app.file-ring"].keys,
+      ).toBeUndefined();
+    }
+  });
+
+  it("checks conflicts for the unbound ring without matching it", () => {
+    const preferences = { profile: "pond" as const, overrides: {} };
+    expect(shortcutConflict("app.file-ring", "Mod+Shift+L", preferences)).toBe(
+      "Show Pond",
+    );
+    expect(
+      shortcutConflict("app.file-ring", "Control+Alt+F12", preferences),
+    ).toBeNull();
+    expect(
+      shortcutConflict("app.summon", "Control+Alt+F12", {
+        profile: "pond",
+        overrides: { "app.file-ring": "Control+Alt+F12" },
+      }),
+    ).toBe("Open File To Ring");
+  });
 });
 
 describe("platform glyphs", () => {
