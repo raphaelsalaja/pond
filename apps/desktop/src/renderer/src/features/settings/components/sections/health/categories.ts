@@ -120,11 +120,11 @@ const ATTENTION = new Set<HealthStatus>([
   "unverified",
 ]);
 
-export function needsAttention(status: HealthStatus): boolean {
+function needsAttention(status: HealthStatus): boolean {
   return ATTENTION.has(status);
 }
 
-export function worstStatus(statuses: Iterable<HealthStatus>): HealthStatus {
+function worstStatus(statuses: Iterable<HealthStatus>): HealthStatus {
   let worst = SEVERITY.length - 1;
   for (const status of statuses) {
     worst = Math.min(worst, SEVERITY.indexOf(status));
@@ -536,7 +536,7 @@ const USER_DEFERRALS = new Set([
   "queue_paused",
 ]);
 
-export function downloadStatus(item: DownloadHealthRow): HealthStatus | null {
+function downloadStatus(item: DownloadHealthRow): HealthStatus | null {
   const { row } = item;
   switch (row.status) {
     case "running":

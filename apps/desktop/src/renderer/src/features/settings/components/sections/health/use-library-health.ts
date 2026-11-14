@@ -25,7 +25,7 @@ import { THIS_DEVICE } from "@/shared/lib/platform";
 import { notify } from "@/shared/lib/toast";
 import { buildHealthCategories } from "./categories";
 
-export const OVERVIEW_KEY = ["libraryHealth.overview"];
+const OVERVIEW_KEY = ["libraryHealth.overview"];
 
 /** Main caps each request so a recheck never blocks the library for long. */
 const RECHECK_BATCH = 500;
@@ -37,7 +37,7 @@ function title(saveId: string): string | null {
   return savesStore.state.byId.get(saveId)?.title?.trim() || null;
 }
 
-export function useHealthOverview() {
+function useHealthOverview() {
   return useQuery({
     queryKey: OVERVIEW_KEY,
     queryFn: () => window.pond.query("libraryHealth.overview", {}),
