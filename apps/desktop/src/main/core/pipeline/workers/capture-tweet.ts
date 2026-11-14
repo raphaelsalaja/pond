@@ -27,7 +27,8 @@ function quoteScreenshotKind(depth: number, scheme: "light" | "dark"): string {
   return `tweet_screenshot_quote${depth}_${scheme}`;
 }
 
-const CAPTURE_TWEET_VERSION = 12;
+/** 13: cards rendered before 2.6.0 can show another Save from the same batch. */
+const CAPTURE_TWEET_VERSION = 13;
 /** A reply image is the reply itself, so a crop that leads with the parent post is stale. */
 const REPLY_CAPTURE_TWEET_VERSION = 14;
 

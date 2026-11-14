@@ -1,3 +1,56 @@
+/// <reference lib="dom" />
+
+const CAPTURE_ROOT_ATTRIBUTE = "data-pond-capture";
+
+function markCaptureRoots(post: string, parent: string): string {
+  const attribute = JSON.stringify(CAPTURE_ROOT_ATTRIBUTE);
+  return `for (const el of document.querySelectorAll('[' + ${attribute} + ']')) el.removeAttribute(${attribute});
+      ${post}.setAttribute(${attribute}, '');
+      if (${parent}) ${parent}.setAttribute(${attribute}, '');`;
+}
+
+/** Resolves true once the marked post's images, video posters, and loading spinners have settled, or false at the deadline. */
+export function buildCaptureMediaSettledExpression(timeoutMs: number): string {
+  return `(${inPageCaptureMediaSettled.toString()})(${JSON.stringify(CAPTURE_ROOT_ATTRIBUTE)}, ${JSON.stringify(timeoutMs)})`;
+}
+
+async function inPageCaptureMediaSettled(
+  attribute: string,
+  timeoutMs: number,
+): Promise<boolean> {
+  const deadline = Date.now() + timeoutMs;
+  const posters = new Map<string, HTMLImageElement>();
+  const loading = (img: HTMLImageElement): boolean =>
+    Boolean(img.getAttribute("src")) && !img.complete;
+  const poster = (src: string): HTMLImageElement => {
+    const known = posters.get(src);
+    if (known) return known;
+    const image = new Image();
+    image.src = src;
+    posters.set(src, image);
+    return image;
+  };
+  const pending = (): boolean =>
+    Array.from(document.querySelectorAll(`[${attribute}]`)).some(
+      (root) =>
+        Array.from(root.querySelectorAll("img")).some(loading) ||
+        Array.from(root.querySelectorAll("video[poster]")).some((video) =>
+          loading(poster(video.getAttribute("poster") ?? "")),
+        ) ||
+        Array.from(root.querySelectorAll('[role="progressbar"]')).some(
+          (bar) => {
+            const rect = bar.getBoundingClientRect();
+            return rect.width > 0 && rect.height > 0;
+          },
+        ),
+    );
+  while (pending()) {
+    if (Date.now() >= deadline) return false;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  return true;
+}
+
 export function buildArticleRectExpression(
   tweetId: string,
   parentId?: string,
@@ -48,6 +101,8 @@ export function buildArticleRectExpression(
           }
         }
       } catch (_) {}
+
+      ${markCaptureRoots("article", "parent")}
 
       window.scrollTo(0, 0);
       try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch (_) {}
@@ -201,6 +256,8 @@ export function buildThreadsPostRectExpression(
           }
         }
       } catch (_) {}
+
+      ${markCaptureRoots("card", "parent")}
 
       window.scrollTo(0, 0);
       try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch (_) {}
