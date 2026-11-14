@@ -1,3 +1,4 @@
+import { FileRingSetting } from "@/features/settings/components/file-ring-customization";
 import { IS_MAC } from "@/shared/lib/platform";
 import { defineCustomSection, group } from "./engine-types";
 
@@ -59,6 +60,31 @@ export const viewerSection = defineCustomSection({
             { value: "detached", label: "Detached Window" },
             { value: "none", label: "Do Nothing" },
           ],
+        },
+        {
+          control: "switch",
+          key: "dragToFile",
+          title: "Drag to File",
+          description:
+            "Shows a ring of folders and actions while you drag a Save, file or link.",
+          keywords: [
+            "drag",
+            "drop",
+            "ring",
+            "radial",
+            "folder",
+            "quick access",
+          ],
+        },
+        {
+          control: "custom",
+          key: "fileRingItems",
+          title: "Ring Items",
+          keywords: ["drag to file", "ring", "radial", "reorder", "pin"],
+          disabled: (values) => !values.dragToFile,
+          render: (binding) => (
+            <FileRingSetting disabled={!binding.values.dragToFile} />
+          ),
         },
         {
           control: "select",

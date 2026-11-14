@@ -52,6 +52,7 @@
     "./capture": "./src/capture.ts",
     "./changelog": "./src/changelog.ts",
     "./folder-rules": "./src/folder-rules.ts",
+    "./file-ring": "./src/file-ring.ts",
     "./folder-presentation": "./src/folder-presentation.ts",
     "./saved-view-presentation": "./src/saved-view-presentation.ts",
     "./source-ids": "./src/source-ids.ts",

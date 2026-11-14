@@ -25,6 +25,13 @@ it("dims a row and disables its control while its disabled predicate holds", asy
             title: "Child",
             disabled: (values) => values.master !== true,
           },
+          {
+            control: "custom",
+            key: "custom-child",
+            title: "Custom Child",
+            disabled: (values) => values.master !== true,
+            render: () => <span>Custom</span>,
+          },
         ],
       },
     ],
@@ -37,9 +44,11 @@ it("dims a row and disables its control while its disabled predicate holds", asy
 
     const master = host.querySelector("#setting-test-master");
     const child = host.querySelector("#setting-test-child");
+    const customChild = host.querySelector("#setting-test-custom-child");
 
     expect(master?.hasAttribute("data-disabled")).toBe(false);
     expect(child?.getAttribute("data-disabled")).toBe("true");
+    expect(customChild?.getAttribute("data-disabled")).toBe("true");
     expect(
       child?.querySelector("[role='switch']")?.hasAttribute("data-disabled"),
     ).toBe(true);
