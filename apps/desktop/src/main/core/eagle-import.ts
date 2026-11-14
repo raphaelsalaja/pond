@@ -458,6 +458,7 @@ async function importEagle(
           thumbnailPath: thumbnail ? join(itemDir, thumbnail) : null,
           sourceId: `eagle:${meta.id}`,
           importedFrom: "eagle",
+          inboxChannel: "imports",
           savedAt: meta.modificationTime
             ? new Date(meta.modificationTime)
             : undefined,

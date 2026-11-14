@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { QuerySchema } from "./filters/schema";
 import { EMPTY_QUERY } from "./filters/types";
+import { InboxStateSchema } from "./inbox";
 
 /** Bumped on every change to the HTTP contract: minor for additions, major for breaks. */
 export const API_VERSION = "2.2.0";
@@ -128,6 +129,7 @@ export const ApiLibraryQueryRequestSchema = z.object({
       untagged: z.boolean().optional(),
       folderIds: z.array(z.string()).optional(),
       uncategorized: z.boolean().optional(),
+      inbox: InboxStateSchema.optional(),
       tag: z.string().optional(),
       saveIds: z.array(z.string()).optional(),
       savedSince: z.number().int().nonnegative().optional(),

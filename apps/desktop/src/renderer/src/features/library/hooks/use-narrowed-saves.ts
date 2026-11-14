@@ -29,6 +29,7 @@ import {
 } from "@/features/saves/tag-picker";
 import type { Save } from "@/features/saves/types";
 import { keywordScopesFromPrefs, useRetrievalOverlay } from "@/features/search";
+import { inboxScope } from "@/shared/lib/library-nav";
 import { usePrefs } from "@/shared/state/prefs";
 import { useRetainedTagPickerSaves } from "./retain-tag-picker-saves";
 
@@ -87,6 +88,10 @@ export function useNarrowedSaves(mode: SaveListMode, sourceFilter: string) {
         source: searchEverywhere ? undefined : sourceFilter || undefined,
         untagged: !searchEverywhere && mode === "untagged",
         uncategorized: !searchEverywhere && nav.kind === "uncategorized",
+        inbox:
+          !searchEverywhere && nav.kind === "inbox"
+            ? inboxScope(nav)
+            : undefined,
         folderIds:
           !searchEverywhere && nav.kind === "folder"
             ? [

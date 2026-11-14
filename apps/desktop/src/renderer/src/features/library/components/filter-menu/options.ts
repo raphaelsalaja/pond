@@ -36,7 +36,7 @@ export interface FilterOption {
 export const FILTER_SECTIONS = [
   {
     label: "Organize",
-    fields: ["tags", "folder", "source", "importedFrom", "list"],
+    fields: ["tags", "folder", "source", "importedFrom", "inbox", "list"],
   },
   {
     label: "Media",
@@ -111,6 +111,7 @@ export const FILTER_MENU: readonly (readonly FilterMenuEntry[])[] = [
     "folder",
     "source",
     "importedFrom",
+    "inbox",
     "list",
     "type",
     "format",
@@ -163,6 +164,7 @@ export const FILTER_MENU: readonly (readonly FilterMenuEntry[])[] = [
 /** These fields hide when no save carries their data; each maps to the field whose value proves it. */
 export const DATA_GATED_FIELDS = new Map<FieldId, FieldId>([
   ["importedFrom", "importedFrom"],
+  ["inbox", "inbox"],
   ["cameraMake", "cameraMake"],
   ["cameraModel", "cameraModel"],
   ["lensModel", "lensModel"],

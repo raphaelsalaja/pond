@@ -84,6 +84,7 @@ export type FieldId =
   | "list"
   | "source"
   | "importedFrom"
+  | "inbox"
   | "type"
   | "format"
   | "fileCount"

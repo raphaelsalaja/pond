@@ -353,6 +353,7 @@ describe("buildSaveMenu", () => {
       REVEAL_LABEL,
       "Open Original in Browser",
       "Replace File",
+      "Add to Inbox",
       "Add Tags",
       "Add to Folders",
       "Add to Canvas",
@@ -695,6 +696,41 @@ describe("buildSaveMenu", () => {
     const refs = sectionItems(items, "Refs") ?? [];
     expect(refs[0]).toMatchObject({ type: "checkbox", checked: true });
     expect(refs[2]).toMatchObject({ label: "Shots", checked: false });
+  });
+
+  it("processes and snoozes a Save waiting in the Inbox", () => {
+    const items = buildSaveMenu(fileSave({ inboxState: "review" }), {
+      clipboardEmpty: true,
+    });
+    expect(topLevelLabels(items)).toEqual(
+      expect.arrayContaining(["Mark Processed", "Snooze", "Remove from Inbox"]),
+    );
+    expect(topLevelLabels(items)).not.toContain("Add to Inbox");
+    const markProcessed = visibleLeafItems(items).find(
+      (item) => "label" in item && item.label === "Mark Processed",
+    );
+    expect(markProcessed).toMatchObject({ shortcut: ["P"] });
+    expect(visibleLabels(sectionItems(items, "Snooze") ?? [])).toContain(
+      "Choose Date and Time",
+    );
+  });
+
+  it("brings a snoozed Save back without leaving the Trash in the Inbox", () => {
+    const snoozed = topLevelLabels(
+      buildSaveMenu(fileSave({ inboxState: "snoozed" }), {
+        clipboardEmpty: true,
+      }),
+    );
+    expect(snoozed).toEqual(
+      expect.arrayContaining(["Mark Processed", "Return to Inbox"]),
+    );
+    const trashed = topLevelLabels(
+      buildSaveMenu(fileSave({ inboxState: "review", deletedAt: 1 }), {
+        clipboardEmpty: true,
+      }),
+    );
+    expect(trashed).not.toContain("Mark Processed");
+    expect(trashed).not.toContain("Add to Inbox");
   });
 
   it("hides Fish for trashed saves", () => {

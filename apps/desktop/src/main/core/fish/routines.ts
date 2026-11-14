@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Prefs } from "@pond/schema/db";
 import { saves } from "@pond/schema/db";
-import { and } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import log from "electron-log/main.js";
 import {
   ASSISTANT_MODELS,
@@ -29,7 +29,8 @@ const MAX_NEW_SAVES = 200;
 export type RoutineTrigger =
   | { kind: "manual" }
   | { kind: "schedule" }
-  | { kind: "newSaves"; saveIds: string[] };
+  | { kind: "newSaves"; saveIds: string[] }
+  | { kind: "inbox"; saveIds: string[] };
 
 export interface RoutineDependencies {
   listFish(): Fish[];
@@ -40,7 +41,11 @@ export interface RoutineDependencies {
   deleteChat(chatId: string): Promise<OkSuccess>;
   send(input: AssistantSend): Promise<AssistantSendResult>;
   listMessages(chatId: string): Promise<AssistantMessage[]>;
-  savesInScope(saveIds: readonly string[], fish: Fish): Promise<string[]>;
+  savesInScope(
+    saveIds: readonly string[],
+    fish: Fish,
+    inInbox?: boolean,
+  ): Promise<string[]>;
   now(): number;
 }
 
@@ -67,7 +72,7 @@ const defaultDependencies: RoutineDependencies = {
     const { listMessages } = await import("../agent/persist");
     return assistantMessages.parse(await listMessages(chatId));
   },
-  async savesInScope(saveIds, fish) {
+  async savesInScope(saveIds, fish, inInbox) {
     if (!saveIds.length) return [];
     const db = await getDb();
     const rows = await db
@@ -79,6 +84,7 @@ const defaultDependencies: RoutineDependencies = {
             saveIds: [...saveIds],
             filter: fishScopeFilter(fish.scope),
           }),
+          inInbox ? eq(saves.inboxState, "review") : undefined,
         ),
       );
     return rows.map((row) => row.id);
@@ -96,6 +102,11 @@ function routineMessage(routine: FishRoutine, trigger: RoutineTrigger): string {
   if (trigger.kind === "newSaves")
     lines.push(
       `New Saves to look at (read them by ID): ${trigger.saveIds.join(", ")}`,
+    );
+  if (trigger.kind === "inbox")
+    lines.push(
+      `Saves waiting in the Inbox (read them by ID): ${trigger.saveIds.join(", ")}`,
+      "For each one, suggest folders, tags, and a note or short summary where it helps, and point out likely duplicates already in the Library. Leave marking processed, snoozing, and the Trash to the person reviewing.",
     );
   return lines.join("\n\n");
 }
@@ -148,7 +159,10 @@ export async function runFishRoutine(
       modelId: model.modelId,
       routine: {
         trigger: trigger.kind,
-        saves: trigger.kind === "newSaves" ? trigger.saveIds.length : undefined,
+        saves:
+          trigger.kind === "schedule" || trigger.kind === "manual"
+            ? undefined
+            : trigger.saveIds.length,
         routineId: routine.id,
         name: routine.name,
       },
@@ -205,23 +219,39 @@ export async function runDueRoutines(
   }
 }
 
-export async function runNewSaveRoutines(
+async function runArrivalRoutines(
+  kind: "newSaves" | "inbox",
   saveIds: readonly string[],
-  deps: RoutineDependencies = defaultDependencies,
+  deps: RoutineDependencies,
 ): Promise<void> {
   for (const fish of deps.listFish()) {
     const routines = fish.routines.filter(
-      (routine) => routine.when.kind === "newSaves" && !routine.paused,
+      (routine) => routine.when.kind === kind && !routine.paused,
     );
     if (!routines.length) continue;
-    const inScope = await deps.savesInScope(saveIds, fish);
+    const inScope = await deps.savesInScope(saveIds, fish, kind === "inbox");
     if (!inScope.length) continue;
     for (const routine of routines)
       await runFishRoutine(
         fish,
         routine,
-        { kind: "newSaves", saveIds: inScope.slice(0, MAX_NEW_SAVES) },
+        { kind, saveIds: inScope.slice(0, MAX_NEW_SAVES) },
         deps,
       );
   }
+}
+
+export function runNewSaveRoutines(
+  saveIds: readonly string[],
+  deps: RoutineDependencies = defaultDependencies,
+): Promise<void> {
+  return runArrivalRoutines("newSaves", saveIds, deps);
+}
+
+/** Inbox routines only see Saves still waiting for review when the batch settles. */
+export function runInboxRoutines(
+  saveIds: readonly string[],
+  deps: RoutineDependencies = defaultDependencies,
+): Promise<void> {
+  return runArrivalRoutines("inbox", saveIds, deps);
 }

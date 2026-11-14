@@ -61,6 +61,8 @@ function emptySidebarCounts(): LibrarySidebarCounts {
     untagged: 0,
     recentlyAdded: 0,
     recentlyUsed: 0,
+    inbox: 0,
+    inboxSnoozed: 0,
     trash: 0,
     folders: {},
     foldersDownloading: {},

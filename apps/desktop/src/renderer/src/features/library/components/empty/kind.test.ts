@@ -39,6 +39,19 @@ describe("libraryEmptyKind", () => {
     ).toBe("folder");
   });
 
+  it("confirms a clear Inbox instead of reporting a failed search", () => {
+    expect(libraryEmptyKind({ ...library, navKind: "inbox" })).toBe("inbox");
+    expect(
+      libraryEmptyKind({ ...library, navKind: "inbox", hasActiveSearch: true }),
+    ).toBe("matches");
+  });
+
+  it("confirms a clear Inbox when the Inbox query itself returns nothing", () => {
+    expect(
+      libraryEmptyKind({ ...library, navKind: "inbox", libraryTotal: 0 }),
+    ).toBe("inbox");
+  });
+
   it("keeps the all-library empty state", () => {
     expect(libraryEmptyKind({ ...library, libraryTotal: 0 })).toBe("library");
   });

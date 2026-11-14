@@ -6,6 +6,7 @@ import {
   TASK_STATUSES,
 } from "@pond/schema/db";
 import { IMPORT_ORIGINS } from "@pond/schema/import-origin";
+import { INBOX_STATES } from "@pond/schema/inbox";
 import { LIST_KINDS } from "@pond/schema/list-kinds";
 import { StoredRawJsonSchema, storedAsRawJson } from "@pond/schema/raw-schema";
 import { toMs } from "@shared/to-ms";
@@ -78,6 +79,8 @@ export const SavePatchSchema = z.object({
   suggestedTags: Texts,
   suggestedTagsModel: Text,
   rating: Num,
+  inboxState: z.enum(INBOX_STATES).nullish().catch(null),
+  inboxUntil: Num,
   rotate: z.number().nullish().catch(0),
   flipX: z.boolean().nullish().catch(false),
   flipY: z.boolean().nullish().catch(false),
@@ -200,6 +203,8 @@ export function normalise(
     suggestedTags: raw.suggestedTags ?? null,
     suggestedTagsModel: raw.suggestedTagsModel ?? null,
     rating: raw.rating ?? null,
+    inboxState: raw.inboxState ?? null,
+    inboxUntil: raw.inboxUntil ?? null,
     rotate: raw.rotate ?? 0,
     flipX: raw.flipX ?? false,
     flipY: raw.flipY ?? false,

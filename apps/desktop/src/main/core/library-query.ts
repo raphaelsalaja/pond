@@ -6,6 +6,7 @@ import {
   asc,
   count,
   desc,
+  eq,
   isNotNull,
   isNull,
   type SQLWrapper,
@@ -89,6 +90,7 @@ export function libraryQueryWhere(
     scope.uncategorized
       ? sql`not exists (select 1 from save_folders sf where sf.save_id = ${saves.id})`
       : undefined,
+    scope.inbox ? eq(saves.inboxState, scope.inbox) : undefined,
     scope.tag
       ? sql`exists (select 1 from json_each(${saves.tags}) where lower(value) = ${scope.tag.toLowerCase()})`
       : undefined,

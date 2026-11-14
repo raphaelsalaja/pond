@@ -34,6 +34,7 @@ import { AssignmentChip } from "./chip";
 import { EnrichedText } from "./enriched-text";
 import { ratingMenu, SaveFacts } from "./facts";
 import { SaveIdentity } from "./identity";
+import { InboxSection } from "./inbox";
 import { SaveNote } from "./note";
 import { SavePreviews } from "./previews";
 import { SourceCard } from "./source-card";
@@ -342,6 +343,7 @@ export function SaveInspector({
               <strong>{ids.length}</strong> items selected
             </p>
           ) : null}
+          <InboxSection saves={saves} />
           <SaveIdentity
             key={targetKey}
             save={single}
