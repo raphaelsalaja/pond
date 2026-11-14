@@ -30,6 +30,17 @@ The desktop package also retains focused manual checks outside `pnpm check`. Run
 
 Use temporary libraries and fixtures in tests. Never require a contributor's personal library, source accounts, or API keys for a PR check. Keep live source tests separate.
 
+### PR proof
+
+`scripts/capture-proof.cjs` records framed screenshots and clips for a PR. It runs the built app offscreen against a temporary Library seeded with image Saves and folders, then writes 2240×1400 PNGs, 1120×700 60 fps MP4s and a `manifest.json` to `--out`. Build once, then run a scenario from the repository root:
+
+```bash
+pnpm --filter @pond/desktop build
+pnpm --filter @pond/desktop exec electron scripts/capture-proof.cjs --scenario=$PWD/apps/desktop/scripts/proof-scenarios/library.cjs --out=$PWD/.artifacts/proof
+```
+
+A scenario exports `async function run(ctx)`; `proof-scenarios/library.cjs` shows `ctx.shot`, `ctx.record`, `ctx.key` and `ctx.waitFor`, and `capture-proof.cjs` defines the rest. Options are `--theme=light|dark`, `--size=1440x1000`, `--crop=x,y,width`, `--wallpaper=<path>` and `--radius=22`. Wrap the build and capture in `until mkdir /tmp/pond-capture.lock 2>/dev/null; do sleep 15; done` and `rmdir /tmp/pond-capture.lock` (also on failure) so only one capture runs per machine. Upload the files with `gh image <files>` from [gh-image](https://github.com/drogers0/gh-image) and paste the printed markdown into the PR body. Don't commit them; `.artifacts/` is ignored.
+
 ## Windows development
 
 Pond builds and runs on Windows 10 and 11 (x64). In addition to Node 24 and pnpm 11.27.0:
