@@ -24,6 +24,10 @@ import {
   exportFolderPackage,
 } from "@/features/library/components/folder-context-menu";
 import type { FolderTool } from "@/features/library/components/folder-tools";
+import {
+  folderColorMenuItems,
+  folderIconMenuItems,
+} from "@/features/library/lib/folder-appearance-menu";
 import { buildMoveFolderItems } from "@/features/library/lib/move-folders-menu";
 import { saveFolderPresentation } from "@/features/library/state/folder-presentation";
 import { folders } from "@/features/library/state/folders";
@@ -34,11 +38,7 @@ import {
   setSort,
 } from "@/features/library/state/view-store";
 import { errorCopy } from "@/shared/lib/error-copy";
-import {
-  FOLDER_MENU_ICONS,
-  FOLDER_SWATCHES,
-  type FolderIconId,
-} from "@/shared/lib/folder-icons";
+import type { FolderIconId } from "@/shared/lib/folder-icons";
 import { notify } from "@/shared/lib/toast";
 import { selectLibraryNav } from "./navigation";
 
@@ -202,45 +202,17 @@ export function buildFolderRowMenuItems(input: FolderRowMenuInput) {
       type: "submenu",
       label: "Icon",
       icon: createElement(IconMediaLibrary),
-      items: FOLDER_MENU_ICONS.map((option) => ({
-        type: "checkbox",
-        label: option.label,
-        icon: createElement(option.Icon),
-        checked: (input.folderIcon ?? "folder") === option.id,
-        onCheckedChange: () =>
-          void saveFolderPresentation(folder.id, { icon: option.id }),
-      })),
+      items: folderIconMenuItems({
+        folderId: folder.id,
+        icon: input.folderIcon,
+        glyphs: true,
+      }),
     },
     {
       type: "submenu",
       label: "Color",
       icon: createElement(IconPalette),
-      items: FOLDER_SWATCHES.map((option) => ({
-        type: "checkbox",
-        label: option.label,
-        icon: createElement("span", {
-          "aria-hidden": true,
-          style: {
-            width: 14,
-            height: 14,
-            border: "1px solid currentColor",
-            borderRadius: "50%",
-            background: option.css,
-          },
-        }),
-        checked: folder.color === option.id,
-        onCheckedChange: () => {
-          void window.pond
-            .query("folders.setColor", { id: folder.id, color: option.id })
-            .then(() => folders.refresh())
-            .catch(() =>
-              notify({
-                id: "folder-color",
-                title: "Couldn't update folder color",
-              }),
-            );
-        },
-      })),
+      items: folderColorMenuItems({ folder, glyphs: true }),
     },
     {
       type: "submenu",

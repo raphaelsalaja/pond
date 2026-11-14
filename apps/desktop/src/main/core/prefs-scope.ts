@@ -55,6 +55,7 @@ const APP_PREF_KEYS = [
   "agent",
   "search",
   "extension",
+  "folderAppearance",
 ] as const satisfies readonly AppPrefKey[];
 
 const _DEFAULT_APP_PREFS: AppPrefs = pickPrefs(DEFAULT_PREFS, APP_PREF_KEYS);
@@ -107,6 +108,7 @@ function mergeAll(base: Prefs, patch: DeepPartial<Prefs>): Prefs {
     shortcuts: { ...base.shortcuts, ...patch.shortcuts },
     viewer: { ...base.viewer, ...patch.viewer },
     folderViews: { ...base.folderViews, ...patch.folderViews },
+    folderAppearance: { ...base.folderAppearance, ...patch.folderAppearance },
     savedViewViews: { ...base.savedViewViews, ...patch.savedViewViews },
     folderRules: { ...base.folderRules, ...patch.folderRules },
     preferences: { ...base.preferences, ...patch.preferences },

@@ -100,6 +100,40 @@ export const FOLDER_ICON_IDS = [
 
 export const FolderIconIdSchema = z.enum(FOLDER_ICON_IDS);
 
+export const FOLDER_COLOR_IDS = [
+  "red",
+  "orange",
+  "yellow",
+  "green",
+  "teal",
+  "blue",
+  "purple",
+  "pink",
+] as const;
+
+/** A folder color is a palette ID or a six-digit hex, stored lowercase. */
+export const FolderColorSchema = z.union([
+  z.enum(FOLDER_COLOR_IDS),
+  z
+    .string()
+    .regex(/^#[0-9a-f]{6}$/i)
+    .transform((hex) => hex.toLowerCase()),
+]);
+
+export const RECENT_FOLDER_APPEARANCE_LIMIT = 8;
+
+/** Icons and colors picked most recently first, shared by every Library on this computer. */
+export const FolderAppearancePrefsSchema = z.object({
+  recentIcons: z
+    .array(FolderIconIdSchema)
+    .max(RECENT_FOLDER_APPEARANCE_LIMIT)
+    .catch([]),
+  recentColors: z
+    .array(FolderColorSchema)
+    .max(RECENT_FOLDER_APPEARANCE_LIMIT)
+    .catch([]),
+});
+
 export const FolderPresentationSchema = z.object({
   icon: FolderIconIdSchema.optional(),
   layout: z.enum(["waterfall", "grid", "justified", "list"]).catch("waterfall"),

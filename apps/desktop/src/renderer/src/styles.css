@@ -101,6 +101,18 @@ html[data-theme="dark"] {
   color-scheme: dark;
 }
 
+/* OKLCH lightness band that keeps custom folder colors visible on each theme's surfaces. */
+:root,
+[data-theme="light"] {
+  --folder-ink-min: 0;
+  --folder-ink-max: 0.64;
+}
+
+[data-theme="dark"] {
+  --folder-ink-min: 0.6;
+  --folder-ink-max: 1;
+}
+
 :root {
   --ds-cursor-interactive: default;
 }
