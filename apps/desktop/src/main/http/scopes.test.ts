@@ -19,6 +19,7 @@ describe("routeAccess", () => {
     ["POST", "/api/v2/saves/tags", "write"],
     ["POST", "/api/v2/saves/trash", "write"],
     ["POST", "/api/v2/saves/rating", "write"],
+    ["POST", "/api/v2/saves/favorite", "write"],
   ])("%s %s needs %s", (method, path, access) => {
     expect(routeAccess(method, path)).toBe(access);
   });
