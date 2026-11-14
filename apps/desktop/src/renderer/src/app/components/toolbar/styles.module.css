@@ -38,7 +38,33 @@
   height: 100%;
   margin-right: var(--window-inset);
   margin-left: var(--window-inset);
+  container: toolbar-main / inline-size;
   transition: margin-left var(--window-edge-duration) var(--window-edge-easing);
+}
+
+/* Equal outer tracks keep Search Pond centered; items start-align so empty space stays draggable. */
+.center {
+  display: grid;
+  flex: 1;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  column-gap: 12px;
+  align-items: center;
+  justify-items: start;
+  min-width: 0;
+  height: 100%;
+}
+
+.search {
+  display: flex;
+  grid-column: 2;
+  justify-self: center;
+  -webkit-app-region: no-drag;
+}
+
+@container toolbar-main (max-width: 560px) {
+  .center {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
 }
 
 .breadcrumbs {

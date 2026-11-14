@@ -10,6 +10,10 @@ import {
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  commandMenu,
+  useCommandMenuOpen,
+} from "@/features/library/state/command-menu";
 import { folders } from "@/features/library/state/folders";
 import { libraryChrome } from "@/features/library/state/library-chrome";
 import { navigationHistory } from "@/features/library/state/navigation-history";
@@ -99,8 +103,19 @@ describe("breadcrumb toolbar", () => {
     return match;
   }
 
+  function CommandMenuProbe() {
+    return <output data-command-menu={useCommandMenuOpen() || undefined} />;
+  }
+
   async function mount(path = "/") {
-    const rootRoute = createRootRoute({ component: Toolbar });
+    const rootRoute = createRootRoute({
+      component: () => (
+        <>
+          <Toolbar />
+          <CommandMenuProbe />
+        </>
+      ),
+    });
     const children = [
       "/",
       "/save/$saveId",
@@ -130,6 +145,20 @@ describe("breadcrumb toolbar", () => {
     });
     return router;
   }
+
+  it.each(["/", "/trash", "/settings", "/fish/default"])(
+    "opens the command menu from Search Pond on %s",
+    async (path) => {
+      commandMenu.close();
+      await mount(path);
+      const search = button("Search Pond");
+      expect(search.textContent).toContain("Search Pond");
+      expect(search.querySelector("kbd")).not.toBeNull();
+      await act(async () => search.click());
+      expect(host.querySelector("output[data-command-menu]")).not.toBeNull();
+      commandMenu.close();
+    },
+  );
 
   it("leaves the fish page without a breadcrumb", async () => {
     await mount("/fish/default");

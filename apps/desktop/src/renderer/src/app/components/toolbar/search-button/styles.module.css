@@ -1,0 +1,26 @@
+.button {
+  min-width: clamp(160px, 36cqi, 320px);
+}
+
+.label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-align: start;
+  white-space: nowrap;
+}
+
+.shortcut {
+  display: inline-flex;
+  flex: none;
+}
+
+@container toolbar-main (max-width: 560px) {
+  .button {
+    min-width: 0;
+  }
+
+  .shortcut {
+    display: none;
+  }
+}

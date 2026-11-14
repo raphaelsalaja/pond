@@ -50,6 +50,7 @@ import { FOLDER_MENU_ICONS, FOLDER_SWATCHES } from "@/shared/lib/folder-icons";
 import { usePrefs } from "@/shared/state/prefs";
 import { type Breadcrumb, buildBreadcrumbs } from "./breadcrumbs";
 import { computeLabel } from "./labels";
+import { SearchButton } from "./search-button";
 import styles from "./styles.module.css";
 
 const FishChatActions = lazy(() =>
@@ -316,7 +317,14 @@ export function Toolbar() {
         <SidebarToggle open={sidebarOpen} />
         <ChromeHistoryNav />
       </div>
-      <div className={styles.main}>{viewingFish ? null : <Breadcrumbs />}</div>
+      <div className={styles.main}>
+        <div className={styles.center}>
+          {viewingFish ? null : <Breadcrumbs />}
+          <div className={styles.search}>
+            <SearchButton />
+          </div>
+        </div>
+      </div>
       {viewingSave || viewingFish || viewingLibrary ? (
         <div className={styles.actions}>
           {viewingFish ? (

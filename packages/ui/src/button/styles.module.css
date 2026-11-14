@@ -313,6 +313,21 @@
     }
   }
 
+  /* Looks like a search field but opens a surface, so content starts at the leading edge. */
+  &:where([data-variant="field"]) {
+    justify-content: flex-start;
+    font-weight: var(--ds-weight-md);
+    color: var(--ds-gray-9);
+    background-color: var(--ds-gray-a2);
+    border: var(--ds-border-width) solid var(--ds-border-subtle);
+
+    &:hover,
+    &[data-demo-state="hover"] {
+      color: var(--ds-gray-11);
+      background-color: var(--ds-gray-a3);
+    }
+  }
+
   /* A pressable surface (card, row, tile): behavior and focus only, the caller lays out the content. */
   &:where([data-variant="bare"]) {
     height: auto;
