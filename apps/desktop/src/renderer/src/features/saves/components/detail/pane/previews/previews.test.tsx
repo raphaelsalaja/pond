@@ -80,7 +80,8 @@ describe("SavePreviews", () => {
 
     await show(imageSave("second"));
     expect(layers()).toEqual(["shown first", "pending second"]);
-    expect(host.querySelector('[aria-hidden="true"] img')?.alt).toBe("first");
+    const held = host.querySelector('[aria-hidden="true"] img');
+    expect(held?.getAttribute("alt")).toBe("first");
 
     await decode("second");
     expect(layers()).toEqual(["shown second"]);
