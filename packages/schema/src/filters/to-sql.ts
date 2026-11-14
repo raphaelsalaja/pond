@@ -11,6 +11,7 @@ import { readColorMatch } from "./color";
 import { isoDurationToMillis } from "./duration";
 import { FIELD_DESCRIPTORS } from "./fields";
 import { ASPECT_TOLERANCE, parseAspectRatio } from "./fields/dims";
+import { splitPostClause } from "./fields/post";
 import {
   folderExists,
   jsonArrayDistinctCount,
@@ -69,6 +70,7 @@ function compileForField(
   if (field === "folder") return folderClause(operator, raw);
   if (field === "list") return jsonArrayClause(saves.listKinds, operator, raw);
   if (field === "format") return fileFormatClause(operator, raw);
+  if (field === "post") return splitPostClause(operator, raw);
 
   const column = FIELD_DESCRIPTORS[field].sqlProjection?.() ?? null;
   if (!column) return null;

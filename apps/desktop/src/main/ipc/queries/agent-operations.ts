@@ -30,6 +30,8 @@ const descriptions = new Map<string, string>(
       "Permanently delete every Save in Trash. Cannot be undone.",
     "saves.split":
       "Split explicitly selected multi-image or multi-video Saves so each image or video becomes its own Save with the same source, tags, notes, and Folders.",
+    "saves.splitPosts":
+      "List posts that were split into separate Saves, newest first, with each post's Save IDs in post order. Filter one post with the `post` field and its key.",
     "folders.rules.set":
       "Set inherited tags for a Folder and optionally apply them to existing Saves.",
     "canvases.list":

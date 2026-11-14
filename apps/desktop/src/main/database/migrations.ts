@@ -343,6 +343,9 @@ export function migratePond(sqlite: Database.Database): void {
 					ON saves(id) WHERE embedding IS NOT NULL;
 				CREATE INDEX IF NOT EXISTS saves_has_clip_embedding_idx
 					ON saves(id) WHERE clip_embedding IS NOT NULL;
+				CREATE INDEX IF NOT EXISTS saves_split_post_idx
+					ON saves(source, json_extract(raw_slim, '$.split.sourceId'))
+					WHERE json_extract(raw_slim, '$.split.sourceId') IS NOT NULL;
 			`);
 
   ensureImportedFrom(sqlite);

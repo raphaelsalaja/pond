@@ -10,6 +10,7 @@ import { initializePondSchema } from "../db";
 import { queryFolderSummaries } from "./folder-summaries";
 import { queryLibraryIds, queryLibraryPage } from "./library-query";
 import { querySidebarCounts } from "./sidebar-counts";
+import { countSplitPosts, querySplitPosts } from "./split-posts";
 
 function nativeAvailable() {
   try {
@@ -171,10 +172,56 @@ describe.skipIf(!nativeAvailable())("authoritative library query", () => {
       untagged: 1199,
       recentlyAdded: 0,
       recentlyUsed: 0,
+      splitPosts: 0,
       trash: 1,
       folders: { all: 1199 },
       foldersDownloading: {},
     });
+  });
+  it("groups split posts and pages one post in post order", async () => {
+    const { db, sqlite } = setup();
+    const split = sqlite.prepare(
+      "update saves set source = ?, raw_slim = ? where id = ?",
+    );
+    const raw = (sourceId: string, media: number[]) =>
+      JSON.stringify({ capture: {}, split: { sourceId, media } });
+    split.run("instagram", raw("DAbC", [0]), "0010");
+    split.run("instagram", raw("DAbC", [2]), "0011");
+    split.run("instagram", raw("DAbC", [1]), "0012");
+    split.run("instagram", raw("DAbC", []), "0013");
+    split.run("instagram", raw("dabc", [0]), "0020");
+    split.run("instagram", raw("dabc", [1]), "0021");
+    split.run("x", raw("DAbC", [0]), "0030");
+    sqlite.exec("update saves set deleted_at=1 where id='0021'");
+
+    expect(querySplitPosts(db)).toEqual([
+      {
+        key: "instagram:DAbC",
+        source: "instagram",
+        title: "reference blue sky 10",
+        saveIds: ["0010", "0012", "0011", "0013"],
+        savedAt: 13,
+      },
+    ]);
+    expect(countSplitPosts(db)).toBe(1);
+    expect(querySidebarCounts(db).splitPosts).toBe(1);
+
+    const request: LibraryQueryRequest = {
+      query: {
+        combinator: "and",
+        rules: [{ field: "post", operator: "eq", value: "instagram:DAbC" }],
+      },
+      sortKey: "post",
+      sortDir: "asc",
+      limit: 2,
+    };
+    const first = await queryLibraryPage(db, "library", request);
+    expect(first.ids).toEqual(["0010", "0012"]);
+    const rest = await queryLibraryPage(db, "library", {
+      ...request,
+      cursor: first.nextCursor,
+    });
+    expect(rest.ids).toEqual(["0011", "0013"]);
   });
   it("counts distinct saves across each folder subtree", () => {
     const { db, sqlite } = setup();

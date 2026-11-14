@@ -26,6 +26,7 @@ export function Library() {
   const isDownloads = pathname.startsWith("/downloads");
   const isFish = fishIdFromPath(pathname) !== null;
   const isTags = pathname === "/tags";
+  const isSplitPosts = pathname === "/split-posts";
   const isSettings = pathname.startsWith("/settings");
   const isCanvas =
     canvasIdFromPath(isSave ? getLastListPath() : pathname) !== null;
@@ -34,6 +35,7 @@ export function Library() {
     !isDownloads &&
     !isFish &&
     !isTags &&
+    !isSplitPosts &&
     !isSettings &&
     !isCanvas;
 

@@ -41,6 +41,7 @@ export const TOKEN_FIELDS: readonly TokenFieldSpec[] = [
   { field: "folder", keys: ["folder", "folders"] },
   { field: "list", keys: ["list"] },
   { field: "source", keys: ["source", "from"] },
+  { field: "post", keys: ["post"] },
   { field: "importedFrom", keys: ["imported", "importedfrom"] },
   { field: "type", keys: ["type", "kind"] },
   { field: "format", keys: ["format", "extension", "ext"] },
@@ -212,6 +213,10 @@ function buildPredicate(token: FieldToken): Predicate | null {
   const { field, op, negate } = token;
   const type = FIELD_META[field].type;
   const raw = token.rawValue.trim();
+  if (field === "post") {
+    const key = unquote(raw);
+    return key ? { field, operator: negate ? "neq" : "eq", value: key } : null;
+  }
 
   switch (type) {
     case "enum": {
