@@ -178,9 +178,13 @@ it("rewinds to the Save whose change the toast undid", async () => {
     (button) => button.textContent === "Undo",
   );
   if (!undo) throw new Error("Missing Undo toast");
+  undo.focus();
   await act(async () => undo.click());
   expect(host.textContent).toContain("1 of 2");
   expect(host.textContent).toContain("First");
+  expect(document.activeElement).toBe(
+    host.querySelector('[aria-label="Review Inbox"]'),
+  );
 });
 
 it("exits on Escape and leaves the grid in place", async () => {

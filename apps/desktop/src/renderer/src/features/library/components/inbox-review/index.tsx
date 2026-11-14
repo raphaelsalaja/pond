@@ -105,21 +105,29 @@ function ReviewStage({ queue }: { queue: ReviewQueue }) {
     inboxReview.advance(outcome);
   }
 
+  /** The toast's Undo button takes focus, so the stage reclaims it to keep the review keys working. */
+  function rewindTo(saveId: string) {
+    return () => {
+      inboxReview.rewind(saveId);
+      stageRef.current?.focus();
+    };
+  }
+
   function keep(from: Input) {
     if (!id) return;
-    void markProcessed([id], () => inboxReview.rewind(id));
+    void markProcessed([id], rewindTo(id));
     advance("keep", from);
   }
 
   function trash(from: Input) {
     if (!id) return;
-    void trashWithUndo([id], () => inboxReview.rewind(id));
+    void trashWithUndo([id], rewindTo(id));
     advance("trash", from);
   }
 
   function file(folder: FolderChoice, from: Input) {
     if (!id) return;
-    void assignSavesToFolder([id], folder, () => inboxReview.rewind(id));
+    void assignSavesToFolder([id], folder, rewindTo(id));
     advance("collection", from);
   }
 
