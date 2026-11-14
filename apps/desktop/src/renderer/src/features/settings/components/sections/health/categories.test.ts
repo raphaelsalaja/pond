@@ -14,6 +14,7 @@ import {
   type HealthCategoryId,
   type HealthInput,
   healthTotals,
+  STATUS_LABELS,
 } from "./categories";
 
 const MEDIA: MediaWarmSnapshot = {
@@ -292,6 +293,29 @@ describe("Library Health categories", () => {
     ).toBe(50);
     expect(downloads.status).toBe("terminal");
     expect(downloads).toMatchObject({ attention: 4, progress: 3 });
+  });
+
+  it("summarizes a download by its error or reason, never its status", () => {
+    const { entries } = category(
+      buildHealthCategories(
+        input({
+          downloads: [
+            download("dead", { error: "Web fetch 404" }),
+            download("failed"),
+            { ...download("running"), reason: null },
+          ],
+        }),
+      ),
+      "downloads",
+    );
+    expect(entries.map((entry) => entry.summary)).toEqual([
+      "Web fetch 404",
+      "failed reason",
+      "Not finished",
+    ]);
+    for (const entry of entries) {
+      expect(entry.summary).not.toBe(STATUS_LABELS[entry.status]);
+    }
   });
 
   it("leaves processing failures for missing originals to the repair row", () => {

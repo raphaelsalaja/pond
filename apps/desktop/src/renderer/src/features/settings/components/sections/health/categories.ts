@@ -587,7 +587,7 @@ function downloadsCategory(input: HealthInput): HealthCategory {
       title: row.name || input.title(row.saveId) || row.saveId,
       status,
       resolution: downloadResolution(item, status),
-      summary: row.error ?? row.stage ?? STATUS_LABELS[status],
+      summary: row.error ?? item.reason ?? "Not finished",
       expected: "Every file downloaded and saved.",
       found:
         row.status === "running" && row.progress != null
