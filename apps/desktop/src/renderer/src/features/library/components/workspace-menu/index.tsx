@@ -8,7 +8,7 @@ import {
   IconFolders,
   IconLayers,
 } from "@pond/icons";
-import { cssVars, Menu } from "@pond/ui";
+import { cssVars, Menu, Tooltip } from "@pond/ui";
 import type { QueryResult } from "@shared/query-contracts";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -179,23 +179,23 @@ export function WorkspaceMenu() {
           if (next) void refetch();
         }}
       >
-        <Menu.Trigger
-          variant="ghost"
-          density="compact"
-          className={styles.trigger}
-        >
-          <span className={styles.mark} aria-hidden>
-            <img
-              className={styles.icon}
-              src={info?.icon ?? defaultAppIcon}
-              alt=""
-            />
-          </span>
-          <span className={styles.name} title={name}>
-            {name}
-          </span>
-          <IconChevronDown size={12} className={styles.chevron} aria-hidden />
-        </Menu.Trigger>
+        <Tooltip label={name} side="bottom">
+          <Menu.Trigger
+            variant="ghost"
+            density="compact"
+            className={styles.trigger}
+            aria-label={name}
+          >
+            <span className={styles.mark} aria-hidden>
+              <img
+                className={styles.icon}
+                src={info?.icon ?? defaultAppIcon}
+                alt=""
+              />
+            </span>
+            <IconChevronDown size={12} className={styles.chevron} aria-hidden />
+          </Menu.Trigger>
+        </Tooltip>
         <Menu.Portal>
           <Menu.Positioner align="start" side="bottom" alignOffset={-2}>
             <Menu.Popup
