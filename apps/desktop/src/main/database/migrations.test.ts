@@ -2,10 +2,10 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import * as schema from "@pond/schema/db";
+import { buildWhere } from "@pond/schema/filters";
 import Database from "better-sqlite3";
 import { is } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/better-sqlite3";
-import { buildWhere } from "@pond/schema/filters";
 import {
   getTableConfig,
   SQLiteSyncDialect,
@@ -170,7 +170,9 @@ describe.skipIf(!nativeSqliteAvailable())("pond database migrations", () => {
       if (!where) throw new Error("Expected a post predicate");
       const compiled = new SQLiteSyncDialect().sqlToQuery(where);
       const plan = db
-        .prepare(`EXPLAIN QUERY PLAN SELECT id FROM saves WHERE ${compiled.sql}`)
+        .prepare(
+          `EXPLAIN QUERY PLAN SELECT id FROM saves WHERE ${compiled.sql}`,
+        )
         .all(...compiled.params)
         .map((row) => z.object({ detail: z.string() }).parse(row).detail);
       expect(plan.join("\n")).toContain("saves_split_post_idx");

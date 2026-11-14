@@ -155,11 +155,7 @@ export function narrowToSplit(
 /** Local and imported Saves carry no capture, but still record the split so the post can be found again. */
 const CAPTURELESS = storedAsRawJson({ capture: {} });
 
-function splitRaw(
-  raw: RawJson | null,
-  post: string,
-  media: number[],
-): RawJson {
+function splitRaw(raw: RawJson | null, post: string, media: number[]): RawJson {
   const base = raw ?? CAPTURELESS;
   return {
     ...base,
