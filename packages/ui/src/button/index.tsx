@@ -14,7 +14,6 @@ export interface ButtonProps extends Base.Props {
     | "accent"
     | "destructive"
     | "link"
-    | "field"
     | "bare";
   size?: "xs" | "sm" | "md" | "lg" | "xl";
   /** `compact` keeps the type and icon of `size` one height step shorter with half the inline padding, for dense trails. */

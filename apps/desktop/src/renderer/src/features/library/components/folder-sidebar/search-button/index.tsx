@@ -7,7 +7,7 @@ import styles from "./styles.module.css";
 export function SearchButton() {
   return (
     <Button
-      variant="field"
+      variant="secondary"
       size="sm"
       className={styles.button}
       aria-label="Search Pond"
