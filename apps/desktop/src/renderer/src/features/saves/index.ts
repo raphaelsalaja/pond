@@ -26,6 +26,7 @@ export {
   notifyFolderMembershipChange,
   notifyUndoableFolderChange,
 } from "./lib/folder-actions";
+export { canImportDrop } from "./lib/import-feedback";
 export { collectionOwnsKeyboard, saveOwnsKeyboard } from "./lib/keyboard-owner";
 export type { FolderPickerMode } from "./lib/library-bridge";
 export { parseMode, type SaveListMode } from "./lib/list";
@@ -46,6 +47,7 @@ export {
 } from "./lib/menu";
 export { applyNavFilter, descendantFolderIds } from "./lib/nav-filter";
 export {
+  notifyUnsupportedDrop,
   type PasteImport,
   pasteImportOf,
   runPasteImport,

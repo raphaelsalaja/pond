@@ -27,7 +27,7 @@ function ids(folders: readonly Row[]): string[] {
 
 function recordingHandlers() {
   const calls: string[] = [];
-  const handlers: RingDropHandlers<Row> = {
+  const handlers: RingDropHandlers<Row, string[]> = {
     addToFolder: (saveIds, folder) =>
       calls.push(`add ${saveIds.join(",")} to ${folder.id}`),
     createFolder: (saveIds) => calls.push(`create ${saveIds.join(",")}`),
@@ -115,12 +115,22 @@ describe("ring drops", () => {
     expect(calls).toEqual(["create a,b", "export a"]);
   });
 
-  it("ignores empty slots, turned off actions, and empty drags", () => {
+  it("refuses Export Files when the drag has no way to export", () => {
+    const { calls, handlers } = recordingHandlers();
+    const withoutExport = {
+      addToFolder: handlers.addToFolder,
+      createFolder: handlers.createFolder,
+    };
+    const exportable = layoutRing(rows, true)["top-right"];
+    expect(dropOnRing(exportable, ["a"], withoutExport)).toBe(false);
+    expect(calls).toEqual([]);
+  });
+
+  it("ignores empty slots and turned off actions", () => {
     const { calls, handlers } = recordingHandlers();
     expect(dropOnRing(layout["top-right"], ["a"], handlers)).toBe(false);
     const empty = layoutRing([], true).left;
     expect(dropOnRing(empty, ["a"], handlers)).toBe(false);
-    expect(dropOnRing(layout.left, [], handlers)).toBe(false);
     expect(calls).toEqual([]);
   });
 });
