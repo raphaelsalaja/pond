@@ -4,13 +4,14 @@ import { join } from "node:path";
 import { saves } from "@pond/schema/db";
 import type { Transaction } from "@pond/schema/tx";
 import {
+  type CombineImageCover,
+  pickCombineImageFile,
+} from "@shared/combine-image-file";
+import {
   type CombineImagesOptions,
   CombineImagesOptionsSchema,
 } from "@shared/combine-images-contracts";
-import {
-  isCombinableImage,
-  layoutCombinedImages,
-} from "@shared/combine-images-layout";
+import { layoutCombinedImages } from "@shared/combine-images-layout";
 import type { OkResult } from "@shared/query-contracts-shared";
 import { inArray } from "drizzle-orm";
 import pLimit from "p-limit";
@@ -101,6 +102,7 @@ export async function combineImages(input: {
   ids: string[];
   folderId?: string | null;
   options?: Partial<CombineImagesOptions>;
+  cover?: CombineImageCover;
 }): Promise<OkResult<{ id?: string; path?: string; skipped: number }>> {
   const unique = [...new Set(input.ids.filter(Boolean))];
   if (unique.length < 2) {
@@ -117,10 +119,11 @@ export async function combineImages(input: {
     unique.map((id) =>
       limit(async () => {
         const row = byId.get(id);
-        const file = row?.files?.[0];
-        if (!row || !isCombinableImage(file?.mimeType, file?.path ?? ""))
-          return null;
-        const target = await resolveSaveFilePath(id, 0);
+        const files = row?.files ?? [];
+        const file = pickCombineImageFile(files, input.cover);
+        const fileIndex = file ? files.indexOf(file) : -1;
+        if (!row || fileIndex < 0) return null;
+        const target = await resolveSaveFilePath(id, fileIndex);
         if (!target.ok) return null;
         return { id, bytes: await readLibraryMedia(target.path) };
       }),

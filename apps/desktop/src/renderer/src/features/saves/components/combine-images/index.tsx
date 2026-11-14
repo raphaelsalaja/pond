@@ -1,13 +1,12 @@
+import { pickCombineImageFile } from "@shared/combine-image-file";
 import type {
   CombineImagesOptions,
   CombineImagesZoomAction,
 } from "@shared/combine-images-contracts";
-import {
-  isCombinableImage,
-  layoutCombinedImages,
-} from "@shared/combine-images-layout";
+import { layoutCombinedImages } from "@shared/combine-images-layout";
 import { useSelector } from "@tanstack/react-store";
 import { type DragEvent, useEffect, useMemo, useState } from "react";
+import { useMediaPickOptions } from "@/features/saves/hooks/use-media-pick-options";
 import { useRetainedSaves } from "@/features/saves/hooks/use-saves";
 import { ensureSaves } from "@/features/saves/lib/ensure-saves";
 import { savesStore } from "@/features/saves/state/pool";
@@ -21,6 +20,7 @@ import { Strip } from "./strip";
 import styles from "./styles.module.css";
 
 function useImages(order: readonly string[]): CombineImage[] {
+  const cover = useMediaPickOptions();
   const saves = useSelector(
     savesStore,
     (state) => order.map((id) => state.byId.get(id)),
@@ -36,12 +36,11 @@ function useImages(order: readonly string[]): CombineImage[] {
   return useMemo(
     () =>
       saves.flatMap((save) => {
-        const file = save?.files[0];
-        return save && file && isCombinableImage(file.mimeType, file.path)
-          ? [{ save, file }]
-          : [];
+        if (!save) return [];
+        const file = pickCombineImageFile(save.files, cover);
+        return file ? [{ save, file }] : [];
       }),
-    [saves],
+    [cover, saves],
   );
 }
 

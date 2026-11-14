@@ -3,11 +3,11 @@ import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, extname, join } from "node:path";
 import { promisify } from "node:util";
-import { type Save, saves } from "@pond/schema/db";
+import { resolveAppearance, type Save, saves } from "@pond/schema/db";
 import { isVideoFile } from "@shared/media-index";
 import { POSTER_KIND } from "@shared/save-file-names";
 import { eq } from "drizzle-orm";
-import { app, BrowserWindow, dialog, nativeImage } from "electron";
+import { app, BrowserWindow, dialog, nativeImage, nativeTheme } from "electron";
 import log from "electron-log/main.js";
 import mime from "mime-types";
 import { z } from "zod";
@@ -24,6 +24,7 @@ import { gifFramePng } from "../../core/gif-thumbnail";
 import { createManualSave } from "../../core/manual-import";
 import { persistSave } from "../../core/persist-save";
 import { runEnsurePoster } from "../../core/pipeline/workers/ensure-poster";
+import { getPrefs } from "../../core/prefs";
 import {
   ensureSaveThumbnail,
   persistSaveThumbnail,
@@ -452,10 +453,15 @@ export const savesImportPersistenceQueries = {
           return { ok: false, reason: "cancelled" };
         options.outputPath = picked.filePath;
       }
+      const prefs = await getPrefs();
       return combineImages({
         ids: params.ids,
         folderId: params.folderId || null,
         options,
+        cover: {
+          tweetCover: prefs.preferences.tweetCover,
+          theme: resolveAppearance(prefs, nativeTheme.shouldUseDarkColors),
+        },
       });
     },
   ),
