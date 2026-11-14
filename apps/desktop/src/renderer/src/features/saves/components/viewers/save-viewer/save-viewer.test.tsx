@@ -70,8 +70,19 @@ async function findToolbar(host: HTMLElement, label: string): Promise<void> {
 describe("SaveViewer", () => {
   let host: HTMLDivElement;
   let root: Root;
+  /** jsdom has no image decoding, so tests settle `decode()` explicitly. */
+  let decodes: Array<{ src: string; resolve: () => void }> = [];
 
   beforeEach(() => {
+    decodes = [];
+    Object.defineProperty(HTMLImageElement.prototype, "decode", {
+      configurable: true,
+      value(this: HTMLImageElement) {
+        return new Promise<void>((resolve) => {
+          decodes.push({ src: this.src, resolve });
+        });
+      },
+    });
     vi.stubGlobal(
       "ResizeObserver",
       class {
@@ -108,6 +119,7 @@ describe("SaveViewer", () => {
 
   afterEach(async () => {
     await act(async () => root.unmount());
+    Reflect.deleteProperty(HTMLImageElement.prototype, "decode");
     host.remove();
     resultNavigation.setSource({ ids: [] });
     vi.unstubAllGlobals();
@@ -161,36 +173,22 @@ describe("SaveViewer", () => {
   });
 
   describe("stepping between images", () => {
-    /** jsdom has no image decoding, so each test settles `decode()` explicitly. */
-    let decodes: Array<{ src: string; resolve: () => void }> = [];
-
-    beforeEach(() => {
-      decodes = [];
-      Object.defineProperty(HTMLImageElement.prototype, "decode", {
-        configurable: true,
-        value(this: HTMLImageElement) {
-          return new Promise<void>((resolve) => {
-            decodes.push({ src: this.src, resolve });
-          });
-        },
-      });
-    });
-
-    afterEach(() => {
-      Reflect.deleteProperty(HTMLImageElement.prototype, "decode");
-    });
-
-    const VIEWER_IMAGE = 'img[alt="Mixed viewer"]';
     const decode = (name: string) =>
       act(async () => {
         for (const pending of decodes) {
-          if (pending.src.includes(name)) pending.resolve();
+          if (pending.src.includes(`/${name}`)) pending.resolve();
         }
       });
-    const heldImage = () =>
-      host.querySelector("[data-held]")?.querySelector(VIEWER_IMAGE);
-    const pendingImage = () =>
-      host.querySelector("div[data-pending]")?.querySelector(VIEWER_IMAGE);
+    const layers = () => {
+      const images = host.querySelectorAll('img[alt="Mixed viewer"]');
+      return [...images].map((image) => {
+        let role = "current";
+        if (image.closest("[data-held]")) role = "held";
+        if (image.closest("div[data-pending]")) role = "pending";
+        const name = image.getAttribute("src")?.match(/\/(\w+)\.jpg/)?.[1];
+        return `${role} ${name}`;
+      });
+    };
 
     it("keeps the shown image on screen until the next one decodes", async () => {
       const save = mixedSave([
@@ -202,20 +200,17 @@ describe("SaveViewer", () => {
 
       await act(async () => root.render(<SaveViewer save={save} />));
       await decode("first.jpg");
-      await click(host, "Next Slide");
+      expect(layers()).toEqual(["current first"]);
 
-      expect(heldImage()?.getAttribute("src")).toContain("first.jpg");
-      expect(pendingImage()?.getAttribute("src")).toContain("second.jpg");
+      await click(host, "Next Slide");
+      expect(layers()).toEqual(["held first", "pending second"]);
       expect(labeledButton(host, "Previous Slide").disabled).toBe(false);
       expect(labeledButton(host, "Next Slide").disabled).toBe(true);
 
       await decode("second.jpg");
-
-      expect(host.querySelector("[data-held]")).toBeNull();
-      expect(host.querySelector("div[data-pending]")).toBeNull();
+      expect(layers()).toEqual(["current second"]);
       const second = host.querySelector('img[src*="second.jpg"]');
       expect(second?.hasAttribute("data-pending")).toBe(false);
-      expect(host.querySelector('img[src*="first.jpg"]')).toBeNull();
     });
 
     it("abandons a skipped image and holds the shown one for the newest", async () => {
@@ -231,17 +226,13 @@ describe("SaveViewer", () => {
       await decode("first.jpg");
       await click(host, "Next Slide");
       await click(host, "Next Slide");
-
-      expect(heldImage()?.getAttribute("src")).toContain("first.jpg");
-      expect(pendingImage()?.getAttribute("src")).toContain("third.jpg");
-      expect(host.querySelector('img[src*="second.jpg"]')).toBeNull();
+      expect(layers()).toEqual(["held first", "pending third"]);
 
       await decode("second.jpg");
-      expect(heldImage()?.getAttribute("src")).toContain("first.jpg");
+      expect(layers()).toEqual(["held first", "pending third"]);
 
       await decode("third.jpg");
-      expect(host.querySelector("[data-held]")).toBeNull();
-      expect(host.querySelector('img[src*="third.jpg"]')).not.toBeNull();
+      expect(layers()).toEqual(["current third"]);
     });
   });
 
