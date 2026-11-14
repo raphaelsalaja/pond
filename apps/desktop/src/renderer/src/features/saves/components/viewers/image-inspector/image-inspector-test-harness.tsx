@@ -62,12 +62,14 @@ export function setupImageInspectorTest() {
   const render = async (
     save: Save = IMAGE_INSPECTOR_SAVE,
     src = "pond://test/reference.jpg",
+    fileIndex?: number,
   ) => {
     pool.upsert(save);
     await act(async () =>
       root.render(
         <ImageInspector
           save={save}
+          fileIndex={fileIndex}
           src={src}
           active
           onRatio={() => {}}

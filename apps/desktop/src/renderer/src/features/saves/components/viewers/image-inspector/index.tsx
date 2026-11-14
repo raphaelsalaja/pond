@@ -1,4 +1,6 @@
 import type { ImageCrop } from "@pond/schema/db";
+import { isStaticThumbnailFile } from "@shared/media-index";
+import { pickCardFile } from "@shared/save-file-names";
 import {
   type CSSProperties,
   type ReactNode,
@@ -128,6 +130,12 @@ export function ImageInspector({
   });
   const decoded = useImageDecoded(viewport.image, src);
   const thumbnail = cardThumbnailFor(src);
+  const cardFile = pickCardFile(save.files);
+  /** `save.blurhash` encodes the card's still, so it only stands in for that same file. */
+  const blurhash =
+    cardFile && cardFile.path === file?.path && isStaticThumbnailFile(cardFile)
+      ? save.blurhash
+      : null;
   const shown = useMediaReveal(decoded || gif.ready, src);
 
   const run = async (action: () => Promise<void>) => {
@@ -360,7 +368,7 @@ export function ImageInspector({
                 : undefined
             }
           >
-            {thumbnail || save.blurhash ? (
+            {thumbnail || blurhash ? (
               <div
                 className={styles.placeholder}
                 data-covered={shown || undefined}
@@ -374,8 +382,8 @@ export function ImageInspector({
                     draggable={false}
                     style={imageStyle}
                   />
-                ) : save.blurhash ? (
-                  <BlurHash hash={save.blurhash} />
+                ) : blurhash ? (
+                  <BlurHash hash={blurhash} />
                 ) : null}
               </div>
             ) : null}
