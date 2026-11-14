@@ -9,6 +9,7 @@ import {
   IconCamera as CameraMakeIcon,
   IconCamera2 as CameraModelIcon,
   IconChatBubble as Caption,
+  IconHeart as FavoriteIcon,
   IconFile as FileIcon,
   IconCopy as FilesIcon,
   IconFocus as FocalLengthIcon,
@@ -83,6 +84,7 @@ const FIELD_ICONS = {
   modifiedAt: CalendarPen,
   takenAt: CalendarDate,
   rating: Star,
+  favorite: FavoriteIcon,
   fileSize: SizeIcon,
   width: WidthIcon,
   height: HeightIcon,
@@ -206,6 +208,14 @@ export function describePredicate(predicate: Predicate): PredicateChip {
         ...base,
         label: `${name} · ${valuePart}`,
         negated: false,
+      };
+    }
+    case "boolean": {
+      const preset = meta.presets?.find((p) => p.value === value);
+      return {
+        ...base,
+        label: preset?.label ?? meta.label,
+        negated: value === false,
       };
     }
     default:

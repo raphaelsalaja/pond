@@ -1,19 +1,20 @@
 import { IconTrash, IconTrashXmark, IconUndo } from "@pond/icons";
 import type { MenuItemSpec } from "@pond/ui";
-import { purgeSave, trashSave, untrashSave } from "@/features/saves/lib/mutate";
+import { purgeSave, untrashSave } from "@/features/saves/lib/mutate";
 import {
   deleteSelectionForever,
   restoreSelection,
-  trashSelection,
 } from "@/features/saves/lib/selection";
-import { tumbleToTrash } from "@/features/saves/state/trash-tumble";
+import {
+  moveSavesToTrash,
+  moveSelectionToTrash,
+} from "@/features/saves/lib/triage";
 import { shortcutGlyphs } from "@/shared/lib/shortcuts";
 import { glyph } from "./shared";
 import type { SaveMenuContext } from "./types";
 
 export function buildTrashItems({
   save,
-  saves,
   ids,
   batch,
   allTrashed,
@@ -47,15 +48,8 @@ export function buildTrashItems({
           variant: "destructive",
           shortcut: shortcutGlyphs("save.trash"),
           onClick: () => {
-            if (batch) {
-              const liveIds = saves
-                .filter((item) => !item.deletedAt)
-                .map((item) => item.id);
-              if (liveIds.length === 0) return;
-              void tumbleToTrash(liveIds).then(() => trashSelection(liveIds));
-              return;
-            }
-            void tumbleToTrash([save.id]).then(() => trashSave(save.id));
+            if (batch) void moveSelectionToTrash(ids);
+            else void moveSavesToTrash([save.id]);
           },
         },
       ];

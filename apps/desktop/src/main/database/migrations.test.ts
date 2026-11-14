@@ -122,6 +122,24 @@ describe.skipIf(!nativeSqliteAvailable())("pond database migrations", () => {
     }
   });
 
+  it("adds favorite to an existing index as off for every save", () => {
+    const db = new Database(":memory:");
+    try {
+      migratePond(db);
+      db.exec("ALTER TABLE saves DROP COLUMN favorite");
+      db.prepare(
+        "INSERT INTO saves (id, source, source_id, url) VALUES (?, ?, ?, ?)",
+      ).run("a", "twitter", "1", "https://x.com/a/status/1");
+
+      migratePond(db);
+      expect(db.prepare("SELECT id, favorite FROM saves").all()).toEqual([
+        { id: "a", favorite: 0 },
+      ]);
+    } finally {
+      db.close();
+    }
+  });
+
   it("keeps source ids that were deleted after the save row is gone", () => {
     const db = new Database(":memory:");
     try {

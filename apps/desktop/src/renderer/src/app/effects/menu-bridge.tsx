@@ -56,15 +56,16 @@ import {
   openTagPicker,
   purgeForever,
   refreshSaveMetadata,
-  trashSave,
   untrashSave,
 } from "@/features/saves/lib/actions";
 import { confirmEmptyTrash } from "@/features/saves/lib/empty-trash";
-import { trashSelection } from "@/features/saves/lib/selection";
+import {
+  moveSavesToTrash,
+  moveSelectionToTrash,
+} from "@/features/saves/lib/triage";
 import { inspect } from "@/features/saves/state/inspect";
 import { pool } from "@/features/saves/state/pool";
 import { primarySelection, selection } from "@/features/saves/state/selection";
-import { tumbleToTrash } from "@/features/saves/state/trash-tumble";
 import { CONNECTABLE, WATCH_MENU_SOURCES } from "@/features/sources/lib/create";
 import { openSources } from "@/features/sources/lib/open";
 import { pickWatchedFolder } from "@/features/sources/lib/watched-folder";
@@ -431,7 +432,7 @@ export function MenuBridge() {
         case "save.trash": {
           const save = currentSave();
           if (!save) return;
-          void tumbleToTrash([save.id]).then(() => trashSave(save));
+          void moveSavesToTrash([save.id]);
           return;
         }
 
@@ -452,7 +453,7 @@ export function MenuBridge() {
         case "save.bulk-trash": {
           const ids = selection.snapshot();
           if (ids.length === 0) return;
-          void tumbleToTrash(ids).then(() => trashSelection(ids));
+          void moveSelectionToTrash(ids);
           return;
         }
 

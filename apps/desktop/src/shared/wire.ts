@@ -111,8 +111,13 @@ export interface WireSyncStatusUpdate {
   lastError?: string | null;
 }
 
-export interface WireUndoState {
+export interface UndoLatestResult {
   ok: boolean;
+  /** The reversed step, or null when the history had nothing to reverse. */
+  step: string | null;
+}
+
+export interface WireUndoState extends UndoLatestResult {
   canUndo: boolean;
   canRedo: boolean;
 }

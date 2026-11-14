@@ -25,8 +25,8 @@ import {
 } from "@/features/library/state/view-store";
 import {
   exportSelectionFiles,
+  moveSelectionToTrash,
   restoreSelection,
-  trashSelection,
   useRecents,
 } from "@/features/saves";
 import { selection, useSelectionSize } from "@/features/saves/navigation";
@@ -169,7 +169,7 @@ function useContextEntries(): MenuEntry[] {
               label: "Move to Trash",
               icon: <IconTrashXmark aria-hidden />,
               shortcut: "save.trash",
-              run: () => void trashSelection(selected()),
+              run: () => void moveSelectionToTrash(selected()),
             },
       );
       return entries;

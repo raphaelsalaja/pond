@@ -167,3 +167,29 @@ it("records no step for an empty change and forgets steps from another library",
   history.clear();
   expect(await history.undoStep(step)).toBe("stale");
 });
+
+it("reports which step the latest Undo and Redo reversed", async () => {
+  let failing = false;
+  let next = 0;
+  const history = createUndoHistory(
+    async () => {
+      if (failing) throw new Error("Library unavailable");
+    },
+    () => `step-${++next}`,
+  );
+  const transaction: Transaction = {
+    kind: "update",
+    model: "save",
+    id: "a",
+    patch: { favorite: true },
+    before: { favorite: false },
+  };
+  expect(await history.undoLatest()).toEqual({ ok: false, step: null });
+  history.record([transaction]);
+  history.record([transaction]);
+  expect(await history.undoLatest()).toEqual({ ok: true, step: "step-2" });
+  expect(await history.redoLatest()).toEqual({ ok: true, step: "step-2" });
+  failing = true;
+  expect(await history.undoLatest()).toEqual({ ok: false, step: "step-2" });
+  expect(history.canUndo()).toBe(true);
+});

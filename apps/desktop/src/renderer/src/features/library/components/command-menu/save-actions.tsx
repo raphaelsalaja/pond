@@ -12,10 +12,10 @@ import { rememberFolderDestinations } from "@/features/library/lib/recent-folder
 import { folders } from "@/features/library/state/folders";
 import {
   copyUrlsForSelection,
+  moveSavesToTrash,
   openInBrowserForSelection,
   revealFilesForSelection,
 } from "@/features/saves";
-import { trashSaves } from "@/features/saves/pool";
 import type { Save } from "@/features/saves/types";
 import { notify } from "@/shared/lib/toast";
 import type { MenuEntry, MenuPage } from "./types";
@@ -133,7 +133,7 @@ export function saveActions(
       icon: <IconTrashXmark aria-hidden />,
       keywords: "delete remove",
       shortcut: "save.trash",
-      run: () => void trashSaves(ids),
+      run: () => void moveSavesToTrash(ids),
     },
   );
   return actions;

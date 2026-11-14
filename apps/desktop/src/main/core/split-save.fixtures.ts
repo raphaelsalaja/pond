@@ -104,6 +104,7 @@ export function carousel(overrides: Partial<Save> = {}): Save {
     suggestedTags: ["coat"],
     suggestedTagsModel: "tags-1",
     rating: 4,
+    favorite: false,
     rotate: 0,
     flipX: false,
     flipY: false,

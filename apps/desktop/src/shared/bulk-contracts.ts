@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { UndoableChange } from "./query-contracts-shared";
 
 export const BulkEditSchema = z.object({
   ids: z.array(z.string().min(1)).min(1).max(100_000),
@@ -13,6 +14,7 @@ export const BulkEditSchema = z.object({
       kind: z.literal("rating"),
       rating: z.number().int().min(0).max(5),
     }),
+    z.object({ kind: z.literal("favorite"), favorite: z.boolean() }),
     z.object({
       kind: z.literal("notes"),
       notes: z.string().max(8192).nullable(),
@@ -28,5 +30,5 @@ export interface BulkQueryInputs {
   "saves.bulkEdit": BulkEdit;
 }
 export interface BulkQueryResults {
-  "saves.bulkEdit": { changed: number };
+  "saves.bulkEdit": { changed: number } & UndoableChange;
 }

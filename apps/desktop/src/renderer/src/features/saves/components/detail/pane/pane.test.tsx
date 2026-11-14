@@ -401,6 +401,25 @@ it("shows enrichment output and applies suggested tags", async () => {
   });
 });
 
+it("toggles Favorite from the inspector without touching the rating", async () => {
+  await act(async () => root.render(<SaveInspector saveId="a" />));
+  const favorite = host.querySelector<HTMLButtonElement>(
+    '[aria-label="Favorite"]',
+  );
+  if (!favorite) throw new Error("Missing Favorite toggle");
+  expect(favorite.getAttribute("aria-pressed")).toBe("false");
+  await act(async () => favorite.click());
+
+  expect(requests).toContainEqual({
+    name: "saves.bulkEdit",
+    input: { ids: ["a"], operation: { kind: "favorite", favorite: true } },
+  });
+  expect(pool.get("a")).toMatchObject({ favorite: true, rating: 3 });
+  await vi.waitFor(() =>
+    expect(host.querySelector('[aria-label="Unfavorite"]')).not.toBeNull(),
+  );
+});
+
 it("clears a sensitive flag from the warning", async () => {
   const current = pool.get("a");
   if (!current) throw new Error("Missing Save fixture");
@@ -628,6 +647,80 @@ it("cancels staged folder assignment without mutating the Save", async () => {
     false,
   );
   expect(document.querySelector('[aria-label="Add to 1 Folder"]')).toBeNull();
+});
+
+it("drives staged folder assignment from the keyboard", async () => {
+  await act(async () =>
+    root.render(
+      <SaveInspector
+        saveId="a"
+        folders={[
+          { id: "inspiration", name: "Inspiration", count: 0 },
+          { id: "reference", name: "Reference", count: 0 },
+        ]}
+      />,
+    ),
+  );
+  const trigger = host.querySelector<HTMLButtonElement>(
+    '[aria-label="Add Folder"]',
+  );
+  if (!trigger) throw new Error("Missing Add Folder");
+  await act(async () => trigger.click());
+  const startStaging = async () => {
+    const multiple = [
+      ...document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
+    ].find((item) => item.textContent === "Select Multiple");
+    if (!multiple) throw new Error("Missing Select Multiple action");
+    await act(async () => multiple.click());
+    const inspiration = [
+      ...document.querySelectorAll<HTMLElement>('[role="menuitemcheckbox"]'),
+    ].find((item) => item.textContent?.includes("Inspiration"));
+    if (!inspiration) throw new Error("Missing Inspiration folder");
+    await act(async () => inspiration.click());
+  };
+  const search = () => {
+    const input = document.querySelector<HTMLInputElement>(
+      '[aria-label="Search Folders"]',
+    );
+    if (!input) throw new Error("Missing folder search");
+    return input;
+  };
+  const key = (init: KeyboardEventInit) =>
+    act(async () => {
+      search().dispatchEvent(
+        new KeyboardEvent("keydown", {
+          bubbles: true,
+          cancelable: true,
+          ...init,
+        }),
+      );
+    });
+
+  await startStaging();
+  const apply = document.querySelector<HTMLButtonElement>(
+    '[aria-label="Add to 1 Folder"]',
+  );
+  if (!apply) throw new Error("Missing Add to Folder action");
+  const cancel = [
+    ...document.querySelectorAll<HTMLButtonElement>("button"),
+  ].find((button) => button.textContent === "Cancel");
+  expect(cancel?.tabIndex).toBe(0);
+  expect(apply.tabIndex).toBe(0);
+
+  await key({ key: "Escape" });
+  expect(document.querySelector('[aria-label="Add to 1 Folder"]')).toBeNull();
+  expect(search().isConnected).toBe(true);
+
+  await startStaging();
+  await key({ key: "Enter", metaKey: true });
+  expect(
+    requests.filter((request) => request.name === "folders.assign"),
+  ).toEqual([
+    {
+      name: "folders.assign",
+      input: { saveIds: ["a"], addIds: ["inspiration"], removeIds: [] },
+    },
+  ]);
 });
 
 it("stages a folder created while selecting multiple folders", async () => {

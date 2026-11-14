@@ -37,6 +37,7 @@ import { AssignMenu, type AssignOption } from "./assign-menu";
 import { AssignmentChip } from "./chip";
 import { EnrichedText } from "./enriched-text";
 import { ratingMenu, SaveFacts } from "./facts";
+import { FavoriteRow } from "./favorite";
 import { SaveIdentity } from "./identity";
 import { SaveNote } from "./note";
 import { SavePreviews } from "./previews";
@@ -488,6 +489,7 @@ export function SaveInspector({
                       </div>
                     </PropertyList.Row>
                   </SpecContextMenu>
+                  <FavoriteRow saves={saves} />
                   <SaveFacts save={single} />
                 </>
               }
@@ -531,6 +533,7 @@ export function SaveInspector({
                     ) : null}
                   </div>
                 </PropertyList.Row>
+                <FavoriteRow saves={saves} />
               </PropertyList.Root>
             </Section>
           )}

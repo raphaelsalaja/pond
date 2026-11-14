@@ -46,7 +46,8 @@ function fixture() {
     batches,
     undo,
     commit,
-    recordUndo: (transactions: Transaction[]) => undo.push(transactions),
+    recordUndo: (transactions: Transaction[]) =>
+      `step-${undo.push(transactions)}`,
   };
 }
 describe.skipIf(!nativeAvailable())("complete bulk selections", () => {
@@ -109,7 +110,7 @@ describe.skipIf(!nativeAvailable())("complete bulk selections", () => {
       f.commit,
       f.recordUndo,
     );
-    expect(result).toEqual({ changed: f.ids.length });
+    expect(result).toEqual({ changed: f.ids.length, undoId: "step-1" });
     expect(
       f.batches[0]?.filter(
         (tx) =>
@@ -151,6 +152,35 @@ describe.skipIf(!nativeAvailable())("complete bulk selections", () => {
       patch: { tags: ["Keep"] },
     });
   });
+  it("toggles favorite without touching rating and skips Saves already in that state", async () => {
+    const f = fixture();
+    f.raw.exec("update saves set favorite=1 where id='save-0'");
+    const result = await bulkEditSaves(
+      {
+        ids: ["save-0", "save-1"],
+        operation: { kind: "favorite", favorite: true },
+      },
+      f.db,
+      f.commit,
+      f.recordUndo,
+    );
+    expect(result).toEqual({ changed: 1, undoId: "step-1" });
+    expect(f.undo[0]).toEqual([
+      expect.objectContaining({
+        id: "save-1",
+        before: { favorite: false },
+        patch: { favorite: true },
+      }),
+    ]);
+    expect(
+      await bulkEditSaves(
+        { ids: ["save-0"], operation: { kind: "favorite", favorite: true } },
+        f.db,
+        f.commit,
+        f.recordUndo,
+      ),
+    ).toEqual({ changed: 0, undoId: null });
+  });
   it("restores every selected trashed Save and records nothing when commit fails", async () => {
     const f = fixture();
     f.raw.exec("update saves set deleted_at=1");
@@ -161,7 +191,7 @@ describe.skipIf(!nativeAvailable())("complete bulk selections", () => {
         f.commit,
         f.recordUndo,
       ),
-    ).toEqual({ changed: 1301 });
+    ).toEqual({ changed: 1301, undoId: "step-1" });
     expect(f.batches[0]).toHaveLength(1301);
     f.undo.length = 0;
     await expect(

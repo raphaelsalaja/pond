@@ -11,9 +11,9 @@ import {
   canUndo,
   recordBatchForUndo,
   recordForUndo,
-  redo,
+  redoLatest,
   redoStep,
-  undo,
+  undoLatest,
   undoStep,
 } from "../../core/undo";
 import { hasUserTitle } from "../../core/user-metadata";
@@ -79,15 +79,17 @@ export function registerAppHandlers(): void {
     return actions;
   });
 
-  safeHandle(IPC.undo, async () => {
-    const ok = await undo();
-    return { ok, canUndo: canUndo(), canRedo: canRedo() };
-  });
+  safeHandle(IPC.undo, async () => ({
+    ...(await undoLatest()),
+    canUndo: canUndo(),
+    canRedo: canRedo(),
+  }));
 
-  safeHandle(IPC.redo, async () => {
-    const ok = await redo();
-    return { ok, canUndo: canUndo(), canRedo: canRedo() };
-  });
+  safeHandle(IPC.redo, async () => ({
+    ...(await redoLatest()),
+    canUndo: canUndo(),
+    canRedo: canRedo(),
+  }));
 
   safeHandle(IPC.undoStep, async (_, step: string) => {
     const outcome = await undoStep(UndoStepIdSchema.parse(step));

@@ -56,3 +56,11 @@
 .icon {
   color: var(--ds-gray-10);
 }
+
+.footer {
+  gap: 8px;
+
+  & > :first-child {
+    margin-inline-end: auto;
+  }
+}

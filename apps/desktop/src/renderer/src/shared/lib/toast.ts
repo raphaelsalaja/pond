@@ -45,6 +45,7 @@ export interface NotifyOptions {
   progress?: ToastProgress;
   action?: ToastData["action"];
   timeout?: number;
+  onClose?: () => void;
 }
 
 function toastOptions(
@@ -60,6 +61,7 @@ function toastOptions(
   };
   if (options.description != null) toast.description = options.description;
   if (options.timeout != null) toast.timeout = options.timeout;
+  if (options.onClose) toast.onClose = options.onClose;
   return toast;
 }
 

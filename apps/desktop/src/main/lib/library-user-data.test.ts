@@ -34,6 +34,32 @@ describe("portable save metadata", () => {
     expect(patchTouchesInfo({ rating: 1 })).toBe(true);
   });
 
+  it("stores favorite apart from rating and reads older files as not favorite", () => {
+    const legacy = StoredInfoDocSchema.parse({
+      id: "save",
+      userData: {
+        rating: 5,
+        dominantColors: [],
+        rotate: 0,
+        flipX: false,
+        flipY: false,
+        crop: null,
+      },
+    });
+    expect(legacy.userData).toMatchObject({ rating: 5, favorite: false });
+    expect(patchTouchesInfo({ favorite: true })).toBe(true);
+
+    const favorited = applyPatchToInfo(legacy, { favorite: true });
+    expect(StoredInfoDocSchema.parse(favorited).userData).toMatchObject({
+      rating: 5,
+      favorite: true,
+    });
+    const cleared = applyPatchToInfo(StoredInfoDocSchema.parse(favorited), {
+      favorite: false,
+    });
+    expect(cleared.userData).toMatchObject({ rating: 5, favorite: false });
+  });
+
   it("keeps where an imported save came from across later edits", () => {
     const info = StoredInfoDocSchema.parse({ id: "save", source: "web" });
     expect(info.importedFrom).toBeUndefined();

@@ -12,6 +12,7 @@ export {
   FolderMenu,
   type FolderMenuItem,
 } from "./components/detail/folder-menu";
+export { RecentFolderMenu } from "./components/detail/recent-folder-menu";
 export { StoredFileViewer } from "./components/viewers/file-viewer";
 export { MediaViewer, type ViewerNav } from "./components/viewers/media-viewer";
 export { useCardActions } from "./hooks/use-card-actions";
@@ -23,6 +24,7 @@ export {
   notifyUndoableFolderChange,
 } from "./lib/folder-actions";
 export { collectionOwnsKeyboard, saveOwnsKeyboard } from "./lib/keyboard-owner";
+export type { FolderPickerMode } from "./lib/library-bridge";
 export { parseMode, type SaveListMode } from "./lib/list";
 export {
   getLastListPath,
@@ -58,7 +60,6 @@ export {
   openInBrowserForSelection,
   restoreSelection,
   revealFilesForSelection,
-  trashSelection,
 } from "./lib/selection";
 export type { ResultDirection } from "./lib/spatial-navigation";
 export {
@@ -70,6 +71,7 @@ export {
   saveDropIds,
 } from "./lib/start-drag";
 export { isTextOnlySave } from "./lib/text";
+export { moveSavesToTrash, moveSelectionToTrash } from "./lib/triage";
 export { asUrlList } from "./lib/url-list";
 export { previewFileIndex, runViewerAction } from "./lib/viewer-actions";
 export { activeVideoShown } from "./state/active-video";

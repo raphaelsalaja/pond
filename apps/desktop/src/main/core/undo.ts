@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { inverse, type Transaction } from "@pond/schema/tx";
-import type { UndoStepOutcome } from "@shared/wire";
+import type { UndoLatestResult, UndoStepOutcome } from "@shared/wire";
 import log from "electron-log/main.js";
 import { executeBatch } from "./executor";
 
@@ -64,6 +64,20 @@ export function createUndoHistory(
       return false;
     }
   }
+  function undoLatest(): Promise<UndoLatestResult> {
+    return serialize(async () => {
+      const step = undoStack.pop();
+      if (!step) return { ok: false, step: null };
+      return { ok: await revert(step), step: step.id };
+    });
+  }
+  function redoLatest(): Promise<UndoLatestResult> {
+    return serialize(async () => {
+      const step = redoStack.pop();
+      if (!step) return { ok: false, step: null };
+      return { ok: await reapply(step), step: step.id };
+    });
+  }
   return {
     record(transactions: Transaction[]): string | null {
       if (!transactions.length) return null;
@@ -78,17 +92,13 @@ export function createUndoHistory(
       undoStack.length = 0;
       redoStack.length = 0;
     },
-    undo(): Promise<boolean> {
-      return serialize(async () => {
-        const step = undoStack.pop();
-        return step ? revert(step) : false;
-      });
+    undoLatest,
+    redoLatest,
+    async undo(): Promise<boolean> {
+      return (await undoLatest()).ok;
     },
-    redo(): Promise<boolean> {
-      return serialize(async () => {
-        const step = redoStack.pop();
-        return step ? reapply(step) : false;
-      });
+    async redo(): Promise<boolean> {
+      return (await redoLatest()).ok;
     },
     /** Reverses one recorded step only while it is still the latest change; an already-undone step reports `done`. */
     undoStep(id: string): Promise<UndoStepOutcome> {
@@ -127,6 +137,8 @@ export function recordForUndo(transaction: Transaction): string | null {
 export function recordBatchForUndo(transactions: Transaction[]): string | null {
   return history.record(transactions);
 }
+export const undoLatest = history.undoLatest;
+export const redoLatest = history.redoLatest;
 export const undo = history.undo;
 export const redo = history.redo;
 export const undoStep = history.undoStep;

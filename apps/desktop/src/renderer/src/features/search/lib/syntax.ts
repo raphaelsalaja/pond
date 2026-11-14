@@ -62,6 +62,7 @@ export const TOKEN_FIELDS: readonly TokenFieldSpec[] = [
   { field: "modifiedAt", keys: ["modified", "modifiedat"] },
   { field: "takenAt", keys: ["taken", "takenat"] },
   { field: "rating", keys: ["rating", "star", "stars"] },
+  { field: "favorite", keys: ["favorite", "favorites", "fav"] },
   { field: "fileSize", keys: ["size", "filesize"] },
   { field: "width", keys: ["width"] },
   { field: "height", keys: ["height"] },
@@ -207,6 +208,7 @@ function dateOperator(op: OpSymbol): ComparatorId {
 }
 
 const OPTIONAL_FALSE = new Set(["without", "false", "no", "none", "empty"]);
+const BOOLEAN_TRUE = new Set(["with", "true", "yes"]);
 
 function buildPredicate(token: FieldToken): Predicate | null {
   const { field, op, negate } = token;
@@ -248,6 +250,14 @@ function buildPredicate(token: FieldToken): Predicate | null {
       }
       if (!raw) return { field, operator: "exists", value: !negate };
       return { field, operator: "contains", value: raw.toLowerCase() };
+    }
+    case "boolean": {
+      const value = raw.toLowerCase();
+      if (OPTIONAL_FALSE.has(value))
+        return { field, operator: "eq", value: negate };
+      if (BOOLEAN_TRUE.has(value))
+        return { field, operator: "eq", value: !negate };
+      return null;
     }
     case "string": {
       if (!raw) return null;
@@ -373,6 +383,10 @@ export function serializePredicate(predicate: Predicate): string | null {
       }
       if (operator !== "exists") return null;
       return `${key}:${value === false ? "without" : "with"}`;
+    }
+    case "boolean": {
+      if (operator !== "eq" || !FIELD_TO_KEY.has(predicate.field)) return null;
+      return `${key}:${value === false ? "no" : "yes"}`;
     }
     case "color": {
       const parsed = z.string().safeParse(value);

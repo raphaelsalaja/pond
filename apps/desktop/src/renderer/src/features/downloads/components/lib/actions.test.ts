@@ -33,7 +33,7 @@ function createTrashFake(outcome: "trashed" | "rejected") {
       trash: async (ids: readonly string[]) => {
         trashed.push(ids);
         if (outcome === "rejected") throw new Error("Disk unavailable");
-        return ids.length;
+        return { changed: ids.length, undoId: null };
       },
       notify: (options: NotifyOptions) => {
         notices.push(options);
@@ -72,7 +72,7 @@ it("does not offer Undo when no downloads changed", async () => {
   const fake = createTrashFake("trashed");
   fake.dependencies.trash = async (ids: readonly string[]) => {
     fake.trashed.push(ids);
-    return 0;
+    return { changed: 0, undoId: null };
   };
   downloadsSelection.set([row]);
 
