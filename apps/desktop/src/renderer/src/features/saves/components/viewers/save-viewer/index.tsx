@@ -99,7 +99,10 @@ function ViewerItemContent({
   const file = save.files[item.fileIndex];
   if (!file) return null;
 
-  if (isMediaItem(item)) {
+  if (
+    item.capability.surface === "raster" ||
+    item.capability.surface === "temporal"
+  ) {
     const slide = mediaSlideFor(save, item);
     return (
       <Slide
