@@ -16,6 +16,7 @@ import { leaseWindow } from "./pool";
 import { emulateColorScheme, withDeviceScaleFactor } from "./screenshot-cdp";
 import {
   buildArticleRectExpression,
+  buildCaptureMediaSettledExpression,
   buildThreadsPostRectExpression,
 } from "./screenshot-dom";
 
@@ -43,6 +44,9 @@ const SCREENSHOT_VERTICAL_PADDING = 40;
 const SCREENSHOT_MAX_HEIGHT = 8192;
 
 const CAPTURE_PAGE_TIMEOUT_MS = 15_000;
+
+/** Matches the native card renderer's image wait. */
+const CAPTURE_MEDIA_WAIT_MS = 6_000;
 
 interface TweetDualScreenshotArgs {
   url: string;
@@ -349,6 +353,10 @@ async function captureCurrentScheme(
       if (remeasured) rect = remeasured;
     }
 
+    if (!(await waitForCaptureMedia(win))) {
+      log.info("[pond screenshot:tweet] media still loading", sourceId);
+    }
+
     try {
       return await withDeviceScaleFactor(
         win,
@@ -514,6 +522,24 @@ const ArticleRectSchema = z
   .catch(null);
 
 type ArticleRect = NonNullable<z.infer<typeof ArticleRectSchema>>;
+
+async function waitForCaptureMedia(win: BrowserWindow): Promise<boolean> {
+  return Promise.race([
+    win.webContents
+      .executeJavaScript(
+        buildCaptureMediaSettledExpression(CAPTURE_MEDIA_WAIT_MS),
+        true,
+      )
+      .then(
+        (settled) => settled === true,
+        (err) => {
+          log.warn("[pond screenshot:tweet] media wait failed", err);
+          return false;
+        },
+      ),
+    sleep(CAPTURE_MEDIA_WAIT_MS + 2_000).then(() => false),
+  ]);
+}
 
 async function readArticleRect(
   win: BrowserWindow,
