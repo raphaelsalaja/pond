@@ -1,6 +1,7 @@
 import { primarySelection, selection } from "@/features/saves/state/selection";
 
 export function selectOnlySave(id: string): void {
+  selection.setPicking(false);
   selection.setCursor(id);
   selection.set([id]);
   selection.setAnchor(id);
@@ -48,6 +49,16 @@ export function clickSave(
   }
 
   selectOnlySave(id);
+}
+
+/** A card's selection circle: toggles like Mod-click without a modifier, and Shift still selects a range. */
+export function pickSave(
+  id: string,
+  keys: { shift: boolean },
+  filteredIds: ReadonlyArray<string>,
+): void {
+  clickSave(id, { meta: !keys.shift, shift: keys.shift }, filteredIds);
+  selection.setPicking(selection.size() > 0);
 }
 
 export function isLibraryBackgroundTarget(target: EventTarget | null): boolean {

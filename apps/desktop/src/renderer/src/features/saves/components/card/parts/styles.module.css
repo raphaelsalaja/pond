@@ -191,3 +191,39 @@
   justify-content: center;
   pointer-events: none;
 }
+
+.item .pick {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 4;
+  pointer-events: none;
+  opacity: 0;
+  -webkit-app-region: no-drag;
+}
+
+.item[data-view="list"] .pick {
+  top: 10px;
+  left: 2px;
+}
+
+.item:hover .pick,
+:global([data-multi-select]) .item .pick {
+  pointer-events: auto;
+  opacity: 1;
+}
+
+/* Keyboard selection reveals every circle at once; only pointer hover fades one in. */
+:global(html[data-focus-source="keyboard"]) .item .pick {
+  transition: none;
+}
+
+.item[data-pickable]:hover .type,
+:global([data-multi-select]) .item[data-pickable] .type {
+  translate: 22px 0;
+}
+
+.item[data-pickable][data-view="list"]:hover .type,
+:global([data-multi-select]) .item[data-pickable][data-view="list"] .type {
+  translate: 18px 0;
+}
