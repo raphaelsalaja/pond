@@ -284,7 +284,7 @@ function indexCheck(report: HealthIndexReport): HealthIndexCheck {
   };
 }
 
-function zeroCounts(): Record<HealthCountKey, number> {
+function zeroCounts(): LibraryHealthCheck["counts"] {
   return {
     thumbnails: 0,
     "physical-file-names": 0,
@@ -309,12 +309,12 @@ function add<T>(
   if (findings.counts[key] <= LIST_LIMIT) list.push(item);
 }
 
-function messageOf(error: unknown, fallback: string): string {
-  return error instanceof Error && error.message ? error.message : fallback;
+function messageOf(cause: unknown, fallback: string): string {
+  return cause instanceof Error && cause.message ? cause.message : fallback;
 }
 
-function isAbortError(error: unknown): boolean {
-  return error instanceof DOMException && error.name === "AbortError";
+function isAbortError(cause: unknown): boolean {
+  return cause instanceof DOMException && cause.name === "AbortError";
 }
 
 function throwIfAborted(signal: AbortSignal): void {

@@ -253,8 +253,8 @@ export async function retryMediaWarm(
   for (const saveId of new Set(saveIds)) {
     const save = await readCandidateSave(saveId);
     if (!save) continue;
-    for (const key of [...failed.keys()]) {
-      if (failed.get(key)?.saveId === saveId) failed.delete(key);
+    for (const [key, failure] of failed) {
+      if (failure.saveId === saveId) failed.delete(key);
     }
     candidates = candidates.filter((c) => c.saveId !== saveId);
     queued.push(...mediaWarmCandidates(save));

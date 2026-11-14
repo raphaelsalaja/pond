@@ -23,7 +23,7 @@ import { errorCopy } from "@/shared/lib/error-copy";
 import { formatPlural } from "@/shared/lib/format";
 import { THIS_DEVICE } from "@/shared/lib/platform";
 import { notify } from "@/shared/lib/toast";
-import { buildHealthCategories, type HealthCategory } from "./categories";
+import { buildHealthCategories } from "./categories";
 
 export const OVERVIEW_KEY = ["libraryHealth.overview"];
 
@@ -46,11 +46,7 @@ export function useHealthOverview() {
   });
 }
 
-export function useHealthCategories(): {
-  categories: HealthCategory[];
-  overview: LibraryHealthOverview | null;
-  downloads: readonly DownloadHealthRow[];
-} {
+export function useHealthCategories() {
   const overview = useHealthOverview();
   const downloads = useDownloadHealth();
   const enrichment = useEnrichmentStatus();

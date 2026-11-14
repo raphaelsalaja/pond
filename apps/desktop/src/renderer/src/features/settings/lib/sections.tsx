@@ -5,11 +5,11 @@ import { appearanceSection } from "@/features/settings/lib/config-appearance";
 import { backupsSection } from "@/features/settings/lib/config-backups";
 import { extensionSection } from "@/features/settings/lib/config-extension";
 import { generalSection } from "@/features/settings/lib/config-general";
-import { healthSection } from "@/features/settings/lib/config-health";
 import {
   scheduleSection,
   sourcesSection,
 } from "@/features/settings/lib/config-harvesting";
+import { healthSection } from "@/features/settings/lib/config-health";
 import { imagesSection } from "@/features/settings/lib/config-images";
 import { librarySection } from "@/features/settings/lib/config-library";
 import { localApiSection } from "@/features/settings/lib/config-local-api";

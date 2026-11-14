@@ -17,11 +17,7 @@ export interface DownloadHealthRow {
   reason: string | null;
 }
 
-export function useDownloadHealth(): {
-  rows: DownloadHealthRow[];
-  paused: boolean;
-  loaded: boolean;
-} {
+export function useDownloadHealth() {
   useLiveDownloadHydration();
   const saves = useSaves();
   const live = useMemo(() => projectLiveDownloads(saves), [saves]);
@@ -39,7 +35,7 @@ export function useDownloadHealth(): {
       (gates.data ?? []).map((gate) => [gate.source, gate]),
     );
     const now = Date.now();
-    return live.map((row) => {
+    return live.map((row): DownloadHealthRow => {
       const gate = bySource.get(row.source) ?? null;
       return {
         row,

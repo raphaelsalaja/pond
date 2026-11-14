@@ -669,10 +669,7 @@ export function buildHealthCategories(input: HealthInput): HealthCategory[] {
   ];
 }
 
-export function healthTotals(categories: readonly HealthCategory[]): {
-  attention: number;
-  progress: number;
-} {
+export function healthTotals(categories: readonly HealthCategory[]) {
   let attention = 0;
   let progress = 0;
   for (const category of categories) {

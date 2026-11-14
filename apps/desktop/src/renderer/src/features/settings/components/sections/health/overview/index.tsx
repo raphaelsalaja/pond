@@ -30,10 +30,16 @@ type OverviewState =
   | "unchecked"
   | "ready";
 
+interface OverviewCopy {
+  state: OverviewState;
+  title: string;
+  detail: string;
+}
+
 function overviewCopy(
   overview: LibraryHealthOverview | null,
   categories: readonly HealthCategory[],
-): { state: OverviewState; title: string; detail: string } {
+): OverviewCopy {
   if (!overview) {
     return {
       state: "loading",
