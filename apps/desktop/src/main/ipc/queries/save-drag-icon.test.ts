@@ -3,7 +3,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import sharp from "sharp";
 import { afterEach, expect, it } from "vitest";
-import { renderSaveDragIcon, saveDragIconSvg } from "./save-drag-icon";
+import {
+  renderSaveDragIcon,
+  saveDragFileIconSize,
+  saveDragIconSvg,
+} from "./save-drag-icon";
 
 const roots: string[] = [];
 
@@ -32,6 +36,12 @@ it("caps the visible count and renders a fallback card", () => {
   const svg = saveDragIconSvg([], 1200);
   expect(svg).toContain(">999+</text>");
   expect(svg).toContain('fill="#d7d7da"');
+});
+
+it("never asks macOS for the large file icon", () => {
+  expect(saveDragFileIconSize("darwin")).toBe("normal");
+  expect(saveDragFileIconSize("win32")).toBe("large");
+  expect(saveDragFileIconSize("linux")).toBe("large");
 });
 
 it("leaves the count off a single save", () => {
