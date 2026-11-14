@@ -4,6 +4,7 @@ import type { CanvasSummary } from "@shared/canvas-contracts";
 import { errorCopy } from "@/shared/lib/error-copy";
 import { notify } from "@/shared/lib/toast";
 import { canvases } from "../state/canvases";
+import { folderSavesNotice, planFolderSaves } from "./from-folder";
 
 export async function runCanvasAction(
   action: () => Promise<void>,
@@ -37,6 +38,40 @@ export function addSavesToCanvas(
       id: "canvas-add-saves",
       title: canvas ? `Added to "${canvas.name}"` : "Added to canvas",
       action: { label: "Open", onClick: () => canvases.open(canvasId) },
+    });
+  });
+}
+
+export function createCanvasFromFolder(
+  name: string,
+  saveIds: readonly string[],
+): Promise<void> {
+  const plan = planFolderSaves(saveIds);
+  return runCanvasAction(async () => {
+    const canvas = await canvases.create(plan.saveIds, name.slice(0, 200));
+    if (plan.overflow)
+      notify({
+        id: "canvas-from-folder",
+        ...folderSavesNotice(canvas.name, plan),
+      });
+  });
+}
+
+export function addFolderSavesToCanvas(
+  canvasId: string,
+  saveIds: readonly string[],
+): Promise<void> {
+  const canvas = canvases.snapshot().find((entry) => entry.id === canvasId);
+  if (!canvas) return Promise.resolve();
+  const plan = planFolderSaves(saveIds, canvas);
+  return runCanvasAction(async () => {
+    await canvases.addSaves(canvasId, plan.saveIds, "beside");
+    notify({
+      id: "canvas-add-saves",
+      ...folderSavesNotice(canvas.name, plan),
+      action: canvases.isOpen(canvasId)
+        ? undefined
+        : { label: "Open", onClick: () => canvases.open(canvasId) },
     });
   });
 }
