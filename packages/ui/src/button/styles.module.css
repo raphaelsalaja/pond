@@ -316,6 +316,7 @@
   /* Looks like a search field but opens a surface, so content starts at the leading edge. */
   &:where([data-variant="field"]) {
     justify-content: flex-start;
+    padding-inline-end: 7px;
     font-weight: var(--ds-weight-md);
     color: var(--ds-gray-9);
     background-color: var(--ds-gray-a2);

@@ -49,9 +49,12 @@ interface KeyProps extends React.ComponentPropsWithoutRef<"kbd"> {
 }
 
 function Key({ density = "default", className, ...props }: KeyProps) {
+  const glyph =
+    typeof props.children === "string" && [...props.children].length === 1;
   return (
     <kbd
       data-density={density === "default" ? undefined : density}
+      data-glyph={glyph || undefined}
       className={cn(styles.key, className)}
       {...props}
     />
