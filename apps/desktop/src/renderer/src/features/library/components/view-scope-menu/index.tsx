@@ -28,6 +28,7 @@ export function ViewScopeMenu({ view, name, scope }: ViewScopeMenuProps) {
           indicator: "check",
           label: name,
           checked: scope === "current",
+          closeOnClick: true,
           onCheckedChange: () => searchCurrentView(),
         },
         {
@@ -35,6 +36,7 @@ export function ViewScopeMenu({ view, name, scope }: ViewScopeMenuProps) {
           indicator: "check",
           label: "All Saves",
           checked: scope === "all",
+          closeOnClick: true,
           onCheckedChange: () => searchAllSaves(view),
         },
       ]}
