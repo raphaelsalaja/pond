@@ -80,7 +80,7 @@ https://github.com/user-attachments/assets/…
 
 - Capture with [`scripts/capture-proof.cjs`](../../CONTRIBUTING.md#pr-proof) so every image has the same frame, size, and wallpaper. Run each scenario with `--theme=light` and `--theme=dark`.
 - For a bug fix, shoot both states in one run and use `ctx.shot("after", { pair: "before" })` when one side-by-side image reads better than two cells.
-- Use a screenshot of the real app only when the harness can't reproduce the behavior, such as native keyboard shortcuts or OS drag. Crop it to the window and caption the row `Real app`.
+- Use a screenshot of the real app only when the harness can't reproduce the behavior, such as native keyboard shortcuts or OS drag. Crop it to the window and caption the row `Real app`, or say it once above the table when every row is.
 
 ### Files
 
