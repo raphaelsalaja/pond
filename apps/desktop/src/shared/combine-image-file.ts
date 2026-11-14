@@ -17,14 +17,7 @@ export interface CombineImageCover {
   theme?: "light" | "dark";
 }
 
-/**
- * The file Combine Images should show for one Save.
- *
- * `files[0]` is not that file. Capture writes the X/Threads card PNGs before
- * media, so the first file is the screenshot. Replacing a card appends the new
- * PNG, which slides an avatar or a quoted-post card into index 0. Post Cover
- * chooses the original media, and the card PNG only when the post has none.
- */
+/** `files[0]` can be a post card, avatar, or quoted-post card, so Post Cover picks the media or the theme-matched card. */
 export function pickCombineImageFile<T extends CombineSourceFile>(
   files: readonly T[],
   cover: CombineImageCover = {},
