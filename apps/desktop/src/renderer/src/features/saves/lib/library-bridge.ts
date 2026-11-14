@@ -7,6 +7,9 @@ export interface SaveFolderReference {
   parentId?: string | null;
 }
 
+/** `recent` lists recent destinations for one-key assignment; `multiple` opens straight into staged selection. */
+export type FolderPickerMode = "all" | "multiple" | "recent";
+
 export interface SaveCanvasReference {
   id: string;
   name: string;
@@ -20,7 +23,7 @@ export interface SaveLibraryBridge {
   openTaggedItems(name: string): void;
   showPost(post: { key: string; title: string }): void;
   closeDetails(): void;
-  openFolderPicker(ids: readonly string[]): void;
+  openFolderPicker(ids: readonly string[], mode?: FolderPickerMode): void;
   openRename(ids: readonly string[]): void;
   openConversion(
     ids: readonly string[],
@@ -87,7 +90,7 @@ export const saveLibraryBridge: SaveLibraryBridge = {
   openTaggedItems: (name) => current.openTaggedItems(name),
   showPost: (post) => current.showPost(post),
   closeDetails: () => current.closeDetails(),
-  openFolderPicker: (ids) => current.openFolderPicker(ids),
+  openFolderPicker: (ids, mode) => current.openFolderPicker(ids, mode),
   openRename: (ids) => current.openRename(ids),
   openConversion: (ids, fileIndex, mode) =>
     current.openConversion(ids, fileIndex, mode),

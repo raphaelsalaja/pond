@@ -398,6 +398,7 @@ describe("buildSaveMenu", () => {
       "Add to Other Library",
       "Export",
       "Share",
+      "Favorite",
       "Paste Tags",
       "Find Duplicates",
       "Merge Duplicates",

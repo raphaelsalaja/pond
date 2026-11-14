@@ -102,6 +102,7 @@ export type FieldId =
   | "publishedAt"
   | "modifiedAt"
   | "rating"
+  | "favorite"
   | "fileSize"
   | "width"
   | "height"
