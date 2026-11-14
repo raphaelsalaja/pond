@@ -130,7 +130,7 @@ export function createLibraryHealthService(deps: LibraryHealthDependencies) {
       let index: HealthIndexCheck | null = null;
       let indexError: string | null = null;
       try {
-        index = indexCheck(await deps.verifyIndex());
+        index = indexCheck(await deps.verifyIndex(), rows);
       } catch (error) {
         indexError = messageOf(error, "Pond couldn't compare the index.");
       }
@@ -159,8 +159,8 @@ export function createLibraryHealthService(deps: LibraryHealthDependencies) {
   }
 
   async function inspectInto(findings: Findings, row: HealthSave) {
-    /** Files of a Save still ingesting are in flight; Downloads reports that work. */
-    if (row.status === "ingesting") return;
+    /** Only a finished ingest owns its files; Downloads reports the rest. */
+    if (row.status !== "complete") return;
     const runtime = memoizedRuntime(deps.integrityRuntime);
     try {
       for (const kind of LibraryRepairKindSchema.options) {
@@ -274,11 +274,18 @@ function posterGap(row: HealthSave): HealthPosterGap | null {
   };
 }
 
-function indexCheck(report: HealthIndexReport): HealthIndexCheck {
+function indexCheck(
+  report: HealthIndexReport,
+  rows: readonly HealthSave[],
+): HealthIndexCheck {
   const { [LIBRARY_ERROR_KEY]: backupError, ...unreadable } = report.errors;
+  /** A download that never finished has no folder yet. */
+  const unfinished = new Set(
+    rows.filter((row) => row.status !== "complete").map((row) => row.id),
+  );
   return {
     orphans: report.orphans,
-    missing: report.missing,
+    missing: report.missing.filter((id) => !unfinished.has(id)),
     unreadable: Object.keys(unreadable),
     backupError: backupError ?? null,
   };

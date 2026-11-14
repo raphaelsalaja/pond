@@ -205,6 +205,22 @@ describe("Library Health check", () => {
     });
   });
 
+  it("leaves Saves whose download didn't finish to Downloads", async () => {
+    const { service } = await fixture(
+      [
+        healthy("a"),
+        save("dead", [], "failed"),
+        save("skipped", [], "skipped"),
+      ],
+      { index: { orphans: [], missing: ["dead", "skipped"], errors: {} } },
+    );
+    service.start();
+    const { check } = await settled(service);
+    expect(check?.issues).toEqual([]);
+    expect(check?.counts["invalid-content"]).toBe(0);
+    expect(check?.index?.missing).toEqual([]);
+  });
+
   it("lists a Save it couldn't read as unverified instead of healthy", async () => {
     const { service } = await fixture([healthy("a"), healthy("locked")], {
       unreadable: ["locked.png"],
