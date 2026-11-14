@@ -1,0 +1,10 @@
+.collections {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
+}

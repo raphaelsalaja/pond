@@ -10,7 +10,11 @@ function saveCount(count: number): string {
   return formatPlural(count, { one: "Save", other: "Saves" });
 }
 
-export function notifyUndoableFolderChange(id: string, title: string): void {
+export function notifyUndoableFolderChange(
+  id: string,
+  title: string,
+  onUndo?: () => void,
+): void {
   notify({
     id,
     title,
@@ -18,8 +22,10 @@ export function notifyUndoableFolderChange(id: string, title: string): void {
       label: "Undo",
       onClick: () => {
         void window.pond.undo().then((result) => {
-          if (result.ok) void saveLibraryBridge.refreshFolders();
-          else
+          if (result.ok) {
+            void saveLibraryBridge.refreshFolders();
+            onUndo?.();
+          } else
             notify({
               id: `${id}-undo`,
               title: "Couldn't undo folder change",
@@ -33,8 +39,9 @@ export function notifyUndoableFolderChange(id: string, title: string): void {
 export async function assignSavesToFolder(
   ids: readonly string[],
   folder: SaveFolderReference,
-): Promise<void> {
-  if (ids.length === 0) return;
+  onUndo?: () => void,
+): Promise<boolean> {
+  if (ids.length === 0) return false;
   try {
     await window.pond.query("folders.addSaves", {
       folderId: folder.id,
@@ -45,13 +52,16 @@ export async function assignSavesToFolder(
     notifyUndoableFolderChange(
       "add-saves-to-folder",
       `Added ${saveCount(ids.length)} to "${folder.name}"`,
+      onUndo,
     );
+    return true;
   } catch (error) {
     notify({
       id: "add-saves-to-folder",
       title: `Couldn't add ${ids.length === 1 ? "Save" : "Saves"} to folder`,
       description: errorCopy(error, "Try again."),
     });
+    return false;
   }
 }
 

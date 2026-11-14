@@ -13,6 +13,8 @@ const TOAST_ID = "inbox-change";
 interface InboxChange {
   operation: BulkEdit["operation"];
   title: (saves: string) => string;
+  failure?: string;
+  onUndo?: () => void;
 }
 
 export function isWaitingInInbox(save: Pick<Save, "inboxState">): boolean {
@@ -28,7 +30,12 @@ export function waitingInInbox(ids: readonly string[]): string[] {
 
 async function changeInbox(
   ids: readonly string[],
-  { operation, title }: InboxChange,
+  {
+    operation,
+    title,
+    failure = "Couldn't update the Inbox",
+    onUndo,
+  }: InboxChange,
 ): Promise<number> {
   if (ids.length === 0) return 0;
   try {
@@ -41,7 +48,8 @@ async function changeInbox(
           label: "Undo",
           onClick: () => {
             void window.pond.undo().then((result) => {
-              if (!result.ok)
+              if (result.ok) onUndo?.();
+              else
                 notify({ id: TOAST_ID, title: "Couldn't undo Inbox change" });
             });
           },
@@ -51,17 +59,21 @@ async function changeInbox(
   } catch (error) {
     notify({
       id: TOAST_ID,
-      title: "Couldn't update the Inbox",
+      title: failure,
       description: errorCopy(error, "Try again."),
     });
     return 0;
   }
 }
 
-export function markProcessed(ids: readonly string[]): Promise<number> {
+export function markProcessed(
+  ids: readonly string[],
+  onUndo?: () => void,
+): Promise<number> {
   return changeInbox(ids, {
     operation: { kind: "inbox", state: "processed" },
     title: (saves) => `Marked ${saves} processed`,
+    onUndo,
   });
 }
 
@@ -87,5 +99,17 @@ export function snoozeSaves(
   return changeInbox(ids, {
     operation: { kind: "snooze", until },
     title: (saves) => `Snoozed ${saves} until ${time}`,
+  });
+}
+
+export function trashWithUndo(
+  ids: readonly string[],
+  onUndo?: () => void,
+): Promise<number> {
+  return changeInbox(ids, {
+    operation: { kind: "trash" },
+    title: (saves) => `Moved ${saves} to Trash`,
+    failure: "Couldn't move to Trash",
+    onUndo,
   });
 }

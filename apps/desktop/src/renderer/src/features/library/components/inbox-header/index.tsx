@@ -1,5 +1,7 @@
-import { Tabs } from "@pond/ui";
+import { IconLayers } from "@pond/icons";
+import { Button, Tabs } from "@pond/ui";
 import { useSidebarCounts } from "@/features/library/hooks/use-sidebar-counts";
+import { inboxReview } from "@/features/library/state/inbox-review";
 import { libraryChrome } from "@/features/library/state/library-chrome";
 import { formatNumber } from "@/shared/lib/format";
 import styles from "./styles.module.css";
@@ -32,6 +34,17 @@ export function InboxHeader({ snoozed }: { snoozed: boolean }) {
           </span>
         </Tabs.Tab>
       </Tabs.List>
+      {snoozed ? null : (
+        <Button
+          size="sm"
+          variant="secondary"
+          disabled={counts.inbox === 0}
+          onClick={() => void inboxReview.start()}
+        >
+          <IconLayers size={12} />
+          Review
+        </Button>
+      )}
     </Tabs.Root>
   );
 }

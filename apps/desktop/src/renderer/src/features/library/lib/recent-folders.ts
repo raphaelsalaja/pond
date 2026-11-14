@@ -1,6 +1,6 @@
 const RECENT_FOLDER_DESTINATIONS_KEY = "pond:recent-folder-destinations";
 
-function readRecentFolderIds(): string[] {
+export function readRecentFolderIds(): string[] {
   try {
     return (
       localStorage
