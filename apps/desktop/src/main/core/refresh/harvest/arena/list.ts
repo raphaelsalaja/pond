@@ -13,7 +13,7 @@ import type {
   ListHarvestResult,
 } from "../list-types";
 
-/** Are.na refuses a contents page larger than this, and that first page is not the library. */
+/** Are.na refuses a contents page larger than this. */
 const PER_PAGE = 100;
 /** The contents API only serves the first 10,000 results (`per` × pages). */
 const MAX_PAGES = 100;
@@ -153,11 +153,7 @@ function blockEntry(
   return entry;
 }
 
-/**
- * Pages through every block Are.na will return for the account. `has_more_pages`
- * is the end of the list; stopping after page 1 recorded a finished full sync
- * and later runs reported no new saves.
- */
+/** Pages through every block Are.na returns for the account, until `has_more_pages` is false. */
 export async function readArenaBlocks(
   args: ArenaListArgs,
   get: ArenaGet,
