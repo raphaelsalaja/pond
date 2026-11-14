@@ -81,6 +81,7 @@ export interface CustomItem {
   title?: string;
   keywords?: string[];
   visible?: (values: SettingsValues) => boolean;
+  disabled?: (values: SettingsValues) => boolean;
   prefsKey?: keyof Prefs;
   standalone?: boolean;
   render: (binding: Binding) => ReactNode;

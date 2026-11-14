@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ExtensionSettingsSchema } from "./browser-extension";
+import { FileRingPrefsSchema } from "./file-ring";
 import { FolderPresentationSchema } from "./folder-presentation";
 import { FolderRulesSchema } from "./folder-rules";
 import {
@@ -469,6 +470,7 @@ const shortcuts = z.object({
 const PrefsObject = z.object({
   folderRules: z.record(z.string(), FolderRulesSchema).catch({}),
   folderViews: z.record(z.string(), FolderPresentationSchema).catch({}),
+  fileRing: FileRingPrefsSchema.catch(FileRingPrefsSchema.parse({})),
   savedViewViews: z.record(z.string(), SavedViewPresentationSchema).catch({}),
   viewer: ViewerPrefsSchema.catch(ViewerPrefsSchema.parse({})),
   shortcuts: shortcuts.catch(shortcuts.parse({})),

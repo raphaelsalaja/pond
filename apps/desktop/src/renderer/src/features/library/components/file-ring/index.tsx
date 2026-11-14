@@ -1,5 +1,5 @@
-import { IconExport, IconFolderPlus } from "@pond/icons";
 import type { Folder } from "@pond/schema/db";
+import type { FileRingItem } from "@pond/schema/file-ring";
 import { clsx as cn } from "clsx";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { folderCoverUrl } from "@/features/library/lib/folder-cover";
@@ -27,6 +27,7 @@ import { useResolvedTheme } from "@/shared/hooks/use-resolved-theme";
 import { FolderIcon } from "@/shared/lib/folder-icons";
 import { formatPlural } from "@/shared/lib/format";
 import { usePrefs } from "@/shared/state/prefs";
+import { RING_ACTIONS } from "./actions";
 import {
   HUB_RADIUS,
   RING_SIZE,
@@ -37,15 +38,15 @@ import {
   slotAnchor,
 } from "./geometry";
 import {
-  ACTION_SLOTS,
   acceptsDrop,
+  autoRingItems,
   dropOnRing,
-  FOLDER_SLOTS,
   layoutRing,
-  pickRingFolders,
   type RingAction,
   type RingDropHandlers,
+  type RingLayout,
   type RingTarget,
+  ringOpens,
 } from "./slots";
 import styles from "./styles.module.css";
 
@@ -57,17 +58,8 @@ const ITEMS = { one: "Item", other: "Items" };
 const SECTOR_PATHS = new Map(
   RING_SLOTS.map((slot) => [slot, sectorPath(slot)]),
 );
+const EMPTY_LAYOUT: RingLayout<Folder> = {};
 const HUB_STYLE = { width: `${((HUB_RADIUS * 2) / RING_SIZE) * 100}%` };
-
-interface ActionCopy {
-  label: string;
-  Icon: typeof IconExport;
-}
-
-const ACTIONS = {
-  "new-folder": { label: "New Folder", Icon: IconFolderPlus },
-  "export-files": { label: "Export Files", Icon: IconExport },
-} satisfies Record<RingAction, ActionCopy>;
 
 const SAVE_DROPS: RingDropHandlers<Folder, readonly string[]> = {
   addToFolder: (ids, folder) => void assignSavesToFolder(ids, folder),
@@ -91,7 +83,12 @@ type RingSource =
 
 interface RingSession {
   source: RingSource;
+  items: FileRingItem[];
   folderIds: string[];
+}
+
+function canExport(source: RingSource): boolean {
+  return source.kind === "saves" && source.session.hasFiles;
 }
 
 interface HubCopy {
@@ -107,7 +104,7 @@ function hubCopy(
   if (!target) return { title: "File To" };
   if (target.kind === "action")
     return {
-      title: ACTIONS[target.action].label,
+      title: RING_ACTIONS[target.action].label,
       detail: saveCount === null ? undefined : formatPlural(saveCount, SAVES),
     };
   const count = counts?.[target.folder.id];
@@ -131,7 +128,7 @@ function ActionSlot({
   action: RingAction;
   disabled: boolean;
 }) {
-  const { label, Icon } = ACTIONS[action];
+  const { label, Icon } = RING_ACTIONS[action];
   return (
     <li
       className={cn(styles.slot, styles.action)}
@@ -199,6 +196,7 @@ function FolderSlot({
 export function FileRing() {
   const [viewer] = usePrefs("viewer");
   const [folderViews] = usePrefs("folderViews");
+  const [fileRing] = usePrefs("fileRing");
   const folderRows = useFolders();
   const drag = useSaveDragSession();
   const [ring, setRing] = useState<RingSession | null>(null);
@@ -211,8 +209,8 @@ export function FileRing() {
   const discRef = useRef<HTMLFieldSetElement>(null);
   const announcedRef = useRef<RingSlot | null>(null);
   const importingRef = useRef(false);
-  const latest = useRef({ folderRows, folderViews });
-  latest.current = { folderRows, folderViews };
+  const latest = useRef({ folderRows, folderViews, fileRing });
+  latest.current = { folderRows, folderViews, fileRing };
 
   const enabled = viewer.dragToFile;
   const source = ring?.source;
@@ -225,17 +223,19 @@ export function FileRing() {
     if (!enabled) return;
     let internal = false;
     const start = (next: RingSource) => {
-      const { folderRows, folderViews } = latest.current;
-      const folderIds = pickRingFolders(
-        folderRows,
-        folderViews,
-        recentFolderIds(),
-      ).map((folder) => folder.id);
-      if (folderIds.length === 0) return;
+      const { folderRows, folderViews, fileRing } = latest.current;
+      const items =
+        fileRing.items ??
+        autoRingItems(folderRows, folderViews, recentFolderIds());
+      const layout = layoutRing(items, folderRows, canExport(next));
+      if (!ringOpens(layout, fileRing.items !== null)) return;
+      const folderIds = items.flatMap((item) =>
+        item.kind === "folder" ? [item.folderId] : [],
+      );
       announcedRef.current = null;
       importingRef.current = next.kind === "import";
       setImporting(next.kind === "import");
-      setRing({ source: next, folderIds });
+      setRing({ source: next, items, folderIds });
       setInside(true);
       setHovered(null);
       setHeld(null);
@@ -352,14 +352,13 @@ export function FileRing() {
     return () => clearTimeout(timer);
   }, [held]);
 
-  const layout = useMemo(() => {
-    const byId = new Map(folderRows.map((folder) => [folder.id, folder]));
-    const ids = ring?.folderIds ?? [];
-    const folders = ids.flatMap((id) => byId.get(id) ?? []);
-    const exportable =
-      ring?.source.kind === "saves" && ring.source.session.hasFiles;
-    return layoutRing(folders, exportable);
-  }, [folderRows, ring]);
+  const layout = useMemo(
+    () =>
+      ring
+        ? layoutRing(ring.items, folderRows, canExport(ring.source))
+        : EMPTY_LAYOUT,
+    [folderRows, ring],
+  );
 
   function targetAt(event: React.DragEvent) {
     const disc = discRef.current;
@@ -459,20 +458,18 @@ export function FileRing() {
           ))}
         </svg>
         <ul className={styles.slots}>
-          {ACTION_SLOTS.map((slot) => {
+          {RING_SLOTS.map((slot) => {
             const target = layout[slot];
-            return target?.kind === "action" ? (
-              <ActionSlot
-                key={slot}
-                slot={slot}
-                action={target.action}
-                disabled={target.disabled}
-              />
-            ) : null;
-          })}
-          {FOLDER_SLOTS.map((slot) => {
-            const target = layout[slot];
-            if (target?.kind !== "folder") return null;
+            if (!target) return null;
+            if (target.kind === "action")
+              return (
+                <ActionSlot
+                  key={slot}
+                  slot={slot}
+                  action={target.action}
+                  disabled={target.disabled}
+                />
+              );
             const { folder } = target;
             const coverSaveId = folderViews[folder.id]?.coverSaveId;
             const previewIds = [
