@@ -1,19 +1,7 @@
-import {
-  IconArrowRotateAnticlockwise,
-  IconChatBubble,
-  IconFolder,
-  IconFolderSend,
-  IconLayers,
-  IconMagnifier,
-  IconTrashXmark,
-  IconUpload,
-} from "@pond/icons";
+import { IconFolder, IconLayers, IconMagnifier } from "@pond/icons";
 import { useMemo } from "react";
-import { addSavesToChat } from "@/features/agent";
 import { selectLibraryNav } from "@/features/library/components/folder-sidebar/navigation";
-import { newFolder } from "@/features/library/components/new-menu/actions";
 import { useFolders } from "@/features/library/state/folders";
-import { useLibraryNav } from "@/features/library/state/library-chrome";
 import { libraryHeader } from "@/features/library/state/library-header";
 import {
   savedViews,
@@ -21,30 +9,29 @@ import {
 } from "@/features/library/state/saved-views";
 import {
   resetFilters,
+  searchCurrentView,
   setSearchInput,
 } from "@/features/library/state/view-store";
-import {
-  exportSelectionFiles,
-  restoreSelection,
-  trashSelection,
-  useRecents,
-} from "@/features/saves";
-import { selection, useSelectionSize } from "@/features/saves/navigation";
+import { useRecents } from "@/features/saves";
 import type { Save } from "@/features/saves/types";
 import type { SaveLookup } from "@/features/search";
 import { COMMANDS } from "./commands";
+import { useContextEntries } from "./context-entries";
 import { buildModel, rankEntries } from "./rank";
-import { addToFolder, folderPage, saveActions } from "./save-actions";
+import { addToFolder, saveActions } from "./save-actions";
 import { SaveThumb } from "./save-thumb";
 import { MIN_SCORE } from "./score";
 import { saveDetail, saveLabel } from "./search";
 import type { MenuEntry, MenuPage } from "./types";
 import { useSavesById } from "./use-saves-by-id";
+import { useViewScope, type ViewScope } from "./use-view-scope";
 
 const RECENT_LIMIT = 5;
 const ROOT_LIMITS = { Folders: 5, "Saved Views": 5 };
 const PAGE_LIMITS = { "": 50 };
 const KEYWORD_SAVE_WEIGHT = 0.95;
+/** Lifts Saves from the view you're on above equally good matches elsewhere in the Library. */
+const IN_VIEW_BOOST = 0.04;
 const SEARCHING = { label: "Searching", busy: true };
 const NO_RESULTS = { label: "No results found", busy: false };
 
@@ -101,95 +88,29 @@ function saveEntry(
   };
 }
 
-function searchLibraryEntry(query: string): MenuEntry {
+function searchLibraryEntry(query: string, scope: ViewScope | null): MenuEntry {
   return {
     id: "search:library",
     group: "Search",
-    label: "Search Library",
+    label: scope ? `Search ${scope.name}` : "Search Library",
     detail: query,
     icon: <IconMagnifier aria-hidden />,
     run: () => {
-      resetFilters();
-      setSearchInput([], query, query);
-      selectLibraryNav({ kind: "all" });
+      if (scope) {
+        searchCurrentView();
+        setSearchInput([], query, query);
+      } else {
+        resetFilters();
+        setSearchInput([], query, query);
+        selectLibraryNav({ kind: "all" });
+      }
       libraryHeader.focusSearch();
     },
   };
 }
 
-function useContextEntries(): MenuEntry[] {
-  const nav = useLibraryNav();
-  const selectionSize = useSelectionSize();
-  return useMemo(() => {
-    if (selectionSize > 0) {
-      const group = `${selectionSize} Selected`;
-      const selected = () => selection.snapshot();
-      const inTrash = nav.kind === "trash";
-      const entries: MenuEntry[] = [];
-      if (!inTrash) {
-        entries.push(
-          {
-            id: "selection:add-to-chat",
-            group,
-            label: "Add to Chat",
-            icon: <IconChatBubble aria-hidden />,
-            run: () => addSavesToChat(selected()),
-          },
-          {
-            id: "selection:add-to-folder",
-            group,
-            label: "Add to Folder",
-            keywords: "move organize collection",
-            icon: <IconFolderSend aria-hidden />,
-            page: () => folderPage(selected()),
-          },
-        );
-      }
-      entries.push(
-        {
-          id: "selection:export",
-          group,
-          label: "Export Selection",
-          icon: <IconUpload aria-hidden />,
-          shortcut: "selection.export",
-          run: () => void exportSelectionFiles(selected()),
-        },
-        inTrash
-          ? {
-              id: "selection:restore",
-              group,
-              label: "Restore from Trash",
-              icon: <IconArrowRotateAnticlockwise aria-hidden />,
-              shortcut: "save.restore",
-              run: () => void restoreSelection(selected()),
-            }
-          : {
-              id: "selection:trash",
-              group,
-              label: "Move to Trash",
-              icon: <IconTrashXmark aria-hidden />,
-              shortcut: "save.trash",
-              run: () => void trashSelection(selected()),
-            },
-      );
-      return entries;
-    }
-    if (nav.kind === "folder") {
-      return [
-        {
-          id: "folder:new-subfolder",
-          group: "Current Folder",
-          label: "New Subfolder",
-          icon: <IconFolder aria-hidden />,
-          run: () => newFolder(nav.id),
-        },
-      ];
-    }
-    return [];
-  }, [nav, selectionSize]);
-}
-
 interface ModelInput {
+  pathname: string;
   query: string;
   page: MenuPage | null;
   lookup: SaveLookup;
@@ -197,11 +118,18 @@ interface ModelInput {
 }
 
 /** Ranks everything the menu can show for one query, so every group updates in the same render. */
-export function useMenuModel({ query, page, lookup, onOpenSave }: ModelInput) {
+export function useMenuModel({
+  pathname,
+  query,
+  page,
+  lookup,
+  onOpenSave,
+}: ModelInput) {
   const folderRows = useFolders();
   const views = useSavedViews();
   const recents = useRecents();
-  const contextEntries = useContextEntries();
+  const contextEntries = useContextEntries(pathname, Boolean(query));
+  const scope = useViewScope(pathname);
 
   const recentIds = useMemo(
     () => recents.slice(0, RECENT_LIMIT * 2).map((entry) => entry.saveId),
@@ -242,20 +170,23 @@ export function useMenuModel({ query, page, lookup, onOpenSave }: ModelInput) {
 
   const saveEntries = useMemo<MenuEntry[]>(() => {
     const via = new Map(lookup.hits.map((hit) => [hit.id, hit.via]));
-    return hitSaves.map((save, rank) =>
-      saveEntry(save, {
+    const inView = new Set(scope?.pick(hitSaves).map((save) => save.id));
+    return hitSaves.map((save, rank) => {
+      const local = inView.has(save.id);
+      const boost = local ? IN_VIEW_BOOST : 0;
+      return saveEntry(save, {
         id: `save:${save.id}`,
-        group: "Saves",
+        group: local && scope ? `In ${scope.name}` : "Saves",
         onOpenSave,
         ...(via.get(save.id) === "semantic"
-          ? { floor: MIN_SCORE + 0.01 - rank * 0.0005, weight: 0 }
+          ? { floor: MIN_SCORE + 0.01 + boost - rank * 0.0005, weight: 0 }
           : {
-              floor: MIN_SCORE + 0.06 - rank * 0.004,
-              weight: KEYWORD_SAVE_WEIGHT,
+              floor: MIN_SCORE + 0.06 + boost - rank * 0.004,
+              weight: KEYWORD_SAVE_WEIGHT + boost,
             }),
-      }),
-    );
-  }, [hitSaves, lookup.hits, onOpenSave]);
+      });
+    });
+  }, [hitSaves, lookup.hits, onOpenSave, scope]);
 
   const recentEntries = useMemo<MenuEntry[]>(
     () =>
@@ -324,7 +255,7 @@ export function useMenuModel({ query, page, lookup, onOpenSave }: ModelInput) {
             ? NO_RESULTS
             : null,
       footer: query
-        ? { entry: searchLibraryEntry(query), score: 0, ranges: [] }
+        ? { entry: searchLibraryEntry(query, scope), score: 0, ranges: [] }
         : null,
     });
   }, [
@@ -337,6 +268,7 @@ export function useMenuModel({ query, page, lookup, onOpenSave }: ModelInput) {
     viewEntries,
     saveEntries,
     lookup.searching,
+    scope,
   ]);
 
   const resultCount = model.entries.length - (model.footer ? 1 : 0);
