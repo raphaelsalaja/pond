@@ -15,6 +15,7 @@ import {
   type RoutineDependencies,
   runDueRoutines,
   runFishRoutine,
+  runInboxRoutines,
   runNewSaveRoutines,
 } from "./routines";
 
@@ -300,4 +301,39 @@ it("skips paused routines until you resume them", async () => {
   ]);
   await runNewSaveRoutines(["poster-1"], fake.deps);
   expect(fake.chats).toEqual([]);
+});
+
+it("asks Inbox routines for suggestions on Saves still waiting for review", async () => {
+  const triage: FishRoutine = {
+    ...tagging,
+    id: "triage",
+    name: "Triage",
+    when: { kind: "inbox" },
+  };
+  const sorter: Fish = {
+    ...curator,
+    id: "sorter",
+    routines: [triage, tagging],
+  };
+  const fake = pond([sorter]);
+  const asked: boolean[] = [];
+  fake.deps.savesInScope = async (ids, _fish, inInbox) => {
+    asked.push(inInbox === true);
+    return ids.filter((id) => id !== "processed");
+  };
+
+  await runInboxRoutines(["poster-1", "processed"], fake.deps);
+
+  expect(asked).toEqual([true]);
+  expect(fake.sent).toHaveLength(1);
+  expect(fake.sent[0]?.routine).toEqual({
+    trigger: "inbox",
+    saves: 1,
+    routineId: "triage",
+    name: "Triage",
+  });
+  expect(fake.sent[0]?.content).toContain(
+    "Saves waiting in the Inbox (read them by ID): poster-1\n",
+  );
+  expect(isRoutineDue(triage, 7 * DAY)).toBe(false);
 });

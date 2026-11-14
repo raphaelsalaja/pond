@@ -21,6 +21,9 @@ function routine(when: FishWhen, patch: Partial<FishRoutine> = {}) {
 describe("describeWhen", () => {
   it("reads each schedule in words", () => {
     expect(describeWhen({ kind: "newSaves" })).toBe("When new Saves arrive");
+    expect(describeWhen({ kind: "inbox" })).toBe(
+      "When Saves arrive in the Inbox",
+    );
     expect(describeWhen({ kind: "every", hours: 1 })).toBe("Every hour");
     expect(describeWhen({ kind: "every", hours: 6 })).toBe("Every 6 hours");
     expect(describeWhen({ kind: "every", hours: 72 })).toBe("Every 3 days");

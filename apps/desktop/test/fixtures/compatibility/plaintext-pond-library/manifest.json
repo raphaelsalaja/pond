@@ -11,12 +11,14 @@
       "items/save-fixture.info/original.txt"
     ],
     "indexLocation": "app-data/indexes/<library-id>.db",
-    "thumbnailLocation": "app-data/pond-cache/thumbs/<library-id>"
+    "thumbnailLocation": "app-data/pond-cache/thumbs/<library-id>",
+    "optionalSaveFields": ["inbox"]
   },
   "compatibilityAssertions": [
     "Open the Library without requiring encryption metadata.",
     "Preserve original bytes and Save identity during encryption migration.",
     "Create an untouched verified backup before committing a new disk format.",
-    "Keep the external index and thumbnail cache rebuildable from Library data."
+    "Keep the external index and thumbnail cache rebuildable from Library data.",
+    "Read a Save without `inbox` as never sent to the Inbox, so opening an older Library leaves the Inbox empty."
   ]
 }

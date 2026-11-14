@@ -33,6 +33,7 @@ function listed(parts: readonly string[]): string {
 /** The schedule in words, the way the routine list and the fish's replies read it. */
 export function describeWhen(when: FishWhen): string {
   if (when.kind === "newSaves") return "When new Saves arrive";
+  if (when.kind === "inbox") return "When Saves arrive in the Inbox";
   if (when.kind === "every") {
     if (when.hours === 1) return "Every hour";
     if (when.hours === 24) return "Every day";
