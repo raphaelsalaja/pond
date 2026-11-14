@@ -203,7 +203,15 @@ describe("SaveViewer", () => {
       expect(layers()).toEqual(["current first"]);
 
       await click(host, "Next Slide");
-      expect(layers()).toEqual(["held first", "pending second"]);
+      const counter = () =>
+        host.querySelector('[data-viewer-bar-slot="end"]')?.textContent;
+      const timeline = [[...layers(), counter()]];
+      await act(() => new Promise((resolve) => setTimeout(resolve, 20)));
+      timeline.push([...layers(), counter()]);
+      expect(timeline).toEqual([
+        ["held first", "pending second", "2 / 2"],
+        ["held first", "pending second", "2 / 2"],
+      ]);
       expect(labeledButton(host, "Previous Slide").disabled).toBe(false);
       expect(labeledButton(host, "Next Slide").disabled).toBe(true);
 
