@@ -7,7 +7,7 @@
   max-height: min(360px, calc(var(--available-height) - 72px));
 }
 
-.batchActions {
+.actions {
   display: flex;
   gap: 8px;
   justify-content: flex-end;

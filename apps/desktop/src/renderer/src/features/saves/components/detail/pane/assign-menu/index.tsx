@@ -79,7 +79,6 @@ export function AssignMenu({
         checked={batch ? assigned || staged : assigned}
         disabled={Boolean(batch && assigned)}
         data-selection={option.state}
-        data-staged={batch && staged ? "" : undefined}
         aria-description={
           assigned
             ? batch
@@ -119,7 +118,7 @@ export function AssignMenu({
     );
   };
   const stagedCount = batch?.staged.size ?? 0;
-  const addLabel = `Add to ${stagedCount} ${stagedCount === 1 ? "folder" : "folders"}`;
+  const addLabel = `Add to ${stagedCount} ${stagedCount === 1 ? noun : plural}`;
   return (
     <Menu.FilterProvider
       filter={null}
@@ -156,7 +155,7 @@ export function AssignMenu({
               {onStartBatch && !batch ? (
                 <>
                   <Menu.Item closeOnClick={false} onClick={onStartBatch}>
-                    <Menu.ItemLabel>Select multiple…</Menu.ItemLabel>
+                    <Menu.ItemLabel>Select Multiple</Menu.ItemLabel>
                   </Menu.Item>
                   <Menu.Separator />
                 </>
@@ -196,20 +195,15 @@ export function AssignMenu({
                 ) : null}
               </Menu.FilterList>
               {batch ? (
-                <div className={styles.batchActions}>
-                  <Button
-                    type="button"
-                    size="xs"
-                    variant="ghost"
-                    onClick={batch.onCancel}
-                  >
+                <div className={styles.actions}>
+                  <Button size="xs" variant="ghost" onClick={batch.onCancel}>
                     Cancel
                   </Button>
                   <Button
-                    type="button"
                     size="xs"
                     variant="primary"
-                    disabled={!stagedCount || batch.applying}
+                    disabled={!stagedCount}
+                    loading={batch.applying}
                     aria-label={addLabel}
                     onClick={batch.onApply}
                   >

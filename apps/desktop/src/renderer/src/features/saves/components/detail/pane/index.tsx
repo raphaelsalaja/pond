@@ -236,7 +236,10 @@ export function SaveInspector({
         createdId ?? (await window.pond.query("folders.create", { name })).id;
       createdId = folderId;
       if (stagedFolderIds) {
-        setStagedFolderIds((current) => new Set(current).add(folderId));
+        await saveLibraryBridge.refreshFolders();
+        setStagedFolderIds(
+          (current) => current && new Set(current).add(folderId),
+        );
       } else {
         await assignFolder(folderId, true);
       }
