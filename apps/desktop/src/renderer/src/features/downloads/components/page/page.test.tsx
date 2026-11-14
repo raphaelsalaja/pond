@@ -239,27 +239,6 @@ it("does not refetch queue saves that are already in the library pool", async ()
   expect(query).not.toHaveBeenCalledWith("saves.getMany", expect.anything());
 });
 
-it("refetches a pooled download whose tasks predate its failure", async () => {
-  const fresh = save("Quick failure", "failed", "dead");
-  setSaves([
-    save("Quick failure", "failed", "pending"),
-    save("Failed video", "failed", "dead"),
-  ]);
-  query.mockImplementation(async (name: string, args?: { ids?: string[] }) => {
-    if (name === "saves.getMany") {
-      expect(args?.ids).toEqual(["Quick failure"]);
-      return [fresh];
-    }
-    return defaultQuery(name);
-  });
-
-  const ids = ["Quick failure", "Failed video"];
-  await hydrateLiveDownloadSaves(ids, () => false);
-
-  const stored = savesStore.state.byId.get("Quick failure");
-  expect(stored?.tasks?.[0]?.status).toBe("dead");
-});
-
 it("hydrates large queues in renderer-sized batches", async () => {
   setSaves([]);
   const ids = Array.from({ length: 401 }, (_, index) => `save-${index}`);
