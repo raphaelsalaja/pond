@@ -301,6 +301,36 @@ describe.skipIf(!nativeAvailable())("authoritative library query", () => {
     });
     expect(trash.ids).toEqual(["0002"]);
   });
+  it("returns each member once across multiple scoped folders", async () => {
+    const { db, sqlite } = setup();
+    sqlite.exec(`
+      insert into folders(id,name) values ('a','A'),('b','B'),('c','C');
+      insert into save_folders(save_id,folder_id) values
+        ('0000','a'),
+        ('0001','b'),
+        ('0001','a'),
+        ('0002','c'),
+        ('0003','b'),
+        ('0004','c');
+    `);
+    const union = await queryLibraryPage(db, "library", {
+      query: EMPTY_QUERY,
+      sortKey: "savedAt",
+      sortDir: "asc",
+      scope: { folderIds: ["a", "b", "c"] },
+      limit: 100,
+    });
+    expect(union.ids).toEqual(["0000", "0001", "0002", "0003", "0004"]);
+    expect(union.total).toBe(5);
+    expect(
+      (
+        await queryLibraryIds(db, "library", {
+          query: EMPTY_QUERY,
+          scope: { folderIds: ["a", "b", "c"] },
+        })
+      ).ids.sort(),
+    ).toEqual(["0000", "0001", "0002", "0003", "0004"]);
+  });
   it("excludes every ingesting save from library results", async () => {
     const { db, sqlite } = setup();
     sqlite.exec(`
