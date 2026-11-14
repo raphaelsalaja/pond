@@ -10,6 +10,7 @@ import type {
   BatchRenameInput,
   OkResult,
   OkSuccess,
+  UndoableChange,
 } from "@shared/query-contracts-shared";
 import { applyRenameTemplate } from "@shared/rename-template";
 import { asc, eq, inArray, isNull } from "drizzle-orm";
@@ -38,7 +39,7 @@ export interface CreateFolderWithSavesRuntime {
     rows: Folder[],
   ): Promise<Transaction[]>;
   execute: typeof executeBatch;
-  recordUndo(transactions: Transaction[]): void;
+  recordUndo(transactions: Transaction[]): string | null;
   createId(): string;
   now(): Date;
 }
@@ -83,7 +84,7 @@ export async function createFolderWithSaves(
     saveIds: string[];
   },
   runtime: CreateFolderWithSavesRuntime = defaultCreateFolderWithSavesRuntime,
-): Promise<Folder> {
+): Promise<Folder & UndoableChange> {
   return runtime.run(async () => {
     const name = input.name.trim();
     if (!name) throw new Error("Enter a folder name.");
@@ -127,10 +128,10 @@ export async function createFolderWithSaves(
       ...(await runtime.planAssignments(assignments, [...rows, folder])),
     ];
     await runtime.execute(transactions);
-    runtime.recordUndo(
+    const undoId = runtime.recordUndo(
       transactions.filter((transaction) => transaction.model !== "tag"),
     );
-    return folder;
+    return { ...folder, undoId };
   });
 }
 
@@ -358,14 +359,15 @@ export async function memberships(): Promise<
 export async function assignSaveFolders(
   assignments: Array<{ saveId: string; folderIds: string[] }>,
   undo = true,
-): Promise<OkSuccess> {
+): Promise<OkSuccess<UndoableChange>> {
   return withMutationScope(async () => {
     const txs = await folderAssignmentTransactions(assignments);
-    if (txs.length) {
-      await executeBatch(txs);
-      if (undo) recordBatchForUndo(txs.filter((tx) => tx.model !== "tag"));
-    }
-    return { ok: true };
+    if (!txs.length) return { ok: true, undoId: null };
+    await executeBatch(txs);
+    const undoId = undo
+      ? recordBatchForUndo(txs.filter((tx) => tx.model !== "tag"))
+      : null;
+    return { ok: true, undoId };
   });
 }
 
@@ -480,14 +482,14 @@ export async function setFolderRules(input: {
 export async function setSaveFolders(
   saveId: string,
   folderIds: string[],
-): Promise<OkSuccess> {
+): Promise<OkSuccess<UndoableChange>> {
   return assignSaveFolders([{ saveId, folderIds }]);
 }
 
 export async function addSavesToFolder(
   folderId: string,
   saveIds: string[],
-): Promise<OkSuccess> {
+): Promise<OkSuccess<UndoableChange>> {
   return withMutationScope(async () => {
     const assignments = await Promise.all(
       [...new Set(saveIds)].map(async (saveId) => ({
@@ -568,7 +570,7 @@ export function moveFolder(input: {
   id: string;
   parentId: string | null;
   beforeId?: string;
-}): Promise<OkSuccess> {
+}): Promise<OkSuccess<UndoableChange>> {
   return withMutationScope(async () => {
     const rows = await listFolders();
     return commitFolderMoves(
@@ -582,7 +584,7 @@ export async function moveFoldersBatch(input: {
   ids: string[];
   parentId: string | null;
   beforeId?: string;
-}): Promise<OkSuccess> {
+}): Promise<OkSuccess<UndoableChange>> {
   return withMutationScope(async () => {
     const rows = await listFolders();
     const changes = planFolderBatchMove(
@@ -598,7 +600,7 @@ export async function moveFoldersBatch(input: {
 async function commitFolderMoves(
   rows: Folder[],
   changes: Array<{ id: string; parentId: string | null; sortOrder: number }>,
-): Promise<OkSuccess> {
+): Promise<OkSuccess<UndoableChange>> {
   const byId = new Map(changes.map((row) => [row.id, row]));
   const txs: Transaction[] = changes.flatMap((patch) => {
     const before = rows.find((row) => row.id === patch.id);
@@ -615,7 +617,7 @@ async function commitFolderMoves(
         ]
       : [];
   });
-  if (!txs.length) return { ok: true };
+  if (!txs.length) return { ok: true, undoId: null };
   const affectedFolders = new Set(
     changes.flatMap((change) => collectDescendants(change.id, rows)),
   );
@@ -651,6 +653,8 @@ async function commitFolderMoves(
     )),
   );
   await executeBatch(txs);
-  recordBatchForUndo(txs.filter((tx) => tx.model !== "tag"));
-  return { ok: true };
+  return {
+    ok: true,
+    undoId: recordBatchForUndo(txs.filter((tx) => tx.model !== "tag")),
+  };
 }

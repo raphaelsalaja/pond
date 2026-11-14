@@ -67,7 +67,10 @@ function ToastItem({ toast }: { toast: ToastObject }) {
           {data?.note ? <Toast.Meta>{data.note}</Toast.Meta> : null}
         </Toast.Header>
         {data?.action ? (
-          <Toast.Action onClick={data.action.onClick}>
+          <Toast.Action
+            disabled={data.action.disabled}
+            onClick={data.action.onClick}
+          >
             {data.action.label}
           </Toast.Action>
         ) : null}

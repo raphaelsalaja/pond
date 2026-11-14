@@ -11,7 +11,11 @@ import { RatingStars } from "@/features/saves/components/detail/rating";
 import { RelatedSaves } from "@/features/saves/components/detail/related-saves";
 import { useRetainedSaves, useSaves } from "@/features/saves/hooks/use-saves";
 import { ensureSaves, reloadSaves } from "@/features/saves/lib/ensure-saves";
-import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
+import { changeSaveFolders } from "@/features/saves/lib/folder-actions";
+import {
+  type SaveFolderReference,
+  saveLibraryBridge,
+} from "@/features/saves/lib/library-bridge";
 import { sensitiveContentMenuItem } from "@/features/saves/lib/menu/sensitive";
 import { bulkMutation } from "@/features/saves/lib/mutate";
 import { pool } from "@/features/saves/state/pool";
@@ -218,14 +222,12 @@ export function SaveInspector({
     await reloadSaves(targets);
   }
 
-  async function assignFolder(folderId: string, add: boolean) {
-    await window.pond.query("folders.assign", {
-      saveIds: [...ids],
-      addIds: add ? [folderId] : [],
-      removeIds: add ? [] : [folderId],
+  async function assignFolder(folder: SaveFolderReference, add: boolean) {
+    await changeSaveFolders({
+      saveIds: ids,
+      add: add ? [folder] : [],
+      remove: add ? [] : [folder],
     });
-    if (add) saveLibraryBridge.rememberFolderDestinations([folderId]);
-    await saveLibraryBridge.refreshFolders();
   }
 
   function createFolder(rawName: string) {
@@ -241,13 +243,13 @@ export function SaveInspector({
           (current) => current && new Set(current).add(folderId),
         );
       } else {
-        await assignFolder(folderId, true);
+        await assignFolder({ id: folderId, name }, true);
       }
     });
   }
 
   function toggleFolder(option: InspectorFolder) {
-    void run(() => assignFolder(option.id, option.count !== ids.length));
+    void run(() => assignFolder(option, option.count !== ids.length));
   }
 
   function toggleStagedFolder(option: AssignOption) {
@@ -265,14 +267,15 @@ export function SaveInspector({
     setFailure(null);
     setApplyingFolderBatch(true);
     try {
-      const addIds = [...stagedFolderIds];
-      await window.pond.query("folders.assign", {
-        saveIds: [...ids],
-        addIds,
-        removeIds: [],
+      const staged = [...stagedFolderIds];
+      await changeSaveFolders({
+        saveIds: ids,
+        add: staged.map((id) => ({
+          id,
+          name: folderNames.get(id) ?? "Folder",
+        })),
+        remove: [],
       });
-      saveLibraryBridge.rememberFolderDestinations(addIds);
-      await saveLibraryBridge.refreshFolders();
       setStagedFolderIds(null);
     } catch (error) {
       setFailure({
@@ -454,9 +457,7 @@ export function SaveInspector({
                     count={folder.count}
                     total={ids.length}
                     removeLabel={`Remove folder ${folder.path}`}
-                    onRemove={() =>
-                      void run(() => assignFolder(folder.id, false))
-                    }
+                    onRemove={() => void run(() => assignFolder(folder, false))}
                   />
                 ))}
             </AssignmentChip.List>

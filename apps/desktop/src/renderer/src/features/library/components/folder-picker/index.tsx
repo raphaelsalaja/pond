@@ -1,7 +1,6 @@
 import { Dialog } from "@pond/ui";
 import { useSelector } from "@tanstack/react-store";
 import { useEffect, useState } from "react";
-import { rememberFolderDestinations } from "@/features/library/lib/recent-folders";
 import {
   closeFolderPicker,
   folderPickerStore,
@@ -11,7 +10,11 @@ import {
   useFolderMemberships,
   useFolders,
 } from "@/features/library/state/folders";
-import { FolderMenu, type FolderMenuItem } from "@/features/saves";
+import {
+  changeSaveFolders,
+  FolderMenu,
+  type FolderMenuItem,
+} from "@/features/saves";
 import { usePrefs } from "@/shared/state/prefs";
 import styles from "./styles.module.css";
 
@@ -47,14 +50,12 @@ function FolderPicker({ ids }: { ids: readonly string[] }) {
     }
   }
 
-  async function assign(folderId: string, add: boolean) {
-    await window.pond.query("folders.assign", {
-      saveIds: [...ids],
-      addIds: add ? [folderId] : [],
-      removeIds: add ? [] : [folderId],
+  async function assign(folder: { id: string; name: string }, add: boolean) {
+    await changeSaveFolders({
+      saveIds: ids,
+      add: add ? [folder] : [],
+      remove: add ? [] : [folder],
     });
-    if (add) rememberFolderDestinations([folderId]);
-    await folders.refresh();
   }
 
   return (
@@ -71,14 +72,14 @@ function FolderPicker({ ids }: { ids: readonly string[] }) {
             folders={items}
             selectionSize={ids.length}
             onToggle={(folder) =>
-              run(() => assign(folder.id, folder.count !== ids.length))
+              run(() => assign(folder, folder.count !== ids.length))
             }
             onCreate={(name) =>
               run(async () => {
                 const created = await window.pond.query("folders.create", {
                   name: name.trim(),
                 });
-                await assign(created.id, true);
+                await assign(created, true);
               })
             }
           />

@@ -21,7 +21,9 @@ import { normalise, SavePatchSchema } from "@/features/saves/lib/reconcile";
 import { pool } from "@/features/saves/state/pool";
 import { setSaveViewerFileIndex } from "@/features/saves/state/save-viewer";
 import { primarySelection } from "@/features/saves/state/selection";
+import { ToastHost } from "@/shared/components/toast-host";
 import { setAppRouter } from "@/shared/lib/app-router";
+import { toastManager } from "@/shared/lib/toast";
 import { SaveInspector } from ".";
 
 let host: HTMLDivElement;
@@ -30,6 +32,38 @@ const requests: Array<{
   name: string;
   input: Record<string, string | string[] | number>;
 }> = [];
+async function stubQuery(
+  name: string,
+  input: Record<string, string | string[] | number>,
+) {
+  requests.push({ name, input });
+  if (
+    name === "folders.list" ||
+    name === "folders.memberships" ||
+    name === "tags.list" ||
+    name === "tagGroups.list"
+  )
+    return [];
+  if (name === "folders.create") return { id: "created" };
+  if (name === "saves.rawJson")
+    return {
+      rawJson:
+        pool.get(z.object({ id: z.string() }).parse(input).id)?.rawJson ?? null,
+    };
+  if (name === "saves.getMany")
+    return [
+      SavePatchSchema.parse({
+        id: "cold",
+        notes: "Other",
+        source: "local",
+        url: "https://other.test",
+        tags: ["Shared"],
+        fileSize: 2048,
+      }),
+    ];
+  return { changed: 2 };
+}
+
 beforeEach(() => {
   host = document.createElement("div");
   document.body.append(host);
@@ -39,38 +73,7 @@ beforeEach(() => {
   requests.length = 0;
   vi.stubGlobal("pond", {
     onSyncAction: () => () => {},
-    query: async (
-      name: string,
-      input: Record<string, string | string[] | number>,
-    ) => {
-      requests.push({ name, input });
-      if (
-        name === "folders.list" ||
-        name === "folders.memberships" ||
-        name === "tags.list" ||
-        name === "tagGroups.list"
-      )
-        return [];
-      if (name === "folders.create") return { id: "created" };
-      if (name === "saves.rawJson")
-        return {
-          rawJson:
-            pool.get(z.object({ id: z.string() }).parse(input).id)?.rawJson ??
-            null,
-        };
-      if (name === "saves.getMany")
-        return [
-          SavePatchSchema.parse({
-            id: "cold",
-            notes: "Other",
-            source: "local",
-            url: "https://other.test",
-            tags: ["Shared"],
-            fileSize: 2048,
-          }),
-        ];
-      return { changed: 2 };
-    },
+    query: stubQuery,
   });
   const save = normalise(
     SavePatchSchema.parse({
@@ -520,6 +523,75 @@ it("stages multiple folders and assigns them together from the inspector menu", 
       removeIds: [],
     },
   });
+});
+
+it("undoes a staged multi-folder assignment as one step from its toast", async () => {
+  const undone: string[] = [];
+  vi.stubGlobal("pond", {
+    onSyncAction: () => () => {},
+    query: async (
+      name: string,
+      input: Record<string, string | string[] | number>,
+    ) => {
+      if (name !== "folders.assign") return stubQuery(name, input);
+      requests.push({ name, input });
+      return { ok: true, undoId: "step-7" };
+    },
+    undoStep: async (step: string) => {
+      undone.push(step);
+      return { outcome: "done", canUndo: false, canRedo: true };
+    },
+  });
+  await act(async () =>
+    root.render(
+      <>
+        <ToastHost />
+        <SaveInspector
+          saveId="a"
+          folders={[
+            { id: "inspiration", name: "Inspiration", count: 0 },
+            { id: "reference", name: "Reference", count: 0 },
+          ]}
+        />
+      </>,
+    ),
+  );
+  const trigger = host.querySelector<HTMLButtonElement>(
+    '[aria-label="Add Folder"]',
+  );
+  if (!trigger) throw new Error("Missing Add Folder");
+  await act(async () => trigger.click());
+  const multiple = [
+    ...document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
+  ].find((item) => item.textContent === "Select Multiple");
+  if (!multiple) throw new Error("Missing Select Multiple action");
+  await act(async () => multiple.click());
+  for (const name of ["Inspiration", "Reference"]) {
+    const row = [
+      ...document.querySelectorAll<HTMLElement>('[role="menuitemcheckbox"]'),
+    ].find((item) => item.textContent?.includes(name));
+    if (!row) throw new Error(`Missing ${name}`);
+    await act(async () => row.click());
+  }
+  const apply = document.querySelector<HTMLButtonElement>(
+    '[aria-label="Add to 2 Folders"]',
+  );
+  if (!apply) throw new Error("Missing Add to Folders action");
+  await act(async () => apply.click());
+
+  const toasts = () =>
+    document.body.querySelector("[data-slot='toasts']")?.textContent ?? "";
+  await vi.waitFor(() => expect(toasts()).toContain("Added to 2 Folders"));
+  const undo = [
+    ...document.querySelectorAll<HTMLButtonElement>(
+      "[data-slot='toasts'] button",
+    ),
+  ].find((button) => button.textContent === "Undo");
+  if (!undo) throw new Error("Missing Undo");
+  await act(async () => undo.click());
+  expect(undone).toEqual(["step-7"]);
+  await vi.waitFor(() => expect(toasts()).toContain("Assignment undone"));
+  toastManager.close();
 });
 
 it("cancels staged folder assignment without mutating the Save", async () => {
