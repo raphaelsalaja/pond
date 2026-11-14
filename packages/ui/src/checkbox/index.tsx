@@ -3,12 +3,22 @@ import { IconCheck as Check, IconMinus as Minus } from "@pond/icons";
 import { clsx as cn } from "clsx";
 import styles from "./styles.module.css";
 
-type RootProps = Base.Root.Props & { size?: "sm" | "md" };
+type RootProps = Base.Root.Props & {
+  size?: "sm" | "md";
+  /** `media` is a round check with a scrim and ring, so it reads on top of any image. */
+  variant?: "default" | "media";
+};
 
-function Root({ className, size = "md", ...props }: RootProps) {
+function Root({
+  className,
+  size = "md",
+  variant = "default",
+  ...props
+}: RootProps) {
   return (
     <Base.Root
       data-size={size}
+      data-variant={variant}
       className={cn(styles.root, className)}
       {...props}
     />
