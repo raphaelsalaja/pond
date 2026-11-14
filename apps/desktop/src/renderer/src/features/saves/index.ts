@@ -17,7 +17,11 @@ export { MediaViewer, type ViewerNav } from "./components/viewers/media-viewer";
 export { useCardActions } from "./hooks/use-card-actions";
 export { useMediaPickOptions } from "./hooks/use-media-pick-options";
 export { confirmEmptyTrash } from "./lib/empty-trash";
-export { notifyUndoableFolderChange } from "./lib/folder-actions";
+export {
+  changeSaveFolders,
+  notifyFolderMembershipChange,
+  notifyUndoableFolderChange,
+} from "./lib/folder-actions";
 export { collectionOwnsKeyboard, saveOwnsKeyboard } from "./lib/keyboard-owner";
 export { parseMode, type SaveListMode } from "./lib/list";
 export {

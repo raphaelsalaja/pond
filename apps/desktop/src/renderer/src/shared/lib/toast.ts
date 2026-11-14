@@ -25,6 +25,7 @@ export interface ToastData {
   action?: {
     label: string;
     onClick: () => void;
+    disabled?: boolean;
   };
   icon?: ReactNode;
   tone?: ToastTone;
@@ -79,6 +80,10 @@ export function notify(options: NotifyOptions): string {
 
 export function updateNotification(options: NotifyOptions): void {
   toastManager.update(options.id, toastOptions(options));
+}
+
+export function closeNotification(id: string): void {
+  toastManager.close(id);
 }
 
 export interface AskOptions extends ToastAsk {
