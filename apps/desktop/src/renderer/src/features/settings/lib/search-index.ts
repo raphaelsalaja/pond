@@ -141,6 +141,20 @@ const MANUAL_ENTRIES = [
     "Move Library",
     "Move your library to a new location",
   ],
+  [
+    "health",
+    "Library Health",
+    "check",
+    "Check Library",
+    "Look for missing files, damaged thumbnails, and failed downloads",
+  ],
+  [
+    "health",
+    "Library Health",
+    "debug-report",
+    "Export Debug Report",
+    "Share library health counts without titles or file paths",
+  ],
   ["backups", "Backups", "backup", "Back Up Library", "Create a backup"],
   [
     "backups",

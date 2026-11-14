@@ -44,6 +44,10 @@ import type {
   InspectQueryInputs,
   InspectQueryResults,
 } from "./inspect-contracts";
+import type {
+  LibraryHealthQueryInputs,
+  LibraryHealthQueryResults,
+} from "./library-health-contracts";
 import type { LibraryMarkSource } from "./library-mark";
 import type {
   LibraryRepairQueryInputs,
@@ -163,6 +167,7 @@ export interface QueryInputs
     QueueQueryInputs,
     ArenaLinkQueryInputs,
     LibraryRepairQueryInputs,
+    LibraryHealthQueryInputs,
     MediaProcessingQueryInputs,
     TagGroupQueryInputs {
   "saves.understandMedia": MediaUnderstandInput;
@@ -384,6 +389,7 @@ export interface QueryResults
     QueueQueryResults,
     ArenaLinkQueryResults,
     LibraryRepairQueryResults,
+    LibraryHealthQueryResults,
     TagGroupQueryResults {
   "folders.rules.get": { tags: string[]; inheritedTags: string[] };
   "folders.rules.set": OkResult<{ affected: number }>;

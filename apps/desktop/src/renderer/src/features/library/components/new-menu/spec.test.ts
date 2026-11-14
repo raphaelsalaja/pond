@@ -95,6 +95,7 @@ describe("new menu spec", () => {
       "Current List",
       "Selected",
       "Rescan Library",
+      "Library Health",
       "Verify Integrity",
       "Repair Library",
       "Repair Thumbnails",

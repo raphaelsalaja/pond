@@ -5,6 +5,7 @@ import { appearanceSection } from "@/features/settings/lib/config-appearance";
 import { backupsSection } from "@/features/settings/lib/config-backups";
 import { extensionSection } from "@/features/settings/lib/config-extension";
 import { generalSection } from "@/features/settings/lib/config-general";
+import { healthSection } from "@/features/settings/lib/config-health";
 import {
   scheduleSection,
   sourcesSection,
@@ -139,6 +140,7 @@ export const SECTION_CONFIGS = new Map<string, SectionConfig>([
     },
   ],
   ["library", librarySection],
+  ["health", healthSection],
   ["storage", storageSection],
   ["backups", backupsSection],
   ["processing", processingSection],
