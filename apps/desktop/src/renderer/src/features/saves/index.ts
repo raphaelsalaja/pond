@@ -24,11 +24,13 @@ export { parseMode, type SaveListMode } from "./lib/list";
 export {
   getLastListPath,
   getLastListSearch,
+  isSaveCollectionPath,
   listPathForLocation,
   rememberListPath,
 } from "./lib/list-path";
 export { storedFileViewerKind } from "./lib/media/file-viewer";
 export {
+  buildSaveMenu,
   loadOpenWithApps,
   type OpenWithApp,
   openWithKind,
@@ -48,15 +50,7 @@ export {
   selectOnlySave,
 } from "./lib/select";
 export { selectResults } from "./lib/select-results";
-export {
-  copyUrlsForSelection,
-  exportSelectionCsv,
-  exportSelectionFiles,
-  openInBrowserForSelection,
-  restoreSelection,
-  revealFilesForSelection,
-  trashSelection,
-} from "./lib/selection";
+export { exportSelectionCsv, exportSelectionFiles } from "./lib/selection";
 export type { ResultDirection } from "./lib/spatial-navigation";
 export {
   announceSaveDragTarget,

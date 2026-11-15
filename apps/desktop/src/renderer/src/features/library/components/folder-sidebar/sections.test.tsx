@@ -1,5 +1,6 @@
 import { act } from "react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { commandMenu } from "@/features/library/state/command-menu";
 import { savePrefsSection } from "@/shared/state/prefs";
 import { createFolderSidebarHarness } from "./test-harness";
 
@@ -28,5 +29,16 @@ describe("folder sidebar sections", () => {
     expect(group("Folders")).toBeNull();
     expect(group("Fish")).not.toBeNull();
     expect(harness.button("All")).toBeTruthy();
+  });
+
+  it("opens the command menu from Search Pond", async () => {
+    const open = vi.spyOn(commandMenu, "open");
+    await harness.mount();
+    const search = harness.button("Search Pond");
+    expect(search.querySelector("kbd")).not.toBeNull();
+    await act(async () => search.click());
+    expect(open).toHaveBeenCalledOnce();
+    open.mockRestore();
+    commandMenu.close();
   });
 });

@@ -24,7 +24,7 @@ export { Input } from "./input";
 export { Keyboard } from "./keyboard";
 export { Loader } from "./loader";
 export { LOGO_PATH, LOGO_VIEW_BOX, Logo, type LogoProps } from "./logo";
-export { Menu, type MenuItemSpec } from "./menu";
+export { Menu, type MenuItemSpec, menuLabelText } from "./menu";
 export { Pane } from "./pane-header";
 export {
   PickerPanel,

@@ -8,6 +8,12 @@ import { Store } from "@tanstack/store";
 import { useMemo } from "react";
 import { z } from "zod";
 import type { SortDir } from "@/features/library/hooks/use-filtered-saves";
+import {
+  canSearchAllSaves,
+  type SearchScope,
+  type SearchView,
+  searchViewKey,
+} from "@/features/library/lib/search-view";
 import { combineQueries } from "@/features/library/lib/smart-folders";
 import {
   isLayoutValue,
@@ -61,7 +67,8 @@ export type VisualProbe =
 interface ViewStoreState {
   q: string;
   searchInput: string;
-  searchScope: "all" | "current";
+  /** Widening holds for the view it was chosen in; every other view searches itself. */
+  searchAllView: string | null;
   rows: Predicate[];
   combinator: Combinator;
   query: Query;
@@ -137,7 +144,7 @@ const initialFilters = readPersistedFilters();
 const store = new Store<ViewStoreState>({
   q: "",
   searchInput: "",
-  searchScope: "all",
+  searchAllView: null,
   rows: initialFilters.rows,
   combinator: initialFilters.combinator,
   query: deriveQuery(initialFilters.rows, initialFilters.combinator),
@@ -218,13 +225,24 @@ export function useSearchInput(): string {
   return useSelector(store, (s) => s.searchInput);
 }
 
-export function useSearchScope(): "all" | "current" {
-  return useSelector(store, (s) => s.searchScope);
+export function useSearchScope(view: SearchView): SearchScope {
+  const key = searchViewKey(view);
+  return useSelector(store, (s) =>
+    s.searchAllView === key ? "all" : "current",
+  );
 }
 
-export function setSearchScope(searchScope: "all" | "current"): void {
+export function searchAllSaves(view: SearchView): void {
+  if (!canSearchAllSaves(view)) return;
+  const searchAllView = searchViewKey(view);
   store.setState((state) =>
-    state.searchScope === searchScope ? state : { ...state, searchScope },
+    state.searchAllView === searchAllView ? state : { ...state, searchAllView },
+  );
+}
+
+export function searchCurrentView(): void {
+  store.setState((state) =>
+    state.searchAllView === null ? state : { ...state, searchAllView: null },
   );
 }
 
@@ -309,6 +327,7 @@ export function resetFilters(): void {
     ...s,
     q: "",
     searchInput: "",
+    searchAllView: null,
     rows: [],
     query: EMPTY_QUERY,
     inheritedQuery: EMPTY_QUERY,
@@ -375,6 +394,7 @@ export function applySavedView(view: {
     ...s,
     q: "",
     searchInput: "",
+    searchAllView: null,
     semanticQuery: null,
     visualProbe: null,
     rows,
@@ -595,6 +615,7 @@ export function restoreDefaults(): void {
     activeViewId: null,
     q: "",
     searchInput: "",
+    searchAllView: null,
     layout: "waterfall",
     sortKey: "savedAt",
     sortDir: "desc",

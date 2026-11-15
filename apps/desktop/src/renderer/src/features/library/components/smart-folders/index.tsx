@@ -37,7 +37,7 @@ import { useOrganizationTree } from "../../hooks/use-organization-tree";
 import { resetFilters, setQuery } from "../../state/view-store";
 import { selectLibraryNav } from "../folder-sidebar/navigation";
 import { SmartFolderEntry } from "./entry";
-import { creationItems } from "./menu-items";
+import { creationItems, quickAccessIdsFor } from "./menu-items";
 import { smartFolderRows, smartFolderSortableIds } from "./reorder";
 import { RuleDialog } from "./rule-dialog";
 import { newRule } from "./rule-editor";
@@ -91,6 +91,11 @@ export function SmartFoldersSection({
     )
       return;
     handledEditorRequest.current = editorRequest.token;
+    if (editorRequest.mode === "edit") {
+      const view = views.find((entry) => entry.id === editorRequest.viewId);
+      if (view) setEditor({ mode: "edit", view });
+      return;
+    }
     setOpen(true);
     setEditor({
       mode: "create",
@@ -98,7 +103,7 @@ export function SmartFoldersSection({
       parentId: editorRequest.parentId,
       onSaved: onSelect,
     });
-  }, [editorRequest, onSelect]);
+  }, [editorRequest, views, onSelect]);
   const childrenByParent = useMemo(() => {
     const groups = new Set(
       views.filter((view) => view.kind === "group").map((view) => view.id),
@@ -149,17 +154,7 @@ export function SmartFoldersSection({
     selectedIds: organization.selected,
     onReveal: (id) => setGroupOpen(id, true),
   });
-  const quickAccessIds = views
-    .filter((view) => presentations[view.id]?.quickAccess)
-    .toSorted(
-      (left, right) =>
-        (presentations[left.id]?.quickAccessOrder ?? Number.MAX_SAFE_INTEGER) -
-          (presentations[right.id]?.quickAccessOrder ??
-            Number.MAX_SAFE_INTEGER) ||
-        left.sortOrder - right.sortOrder ||
-        left.name.localeCompare(right.name),
-    )
-    .map((view) => view.id);
+  const quickAccessIds = quickAccessIdsFor(views, presentations);
   const items = () =>
     creationItems(
       null,
