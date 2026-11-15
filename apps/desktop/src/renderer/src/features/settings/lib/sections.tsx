@@ -1,11 +1,11 @@
 import { EXTERNAL_SOURCE_IDS } from "@pond/schema/sources";
-import { lazy } from "react";
 import type { SectionConfig } from "@/features/settings/components/engine";
 import { appearanceSection } from "@/features/settings/lib/config-appearance";
 import { backupsSection } from "@/features/settings/lib/config-backups";
 import { extensionSection } from "@/features/settings/lib/config-extension";
 import { generalSection } from "@/features/settings/lib/config-general";
 import {
+  ScheduleSection,
   scheduleSection,
   sourcesSection,
 } from "@/features/settings/lib/config-harvesting";
@@ -19,44 +19,51 @@ import { storageSection } from "@/features/settings/lib/config-storage";
 import { videosSection } from "@/features/settings/lib/config-videos";
 import { viewerSection } from "@/features/settings/lib/config-viewer";
 import { sourceSectionId } from "@/features/settings/lib/download-sources";
+import { lazyWithPreload } from "@/shared/lib/lazy-with-preload";
 
-const TagsSection = lazy(() =>
-  import("@/features/tags/manager").then((m) => ({
-    default: m.TagsSection,
-  })),
+const TagsSection = lazyWithPreload(() =>
+  import("@/features/tags/manager").then((m) => m.TagsSection),
 );
-const AgentSection = lazy(() =>
-  import("@/features/settings/components/sections/agent").then((m) => ({
-    default: m.AgentSection,
-  })),
-);
-const ModelsSection = lazy(() =>
-  import("@/features/settings/components/sections/agent/models").then((m) => ({
-    default: m.ModelsSection,
-  })),
-);
-const PersonalizationSection = lazy(() =>
-  import("@/features/settings/components/sections/agent/personalization").then(
-    (m) => ({
-      default: m.PersonalizationSection,
-    }),
+const AgentSection = lazyWithPreload(() =>
+  import("@/features/settings/components/sections/agent").then(
+    (m) => m.AgentSection,
   ),
 );
-const McpSection = lazy(() =>
-  import("@/features/settings/components/sections/mcp").then((m) => ({
-    default: m.McpSection,
-  })),
+const ModelsSection = lazyWithPreload(() =>
+  import("@/features/settings/components/sections/agent/models").then(
+    (m) => m.ModelsSection,
+  ),
 );
-const LocalApiSection = lazy(() =>
-  import("@/features/settings/components/sections/local-api").then((m) => ({
-    default: m.LocalApiSection,
-  })),
+const PersonalizationSection = lazyWithPreload(() =>
+  import("@/features/settings/components/sections/agent/personalization").then(
+    (m) => m.PersonalizationSection,
+  ),
 );
-const ShortcutSettings = lazy(() =>
-  import("@/features/shortcuts").then((m) => ({
-    default: m.ShortcutSettings,
-  })),
+const McpSection = lazyWithPreload(() =>
+  import("@/features/settings/components/sections/mcp").then(
+    (m) => m.McpSection,
+  ),
 );
+const LocalApiSection = lazyWithPreload(() =>
+  import("@/features/settings/components/sections/local-api").then(
+    (m) => m.LocalApiSection,
+  ),
+);
+const ShortcutSettings = lazyWithPreload(() =>
+  import("@/features/shortcuts").then((m) => m.ShortcutSettings),
+);
+
+export const SECTION_PRELOADS = [
+  TagsSection.preload,
+  AgentSection.preload,
+  ModelsSection.preload,
+  PersonalizationSection.preload,
+  McpSection.preload,
+  LocalApiSection.preload,
+  ShortcutSettings.preload,
+  ScheduleSection.preload,
+];
+
 export const SECTION_CONFIGS = new Map<string, SectionConfig>([
   ["general", generalSection],
   ["viewer", viewerSection],
