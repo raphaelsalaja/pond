@@ -1,0 +1,27 @@
+:global(html),
+:global(body) {
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+}
+
+.root {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  container-type: size;
+  user-select: none;
+  outline: none;
+}
+
+.status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  border: 0;
+  clip: rect(0, 0, 0, 0);
+}
