@@ -6,6 +6,7 @@ import type { Save } from "@/features/saves/types";
 import { errorCopy } from "@/shared/lib/error-copy";
 import { formatPlural } from "@/shared/lib/format";
 import { notify } from "@/shared/lib/toast";
+import { notifyUndoable } from "@/shared/lib/undo-toast";
 
 const SAVES = { one: "save", other: "saves" };
 const TOAST_ID = "inbox-change";
@@ -32,20 +33,14 @@ async function changeInbox(
 ): Promise<number> {
   if (ids.length === 0) return 0;
   try {
-    const changed = await bulkMutation(ids, operation);
+    const { changed, undoId } = await bulkMutation(ids, operation);
     if (changed > 0)
-      notify({
+      notifyUndoable({
         id: TOAST_ID,
         title: title(formatPlural(changed, SAVES)),
-        action: {
-          label: "Undo",
-          onClick: () => {
-            void window.pond.undo().then((result) => {
-              if (!result.ok)
-                notify({ id: TOAST_ID, title: "Couldn't undo Inbox change" });
-            });
-          },
-        },
+        undoneTitle: "Inbox change undone",
+        subject: "Inbox change",
+        step: undoId,
       });
     return changed;
   } catch (error) {
