@@ -14,9 +14,11 @@ import type { Folder } from "@pond/schema/db";
 import { libraryFolderLink } from "@shared/library-links";
 import { createElement } from "react";
 import {
+  buildFolderCanvasItems,
   buildFolderMenuItems,
   confirmRemoveFolder,
   copyFolderToLibrary,
+  createCanvasFromFolderSaves,
   duplicateFolder,
   exportFolderCsv,
   exportFolderEaglePackage,
@@ -154,6 +156,9 @@ export function buildFolderRowMenuItems(input: FolderRowMenuInput) {
     onExportEaglePackage: () => void exportFolderEaglePackage(input.exportIds),
     onExportPackage: () => void exportFolderPackage(input.exportIds),
     onCopyToLibrary: () => void copyFolderToLibrary(input.exportIds),
+    onCreateCanvas: () =>
+      void createCanvasFromFolderSaves(folder.name, input.exportIds),
+    canvasItems: buildFolderCanvasItems(input.exportIds),
     onCopyLink: () => {
       void window.pond
         .query("clipboard.writeText", {
