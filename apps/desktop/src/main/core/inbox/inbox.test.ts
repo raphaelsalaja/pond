@@ -201,6 +201,7 @@ describe.skipIf(!nativeAvailable())("inbox storage", () => {
         },
         (transactions) => {
           undone = transactions;
+          return null;
         },
       );
       expect(undone).toBe(committed);

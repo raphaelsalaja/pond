@@ -168,6 +168,7 @@ it("reads favorite next to rating", async () => {
     transcript: null,
     rating: 3,
     favorite: true,
+    inboxState: null,
     mediaType: "image",
     width: null,
     height: null,
