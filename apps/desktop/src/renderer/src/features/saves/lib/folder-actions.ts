@@ -38,6 +38,7 @@ export function notifyUndoableFolderChange(
   title: string,
   undoId: string | null,
   undoneTitle = "Folder change undone",
+  onUndo?: () => void,
 ): void {
   notifyUndoable({
     id,
@@ -46,18 +47,21 @@ export function notifyUndoableFolderChange(
     subject: "folder change",
     step: undoId,
     onChange: () => saveLibraryBridge.refreshFolders(),
+    onUndo,
   });
 }
 
 export function notifyFolderMembershipChange(
   change: FolderMembershipChange,
   undoId: string | null,
+  onUndo?: () => void,
 ): void {
   notifyUndoableFolderChange(
     "folder-membership",
     folderChangeTitle(change),
     undoId,
     change.kind === "add" ? "Assignment undone" : "Removal undone",
+    onUndo,
   );
 }
 
@@ -90,8 +94,9 @@ export async function changeSaveFolders(input: {
 export async function assignSavesToFolder(
   ids: readonly string[],
   folder: SaveFolderReference,
-): Promise<void> {
-  if (ids.length === 0) return;
+  onUndo?: () => void,
+): Promise<boolean> {
+  if (ids.length === 0) return false;
   try {
     const result = await window.pond.query("folders.addSaves", {
       folderId: folder.id,
@@ -102,13 +107,16 @@ export async function assignSavesToFolder(
     notifyFolderMembershipChange(
       { kind: "add", saveCount: ids.length, folders: [folder] },
       result.ok ? result.undoId : null,
+      onUndo,
     );
+    return true;
   } catch (error) {
     notify({
       id: "add-saves-to-folder",
       title: `Couldn't add ${ids.length === 1 ? "Save" : "Saves"} to folder`,
       description: errorCopy(error, "Try again."),
     });
+    return false;
   }
 }
 
