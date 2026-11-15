@@ -42,6 +42,7 @@ import {
   pickWatchedFolder,
   watchableSourceItems,
 } from "@/features/sources";
+import { openSettings } from "@/shared/lib/open-settings";
 import { shortcutGlyphs } from "@/shared/lib/shortcuts";
 import {
   createBlankDocument,
@@ -375,6 +376,13 @@ export function buildNewMenuItems(
           keywords: "reconcile index files disk",
           shortcut: shortcutGlyphs("library.rescan"),
           onClick: () => void runNewAction(rescanLibrary),
+        },
+        {
+          id: "health",
+          label: "Library Health",
+          icon: <IconShieldCheck />,
+          keywords: "status problems failed missing thumbnails posters check",
+          onClick: () => openSettings("health"),
         },
         {
           id: "verify",

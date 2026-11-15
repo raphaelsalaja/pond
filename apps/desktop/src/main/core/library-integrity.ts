@@ -12,6 +12,11 @@ import {
 import { eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 import type {
+  HealthFileCheck,
+  HealthFileFinding,
+  HealthOriginals,
+} from "../../shared/library-health-contracts";
+import type {
   LibraryRepairIssue,
   LibraryRepairKind,
 } from "../../shared/library-repair-contracts";
@@ -35,8 +40,14 @@ export type IntegritySave = Pick<
 >;
 export type RepairSave = IntegritySave & Pick<Save, "deletedAt">;
 
+export interface IntegrityEvidence {
+  originals: HealthOriginals;
+  files: HealthFileCheck[];
+}
+
 export interface InternalLibraryRepairIssue extends LibraryRepairIssue {
   fingerprint: string;
+  evidence: IntegrityEvidence;
   action:
     | {
         kind: "thumbnail";
@@ -147,12 +158,15 @@ const defaultRuntime: LibraryIntegrityRuntime = {
 
 export async function scanLibraryIntegrity(input: {
   kind: LibraryRepairKind;
+  saveIds?: readonly string[];
   signal?: AbortSignal;
   onProgress?: (processed: number, total: number) => void;
   runtime?: LibraryIntegrityRuntime;
 }): Promise<InternalLibraryRepairIssue[]> {
   const runtime = input.runtime ?? defaultRuntime;
-  const rows = await runtime.listSaves();
+  const rows = input.saveIds
+    ? await scopedSaves(input.saveIds, runtime)
+    : await runtime.listSaves();
   const issues: InternalLibraryRepairIssue[] = [];
   for (const [index, row] of rows.entries()) {
     throwIfAborted(input.signal);
@@ -165,6 +179,18 @@ export async function scanLibraryIntegrity(input: {
     input.onProgress?.(index + 1, rows.length);
   }
   return issues;
+}
+
+async function scopedSaves(
+  saveIds: readonly string[],
+  runtime: LibraryIntegrityRuntime,
+): Promise<IntegritySave[]> {
+  const rows: IntegritySave[] = [];
+  for (const id of new Set(saveIds)) {
+    const row = await runtime.getSave(id);
+    if (row && !row.deletedAt) rows.push(row);
+  }
+  return rows;
 }
 
 export async function inspectCurrentSaveIntegrity(input: {
@@ -202,18 +228,15 @@ async function inspectThumbnail(
   const directory = saveDirIn(runtime.root(), row.id);
   const thumbnails = row.files.filter((file) => isThumbnailKind(file.kind));
   const healthy: SaveFile[] = [];
+  const inspections = new Map<SaveFile, PayloadInspection>();
+  const findings = new Map<SaveFile, HealthFileFinding>();
   for (const thumbnail of thumbnails) {
-    const inspection = await runtime.inspectPayload(
-      safePayloadPath(directory, thumbnail.path),
-      thumbnail,
-    );
-    if (
-      inspection.ok &&
-      (await runtime.canRenderThumbnail(
-        safePayloadPath(directory, thumbnail.path),
-      ))
-    )
-      healthy.push(thumbnail);
+    const path = safePayloadPath(directory, thumbnail.path);
+    const inspection = await runtime.inspectPayload(path, thumbnail);
+    inspections.set(thumbnail, inspection);
+    if (!inspection.ok) findings.set(thumbnail, inspection.reason);
+    else if (await runtime.canRenderThumbnail(path)) healthy.push(thumbnail);
+    else findings.set(thumbnail, "undecodable");
   }
   const sourceCandidate = thumbnailSource(row.files);
   if (!sourceCandidate) return null;
@@ -231,19 +254,37 @@ async function inspectThumbnail(
   if (!sourceInspection.ok || !(await runtime.canRenderThumbnail(sourcePath)))
     return null;
   const destination = thumbnailFilename(source.path);
+  const thumbnailInspections = thumbnails.map(
+    (file) => inspections.get(file) ?? failedPayload("error"),
+  );
   const observed = {
     files: fileFacts(row.files),
     source: sourceInspection,
-    thumbnails: await Promise.all(
-      thumbnails.map((file) =>
-        runtime.inspectPayload(safePayloadPath(directory, file.path), file),
-      ),
-    ),
+    thumbnails: thumbnailInspections,
     destination,
   };
+  const thumbnailChecks: HealthFileCheck[] =
+    thumbnails.length === 0
+      ? [
+          {
+            path: destination,
+            kind: "thumbnail",
+            expectedSize: null,
+            foundSize: null,
+            finding: "missing",
+          },
+        ]
+      : thumbnails.map((file) => ({
+          ...fileCheck(file, inspections.get(file) ?? failedPayload("error")),
+          finding: findings.get(file) ?? (mismatched ? "mismatch" : "ok"),
+        }));
   return issue({
     kind: "thumbnails",
     row,
+    evidence: {
+      originals: "usable",
+      files: [fileCheck(source, sourceInspection), ...thumbnailChecks],
+    },
     summary: mismatched
       ? "Thumbnail doesn't match this save"
       : thumbnails.length === 0
@@ -301,6 +342,7 @@ async function inspectPhysicalNames(
     to: string;
     payload: PayloadInspection;
   }> = [];
+  const checks: HealthFileCheck[] = [];
   for (const file of row.files) {
     if (file.path !== basename(file.path) || validPhysicalName(file.path))
       continue;
@@ -312,11 +354,17 @@ async function inspectPhysicalNames(
     const to = availablePhysicalName(file.path, occupied);
     occupied.add(to.toLowerCase());
     changes.push({ from: file.path, to, payload });
+    checks.push({
+      ...fileCheck(file, payload),
+      finding: "rename",
+      renameTo: to,
+    });
   }
   if (changes.length === 0) return null;
   return issue({
     kind: "physical-file-names",
     row,
+    evidence: { originals: "usable", files: checks },
     summary:
       changes.length === 1
         ? "1 file name needs renaming"
@@ -345,6 +393,12 @@ async function inspectInvalidContent(
   return issue({
     kind: "invalid-content",
     row,
+    evidence: {
+      originals: originals.length === 0 ? "none" : "unusable",
+      files: originals.map((file, index) =>
+        fileCheck(file, payloads[index] ?? failedPayload("error")),
+      ),
+    },
     summary: "Files are missing or damaged",
     detail:
       originals.length === 0
@@ -372,6 +426,18 @@ async function inspectSaveMetadata(
   return issue({
     kind: "save-metadata",
     row,
+    evidence: {
+      originals: "usable",
+      files: [
+        {
+          path: "info.json",
+          kind: "record",
+          expectedSize: null,
+          foundSize: null,
+          finding: info.status === "valid" ? "stale" : info.status,
+        },
+      ],
+    },
     summary: "Save record is out of date",
     detail:
       "The record stored with this save is missing or doesn't match your library.",
@@ -502,11 +568,25 @@ function fileFacts(files: readonly SaveFile[]) {
   }));
 }
 
+function fileCheck(
+  file: SaveFile,
+  inspection: PayloadInspection,
+): HealthFileCheck {
+  return {
+    path: file.path,
+    kind: file.kind,
+    expectedSize: file.size,
+    foundSize: inspection.size,
+    finding: inspection.reason,
+  };
+}
+
 function issue(input: {
   kind: LibraryRepairKind;
   row: IntegritySave;
   summary: string;
   detail: string;
+  evidence: IntegrityEvidence;
   observed: unknown;
   action: InternalLibraryRepairIssue["action"];
 }): InternalLibraryRepairIssue {
@@ -534,6 +614,7 @@ function issue(input: {
     summary: input.summary,
     detail: input.detail,
     fingerprint,
+    evidence: input.evidence,
     action: input.action,
   };
 }

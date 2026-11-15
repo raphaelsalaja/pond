@@ -134,6 +134,8 @@ closed gate whose hourly or daily request budget is spent, with that source's
 caps. Downloads combines it with each Save's task state, deferral reason, and
 recorded error class to explain a status in plain language.
 
+Library Health lives at `/settings/health`. `main/core/library-health` owns one cancellable check per Library. It runs the integrity scanner's read-only inspections Save by Save, adds the index verification and poster gaps, and stores the last result in `library-health/<library id>.json` under app data, next to the index rather than inside the Library. The page never starts a check on open. The renderer adds live rows from the Downloads projection, its status reasons, and `queue.sourceGates`, plus enrichment failures and the media warmer's snapshot (`mediaWarmSnapshot`), so Health reports the same state Downloads and Processing show. Repairs open the existing repair dialog scoped to the affected Saves, and Health rechecks those Saves when it closes before it reports them fixed. The Debug Report includes the latest result as counts, Save IDs, and file findings, with titles, paths, and URLs left out.
+
 Retry batches can contain failed Saves and Saves that are still ingesting.
 A failed Save stays failed until a worker claims its next task. The orphan
 sweep preserves tasks in active and paused retry batches.
