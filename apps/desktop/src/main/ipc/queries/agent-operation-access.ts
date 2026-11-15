@@ -100,6 +100,7 @@ export const queryOperationAccess = {
   "folders.metadata.get": "read",
   "folders.metadata.set": "review",
   "folders.summaries": "read",
+  "folders.previews": "read",
   "folders.move": "review",
   "folders.moveBatch": "review",
   "folders.rename": "review",

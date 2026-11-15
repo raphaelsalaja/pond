@@ -20,7 +20,9 @@ export { useCardActions } from "./hooks/use-card-actions";
 export { useMediaPickOptions } from "./hooks/use-media-pick-options";
 export { confirmEmptyTrash } from "./lib/empty-trash";
 export {
+  assignSavesToFolder,
   changeSaveFolders,
+  createFolderWithSaves,
   notifyFolderMembershipChange,
   notifyUndoableFolderChange,
 } from "./lib/folder-actions";
@@ -81,6 +83,11 @@ export {
   useDisplayPrefs,
   useItemInfo,
 } from "./state/display-prefs";
+export {
+  currentSaveDragSession,
+  type SaveDragSession,
+  useSaveDragSession,
+} from "./state/drag-session";
 export { importFilesWithDuplicateReview } from "./state/duplicate-import-review";
 export { inspect, useInspect } from "./state/inspect";
 export {

@@ -112,6 +112,33 @@ export async function assignSavesToFolder(
   }
 }
 
+export function createFolderWithSaves(ids: readonly string[]): void {
+  void (async () => {
+    try {
+      const folder = await window.pond.query("folders.createWithSaves", {
+        name: "Untitled",
+        parentId: null,
+        saveIds: [...ids],
+      });
+      saveLibraryBridge.rememberFolderDestinations([folder.id]);
+      await saveLibraryBridge.refreshFolders();
+      saveLibraryBridge.startEditingFolder(folder.id);
+      notifyUndoableFolderChange(
+        "create-folder-with-saves",
+        `Created "${folder.name}" with ${formatPlural(ids.length, { one: "save", other: "saves" })}`,
+        folder.undoId,
+        "Folder creation undone",
+      );
+    } catch (error) {
+      notify({
+        id: "create-folder-with-saves",
+        title: "Couldn't create folder",
+        description: errorCopy(error, "Try again."),
+      });
+    }
+  })();
+}
+
 export async function removeSavesFromFolder(
   ids: readonly string[],
   folder: SaveFolderReference,
