@@ -17,6 +17,8 @@ export function routineEventText(
       ? `${name} ran ${titled}`
       : `${name} ran its scheduled routine`;
   const saves = routine.saves ?? 0;
+  if (routine.trigger === "inbox")
+    return `${name} looked at ${formatPlural(saves, { one: "Save", other: "Saves" })} in the Inbox`;
   return `${name} looked at ${formatPlural(saves, { one: "new Save", other: "new Saves" })}`;
 }
 

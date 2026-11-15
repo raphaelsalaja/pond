@@ -81,6 +81,8 @@ export function migratePond(sqlite: Database.Database): void {
 					suggested_tags_model TEXT,
 					rating INTEGER,
 					favorite INTEGER NOT NULL DEFAULT 0,
+					inbox_state TEXT,
+					inbox_until INTEGER,
 					rotate INTEGER NOT NULL DEFAULT 0,
 					flip_x INTEGER NOT NULL DEFAULT 0,
 					flip_y INTEGER NOT NULL DEFAULT 0,
@@ -351,6 +353,7 @@ export function migratePond(sqlite: Database.Database): void {
 
   ensureImportedFrom(sqlite);
   ensureFavorite(sqlite);
+  ensureInboxColumns(sqlite);
   ensureSavesFts(sqlite);
 }
 
@@ -366,6 +369,20 @@ function ensureFavorite(sqlite: Database.Database): void {
   sqlite.exec(
     "ALTER TABLE saves ADD COLUMN favorite INTEGER NOT NULL DEFAULT 0",
   );
+}
+
+/** Existing Saves keep a null state, so opening an older index never fills the Inbox. */
+function ensureInboxColumns(sqlite: Database.Database): void {
+  const columns = savesColumns(sqlite);
+  sqlite.transaction(() => {
+    if (!columns.includes("inbox_state"))
+      sqlite.exec("ALTER TABLE saves ADD COLUMN inbox_state TEXT");
+    if (!columns.includes("inbox_until"))
+      sqlite.exec("ALTER TABLE saves ADD COLUMN inbox_until INTEGER");
+    sqlite.exec(
+      "CREATE INDEX IF NOT EXISTS saves_inbox_idx ON saves(inbox_state, inbox_until)",
+    );
+  })();
 }
 
 /** `CREATE TABLE IF NOT EXISTS` leaves existing indexes without the column, so add it and fill it from legacy source id prefixes. */

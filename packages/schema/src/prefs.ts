@@ -6,6 +6,7 @@ import {
   FolderPresentationSchema,
 } from "./folder-presentation";
 import { FolderRulesSchema } from "./folder-rules";
+import { DEFAULT_INBOX_CHANNELS } from "./inbox";
 import {
   DEFAULT_APP_ICON,
   DEFAULT_DARK_PRESET_ID,
@@ -214,6 +215,19 @@ const feedback = z.object({
 const trash = z.object({
   autoEmptyDays: z.number().nullable().catch(null),
   confirmBeforeEmpty: z.boolean().catch(true),
+});
+
+const inbox = z.object({
+  /** Off stops new Saves entering the Inbox from every path; Saves already there stay. */
+  enabled: z.boolean().catch(true),
+  channels: z
+    .object({
+      captures: z.boolean().catch(DEFAULT_INBOX_CHANNELS.captures),
+      sync: z.boolean().catch(DEFAULT_INBOX_CHANNELS.sync),
+      watches: z.boolean().catch(DEFAULT_INBOX_CHANNELS.watches),
+      imports: z.boolean().catch(DEFAULT_INBOX_CHANNELS.imports),
+    })
+    .catch({ ...DEFAULT_INBOX_CHANNELS }),
 });
 
 const windowSlice = z.object({
@@ -487,6 +501,7 @@ const PrefsObject = z.object({
   sidebar: sidebar.catch(sidebar.parse({})),
   feedback: feedback.catch(feedback.parse({})),
   trash: trash.catch(trash.parse({})),
+  inbox: inbox.catch(inbox.parse({})),
   window: windowSlice.catch(windowSlice.parse({})),
   system: system.catch(system.parse({})),
   quickCapture: quickCapture.catch(quickCapture.parse({})),

@@ -122,6 +122,7 @@ export async function captureAsset(input: {
       tags: input.metadata.tags,
       note: input.metadata.notes,
       rating: input.metadata.rating,
+      inboxChannel: "captures",
     });
     if (!result.ok) throw new Error(result.error);
     return { id: result.id, duplicate: Boolean(result.skipped) };

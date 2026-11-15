@@ -9,6 +9,7 @@ import {
   saves,
 } from "@pond/schema/db";
 import type { ImportOrigin } from "@pond/schema/import-origin";
+import type { InboxChannel } from "@pond/schema/inbox";
 import {
   classifyLibraryFileFromHeader,
   type LibraryFileFormat,
@@ -29,6 +30,7 @@ import { saveDir } from "../paths";
 import { executeBatch, withMutationScope } from "./executor";
 import { extractFontMetadata, metadataFromOpenType } from "./font-metadata";
 import { extractImageMetadata, type ImageMetadata } from "./image-metadata";
+import { newSaveInbox } from "./inbox";
 import { extractMediaMetadata } from "./media-metadata";
 import { persistSave } from "./persist-save";
 import type { WriteFileArgs } from "./pipeline/workers/apply";
@@ -61,6 +63,8 @@ export interface ManualSaveInput {
   rating?: number | null;
   dominantColors?: string[];
   mediaType?: MediaType | null;
+  /** Omitted for Saves derived from another, like crop copies, which never enter the Inbox. */
+  inboxChannel?: InboxChannel;
 }
 
 export interface ManualSaveMemoryFile {
@@ -321,6 +325,7 @@ async function importManualSave(
     savedAt: input.savedAt ?? now,
     createdAt: input.createdAt ?? now,
     publishedAt: input.publishedAt,
+    ...(await newSaveInbox(input.inboxChannel)),
   };
   if (input.width != null) insertValues.width = input.width;
   if (input.height != null) insertValues.height = input.height;

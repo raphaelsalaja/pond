@@ -19,6 +19,8 @@ function sameCounts(a: LibrarySidebarCounts, b: LibrarySidebarCounts): boolean {
     a.recentlyAdded === b.recentlyAdded &&
     a.recentlyUsed === b.recentlyUsed &&
     a.splitPosts === b.splitPosts &&
+    a.inbox === b.inbox &&
+    a.inboxSnoozed === b.inboxSnoozed &&
     a.trash === b.trash &&
     sameFolderMap(a.folders, b.folders) &&
     sameFolderMap(a.foldersDownloading, b.foldersDownloading)
@@ -32,6 +34,8 @@ const EMPTY: LibrarySidebarCounts = {
   recentlyAdded: 0,
   recentlyUsed: 0,
   splitPosts: 0,
+  inbox: 0,
+  inboxSnoozed: 0,
   trash: 0,
   folders: {},
   foldersDownloading: {},

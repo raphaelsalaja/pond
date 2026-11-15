@@ -2,6 +2,7 @@ import type { Save, Source } from "@pond/schema/db";
 import { mergeListKinds } from "@pond/schema/list-kinds";
 import log from "electron-log/main.js";
 import { broadcastSyncAction } from "../executor";
+import { newSaveInboxForTrigger } from "../inbox";
 import { persistSave } from "../persist-save";
 import type { ImportableCookie } from "../refresh/harvest-window/session";
 import { restoreSave } from "../restore-save";
@@ -250,6 +251,7 @@ async function enqueueOne(
     opts,
     now,
     opts.trigger ?? "pipeline:enqueue",
+    await newSaveInboxForTrigger(opts.trigger),
   );
   const insertedAction = persistence.insertBundle(bundle);
   if (insertedAction) broadcastSyncAction(insertedAction);
@@ -329,8 +331,9 @@ async function enqueueMany(
 
   const now = new Date();
   const actorReason = opts.trigger ?? "pipeline:enqueue:many";
+  const inbox = await newSaveInboxForTrigger(opts.trigger);
   const bundles = fresh.map((candidate) =>
-    createEnqueueBundle(candidate, opts, now, actorReason),
+    createEnqueueBundle(candidate, opts, now, actorReason, inbox),
   );
   const insertedActions = await persistence.insertBundles(
     bundles,

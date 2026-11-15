@@ -18,17 +18,20 @@ import {
 } from "node:path";
 import { MEDIA_TYPES, type NewSave, SOURCES, saves } from "@pond/schema/db";
 import { IMPORT_ORIGINS } from "@pond/schema/import-origin";
+import { InboxStateSchema } from "@pond/schema/inbox";
 import { StoredRawJsonSchema, storedAsRawJson } from "@pond/schema/raw-schema";
 import { and, eq } from "drizzle-orm";
 import { ulid } from "ulid";
 import { z } from "zod";
 import { getDb } from "../db";
 import { writeBundleJson } from "../lib/library-config";
+import { inboxFromInfo } from "../lib/library-format";
 import { saveDir } from "../paths";
 import { writeEnrichmentSidecar } from "./enrichment-sidecar";
 import { executeBatch, withMutationScope } from "./executor";
 import { exportSavesToDirectory } from "./export-saves";
 import { importFolderTree, setSaveFolders } from "./folders";
+import { newSaveInbox } from "./inbox";
 import { runLibraryTransfer } from "./library-transfers";
 import {
   importPackageOrganization,
@@ -73,6 +76,10 @@ const PackageSaveSchema = z.object({
   author: z.string().nullable().optional(),
   rating: z.number().nullable().optional(),
   favorite: z.boolean().optional(),
+  inbox: z
+    .object({ state: InboxStateSchema, until: z.string().optional() })
+    .optional()
+    .catch(undefined),
   dominantColors: z.array(z.string()).optional(),
   primaryColor: z.string().nullable().optional(),
   width: z.number().nullable().optional(),
@@ -174,6 +181,9 @@ const runtime: PackageImportRuntime = {
         tags: save.tags,
         rating: save.rating,
         favorite: save.favorite ?? false,
+        ...(save.inbox
+          ? inboxFromInfo(save.inbox)
+          : await newSaveInbox("imports")),
         dominantColors: save.dominantColors,
         primaryColor: save.primaryColor,
         width: save.width,

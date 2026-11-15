@@ -36,6 +36,7 @@ import {
   INFO_FILE,
   type InfoDoc,
   type InfoFile,
+  type InfoInbox,
   infoDocFromSave,
   infoFilesFromSave,
   SOURCE_FILE,
@@ -67,6 +68,7 @@ interface SaveMetadata {
   pond: {
     schemaVersion: number;
     userData?: SaveUserData;
+    inbox?: InfoInbox;
     publishedAt?: number | null;
     rawSource?: RawJson | null;
     description?: string | null;
@@ -281,6 +283,7 @@ function metadataFromInfo(
     pond: {
       schemaVersion: info.schema ?? 3,
       userData: info.userData,
+      inbox: info.inbox,
       publishedAt: parseTimestamp(info.publishedAt),
       rawSource,
       description: info.description ?? null,

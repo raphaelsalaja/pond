@@ -614,6 +614,8 @@ describe("folder sidebar tree", () => {
       recentlyUsed: 0,
       splitPosts: 0,
       trash: 0,
+      inbox: 0,
+      inboxSnoozed: 0,
       folders: {
         "Jil Sander": 6006,
         "Runway Year": 206,
@@ -660,6 +662,8 @@ describe("folder sidebar tree", () => {
       recentlyUsed: 0,
       splitPosts: 0,
       trash: 0,
+      inbox: 0,
+      inboxSnoozed: 0,
       folders: { Pinterest: 3, Gardens: 3 },
       foldersDownloading: { Pinterest: 12, Kitchens: 12 },
     };

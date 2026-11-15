@@ -67,4 +67,37 @@ describe("portable original manifest", () => {
     expect(next.files[0]?.sourceUrl).toBe(original.sourceUrl);
     expect(applyPatchToInfo(next, { files: [] }).files).toEqual([]);
   });
+  it("records Inbox state only while a Save is in the Inbox", () => {
+    const info = StoredInfoDocSchema.parse({
+      id: "save",
+      source: "local",
+      sourceId: "save",
+      url: "pond:save",
+      files: [],
+    });
+    expect(info.inbox).toBeUndefined();
+    const until = Date.parse("2030-01-02T03:04:05.000Z");
+    const snoozed = applyPatchToInfo(info, {
+      inboxState: "snoozed",
+      inboxUntil: until,
+    });
+    expect(snoozed.inbox).toEqual({
+      state: "snoozed",
+      until: "2030-01-02T03:04:05.000Z",
+    });
+    expect(StoredInfoDocSchema.parse(snoozed).inbox).toEqual(snoozed.inbox);
+    expect(applyPatchToInfo(snoozed, { title: "Kept" }).inbox).toEqual(
+      snoozed.inbox,
+    );
+    expect(
+      applyPatchToInfo(snoozed, { inboxState: "processed", inboxUntil: null })
+        .inbox,
+    ).toEqual({ state: "processed" });
+    expect(
+      applyPatchToInfo(snoozed, { inboxState: null, inboxUntil: null }).inbox,
+    ).toBeUndefined();
+    expect(
+      StoredInfoDocSchema.parse({ ...info, inbox: { state: "later" } }).inbox,
+    ).toBeUndefined();
+  });
 });

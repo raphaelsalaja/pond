@@ -39,4 +39,5 @@ export interface SaveLike {
   publishedAt?: string | Date | number | null;
   rating?: number | null;
   favorite?: boolean;
+  inboxState?: string | null;
 }

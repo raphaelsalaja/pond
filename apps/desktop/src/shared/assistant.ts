@@ -444,7 +444,7 @@ export const assistantToolStep = z.object({
 export type AssistantToolStep = z.infer<typeof assistantToolStep>;
 
 export const assistantRoutine = z.object({
-  trigger: z.enum(["manual", "schedule", "newSaves"]),
+  trigger: z.enum(["manual", "schedule", "newSaves", "inbox"]),
   saves: z.number().int().min(0).optional(),
   routineId: z.string().optional(),
   name: z.string().optional(),

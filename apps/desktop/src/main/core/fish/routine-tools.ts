@@ -12,7 +12,7 @@ import { announceFishChanged } from "./presence";
 import { createRoutine, deleteRoutine, updateRoutine } from "./store";
 
 const WHEN_HELP =
-  'when is {"kind":"daily","time":"08:00","days":[1,2,3,4,5]} for weekdays at 8:00 AM (24-hour time, 0 is Sunday), {"kind":"every","hours":2} for every 2 hours, or {"kind":"newSaves"} to run when new Saves arrive in this fish\'s scope.';
+  'when is {"kind":"daily","time":"08:00","days":[1,2,3,4,5]} for weekdays at 8:00 AM (24-hour time, 0 is Sunday), {"kind":"every","hours":2} for every 2 hours, {"kind":"newSaves"} to run when new Saves arrive in this fish\'s scope, or {"kind":"inbox"} to run when Saves in its scope arrive in the Inbox for review.';
 
 const RoutineId = z.string().min(1).max(64);
 const RoutineIdInput = z.object({ routineId: RoutineId });

@@ -82,6 +82,7 @@ export async function startAutoImport(): Promise<void> {
         filePaths: [input.path],
         sourceId: input.sourceId,
         importedFrom: "watched-folder",
+        inboxChannel: "watches",
       });
     },
     trash: (path) => shell.trashItem(path),

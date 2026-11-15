@@ -48,6 +48,7 @@ import {
 import { startLaunchSync } from "./core/sync/launch";
 import { flushTagsDump, hydrateTagsFromBundle } from "./core/tags-bundle";
 import {
+  registerInboxSnoozeCron,
   registerSyncCron,
   registerTrashCron,
   registerYtDlpUpdateCron,
@@ -456,6 +457,7 @@ async function postLaunchInit(): Promise<void> {
     log.warn("[pond] interrupted-sync recovery failed", err),
   );
   registerTrashCron();
+  registerInboxSnoozeCron();
   registerYtDlpUpdateCron();
   registerSyncCron();
   await startStorageWatcher().catch((err) =>

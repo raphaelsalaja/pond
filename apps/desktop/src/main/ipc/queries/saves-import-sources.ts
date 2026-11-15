@@ -36,7 +36,12 @@ async function quickAdd({
   tags,
 }: QuickAddInput): Promise<QueryResult<"saves.quickAdd">> {
   if (!url) {
-    const result = await createManualSave({ title: note, note, tags });
+    const result = await createManualSave({
+      title: note,
+      note,
+      tags,
+      inboxChannel: "captures",
+    });
     return result.ok
       ? { ok: true, id: result.id }
       : { ok: false, error: result.error };
@@ -59,6 +64,7 @@ async function quickAdd({
         title: note ?? url,
         note,
         tags,
+        inboxChannel: "captures",
       });
       return result.ok
         ? { ok: true, id: result.id }

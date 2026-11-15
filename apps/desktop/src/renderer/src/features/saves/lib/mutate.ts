@@ -1,4 +1,5 @@
 import type { NewSave } from "@pond/schema/db";
+import { applyInboxChange } from "@pond/schema/inbox";
 import type { Transaction, TxMeta } from "@pond/schema/tx";
 import type { BulkEdit, BulkQueryResults } from "@shared/bulk-contracts";
 import { ensureSaves } from "@/features/saves/lib/ensure-saves";
@@ -159,7 +160,14 @@ export async function bulkMutation(
         updates.push({ ...save, favorite: operation.favorite });
       else if (operation.kind === "notes")
         updates.push({ ...save, notes: operation.notes });
-      else if (operation.kind === "tags" && operation.mode === "replace")
+      else if (operation.kind === "inbox" || operation.kind === "snooze") {
+        const next = applyInboxChange(operation, {
+          inboxState: save.inboxState ?? null,
+          inboxUntil: save.inboxUntil ?? null,
+          deletedAt: save.deletedAt,
+        });
+        if (next) updates.push({ ...save, ...next });
+      } else if (operation.kind === "tags" && operation.mode === "replace")
         updates.push({ ...save, tags: operation.tags });
     }
     pool.bulkUpsert(updates);
