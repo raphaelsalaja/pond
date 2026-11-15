@@ -4,6 +4,7 @@ export {
   useMultiSelectActive,
 } from "./components/card/context";
 export { CardThumb } from "./components/card/media";
+export { useSaveCardModel } from "./components/card/model";
 export { Card } from "./components/card/parts";
 export { SaveTile } from "./components/card/tile";
 export type { LibraryCardView } from "./components/card/types";
@@ -27,6 +28,7 @@ export {
   notifyUndoableFolderChange,
 } from "./lib/folder-actions";
 export { canImportDrop } from "./lib/import-feedback";
+export { markProcessed, trashWithUndo } from "./lib/inbox-actions";
 export { collectionOwnsKeyboard, saveOwnsKeyboard } from "./lib/keyboard-owner";
 export type { FolderPickerMode } from "./lib/library-bridge";
 export { parseMode, type SaveListMode } from "./lib/list";

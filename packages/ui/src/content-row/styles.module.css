@@ -21,6 +21,9 @@
 .trigger:hover {
   background: var(--ds-gray-a3);
 }
+.trigger[aria-current]:not([aria-current="false"]) {
+  background: var(--ds-gray-a4);
+}
 .media {
   display: flex;
   flex-shrink: 0;

@@ -19,6 +19,7 @@ export interface UndoToastOptions {
   /** Null when the change recorded no Undo step, so the toast confirms it without offering Undo. */
   step: string | null;
   onChange?(): void | Promise<void>;
+  onUndo?(): void;
 }
 
 type Direction = "undo" | "redo";
@@ -123,6 +124,7 @@ function present(
       direction === "undo" ? options.undoneTitle : options.title,
       direction === "undo" ? "redo" : "undo",
     );
+    if (direction === "undo") options.onUndo?.();
     await options.onChange?.();
   }
 
