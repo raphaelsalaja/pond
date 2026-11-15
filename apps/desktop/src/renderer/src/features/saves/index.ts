@@ -68,7 +68,6 @@ export {
   saveDropIds,
 } from "./lib/start-drag";
 export { isTextOnlySave } from "./lib/text";
-export { moveSavesToTrash, moveSelectionToTrash } from "./lib/triage";
 export { asUrlList } from "./lib/url-list";
 export { previewFileIndex, runViewerAction } from "./lib/viewer-actions";
 export { activeVideoShown } from "./state/active-video";
