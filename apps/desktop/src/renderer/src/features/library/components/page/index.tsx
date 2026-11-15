@@ -1,6 +1,6 @@
 import { Shell } from "@pond/ui";
 import { Outlet, useRouterState } from "@tanstack/react-router";
-import { useLayoutEffect, useMemo } from "react";
+import { useLayoutEffect, useMemo, useRef } from "react";
 import { FileRing } from "@/features/library/components/file-ring";
 import { FilterBar } from "@/features/library/components/filter-menu";
 import { InboxReview } from "@/features/library/components/inbox-review";
@@ -14,7 +14,11 @@ import {
   rememberListPath,
   SaveSelectionBar,
 } from "@/features/saves";
-import { saveIdFromPath } from "@/features/saves/navigation";
+import {
+  resultNavigation,
+  saveIdFromPath,
+  selection,
+} from "@/features/saves/navigation";
 import {
   ScrollRestorationContext,
   useScrollRestoration,
@@ -31,6 +35,16 @@ export function Library() {
   useLayoutEffect(() => {
     rememberListPath(pathname, search);
   }, [pathname, search]);
+
+  const wasSave = useRef(isSave);
+  /** Focus only lands once this commit lifts `inert` from the grid, not when the route is pushed. */
+  useLayoutEffect(() => {
+    const closed = wasSave.current && !isSave;
+    wasSave.current = isSave;
+    if (!closed || !showLibraryGrid) return;
+    const cursor = selection.getCursor();
+    if (cursor) void resultNavigation.reveal(cursor, { focus: true });
+  }, [isSave, showLibraryGrid]);
 
   const listPath = isSave ? getLastListPath() : pathname;
   const listSearch = isSave ? getLastListSearch() : search;

@@ -52,15 +52,8 @@ export function stepSave(id: string, delta: number): void {
 }
 
 export function closeSave(): void {
-  const router = getAppRouter();
-  const cursor = selection.getCursor();
-  primarySelection.set(cursor);
-  if (!router) return;
-  const reveal = cursor
-    ? () => resultNavigation.reveal(cursor, { focus: true })
-    : undefined;
-  router.history.push(getLastListPath());
-  void reveal?.();
+  primarySelection.set(selection.getCursor());
+  getAppRouter()?.history.push(getLastListPath());
 }
 
 export function syncPrimaryFromPath(pathname: string): void {
