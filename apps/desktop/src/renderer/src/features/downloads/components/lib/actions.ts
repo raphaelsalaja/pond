@@ -192,7 +192,7 @@ async function trashDownloadIds(
   const uniqueIds = [...new Set(ids)];
   if (uniqueIds.length === 0) return false;
   try {
-    const changed = await dependencies.trash(uniqueIds);
+    const { changed } = await dependencies.trash(uniqueIds);
     if (changed === 0) return false;
     notifyTrashedDownloads(changed, dependencies);
     return true;

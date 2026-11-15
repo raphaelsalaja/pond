@@ -34,7 +34,7 @@ Each scoped token has one or more of these. A request outside them gets `forbidd
 | --- | --- |
 | Search Saves | `GET /library/info`, `/library/tags`, `/library/folders`, `/library/views`, `/library/sources`. `POST /library/query`, `/library/search`. `/saves/get`, `GET /saves/info`, `/saves/text`, `/saves/status`, `/saves/thumb`, `/saves/file`, `/saves/related`. |
 | Export Files | Every `/library/conversion` route. |
-| Add and Edit Saves | `POST /enqueue`, `/saves/tags`, `/saves/folders`, `/saves/trash`, `/saves/restore`, `/saves/note`, `/saves/rating`. |
+| Add and Edit Saves | `POST /enqueue`, `/saves/tags`, `/saves/folders`, `/saves/trash`, `/saves/restore`, `/saves/note`, `/saves/rating`, `/saves/favorite`. |
 
 These routes are private. Only the Local API Token reaches them, and they may change between minor versions:
 
@@ -85,7 +85,7 @@ New codes may appear in minor versions. Treat an unknown code by its HTTP status
 
 ## Versioning
 
-`GET /app/info` returns `apiVersion`, currently `2.2.0`. Within `/api/v2`:
+`GET /app/info` returns `apiVersion`, currently `2.3.0`. Within `/api/v2`:
 
 - Minor versions add endpoints, optional request fields, response fields, and error codes.
 - Nothing is removed or renamed, and no field changes type.
@@ -93,7 +93,7 @@ New codes may appear in minor versions. Treat an unknown code by its HTTP status
 
 The promise covers the routes in [Access](#access) and the MCP tools below. Private routes can change in any release.
 
-Ignore response fields you don't recognize. Pond builds before 2.1 don't send `apiVersion` and return errors as a bare string. Builds before 2.2 don't accept scoped tokens.
+Ignore response fields you don't recognize. Pond builds before 2.1 don't send `apiVersion` and return errors as a bare string. Builds before 2.2 don't accept scoped tokens. Builds before 2.3 don't send `favorite` or accept `/saves/favorite`.
 
 ## Libraries
 
@@ -178,6 +178,7 @@ Optional `source`, `folderId`, and `kinds` narrow it. The response is `{ library
   "folderIds": ["01J…"],
   "note": null,
   "rating": 4,
+  "favorite": false,
   "kind": "image",
   "status": "complete",
   "savedAt": 1761091200000,
@@ -189,7 +190,7 @@ Optional `source`, `folderId`, and `kinds` narrow it. The response is `{ library
 }
 ```
 
-Times are epoch milliseconds. `status` is `ingesting`, `complete`, `failed`, or `skipped`. `thumbnail` tells you whether `/saves/thumb` will return an image. `text` tells you which extracted text exists, so you only call `/saves/text` when there's something to read.
+Times are epoch milliseconds. `status` is `ingesting`, `complete`, `failed`, or `skipped`. `favorite` is separate from `rating`. `thumbnail` tells you whether `/saves/thumb` will return an image. `text` tells you which extracted text exists, so you only call `/saves/text` when there's something to read.
 
 ### Thumbnails
 
@@ -227,7 +228,7 @@ The response is `{ id, created, status }`. `created` is `false` when the URL was
 
 ## Editing Saves
 
-Each write takes up to 1000 Save ids and an optional `libraryId`. Pond checks every id first and changes nothing if one is missing. Edits run through the same path as edits you make in Pond, so open windows update right away. Tag, Trash, note, and rating edits can be undone in the app.
+Each write takes up to 1000 Save ids and an optional `libraryId`. Pond checks every id first and changes nothing if one is missing. Edits run through the same path as edits you make in Pond, so open windows update right away. Tag, Trash, note, rating, and favorite edits can be undone in the app.
 
 | Path | Body |
 | --- | --- |
@@ -237,6 +238,7 @@ Each write takes up to 1000 Save ids and an optional `libraryId`. Pond checks ev
 | `/saves/restore` | `{ "ids" }` |
 | `/saves/note` | `{ "id", "note" }`. `null` clears the note. |
 | `/saves/rating` | `{ "ids", "rating" }`, 0 to 5. 0 clears the rating. |
+| `/saves/favorite` | `{ "ids", "favorite" }`. `false` removes the favorite. |
 
 All of them use `POST` and return `{ "changed": n }`, the number of Saves that actually changed.
 

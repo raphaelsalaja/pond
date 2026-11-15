@@ -4,12 +4,14 @@ import { useLayoutEffect, useMemo } from "react";
 import { canvasIdFromPath } from "@/features/canvas";
 import { fishIdFromPath } from "@/features/fish";
 import { LibraryChrome } from "@/features/library/components/chrome";
+import { FileRing } from "@/features/library/components/file-ring";
 import { LibraryView } from "@/features/library/components/view";
 import { AppShell } from "@/features/library/components/workspace-shell";
 import {
   getLastListPath,
   getLastListSearch,
   rememberListPath,
+  SaveSelectionBar,
 } from "@/features/saves";
 import { saveIdFromPath } from "@/features/saves/navigation";
 import {
@@ -26,6 +28,7 @@ export function Library() {
   const isDownloads = pathname.startsWith("/downloads");
   const isFish = fishIdFromPath(pathname) !== null;
   const isTags = pathname === "/tags";
+  const isSplitPosts = pathname === "/split-posts";
   const isSettings = pathname.startsWith("/settings");
   const isCanvas =
     canvasIdFromPath(isSave ? getLastListPath() : pathname) !== null;
@@ -34,6 +37,7 @@ export function Library() {
     !isDownloads &&
     !isFish &&
     !isTags &&
+    !isSplitPosts &&
     !isSettings &&
     !isCanvas;
 
@@ -68,6 +72,8 @@ export function Library() {
                   {view}
                 </Shell.Main>
               </ScrollRestorationContext.Provider>
+              {isSave ? null : <SaveSelectionBar />}
+              {isSave ? null : <FileRing />}
             </Shell.Body>
           </AppShell.Content>
         </div>

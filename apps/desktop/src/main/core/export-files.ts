@@ -49,6 +49,7 @@ type ExportSave = Pick<
       | "author"
       | "description"
       | "rating"
+      | "favorite"
       | "inboxState"
       | "inboxUntil"
       | "savedAt"
@@ -324,6 +325,7 @@ export async function exportFiles(input: {
             author: save.author,
             description: save.description,
             rating: save.rating,
+            favorite: save.favorite,
             inbox: infoInbox(save.inboxState, save.inboxUntil),
             savedAt: save.savedAt,
             createdAt: save.createdAt,

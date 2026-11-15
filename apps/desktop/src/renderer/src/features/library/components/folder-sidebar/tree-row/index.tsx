@@ -216,6 +216,7 @@ function sameNav(a: LibraryNav, b: LibraryNav): boolean {
   if (a.kind !== b.kind) return false;
   if (a.kind === "folder" && b.kind === "folder") return a.id === b.id;
   if (a.kind === "tag" && b.kind === "tag") return a.name === b.name;
+  if (a.kind === "post" && b.kind === "post") return a.key === b.key;
   return true;
 }
 

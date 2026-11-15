@@ -7,6 +7,8 @@ interface SelectionState {
   readonly anchor: string | null;
   readonly cursor: string | null;
   readonly snapshot: ReadonlyArray<string>;
+  /** Set by a card's selection circle; keeps every circle shown until the selection empties. */
+  readonly picking: boolean;
 }
 
 const initialSelection: SelectionState = {
@@ -14,6 +16,7 @@ const initialSelection: SelectionState = {
   anchor: null,
   cursor: null,
   snapshot: [],
+  picking: false,
 };
 
 const selectionStore = new Store<SelectionState>(initialSelection);
@@ -28,6 +31,7 @@ function withIds(
     ids: next,
     anchor,
     snapshot: Array.from(next),
+    picking: state.picking && next.size > 0,
   };
 }
 
@@ -55,9 +59,21 @@ function toggleSelection(id: string): void {
 
 function clearSelection(): void {
   selectionStore.setState((s) => {
-    if (s.ids.size === 0 && s.anchor === null && s.cursor === null) return s;
-    return { ids: new Set(), anchor: null, cursor: null, snapshot: [] };
+    if (
+      s.ids.size === 0 &&
+      s.anchor === null &&
+      s.cursor === null &&
+      !s.picking
+    )
+      return s;
+    return initialSelection;
   });
+}
+
+function setPicking(picking: boolean): void {
+  selectionStore.setState((s) =>
+    s.picking === picking ? s : { ...s, picking },
+  );
 }
 
 function setSelectionAnchor(id: string): void {
@@ -116,6 +132,9 @@ export const selection = {
   setRange(allIds: ReadonlyArray<string>, from: string, to: string): void {
     setSelectionRange(allIds, from, to);
   },
+  setPicking(picking: boolean): void {
+    setPicking(picking);
+  },
 };
 
 export function useSelectedIds(): readonly string[] {
@@ -124,6 +143,14 @@ export function useSelectedIds(): readonly string[] {
 
 export function useSelectionSize(): number {
   return useSelector(selectionStore, (s) => s.ids.size);
+}
+
+/** A single plain click also selects, so circles and the toolbar wait for a circle or a second Save. */
+export function useSelectionActive(): boolean {
+  return useSelector(
+    selectionStore,
+    (s) => s.ids.size > 1 || (s.picking && s.ids.size > 0),
+  );
 }
 export function useSelectionCursor(): string | null {
   return useSelector(selectionStore, (s) => s.cursor);

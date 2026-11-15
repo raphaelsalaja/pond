@@ -10,6 +10,7 @@ export { resultNavigation, useResultTotal } from "./state/result-navigation";
 export {
   primarySelection,
   selection,
+  useSelectedIds,
   useSelectionCursor,
   useSelectionSize,
 } from "./state/selection";

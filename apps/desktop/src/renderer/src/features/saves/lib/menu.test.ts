@@ -8,6 +8,7 @@ import {
   conversionDialogStore,
 } from "@/features/library/state/conversion-dialog";
 import { folders } from "@/features/library/state/folders";
+import { libraryChrome } from "@/features/library/state/library-chrome";
 import { buildViewerMenu } from "@/features/saves/components/viewers/media-viewer/lib/menu";
 import { pool } from "@/features/saves/state/pool";
 import { selection } from "@/features/saves/state/selection";
@@ -339,6 +340,44 @@ describe("buildSaveMenu", () => {
     ]);
   });
 
+  it("shows the whole post from a split Save", () => {
+    const options = {
+      clipboardEmpty: true,
+      openWithApps: previewOpenWithApps(),
+    };
+    expect(topLevelLabels(buildSaveMenu(fileSave(), options))).not.toContain(
+      "Show Post",
+    );
+    const items = buildSaveMenu(
+      fileSave({
+        rawJson: {
+          capture: {
+            id: "DAbC",
+            source: "twitter",
+            url: "https://example.test/file",
+            media: [],
+          },
+          extractorId: "twitter",
+          extractedAt: "2026-11-14T00:00:00.000Z",
+          split: { sourceId: "DAbC", media: [1] },
+        },
+      }),
+      options,
+    );
+    const showPost = items.find(
+      (item) => "label" in item && item.label === "Show Post",
+    );
+    if (!showPost || !("onClick" in showPost))
+      throw new Error("Missing Show Post action");
+    showPost.onClick?.();
+    expect(libraryChrome.getState().nav).toEqual({
+      kind: "post",
+      key: "twitter:DAbC",
+      title: "File",
+    });
+    libraryChrome.setNav({ kind: "all" });
+  });
+
   it("keeps common actions flat and reserves submenus for option families", () => {
     const items = buildSaveMenu(fileSave(), {
       clipboardEmpty: true,
@@ -359,6 +398,7 @@ describe("buildSaveMenu", () => {
       "Add to Other Library",
       "Export",
       "Share",
+      "Favorite",
       "Paste Tags",
       "Find Duplicates",
       "Merge Duplicates",

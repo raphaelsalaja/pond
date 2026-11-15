@@ -102,6 +102,16 @@ export const foldersQueries = {
       return folderSummaries(parentId);
     },
   ),
+  "folders.previews": query(
+    z.object({
+      folderIds: StringListParam,
+      limit: z.number().int().min(1).max(8).catch(4),
+    }),
+    async ({ folderIds, limit }) => {
+      const { folderPreviews } = await import("../../core/folder-summaries");
+      return folderPreviews(folderIds, limit);
+    },
+  ),
   "folders.downloading": query(
     z.object({ folderIds: StringListParam }),
     async ({ folderIds }) => {

@@ -6,6 +6,11 @@ import {
   exportDebugReport,
   runNewAction,
 } from "@/features/library/components/new-menu/actions";
+import {
+  type SearchScope,
+  type SearchView,
+  searchViewFor,
+} from "@/features/library/lib/search-view";
 import { commandMenu } from "@/features/library/state/command-menu";
 import { libraryChrome } from "@/features/library/state/library-chrome";
 import { libraryHeader } from "@/features/library/state/library-header";
@@ -14,13 +19,19 @@ import {
   getViewState,
   reseedRandomSort,
   resetFilters,
+  searchAllSaves,
+  searchCurrentView,
   setIncludeSubfolders,
-  setSearchScope,
   setSort,
 } from "@/features/library/state/view-store";
 import { copyId, openTagPicker } from "@/features/saves/lib/actions";
 import { addSavesToLastUsedFolder } from "@/features/saves/lib/folder-actions";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
+import { parseMode } from "@/features/saves/lib/list";
+import {
+  isSaveCollectionPath,
+  listPathForLocation,
+} from "@/features/saves/lib/list-path";
 import { rateSaves } from "@/features/saves/lib/rating";
 import { REVERSE_SEARCH_ENGINES } from "@/features/saves/lib/reverse-image-search";
 import { selectResults } from "@/features/saves/lib/select-results";
@@ -37,6 +48,7 @@ import {
   pasteTagsForSelection,
   reverseImageSearchForSelection,
 } from "@/features/saves/lib/selection";
+import { toggleFavorite } from "@/features/saves/lib/triage";
 import { pool } from "@/features/saves/state/pool";
 import { primarySelection, selection } from "@/features/saves/state/selection";
 import { requestUpdateCheck } from "@/features/settings/update-check";
@@ -135,12 +147,29 @@ function openFilter(field: FieldId): void {
   filterToolbar.setOpen(true);
 }
 
-function openSearch(scope: "all" | "current"): void {
-  setSearchScope(scope);
-  if (scope === "all") {
-    libraryChrome.setNav({ kind: "all" });
-    getAppRouter()?.history.push("/");
+function currentSearchView(): SearchView | null {
+  const pathname = getAppRouter()?.state.location.pathname;
+  if (!pathname || !isSaveCollectionPath(pathname)) return null;
+  return searchViewFor(
+    parseMode(listPathForLocation(pathname)) ?? "library",
+    libraryChrome.getState().nav,
+  );
+}
+
+function searchAllSavesInPlace(): void {
+  const view = currentSearchView();
+  if (view && view.kind !== "trash") {
+    searchAllSaves(view);
+    return;
   }
+  searchCurrentView();
+  libraryChrome.setNav({ kind: "all" });
+  getAppRouter()?.history.push("/");
+}
+
+function openSearch(scope: SearchScope): void {
+  if (scope === "all") searchAllSavesInPlace();
+  else searchCurrentView();
   libraryHeader.focusSearch();
 }
 
@@ -295,6 +324,21 @@ export function handleNativeMenuAction(id: MenuActionId): boolean {
     case "organize.add-to-folders": {
       const ids = requireSelection();
       if (ids.length > 0) saveLibraryBridge.openFolderPicker(ids);
+      return true;
+    }
+    case "organize.add-to-multiple-folders":
+    case "organize.add-to-recent-folder": {
+      const ids = requireSelection();
+      if (ids.length > 0)
+        saveLibraryBridge.openFolderPicker(
+          ids,
+          id === "organize.add-to-recent-folder" ? "recent" : "multiple",
+        );
+      return true;
+    }
+    case "organize.favorite": {
+      const ids = requireSelection();
+      if (ids.length > 0) void toggleFavorite(ids);
       return true;
     }
     case "find.add-to-last-folder":

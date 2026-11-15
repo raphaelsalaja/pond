@@ -6,6 +6,7 @@ import {
   API_THUMBNAIL_SIZES,
   ApiEditFoldersRequestSchema,
   ApiEditTagsRequestSchema,
+  ApiFavoriteRequestSchema,
   ApiNoteRequestSchema,
   ApiRatingRequestSchema,
   ApiSaveIdsRequestSchema,
@@ -420,6 +421,18 @@ export function savesRoutes(runtime: ApiRuntime = apiRuntime): Hono {
     const data = await bulkEdit({
       ids: parsed.data.ids,
       operation: { kind: "rating", rating: parsed.data.rating },
+    });
+    return c.json({ status: "success", data });
+  });
+
+  routes.post("/favorite", async (c) => {
+    const parsed = ApiFavoriteRequestSchema.safeParse(await c.req.json());
+    if (!parsed.success) return invalidRequest(c, parsed.error);
+    requireLibrary(runtime, parsed.data.libraryId);
+    await requireSaves(runtime, parsed.data.ids);
+    const data = await bulkEdit({
+      ids: parsed.data.ids,
+      operation: { kind: "favorite", favorite: parsed.data.favorite },
     });
     return c.json({ status: "success", data });
   });

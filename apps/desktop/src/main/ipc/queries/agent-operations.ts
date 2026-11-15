@@ -15,7 +15,7 @@ const descriptions = new Map<string, string>(
     "agent.listAvailableModels":
       "List available models from configured AI providers.",
     "saves.bulkEdit":
-      "Edit rating or tags, move Saves through the Inbox (add, mark processed, snooze until a time, or remove), trash, restore, or permanently delete explicitly selected Saves. Pass exact IDs and an operation. Purge is permanent; trash is recoverable.",
+      "Edit rating, favorite or tags, move Saves through the Inbox (add, mark processed, snooze until a time, or remove), trash, restore, or permanently delete explicitly selected Saves. Pass exact IDs and an operation. Purge is permanent; trash is recoverable.",
     "saves.createManual":
       "Create a Save from a title, URL, note, tags, and optional local files.",
     "saves.createBlankDocument":
@@ -30,6 +30,8 @@ const descriptions = new Map<string, string>(
       "Permanently delete every Save in Trash. Cannot be undone.",
     "saves.split":
       "Split explicitly selected multi-image or multi-video Saves so each image or video becomes its own Save with the same source, tags, notes, and Folders.",
+    "saves.splitPosts":
+      "List posts that were split into separate Saves, newest first, with each post's Save IDs in post order. Filter one post with the `post` field and its key.",
     "folders.rules.set":
       "Set inherited tags for a Folder and optionally apply them to existing Saves.",
     "canvases.list":

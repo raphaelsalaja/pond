@@ -1,22 +1,55 @@
 import { PrefsSchema } from "@pond/schema";
+import type { LibraryQueryRequest } from "@shared/library-query";
+import {
+  createMemoryHistory,
+  createRootRoute,
+  createRoute,
+  createRouter,
+  RouterProvider,
+} from "@tanstack/react-router";
 import { act, useSyncExternalStore } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import "@/app/effects/save-library-bridge";
+import { useCommandContext } from "@/features/library/state/command-context";
 import { commandMenu } from "@/features/library/state/command-menu";
+import { libraryChrome } from "@/features/library/state/library-chrome";
 import { clearRecents, normalise, useTrackVisit } from "@/features/saves";
-import { selection } from "@/features/saves/navigation";
+import { resultNavigation, selection } from "@/features/saves/navigation";
 import { pool } from "@/features/saves/pool";
 import type { SaveHit, SaveLookup } from "@/features/search";
+import { setAppRouter } from "@/shared/lib/app-router";
 import { CommandMenuHost } from "./";
 
 const openSave = vi.fn();
+const viewIds = { current: Array<string>() };
+const viewRequests: (LibraryQueryRequest | undefined)[] = [];
+
+async function query(method: string, request?: LibraryQueryRequest) {
+  if (method === "tags.list") return [{ id: "tag-poster", name: "poster" }];
+  if (method === "tagGroups.list") return [];
+  if (method === "saves.queryPage") {
+    viewRequests.push(request);
+    return { ids: viewIds.current, total: viewIds.current.length };
+  }
+  return PrefsSchema.parse({});
+}
+
+function wait(ms: number) {
+  return act(() => new Promise((resolve) => setTimeout(resolve, ms)));
+}
 
 function RecentVisit({ saveId }: { saveId: string }) {
   useTrackVisit(saveId);
   return null;
 }
 
-function addSave(id: string, title: string) {
+function addSave(
+  id: string,
+  title: string,
+  tags: string[] = [],
+  deletedAt: number | null = null,
+) {
   const save = normalise({
     id,
     source: "local",
@@ -24,6 +57,8 @@ function addSave(id: string, title: string) {
     url: `pond://${id}`,
     author: "Pond",
     mediaType: "text",
+    tags,
+    deletedAt,
   });
   if (!save) throw new Error("Invalid save fixture");
   pool.upsert(save);
@@ -117,7 +152,7 @@ describe("command menu", () => {
   let root: Root;
 
   beforeEach(() => {
-    vi.stubGlobal("pond", { query: async () => PrefsSchema.parse({}) });
+    vi.stubGlobal("pond", { query, onSyncAction: () => () => {} });
     vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
       callback(0);
       return 1;
@@ -133,8 +168,11 @@ describe("command menu", () => {
     clearRecents();
     commandMenu.close();
     selection.clear();
+    libraryChrome.setNav({ kind: "all" });
     lookups.hits.clear();
     lookups.pending.clear();
+    viewIds.current = [];
+    viewRequests.length = 0;
     addSave("save-1", "Design systems field notes");
     lookups.hits.set("design", [{ id: "save-1", via: "keyword" }]);
     host = document.createElement("div");
@@ -144,17 +182,32 @@ describe("command menu", () => {
 
   afterEach(async () => {
     commandMenu.close();
+    resultNavigation.setSource({ ids: [] });
     await act(async () => root.unmount());
     host.remove();
     vi.unstubAllGlobals();
   });
 
-  async function open() {
-    await act(async () =>
-      root.render(
-        <CommandMenuHost useLookup={useLookup} onOpenSave={openSave} />,
+  async function open(path = "/") {
+    const rootRoute = createRootRoute({
+      component: () => (
+        <CommandMenuHost useLookup={useLookup} onOpenSave={openSave} />
       ),
-    );
+    });
+    const router = createRouter({
+      routeTree: rootRoute.addChildren(
+        ["/", "/trash", "/save/$saveId", "/sources/account/$id"].map(
+          (routePath) =>
+            createRoute({ getParentRoute: () => rootRoute, path: routePath }),
+        ),
+      ),
+      history: createMemoryHistory({ initialEntries: [path] }),
+    });
+    setAppRouter(router);
+    await act(async () => {
+      await router.load();
+      root.render(<RouterProvider router={router} />);
+    });
     await act(async () => commandMenu.open());
     return input();
   }
@@ -181,14 +234,122 @@ describe("command menu", () => {
     expect(openSave).toHaveBeenCalledWith("recent-save");
   });
 
-  it("prioritizes actions for the current selection", async () => {
+  it("leads with suggested actions for the current selection", async () => {
     selection.set(["save-1"]);
     await open();
 
     expect(document.body.textContent).toContain("1 Selected");
-    expect(document.body.textContent).toContain("Add to Chat");
-    expect(document.body.textContent).toContain("Export Selection");
+    expect(document.body.textContent).toContain("Add Tags");
     expect(document.body.textContent).toContain("Move to Trash");
+    expect(document.body.textContent).not.toContain("Copy Name");
+
+    await pressUntil("focus:all-actions");
+    await press("Enter");
+    expect(document.body.textContent).toContain("Copy Name");
+    expect(document.body.textContent).toContain("Add Tags");
+  });
+
+  it("searches every Save menu action for the selection", async () => {
+    selection.set(["save-1"]);
+    await open();
+    await type("copy name");
+    const labels = [...document.querySelectorAll('[role="option"]')].map(
+      (el) => el.textContent,
+    );
+    expect(labels[0]).toContain("Copy Name");
+    expect(document.body.textContent).toContain("1 Selected");
+  });
+
+  it("acts on the open Save without a selection", async () => {
+    await open("/save/save-1");
+    expect(document.body.textContent).toContain("Current Save");
+    expect(document.body.textContent).toContain("Add Tags");
+  });
+
+  it("lists Saves from the current view first and searches inside it", async () => {
+    addSave("save-2", "Design poster", ["poster"]);
+    lookups.hits.set("design", [
+      { id: "save-1", via: "keyword" },
+      { id: "save-2", via: "keyword" },
+    ]);
+    libraryChrome.setNav({ kind: "tag", name: "poster" });
+    await open();
+    await type("design");
+
+    expect(document.body.textContent).toContain("In poster");
+    expect(optionIds().indexOf("save:save-2")).toBeLessThan(
+      optionIds().indexOf("save:save-1"),
+    );
+    expect(document.getElementById("search:library")?.textContent).toContain(
+      "Search poster",
+    );
+  });
+
+  it("finds Saves inside the current view that miss the Library's top hits", async () => {
+    addSave("save-3", "Archive sheet", ["poster"]);
+    viewIds.current = ["save-3"];
+    libraryChrome.setNav({ kind: "tag", name: "poster" });
+    await open();
+    await type("design");
+    await wait(80);
+
+    expect(viewRequests.at(-1)).toMatchObject({
+      keywords: "design",
+      scope: { tag: "poster" },
+    });
+    expect(document.getElementById("save:save-3")).not.toBeNull();
+    expect(document.body.textContent).toContain("In poster");
+  });
+
+  it("searches inside Trash", async () => {
+    addSave("save-trashed", "Design leftovers", [], Date.now());
+    viewIds.current = ["save-trashed"];
+    libraryChrome.setNav({ kind: "trash" });
+    await open("/trash");
+    await type("design");
+    await wait(80);
+
+    expect(viewRequests.at(-1)).toMatchObject({
+      scope: { deletedOnly: true },
+    });
+    expect(document.body.textContent).toContain("In Trash");
+    expect(document.getElementById("save:save-trashed")).not.toBeNull();
+    expect(document.getElementById("search:library")?.textContent).toContain(
+      "Search Trash",
+    );
+  });
+
+  it("offers the current tag's actions", async () => {
+    libraryChrome.setNav({ kind: "tag", name: "poster" });
+    await open();
+    await wait(0);
+    expect(document.body.textContent).toContain("Current Tag");
+    expect(document.body.textContent).toContain("Rename Tag");
+    expect(document.getElementById("tag:all-actions")).not.toBeNull();
+  });
+
+  it("offers actions a page registers", async () => {
+    function Registered() {
+      useCommandContext("Current Source", () => [
+        { label: "Sync Now", onClick: () => {} },
+      ]);
+      return null;
+    }
+    const extra = document.createElement("div");
+    const extraRoot = createRoot(extra);
+    await act(async () => extraRoot.render(<Registered />));
+    await open("/sources/account/acc");
+    expect(document.body.textContent).toContain("Current Source");
+    expect(document.body.textContent).toContain("Sync Now");
+    await act(async () => extraRoot.unmount());
+  });
+
+  it("offers Trash actions in Trash", async () => {
+    libraryChrome.setNav({ kind: "trash" });
+    resultNavigation.setSource({ ids: ["trashed"], total: 1 });
+    await open();
+    await type("trash");
+    expect(document.body.textContent).toContain("Empty Trash");
   });
 
   it("searches saves and opens the highlighted result with the keyboard", async () => {
@@ -261,7 +422,7 @@ describe("command menu", () => {
 
     await press("Tab");
     expect(input().value).toBe("");
-    expect(document.body.textContent).toContain("Add to Chat");
+    expect(document.body.textContent).toContain("Add Tags");
     expect(document.body.textContent).toContain("Move to Trash");
     expect(optionIds()).not.toContain("save:save-1");
 
@@ -273,6 +434,17 @@ describe("command menu", () => {
     await press("Escape");
     expect(document.querySelector('[role="dialog"]')).not.toBeNull();
     expect(input().value).toBe("design");
+  });
+
+  it("selects a searched Save before running its menu action", async () => {
+    await open();
+    await type("design");
+    await pressUntil("save:save-1");
+    await press("Tab");
+    await type("copy name");
+    await press("Enter");
+    await wait(0);
+    expect(selection.snapshot()).toEqual(["save-1"]);
   });
 
   it("keeps composed text and dead keys from executing a command", async () => {

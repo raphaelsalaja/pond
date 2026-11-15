@@ -14,6 +14,7 @@ import {
 } from "@/features/library/state/command-menu";
 import { openSave } from "@/features/saves/navigation";
 import { useSaveLookup } from "@/features/search";
+import { getAppRouter } from "@/shared/lib/app-router";
 import { formatPlural } from "@/shared/lib/format";
 import { usePrefs } from "@/shared/state/prefs";
 import { ResultsList } from "./results-list";
@@ -28,7 +29,6 @@ const PAGE_STEP = 8;
 const PLACEHOLDERS = {
   root: "Search Pond or type a command…",
   actions: "Search actions…",
-  folders: "Search folders…",
   views: "Search saved views…",
 } satisfies Record<MenuPage["kind"] | "root", string>;
 
@@ -79,6 +79,9 @@ function CommandMenu({
   const [direction, setDirection] = useState<"forward" | "back">();
   const [activeId, setActiveId] = useState<string>();
   const [focused, setFocused] = useState(true);
+  const [pathname] = useState(
+    () => getAppRouter()?.state.location.pathname ?? "/",
+  );
   const page = stack.at(-1)?.page ?? null;
   const trimmed = query.trim();
   const [ai] = usePrefs("ai");
@@ -86,6 +89,7 @@ function CommandMenu({
     retrieve: Boolean(ai.semanticSearch || ai.enableClip),
   });
   const { model, resultCount } = useMenuModel({
+    pathname,
     query: trimmed,
     page,
     lookup,

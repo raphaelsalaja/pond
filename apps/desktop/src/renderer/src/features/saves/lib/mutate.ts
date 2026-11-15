@@ -1,11 +1,14 @@
 import type { NewSave } from "@pond/schema/db";
 import { applyInboxChange } from "@pond/schema/inbox";
 import type { Transaction, TxMeta } from "@pond/schema/tx";
+import type { BulkEdit, BulkQueryResults } from "@shared/bulk-contracts";
 import { ensureSaves } from "@/features/saves/lib/ensure-saves";
 import { optimistic } from "@/features/saves/lib/optimistic";
 import { pool } from "@/features/saves/state/pool";
 import type { Save } from "@/features/saves/types";
 import { emitFeedback } from "@/shared/lib/sounds";
+
+type BulkEditResult = BulkQueryResults["saves.bulkEdit"];
 
 interface MutateOpts {
   actorReason?: string;
@@ -104,17 +107,6 @@ export async function setSaveTags(id: string, tags: string[]): Promise<void> {
   );
 }
 
-export async function trashSave(id: string): Promise<void> {
-  const prev = pool.get(id) ?? (await refetch(id));
-  if (!prev) return;
-  await optimistic(
-    () => pool.upsert({ ...prev, deletedAt: Date.now() }),
-    () => pool.upsert(prev),
-    async () => window.pond.tx({ kind: "trash", model: "save", id }),
-  );
-  emitFeedback("saveDeletion");
-}
-
 export async function untrashSave(id: string): Promise<void> {
   const prev = pool.get(id) ?? (await refetch(id));
   if (!prev) return;
@@ -144,11 +136,11 @@ export async function purgeSave(id: string): Promise<void> {
 
 export async function bulkMutation(
   ids: readonly string[],
-  operation: import("@shared/bulk-contracts").BulkEdit["operation"],
+  operation: BulkEdit["operation"],
   opts: MutateOpts = {},
-): Promise<number> {
+): Promise<BulkEditResult> {
   const targets = [...new Set(ids)];
-  if (!targets.length) return 0;
+  if (!targets.length) return { changed: 0, undoId: null };
   const before = targets.flatMap((id) => {
     const save = pool.get(id);
     return save ? [save] : [];
@@ -164,6 +156,8 @@ export async function bulkMutation(
         updates.push({ ...save, deletedAt: null });
       else if (operation.kind === "rating" && !save.deletedAt)
         updates.push({ ...save, rating: operation.rating || null });
+      else if (operation.kind === "favorite" && !save.deletedAt)
+        updates.push({ ...save, favorite: operation.favorite });
       else if (operation.kind === "notes")
         updates.push({ ...save, notes: operation.notes });
       else if (operation.kind === "inbox" || operation.kind === "snooze") {
@@ -190,7 +184,7 @@ export async function bulkMutation(
     ) {
       emitFeedback("saveDeletion");
     }
-    return result.changed;
+    return { changed: result.changed, undoId: result.undoId ?? null };
   } catch (error) {
     /** Skips Saves still identical to match single-upsert's no-op; every other one, intervening edits included, rolls back. */
     pool.bulkUpsert(before.filter((save) => pool.get(save.id) !== save));
@@ -200,15 +194,17 @@ export async function bulkMutation(
 export async function trashSaves(
   ids: readonly string[],
   opts: MutateOpts = {},
-): Promise<number> {
+): Promise<BulkEditResult> {
   return bulkMutation(ids, { kind: "trash" }, opts);
 }
 export async function untrashSaves(
   ids: readonly string[],
   opts: MutateOpts = {},
-): Promise<number> {
+): Promise<BulkEditResult> {
   return bulkMutation(ids, { kind: "untrash" }, opts);
 }
-export async function purgeSaves(ids: readonly string[]): Promise<number> {
+export async function purgeSaves(
+  ids: readonly string[],
+): Promise<BulkEditResult> {
   return bulkMutation(ids, { kind: "purge" });
 }

@@ -75,6 +75,7 @@ const PackageSaveSchema = z.object({
   description: z.string().nullable().optional(),
   author: z.string().nullable().optional(),
   rating: z.number().nullable().optional(),
+  favorite: z.boolean().optional(),
   inbox: z
     .object({ state: InboxStateSchema, until: z.string().optional() })
     .optional()
@@ -179,6 +180,7 @@ const runtime: PackageImportRuntime = {
         author: save.author,
         tags: save.tags,
         rating: save.rating,
+        favorite: save.favorite ?? false,
         ...(save.inbox
           ? inboxFromInfo(save.inbox)
           : await newSaveInbox("imports")),

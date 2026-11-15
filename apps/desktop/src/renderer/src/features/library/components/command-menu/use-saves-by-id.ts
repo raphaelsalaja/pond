@@ -15,7 +15,10 @@ function sameItems(
 }
 
 /** Live, untrashed saves for these ids; re-renders only when one of them changes. */
-export function useSavesById(ids: readonly string[]): readonly Save[] {
+export function useSavesById(
+  ids: readonly string[],
+  deleted = false,
+): readonly Save[] {
   const key = ids.join("\n");
   useRetainedSaves(ids);
   useEffect(() => {
@@ -29,8 +32,9 @@ export function useSavesById(ids: readonly string[]): readonly Save[] {
   return useMemo(
     () =>
       found.filter(
-        (save): save is Save => save !== undefined && !save.deletedAt,
+        (save): save is Save =>
+          save !== undefined && Boolean(save.deletedAt) === deleted,
       ),
-    [found],
+    [found, deleted],
   );
 }

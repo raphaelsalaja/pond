@@ -143,11 +143,9 @@ export function MediaViewer({
 }
 
 export function MediaViewerFrame({
-  activeIndex = 0,
   children,
   showControls,
 }: {
-  activeIndex?: number;
   children: React.ReactNode;
   showControls: boolean;
 }) {
@@ -155,11 +153,11 @@ export function MediaViewerFrame({
   const ref = useRef<HTMLDivElement>(null);
 
   const activeVideo = () => {
-    const slides = ref.current?.querySelectorAll("[data-blossom-slide]");
-    const video = slides?.length
-      ? slides[activeIndex]?.querySelector("video")
-      : ref.current?.querySelector("video");
-    return video?.videoWidth ? video : null;
+    const root = ref.current;
+    const video = root?.querySelector("[data-blossom-slide]")
+      ? root.querySelector("[data-blossom-slide][data-active] video")
+      : root?.querySelector("video");
+    return video instanceof HTMLVideoElement && video.videoWidth ? video : null;
   };
 
   useHotkey(
@@ -263,7 +261,7 @@ function Carousel({
   }, [navRef, step]);
 
   return (
-    <MediaViewerFrame activeIndex={active} showControls={showControls}>
+    <MediaViewerFrame showControls={showControls}>
       <div ref={setScroller} className={styles.scroller}>
         {slides.map((s, i) => (
           <Slide

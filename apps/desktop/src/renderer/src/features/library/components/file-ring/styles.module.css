@@ -1,0 +1,16 @@
+.root {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  visibility: hidden;
+  place-items: center;
+  container-type: size;
+  pointer-events: none;
+  transition: visibility 0s var(--ds-duration-snap);
+
+  &[data-open] {
+    visibility: visible;
+    transition: none;
+  }
+}

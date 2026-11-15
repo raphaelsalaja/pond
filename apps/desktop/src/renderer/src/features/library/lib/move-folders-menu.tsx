@@ -33,11 +33,16 @@ async function moveFolders(
   subject: string,
 ): Promise<void> {
   try {
-    await window.pond.query("folders.moveBatch", { ids: [...ids], parentId });
+    const result = await window.pond.query("folders.moveBatch", {
+      ids: [...ids],
+      parentId,
+    });
     await folders.refresh();
     notifyUndoableFolderChange(
       "move-folders",
       `Moved ${subject} to ${destination}`,
+      result.ok ? result.undoId : null,
+      "Move undone",
     );
   } catch (error) {
     notify({

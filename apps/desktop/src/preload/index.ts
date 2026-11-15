@@ -20,6 +20,7 @@ import {
   type NavigationDirection,
   type RecentMenuEntry,
 } from "../shared/constants";
+import { FILE_RING_OVERLAY_IPC } from "../shared/file-ring-overlay-contracts";
 import { FilterQuery } from "../shared/filter-query";
 import type { FishEvent, FishOpen } from "../shared/fish-contracts";
 import {
@@ -54,6 +55,7 @@ import type {
   WireSyncAction,
   WireSyncStatusUpdate,
   WireUndoState,
+  WireUndoStepState,
 } from "../shared/wire";
 import { createNavigationMailbox } from "./navigation";
 
@@ -120,6 +122,9 @@ const api = {
   openCombineImagesWindow(input: CombineImagesWindowOpen): Promise<void> {
     return ipcRenderer.invoke(COMBINE_IMAGES_WINDOW_IPC.open, input);
   },
+  openFileRing(): Promise<void> {
+    return ipcRenderer.invoke(FILE_RING_OVERLAY_IPC.open);
+  },
   onFullScreenChange(callback: (fullScreen: boolean) => void): () => void {
     return fullScreen.subscribe(callback);
   },
@@ -154,6 +159,14 @@ const api = {
 
   redo(): Promise<WireUndoState> {
     return ipcRenderer.invoke(IPC.redo);
+  },
+
+  undoStep(step: string): Promise<WireUndoStepState> {
+    return ipcRenderer.invoke(IPC.undoStep, step);
+  },
+
+  redoStep(step: string): Promise<WireUndoStepState> {
+    return ipcRenderer.invoke(IPC.redoStep, step);
   },
 
   query,

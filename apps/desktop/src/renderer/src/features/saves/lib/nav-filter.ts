@@ -1,4 +1,6 @@
 import type { Folder } from "@pond/schema/db";
+import type { SaveLike } from "@pond/schema/filters";
+import { splitPostKey } from "@pond/schema/filters/fields";
 import type { Save } from "@/features/saves/types";
 import type { LibraryNav } from "@/shared/lib/library-nav";
 
@@ -19,7 +21,9 @@ export function descendantFolderIds(
   return ids;
 }
 
-export function applyNavFilter<T extends Pick<Save, "id" | "tags">>(
+export function applyNavFilter<
+  T extends Pick<Save, "id" | "tags"> & Pick<SaveLike, "source" | "rawJson">,
+>(
   saves: readonly T[],
   nav: LibraryNav,
   memberships: Record<string, string[]>,
@@ -48,6 +52,8 @@ export function applyNavFilter<T extends Pick<Save, "id" | "tags">>(
       (memberships[save.id] ?? []).some((folderId) => ids.has(folderId)),
     );
   }
+  if (nav.kind === "post")
+    return saves.filter((save) => splitPostKey(save) === nav.key);
   if (nav.kind === "tag") {
     const needle = nav.name.toLowerCase();
     return saves.filter((save) =>

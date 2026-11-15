@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { initializePondSchema } from "../db";
 import {
   queryFolderDownloadingCount,
+  queryFolderPreviews,
   queryFolderSummaries,
 } from "./folder-summaries";
 import { querySidebarCounts } from "./sidebar-counts";
@@ -75,6 +76,39 @@ describe.skipIf(!nativeAvailable())("queryFolderDownloadingCount", () => {
 
   it("returns 0 without folders", async () => {
     await expect(queryFolderDownloadingCount(seed(), [])).resolves.toBe(0);
+  });
+});
+
+describe.skipIf(!nativeAvailable())("queryFolderPreviews", () => {
+  it("previews finished saves from each folder and its subfolders", async () => {
+    await expect(
+      queryFolderPreviews(seed(), ["boards", "other"], 2),
+    ).resolves.toEqual({ boards: ["done"] });
+  });
+
+  it("keeps the newest saves up to the limit", async () => {
+    const db = seed();
+    const save = db.$raw.prepare(
+      "insert into saves(id,source,source_id,url,status,saved_at) values(?,?,?,?,?,?)",
+    );
+    const member = db.$raw.prepare(
+      "insert into save_folders(save_id,folder_id) values(?,?)",
+    );
+    for (const [id, savedAt] of [
+      ["old", 1],
+      ["new", 3],
+      ["mid", 2],
+    ] as const) {
+      save.run(id, "pinterest", id, "", "complete", savedAt);
+      member.run(id, "other");
+    }
+    await expect(queryFolderPreviews(db, ["other"], 2)).resolves.toEqual({
+      other: ["new", "mid"],
+    });
+  });
+
+  it("returns nothing without folders", async () => {
+    await expect(queryFolderPreviews(seed(), [], 2)).resolves.toEqual({});
   });
 });
 

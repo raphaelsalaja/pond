@@ -143,6 +143,23 @@ async function moveSavedViewQuickAccess(
   );
 }
 
+export function quickAccessIdsFor(
+  views: readonly SavedView[],
+  presentations: Record<string, SavedViewPresentation>,
+): string[] {
+  return views
+    .filter((view) => presentations[view.id]?.quickAccess)
+    .toSorted(
+      (left, right) =>
+        (presentations[left.id]?.quickAccessOrder ?? Number.MAX_SAFE_INTEGER) -
+          (presentations[right.id]?.quickAccessOrder ??
+            Number.MAX_SAFE_INTEGER) ||
+        left.sortOrder - right.sortOrder ||
+        left.name.localeCompare(right.name),
+    )
+    .map((view) => view.id);
+}
+
 export function entryItems({
   view,
   views,

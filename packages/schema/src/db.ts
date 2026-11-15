@@ -228,6 +228,7 @@ export const saves = sqliteTable(
     suggestedTags: text("suggested_tags", { mode: "json" }).$type<string[]>(),
     suggestedTagsModel: text("suggested_tags_model"),
     rating: integer("rating"),
+    favorite: integer("favorite", { mode: "boolean" }).notNull().default(false),
     inboxState: text("inbox_state").$type<InboxState>(),
     inboxUntil: integer("inbox_until"),
     rotate: integer("rotate").notNull().default(0),

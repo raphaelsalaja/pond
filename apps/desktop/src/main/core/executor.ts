@@ -90,6 +90,7 @@ const SYNC_ACTIONS_RING = 5000;
 function canPersistBeforeMaterialization(patch: Partial<NewSave>): boolean {
   const {
     createdAt: _createdAt,
+    favorite: _favorite,
     inboxState: _inboxState,
     inboxUntil: _inboxUntil,
     listKinds: _listKinds,

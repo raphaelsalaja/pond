@@ -3,8 +3,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { clipboard, nativeImage } from "electron";
 import log from "electron-log/main.js";
+import { z } from "zod";
 import { importFiles } from "../../core/import-files";
-import type { QueryHandlerMap } from "./params";
+import { NullableStringParam, type QueryHandlerMap, query } from "./params";
 import { normalizeClipboardFilePaths } from "./saves-import-input";
 
 async function clipboardFilePaths(): Promise<string[]> {
@@ -47,35 +48,39 @@ export async function readClipboardImage() {
 }
 
 export const savesImportClipboardQueries = {
-  async "saves.importClipboard"() {
-    const filePaths = await clipboardFilePaths();
-    if (filePaths.length > 0) {
-      return importFiles({
-        paths: filePaths,
-        tags: [],
-        folderIds: [],
-        origin: "clipboard",
-      });
-    }
+  "saves.importClipboard": query(
+    z.object({ folderId: NullableStringParam }),
+    async ({ folderId }) => {
+      const folderIds = folderId ? [folderId] : [];
+      const filePaths = await clipboardFilePaths();
+      if (filePaths.length > 0) {
+        return importFiles({
+          paths: filePaths,
+          tags: [],
+          folderIds,
+          origin: "clipboard",
+        });
+      }
 
-    const image = await readClipboardImage();
-    if (image.isEmpty()) {
-      return { ok: false, error: "empty_clipboard", ids: [] };
-    }
+      const image = await readClipboardImage();
+      if (image.isEmpty()) {
+        return { ok: false, error: "empty_clipboard", ids: [] };
+      }
 
-    try {
-      const directory = await mkdtemp(join(tmpdir(), "pond-clip-"));
-      const path = join(directory, "clipboard.png");
-      await writeFile(path, image.toPNG());
-      return importFiles({
-        paths: [path],
-        tags: [],
-        folderIds: [],
-        origin: "clipboard",
-      });
-    } catch (error) {
-      log.warn("[pond ipc] importClipboard failed", error);
-      return { ok: false, error: "clipboard_write_failed", ids: [] };
-    }
-  },
+      try {
+        const directory = await mkdtemp(join(tmpdir(), "pond-clip-"));
+        const path = join(directory, "clipboard.png");
+        await writeFile(path, image.toPNG());
+        return importFiles({
+          paths: [path],
+          tags: [],
+          folderIds,
+          origin: "clipboard",
+        });
+      } catch (error) {
+        log.warn("[pond ipc] importClipboard failed", error);
+        return { ok: false, error: "clipboard_write_failed", ids: [] };
+      }
+    },
+  ),
 } satisfies QueryHandlerMap;

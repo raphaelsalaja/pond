@@ -42,7 +42,10 @@ it("creates a folder and assigns Saves in one Undo batch", async () => {
       executed.push(transactions);
       return [];
     },
-    recordUndo: (transactions) => recorded.push(transactions),
+    recordUndo: (transactions) => {
+      recorded.push(transactions);
+      return "undo-1";
+    },
     createId: () => "new-folder",
     now: () => createdAt,
   };
@@ -59,6 +62,7 @@ it("creates a folder and assigns Saves in one Undo batch", async () => {
     color: null,
     sortOrder: 1,
     createdAt,
+    undoId: "undo-1",
   });
   expect(executed).toHaveLength(1);
   expect(executed[0]).toEqual([

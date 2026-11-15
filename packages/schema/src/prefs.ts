@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { ExtensionSettingsSchema } from "./browser-extension";
-import { FolderPresentationSchema } from "./folder-presentation";
+import { FileRingPrefsSchema } from "./file-ring";
+import {
+  FolderAppearancePrefsSchema,
+  FolderPresentationSchema,
+} from "./folder-presentation";
 import { FolderRulesSchema } from "./folder-rules";
 import { DEFAULT_INBOX_CHANNELS } from "./inbox";
 import {
@@ -62,6 +66,7 @@ export const SIDEBAR_DESTINATIONS = [
   "recentlyUsed",
   "tags",
   "random",
+  "splitPosts",
   "trash",
   "sources",
   "downloads",
@@ -154,6 +159,7 @@ const sidebar = z.object({
       recentlyUsed: z.boolean().catch(true),
       tags: z.boolean().catch(true),
       random: z.boolean().catch(true),
+      splitPosts: z.boolean().catch(true),
       trash: z.boolean().catch(true),
       downloads: z.boolean().catch(true),
       sources: z.boolean().catch(true),
@@ -166,6 +172,7 @@ const sidebar = z.object({
       recentlyUsed: true,
       tags: true,
       random: true,
+      splitPosts: true,
       trash: true,
       downloads: true,
       sources: true,
@@ -483,6 +490,10 @@ const shortcuts = z.object({
 const PrefsObject = z.object({
   folderRules: z.record(z.string(), FolderRulesSchema).catch({}),
   folderViews: z.record(z.string(), FolderPresentationSchema).catch({}),
+  folderAppearance: FolderAppearancePrefsSchema.catch(
+    FolderAppearancePrefsSchema.parse({}),
+  ),
+  fileRing: FileRingPrefsSchema.catch(FileRingPrefsSchema.parse({})),
   savedViewViews: z.record(z.string(), SavedViewPresentationSchema).catch({}),
   viewer: ViewerPrefsSchema.catch(ViewerPrefsSchema.parse({})),
   shortcuts: shortcuts.catch(shortcuts.parse({})),

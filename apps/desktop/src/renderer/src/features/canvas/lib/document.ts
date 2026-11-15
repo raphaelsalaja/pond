@@ -8,6 +8,7 @@ import {
   type CanvasOutline,
   type CanvasSide,
   type CanvasViewport,
+  saveGridColumns,
 } from "@shared/canvas-contracts";
 import type { Edge, Node, NodeChange, XYPosition } from "@xyflow/react";
 
@@ -71,7 +72,6 @@ const TOPIC_SIZE = { width: 192, height: 48 };
 const CELL = { width: 144, height: 48 };
 const LINE_HEIGHT = 24;
 const GAP = 48;
-const COLUMNS = 4;
 const DUPLICATE_OFFSET = GRID;
 
 export type Bounds = Pick<CanvasItem, "id" | "x" | "y" | "width" | "height">;
@@ -309,25 +309,54 @@ export function contentOf(
   };
 }
 
+function saveGrid(
+  saveIds: readonly string[],
+  origin: XYPosition,
+  columns: number,
+): CanvasItem[] {
+  return saveIds.map((saveId, index) => ({
+    kind: "save",
+    id: newId(),
+    saveId,
+    x: origin.x + (index % columns) * (SAVE_SIZE.width + GAP),
+    y: origin.y + Math.floor(index / columns) * (SAVE_SIZE.height + GAP),
+    ...SAVE_SIZE,
+  }));
+}
+
 /** Saves dropped together fan out in a grid centred on the drop point. */
 export function placeSaves(
   saveIds: readonly string[],
   center: XYPosition,
 ): CanvasItem[] {
-  const columns = Math.min(COLUMNS, saveIds.length);
-  const rows = Math.ceil(saveIds.length / COLUMNS);
-  const left = snap(
-    center.x - (columns * SAVE_SIZE.width + (columns - 1) * GAP) / 2,
+  const columns = saveGridColumns(saveIds.length);
+  const across = Math.min(columns, saveIds.length);
+  const rows = Math.ceil(saveIds.length / columns);
+  return saveGrid(
+    saveIds,
+    {
+      x: snap(center.x - (across * SAVE_SIZE.width + (across - 1) * GAP) / 2),
+      y: snap(center.y - (rows * SAVE_SIZE.height + (rows - 1) * GAP) / 2),
+    },
+    columns,
   );
-  const top = snap(center.y - (rows * SAVE_SIZE.height + (rows - 1) * GAP) / 2);
-  return saveIds.map((saveId, index) => ({
-    kind: "save",
-    id: newId(),
-    saveId,
-    x: left + (index % COLUMNS) * (SAVE_SIZE.width + GAP),
-    y: top + Math.floor(index / COLUMNS) * (SAVE_SIZE.height + GAP),
-    ...SAVE_SIZE,
-  }));
+}
+
+/** A batch from a folder lands to the right of everything on the board, so it never covers existing work. */
+export function placeSavesBeside(
+  saveIds: readonly string[],
+  frames: readonly { x: number; y: number; width: number; height: number }[],
+  fallback: XYPosition,
+): CanvasItem[] {
+  if (!frames.length) return placeSaves(saveIds, fallback);
+  return saveGrid(
+    saveIds,
+    {
+      x: snap(Math.max(...frames.map((frame) => frame.x + frame.width)) + GAP),
+      y: snap(Math.min(...frames.map((frame) => frame.y))),
+    },
+    saveGridColumns(saveIds.length),
+  );
 }
 
 export function noteAt(point: XYPosition, color: CanvasColor): CanvasItem {

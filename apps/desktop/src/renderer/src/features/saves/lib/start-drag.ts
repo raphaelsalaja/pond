@@ -1,4 +1,8 @@
 import { resolveFileIndex } from "@/features/saves/lib/actions";
+import {
+  endSaveDragSession,
+  startSaveDragSession,
+} from "@/features/saves/state/drag-session";
 import { pool } from "@/features/saves/state/pool";
 import { selection } from "@/features/saves/state/selection";
 import { formatPlural } from "@/shared/lib/format";
@@ -169,6 +173,7 @@ function installNativeSessionListeners(): void {
 
 export function endSaveDrag(): void {
   draggingIds = [];
+  endSaveDragSession();
   removeSessionListeners?.();
   document.body.removeAttribute("data-save-dragging");
   dragPreview?.remove();
@@ -185,6 +190,7 @@ export function beginSaveDrag(id: string, event?: SaveDragStartEvent): void {
     const save = pool.get(saveId);
     return save ? resolveFileIndex(save) != null : false;
   });
+  startSaveDragSession({ ids: selected, hasFiles: ids.length > 0 });
   if (ids.length > 0) {
     /** `startDrag` only adds files to Chromium's drag; running both strands this window in a drag that never ends. */
     event?.preventDefault();

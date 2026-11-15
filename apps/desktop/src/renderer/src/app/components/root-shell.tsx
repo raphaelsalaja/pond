@@ -28,6 +28,10 @@ import {
   SourceDetailsPageSchema,
 } from "@/features/sources/state/source-detail";
 import { getAppRouter } from "@/shared/lib/app-router";
+import {
+  lazyWithPreload,
+  preloadWhenIdle,
+} from "@/shared/lib/lazy-with-preload";
 import { settingsHref } from "@/shared/lib/open-settings";
 
 const FishDetails = lazy(() =>
@@ -36,10 +40,10 @@ const FishDetails = lazy(() =>
   })),
 );
 
-const SettingsSidebar = lazy(() =>
-  import("@/features/settings/components/sidebar").then((module) => ({
-    default: module.SettingsSidebar,
-  })),
+const SettingsSidebar = lazyWithPreload(() =>
+  import("@/features/settings/components/sidebar").then(
+    (module) => module.SettingsSidebar,
+  ),
 );
 
 const DownloadDialogHost = lazy(() =>
@@ -103,6 +107,7 @@ export function RootShell() {
       getAppRouter()?.history.push(pathname);
     });
   }, []);
+  useEffect(() => preloadWhenIdle(SettingsSidebar.preload), []);
 
   return (
     <>

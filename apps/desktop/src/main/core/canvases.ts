@@ -3,6 +3,7 @@ import { existsSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import log from "electron-log/main.js";
 import {
+  CANVAS_ITEM_LIMIT,
   type Canvas,
   type CanvasContentInput,
   CanvasContentSchema,
@@ -10,6 +11,7 @@ import {
   type CanvasItem,
   CanvasSchema,
   type CanvasSummary,
+  saveGridColumns,
 } from "../../shared/canvas-contracts";
 import { readBundleJson, writeBundleJson } from "../lib/library-config";
 import { resolvePaths } from "../paths";
@@ -17,7 +19,6 @@ import { resolvePaths } from "../paths";
 const SAVE_WIDTH = 240;
 const SAVE_HEIGHT = 220;
 const GAP = 40;
-const COLUMNS = 4;
 
 function libraryRoot(): string {
   return resolvePaths().libraryRoot;
@@ -69,7 +70,10 @@ function placeSaves(canvas: Canvas, saveIds: readonly string[]): CanvasItem[] {
   const present = new Set(
     canvas.items.flatMap((item) => (item.kind === "save" ? [item.saveId] : [])),
   );
-  const incoming = [...new Set(saveIds)].filter((id) => !present.has(id));
+  const incoming = [...new Set(saveIds)]
+    .filter((id) => !present.has(id))
+    .slice(0, Math.max(0, CANVAS_ITEM_LIMIT - canvas.items.length));
+  const columns = saveGridColumns(incoming.length);
   const left = canvas.items.length
     ? Math.max(...canvas.items.map((item) => item.x + item.width)) + GAP
     : 0;
@@ -80,8 +84,8 @@ function placeSaves(canvas: Canvas, saveIds: readonly string[]): CanvasItem[] {
     kind: "save",
     id: randomUUID(),
     saveId,
-    x: left + (index % COLUMNS) * (SAVE_WIDTH + GAP),
-    y: top + Math.floor(index / COLUMNS) * (SAVE_HEIGHT + GAP),
+    x: left + (index % columns) * (SAVE_WIDTH + GAP),
+    y: top + Math.floor(index / columns) * (SAVE_HEIGHT + GAP),
     width: SAVE_WIDTH,
     height: SAVE_HEIGHT,
   }));

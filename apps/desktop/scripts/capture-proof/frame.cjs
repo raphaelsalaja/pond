@@ -135,6 +135,11 @@ async function layers(frame, options) {
     .blur(Math.max(0.3, 1.5 * unit))
     .removeAlpha()
     .toBuffer();
+  if (options.bare) {
+    const background = await sharp(softened).png().toBuffer();
+    const cover = await sharp(svg(canvas, "")).png().toBuffer();
+    return { background, cover };
+  }
   const shadow = (dy, blur, opacity, id) => {
     const silhouette = roundedRect(
       { ...rect, y: rect.y + dy * unit },
@@ -261,9 +266,13 @@ async function composePair(left, right) {
 }
 
 /** Writes lossless window frames at a constant rate while capturing, then composites and encodes. */
-function startRecorder(frame, scratch, fps) {
+function startRecorder(frame, scratch, fps, bare = false) {
   const ffmpeg = ffmpegPath();
   const raw = join(scratch, `raw-${Date.now()}.mkv`);
+  /** libx264rgb drops alpha, so transparent windows keep it with lossless ffv1. */
+  const codec = bare
+    ? ["-c:v", "ffv1", "-pix_fmt", "bgra"]
+    : ["-c:v", "libx264rgb", "-preset", "ultrafast", "-qp", "0"];
   const child = spawn(
     ffmpeg,
     [
@@ -280,12 +289,7 @@ function startRecorder(frame, scratch, fps) {
       String(fps),
       "-i",
       "-",
-      "-c:v",
-      "libx264rgb",
-      "-preset",
-      "ultrafast",
-      "-qp",
-      "0",
+      ...codec,
       raw,
     ],
     { stdio: ["pipe", "ignore", "pipe"] },

@@ -18,9 +18,11 @@ const store = new Store<CanvasesState>({
   editingId: null,
 });
 
+type Placement = "beside";
+
 interface OpenBoard {
   id: string;
-  addSaves(saveIds: readonly string[]): void;
+  addSaves(saveIds: readonly string[], placement?: Placement): void;
 }
 
 /** The open board places incoming Saves itself, so a pending autosave never overwrites them. */
@@ -89,8 +91,12 @@ export const canvases = {
   open(id: string): void {
     getAppRouter()?.history.push(canvasPath(id));
   },
-  async create(saveIds: readonly string[] = []): Promise<Canvas> {
+  async create(
+    saveIds: readonly string[] = [],
+    name?: string,
+  ): Promise<Canvas> {
     const canvas = await window.pond.query("canvases.create", {
+      name,
       saveIds: saveIds.length ? [...saveIds] : undefined,
     });
     documents.set(canvas.id, canvas);
@@ -122,10 +128,14 @@ export const canvases = {
   isOpen(id: string): boolean {
     return openBoard?.id === id;
   },
-  async addSaves(id: string, saveIds: readonly string[]): Promise<void> {
+  async addSaves(
+    id: string,
+    saveIds: readonly string[],
+    placement?: Placement,
+  ): Promise<void> {
     if (!saveIds.length) return;
     if (openBoard?.id === id) {
-      openBoard.addSaves(saveIds);
+      openBoard.addSaves(saveIds, placement);
       return;
     }
     const canvas = await window.pond.query("canvases.addSaves", {

@@ -78,9 +78,10 @@ it("retains cold IDs for trash, restore, and purge beyond the loaded page", asyn
   const query = vi.fn(async () => ({ changed: ids.length }));
   vi.stubGlobal("window", { pond: { query } });
   const { trashSaves, untrashSaves, purgeSaves } = await import("./mutate");
-  expect(await trashSaves(ids)).toBe(ids.length);
-  expect(await untrashSaves(ids)).toBe(ids.length);
-  expect(await purgeSaves(ids)).toBe(ids.length);
+  const changed = { changed: ids.length, undoId: null };
+  expect(await trashSaves(ids)).toEqual(changed);
+  expect(await untrashSaves(ids)).toEqual(changed);
+  expect(await purgeSaves(ids)).toEqual(changed);
   expect(query.mock.calls).toEqual([
     ["saves.bulkEdit", { ids, operation: { kind: "trash" } }],
     ["feedback.emit", { event: "saveDeletion" }],
@@ -203,7 +204,7 @@ for (const operation of operations) {
           expect(batches).toEqual(changes.length ? [changes, changes] : []);
         } else {
           pending.resolve({ changed: 4 });
-          expect(await mutation).toBe(4);
+          expect(await mutation).toEqual({ changed: 4, undoId: null });
           expect(publications).toBe(changes.length ? 1 : 0);
         }
       } finally {
@@ -269,7 +270,7 @@ for (const ids of [[], ["cold"], ["trashed", "cold"]]) {
           operation: { kind: "rating", rating: 3 },
         });
       } else {
-        expect(await mutation).toBe(0);
+        expect(await mutation).toEqual({ changed: 0, undoId: null });
         expect(query).not.toHaveBeenCalled();
       }
       expect(publications).toBe(0);
@@ -286,7 +287,10 @@ it("does not send an empty selection", async () => {
   const query = vi.fn();
   vi.stubGlobal("window", { pond: { query } });
   const before = pool.snapshot();
-  expect(await bulkMutation([], { kind: "trash" })).toBe(0);
+  expect(await bulkMutation([], { kind: "trash" })).toEqual({
+    changed: 0,
+    undoId: null,
+  });
   expect(pool.snapshot()).toBe(before);
   expect(query).not.toHaveBeenCalled();
 });

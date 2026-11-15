@@ -16,6 +16,7 @@ import { creator } from "./creator";
 import type { FieldDescriptor } from "./descriptor";
 import { aspect, orientation } from "./dims";
 import { duration } from "./duration";
+import { favorite } from "./favorite";
 import { fileCount } from "./file-count";
 import { fileSize } from "./file-size";
 import { folder } from "./folder";
@@ -27,6 +28,7 @@ import { inbox } from "./inbox";
 import { list } from "./list";
 import { modifiedAt } from "./modified-at";
 import { note } from "./note";
+import { post } from "./post";
 import { publishedAt } from "./published-at";
 import { rating } from "./rating";
 import { savedAt } from "./saved-at";
@@ -46,6 +48,13 @@ export type {
 } from "./descriptor";
 export { aspectFromDims, orientationFromDims } from "./dims";
 export {
+  parseSplitPostKey,
+  type SplitPostRef,
+  splitPostKey,
+  splitPostPredicate,
+  splitPostSourceIdSql,
+} from "./post";
+export {
   durationProjection,
   folderExists,
   tagsDistinctCount,
@@ -61,6 +70,7 @@ export const FIELD_DESCRIPTORS = {
   folder,
   list,
   source,
+  post,
   importedFrom,
   inbox,
   type: typeField,
@@ -90,6 +100,7 @@ export const FIELD_DESCRIPTORS = {
   takenAt,
   modifiedAt,
   rating,
+  favorite,
   fileSize,
   width,
   height,

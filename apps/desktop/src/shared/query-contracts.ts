@@ -44,6 +44,10 @@ import type {
   InspectQueryInputs,
   InspectQueryResults,
 } from "./inspect-contracts";
+import type {
+  LibraryHealthQueryInputs,
+  LibraryHealthQueryResults,
+} from "./library-health-contracts";
 import type { LibraryMarkSource } from "./library-mark";
 import type {
   LibraryRepairQueryInputs,
@@ -60,6 +64,7 @@ import type {
   EmptyInput,
   OkResult,
   OkSuccess,
+  UndoableChange,
 } from "./query-contracts-shared";
 import type {
   LibraryLocationResult,
@@ -163,6 +168,7 @@ export interface QueryInputs
     QueueQueryInputs,
     ArenaLinkQueryInputs,
     LibraryRepairQueryInputs,
+    LibraryHealthQueryInputs,
     MediaProcessingQueryInputs,
     TagGroupQueryInputs {
   "saves.understandMedia": MediaUnderstandInput;
@@ -384,12 +390,13 @@ export interface QueryResults
     QueueQueryResults,
     ArenaLinkQueryResults,
     LibraryRepairQueryResults,
+    LibraryHealthQueryResults,
     TagGroupQueryResults {
   "folders.rules.get": { tags: string[]; inheritedTags: string[] };
   "folders.rules.set": OkResult<{ affected: number }>;
   "folders.createBatch": Folder[];
-  "folders.createWithSaves": Folder;
-  "folders.moveBatch": OkResult;
+  "folders.createWithSaves": Folder & UndoableChange;
+  "folders.moveBatch": OkResult<UndoableChange>;
 
   "library.recent": Array<{
     path: string;
@@ -424,8 +431,8 @@ export interface QueryResults
     path: string;
     copied?: number;
   }>;
-  "folders.move": OkResult;
-  "folders.assign": OkResult;
+  "folders.move": OkResult<UndoableChange>;
+  "folders.assign": OkResult<UndoableChange>;
   "tags.list": Tag[];
   "tags.rename": OkResult<{ affected: number }>;
   "tags.merge": OkResult<{ affected: number }>;
@@ -478,8 +485,8 @@ export interface QueryResults
   "folders.setColor": OkResult;
   "folders.delete": OkResult;
   "folders.memberships": { saveId: string; folderId: string }[];
-  "folders.setSaveFolders": OkResult;
-  "folders.addSaves": OkResult;
+  "folders.setSaveFolders": OkResult<UndoableChange>;
+  "folders.addSaves": OkResult<UndoableChange>;
   "tags.create": OkResult;
   "agent.saveKey": OkResult;
   "settings.getPrefs": Prefs;

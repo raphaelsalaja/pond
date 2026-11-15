@@ -24,12 +24,6 @@ export type MenuPage =
       context?: string;
       entries: readonly MenuEntry[];
     }
-  | {
-      kind: "folders";
-      key: string;
-      title: string;
-      saveIds: readonly string[];
-    }
   | { kind: "views"; key: string; title: string };
 
 export interface MenuEntry {
@@ -45,6 +39,9 @@ export interface MenuEntry {
   keywords?: string;
   icon: ReactNode;
   shortcut?: ShortcutId;
+  /** Key glyphs for entries that come from a menu spec rather than a shortcut id. */
+  keys?: readonly string[];
+  checked?: boolean;
   /** Lowest score while a query is active, for entries matched on text the label doesn't show. */
   scoreFloor?: number;
   /** Multiplies the label score, so near ties go to commands. */

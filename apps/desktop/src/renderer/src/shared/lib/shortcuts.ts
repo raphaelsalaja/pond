@@ -16,6 +16,7 @@ import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 
 export {
+  isRecordable,
   isShortcutId,
   isValidShortcut,
   RATING_COMMANDS,

@@ -3,16 +3,25 @@ import {
   IconPlus as Plus,
 } from "@pond/icons";
 import {
+  Button,
+  Keyboard,
   PickerPanel,
   type PickerSelectionState,
   usePickerCursor,
 } from "@pond/ui";
-import { type CSSProperties, useMemo, useState } from "react";
+import {
+  type CSSProperties,
+  type KeyboardEvent,
+  useMemo,
+  useState,
+} from "react";
 import {
   FolderIcon,
   type FolderIconId,
   folderColorCss,
 } from "@/shared/lib/folder-icons";
+import { formatPlural } from "@/shared/lib/format";
+import { chordGlyphs } from "@/shared/lib/shortcuts";
 import styles from "./styles.module.css";
 
 export interface FolderMenuItem {
@@ -40,13 +49,26 @@ interface FolderRowStyle extends CSSProperties {
   "--folder-depth": number;
 }
 
+export interface FolderMenuBatch {
+  staged: ReadonlySet<string>;
+  applying?: boolean;
+  onToggle(folder: FolderMenuItem): void;
+  onApply(): void;
+  onCancel(): void;
+}
+
 export interface FolderMenuProps {
   folders: readonly FolderMenuItem[];
   selectionSize: number;
   selection?: "multiple" | "single";
   onToggle(folder: FolderMenuItem): void | Promise<void>;
   onCreate?(name: string): void | Promise<void>;
+  onStartBatch?(): void;
+  /** Staged mode: rows toggle a pending set that applies together as one change. */
+  batch?: FolderMenuBatch;
 }
+
+const APPLY_CHORD = "Mod+Enter";
 
 function buildTree(folders: readonly FolderMenuItem[]): FolderNode[] {
   const byId = new Map(folders.map((folder) => [folder.id, folder]));
@@ -141,6 +163,8 @@ export function FolderMenu({
   selection = "multiple",
   onToggle,
   onCreate,
+  onStartBatch,
+  batch,
 }: FolderMenuProps) {
   const single = selection === "single";
   const tree = useMemo(() => buildTree(folders), [folders]);
@@ -186,7 +210,11 @@ export function FolderMenu({
       return;
     }
     if (row.folder.disabled) return;
-    void onToggle(row.folder);
+    if (!batch) {
+      void onToggle(row.folder);
+      return;
+    }
+    if (row.folder.count !== selectionSize) batch.onToggle(row.folder);
   }
 
   const cursor = usePickerCursor({
@@ -205,6 +233,15 @@ export function FolderMenu({
     },
   });
 
+  function onSearchKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (batch && event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+      event.preventDefault();
+      if (batch.staged.size && !batch.applying) batch.onApply();
+      return;
+    }
+    cursor.inputProps.onKeyDown(event);
+  }
+
   return (
     <PickerPanel.Surface
       className={styles.root}
@@ -213,6 +250,7 @@ export function FolderMenu({
       <PickerPanel.Header>
         <PickerPanel.Search
           {...cursor.inputProps}
+          onKeyDown={onSearchKeyDown}
           aria-label="Search Folders"
           placeholder="Search…"
           value={query}
@@ -248,12 +286,15 @@ export function FolderMenu({
             );
 
           const { folder } = row;
+          const assigned = folder.count === selectionSize;
+          const staged = batch?.staged.has(folder.id) ?? false;
           const state: PickerSelectionState =
-            folder.count === selectionSize
+            assigned || staged
               ? "checked"
               : folder.count > 0
                 ? "mixed"
                 : "unchecked";
+          const inert = folder.disabled || Boolean(batch && assigned);
           const rowStyle: FolderRowStyle = {
             "--folder-depth": showTree ? folder.depth : 0,
           };
@@ -274,10 +315,11 @@ export function FolderMenu({
                   ? !collapsed.has(folder.id)
                   : undefined
               }
-              aria-disabled={folder.disabled || undefined}
+              aria-disabled={inert || undefined}
+              aria-description={batch && assigned ? "Already added" : undefined}
               selected={state}
               data-depth={folder.depth}
-              data-disabled={folder.disabled || undefined}
+              data-disabled={inert || undefined}
             >
               {showTree ? (
                 folder.children.length ? (
@@ -319,6 +361,36 @@ export function FolderMenu({
           </PickerPanel.Empty>
         ) : null}
       </PickerPanel.Collection>
+
+      {batch ? (
+        <PickerPanel.Footer className={styles.footer}>
+          <PickerPanel.Hint>
+            <Keyboard.Cluster keys={chordGlyphs(APPLY_CHORD)} density="flat" />
+            Add
+          </PickerPanel.Hint>
+          <Button size="xs" variant="ghost" onClick={batch.onCancel}>
+            Cancel
+          </Button>
+          <Button
+            size="xs"
+            variant="primary"
+            disabled={!batch.staged.size}
+            loading={batch.applying}
+            onClick={batch.onApply}
+          >
+            {`Add to ${formatPlural(batch.staged.size, {
+              one: "Folder",
+              other: "Folders",
+            })}`}
+          </Button>
+        </PickerPanel.Footer>
+      ) : onStartBatch ? (
+        <PickerPanel.Footer className={styles.footer}>
+          <Button size="xs" variant="ghost" onClick={onStartBatch}>
+            Select Multiple
+          </Button>
+        </PickerPanel.Footer>
+      ) : null}
     </PickerPanel.Surface>
   );
 }

@@ -55,11 +55,13 @@ import styles from "./styles.module.css";
 
 export interface SearchComposerProps {
   compile?: ReturnType<typeof useNlCompiler>;
+  placeholder?: string;
   children?: ReactNode;
 }
 
 export function SearchComposer({
   compile,
+  placeholder = "Search your library…",
   children,
 }: SearchComposerProps = {}) {
   const initialConfig = useMemo(
@@ -76,7 +78,7 @@ export function SearchComposer({
 
   return (
     <LexicalComposer initialConfig={initialConfig}>
-      <SearchField compileOverride={compile} />
+      <SearchField compileOverride={compile} placeholder={placeholder} />
       {children}
     </LexicalComposer>
   );
@@ -84,8 +86,10 @@ export function SearchComposer({
 
 function SearchField({
   compileOverride,
+  placeholder,
 }: {
   compileOverride?: ReturnType<typeof useNlCompiler>;
+  placeholder: string;
 }) {
   const [editor] = useLexicalComposerContext();
   const tags = useTags();
@@ -274,7 +278,7 @@ function SearchField({
                 />
               }
               placeholder={
-                <span className={styles.placeholder}>Search your library…</span>
+                <span className={styles.placeholder}>{placeholder}</span>
               }
               ErrorBoundary={LexicalErrorBoundary}
             />

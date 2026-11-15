@@ -24,6 +24,7 @@ export interface InfoFile {
 export type SaveUserData = Pick<
   Save,
   | "rating"
+  | "favorite"
   | "dominantColors"
   | "primaryColor"
   | "rotate"
@@ -72,6 +73,7 @@ export const StoredInfoDocSchema = z.object({
   userData: z
     .object({
       rating: z.number().min(0).max(5).nullable(),
+      favorite: z.boolean().catch(false),
       dominantColors: z.array(z.string()),
       primaryColor: z
         .string()
@@ -174,6 +176,7 @@ export function infoDocFromSave(
   return {
     userData: {
       rating: save.rating ?? null,
+      favorite: save.favorite ?? false,
       dominantColors: save.dominantColors ?? [],
       primaryColor: save.primaryColor ?? null,
       rotate: save.rotate ?? 0,
@@ -211,6 +214,7 @@ export function infoDocFromSave(
 const EXPORTED_SAVE_FIELDS = [
   "files",
   "rating",
+  "favorite",
   "dominantColors",
   "primaryColor",
   "rotate",
@@ -255,6 +259,7 @@ export function applyPatchToInfo(
   };
   const userFields = [
     "rating",
+    "favorite",
     "dominantColors",
     "primaryColor",
     "rotate",
@@ -265,6 +270,7 @@ export function applyPatchToInfo(
   if (userFields.some((key) => patch[key] !== undefined)) {
     next.userData = {
       rating: info.userData?.rating ?? null,
+      favorite: info.userData?.favorite ?? false,
       dominantColors: info.userData?.dominantColors ?? [],
       primaryColor: info.userData?.primaryColor ?? null,
       rotate: info.userData?.rotate ?? 0,
@@ -273,6 +279,8 @@ export function applyPatchToInfo(
       crop: info.userData?.crop ?? null,
     };
     if (patch.rating !== undefined) next.userData.rating = patch.rating;
+    if (patch.favorite !== undefined)
+      next.userData.favorite = patch.favorite ?? false;
     if (patch.dominantColors !== undefined)
       next.userData.dominantColors = patch.dominantColors ?? [];
     if (patch.primaryColor !== undefined)

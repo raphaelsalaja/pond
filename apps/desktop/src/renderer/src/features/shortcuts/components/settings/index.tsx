@@ -4,6 +4,7 @@ import { type ReactNode, useEffect, useRef, useState } from "react";
 import { errorCopy } from "@/shared/lib/error-copy";
 import {
   chordGlyphs,
+  isRecordable,
   isShortcutId,
   isValidShortcut,
   resolveShortcuts,
@@ -76,11 +77,12 @@ export function ShortcutSettings({
     ? preferences
     : { profile: "pond" as const, overrides: {} };
   const bindings = resolveShortcuts(current);
+  const defaults = resolveShortcuts({ ...current, overrides: {} });
   const matching = Object.keys(bindings)
     .filter(isShortcutId)
     .filter(
       (id) =>
-        (only ? only.includes(id) : bindings[id].keys) &&
+        (only ? only.includes(id) : isRecordable(bindings[id])) &&
         `${bindings[id].group} ${bindings[id].label}`
           .toLowerCase()
           .includes(search.toLowerCase()),
@@ -95,7 +97,11 @@ export function ShortcutSettings({
 
   const renderRows = (ids: ShortcutId[]) =>
     ids.map((id) => (
-      <Settings.Item className={styles.row} key={id}>
+      <Settings.Item
+        className={styles.row}
+        key={id}
+        id={`setting-shortcuts-${id}`}
+      >
         <Settings.ItemDetails>
           <Settings.ItemTitle>{bindings[id].label}</Settings.ItemTitle>
         </Settings.ItemDetails>
@@ -169,7 +175,7 @@ export function ShortcutSettings({
             <Button
               variant="ghost"
               size="sm"
-              aria-label={`Reset ${bindings[id].label} shortcut`}
+              aria-label={`${defaults[id].keys ? "Reset" : "Clear"} ${bindings[id].label} shortcut`}
               disabled={pending || disabled}
               onClick={() => {
                 const overrides = { ...current.overrides };
@@ -177,7 +183,7 @@ export function ShortcutSettings({
                 void patch({ overrides });
               }}
             >
-              Reset
+              {defaults[id].keys ? "Reset" : "Clear"}
             </Button>
           ) : null}
         </Settings.ItemControl>

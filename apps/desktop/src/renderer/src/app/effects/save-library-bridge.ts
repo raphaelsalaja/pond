@@ -24,6 +24,7 @@ registerSaveLibraryBridge({
   setNav: (nav) => libraryChrome.setNav(nav),
   resetFilters,
   openTaggedItems: (name) => selectLibraryNav({ kind: "tag", name }),
+  showPost: (post) => selectLibraryNav({ kind: "post", ...post }),
   closeDetails: () => libraryChrome.setDetailsOpen(false),
   openFolderPicker,
   openRename: openRenameDialog,

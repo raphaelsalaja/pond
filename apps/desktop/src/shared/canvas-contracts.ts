@@ -236,9 +236,16 @@ export const CanvasViewportSchema = z.object({
 });
 export type CanvasViewport = z.infer<typeof CanvasViewportSchema>;
 
+export const CANVAS_ITEM_LIMIT = 5_000;
+
+/** Save grids stay roughly square, so a large folder doesn't land as one tall strip. */
+export function saveGridColumns(count: number): number {
+  return Math.max(4, Math.ceil(Math.sqrt(count)));
+}
+
 const contentFields = {
   viewport: CanvasViewportSchema,
-  items: z.array(CanvasItemSchema).max(5_000),
+  items: z.array(CanvasItemSchema).max(CANVAS_ITEM_LIMIT),
   connectors: z.array(CanvasConnectorSchema).max(10_000),
 };
 

@@ -18,11 +18,7 @@ function readStoredShell(): ShellHint {
   }
 }
 
-function paintShell(): void {
-  const shell: ShellHint = {
-    ...readStoredShell(),
-    ...window.__pondShell,
-  };
+export function paintShell(shell: ShellHint): void {
   const doc = document.documentElement;
 
   const theme =
@@ -31,6 +27,7 @@ function paintShell(): void {
       ? "dark"
       : "light");
   doc.setAttribute("data-theme", theme);
+  doc.classList.remove("light", "dark");
   doc.classList.add(theme);
 
   const { background, foreground, accent, contrast } = shell;
@@ -41,8 +38,6 @@ function paintShell(): void {
     "data-platform",
     /Mac|iPhone|iPad/i.test(navigator.userAgent) ? "mac" : "other",
   );
-
-  performance.mark("pondAppStart");
 }
 
 function armBootFailsafe(): void {
@@ -55,6 +50,7 @@ function armBootFailsafe(): void {
   }, BOOT_FAILSAFE_MS);
 }
 
-paintShell();
+paintShell({ ...readStoredShell(), ...window.__pondShell });
+performance.mark("pondAppStart");
 armBootFailsafe();
 initScrollFade();

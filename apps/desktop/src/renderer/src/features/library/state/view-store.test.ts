@@ -1,23 +1,52 @@
 import { matches } from "@pond/schema/filters/match";
 import { EMPTY_QUERY, type Query } from "@pond/schema/filters/types";
 import { beforeEach, describe, expect, it } from "vitest";
+import { type SearchView, searchViewKey } from "../lib/search-view";
 import { combineQueries } from "../lib/smart-folders";
 import {
   activateFolderPresentation,
   applySavedView,
   getViewState,
   resetFilters,
+  searchAllSaves,
+  searchCurrentView,
   setCombinator,
   setLayout,
   setQuery,
   setSearchDraft,
-  setSearchScope,
   setSemanticQuery,
   setSort,
   setVisualProbe,
   updateLocalFilters,
   updateRow,
 } from "./view-store";
+
+const designFolder: SearchView = { kind: "folder", id: "design" };
+
+describe("library search scope", () => {
+  beforeEach(() => {
+    resetFilters();
+  });
+
+  it("searches the current view by default", () => {
+    setSearchDraft("reference");
+    expect(getViewState().searchAllView).toBeNull();
+  });
+
+  it("returns to the current view when filters reset for a new view", () => {
+    searchAllSaves(designFolder);
+    resetFilters();
+    expect(getViewState().searchAllView).toBeNull();
+  });
+
+  it.each([{ kind: "trash" }, { kind: "library" }] as const)(
+    "keeps $kind on its own Saves",
+    (view) => {
+      searchAllSaves(view);
+      expect(getViewState().searchAllView).toBeNull();
+    },
+  );
+});
 
 const parentQuery: Query = {
   combinator: "or",
@@ -39,20 +68,22 @@ function effectiveQuery(): Query {
 describe("smart folder selection", () => {
   beforeEach(() => {
     resetFilters();
-    setSearchScope("all");
     setSort({ key: "title", dir: "asc" });
     setLayout("list");
   });
 
-  it("tracks native menu search scope independently from the query", () => {
+  it("tracks search scope independently from the query", () => {
     setSearchDraft("reference");
-    setSearchScope("current");
+    searchAllSaves(designFolder);
     expect(getViewState()).toMatchObject({
       q: "reference",
-      searchScope: "current",
+      searchAllView: searchViewKey(designFolder),
     });
-    setSearchScope("all");
-    expect(getViewState().searchScope).toBe("all");
+    searchCurrentView();
+    expect(getViewState()).toMatchObject({
+      q: "reference",
+      searchAllView: null,
+    });
   });
 
   it("ANDs parent alternatives with editable child conditions", () => {

@@ -47,15 +47,27 @@ export const QuickAddParamsSchema = z.object({
   url: StringParam,
   note: NullableStringParam,
   tags: StringListParam,
+  folderId: NullableStringParam,
 });
+
+export interface QuickAddInput {
+  url: string;
+  note: string | null;
+  tags: string[];
+}
+
+export interface QuickAddRequest extends QuickAddInput {
+  folderId: string | null;
+}
 
 export function normalizeQuickAddInput(
   params: z.infer<typeof QuickAddParamsSchema>,
-) {
+): QuickAddRequest {
   return {
     url: params.url.trim(),
     note: params.note?.trim() || null,
     tags: params.tags,
+    folderId: params.folderId?.trim() || null,
   };
 }
 
