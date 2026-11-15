@@ -6,10 +6,10 @@ import {
   announceSaveDragTarget,
   endSaveDrag,
   isLibrarySaveDrag,
+  notifyFolderMembershipChange,
   saveDropIds,
 } from "@/features/saves";
 import { errorCopy } from "@/shared/lib/error-copy";
-import { formatPlural } from "@/shared/lib/format";
 import { notify } from "@/shared/lib/toast";
 import {
   type FolderDropKind,
@@ -44,29 +44,16 @@ export function useFolderDragDrop({
   ): Promise<void> {
     const count = ids.length;
     try {
-      await window.pond.query("folders.addSaves", {
+      const result = await window.pond.query("folders.addSaves", {
         folderId: folder.id,
         saveIds: ids,
       });
       rememberFolderDestinations([folder.id]);
       await folders.refresh();
-      notify({
-        id: "add-saves-to-folder",
-        title: `Added ${formatPlural(count, { one: "Save", other: "Saves" })} to "${folder.name}"`,
-        action: {
-          label: "Undo",
-          onClick: () => {
-            void window.pond.undo().then((result) => {
-              if (result.ok) void folders.refresh();
-              else
-                notify({
-                  id: "undo-folder-assignment",
-                  title: "Couldn't undo folder assignment",
-                });
-            });
-          },
-        },
-      });
+      notifyFolderMembershipChange(
+        { kind: "add", saveCount: count, folders: [folder] },
+        result.ok ? result.undoId : null,
+      );
     } catch (error) {
       notify({
         id: "add-saves-to-folder",

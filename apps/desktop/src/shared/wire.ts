@@ -116,3 +116,12 @@ export interface WireUndoState {
   canUndo: boolean;
   canRedo: boolean;
 }
+
+/** `stale` means newer changes sit above the step, so reversing it would skip them. */
+export type UndoStepOutcome = "done" | "stale" | "failed";
+
+export interface WireUndoStepState {
+  outcome: UndoStepOutcome;
+  canUndo: boolean;
+  canRedo: boolean;
+}

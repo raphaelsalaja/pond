@@ -106,3 +106,64 @@ it("swaps replacement bytes when undoing and redoing file compression", async ()
     beforeFiles: [{ filename: "image.png", bytes: original }],
   });
 });
+
+function ratingChange(id: string, rating: number): Transaction {
+  return {
+    kind: "update",
+    model: "save",
+    id,
+    patch: { rating },
+    before: { rating: 0 },
+  };
+}
+
+it("undoes and redoes a step only while it is the latest change in that direction", async () => {
+  const committed: string[] = [];
+  let next = 0;
+  const history = createUndoHistory(
+    async (transactions) => {
+      for (const transaction of transactions)
+        if (transaction.kind === "update" && transaction.model === "save")
+          committed.push(`${transaction.id}:${transaction.patch.rating}`);
+    },
+    () => `step-${++next}`,
+  );
+  const first = history.record([ratingChange("a", 5)]);
+  expect(first).toBe("step-1");
+  expect(await history.undoStep("step-1")).toBe("done");
+  expect(await history.undoStep("step-1")).toBe("done");
+  expect(committed).toEqual(["a:0"]);
+  expect(await history.redoStep("step-1")).toBe("done");
+  expect(committed).toEqual(["a:0", "a:5"]);
+
+  history.record([ratingChange("b", 4)]);
+  expect(await history.undoStep("step-1")).toBe("stale");
+  expect(committed).toEqual(["a:0", "a:5"]);
+  expect(await history.undoStep("step-2")).toBe("done");
+  expect(await history.redoStep("step-1")).toBe("done");
+  expect(await history.redoStep("missing")).toBe("stale");
+  expect(committed).toEqual(["a:0", "a:5", "b:0"]);
+});
+
+it("keeps a step in place when its scoped undo fails", async () => {
+  let failing = true;
+  const history = createUndoHistory(async () => {
+    if (failing) throw new Error("Library unavailable");
+  });
+  const step = history.record([ratingChange("a", 5)]);
+  if (!step) throw new Error("Missing step");
+  expect(await history.undoStep(step)).toBe("failed");
+  expect(history.canUndo()).toBe(true);
+  failing = false;
+  expect(await history.undoStep(step)).toBe("done");
+  expect(history.canRedo()).toBe(true);
+});
+
+it("records no step for an empty change and forgets steps from another library", async () => {
+  const history = createUndoHistory(async () => {});
+  expect(history.record([])).toBeNull();
+  const step = history.record([ratingChange("a", 5)]);
+  if (!step) throw new Error("Missing step");
+  history.clear();
+  expect(await history.undoStep(step)).toBe("stale");
+});

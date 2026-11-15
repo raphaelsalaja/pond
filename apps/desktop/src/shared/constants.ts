@@ -21,6 +21,8 @@ export const IPC = {
   txBatch: "pond:tx-batch",
   undo: "pond:undo",
   redo: "pond:redo",
+  undoStep: "pond:undo-step",
+  redoStep: "pond:redo-step",
   query: "pond:query",
   syncAction: "pond:sync-action",
   appInfo: "pond:app-info",
