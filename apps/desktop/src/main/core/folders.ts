@@ -5,6 +5,7 @@ import {
   saveFolders as saveFoldersTable,
   saves,
 } from "@pond/schema/db";
+import { FolderColorSchema } from "@pond/schema/folder-presentation";
 import type { Transaction } from "@pond/schema/tx";
 import type {
   BatchRenameInput,
@@ -254,7 +255,11 @@ export async function setFolderColor(
   id: string,
   color: string | null,
 ): Promise<OkResult> {
-  const next = color?.trim() || null;
+  const requested = color?.trim() || null;
+  const parsed = requested ? FolderColorSchema.safeParse(requested) : null;
+  if (parsed && !parsed.success)
+    return { ok: false, error: "Choose a palette color or a hex color." };
+  const next = parsed?.data ?? null;
   const db = await getDb();
   const row = (
     await db.select().from(foldersTable).where(eq(foldersTable.id, id))
