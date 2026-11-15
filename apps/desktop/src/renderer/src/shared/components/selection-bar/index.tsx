@@ -1,7 +1,8 @@
 import { IconXmark } from "@pond/icons";
-import { Button, type ButtonProps, Keyboard, Tooltip } from "@pond/ui";
+import { Button, type ButtonProps, Keyboard, Menu, Tooltip } from "@pond/ui";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactElement, ReactNode } from "react";
+import { SpecMenu } from "@/shared/components/spec-context-menu";
 import { gentleSpring } from "@/shared/lib/motion";
 import styles from "./styles.module.css";
 
@@ -64,15 +65,20 @@ function Root({ label, count, onClear, children }: RootProps) {
   );
 }
 
+function shortcutHint(keys: readonly string[] | undefined) {
+  return keys?.length ? <Keyboard.Cluster keys={[...keys]} /> : undefined;
+}
+
 interface ActionProps
   extends Omit<ButtonProps, "icon" | "size" | "variant" | "aria-label"> {
   label: string;
+  shortcut?: readonly string[];
 }
 
 /** Stays focusable while disabled so its tooltip still names the icon. */
-function Action({ label, ...props }: ActionProps) {
+function Action({ label, shortcut, ...props }: ActionProps) {
   return (
-    <Tooltip label={label} side="top">
+    <Tooltip label={label} shortcut={shortcutHint(shortcut)} side="top">
       <Button
         icon
         size="sm"
@@ -85,4 +91,39 @@ function Action({ label, ...props }: ActionProps) {
   );
 }
 
-export const SelectionBar = { Root, Action };
+interface ActionMenuProps
+  extends Pick<
+    ComponentProps<typeof SpecMenu>,
+    "buildItems" | "onOpen" | "search" | "searchLabel" | "minWidth"
+  > {
+  label: string;
+  shortcut?: readonly string[];
+  disabled?: boolean;
+  children: ReactElement;
+}
+
+function ActionMenu({
+  label,
+  shortcut,
+  disabled,
+  children,
+  ...menu
+}: ActionMenuProps) {
+  return (
+    <SpecMenu align="center" {...menu}>
+      <Tooltip label={label} shortcut={shortcutHint(shortcut)} side="top">
+        <Menu.Trigger
+          icon
+          size="sm"
+          variant="ghost"
+          aria-label={label}
+          disabled={disabled}
+        >
+          {children}
+        </Menu.Trigger>
+      </Tooltip>
+    </SpecMenu>
+  );
+}
+
+export const SelectionBar = { Root, Action, Menu: ActionMenu };

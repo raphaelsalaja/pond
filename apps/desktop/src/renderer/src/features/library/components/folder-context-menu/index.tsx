@@ -2,6 +2,7 @@ import {
   IconArchive,
   IconArchiveExport,
   IconBulletList,
+  IconCanvas,
   IconCopy,
   IconEye,
   IconFaceSmile,
@@ -15,6 +16,7 @@ import {
   IconFolders,
   IconFolderTree,
   IconFolderXmark,
+  IconGridPlus,
   IconLink2,
   IconRename,
   IconTableDownload,
@@ -22,6 +24,11 @@ import {
 import { EMPTY_QUERY } from "@pond/schema/filters/types";
 import { Dialog, type MenuItemSpec } from "@pond/ui";
 import type { ReactElement } from "react";
+import {
+  addFolderSavesToCanvas,
+  canvases,
+  createCanvasFromFolder,
+} from "@/features/canvas";
 import { descendantFolderIds } from "@/features/library/components/folder-sidebar/tree";
 import { exportSelectionCsv, exportSelectionFiles } from "@/features/saves";
 import { SpecContextMenu } from "@/shared/components/spec-context-menu";
@@ -49,6 +56,8 @@ export interface FolderMenuActions {
   onExportEaglePackage: () => void;
   onExportPackage: () => void;
   onCopyToLibrary: () => void;
+  onCreateCanvas: () => void;
+  canvasItems: MenuItemSpec[];
   onCopyLink?: () => void;
   onToggleSubfolders: (next: boolean) => void;
   onCustomize: () => void;
@@ -116,6 +125,21 @@ export function buildFolderMenuItems(a: FolderMenuActions): MenuItemSpec[] {
       icon: <IconCopy />,
       disabled: a.creating,
       onClick: a.onDuplicate,
+    },
+    { type: "separator" },
+    {
+      label: "Create Canvas from Folder",
+      icon: <IconCanvas />,
+      keywords: "canvas board",
+      onClick: a.onCreateCanvas,
+    },
+    {
+      type: "submenu",
+      label: "Add Folder Saves to Canvas",
+      icon: <IconGridPlus />,
+      keywords: "canvas board",
+      disabled: !a.canvasItems.length,
+      items: a.canvasItems,
     },
     { type: "separator" },
     {
@@ -279,6 +303,24 @@ export async function exportFolderEaglePackage(
     else if (result.ok)
       notify({ id: "folder-export", title: "Eagle package exported" });
   });
+}
+
+export async function createCanvasFromFolderSaves(
+  name: string,
+  folderIds: string[],
+): Promise<void> {
+  await withFolderSaves(folderIds, (ids) => createCanvasFromFolder(name, ids));
+}
+
+export function buildFolderCanvasItems(folderIds: string[]): MenuItemSpec[] {
+  return canvases.snapshot().map((canvas) => ({
+    label: canvas.name,
+    icon: <IconCanvas />,
+    onClick: () =>
+      void withFolderSaves(folderIds, (ids) =>
+        addFolderSavesToCanvas(canvas.id, ids),
+      ),
+  }));
 }
 
 export async function copyFolderToLibrary(folderIds: string[]): Promise<void> {

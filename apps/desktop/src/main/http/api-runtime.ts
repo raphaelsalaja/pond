@@ -21,7 +21,10 @@ export interface ApiRuntime {
 export const apiRuntime: ApiRuntime = {
   getDb,
   libraryId: activeLibraryId,
-  bulkEdit: (input) => bulkQueries["saves.bulkEdit"](input),
+  async bulkEdit(input) {
+    const { changed } = await bulkQueries["saves.bulkEdit"](input);
+    return { changed };
+  },
   async assignFolders(input) {
     await foldersQueries["folders.assign"](input);
   },

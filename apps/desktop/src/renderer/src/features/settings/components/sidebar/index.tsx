@@ -2,7 +2,7 @@ import { IconArrowLeft } from "@pond/icons";
 import { Button, Sidebar } from "@pond/ui";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import Fuse from "fuse.js";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   SETTINGS_MASTER_GROUPS,
   type SectionDef,
@@ -13,6 +13,8 @@ import {
   SETTINGS_SEARCH_INDEX,
   type SettingsSearchEntry,
 } from "@/features/settings/lib/search-index";
+import { SECTION_PRELOADS } from "@/features/settings/lib/sections";
+import { preloadWhenIdle } from "@/shared/lib/lazy-with-preload";
 import { openSettings } from "@/shared/lib/open-settings";
 import styles from "./styles.module.css";
 
@@ -26,6 +28,7 @@ export function SettingsSidebar() {
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
+  useEffect(() => preloadWhenIdle(...SECTION_PRELOADS), []);
   const activeSection = pathname.startsWith("/settings/")
     ? pathname.slice("/settings/".length).split("/")[0]
     : null;

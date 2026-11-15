@@ -1,4 +1,4 @@
-import { Button, type ButtonProps } from "@pond/ui";
+import { Button, type ButtonProps, Checkbox } from "@pond/ui";
 import { clsx as cn } from "clsx";
 import React, { memo, type ReactNode } from "react";
 import type { SaveCardOverlayModel } from "@/features/saves/components/card/model";
@@ -46,6 +46,43 @@ function Select({
       className={cn(styles.select, className)}
       {...props}
     />
+  );
+}
+
+type PickProps = Omit<
+  React.ComponentProps<typeof Checkbox.Root>,
+  "variant" | "tabIndex" | "onPointerDown" | "onMouseDown" | "onDoubleClick"
+>;
+
+function stopPropagation(event: React.SyntheticEvent) {
+  event.stopPropagation();
+}
+
+/** Cancelling mousedown keeps the circle from starting a Save drag or taking focus from the listbox. */
+function cancelPress(event: React.MouseEvent) {
+  event.preventDefault();
+  event.stopPropagation();
+}
+
+/** Pointer-only: the keyboard selects through the listbox, so the circle never takes a tab stop. */
+function Pick({ className, onClick, ...props }: PickProps) {
+  return (
+    <Checkbox.Root
+      variant="media"
+      tabIndex={-1}
+      aria-hidden
+      className={cn(styles.pick, className)}
+      onPointerDown={stopPropagation}
+      onMouseDown={cancelPress}
+      onDoubleClick={stopPropagation}
+      onClick={(event) => {
+        event.stopPropagation();
+        onClick?.(event);
+      }}
+      {...props}
+    >
+      <Checkbox.Indicator />
+    </Checkbox.Root>
   );
 }
 
@@ -139,6 +176,7 @@ const Overlay = memo(function Overlay({
 export const Card = Object.assign(Root, {
   Root,
   Select,
+  Pick,
   Media,
   Frame,
   Meta,

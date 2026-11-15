@@ -80,6 +80,7 @@ export function migratePond(sqlite: Database.Database): void {
 					suggested_tags TEXT,
 					suggested_tags_model TEXT,
 					rating INTEGER,
+					favorite INTEGER NOT NULL DEFAULT 0,
 					rotate INTEGER NOT NULL DEFAULT 0,
 					flip_x INTEGER NOT NULL DEFAULT 0,
 					flip_y INTEGER NOT NULL DEFAULT 0,
@@ -343,19 +344,33 @@ export function migratePond(sqlite: Database.Database): void {
 					ON saves(id) WHERE embedding IS NOT NULL;
 				CREATE INDEX IF NOT EXISTS saves_has_clip_embedding_idx
 					ON saves(id) WHERE clip_embedding IS NOT NULL;
+				CREATE INDEX IF NOT EXISTS saves_split_post_idx
+					ON saves(source, json_extract(raw_slim, '$.split.sourceId'))
+					WHERE json_extract(raw_slim, '$.split.sourceId') IS NOT NULL;
 			`);
 
   ensureImportedFrom(sqlite);
+  ensureFavorite(sqlite);
   ensureSavesFts(sqlite);
+}
+
+function savesColumns(sqlite: Database.Database): string[] {
+  return sqlite
+    .prepare("PRAGMA table_info(saves)")
+    .all()
+    .map((row) => ColumnRowSchema.parse(row).name);
+}
+
+function ensureFavorite(sqlite: Database.Database): void {
+  if (savesColumns(sqlite).includes("favorite")) return;
+  sqlite.exec(
+    "ALTER TABLE saves ADD COLUMN favorite INTEGER NOT NULL DEFAULT 0",
+  );
 }
 
 /** `CREATE TABLE IF NOT EXISTS` leaves existing indexes without the column, so add it and fill it from legacy source id prefixes. */
 function ensureImportedFrom(sqlite: Database.Database): void {
-  const columns = sqlite
-    .prepare("PRAGMA table_info(saves)")
-    .all()
-    .map((row) => ColumnRowSchema.parse(row).name);
-  if (columns.includes("imported_from")) return;
+  if (savesColumns(sqlite).includes("imported_from")) return;
   sqlite.transaction(() => {
     sqlite.exec("ALTER TABLE saves ADD COLUMN imported_from TEXT");
     const backfill = sqlite.prepare(`

@@ -11,6 +11,7 @@ import { readColorMatch } from "./color";
 import { isoDurationToMillis } from "./duration";
 import { FIELD_DESCRIPTORS } from "./fields";
 import { ASPECT_TOLERANCE, parseAspectRatio } from "./fields/dims";
+import { splitPostClause } from "./fields/post";
 import {
   folderExists,
   jsonArrayDistinctCount,
@@ -49,7 +50,7 @@ function compilePredicate(p: Predicate): SQL {
   }
   const sqlExpr = compileForField(p.field, p.operator, p.value);
   if (!sqlExpr) throw new Error(`Invalid filter: ${p.field} ${p.operator}`);
-  const boolean = sql`coalesce((${sqlExpr}), 0)`;
+  const boolean = p.field === "post" ? sqlExpr : sql`coalesce((${sqlExpr}), 0)`;
   return p.negate ? sql`not (${boolean})` : boolean;
 }
 
@@ -69,6 +70,7 @@ function compileForField(
   if (field === "folder") return folderClause(operator, raw);
   if (field === "list") return jsonArrayClause(saves.listKinds, operator, raw);
   if (field === "format") return fileFormatClause(operator, raw);
+  if (field === "post") return splitPostClause(operator, raw);
 
   const column = FIELD_DESCRIPTORS[field].sqlProjection?.() ?? null;
   if (!column) return null;
@@ -288,6 +290,7 @@ function scalarClause(
 }
 
 const FiniteNumber = z.number().refine(Number.isFinite);
+const Flag = z.boolean();
 const Text = z.string();
 
 function escapeLike(value: string): string {
@@ -299,6 +302,8 @@ function scalarValue(
   raw: PredicateValue,
 ): string | number | null {
   if (raw == null) return null;
+  const flag = Flag.safeParse(raw);
+  if (flag.success) return flag.data ? 1 : 0;
   if (isDateField(field)) return numericValue(field, raw);
   const num = FiniteNumber.safeParse(raw);
   if (num.success) return num.data;

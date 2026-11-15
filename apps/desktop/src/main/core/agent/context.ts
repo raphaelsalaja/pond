@@ -192,7 +192,7 @@ export function libraryContext(
     {
       name: "readSave",
       description:
-        "Read a Save the way Cursor reads a file: caption, OCR, transcript, notes, rating, tags, folders, and media. Use field plus offset and limit for long transcripts.",
+        "Read a Save the way Cursor reads a file: caption, OCR, transcript, notes, rating, favorite, tags, folders, and media. Use field plus offset and limit for long transcripts.",
       schema: readSaveInput,
       execute: async (args) => {
         input.signal.throwIfAborted();

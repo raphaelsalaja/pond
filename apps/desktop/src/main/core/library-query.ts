@@ -62,9 +62,19 @@ export function librarySortColumn(
       return sql`lower(${saves.source})`;
     case "type":
       return sql`lower(coalesce(${saves.mediaType}, ''))`;
+    case "post":
+      return splitPostOrder();
     default:
       return saves.savedAt;
   }
+}
+
+/**
+ * Capture media position first, then newest first, since a split stamps each slide one millisecond before the last.
+ * @remarks Zero-padded text keeps the single-value cursor exact; a packed integer would pass 2^53 in JavaScript.
+ */
+function splitPostOrder(): SQLWrapper {
+  return sql`printf('%06d %013d', coalesce(json_extract(${saves.rawSlim}, '$.split.media[0]'), 999999), 9999999999999 - ${saves.savedAt})`;
 }
 
 export function libraryQueryWhere(

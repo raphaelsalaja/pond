@@ -15,6 +15,7 @@ import { recentlyAddedSince } from "../../shared/recently-added";
 import type { LibrarySidebarCounts } from "../../shared/sidebar-counts";
 import type { Db } from "../db";
 import { libraryQueryWhere } from "./library-query";
+import { countSplitPosts } from "./split-posts";
 
 export function querySidebarCounts(
   db: Db,
@@ -69,6 +70,7 @@ export function querySidebarCounts(
               .from(saves)
               .where(and(live, inArray(saves.id, [...recentIds])))
               .get()?.n ?? 0),
+      splitPosts: countSplitPosts(db, hiddenFolderIds),
       trash:
         db
           .select({ n: count() })

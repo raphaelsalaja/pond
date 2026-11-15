@@ -26,12 +26,30 @@ export function buildOrganizeSection(context: AppMenuContext): AppMenuItem {
           ),
         })),
       },
+      {
+        label: "Favorite",
+        accelerator: accelerator("save.favorite"),
+        registerAccelerator: false,
+        click: sendMenuAction("organize.favorite"),
+      },
       { type: "separator" },
       {
         label: "Add to Folders",
         accelerator: accelerator("save.assign-folders"),
         registerAccelerator: false,
         click: sendMenuAction("organize.add-to-folders"),
+      },
+      {
+        label: "Add to Multiple Folders",
+        accelerator: accelerator("save.assign-multiple-folders"),
+        registerAccelerator: false,
+        click: sendMenuAction("organize.add-to-multiple-folders"),
+      },
+      {
+        label: "Add to Recent Folder",
+        accelerator: accelerator("save.add-to-recent-folder"),
+        registerAccelerator: false,
+        click: sendMenuAction("organize.add-to-recent-folder"),
       },
       {
         label: "Add to Last Used Folder",

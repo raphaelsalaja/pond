@@ -26,7 +26,7 @@ const mock = {
   write: vi.fn<(typeof reviewDependencies)["executeTransaction"]>(),
   saveFolders: vi
     .fn<(typeof reviewDependencies)["setSaveFolders"]>()
-    .mockResolvedValue({ ok: true }),
+    .mockResolvedValue({ ok: true, undoId: null }),
   setTags: vi
     .fn<(typeof reviewDependencies)["setSaveTags"]>()
     .mockResolvedValue({ ok: true }),

@@ -153,6 +153,36 @@ it("accepts a visual probe on search input", () => {
   ).toMatchObject({ visual: { kind: "saveId", id: "save" } });
 });
 
+it("reads favorite next to rating", async () => {
+  const row: Awaited<ReturnType<typeof toolDependencies.readRows>>[number] = {
+    id: "save",
+    title: "Poster",
+    url: "https://example.com",
+    author: null,
+    source: "local",
+    description: null,
+    notes: null,
+    tags: [],
+    caption: null,
+    ocrText: null,
+    transcript: null,
+    rating: 3,
+    favorite: true,
+    mediaType: "image",
+    width: null,
+    height: null,
+  };
+  const result = await read(
+    { id: "save" },
+    {},
+    {
+      ...deps,
+      readRows: async () => [row],
+    },
+  );
+  expect(result).toMatchObject({ save: { rating: 3, favorite: true } });
+});
+
 it("returns OCR snippets from library grep", async () => {
   mock.fts.mockResolvedValue([
     {

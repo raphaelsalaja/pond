@@ -4,6 +4,7 @@ import { isoDurationToMillis } from "./duration";
 import { FIELD_DESCRIPTORS } from "./fields";
 import type { FieldValue } from "./fields/descriptor";
 import { ASPECT_TOLERANCE, parseAspectRatio } from "./fields/dims";
+import { matchesSplitPost } from "./fields/post";
 import type { SaveLike } from "./fields/save-like";
 import type {
   Clause,
@@ -44,6 +45,7 @@ function evalClause(c: Clause, s: SaveLike): boolean {
 
 function evalPredicate(p: Predicate, s: SaveLike): boolean {
   if (p.field === "aspect") return matchesAspect(p, s);
+  if (p.field === "post") return matchesSplitPost(p.operator, p.value, s);
   const projected = FIELD_DESCRIPTORS[p.field].project(s);
   return runComparator(p.operator, projected, p.value);
 }

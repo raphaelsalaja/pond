@@ -1,8 +1,17 @@
 import { useVideo } from "@pond/ui";
+import type { ReactEventHandler } from "react";
 import styles from "./styles.module.css";
 
-/** Sits under the video until its fade-in ends, so opening a video never shows an empty box. */
-function Start({ src, covered }: { src?: string; covered: boolean }) {
+/** Sits under the video until its first frame shows, so opening a video never shows an empty box. */
+function Start({
+  src,
+  covered,
+  onLoad,
+}: {
+  src?: string;
+  covered: boolean;
+  onLoad?: ReactEventHandler<HTMLImageElement>;
+}) {
   if (!src) return null;
   return (
     <img
@@ -13,6 +22,7 @@ function Start({ src, covered }: { src?: string; covered: boolean }) {
       data-covered={covered || undefined}
       decoding="sync"
       draggable={false}
+      onLoad={onLoad}
     />
   );
 }

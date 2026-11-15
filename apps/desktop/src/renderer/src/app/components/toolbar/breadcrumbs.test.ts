@@ -25,6 +25,7 @@ describe("library breadcrumb paths", () => {
     ["/untagged", "Untagged"],
     ["/downloads", "Downloads"],
     ["/trash", "Trash"],
+    ["/split-posts", "Split Posts"],
     ["/settings", "Settings"],
   ] as const)("keeps %s as its own root", (pathname, label) => {
     expect(
@@ -35,6 +36,24 @@ describe("library breadcrumb paths", () => {
         folders,
       }).map((crumb) => crumb.label),
     ).toEqual([label]);
+  });
+
+  it("places a split post under Split Posts", () => {
+    const nav = {
+      kind: "post",
+      key: "instagram:DAbC",
+      title: "Studio",
+    } as const;
+    expect(
+      buildBreadcrumbs({ pathname: "/", listPath: "/", nav, folders }),
+    ).toEqual([
+      {
+        label: "Split Posts",
+        path: "/split-posts",
+        nav: { kind: "splitPosts" },
+      },
+      { label: "Studio", path: "/", nav },
+    ]);
   });
 
   it("names a fish page after its fish", () => {

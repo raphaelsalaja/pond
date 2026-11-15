@@ -231,7 +231,7 @@ describe("buildSlideRows", () => {
     expect(manualRow?.sensitiveModel).toBe(MANUAL_LIKELY_SENSITIVE_MODEL);
   });
 
-  it("gives a local slide its own local URL", () => {
+  it("gives a local slide its own local URL and records its post", () => {
     const save = carousel({
       source: "local",
       sourceId: "original",
@@ -242,7 +242,11 @@ describe("buildSlideRows", () => {
     if (!plan) throw new Error("Expected a plan.");
     const [row] = buildSlideRows(save, plan, sequentialIds());
     expect(row?.url).toBe("pond:local/slide-1");
-    expect(row?.rawJson).toBeNull();
+    expect(row?.rawJson?.split).toEqual({ sourceId: "original", media: [] });
+    expect(buildOriginalPatch(save, plan).patch.rawJson?.split).toEqual({
+      sourceId: "original",
+      media: [],
+    });
   });
 });
 

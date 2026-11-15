@@ -2,10 +2,15 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import * as schema from "@pond/schema/db";
+import { buildWhere } from "@pond/schema/filters";
 import Database from "better-sqlite3";
 import { is } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/better-sqlite3";
-import { getTableConfig, SQLiteTable } from "drizzle-orm/sqlite-core";
+import {
+  getTableConfig,
+  SQLiteSyncDialect,
+  SQLiteTable,
+} from "drizzle-orm/sqlite-core";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { migratePond } from "./migrations";
@@ -122,6 +127,24 @@ describe.skipIf(!nativeSqliteAvailable())("pond database migrations", () => {
     }
   });
 
+  it("adds favorite to an existing index as off for every save", () => {
+    const db = new Database(":memory:");
+    try {
+      migratePond(db);
+      db.exec("ALTER TABLE saves DROP COLUMN favorite");
+      db.prepare(
+        "INSERT INTO saves (id, source, source_id, url) VALUES (?, ?, ?, ?)",
+      ).run("a", "twitter", "1", "https://x.com/a/status/1");
+
+      migratePond(db);
+      expect(db.prepare("SELECT id, favorite FROM saves").all()).toEqual([
+        { id: "a", favorite: 0 },
+      ]);
+    } finally {
+      db.close();
+    }
+  });
+
   it("keeps source ids that were deleted after the save row is gone", () => {
     const db = new Database(":memory:");
     try {
@@ -154,6 +177,28 @@ describe.skipIf(!nativeSqliteAvailable())("pond database migrations", () => {
     }
   });
 
+  it("indexes split posts so post lookups skip a full scan", () => {
+    const db = new Database(":memory:");
+    try {
+      migratePond(db);
+      const where = buildWhere({
+        combinator: "and",
+        rules: [{ field: "post", operator: "eq", value: "instagram:DAbC" }],
+      });
+      if (!where) throw new Error("Expected a post predicate");
+      const compiled = new SQLiteSyncDialect().sqlToQuery(where);
+      const plan = db
+        .prepare(
+          `EXPLAIN QUERY PLAN SELECT id FROM saves WHERE ${compiled.sql}`,
+        )
+        .all(...compiled.params)
+        .map((row) => z.object({ detail: z.string() }).parse(row).detail);
+      expect(plan.join("\n")).toContain("saves_split_post_idx");
+    } finally {
+      db.close();
+    }
+  });
+
   it("creates scheduler indexes and reruns without changes", () => {
     const root = mkdtempSync(join(tmpdir(), "pond-migration-"));
     try {
@@ -179,6 +224,12 @@ describe.skipIf(!nativeSqliteAvailable())("pond database migrations", () => {
           "tasks_source_op_idx",
         ]),
       );
+      expect(
+        created
+          .prepare("PRAGMA index_list(saves)")
+          .all()
+          .map((row) => z.object({ name: z.string() }).parse(row).name),
+      ).toContain("saves_split_post_idx");
       created.close();
     } finally {
       rmSync(root, { recursive: true, force: true });

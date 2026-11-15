@@ -25,6 +25,7 @@ export interface ToastData {
   action?: {
     label: string;
     onClick: () => void;
+    disabled?: boolean;
   };
   icon?: ReactNode;
   tone?: ToastTone;
@@ -44,6 +45,7 @@ export interface NotifyOptions {
   progress?: ToastProgress;
   action?: ToastData["action"];
   timeout?: number;
+  onClose?: () => void;
 }
 
 function toastOptions(
@@ -59,6 +61,7 @@ function toastOptions(
   };
   if (options.description != null) toast.description = options.description;
   if (options.timeout != null) toast.timeout = options.timeout;
+  if (options.onClose) toast.onClose = options.onClose;
   return toast;
 }
 
@@ -79,6 +82,10 @@ export function notify(options: NotifyOptions): string {
 
 export function updateNotification(options: NotifyOptions): void {
   toastManager.update(options.id, toastOptions(options));
+}
+
+export function closeNotification(id: string): void {
+  toastManager.close(id);
 }
 
 export interface AskOptions extends ToastAsk {

@@ -115,6 +115,7 @@ async function fixture() {
           tags: ["Research"],
           mediaType: "document",
           rating: 5,
+          favorite: true,
           files: [
             {
               path: "one.pdf",
@@ -146,7 +147,7 @@ describe("copy into an inactive library", () => {
     );
     expect(info.source).toBe("web");
     expect(info.sourceId).toBe("paper");
-    expect(info.userData?.rating).toBe(5);
+    expect(info.userData).toMatchObject({ rating: 5, favorite: true });
     expect(await readFile(join(target, "items", name, "one.pdf"), "utf8")).toBe(
       "original bytes",
     );
@@ -192,8 +193,8 @@ describe("copy into an inactive library", () => {
     expect((await packageLibrary(target, exported)).exported).toBe(1);
     expect(
       JSON.parse(await readFile(join(exported, "pond-export.json"), "utf8"))
-        .saves[0].rating,
-    ).toBe(5);
+        .saves[0],
+    ).toMatchObject({ rating: 5, favorite: true });
     expect(await readdir(pack)).toContain("pond-export.json");
     expect(await readdir(target)).not.toContain(".pond-transfer.lock");
   });

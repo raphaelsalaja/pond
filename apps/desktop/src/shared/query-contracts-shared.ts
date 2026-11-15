@@ -14,6 +14,11 @@ export interface OkFailure {
 
 export type OkResult<Data = NoData> = OkSuccess<Data> | OkFailure;
 
+/** Names the Undo history step a mutation recorded, or null when it changed nothing or skipped history. */
+export interface UndoableChange {
+  undoId: string | null;
+}
+
 export interface ReasonFailure<Reason extends string> {
   ok: false;
   reason: Reason;

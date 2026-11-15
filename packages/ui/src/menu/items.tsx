@@ -153,7 +153,7 @@ function pruneSpecs(items: MenuItemSpec[]): MenuItemSpec[] {
   return out;
 }
 
-function keyText(value: ReactNode): string | null {
+export function menuLabelText(value: ReactNode): string | null {
   const values = Children.toArray(value);
   const text = values.length === 1 ? values[0] : null;
   return text != null && !isValidElement(text) ? String(text) : null;
@@ -164,11 +164,11 @@ function specKey(spec: MenuItemSpec, index: number): string | number {
   if (spec.type === "separator") return `sep-${index}`;
   if (!("label" in spec)) return index;
 
-  const label = keyText(spec.label);
+  const label = menuLabelText(spec.label);
   if (label == null) return index;
   if (!("breadcrumb" in spec) || !spec.breadcrumb?.length) return label;
 
-  const breadcrumb = spec.breadcrumb.map(keyText);
+  const breadcrumb = spec.breadcrumb.map(menuLabelText);
   if (breadcrumb.some((segment) => segment == null)) return index;
   return [...breadcrumb, label].join(" › ");
 }
@@ -178,7 +178,7 @@ function filterLabel(
   spec: MenuActionItem | MenuCheckboxItem | MenuLinkItem | MenuSubmenuItem,
 ): string | undefined {
   if (!spec.keywords) return undefined;
-  const label = keyText(spec.label);
+  const label = menuLabelText(spec.label);
   return label == null ? undefined : `${label} ${spec.keywords}`;
 }
 
@@ -194,7 +194,7 @@ function renderItemLabel(
   return (
     <parts.ItemLabel>
       {spec.breadcrumb.map((segment) => {
-        const text = keyText(segment) ?? "segment";
+        const text = menuLabelText(segment) ?? "segment";
         const occurrence = occurrences.get(text) ?? 0;
         occurrences.set(text, occurrence + 1);
         return (

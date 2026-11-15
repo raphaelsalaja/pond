@@ -10,7 +10,9 @@ export type LibraryNav =
   | { kind: "downloads" }
   | { kind: "sources" }
   | { kind: "tags" }
-  | { kind: "untagged" };
+  | { kind: "untagged" }
+  | { kind: "splitPosts" }
+  | { kind: "post"; key: string; title: string };
 
 const ALL: LibraryNav = { kind: "all" };
 const RECENTLY_ADDED: LibraryNav = { kind: "recentlyAdded" };
@@ -20,6 +22,7 @@ const DOWNLOADS: LibraryNav = { kind: "downloads" };
 const SOURCES: LibraryNav = { kind: "sources" };
 const TAGS: LibraryNav = { kind: "tags" };
 const UNTAGGED: LibraryNav = { kind: "untagged" };
+const SPLIT_POSTS: LibraryNav = { kind: "splitPosts" };
 
 const COLLECTION_PATHS = new Set([
   "/",
@@ -30,6 +33,7 @@ const COLLECTION_PATHS = new Set([
   "/recently-added",
   "/tags",
   "/untagged",
+  "/split-posts",
 ]);
 
 export function pathForLibraryNav(nav: LibraryNav): string {
@@ -48,11 +52,14 @@ export function pathForLibraryNav(nav: LibraryNav): string {
       return "/tags";
     case "untagged":
       return "/untagged";
+    case "splitPosts":
+      return "/split-posts";
     case "all":
     case "random":
     case "uncategorized":
     case "folder":
     case "tag":
+    case "post":
       return "/";
   }
 }
@@ -89,6 +96,8 @@ export function activeLibraryDestination(
       return RECENTS;
     case "/recently-added":
       return RECENTLY_ADDED;
+    case "/split-posts":
+      return SPLIT_POSTS;
     default:
       break;
   }
@@ -98,6 +107,7 @@ export function activeLibraryDestination(
     case "uncategorized":
     case "tag":
     case "random":
+    case "post":
       return nav;
     default:
       return pathname === "/" || pathname === "" ? ALL : nav;

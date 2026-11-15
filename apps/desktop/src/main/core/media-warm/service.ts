@@ -4,6 +4,10 @@ import { desc, eq, sql } from "drizzle-orm";
 import { powerMonitor } from "electron";
 import log from "electron-log/main.js";
 import type {
+  MediaWarmFailure,
+  MediaWarmSnapshot,
+} from "../../../shared/library-health-contracts";
+import type {
   MediaIndexPauseReason,
   MediaIndexStatus,
 } from "../../../shared/media-index";
@@ -30,7 +34,8 @@ let timer: NodeJS.Timeout | null = null;
 let started = false;
 let stopped = false;
 let manual = false;
-let failures = 0;
+const failed = new Map<string, MediaWarmFailure>();
+const active = new Map<string, MediaWarmCandidate>();
 let thermal: ThermalState = "unknown";
 let activeJobs = 0;
 let scanCursor: { savedAt: number; id: string } | null = null;
@@ -48,7 +53,7 @@ async function startMediaIndex(): Promise<void> {
   scanGeneration += 1;
   manual = false;
   stopped = false;
-  failures = 0;
+  failed.clear();
   candidates = [];
   scanCursor = null;
   scanComplete = false;
@@ -165,10 +170,10 @@ async function tick(): Promise<void> {
   if (candidates.length === 0) {
     if (activeJobs > 0) return;
     publish({
-      state: failures > 0 ? "error" : "complete",
+      state: failed.size > 0 ? "error" : "complete",
       currentTitle: null,
       pauseReason: null,
-      remaining: failures,
+      remaining: failed.size,
     });
     return;
   }
@@ -188,18 +193,15 @@ async function processOne(candidate: MediaWarmCandidate): Promise<void> {
     pauseReason: null,
   });
   try {
-    await processCandidate(candidate);
+    await attempt(candidate);
     publish({
       prepared: status.prepared + 1,
       remaining: Math.max(0, status.remaining - 1),
       currentTitle: activeJobs <= 1 ? null : status.currentTitle,
     });
   } catch (err) {
-    failures += 1;
-    const message = err instanceof Error ? err.message : String(err);
-    log.warn("[pond media-index] candidate failed", candidate.saveId, err);
     publish({
-      lastError: message,
+      lastError: err instanceof Error ? err.message : String(err),
       remaining: Math.max(0, status.remaining - 1),
       currentTitle: activeJobs <= 1 ? null : status.currentTitle,
     });
@@ -207,6 +209,63 @@ async function processOne(candidate: MediaWarmCandidate): Promise<void> {
     activeJobs -= 1;
   }
   schedule(0);
+}
+
+function failureKey(candidate: Pick<MediaWarmCandidate, "kind" | "saveId">) {
+  return `${candidate.kind}:${candidate.saveId}`;
+}
+
+async function attempt(candidate: MediaWarmCandidate): Promise<void> {
+  active.set(failureKey(candidate), candidate);
+  try {
+    await processCandidate(candidate);
+    failed.delete(failureKey(candidate));
+  } catch (err) {
+    log.warn("[pond media-index] candidate failed", candidate.saveId, err);
+    failed.set(failureKey(candidate), {
+      saveId: candidate.saveId,
+      title: candidate.title,
+      kind: candidate.kind,
+      error: err instanceof Error ? err.message : String(err),
+      at: Date.now(),
+    });
+    throw err;
+  } finally {
+    active.delete(failureKey(candidate));
+  }
+}
+
+export function mediaWarmSnapshot(): MediaWarmSnapshot {
+  return {
+    ...status,
+    pendingPosters: candidates.filter((c) => c.kind === "poster").length,
+    activeSaveIds: [...new Set([...active.values()].map((c) => c.saveId))],
+    discovering: started && !scanComplete,
+    failures: [...failed.values()].sort((a, b) => b.at - a.at),
+  };
+}
+
+/** Runs outside idle-time pacing because it answers an explicit request. */
+export async function retryMediaWarm(
+  saveIds: readonly string[],
+): Promise<number> {
+  const queued: MediaWarmCandidate[] = [];
+  for (const saveId of new Set(saveIds)) {
+    const save = await readCandidateSave(saveId);
+    if (!save) continue;
+    for (const [key, failure] of failed) {
+      if (failure.saveId === saveId) failed.delete(key);
+    }
+    candidates = candidates.filter((c) => c.saveId !== saveId);
+    queued.push(...mediaWarmCandidates(save));
+  }
+  void (async () => {
+    for (const candidate of queued) {
+      await attempt(candidate).catch(() => {});
+    }
+    kick();
+  })();
+  return queued.length;
 }
 
 async function processCandidate(candidate: MediaWarmCandidate): Promise<void> {

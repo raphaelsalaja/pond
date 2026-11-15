@@ -54,6 +54,7 @@ import type {
   WireSyncAction,
   WireSyncStatusUpdate,
   WireUndoState,
+  WireUndoStepState,
 } from "../shared/wire";
 import { createNavigationMailbox } from "./navigation";
 
@@ -154,6 +155,14 @@ const api = {
 
   redo(): Promise<WireUndoState> {
     return ipcRenderer.invoke(IPC.redo);
+  },
+
+  undoStep(step: string): Promise<WireUndoStepState> {
+    return ipcRenderer.invoke(IPC.undoStep, step);
+  },
+
+  redoStep(step: string): Promise<WireUndoStepState> {
+    return ipcRenderer.invoke(IPC.redoStep, step);
   },
 
   query,

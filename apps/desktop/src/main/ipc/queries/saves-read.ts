@@ -26,6 +26,7 @@ import { librarySortColumn } from "../../core/library-query";
 import { libraryRetrievalInput } from "../../core/library-retrieval";
 import { getPrefs } from "../../core/prefs";
 import { querySidebarCounts } from "../../core/sidebar-counts";
+import { querySplitPosts } from "../../core/split-posts";
 import type { Db } from "../../db";
 import { getDb } from "../../db";
 import { resolveSaveFilePath } from "../helpers";
@@ -130,6 +131,9 @@ export const savesReadQueries = {
       );
     return { count: rows[0]?.count ?? 0 };
   }),
+  async "saves.splitPosts"() {
+    return querySplitPosts(await getDb());
+  },
   "saves.get": query(z.object({ id: StringParam }), async (params) => {
     if (!params.id) return null;
     const db = await getDb();

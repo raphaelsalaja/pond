@@ -21,6 +21,7 @@ Every write takes an optional `libraryId`. Pass the one a Save came with, and Po
 
 ```ts
 await pond.setRating([save.id], 5, save.libraryId);
+await pond.setFavorite([save.id], true, save.libraryId);
 ```
 
 `SOURCES`, `sourceLabel`, and `hostToSource` name the platforms Pond saves from, so you can label `save.source` the way Pond does.

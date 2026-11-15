@@ -1,13 +1,22 @@
+import { randomUUID } from "node:crypto";
 import { inverse, type Transaction } from "@pond/schema/tx";
+import type { UndoLatestResult, UndoStepOutcome } from "@shared/wire";
 import log from "electron-log/main.js";
 import { executeBatch } from "./executor";
 
 const MAX_HISTORY = 200;
+
+interface UndoStep {
+  id: string;
+  transactions: Transaction[];
+}
+
 export function createUndoHistory(
   commit: (transactions: Transaction[]) => Promise<void>,
+  createId: () => string = randomUUID,
 ) {
-  const undoStack: Transaction[][] = [];
-  const redoStack: Transaction[][] = [];
+  const undoStack: UndoStep[] = [];
+  const redoStack: UndoStep[] = [];
   let epoch = 0;
   let commandTail = Promise.resolve();
   function serialize<T>(operation: () => Promise<T>): Promise<T> {
@@ -18,61 +27,97 @@ export function createUndoHistory(
     );
     return result;
   }
+  async function revert(step: UndoStep): Promise<boolean> {
+    const started = epoch;
+    try {
+      await commit(
+        [...step.transactions].reverse().map((item) => {
+          const reverse = inverse(item);
+          return {
+            ...reverse,
+            meta: { ...reverse.meta, actorReason: "undo" },
+          };
+        }),
+      );
+      if (epoch === started) redoStack.push(step);
+      return true;
+    } catch (error) {
+      log.warn("[pond undo] failed", error);
+      if (epoch === started) undoStack.push(step);
+      return false;
+    }
+  }
+  async function reapply(step: UndoStep): Promise<boolean> {
+    const started = epoch;
+    try {
+      await commit(
+        step.transactions.map((item) => ({
+          ...item,
+          meta: { ...item.meta, actorReason: "redo" },
+        })),
+      );
+      if (epoch === started) undoStack.push(step);
+      return true;
+    } catch (error) {
+      log.warn("[pond redo] failed", error);
+      if (epoch === started) redoStack.push(step);
+      return false;
+    }
+  }
+  function undoLatest(): Promise<UndoLatestResult> {
+    return serialize(async () => {
+      const step = undoStack.pop();
+      if (!step) return { ok: false, step: null };
+      return { ok: await revert(step), step: step.id };
+    });
+  }
+  function redoLatest(): Promise<UndoLatestResult> {
+    return serialize(async () => {
+      const step = redoStack.pop();
+      if (!step) return { ok: false, step: null };
+      return { ok: await reapply(step), step: step.id };
+    });
+  }
   return {
-    record(transactions: Transaction[]): void {
-      if (!transactions.length) return;
-      undoStack.push(structuredClone(transactions));
+    record(transactions: Transaction[]): string | null {
+      if (!transactions.length) return null;
+      const id = createId();
+      undoStack.push({ id, transactions: structuredClone(transactions) });
       if (undoStack.length > MAX_HISTORY) undoStack.shift();
       redoStack.length = 0;
+      return id;
     },
     clear(): void {
       epoch++;
       undoStack.length = 0;
       redoStack.length = 0;
     },
-    undo(): Promise<boolean> {
+    undoLatest,
+    redoLatest,
+    async undo(): Promise<boolean> {
+      return (await undoLatest()).ok;
+    },
+    async redo(): Promise<boolean> {
+      return (await redoLatest()).ok;
+    },
+    /** Reverses one recorded step only while it is still the latest change; an already-undone step reports `done`. */
+    undoStep(id: string): Promise<UndoStepOutcome> {
       return serialize(async () => {
-        const started = epoch;
-        const transactions = undoStack.pop();
-        if (!transactions) return false;
-        try {
-          await commit(
-            [...transactions].reverse().map((item) => {
-              const reverse = inverse(item);
-              return {
-                ...reverse,
-                meta: { ...reverse.meta, actorReason: "undo" },
-              };
-            }),
-          );
-          if (epoch === started) redoStack.push(transactions);
-          return true;
-        } catch (error) {
-          log.warn("[pond undo] failed", error);
-          if (epoch === started) undoStack.push(transactions);
-          return false;
-        }
+        if (redoStack.at(-1)?.id === id) return "done";
+        if (undoStack.at(-1)?.id !== id) return "stale";
+        const step = undoStack.pop();
+        if (!step) return "stale";
+        return (await revert(step)) ? "done" : "failed";
       });
     },
-    redo(): Promise<boolean> {
+    /** Reapplies one undone step only while it is still the latest undo; an already-redone step reports `done`. */
+    redoStep(id: string): Promise<UndoStepOutcome> {
       return serialize(async () => {
-        const started = epoch;
-        const transactions = redoStack.pop();
-        if (!transactions) return false;
-        try {
-          await commit(
-            transactions.map((item) => ({
-              ...item,
-              meta: { ...item.meta, actorReason: "redo" },
-            })),
-          );
-          if (epoch === started) undoStack.push(transactions);
-          return true;
-        } catch (error) {
-          log.warn("[pond redo] failed", error);
-          if (epoch === started) redoStack.push(transactions);
-          return false;
-        }
+        if (undoStack.at(-1)?.id === id) return "done";
+        if (redoStack.at(-1)?.id !== id) return "stale";
+        const step = redoStack.pop();
+        if (!step) return "stale";
+        return (await reapply(step)) ? "done" : "failed";
       });
     },
     canUndo(): boolean {
@@ -86,14 +131,18 @@ export function createUndoHistory(
 const history = createUndoHistory(async (transactions) => {
   await executeBatch(transactions);
 });
-export function recordForUndo(transaction: Transaction): void {
-  history.record([transaction]);
+export function recordForUndo(transaction: Transaction): string | null {
+  return history.record([transaction]);
 }
-export function recordBatchForUndo(transactions: Transaction[]): void {
-  history.record(transactions);
+export function recordBatchForUndo(transactions: Transaction[]): string | null {
+  return history.record(transactions);
 }
+export const undoLatest = history.undoLatest;
+export const redoLatest = history.redoLatest;
 export const undo = history.undo;
 export const redo = history.redo;
+export const undoStep = history.undoStep;
+export const redoStep = history.redoStep;
 export const canUndo = history.canUndo;
 export const canRedo = history.canRedo;
 

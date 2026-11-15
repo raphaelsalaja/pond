@@ -47,6 +47,12 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     group: "library",
   },
   {
+    id: "health",
+    path: "health",
+    label: "Library Health",
+    group: "library",
+  },
+  {
     id: "storage",
     path: "storage",
     label: "Storage",

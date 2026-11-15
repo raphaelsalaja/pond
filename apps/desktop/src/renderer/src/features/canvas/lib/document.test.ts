@@ -24,6 +24,7 @@ import {
   noteAt,
   pasteOf,
   placeSaves,
+  placeSavesBeside,
   reorder,
   resizeTable,
   sectionContents,
@@ -136,6 +137,27 @@ describe("canvas document", () => {
       [312, -240],
       [-552, 24],
     ]);
+  });
+
+  it("places a folder's Saves to the right of existing work without covering it", () => {
+    const frames = [
+      { x: 0, y: 48, width: 240, height: 216 },
+      { x: 480, y: -96, width: 192, height: 192 },
+    ];
+    const ids = Array.from({ length: 25 }, (_, index) => `save-${index}`);
+    const placed = placeSavesBeside(ids, frames, { x: 0, y: 0 });
+
+    expect(Math.min(...placed.map((item) => item.x))).toBeGreaterThan(672);
+    expect(Math.min(...placed.map((item) => item.y))).toBe(-96);
+    expect(new Set(placed.map((item) => item.x)).size).toBe(5);
+  });
+
+  it("centres a folder's Saves on the view when the board is empty", () => {
+    const beside = placeSavesBeside(["a", "b"], [], { x: 0, y: 0 });
+    const centred = placeSaves(["a", "b"], { x: 0, y: 0 });
+    expect(beside.map((item) => [item.x, item.y])).toEqual(
+      centred.map((item) => [item.x, item.y]),
+    );
   });
 
   it("drops new items on the grid", () => {
