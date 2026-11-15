@@ -48,10 +48,7 @@ function sameSaves(a: readonly Save[], b: readonly Save[]): boolean {
   return a.length === b.length && a.every((save, i) => save === b[i]);
 }
 
-function useFocusedSaves(pathname: string): {
-  saves: readonly Save[];
-  opened: boolean;
-} {
+function useFocusedSaves(pathname: string) {
   const openId = saveIdFromPath(pathname);
   const selectedIds = useSelectedIds();
   const ids = openId ? [openId] : selectedIds;

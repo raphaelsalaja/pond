@@ -1,4 +1,4 @@
-import type { MenuItemSpec } from "@pond/ui";
+import { type MenuItemSpec, menuLabelText } from "@pond/ui";
 import type { MenuEntry } from "./types";
 
 function glyphs(shortcut: string | string[] | undefined): readonly string[] {
@@ -20,8 +20,8 @@ export function specEntries(
       entries.push(...specEntries(item.items, group, `${key}.${index}`));
       return;
     }
-    if (item.disabled || typeof item.label !== "string") return;
-    const { label } = item;
+    const label = menuLabelText(item.label);
+    if (item.disabled || label === null) return;
     const base = {
       id: `${key}.${index}`,
       group,

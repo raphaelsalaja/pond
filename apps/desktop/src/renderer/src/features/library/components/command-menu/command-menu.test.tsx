@@ -1,4 +1,5 @@
 import { PrefsSchema } from "@pond/schema";
+import type { LibraryQueryRequest } from "@shared/library-query";
 import {
   createMemoryHistory,
   createRootRoute,
@@ -21,10 +22,10 @@ import { setAppRouter } from "@/shared/lib/app-router";
 import { CommandMenuHost } from "./";
 
 const openSave = vi.fn();
-const viewIds = { current: [] as string[] };
-const viewRequests: unknown[] = [];
+const viewIds = { current: Array<string>() };
+const viewRequests: (LibraryQueryRequest | undefined)[] = [];
 
-async function query(method: string, request?: unknown): Promise<unknown> {
+async function query(method: string, request?: LibraryQueryRequest) {
   if (method === "tags.list") return [{ id: "tag-poster", name: "poster" }];
   if (method === "tagGroups.list") return [];
   if (method === "saves.queryPage") {
