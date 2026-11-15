@@ -51,6 +51,7 @@ export {
 } from "./lib/select";
 export { selectResults } from "./lib/select-results";
 export { exportSelectionCsv, exportSelectionFiles } from "./lib/selection";
+export { getSourceLabel } from "./lib/source-labels";
 export type { ResultDirection } from "./lib/spatial-navigation";
 export {
   announceSaveDragTarget,

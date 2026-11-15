@@ -10,6 +10,7 @@ const LIBRARY_DESTINATIONS = [
   "recentlyUsed",
   "tags",
   "random",
+  "splitPosts",
   "trash",
 ] as const;
 
@@ -54,6 +55,7 @@ it("reorders visible sidebar destinations while preserving hidden slots", () => 
     "tags",
     "all",
     "random",
+    "splitPosts",
     "trash",
     "downloads",
     "sources",

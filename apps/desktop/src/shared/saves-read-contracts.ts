@@ -9,6 +9,7 @@ import type {
   SavesRetrievalInput,
 } from "./saves-contracts-shared";
 import type { LibrarySidebarCounts } from "./sidebar-counts";
+import type { SplitPostSummary } from "./split-posts";
 import type { WireSave } from "./wire";
 
 export interface SavesReadQueryInputs {
@@ -16,6 +17,7 @@ export interface SavesReadQueryInputs {
   "saves.queryPage": LibraryQueryRequest;
   "saves.queryIds": LibraryQueryRequest;
   "saves.queryCount": { query: Query };
+  "saves.splitPosts": EmptyInput;
   "saves.get": SavesIdInput;
   "saves.list": { limit?: number };
   "saves.listPage": {
@@ -59,6 +61,7 @@ export interface SavesReadQueryResults {
   "saves.queryPage": LibraryQueryPage;
   "saves.queryIds": { ids: string[]; revision: number; libraryId: string };
   "saves.queryCount": { count: number };
+  "saves.splitPosts": SplitPostSummary[];
   "saves.get": WireSave | null;
   "saves.list": WireSave[];
   "saves.listPage": {

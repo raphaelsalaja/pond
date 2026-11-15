@@ -18,6 +18,7 @@ export interface SaveLibraryBridge {
   setNav(nav: LibraryNav): void;
   resetFilters(): void;
   openTaggedItems(name: string): void;
+  showPost(post: { key: string; title: string }): void;
   closeDetails(): void;
   openFolderPicker(ids: readonly string[]): void;
   openRename(ids: readonly string[]): void;
@@ -54,6 +55,7 @@ let current: SaveLibraryBridge = {
   setNav: unavailable,
   resetFilters: unavailable,
   openTaggedItems: unavailable,
+  showPost: unavailable,
   closeDetails: unavailable,
   openFolderPicker: unavailable,
   openRename: unavailable,
@@ -83,6 +85,7 @@ export const saveLibraryBridge: SaveLibraryBridge = {
   setNav: (nav) => current.setNav(nav),
   resetFilters: () => current.resetFilters(),
   openTaggedItems: (name) => current.openTaggedItems(name),
+  showPost: (post) => current.showPost(post),
   closeDetails: () => current.closeDetails(),
   openFolderPicker: (ids) => current.openFolderPicker(ids),
   openRename: (ids) => current.openRename(ids),

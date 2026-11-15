@@ -8,6 +8,7 @@ import {
   IconFile,
   IconFocus,
   IconGrid,
+  IconGroup,
   IconImageMinus,
   IconImagePlus,
   IconMagicWand,
@@ -16,6 +17,7 @@ import {
   IconTrash,
   IconUngroup,
 } from "@pond/icons";
+import { splitPostKey } from "@pond/schema/filters/fields";
 import type { MenuItemSpec } from "@pond/ui";
 import { createElement } from "react";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
@@ -137,6 +139,7 @@ export function buildDetailItems({
   archivable,
   canSplit,
 }: SaveMenuContext): DetailMenuItems {
+  const post = batch ? null : splitPostKey(save);
   return {
     organization: [
       {
@@ -157,6 +160,15 @@ export function buildDetailItems({
         hidden: !canSplit,
         shortcut: shortcutGlyphs("save.split"),
         onClick: () => splitIntoSaves(ids),
+      },
+      {
+        label: "Show Post",
+        icon: glyph(IconGroup),
+        hidden: !post,
+        onClick: () => {
+          if (post)
+            saveLibraryBridge.showPost({ key: post, title: save.title ?? "" });
+        },
       },
     ],
     media: [

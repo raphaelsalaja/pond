@@ -90,9 +90,25 @@ const webExamples: SaveLike[] = [
   },
 ];
 
+function splitExample(id: string, sourceId: string, media: number[]): SaveLike {
+  return {
+    id,
+    source: "instagram",
+    url: "",
+    tags: [],
+    folderIds: [],
+    rawJson: {
+      capture: { id, source: "instagram", url: "", media: [] },
+      extractorId: "instagram",
+      extractedAt: "2026-10-27T00:00:00.000Z",
+      split: { sourceId, media },
+    },
+  };
+}
+
 function fixture(rows: SaveLike[] = examples) {
   const db = new Database(":memory:");
-  db.exec(`CREATE TABLE saves (id TEXT, title TEXT, tags TEXT, width INTEGER, height INTEGER, dominant_colors TEXT, sensitive_score REAL, files TEXT, source TEXT, media_type TEXT, raw_json TEXT);
+  db.exec(`CREATE TABLE saves (id TEXT, title TEXT, tags TEXT, width INTEGER, height INTEGER, dominant_colors TEXT, sensitive_score REAL, files TEXT, source TEXT, media_type TEXT, raw_json TEXT, raw_slim TEXT);
     CREATE TABLE folders (id TEXT PRIMARY KEY, name TEXT);
     CREATE TABLE folder_metadata (folder_id TEXT PRIMARY KEY, description TEXT);
     CREATE TABLE save_folders (save_id TEXT, folder_id TEXT);
@@ -110,7 +126,7 @@ function fixture(rows: SaveLike[] = examples) {
   db.prepare("INSERT INTO folders VALUES (?, ?)").run("FolderB", "Folder B");
   for (const save of rows) {
     db.prepare(
-      "INSERT INTO saves VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO saves VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     ).run(
       save.id,
       save.title,
@@ -122,6 +138,7 @@ function fixture(rows: SaveLike[] = examples) {
       "[]",
       save.source,
       save.mediaType ?? null,
+      save.rawJson ? JSON.stringify(save.rawJson) : null,
       save.rawJson ? JSON.stringify(save.rawJson) : null,
     );
     db.prepare("INSERT INTO saves_fts VALUES (?, ?)").run(save.id, save.title);
@@ -272,6 +289,50 @@ describe.skipIf(!nativeSqliteAvailable())("filter engine parity", () => {
         expect(
           rows.filter((save) => matches(query, save)).map((save) => save.id),
         ).toEqual([type === "product" ? "shop" : "site"]);
+      } finally {
+        db.close();
+      }
+    },
+  );
+
+  it.each<["eq" | "neq", string, string[]]>([
+    ["eq", "instagram:DAbC", ["post-a", "post-b"]],
+    ["eq", "instagram:dAbC", []],
+    ["eq", "x:DAbC", []],
+    ["neq", "instagram:DAbC", ["cat", "dog", "none", "other"]],
+  ])(
+    "matches split post %s %s exactly in SQL and memory",
+    (operator, value, ids) => {
+      const rows = [
+        ...examples,
+        splitExample("post-a", "DAbC", [0]),
+        splitExample("post-b", "DAbC", [1]),
+        splitExample("other", "dabc", [0]),
+      ];
+      const query: Query = {
+        combinator: "and",
+        rules: [{ field: "post", operator, value }],
+      };
+      const db = fixture(rows);
+      try {
+        const where = buildWhere(query);
+        if (!where) throw new Error("Expected a filter predicate");
+        const compiled = new SQLiteSyncDialect().sqlToQuery(where);
+        const found = z
+          .array(z.object({ id: z.string() }))
+          .parse(
+            db
+              .prepare(`SELECT id FROM saves WHERE ${compiled.sql} ORDER BY id`)
+              .all(...compiled.params),
+          );
+        expect(found.map((row) => row.id)).toEqual(ids);
+        expect(
+          rows
+            .filter((save) => matches(query, save))
+            .map((save) => save.id)
+            .sort(),
+        ).toEqual(ids);
+        expect(queryIsFullySqlSupported(query)).toBe(true);
       } finally {
         db.close();
       }
