@@ -6,7 +6,7 @@
 - **Style**: [Biome](https://biomejs.dev/) handles formatting; `pnpm lint` and `pnpm oxlint` check the repository standards.
 - **Commits**: [Conventional Commits](https://www.conventionalcommits.org/) enforced by commitlint + husky.
 - **Checks**: run `pnpm check` and `pnpm build` before opening a PR. CI also verifies generated source documentation, and it runs the build, tests, and desktop smoke test on Ubuntu x64 and ARM, Windows, and macOS.
-- **PRs**: Keep scope focused; link issues when relevant. Generated source documentation must stay in sync: run `pnpm generate` after descriptor changes.
+- **PRs**: Keep scope focused; link issues when relevant. Lay out the body and proof as [pull requests](docs/contributing/pull-requests.md) describes. Generated source documentation must stay in sync: run `pnpm generate` after descriptor changes.
 
 ## Engineering standards
 
@@ -39,7 +39,7 @@ pnpm --filter @pond/desktop build
 pnpm --filter @pond/desktop exec electron scripts/capture-proof.cjs --scenario=$PWD/apps/desktop/scripts/proof-scenarios/library.cjs --out=$PWD/.artifacts/proof
 ```
 
-A scenario exports `async function run(ctx)`; `proof-scenarios/library.cjs` shows `ctx.shot`, `ctx.record`, `ctx.key` and `ctx.waitFor`, and `capture-proof.cjs` defines the rest. Options are `--theme=light|dark`, `--size=1440x1000`, `--crop=x,y,width`, `--wallpaper=<path>` and `--radius=22`. Wrap the build and capture in `until mkdir /tmp/pond-capture.lock 2>/dev/null; do sleep 15; done` and `rmdir /tmp/pond-capture.lock` (also on failure) so only one capture runs per machine. Upload the files with `gh image <files>` from [gh-image](https://github.com/drogers0/gh-image) and paste the printed markdown into the PR body. Don't commit them; `.artifacts/` is ignored.
+A scenario exports `async function run(ctx)`; `proof-scenarios/library.cjs` shows `ctx.shot`, `ctx.record`, `ctx.key` and `ctx.waitFor`, and `capture-proof.cjs` defines the rest. Options are `--theme=light|dark`, `--size=1440x1000`, `--crop=x,y,width`, `--wallpaper=<path>` and `--radius=22`. Wrap the build and capture in `until mkdir /tmp/pond-capture.lock 2>/dev/null; do sleep 15; done` and `rmdir /tmp/pond-capture.lock` (also on failure) so only one capture runs per machine. Write to `.artifacts/proof/<branch>/` and name shots `NN-state-theme`. Upload the files with `gh image <files>` from [gh-image](https://github.com/drogers0/gh-image) and lay them out as [pull requests](docs/contributing/pull-requests.md#proof) describes. Don't commit them; `.artifacts/` is ignored.
 
 ## Windows development
 
