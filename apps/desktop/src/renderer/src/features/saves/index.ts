@@ -47,15 +47,7 @@ export {
   selectOnlySave,
 } from "./lib/select";
 export { selectResults } from "./lib/select-results";
-export {
-  copyUrlsForSelection,
-  exportSelectionCsv,
-  exportSelectionFiles,
-  openInBrowserForSelection,
-  restoreSelection,
-  revealFilesForSelection,
-  trashSelection,
-} from "./lib/selection";
+export { exportSelectionCsv, exportSelectionFiles } from "./lib/selection";
 export type { ResultDirection } from "./lib/spatial-navigation";
 export {
   announceSaveDragTarget,
