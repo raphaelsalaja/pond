@@ -118,10 +118,12 @@ function keepOffscreen(win) {
     if (win.getPosition()[0] < right) win.setPosition(right + 400, 0);
   };
   win.webContents.setBackgroundThrottling(false);
-  win.show = () => {
+  const showInactive = win.showInactive.bind(win);
+  win.showInactive = () => {
     park();
-    win.showInactive();
+    showInactive();
   };
+  win.show = win.showInactive;
   win.focus = () => {};
   win.moveTop = () => {};
   win.on("move", park);
@@ -326,10 +328,15 @@ function context(main) {
     };
   };
 
-  const chrome = (win) => ({
+  /** `bare` is for transparent windows: no window shadow, edge or traffic lights. */
+  const chrome = (win, bare = false) => ({
     theme,
     wallpaper,
-    lights: win.getWindowButtonPosition ? win.getWindowButtonPosition() : null,
+    bare,
+    lights:
+      !bare && win.getWindowButtonPosition
+        ? win.getWindowButtonPosition()
+        : null,
   });
 
   const contentSize = (win) => {
@@ -456,7 +463,7 @@ function context(main) {
         await cropFor(win, options.crop),
         radius,
       );
-      const png = await composeStill(image, layout, chrome(win));
+      const png = await composeStill(image, layout, chrome(win, options.bare));
       writeFileSync(file, png);
       stills.set(name, png);
       record({ kind: "still", name, file: basename(file), ...STILL });
@@ -489,7 +496,7 @@ function context(main) {
         await cropFor(win, options.crop),
         radius,
       );
-      const recorder = startRecorder(layout, scratch, fps);
+      const recorder = startRecorder(layout, scratch, fps, options.bare);
       let written = 0;
       let unique = 0;
       let previous = null;
@@ -535,7 +542,7 @@ function context(main) {
         `capture-proof: ${name} captured ${unique} of ${written} frames`,
       );
       const file = join(out, `${name}.mp4`);
-      await recorder.finish(file, chrome(win));
+      await recorder.finish(file, chrome(win, options.bare));
       record({
         kind: "video",
         name,
