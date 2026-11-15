@@ -65,7 +65,7 @@ export const viewerSection = defineCustomSection({
           key: "dragToFile",
           title: "Drag to File",
           description:
-            "Hold Shift while you drag a Save to show your Quick Access and recent folders in a ring.",
+            "Hold Shift while you drag a Save, file or link to show your Quick Access and recent folders in a ring.",
           keywords: [
             "drag",
             "drop",

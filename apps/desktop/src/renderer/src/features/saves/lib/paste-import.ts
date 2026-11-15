@@ -1,4 +1,8 @@
 import { z } from "zod";
+import {
+  importToast,
+  UNSUPPORTED_DROP,
+} from "@/features/saves/lib/import-feedback";
 import { asUrlList, filePathsFromText } from "@/features/saves/lib/url-list";
 import { importFilesWithDuplicateReview } from "@/features/saves/state/duplicate-import-review";
 import { notify } from "@/shared/lib/toast";
@@ -11,17 +15,35 @@ export type PasteImport =
 const ImportReplySchema = z
   .object({
     ok: z.boolean().catch(false),
+    reason: z.string().optional().catch(undefined),
     id: z.string().optional().catch(undefined),
     ids: z.array(z.string()).optional().catch(undefined),
+    failedPaths: z.array(z.string()).optional().catch(undefined),
   })
   .catch({ ok: false });
 
-function savedTitle(count: number): string {
-  return count === 1 ? "Saved to Pond" : `Saved ${count} items to Pond`;
+interface PasteImportTarget {
+  id: string;
+  name: string;
 }
 
-function downloadingTitle(count: number): string {
-  return count === 1 ? "Downloading" : `Downloading ${count} links`;
+interface FolderInput {
+  folderId?: string;
+}
+
+interface PlanResult {
+  ids: string[];
+  failed: number;
+}
+
+function replyResult(
+  reply: z.infer<typeof ImportReplySchema>,
+  attempted: number,
+): PlanResult {
+  if (!reply.ok) {
+    return { ids: [], failed: reply.reason === "cancelled" ? 0 : attempted };
+  }
+  return { ids: reply.ids ?? [], failed: reply.failedPaths?.length ?? 0 };
 }
 
 function filePaths(data: DataTransfer): string[] {
@@ -59,43 +81,66 @@ export function pasteImportOf(data: DataTransfer): PasteImport | null {
   return null;
 }
 
-async function importPlan(plan: PasteImport): Promise<string[]> {
+interface FilesInput {
+  paths: string[];
+  folderIds?: string[];
+}
+
+function filesInput(paths: string[], folderId: string | undefined) {
+  const input: FilesInput = { paths };
+  if (folderId) input.folderIds = [folderId];
+  return input;
+}
+
+async function importPlan(
+  plan: PasteImport,
+  folderId: string | undefined,
+): Promise<PlanResult> {
+  const into: FolderInput = {};
+  if (folderId) into.folderId = folderId;
   switch (plan.kind) {
     case "files": {
       const reply = ImportReplySchema.parse(
-        await importFilesWithDuplicateReview({ paths: plan.paths }),
+        await importFilesWithDuplicateReview(filesInput(plan.paths, folderId)),
       );
-      return reply.ok ? (reply.ids ?? []) : [];
+      return replyResult(reply, plan.paths.length);
     }
     case "urls": {
-      const ids: string[] = [];
+      const result: PlanResult = { ids: [], failed: 0 };
       for (const url of plan.urls) {
         const reply = ImportReplySchema.parse(
-          await window.pond.query("saves.quickAdd", { url }),
+          await window.pond.query("saves.quickAdd", { ...into, url }),
         );
-        if (reply.ok && reply.id) ids.push(reply.id);
+        if (reply.ok && reply.id) result.ids.push(reply.id);
+        else result.failed += 1;
       }
-      return ids;
+      return result;
     }
     case "clipboard": {
       const reply = ImportReplySchema.parse(
-        await window.pond.query("saves.importClipboard", {}),
+        await window.pond.query("saves.importClipboard", into),
       );
-      return reply.ok ? (reply.ids ?? []) : [];
+      return replyResult(reply, 1);
     }
   }
 }
 
-/** Imports the pasted files, links, or clipboard image as Saves and returns their IDs. */
-export async function runPasteImport(plan: PasteImport): Promise<string[]> {
-  const ids = await importPlan(plan);
-  if (ids.length)
-    notify({
-      id: "paste-import",
-      title:
-        plan.kind === "urls"
-          ? downloadingTitle(ids.length)
-          : savedTitle(ids.length),
-    });
+/** Imports the pasted or dropped files, links, or clipboard image as Saves, optionally into a folder, and returns their IDs. */
+export async function runPasteImport(
+  plan: PasteImport,
+  target?: PasteImportTarget,
+): Promise<string[]> {
+  const { ids, failed } = await importPlan(plan, target?.id);
+  const toast = importToast({
+    kind: plan.kind,
+    imported: ids.length,
+    failed,
+    folderName: target?.name,
+  });
+  if (toast) notify({ id: "paste-import", ...toast });
   return ids;
+}
+
+export function notifyUnsupportedDrop(): void {
+  notify({ id: "paste-import", ...UNSUPPORTED_DROP });
 }

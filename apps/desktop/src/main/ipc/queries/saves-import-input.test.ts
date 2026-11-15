@@ -42,7 +42,17 @@ describe("save import input normalization", () => {
       url: "https://example.com/save",
       note: "A note",
       tags: ["Research"],
+      folderId: null,
     });
+  });
+
+  it("keeps the folder a quick add files into", () => {
+    const params = QuickAddParamsSchema.parse({
+      url: "https://example.com/save",
+      folderId: " folder-1 ",
+    });
+
+    expect(normalizeQuickAddInput(params).folderId).toBe("folder-1");
   });
 
   it("keeps only finite manual dimensions", () => {

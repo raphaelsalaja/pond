@@ -11,6 +11,7 @@ import {
   importEagleLibrary,
 } from "../../core/eagle-import";
 import { readEagleShortcuts } from "../../core/eagle-shortcuts";
+import { addSavesToFolder } from "../../core/folders";
 import { createManualSave } from "../../core/manual-import";
 import { importMymindExport } from "../../core/mymind-import";
 import { extractPageAssets } from "../../core/page-extract";
@@ -23,10 +24,53 @@ import { setSaveTags } from "../../core/tags";
 import { type QueryHandlerMap, query, StringParam } from "./params";
 import {
   normalizeQuickAddInput,
+  type QuickAddInput,
   QuickAddParamsSchema,
 } from "./saves-import-input";
 
 const EAGLE_IMPORT_PROGRESS_INTERVAL_MS = 100;
+
+async function quickAdd({
+  url,
+  note,
+  tags,
+}: QuickAddInput): Promise<QueryResult<"saves.quickAdd">> {
+  if (!url) {
+    const result = await createManualSave({ title: note, note, tags });
+    return result.ok
+      ? { ok: true, id: result.id }
+      : { ok: false, error: result.error };
+  }
+  try {
+    const result = await enqueue(url, { trigger: "user:quickAdd" });
+    if (tags.length > 0) await setSaveTags(result.id, tags);
+    if (note) {
+      await persistSave(
+        result.id,
+        { notes: note },
+        { actorReason: "user:quickAdd-note" },
+      );
+    }
+    return { ok: true, id: result.id, created: result.created };
+  } catch (error) {
+    if (error instanceof UnsupportedError) {
+      const result = await createManualSave({
+        url,
+        title: note ?? url,
+        note,
+        tags,
+      });
+      return result.ok
+        ? { ok: true, id: result.id }
+        : { ok: false, error: "unsupported_url" };
+    }
+    log.error("[pond ipc] quickAdd failed", error);
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
 
 export const savesImportSourceQueries = {
   "saves.classifyUrl": query(z.object({ url: StringParam }), (params) => {
@@ -146,42 +190,15 @@ export const savesImportSourceQueries = {
   "saves.quickAdd": query(
     QuickAddParamsSchema,
     async (params): Promise<QueryResult<"saves.quickAdd">> => {
-      const { url, note, tags } = normalizeQuickAddInput(params);
-
-      if (!url) {
-        const result = await createManualSave({ title: note, note, tags });
-        return result.ok
-          ? { ok: true, id: result.id }
-          : { ok: false, error: result.error };
-      }
+      const { folderId, ...input } = normalizeQuickAddInput(params);
+      const result = await quickAdd(input);
+      if (!result.ok || !folderId) return result;
       try {
-        const result = await enqueue(url, { trigger: "user:quickAdd" });
-        if (tags.length > 0) await setSaveTags(result.id, tags);
-        if (note) {
-          await persistSave(
-            result.id,
-            { notes: note },
-            { actorReason: "user:quickAdd-note" },
-          );
-        }
-        return { ok: true, id: result.id, created: result.created };
+        await addSavesToFolder(folderId, [result.id]);
+        return result;
       } catch (error) {
-        if (error instanceof UnsupportedError) {
-          const result = await createManualSave({
-            url,
-            title: note ?? url,
-            note,
-            tags,
-          });
-          return result.ok
-            ? { ok: true, id: result.id }
-            : { ok: false, error: "unsupported_url" };
-        }
-        log.error("[pond ipc] quickAdd failed", error);
-        return {
-          ok: false,
-          error: error instanceof Error ? error.message : String(error),
-        };
+        log.error("[pond ipc] quickAdd folder failed", error);
+        return { ok: false, error: "folder_unavailable" };
       }
     },
   ),
