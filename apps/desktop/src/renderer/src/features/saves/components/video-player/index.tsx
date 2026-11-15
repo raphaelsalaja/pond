@@ -15,6 +15,7 @@ import {
   ChromePortal,
   useViewerChromeRoot,
 } from "@/features/saves/components/viewers/media-viewer/chrome";
+import { useReportMediaReady } from "@/features/saves/hooks/use-media-ready";
 import { useMediaReveal } from "@/features/saves/hooks/use-media-reveal";
 import { useSave } from "@/features/saves/hooks/use-saves";
 import { containImage } from "@/features/saves/lib/image-regions";
@@ -111,6 +112,10 @@ function VideoSurface({
   const { actions } = useVideo();
   const frame = useRef<HTMLDivElement>(null);
   const shown = useMediaReveal(useFirstFrame(src), src);
+  const [loadedPoster, setLoadedPoster] = useState<string | null>(null);
+  useReportMediaReady(
+    shown || (placeholder !== undefined && loadedPoster === placeholder),
+  );
   const [viewerSize, setViewerSize] = useState({ width: 0, height: 0 });
   /**
    * The fitted box must exist before first paint so the video never shows at its unfitted size.
@@ -174,7 +179,11 @@ function VideoSurface({
           : undefined
       }
     >
-      <Poster.Start src={placeholder} covered={shown} />
+      <Poster.Start
+        src={placeholder}
+        covered={shown}
+        onLoad={() => setLoadedPoster(placeholder ?? null)}
+      />
       <Video.Media
         className={styles.media}
         data-pending={!shown || undefined}

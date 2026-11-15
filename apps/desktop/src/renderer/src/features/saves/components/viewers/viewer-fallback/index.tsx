@@ -6,6 +6,7 @@ import {
   type ViewerNavigation,
   ViewerNavigationControls,
 } from "@/features/saves/components/viewers/viewer-toolbar-groups";
+import { useReportMediaReady } from "@/features/saves/hooks/use-media-ready";
 import type { Save, SaveFile } from "@/features/saves/types";
 import styles from "./styles.module.css";
 
@@ -28,6 +29,7 @@ export function ViewerFallback({
   active = true,
   slideNavigation,
 }: ViewerFallbackProps) {
+  useReportMediaReady(true);
   const detail =
     reason === "preview"
       ? "Pond couldn't create a compatible preview. Open or export the original file."

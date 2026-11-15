@@ -12,6 +12,8 @@ import {
 import { BlurHash } from "@/features/saves/components/card/media/blur-hash";
 import type { ViewerNavigation } from "@/features/saves/components/viewers/viewer-toolbar-groups";
 import { useGifPlayer } from "@/features/saves/hooks/use-gif-player";
+import { useImageDecoded } from "@/features/saves/hooks/use-image-decoded";
+import { useReportMediaReady } from "@/features/saves/hooks/use-media-ready";
 import { useMediaReveal } from "@/features/saves/hooks/use-media-reveal";
 import {
   fullImageCrop,
@@ -44,7 +46,6 @@ import { ImageOverlay } from "./overlay";
 import styles from "./styles.module.css";
 import type { InspectorMode } from "./types";
 import { useCropKeyboard } from "./use-crop-keyboard";
-import { useImageDecoded } from "./use-image-decoded";
 import { useImageViewport } from "./use-image-viewport";
 
 interface ImageInspectorProps {
@@ -137,6 +138,7 @@ export function ImageInspector({
       ? save.blurhash
       : null;
   const shown = useMediaReveal(decoded || gif.ready, src);
+  useReportMediaReady(shown);
 
   const run = async (action: () => Promise<void>) => {
     if (pending.current) return;
