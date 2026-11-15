@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ExtensionSettingsSchema } from "./browser-extension";
+import { FileRingPrefsSchema } from "./file-ring";
 import {
   FolderAppearancePrefsSchema,
   FolderPresentationSchema,
@@ -478,6 +479,7 @@ const PrefsObject = z.object({
   folderAppearance: FolderAppearancePrefsSchema.catch(
     FolderAppearancePrefsSchema.parse({}),
   ),
+  fileRing: FileRingPrefsSchema.catch(FileRingPrefsSchema.parse({})),
   savedViewViews: z.record(z.string(), SavedViewPresentationSchema).catch({}),
   viewer: ViewerPrefsSchema.catch(ViewerPrefsSchema.parse({})),
   shortcuts: shortcuts.catch(shortcuts.parse({})),

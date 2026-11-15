@@ -1,9 +1,13 @@
+import { FILE_RING_CAPACITY, type FileRingItem } from "@pond/schema/file-ring";
 import { describe, expect, it } from "vitest";
 import {
+  autoRingItems,
   dropOnRing,
   layoutRing,
   pickRingFolders,
+  RING_FILL,
   type RingDropHandlers,
+  ringOpens,
 } from "./slots";
 
 interface Row {
@@ -72,9 +76,31 @@ describe("ring folders", () => {
   });
 });
 
+function folderItems(folderIds: readonly string[]): FileRingItem[] {
+  return folderIds.map((folderId) => ({ kind: "folder", folderId }));
+}
+
+describe("automatic ring", () => {
+  it("puts New Folder and Export Files ahead of the picked folders", () => {
+    const quick = { rooms: { quickAccess: true } };
+    expect(autoRingItems(rows, quick, ["film"])).toEqual([
+      { kind: "action", action: "new-folder" },
+      { kind: "action", action: "export-files" },
+      { kind: "folder", folderId: "rooms" },
+      { kind: "folder", folderId: "film" },
+    ]);
+  });
+
+  it("fills every sector of the ring and no more", () => {
+    expect(RING_FILL).toHaveLength(FILE_RING_CAPACITY);
+  });
+});
+
 describe("ring layout", () => {
+  const auto = autoRingItems(rows, {}, ["inbox", "portraits", "rooms"]);
+
   it("fills the sides before the bottom and keeps the actions on top", () => {
-    const layout = layoutRing(rows.slice(0, 3), true);
+    const layout = layoutRing(auto, rows, true);
     expect(layout.left).toEqual({ kind: "folder", folder: rows[0] });
     expect(layout.right).toEqual({ kind: "folder", folder: rows[1] });
     expect(layout["bottom-left"]).toEqual({ kind: "folder", folder: rows[2] });
@@ -92,14 +118,64 @@ describe("ring layout", () => {
   });
 
   it("turns off Export Files when no dragged Save has a file", () => {
-    const layout = layoutRing(rows, false);
+    const layout = layoutRing(auto, rows, false);
     expect(layout["top-right"]).toMatchObject({ disabled: true });
     expect(layout["top-left"]).toMatchObject({ disabled: false });
+  });
+
+  it("places a customized ring in its saved order", () => {
+    const items: FileRingItem[] = [
+      { kind: "folder", folderId: "film" },
+      { kind: "action", action: "export-files" },
+      { kind: "folder", folderId: "plants" },
+    ];
+    const layout = layoutRing(items, rows, true);
+    expect(layout["top-left"]).toEqual({ kind: "folder", folder: rows[4] });
+    expect(layout["top-right"]).toMatchObject({ action: "export-files" });
+    expect(layout.left).toEqual({ kind: "folder", folder: rows[5] });
+    expect(layout.right).toBeUndefined();
+  });
+
+  it("leaves a deleted folder's sector empty and keeps the rest in place", () => {
+    const items = folderItems(["inbox", "gone", "rooms"]);
+    const layout = layoutRing(items, rows, true);
+    expect(layout["top-left"]).toEqual({ kind: "folder", folder: rows[0] });
+    expect(layout["top-right"]).toBeUndefined();
+    expect(layout.left).toEqual({ kind: "folder", folder: rows[2] });
+  });
+
+  it("shows a renamed folder under its new name", () => {
+    const renamed = rows.map((row) =>
+      row.id === "inbox" ? { ...row, name: "Unsorted" } : row,
+    );
+    const layout = layoutRing(folderItems(["inbox"]), renamed, true);
+    expect(layout["top-left"]).toMatchObject({ folder: { name: "Unsorted" } });
+  });
+});
+
+describe("ring opening", () => {
+  it("keeps the automatic ring closed until there's a folder to file into", () => {
+    const empty = layoutRing(autoRingItems([], {}, []), [], true);
+    expect(ringOpens(empty, false)).toBe(false);
+    const one = layoutRing(autoRingItems(rows, {}, ["film"]), rows, true);
+    expect(ringOpens(one, false)).toBe(true);
+  });
+
+  it("opens a customized ring for any sector that takes the drop", () => {
+    const actions: FileRingItem[] = [{ kind: "action", action: "new-folder" }];
+    expect(ringOpens(layoutRing(actions, [], false), true)).toBe(true);
+    const exportOnly: FileRingItem[] = [
+      { kind: "action", action: "export-files" },
+    ];
+    expect(ringOpens(layoutRing(exportOnly, [], false), true)).toBe(false);
+    const gone = folderItems(["gone"]);
+    expect(ringOpens(layoutRing(gone, rows, true), true)).toBe(false);
   });
 });
 
 describe("ring drops", () => {
-  const layout = layoutRing(rows, false);
+  const auto = autoRingItems(rows, {}, ids(rows));
+  const layout = layoutRing(auto, rows, false);
 
   it("adds every dragged Save to the folder under the drop", () => {
     const { calls, handlers } = recordingHandlers();
@@ -109,7 +185,7 @@ describe("ring drops", () => {
 
   it("runs the action under the drop", () => {
     const { calls, handlers } = recordingHandlers();
-    const exportable = layoutRing(rows, true)["top-right"];
+    const exportable = layoutRing(auto, rows, true)["top-right"];
     expect(dropOnRing(layout["top-left"], ["a", "b"], handlers)).toBe(true);
     expect(dropOnRing(exportable, ["a"], handlers)).toBe(true);
     expect(calls).toEqual(["create a,b", "export a"]);
@@ -121,7 +197,7 @@ describe("ring drops", () => {
       addToFolder: handlers.addToFolder,
       createFolder: handlers.createFolder,
     };
-    const exportable = layoutRing(rows, true)["top-right"];
+    const exportable = layoutRing(auto, rows, true)["top-right"];
     expect(dropOnRing(exportable, ["a"], withoutExport)).toBe(false);
     expect(calls).toEqual([]);
   });
@@ -129,7 +205,7 @@ describe("ring drops", () => {
   it("ignores empty slots and turned off actions", () => {
     const { calls, handlers } = recordingHandlers();
     expect(dropOnRing(layout["top-right"], ["a"], handlers)).toBe(false);
-    const empty = layoutRing([], true).left;
+    const empty = layoutRing([], rows, true).left;
     expect(dropOnRing(empty, ["a"], handlers)).toBe(false);
     expect(calls).toEqual([]);
   });

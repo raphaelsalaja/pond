@@ -15,6 +15,7 @@ import { libraryId, resolvePaths } from "../paths";
 const POND_PREF_KEYS = [
   "folderRules",
   "folderViews",
+  "fileRing",
   "savedViewViews",
   "preferences",
   "sourcesView",
@@ -109,6 +110,7 @@ function mergeAll(base: Prefs, patch: DeepPartial<Prefs>): Prefs {
     viewer: { ...base.viewer, ...patch.viewer },
     folderViews: { ...base.folderViews, ...patch.folderViews },
     folderAppearance: { ...base.folderAppearance, ...patch.folderAppearance },
+    fileRing: { ...base.fileRing, ...patch.fileRing },
     savedViewViews: { ...base.savedViewViews, ...patch.savedViewViews },
     folderRules: { ...base.folderRules, ...patch.folderRules },
     preferences: { ...base.preferences, ...patch.preferences },
