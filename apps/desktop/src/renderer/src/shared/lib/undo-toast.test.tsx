@@ -4,7 +4,11 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { ToastHost } from "@/shared/components/toast-host";
 import { toastManager } from "@/shared/lib/toast";
-import { notifyUndoable, type UndoStepHistory } from "@/shared/lib/undo-toast";
+import {
+  notifyUndoable,
+  reflectHistoryChange,
+  type UndoStepHistory,
+} from "@/shared/lib/undo-toast";
 
 let root: Root;
 let host: HTMLDivElement;
@@ -155,4 +159,57 @@ it("keeps only the latest undoable change on screen", async () => {
       expect.stringContaining('Added to "Travel"'),
     ]);
   });
+});
+
+it("flips the live toast when global Undo and Redo reverse its step", async () => {
+  const { history, calls } = controlledHistory();
+  const onChange = vi.fn();
+  await act(async () => {
+    notifyUndoable({ ...options, onChange }, history);
+  });
+
+  await act(async () =>
+    reflectHistoryChange("undo", { ok: true, step: "step-1" }),
+  );
+  expect(toasts()[0]?.textContent).toContain("Assignment undone");
+  expect(action("Redo").disabled).toBe(false);
+
+  await act(async () =>
+    reflectHistoryChange("redo", { ok: true, step: "step-1" }),
+  );
+  expect(toasts()[0]?.textContent).toContain('Added to "Inspiration"');
+  expect(action("Undo").disabled).toBe(false);
+  expect(onChange).toHaveBeenCalledTimes(2);
+  expect(calls).toEqual([]);
+});
+
+it("keeps the live toast truthful when global Undo fails on its step", async () => {
+  const { history } = controlledHistory();
+  await act(async () => {
+    notifyUndoable(options, history);
+  });
+  await act(async () =>
+    reflectHistoryChange("undo", { ok: false, step: "step-1" }),
+  );
+  expect(toasts()[0]?.textContent).toContain("Couldn't undo folder change");
+  expect(action("Undo").disabled).toBe(false);
+});
+
+it("says when global history has nothing to reverse or fails", async () => {
+  const open = () =>
+    toasts()
+      .filter((toast) => !toast.hasAttribute("data-ending-style"))
+      .map((toast) => toast.textContent);
+  await act(async () =>
+    reflectHistoryChange("undo", { ok: false, step: null }),
+  );
+  await vi.waitFor(() =>
+    expect(open()).toEqual([expect.stringContaining("Nothing to undo")]),
+  );
+  await act(async () => reflectHistoryChange("redo", null));
+  await vi.waitFor(() =>
+    expect(open()).toEqual([
+      expect.stringContaining("Couldn't redo the last change"),
+    ]),
+  );
 });

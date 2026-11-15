@@ -1,8 +1,9 @@
 import { IconPlus } from "@pond/icons";
-import { Button, Chip, Menu } from "@pond/ui";
+import { Button, Chip, Keyboard, Menu } from "@pond/ui";
 import type { ReactNode } from "react";
 import { useMenuFilterQuery } from "@/shared/hooks/use-menu-filter-query";
 import { placeCreateOptionLast } from "@/shared/lib/picker-order";
+import { chordGlyphs } from "@/shared/lib/shortcuts";
 import styles from "./styles.module.css";
 
 export interface AssignOption {
@@ -28,6 +29,8 @@ interface AssignMenuProps {
     applying?: boolean;
   };
 }
+
+const APPLY_CHORD = "Mod+Enter";
 
 function sortKey(option: AssignOption): string {
   return option.crumb ? `${option.crumb} ${option.label}` : option.label;
@@ -127,9 +130,12 @@ export function AssignMenu({
       autoHighlight
     >
       <Menu.Root
-        onOpenChange={(open) => {
+        onOpenChange={(open, details) => {
           if (open) reset();
-          else batch?.onCancel();
+          else if (batch && details.reason === "escape-key") {
+            details.cancel();
+            batch.onCancel();
+          } else batch?.onCancel();
         }}
       >
         <Menu.Trigger
@@ -151,6 +157,17 @@ export function AssignMenu({
               <Menu.Input
                 aria-label={`Search ${plural}`}
                 placeholder={`Search ${plural.toLowerCase()}…`}
+                onKeyDown={(event) => {
+                  if (
+                    !batch ||
+                    event.key !== "Enter" ||
+                    !(event.metaKey || event.ctrlKey)
+                  )
+                    return;
+                  event.preventDefault();
+                  event.preventBaseUIHandler();
+                  if (stagedCount && !batch.applying) batch.onApply();
+                }}
               />
               {onStartBatch && !batch ? (
                 <>
@@ -196,6 +213,11 @@ export function AssignMenu({
               </Menu.FilterList>
               {batch ? (
                 <div className={styles.actions}>
+                  <Keyboard.Cluster
+                    className={styles.hint}
+                    keys={chordGlyphs(APPLY_CHORD)}
+                    density="flat"
+                  />
                   <Button size="xs" variant="ghost" onClick={batch.onCancel}>
                     Cancel
                   </Button>
@@ -205,6 +227,7 @@ export function AssignMenu({
                     disabled={!stagedCount}
                     loading={batch.applying}
                     aria-label={addLabel}
+                    aria-keyshortcuts="Meta+Enter"
                     onClick={batch.onApply}
                   >
                     {addLabel}

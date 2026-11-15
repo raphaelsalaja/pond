@@ -12,6 +12,7 @@ export {
   FolderMenu,
   type FolderMenuItem,
 } from "./components/detail/folder-menu";
+export { RecentFolderMenu } from "./components/detail/recent-folder-menu";
 export { SaveSelectionBar } from "./components/selection-bar";
 export { StoredFileViewer } from "./components/viewers/file-viewer";
 export { MediaViewer, type ViewerNav } from "./components/viewers/media-viewer";
@@ -24,6 +25,7 @@ export {
   notifyUndoableFolderChange,
 } from "./lib/folder-actions";
 export { collectionOwnsKeyboard, saveOwnsKeyboard } from "./lib/keyboard-owner";
+export type { FolderPickerMode } from "./lib/library-bridge";
 export { parseMode, type SaveListMode } from "./lib/list";
 export {
   getLastListPath,

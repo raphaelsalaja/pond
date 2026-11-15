@@ -31,14 +31,13 @@ import { selectResults } from "@/features/saves/lib/select-results";
 import {
   deleteSelectionForever,
   restoreSelection,
-  trashSelection,
 } from "@/features/saves/lib/selection";
+import { moveSelectionToTrash } from "@/features/saves/lib/triage";
 import { pool } from "@/features/saves/state/pool";
 import {
   useSelectedIds,
   useSelectionActive,
 } from "@/features/saves/state/selection";
-import { tumbleToTrash } from "@/features/saves/state/trash-tumble";
 import { useViewMode } from "@/features/saves/state/view-context";
 import type { Save } from "@/features/saves/types";
 import { tagClipboard } from "@/features/tags";
@@ -198,9 +197,7 @@ export function SaveSelectionBar() {
         <SelectionBar.Action
           label="Move to Trash"
           shortcut={shortcutGlyphs("save.trash")}
-          onClick={() =>
-            void tumbleToTrash([...ids]).then(() => trashSelection(ids))
-          }
+          onClick={() => void moveSelectionToTrash(ids)}
         >
           <IconTrashXmark />
         </SelectionBar.Action>

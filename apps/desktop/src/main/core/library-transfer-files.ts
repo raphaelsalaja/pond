@@ -272,6 +272,7 @@ export function copyPackageToLibrary(packagePath: string, libraryPath: string) {
             })),
             userData: {
               rating: save.rating ?? null,
+              favorite: save.favorite ?? false,
               dominantColors: save.dominantColors ?? [],
               primaryColor: save.primaryColor ?? null,
               rotate: save.rotate ?? 0,

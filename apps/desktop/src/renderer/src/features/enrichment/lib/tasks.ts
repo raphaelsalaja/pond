@@ -56,7 +56,7 @@ export async function autoTag(ids?: TaskScope): Promise<TaskResult> {
           query: { combinator: "and", rules: [] },
         })
       ).ids;
-  const changed = await bulkMutation(targets, { kind: "suggested-tags" });
+  const { changed } = await bulkMutation(targets, { kind: "suggested-tags" });
   if (changed > 0) {
     statusFeed.note(`Applied tags to ${formatPlural(changed, ITEMS)}`);
   }

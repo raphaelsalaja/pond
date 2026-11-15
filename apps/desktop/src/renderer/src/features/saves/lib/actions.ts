@@ -8,7 +8,6 @@ import {
   pickPrimaryUnit,
 } from "@/features/saves/lib/media/units";
 import {
-  trashSave as applyTrash,
   untrashSave as applyUntrash,
   purgeSave,
   setSaveTags,
@@ -55,22 +54,9 @@ export function resolveFileIndex(
   return original >= 0 ? original : null;
 }
 
-async function toggleTrash(save: Save): Promise<void> {
-  const prev = pool.get(save.id);
-  if (!prev) return;
-  const wasTrashed = Boolean(prev.deletedAt);
-  if (wasTrashed) await applyUntrash(save.id);
-  else await applyTrash(save.id);
-}
-
-export async function trashSave(save: Save): Promise<void> {
-  if (save.deletedAt) return;
-  await toggleTrash(save);
-}
-
 export async function untrashSave(save: Save): Promise<void> {
-  if (!save.deletedAt) return;
-  await toggleTrash(save);
+  if (!save.deletedAt || !pool.get(save.id)?.deletedAt) return;
+  await applyUntrash(save.id);
 }
 
 /** Pasteboard writes go through main; renderer clipboard rejects once a closing menu steals focus. */

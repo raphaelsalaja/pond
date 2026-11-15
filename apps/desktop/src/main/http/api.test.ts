@@ -65,6 +65,7 @@ interface SaveColumns {
   ocr_text?: string;
   transcript?: string;
   deleted_at?: number;
+  favorite?: number;
 }
 
 function seed(lib: Library, id: string, columns: SaveColumns = {}) {
@@ -119,6 +120,7 @@ describe.skipIf(!nativeSqliteAvailable())("Local API", () => {
       status: "complete",
       savedAt: 1_700_000_000_000,
       deletedAt: null,
+      favorite: false,
       thumbnail: false,
       text: { caption: false, ocr: true, transcript: false },
     });
@@ -210,6 +212,31 @@ describe.skipIf(!nativeSqliteAvailable())("Local API", () => {
     expect(response.status).toBe(404);
     expect((await response.json()).error.code).toBe("folder_not_found");
     expect(lib.assignments).toEqual([]);
+  });
+
+  it("reads and writes favorites", async () => {
+    seed(lib, "a", { favorite: 1 });
+    seed(lib, "b");
+    const favorite = async (id: string) =>
+      (await (await get(`/info?id=${id}`)).json()).data.favorite;
+    expect(await favorite("a")).toBe(true);
+    expect(await favorite("b")).toBe(false);
+
+    const response = await post(lib, "/favorite", {
+      ids: ["b"],
+      favorite: true,
+    });
+    expect((await response.json()).data).toEqual({ changed: 1 });
+    expect(lib.bulkEdits).toEqual([
+      {
+        ids: ["b"],
+        operation: { kind: "favorite", favorite: true },
+        actorReason: "api:favorite",
+      },
+    ]);
+
+    const invalid = await post(lib, "/favorite", { ids: ["a"], favorite: 1 });
+    expect(invalid.status).toBe(422);
   });
 
   it("validates ratings", async () => {
