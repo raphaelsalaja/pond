@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  consumePendingDeepLink,
   deepLinkArg,
+  handleDeepLink,
   handleSecondInstance,
   shouldOpenInitialWindow,
 } from "./deep-link";
@@ -23,6 +25,13 @@ describe("deepLinkArg", () => {
     expect(shouldOpenInitialWindow(true, "library")).toBe(true);
     expect(shouldOpenInitialWindow(true, undefined)).toBe(false);
     expect(shouldOpenInitialWindow(false, undefined)).toBe(true);
+  });
+});
+
+describe("handleDeepLink", () => {
+  it("opens the Inbox from pond://inbox", () => {
+    expect(handleDeepLink("pond://inbox", null)).toBe("library");
+    expect(consumePendingDeepLink()).toBe("/?inbox=1");
   });
 });
 

@@ -219,6 +219,7 @@ export function buildTrayTemplate(
     {
       label: "Navigate",
       submenu: [
+        run("Inbox", "nav.inbox"),
         run("Library", "nav.library"),
         run("Search", "library.search", accelerators.search),
         run("Sources", "nav.sources", accelerators.sources),

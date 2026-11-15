@@ -18,6 +18,7 @@ import {
   setInheritedQuery,
 } from "@/features/library/state/view-store";
 import { descendantFolderIds } from "@/features/saves";
+import { inboxScope } from "@/shared/lib/library-nav";
 
 export type SavedViewEditorRequest =
   | {
@@ -68,6 +69,11 @@ function currentQuery(): Query {
     scope = {
       combinator: "and",
       rules: [{ field: "tags", operator: "some", value: [nav.name] }],
+    };
+  } else if (nav.kind === "inbox") {
+    scope = {
+      combinator: "and",
+      rules: [{ field: "inbox", operator: "eq", value: inboxScope(nav) }],
     };
   } else if (nav.kind === "uncategorized") {
     scope = {

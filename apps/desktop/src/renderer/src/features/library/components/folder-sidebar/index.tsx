@@ -12,15 +12,17 @@ import { useActiveViewId } from "@/features/library/state/view-store";
 import { activeLibraryDestination } from "@/shared/lib/library-nav";
 import { LibraryDestinations } from "./destinations";
 import { FolderTree } from "./folder-tree";
+import { InboxButton } from "./inbox-button";
 import { selectLibraryNav } from "./navigation";
 import { SearchButton } from "./search-button";
 import styles from "./styles.module.css";
 
-function WorkspaceHeader() {
+function WorkspaceHeader({ inbox }: { inbox: boolean }) {
   return (
     <Sidebar.Header className={styles.workspace}>
       <WorkspaceMenu />
       <div className={styles.actions}>
+        <InboxButton active={inbox} />
         <NewMenu />
       </div>
     </Sidebar.Header>
@@ -46,7 +48,7 @@ export function FolderSidebar() {
       role="navigation"
       aria-label="Library"
     >
-      <WorkspaceHeader />
+      <WorkspaceHeader inbox={destination?.kind === "inbox"} />
       <SearchButton />
       <Sidebar.Scroll className={styles.scroll}>
         <LibraryDestinations

@@ -268,6 +268,12 @@ export const SHORTCUTS = {
     label: "Restore from Trash",
     group: "Saves",
   },
+  "save.mark-processed": {
+    keys: "P",
+    label: "Mark Processed",
+    group: "Saves",
+  },
+  "save.snooze": { keys: "H", label: "Snooze", group: "Saves" },
   "save.delete-forever": {
     keys: "Mod+Backspace",
     label: "Delete Forever",
