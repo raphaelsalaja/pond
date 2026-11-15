@@ -175,7 +175,11 @@ function CurrentTime({
 }: React.ComponentPropsWithoutRef<"span">) {
   const { state } = useVideo();
   return (
-    <span className={cn(styles.time, className)} {...props}>
+    <span
+      className={cn(styles.time, className)}
+      data-pending={state.duration > 0 ? undefined : ""}
+      {...props}
+    >
       {formatTime(state.currentTime)}
     </span>
   );
@@ -187,7 +191,11 @@ function Duration({
 }: React.ComponentPropsWithoutRef<"span">) {
   const { state } = useVideo();
   return (
-    <span className={cn(styles.time, className)} {...props}>
+    <span
+      className={cn(styles.time, className)}
+      data-pending={state.duration > 0 ? undefined : ""}
+      {...props}
+    >
       {formatTime(state.duration)}
     </span>
   );
