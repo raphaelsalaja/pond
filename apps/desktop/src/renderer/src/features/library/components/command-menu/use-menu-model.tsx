@@ -13,7 +13,7 @@ import {
   setSearchInput,
 } from "@/features/library/state/view-store";
 import { useRecents } from "@/features/saves";
-import { saveIdFromPath } from "@/features/saves/lib/save-nav";
+import { saveIdFromPath } from "@/features/saves/navigation";
 import type { Save } from "@/features/saves/types";
 import type { SaveLookup } from "@/features/search";
 import { COMMANDS } from "./commands";

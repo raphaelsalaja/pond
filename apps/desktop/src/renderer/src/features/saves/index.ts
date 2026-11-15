@@ -23,11 +23,13 @@ export { parseMode, type SaveListMode } from "./lib/list";
 export {
   getLastListPath,
   getLastListSearch,
+  isSaveCollectionPath,
   listPathForLocation,
   rememberListPath,
 } from "./lib/list-path";
 export { storedFileViewerKind } from "./lib/media/file-viewer";
 export {
+  buildSaveMenu,
   loadOpenWithApps,
   type OpenWithApp,
   openWithKind,

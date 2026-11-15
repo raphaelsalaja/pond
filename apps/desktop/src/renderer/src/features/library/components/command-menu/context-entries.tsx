@@ -20,13 +20,17 @@ import {
   setIncludeSubfolders,
   useIncludeSubfolders,
 } from "@/features/library/state/view-store";
-import { isSaveCollectionPath } from "@/features/saves/lib/list-path";
-import { buildSaveMenu } from "@/features/saves/lib/menu";
-import { descendantFolderIds } from "@/features/saves/lib/nav-filter";
-import { saveIdFromPath } from "@/features/saves/lib/save-nav";
+import {
+  buildSaveMenu,
+  descendantFolderIds,
+  isSaveCollectionPath,
+} from "@/features/saves";
+import {
+  saveIdFromPath,
+  useResultTotal,
+  useSelectedIds,
+} from "@/features/saves/navigation";
 import { savesStore } from "@/features/saves/pool";
-import { useResultTotal } from "@/features/saves/state/result-navigation";
-import { useSelectedIds } from "@/features/saves/state/selection";
 import type { Save } from "@/features/saves/types";
 import { tagClipboard } from "@/features/tags";
 import { offerEntries } from "./offer-entries";

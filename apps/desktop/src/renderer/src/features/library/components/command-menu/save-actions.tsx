@@ -1,8 +1,7 @@
 import { IconArrowUpRight } from "@pond/icons";
 import { flushSync } from "react-dom";
-import { buildSaveMenu } from "@/features/saves/lib/menu";
-import { selectOnlySave } from "@/features/saves/lib/select";
-import { selection } from "@/features/saves/state/selection";
+import { buildSaveMenu, selectOnlySave } from "@/features/saves";
+import { selection } from "@/features/saves/navigation";
 import type { Save } from "@/features/saves/types";
 import { tagClipboard } from "@/features/tags";
 import { specEntries } from "./spec-entries";

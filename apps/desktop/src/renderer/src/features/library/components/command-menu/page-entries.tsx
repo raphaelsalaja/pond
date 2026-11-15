@@ -15,10 +15,13 @@ import {
   useSavedViews,
 } from "@/features/library/state/saved-views";
 import { useActiveViewId } from "@/features/library/state/view-store";
-import { isSaveCollectionPath } from "@/features/saves/lib/list-path";
-import { useTagGroups, useTags } from "@/features/tags";
-import { buildTagMenuItems } from "@/features/tags/components/context-menu";
-import { tagOperations } from "@/features/tags/operations/tag-client";
+import { isSaveCollectionPath } from "@/features/saves";
+import {
+  buildTagMenuItems,
+  tagOperations,
+  useTagGroups,
+  useTags,
+} from "@/features/tags";
 import { usePrefs } from "@/shared/state/prefs";
 import { offerEntries } from "./offer-entries";
 import { specEntries } from "./spec-entries";

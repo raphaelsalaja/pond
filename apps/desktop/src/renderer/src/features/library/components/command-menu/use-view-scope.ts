@@ -11,15 +11,14 @@ import {
 } from "@/features/library/state/folders";
 import { useLibraryNav } from "@/features/library/state/library-chrome";
 import { useIncludeSubfolders } from "@/features/library/state/view-store";
-import { parseMode, useRecents } from "@/features/saves";
-import {
-  isSaveCollectionPath,
-  listPathForLocation,
-} from "@/features/saves/lib/list-path";
 import {
   applyNavFilter,
   descendantFolderIds,
-} from "@/features/saves/lib/nav-filter";
+  isSaveCollectionPath,
+  listPathForLocation,
+  parseMode,
+  useRecents,
+} from "@/features/saves";
 import type { Save } from "@/features/saves/types";
 
 export interface ViewScope {
