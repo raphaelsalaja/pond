@@ -28,6 +28,8 @@ function actions(
     onExportEaglePackage: vi.fn(),
     onExportPackage: vi.fn(),
     onCopyToLibrary: vi.fn(),
+    onCreateCanvas: vi.fn(),
+    canvasItems: [{ label: "Moodboard", icon: <span />, onClick: vi.fn() }],
     onToggleSubfolders: vi.fn(),
     onCustomize: vi.fn(),
     onRemove: vi.fn(),
@@ -55,6 +57,9 @@ describe("folder context menu", () => {
       "Expand/Collapse Same Level Folders",
       "Expand/Collapse All Folders",
       "Duplicate",
+      "Create Canvas from Folder",
+      "Add Folder Saves to Canvas",
+      "Moodboard",
       "Export",
       "Export Files",
       "Export to CSV",
@@ -126,6 +131,30 @@ describe("folder context menu", () => {
       throw new Error("Missing customize action");
     item.onClick?.();
     expect(onCustomize).toHaveBeenCalledOnce();
+  });
+
+  it("creates a canvas from the folder", () => {
+    const onCreateCanvas = vi.fn();
+    const item = buildFolderMenuItems(actions({ onCreateCanvas })).find(
+      (candidate) =>
+        "label" in candidate && candidate.label === "Create Canvas from Folder",
+    );
+    if (!item || !("onClick" in item))
+      throw new Error("Missing create canvas action");
+    item.onClick?.();
+    expect(onCreateCanvas).toHaveBeenCalledOnce();
+  });
+
+  it("disables adding to a canvas until one exists", () => {
+    expect(buildFolderMenuItems(actions({ canvasItems: [] }))).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "submenu",
+          label: "Add Folder Saves to Canvas",
+          disabled: true,
+        }),
+      ]),
+    );
   });
 
   it("marks remove folder as destructive", () => {

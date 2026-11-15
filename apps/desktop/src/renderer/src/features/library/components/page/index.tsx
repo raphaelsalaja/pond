@@ -10,6 +10,7 @@ import {
   getLastListPath,
   getLastListSearch,
   rememberListPath,
+  SaveSelectionBar,
 } from "@/features/saves";
 import { saveIdFromPath } from "@/features/saves/navigation";
 import {
@@ -68,6 +69,7 @@ export function Library() {
                   {view}
                 </Shell.Main>
               </ScrollRestorationContext.Provider>
+              {isSave ? null : <SaveSelectionBar />}
             </Shell.Body>
           </AppShell.Content>
         </div>

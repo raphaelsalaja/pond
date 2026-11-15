@@ -64,6 +64,7 @@ export function createLibraryRepairService(
 
   async function preview(input: {
     kind: LibraryRepairKind;
+    saveIds?: readonly string[];
     signal?: AbortSignal;
     onProgress?: (processed: number, total: number) => void;
   }): Promise<LibraryRepairPreview> {

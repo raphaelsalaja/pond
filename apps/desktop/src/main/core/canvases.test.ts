@@ -59,6 +59,29 @@ it("places added Saves to the right of existing content and skips Saves already 
   expect(listCanvases(root)[0]?.saveIds).toEqual(["a", "b", "c"]);
 });
 
+it("lays a large set of Saves out in a roughly square grid", async () => {
+  const root = await library();
+  const ids = Array.from({ length: 100 }, (_, index) => `save-${index}`);
+  const canvas = createCanvas({ name: "Inspiration", saveIds: ids }, root, 1);
+
+  const columns = new Set(canvas.items.map((item) => item.x));
+  const rows = new Set(canvas.items.map((item) => item.y));
+  expect(canvas.name).toBe("Inspiration");
+  expect(columns.size).toBe(10);
+  expect(rows.size).toBe(10);
+});
+
+it("stops adding Saves once the Canvas is full instead of writing an unreadable file", async () => {
+  const root = await library();
+  const ids = Array.from({ length: 5_003 }, (_, index) => `save-${index}`);
+  const canvas = createCanvas({ saveIds: ids.slice(0, 4_999) }, root, 1);
+
+  const full = addSavesToCanvas(canvas.id, ids, root, 2);
+  expect(full.items).toHaveLength(5_000);
+  expect(readCanvas(canvas.id, root)?.items).toHaveLength(5_000);
+  expect(addSavesToCanvas(canvas.id, ["another"], root, 3).updatedAt).toBe(2);
+});
+
 it("keeps the stored name when content is updated and rejects connectors to missing items", async () => {
   const root = await library();
   const canvas = createCanvas({ name: "Typography" }, root, 1);

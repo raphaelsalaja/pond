@@ -89,7 +89,7 @@ function buildFolderItems(ids: string[], batch: boolean): MenuItemSpec[] {
   ];
 }
 
-function buildCanvasItems(ids: string[]): MenuItemSpec[] {
+export function buildCanvasItems(ids: string[]): MenuItemSpec[] {
   return [
     ...saveLibraryBridge.canvasesSnapshot().map((canvas): MenuItemSpec => {
       const onCanvas = new Set(canvas.saveIds);

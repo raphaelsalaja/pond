@@ -1,14 +1,12 @@
 import { useEffect } from "react";
 import { useSave } from "@/features/saves/hooks/use-saves";
 import {
+  PRELOAD_SETTLE_MS,
   preloadImage,
   viewerImageUrl,
 } from "@/features/saves/lib/media/preload";
 import { useSelectionCursor } from "@/features/saves/state/selection";
 import { useResolvedTheme } from "@/shared/hooks/use-resolved-theme";
-
-/** Arrow-key sweeps settle before decoding, so only the save you stop on pays for its original. */
-const SETTLE_MS = 80;
 
 export function ViewerPreload() {
   const theme = useResolvedTheme();
@@ -18,7 +16,7 @@ export function ViewerPreload() {
 
   useEffect(() => {
     if (!url) return;
-    const timer = window.setTimeout(() => preloadImage(url), SETTLE_MS);
+    const timer = window.setTimeout(() => preloadImage(url), PRELOAD_SETTLE_MS);
     return () => window.clearTimeout(timer);
   }, [url]);
 

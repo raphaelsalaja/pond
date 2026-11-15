@@ -1,12 +1,12 @@
 import { EXTERNAL_SOURCE_IDS, sourceLabel } from "@pond/schema/sources";
-import { lazy } from "react";
 import type { SectionConfig } from "@/features/settings/components/engine";
 import { DownloadSources } from "@/features/settings/components/sections/download-sources";
+import { lazyWithPreload } from "@/shared/lib/lazy-with-preload";
 
-const ScheduleSection = lazy(() =>
-  import("@/features/settings/components/sections/schedule").then((module) => ({
-    default: module.ScheduleSection,
-  })),
+export const ScheduleSection = lazyWithPreload(() =>
+  import("@/features/settings/components/sections/schedule").then(
+    (module) => module.ScheduleSection,
+  ),
 );
 
 export const scheduleSection: SectionConfig = {

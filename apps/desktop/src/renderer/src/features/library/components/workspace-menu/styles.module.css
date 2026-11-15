@@ -1,12 +1,6 @@
 .trigger {
-  display: grid;
-  grid-template-columns: auto auto 1fr;
-  justify-content: start;
-  min-width: 96px;
-
-  > :last-child {
-    justify-self: end;
-  }
+  display: inline-flex;
+  align-items: center;
 }
 
 .switcher {
@@ -33,15 +27,6 @@
   width: 20px;
   height: 20px;
   border-radius: var(--ds-radius-sm);
-}
-
-.name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: var(--ds-text-lg);
-  font-weight: var(--ds-weight-xl);
-  color: var(--ds-gray-12);
-  white-space: nowrap;
 }
 
 .chevron {
