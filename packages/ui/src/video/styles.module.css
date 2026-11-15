@@ -107,6 +107,13 @@
   text-align: center;
   white-space: nowrap;
   user-select: none;
+  transition: opacity var(--ds-duration-fast) var(--ds-easing-standard);
+
+  /* Hide instantly so a new video never shows 0:00, then fade in once its duration loads. */
+  &[data-pending] {
+    opacity: 0;
+    transition: none;
+  }
 }
 
 .time-display {
