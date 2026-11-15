@@ -126,6 +126,8 @@ export function createFolderWithSaves(ids: readonly string[]): void {
       notifyUndoableFolderChange(
         "create-folder-with-saves",
         `Created "${folder.name}" with ${formatPlural(ids.length, { one: "save", other: "saves" })}`,
+        folder.undoId,
+        "Folder creation undone",
       );
     } catch (error) {
       notify({
