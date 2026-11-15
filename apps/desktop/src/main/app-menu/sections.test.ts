@@ -243,6 +243,8 @@ describe("app menu sections", () => {
         "organize.clear-tags",
         "organize.copy-tags",
         "organize.paste-tags",
+        "organize.mark-processed",
+        "organize.snooze",
       ]),
     );
   });

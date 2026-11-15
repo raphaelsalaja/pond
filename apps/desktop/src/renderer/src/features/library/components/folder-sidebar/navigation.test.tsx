@@ -122,6 +122,17 @@ describe("folder sidebar navigation", () => {
     }
   });
 
+  it("opens the Inbox from the header button with its count", async () => {
+    sidebarCounts.current.inbox = 13;
+    await harness.mount();
+    const inbox = harness.iconButton("Inbox, 13");
+    expect(inbox.textContent).toBe("13");
+    expect(() => harness.button("Inbox")).toThrow();
+    await act(async () => inbox.click());
+    expect(libraryChrome.getState().nav).toEqual({ kind: "inbox" });
+    expect(inbox.getAttribute("aria-current")).toBe("page");
+  });
+
   it("opens Tags from the sidebar with an outline icon", async () => {
     const router = await harness.mount();
     const tags = harness.button("Tags");

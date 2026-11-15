@@ -34,3 +34,11 @@ Add `&tags=` or `&folder=` to the end of the text in step 3:
 ```text
 pond://save?url=<URL Encoded Text>&tags=reading&folder=01J8Z3
 ```
+
+## Open the Inbox
+
+Add **Open URLs** with this link to go straight to the Saves waiting for review:
+
+```text
+pond://inbox
+```

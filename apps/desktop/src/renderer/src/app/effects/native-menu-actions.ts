@@ -26,6 +26,10 @@ import {
 } from "@/features/library/state/view-store";
 import { copyId, openTagPicker } from "@/features/saves/lib/actions";
 import { addSavesToLastUsedFolder } from "@/features/saves/lib/folder-actions";
+import {
+  markProcessed,
+  waitingInInbox,
+} from "@/features/saves/lib/inbox-actions";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
 import { parseMode } from "@/features/saves/lib/list";
 import {
@@ -51,6 +55,7 @@ import {
 import { toggleFavorite } from "@/features/saves/lib/triage";
 import { pool } from "@/features/saves/state/pool";
 import { primarySelection, selection } from "@/features/saves/state/selection";
+import { openSnoozeDialog } from "@/features/saves/state/snooze-dialog";
 import { requestUpdateCheck } from "@/features/settings/update-check";
 import { getAppRouter } from "@/shared/lib/app-router";
 import { isEditableTarget } from "@/shared/lib/editable-target";
@@ -365,6 +370,16 @@ export function handleNativeMenuAction(id: MenuActionId): boolean {
     case "organize.add-tag":
       addTag();
       return true;
+    case "organize.mark-processed": {
+      const ids = waitingInInbox(requireSelection());
+      if (ids.length > 0) void markProcessed(ids);
+      return true;
+    }
+    case "organize.snooze": {
+      const ids = waitingInInbox(requireSelection());
+      if (ids.length > 0) openSnoozeDialog(ids);
+      return true;
+    }
     case "organize.clear-tags": {
       const ids = requireSelection();
       if (ids.length > 0) void clearTagsForSelection(ids);

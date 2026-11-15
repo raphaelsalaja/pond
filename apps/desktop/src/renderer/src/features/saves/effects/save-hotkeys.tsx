@@ -19,6 +19,10 @@ import {
   untrashSave,
 } from "@/features/saves/lib/actions";
 import { addSavesToLastUsedFolder } from "@/features/saves/lib/folder-actions";
+import {
+  markProcessed,
+  waitingInInbox,
+} from "@/features/saves/lib/inbox-actions";
 import { saveOwnsKeyboard } from "@/features/saves/lib/keyboard-owner";
 import {
   type FolderPickerMode,
@@ -57,6 +61,7 @@ import {
   selection,
   useSelectionSize,
 } from "@/features/saves/state/selection";
+import { openSnoozeDialog } from "@/features/saves/state/snooze-dialog";
 import type { Save } from "@/features/saves/types";
 import { appHotkeyBlockedByEditable } from "@/shared/lib/editable-target";
 import {
@@ -94,11 +99,12 @@ function withSelection(
   };
 }
 
-/** Commands act on the multi-selection when there is one, otherwise on the Save in focus. */
+/** The viewer moves the primary Save without clearing the grid selection, so one selected id may be stale. */
 function targetIds(): readonly string[] {
   const selected = selection.snapshot();
   const primary = primarySelectionStore.state.id;
-  return selected.length ? selected : primary ? [primary] : [];
+  if (selected.length > 1) return selected;
+  return primary ? [primary] : [];
 }
 
 function openFolderPicker(mode: FolderPickerMode): void {
@@ -331,6 +337,19 @@ export function SaveHotkeys() {
           (save) => void exportFile(save),
           exportSelectionFiles,
         ),
+        options: { enabled: hasPrimary || hasMulti, ignoreInputs: true },
+      },
+      {
+        hotkey: bindingKeys(shortcuts, "save.mark-processed"),
+        callback: () => void markProcessed(waitingInInbox(targetIds())),
+        options: { enabled: hasPrimary || hasMulti, ignoreInputs: true },
+      },
+      {
+        hotkey: bindingKeys(shortcuts, "save.snooze"),
+        callback: () => {
+          const ids = waitingInInbox(targetIds());
+          if (ids.length > 0) openSnoozeDialog(ids);
+        },
         options: { enabled: hasPrimary || hasMulti, ignoreInputs: true },
       },
       {
