@@ -1,7 +1,7 @@
 import { expect, it, vi } from "vitest";
 import { selectAllInTextField } from "./select-all";
 
-function contents(focused: unknown) {
+function contents(focused: boolean) {
   return {
     executeJavaScript: vi.fn(async () => focused),
     selectAll: vi.fn(),
