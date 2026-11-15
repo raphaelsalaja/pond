@@ -12,6 +12,7 @@ interface LayoutSwitcherProps {
   saves: ReadonlyArray<Save>;
   multiSelectActive: boolean;
   onClick: (id: string, e: React.MouseEvent) => void;
+  onPick: (id: string, e: React.MouseEvent) => void;
   onAuxClick: (id: string, e: React.MouseEvent) => void;
   onDoubleClick: (id: string) => void;
   onEndReached?: () => void;
@@ -23,14 +24,15 @@ export function LayoutSwitcher(props: LayoutSwitcherProps) {
     saves,
     multiSelectActive,
     onClick,
+    onPick,
     onAuxClick,
     onDoubleClick,
     onEndReached,
   } = props;
 
   const callbacks = useMemo(
-    () => ({ onClick, onAuxClick, onDoubleClick }),
-    [onClick, onAuxClick, onDoubleClick],
+    () => ({ onClick, onPick, onAuxClick, onDoubleClick }),
+    [onClick, onPick, onAuxClick, onDoubleClick],
   );
 
   return (

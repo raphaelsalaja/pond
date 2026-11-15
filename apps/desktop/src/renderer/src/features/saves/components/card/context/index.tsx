@@ -4,6 +4,8 @@ interface LibraryCardCallbacks {
   onClick: (id: string, e: React.MouseEvent) => void;
   onAuxClick: (id: string, e: React.MouseEvent) => void;
   onDoubleClick: (id: string) => void;
+  /** Cards show a selection circle only when the collection can select. */
+  onPick?: (id: string, e: React.MouseEvent) => void;
 }
 
 const CallbacksContext = createContext<LibraryCardCallbacks | null>(null);
