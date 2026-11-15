@@ -12,9 +12,22 @@ function redact(value: string): string {
     .replace(/https?:\/\/[^\s"']+/gi, "[redacted-url]");
 }
 
+async function libraryHealth() {
+  const { debugReportHealth, libraryHealthService } = await import(
+    "./library-health"
+  );
+  const { readQueueSummary } = await import("./pipeline/queue-summary");
+  const [overview, queue] = await Promise.all([
+    libraryHealthService.overview(),
+    readQueueSummary().catch(() => null),
+  ]);
+  return debugReportHealth({ overview, queue, redact });
+}
+
 export async function createDebugReport(): Promise<Buffer> {
   const { conversionCapabilities } = await import("./conversion-capabilities");
   const capabilities = await conversionCapabilities();
+  const health = await libraryHealth().catch(() => null);
   const report = {
     generatedAt: new Date().toISOString(),
     app: {
@@ -38,12 +51,13 @@ export async function createDebugReport(): Promise<Buffer> {
         ? redact(capability.unavailableReason)
         : null,
     })),
+    libraryHealth: health,
   };
   const archive = new JSZip();
   archive.file("report.json", JSON.stringify(report, null, 2));
   archive.file(
     "README.txt",
-    "This report excludes library content, file paths, URLs, credentials, and logs.",
+    "This report excludes library content, file paths, URLs, credentials, and logs. Library Health lists Save IDs with counts and file checks, without titles.",
   );
   return archive.generateAsync({
     type: "nodebuffer",

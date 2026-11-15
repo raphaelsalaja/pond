@@ -18,6 +18,7 @@ import {
   menuActionSourceFromClick,
   shouldOpenLibraryForMenuAction,
 } from "./menu-action";
+import { selectAllInTextField } from "./select-all";
 import type { AppMenuContext } from "./types";
 
 export interface AppMenuRuntimeDeps {
@@ -71,7 +72,9 @@ export function createAppMenuContext(deps: AppMenuRuntimeDeps): AppMenuContext {
         contents.redo();
         contents.send(IPC.editRedoRequested);
       }),
-      selectAll: withFocusedWebContents((contents) => contents.selectAll()),
+      selectAll: withFocusedWebContents((contents) => {
+        void selectAllInTextField(contents);
+      }),
       undo: withFocusedWebContents((contents) => {
         contents.undo();
         contents.send(IPC.editUndoRequested);

@@ -62,6 +62,32 @@
     cursor: not-allowed;
     opacity: 0.5;
   }
+
+  &[data-variant="media"] {
+    width: 18px;
+    height: 18px;
+    background: var(--ds-black-a6);
+    border: 1.5px solid var(--ds-white-a12);
+    border-radius: var(--ds-radius-full);
+    box-shadow: 0 0 0 0.5px var(--ds-black-a4);
+  }
+
+  &[data-variant="media"][data-size="sm"] {
+    width: 14px;
+    height: 14px;
+  }
+
+  &[data-variant="media"]:hover,
+  &[data-variant="media"][data-demo-state="hover"] {
+    background: var(--ds-black-a8);
+    border-color: var(--ds-white-a12);
+  }
+
+  &[data-variant="media"][data-checked],
+  &[data-variant="media"][data-checked]:hover {
+    background: var(--ds-accent-9);
+    border-color: var(--ds-white-a12);
+  }
 }
 
 .indicator {

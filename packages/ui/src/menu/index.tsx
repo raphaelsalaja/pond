@@ -418,4 +418,4 @@ export const Menu = {
   Items,
 };
 
-export type { MenuItemSpec } from "./items";
+export { type MenuItemSpec, menuLabelText } from "./items";

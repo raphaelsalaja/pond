@@ -14,7 +14,7 @@ import { query } from "./params";
 export const libraryRepairQueries = {
   "libraryRepairs.preview": query(
     LibraryRepairPreviewRequestSchema,
-    ({ kind }) => startLibraryRepairPreview(kind),
+    ({ kind, saveIds }) => startLibraryRepairPreview(kind, saveIds),
   ),
   "libraryRepairs.apply": query(LibraryRepairApplyRequestSchema, ({ token }) =>
     startLibraryRepairApply(token),

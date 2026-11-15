@@ -28,10 +28,12 @@ const DESCRIPTIONS = {
 
 export function LibraryRepairDialog({
   kind,
+  saveIds,
   open,
   onClose,
 }: {
   kind: LibraryRepairKind;
+  saveIds?: readonly string[];
   open: boolean;
   onClose: () => void;
 }) {
@@ -53,7 +55,10 @@ export function LibraryRepairDialog({
       }
     }
     void window.pond
-      .query("libraryRepairs.preview", { kind })
+      .query("libraryRepairs.preview", {
+        kind,
+        saveIds: saveIds ? [...saveIds] : undefined,
+      })
       .then((next) => {
         if (!active) return;
         setJob(next);
@@ -69,7 +74,7 @@ export function LibraryRepairDialog({
       active = false;
       if (timer) clearTimeout(timer);
     };
-  }, [kind]);
+  }, [kind, saveIds]);
 
   async function apply(): Promise<void> {
     if (!preview) return;

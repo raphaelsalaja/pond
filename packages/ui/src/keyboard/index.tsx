@@ -37,7 +37,9 @@ function Cluster({
           {i > 0 && gap ? (
             <span className={styles.separator}>{gap}</span>
           ) : null}
-          <Key density={density}>{k}</Key>
+          <Key density={density} data-glyph={[...k].length === 1 || undefined}>
+            {k}
+          </Key>
         </span>
       ))}
     </span>

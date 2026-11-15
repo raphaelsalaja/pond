@@ -41,6 +41,11 @@
   border-bottom-width: 2px;
   border-radius: var(--ds-radius-xs);
 
+  &[data-glyph] {
+    width: 18px;
+    padding: 0;
+  }
+
   &[data-density="flat"] {
     width: auto;
     min-width: 0;

@@ -12,6 +12,7 @@ export {
   FolderMenu,
   type FolderMenuItem,
 } from "./components/detail/folder-menu";
+export { SaveSelectionBar } from "./components/selection-bar";
 export { StoredFileViewer } from "./components/viewers/file-viewer";
 export { MediaViewer, type ViewerNav } from "./components/viewers/media-viewer";
 export { useCardActions } from "./hooks/use-card-actions";
@@ -23,11 +24,13 @@ export { parseMode, type SaveListMode } from "./lib/list";
 export {
   getLastListPath,
   getLastListSearch,
+  isSaveCollectionPath,
   listPathForLocation,
   rememberListPath,
 } from "./lib/list-path";
 export { storedFileViewerKind } from "./lib/media/file-viewer";
 export {
+  buildSaveMenu,
   loadOpenWithApps,
   type OpenWithApp,
   openWithKind,
@@ -47,15 +50,7 @@ export {
   selectOnlySave,
 } from "./lib/select";
 export { selectResults } from "./lib/select-results";
-export {
-  copyUrlsForSelection,
-  exportSelectionCsv,
-  exportSelectionFiles,
-  openInBrowserForSelection,
-  restoreSelection,
-  revealFilesForSelection,
-  trashSelection,
-} from "./lib/selection";
+export { exportSelectionCsv, exportSelectionFiles } from "./lib/selection";
 export { getSourceLabel } from "./lib/source-labels";
 export type { ResultDirection } from "./lib/spatial-navigation";
 export {
