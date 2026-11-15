@@ -14,6 +14,10 @@ import { ensureSaves, reloadSaves } from "@/features/saves/lib/ensure-saves";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
 import { sensitiveContentMenuItem } from "@/features/saves/lib/menu/sensitive";
 import { bulkMutation } from "@/features/saves/lib/mutate";
+import {
+  assignPreviewFolders,
+  folderAssignmentTitle,
+} from "@/features/saves/lib/preview-folder-assignment";
 import { pool } from "@/features/saves/state/pool";
 import { useSaveViewerFileIndex } from "@/features/saves/state/save-viewer";
 import { useTagGroups, useTags } from "@/features/tags";
@@ -219,13 +223,18 @@ export function SaveInspector({
   }
 
   async function assignFolder(folderId: string, add: boolean) {
-    await window.pond.query("folders.assign", {
+    const addIds = add ? [folderId] : [];
+    const removeIds = add ? [] : [folderId];
+    await assignPreviewFolders({
       saveIds: [...ids],
-      addIds: add ? [folderId] : [],
-      removeIds: add ? [] : [folderId],
+      addIds,
+      removeIds,
+      title: folderAssignmentTitle({
+        addIds,
+        removeIds,
+        folders,
+      }),
     });
-    if (add) saveLibraryBridge.rememberFolderDestinations([folderId]);
-    await saveLibraryBridge.refreshFolders();
   }
 
   function createFolder(rawName: string) {
@@ -266,13 +275,16 @@ export function SaveInspector({
     setApplyingFolderBatch(true);
     try {
       const addIds = [...stagedFolderIds];
-      await window.pond.query("folders.assign", {
+      await assignPreviewFolders({
         saveIds: [...ids],
         addIds,
         removeIds: [],
+        title: folderAssignmentTitle({
+          addIds,
+          removeIds: [],
+          folders,
+        }),
       });
-      saveLibraryBridge.rememberFolderDestinations(addIds);
-      await saveLibraryBridge.refreshFolders();
       setStagedFolderIds(null);
     } catch (error) {
       setFailure({

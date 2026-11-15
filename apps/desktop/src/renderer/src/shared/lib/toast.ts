@@ -24,6 +24,7 @@ export interface ToastData {
   progress?: ToastProgress;
   action?: {
     label: string;
+    disabled?: boolean;
     onClick: () => void;
   };
   icon?: ReactNode;

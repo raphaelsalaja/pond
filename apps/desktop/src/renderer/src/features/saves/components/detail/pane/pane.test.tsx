@@ -21,7 +21,9 @@ import { normalise, SavePatchSchema } from "@/features/saves/lib/reconcile";
 import { pool } from "@/features/saves/state/pool";
 import { setSaveViewerFileIndex } from "@/features/saves/state/save-viewer";
 import { primarySelection } from "@/features/saves/state/selection";
+import { ToastHost } from "@/shared/components/toast-host";
 import { setAppRouter } from "@/shared/lib/app-router";
+import { toastManager } from "@/shared/lib/toast";
 import { SaveInspector } from ".";
 
 let host: HTMLDivElement;
@@ -30,6 +32,12 @@ const requests: Array<{
   name: string;
   input: Record<string, string | string[] | number>;
 }> = [];
+interface PendingFolderAssignment {
+  release: (() => void) | null;
+}
+
+let memberships: Array<{ saveId: string; folderId: string }>;
+let nextFolderAssignment: Promise<void> | null;
 beforeEach(() => {
   host = document.createElement("div");
   document.body.append(host);
@@ -37,6 +45,8 @@ beforeEach(() => {
   pool.clear();
   setSaveViewerFileIndex(null);
   requests.length = 0;
+  memberships = [];
+  nextFolderAssignment = null;
   vi.stubGlobal("pond", {
     onSyncAction: () => () => {},
     query: async (
@@ -46,11 +56,17 @@ beforeEach(() => {
       requests.push({ name, input });
       if (
         name === "folders.list" ||
-        name === "folders.memberships" ||
         name === "tags.list" ||
         name === "tagGroups.list"
       )
         return [];
+      if (name === "folders.memberships") return memberships;
+      if (name === "folders.assign") {
+        const pending = nextFolderAssignment;
+        nextFolderAssignment = null;
+        if (pending) await pending;
+        return { changed: 2 };
+      }
       if (name === "folders.create") return { id: "created" };
       if (name === "saves.rawJson")
         return {
@@ -91,6 +107,7 @@ beforeEach(() => {
   pool.upsert(save);
 });
 afterEach(async () => {
+  toastManager.close();
   await act(async () => root.unmount());
   host.remove();
   pool.clear();
@@ -467,6 +484,157 @@ it("assigns a mixed folder immediately from the inspector menu", async () => {
   expect(requests).toContainEqual({
     name: "folders.assign",
     input: { saveIds: ["a", "cold"], addIds: ["folder"], removeIds: [] },
+  });
+});
+
+it("undoes and redoes a preview folder assignment without affecting existing membership", async () => {
+  memberships = [{ saveId: "cold", folderId: "inspiration" }];
+  await act(async () =>
+    root.render(
+      <>
+        <ToastHost />
+        <SaveInspector
+          saveId="a"
+          saveIds={["a", "cold"]}
+          folders={[{ id: "inspiration", name: "Inspiration", count: 1 }]}
+        />
+      </>,
+    ),
+  );
+  const trigger = host.querySelector<HTMLButtonElement>(
+    '[aria-label="Add Folder"]',
+  );
+  if (!trigger) throw new Error("Missing Add Folder");
+  await act(async () => trigger.click());
+  const folder = document.querySelector<HTMLElement>(
+    '[role="menuitemcheckbox"]',
+  );
+  if (!folder) throw new Error("Missing folder option");
+  await act(async () => folder.click());
+
+  const undo = [
+    ...document.body.querySelectorAll<HTMLButtonElement>("button"),
+  ].find((button) => button.textContent === "Undo");
+  if (!undo) throw new Error("Missing Undo action");
+  await act(async () => undo.click());
+  await vi.waitFor(() => {
+    expect(requests).toContainEqual({
+      name: "folders.assign",
+      input: { saveIds: ["a"], addIds: [], removeIds: ["inspiration"] },
+    });
+  });
+
+  const redo = [
+    ...document.body.querySelectorAll<HTMLButtonElement>("button"),
+  ].find((button) => button.textContent === "Redo");
+  if (!redo) throw new Error("Missing Redo action");
+  await act(async () => redo.click());
+  await vi.waitFor(() => {
+    expect(requests).toContainEqual({
+      name: "folders.assign",
+      input: {
+        saveIds: ["a", "cold"],
+        addIds: ["inspiration"],
+        removeIds: [],
+      },
+    });
+  });
+});
+
+it("undoes a staged multi-folder assignment as one operation", async () => {
+  await act(async () =>
+    root.render(
+      <>
+        <ToastHost />
+        <SaveInspector
+          saveId="a"
+          folders={[
+            { id: "inspiration", name: "Inspiration", count: 0 },
+            { id: "reference", name: "Reference", count: 0 },
+          ]}
+        />
+      </>,
+    ),
+  );
+  const trigger = host.querySelector<HTMLButtonElement>(
+    '[aria-label="Add Folder"]',
+  );
+  if (!trigger) throw new Error("Missing Add Folder");
+  await act(async () => trigger.click());
+  const multiple = [
+    ...document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
+  ].find((item) => item.textContent === "Select Multiple");
+  if (!multiple) throw new Error("Missing Select Multiple action");
+  await act(async () => multiple.click());
+  const rows = [
+    ...document.querySelectorAll<HTMLElement>('[role="menuitemcheckbox"]'),
+  ];
+  await act(async () => rows[0]?.click());
+  await act(async () => rows[1]?.click());
+  const apply = document.querySelector<HTMLButtonElement>(
+    '[aria-label="Add to 2 Folders"]',
+  );
+  if (!apply) throw new Error("Missing Add to Folders action");
+  await act(async () => apply.click());
+
+  const undo = [
+    ...document.body.querySelectorAll<HTMLButtonElement>("button"),
+  ].find((button) => button.textContent === "Undo");
+  if (!undo) throw new Error("Missing Undo action");
+  await act(async () => undo.click());
+  await vi.waitFor(() => {
+    expect(requests).toContainEqual({
+      name: "folders.assign",
+      input: {
+        saveIds: ["a"],
+        addIds: [],
+        removeIds: ["inspiration", "reference"],
+      },
+    });
+  });
+});
+
+it("disables Undo while its folder mutation is running", async () => {
+  await act(async () =>
+    root.render(
+      <>
+        <ToastHost />
+        <SaveInspector
+          saveId="a"
+          folders={[{ id: "inspiration", name: "Inspiration", count: 0 }]}
+        />
+      </>,
+    ),
+  );
+  const trigger = host.querySelector<HTMLButtonElement>(
+    '[aria-label="Add Folder"]',
+  );
+  if (!trigger) throw new Error("Missing Add Folder");
+  await act(async () => trigger.click());
+  const folder = document.querySelector<HTMLElement>(
+    '[role="menuitemcheckbox"]',
+  );
+  if (!folder) throw new Error("Missing folder option");
+  await act(async () => folder.click());
+
+  const pending: PendingFolderAssignment = { release: null };
+  nextFolderAssignment = new Promise((resolve) => {
+    pending.release = resolve;
+  });
+  const undo = [
+    ...document.body.querySelectorAll<HTMLButtonElement>("button"),
+  ].find((button) => button.textContent === "Undo");
+  if (!undo) throw new Error("Missing Undo action");
+  await act(async () => undo.click());
+  expect(undo.disabled).toBe(true);
+  if (!pending.release) throw new Error("Missing assignment release");
+  pending.release();
+  await vi.waitFor(() => {
+    expect(
+      [...document.body.querySelectorAll<HTMLButtonElement>("button")].find(
+        (button) => button.textContent === "Redo",
+      ),
+    ).toBeDefined();
   });
 });
 
