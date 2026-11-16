@@ -22,6 +22,7 @@ export interface SaveDragDataTransfer {
 
 export interface SaveDragStartEvent {
   readonly dataTransfer: SaveDragDataTransfer | null;
+  readonly altKey?: boolean;
   preventDefault(): void;
 }
 
@@ -185,14 +186,23 @@ export function beginSaveDrag(id: string, event?: SaveDragStartEvent): void {
   const selected = selection.has(id) ? [...selection.snapshot()] : [id];
   draggingIds = selected;
   document.body.dataset.saveDragging = String(selected.length);
-  announce(`${formatPlural(selected.length, SAVES)} ready to add to a folder`);
   const ids = selected.filter((saveId) => {
     const save = pool.get(saveId);
     return save ? resolveFileIndex(save) != null : false;
   });
   startSaveDragSession({ ids: selected, hasFiles: ids.length > 0 });
-  if (ids.length > 0) {
-    /** `startDrag` only adds files to Chromium's drag; running both strands this window in a drag that never ends. */
+  /**
+   * Default is the in-app drag, which drops onto folders and stays reliable on
+   * Wayland; holding Option starts the native drag that carries the file to the OS.
+   * @remarks `startDrag` only adds files to Chromium's drag; running both strands this window in a drag that never ends.
+   */
+  const nativeDrag = event?.altKey === true && ids.length > 0;
+  announce(
+    nativeDrag
+      ? `${formatPlural(selected.length, SAVES)} ready to drag as a file`
+      : `${formatPlural(selected.length, SAVES)} ready to add to a folder`,
+  );
+  if (nativeDrag) {
     event?.preventDefault();
     installNativeSessionListeners();
     const fileIndexes: Record<string, number> = {};
