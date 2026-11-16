@@ -175,7 +175,11 @@ function CurrentTime({
 }: React.ComponentPropsWithoutRef<"span">) {
   const { state } = useVideo();
   return (
-    <span className={cn(styles.time, className)} {...props}>
+    <span
+      className={cn(styles.time, className)}
+      data-pending={state.metadataLoaded ? undefined : ""}
+      {...props}
+    >
       {formatTime(state.currentTime)}
     </span>
   );
@@ -187,7 +191,11 @@ function Duration({
 }: React.ComponentPropsWithoutRef<"span">) {
   const { state } = useVideo();
   return (
-    <span className={cn(styles.time, className)} {...props}>
+    <span
+      className={cn(styles.time, className)}
+      data-pending={state.metadataLoaded ? undefined : ""}
+      {...props}
+    >
       {formatTime(state.duration)}
     </span>
   );
@@ -202,6 +210,7 @@ function TimeDisplay({
     <div
       className={cn(styles["time-display"], className)}
       data-visible={chrome || state.controlsVisible ? "" : undefined}
+      data-pending={state.metadataLoaded ? undefined : ""}
       {...props}
     >
       <span>{formatTime(state.currentTime)}</span>

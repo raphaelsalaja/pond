@@ -122,6 +122,17 @@
   user-select: none;
 }
 
+.time,
+.time-display {
+  transition: opacity var(--ds-duration-fast) var(--ds-easing-standard);
+
+  /* Hide instantly so a new video never shows 0:00, then fade in once its metadata loads. */
+  &[data-pending] {
+    opacity: 0;
+    transition: none;
+  }
+}
+
 .time-display-separator {
   color: var(--ds-white-a8);
 }

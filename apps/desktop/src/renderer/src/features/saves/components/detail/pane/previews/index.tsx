@@ -1,5 +1,11 @@
 import { typeLabelForPath } from "@shared/file-format";
-import { useCallback, useMemo, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   type StageEntry,
   type StageRole,
@@ -12,11 +18,11 @@ import {
 } from "@/features/saves/hooks/use-media-ready";
 import {
   deriveTypeLabel,
-  type MediaUnit,
+  detailsPreviewUrl,
   pickCardUnit,
   pickPrimaryFile,
 } from "@/features/saves/lib/media/units";
-import { previewThumbUrlFor } from "@/features/saves/lib/media/url";
+import { aspectFor } from "@/features/saves/state/aspect";
 import type { Save } from "@/features/saves/types";
 import styles from "./styles.module.css";
 
@@ -29,28 +35,32 @@ function inspectorFormat(save: Save): string {
   );
 }
 
-function previewUrl(unit: MediaUnit | null): string | null {
-  if (!unit) return null;
-  if (unit.isVideo) return unit.posterUrl ?? null;
-  return unit.requiresGeneratedPreview
-    ? previewThumbUrlFor(unit.url, 560)
-    : unit.url;
-}
-
 function entries(saves: readonly Save[]) {
   const next = saves.map((save) => ({
     save,
-    url: previewUrl(pickCardUnit(save)),
+    url: detailsPreviewUrl(pickCardUnit(save)),
   }));
   const withImages = next.filter((entry) => entry.url !== null);
   return (withImages.length > 0 ? withImages : next).slice(0, 4);
 }
 
+interface PreviewStyle extends CSSProperties {
+  "--preview-aspect": number;
+}
+
 function Preview({ save, url }: { save: Save; url: string | null }) {
   const [failed, setFailed] = useState<string | null>(null);
+  const [measured, setMeasured] = useState<{
+    url: string;
+    aspect: number;
+  } | null>(null);
   const image = useRef<HTMLImageElement>(null);
   const decoded = useImageDecoded(image, url ?? "");
   useReportMediaReady(decoded || !url || failed === url);
+  const style: PreviewStyle = {
+    "--preview-aspect":
+      measured && measured.url === url ? measured.aspect : aspectFor(save),
+  };
   return (
     <figure className={styles.preview}>
       {url && failed !== url ? (
@@ -59,6 +69,13 @@ function Preview({ save, url }: { save: Save; url: string | null }) {
           src={url}
           alt={save.title || "Save preview"}
           draggable={false}
+          style={style}
+          onLoad={(event) => {
+            const { naturalWidth, naturalHeight } = event.currentTarget;
+            if (naturalWidth > 0 && naturalHeight > 0) {
+              setMeasured({ url, aspect: naturalWidth / naturalHeight });
+            }
+          }}
           onError={() => setFailed(url)}
         />
       ) : (
@@ -102,7 +119,7 @@ function Layer({
 
 export function SavePreviews({ saves }: { saves: readonly Save[] }) {
   const single = saves.length === 1 ? saves[0] : undefined;
-  const url = single ? previewUrl(pickCardUnit(single)) : null;
+  const url = single ? detailsPreviewUrl(pickCardUnit(single)) : null;
   const target = useMemo<StageEntry<Entry> | null>(
     () =>
       single

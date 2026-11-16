@@ -1,24 +1,37 @@
 import { useEffect } from "react";
 import { useSave } from "@/features/saves/hooks/use-saves";
 import {
+  cancelPreload,
   PRELOAD_SETTLE_MS,
   preloadImage,
-  viewerImageUrl,
+  saveImageUrls,
 } from "@/features/saves/lib/media/preload";
 import { useSelectionCursor } from "@/features/saves/state/selection";
 import { useResolvedTheme } from "@/shared/hooks/use-resolved-theme";
+import { useStableStrings } from "@/shared/hooks/use-stable-array";
 
-export function ViewerPreload() {
+const NO_URLS: readonly string[] = [];
+
+export function ViewerPreload({ details }: { details: boolean }) {
   const theme = useResolvedTheme();
   const cursor = useSelectionCursor();
   const save = useSave(cursor);
-  const url = save ? viewerImageUrl(save, theme) : null;
+  const urls = useStableStrings(
+    save ? saveImageUrls(save, theme, { details }) : NO_URLS,
+  );
 
   useEffect(() => {
-    if (!url) return;
-    const timer = window.setTimeout(() => preloadImage(url), PRELOAD_SETTLE_MS);
-    return () => window.clearTimeout(timer);
-  }, [url]);
+    if (urls.length === 0) return;
+    let started = false;
+    const timer = window.setTimeout(() => {
+      started = true;
+      for (const url of urls) preloadImage(url);
+    }, PRELOAD_SETTLE_MS);
+    return () => {
+      window.clearTimeout(timer);
+      if (started) for (const url of urls) cancelPreload(url);
+    };
+  }, [urls]);
 
   return null;
 }

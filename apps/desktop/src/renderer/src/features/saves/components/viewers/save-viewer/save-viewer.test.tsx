@@ -236,6 +236,151 @@ describe("SaveViewer", () => {
     });
   });
 
+  describe("stepping between Saves", () => {
+    const imageSave = (id: string): Save => ({
+      ...mixedSave([file(`${id}.jpg`, "image", "image/jpeg")]),
+      id,
+      sourceId: id,
+      mediaType: "image",
+    });
+    const videoSave = (id: string): Save => ({
+      ...mixedSave([
+        file(`${id}.mp4`, "video", "video/mp4"),
+        file(`${id}-poster.jpg`, "poster", "image/jpeg"),
+      ]),
+      id,
+      sourceId: id,
+      mediaType: "video",
+    });
+    const show = (save: Save) =>
+      act(async () => {
+        pool.upsert(save);
+        root.render(<SaveViewer save={save} />);
+      });
+    const fileName = (src: string | null | undefined) =>
+      src?.split("?")[0]?.split("/").pop();
+    const decode = (name: string) =>
+      act(async () => {
+        for (const pending of decodes) {
+          if (fileName(pending.src) === name) pending.resolve();
+        }
+      });
+    const stage = () =>
+      [...host.querySelectorAll<HTMLElement>("[data-blossom-slide]")].map(
+        (slide) => {
+          const layer = slide.closest("[data-held], div[data-pending]");
+          let role = "current";
+          if (layer?.hasAttribute("data-held")) role = "held";
+          else if (layer) role = "pending";
+          const media =
+            slide.querySelector("video")?.getAttribute("src") ??
+            slide.querySelector('img[src*=".jpg"]')?.getAttribute("src");
+          return `${role} ${fileName(media)}`;
+        },
+      );
+    const timing = () => {
+      const elapsed = host.querySelectorAll('[aria-label="Elapsed time"]');
+      const duration = host.querySelectorAll('[aria-label="Duration"]');
+      const seek = host.querySelector('[aria-label="Seek"]');
+      expect(elapsed).toHaveLength(1);
+      expect(duration).toHaveLength(1);
+      return {
+        pending: [elapsed[0], duration[0], seek].map((part) =>
+          part?.hasAttribute("data-pending"),
+        ),
+        duration: duration[0]?.textContent,
+        seekDisabled: seek?.hasAttribute("data-disabled"),
+      };
+    };
+    const loadMetadata = (name: string, seconds: number) =>
+      act(async () => {
+        const video = host.querySelector<HTMLVideoElement>(
+          `video[src*="/${name}"]`,
+        );
+        if (!video) throw new Error(`Missing ${name}`);
+        Object.defineProperty(video, "duration", {
+          configurable: true,
+          value: seconds,
+        });
+        video.dispatchEvent(new Event("loadedmetadata"));
+      });
+
+    beforeEach(() => {
+      vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
+      vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(
+        () => {},
+      );
+    });
+
+    it("never lets an earlier Save's decode reveal a newer one", async () => {
+      await show(imageSave("first"));
+      await decode("first.jpg");
+      await show(imageSave("second"));
+      await show(imageSave("third"));
+      expect(stage()).toEqual(["held first.jpg", "pending third.jpg"]);
+
+      await decode("second.jpg");
+      expect(stage()).toEqual(["held first.jpg", "pending third.jpg"]);
+
+      await decode("third.jpg");
+      expect(stage()).toEqual(["current third.jpg"]);
+    });
+
+    it("keeps an incoming video's timeline pending until its metadata loads", async () => {
+      await show(imageSave("photo"));
+      await decode("photo.jpg");
+      await show(videoSave("clip"));
+
+      expect(stage()).toEqual(["held photo.jpg", "pending clip.mp4"]);
+      const pending = host.querySelector("div[data-pending]");
+      expect(
+        pending?.querySelector('img[src^="pond://clip/clip-poster.jpg"]'),
+      ).not.toBeNull();
+      expect(
+        pending?.querySelector("video")?.hasAttribute("data-pending"),
+      ).toBe(true);
+      expect(timing()).toMatchObject({
+        pending: [true, true, true],
+        seekDisabled: true,
+      });
+
+      await loadMetadata("clip.mp4", 45);
+
+      expect(timing()).toEqual({
+        pending: [false, false, false],
+        duration: "0:45",
+        seekDisabled: false,
+      });
+    });
+
+    it("never shows the previous video's duration on the next one", async () => {
+      await show(videoSave("short"));
+      await loadMetadata("short.mp4", 45);
+      expect(timing().duration).toBe("0:45");
+
+      await show(videoSave("long"));
+
+      expect(stage()).toEqual(["held short.mp4", "pending long.mp4"]);
+      const next = timing();
+      expect(next.pending).toEqual([true, true, true]);
+      expect(next.duration).not.toBe("0:45");
+
+      await loadMetadata("long.mp4", 200);
+      expect(timing().duration).toBe("3:20");
+    });
+
+    it("keeps stepping when a video's metadata never arrives", async () => {
+      await show(videoSave("stuck"));
+      expect(timing().pending).toEqual([true, true, true]);
+
+      await show(imageSave("after"));
+      await decode("after.jpg");
+
+      expect(stage()).toEqual(["current after.jpg"]);
+      expect(host.querySelector('[aria-label="Duration"]')).toBeNull();
+    });
+  });
+
   it("offers Download Video until the video file arrives", async () => {
     vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
     vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => {});
