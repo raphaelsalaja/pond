@@ -9,6 +9,7 @@
   cursor: var(--ds-cursor-interactive, pointer);
 }
 
+/* The reset caps media at max-width: 100%, so an auto width would shrink the preview as the pointer nears the end. */
 .preview {
   position: absolute;
   bottom: calc(100% + 8px);
@@ -16,6 +17,7 @@
   display: grid;
   gap: 4px;
   justify-items: center;
+  width: max-content;
   padding: 0;
   font-size: var(--ds-text-sm);
   font-variant-numeric: tabular-nums;
