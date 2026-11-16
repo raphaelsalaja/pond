@@ -74,6 +74,7 @@ import { rotateBundleBackups } from "./lib/library-config";
 import { LibraryMetadataError } from "./lib/library-id";
 import { readLibraryPointer } from "./lib/library-pointer";
 import { disableMenuActionImages } from "./lib/menu-action-images";
+import { openAppInstance } from "./lib/open-app-instance";
 import { killTrackedProcessTrees } from "./lib/process-tree";
 import { RELAUNCH_ARG } from "./lib/relaunch";
 import { limitSharpMemory } from "./lib/sharp-memory";
@@ -287,6 +288,17 @@ app.whenReady().then(async () => {
   registerProtocol();
 
   if (wantsMcp) {
+    if (process.platform === "darwin" && app.isPackaged) {
+      /** macOS sends a click on Pond to any running copy, this headless one included, and gives it a Dock icon. */
+      app.on("activate", () => {
+        app.dock?.hide();
+        openAppInstance({
+          execPath: process.execPath,
+          onError: (error) =>
+            log.error("[pond] could not open Pond from MCP", error),
+        });
+      });
+    }
     await ensureIngestToken().catch((err) =>
       log.error("[pond] ingest token init failed; MCP starts without one", err),
     );
