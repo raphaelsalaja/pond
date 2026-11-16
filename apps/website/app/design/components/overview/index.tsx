@@ -29,11 +29,7 @@ export function Overview() {
         </p>
       </section>
       {tiles.map((tile) => (
-        <section
-          key={tile.slug}
-          className={styles.tile}
-          aria-label={tile.name}
-        >
+        <section key={tile.slug} className={styles.tile} aria-label={tile.name}>
           <Link
             href={`/design/${tile.slug}`}
             scroll={false}

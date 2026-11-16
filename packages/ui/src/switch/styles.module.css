@@ -54,7 +54,10 @@
     background var(--ds-duration-snap) var(--ds-easing-standard);
 
   &[data-checked] {
-    background: light-dark(var(--ds-background-primary), var(--ds-background-inverse));
+    background: light-dark(
+      var(--ds-background-primary),
+      var(--ds-background-inverse)
+    );
     translate: 10px 0;
   }
 }

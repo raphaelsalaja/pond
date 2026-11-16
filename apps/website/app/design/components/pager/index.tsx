@@ -14,11 +14,7 @@ export function Pager({ className, ...props }: PagerProps) {
   if (!previous && !next) return null;
 
   return (
-    <nav
-      aria-label="Pages"
-      className={cn(styles.pager, className)}
-      {...props}
-    >
+    <nav aria-label="Pages" className={cn(styles.pager, className)} {...props}>
       {previous ? (
         <Link href={previous.href} scroll={false} className={styles.link}>
           <IconArrowLeft size={16} className={styles.arrow} />

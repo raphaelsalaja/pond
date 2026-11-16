@@ -20,10 +20,10 @@
   width: 36px;
   height: 24px;
   margin-inline: var(--ds-space-xs);
+  outline: var(--ds-focus-width) solid var(--ds-focus-outline);
   background: var(--ds-background-primary);
   border-radius: var(--ds-radius-sm);
   box-shadow: var(--ds-shadow-border);
-  outline: var(--ds-focus-width) solid var(--ds-focus-outline);
 
   &[data-ring="outside"] {
     outline-offset: var(--ds-focus-offset);

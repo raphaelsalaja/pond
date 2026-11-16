@@ -121,11 +121,7 @@ const EntryRow = memo(function EntryRow({
         </Keyboard.Key>
       ) : null}
       {entry.page ? (
-        <IconCaretRight
-          className={styles.indicator}
-          size={10}
-          aria-hidden
-        />
+        <IconCaretRight className={styles.indicator} size={10} aria-hidden />
       ) : null}
     </PickerPanel.Item>
   );

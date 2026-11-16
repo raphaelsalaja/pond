@@ -158,9 +158,9 @@
 .name {
   max-width: 100%;
   overflow: hidden;
+  text-overflow: ellipsis;
   font-size: var(--ds-text-micro);
   line-height: var(--ds-leading-micro);
   color: var(--ds-foreground-secondary);
-  text-overflow: ellipsis;
   white-space: nowrap;
 }

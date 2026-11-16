@@ -2,11 +2,7 @@ import { clsx as cn } from "clsx";
 import type { ComponentPropsWithoutRef } from "react";
 import styles from "./styles.module.css";
 
-export type BadgeTone =
-  | "neutral"
-  | "inverted"
-  | "negative"
-  | "accent";
+export type BadgeTone = "neutral" | "inverted" | "negative" | "accent";
 
 interface RootProps extends ComponentPropsWithoutRef<"span"> {
   tone?: BadgeTone;

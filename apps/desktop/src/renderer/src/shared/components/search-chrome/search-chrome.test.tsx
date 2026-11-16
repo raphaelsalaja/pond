@@ -34,7 +34,9 @@ describe("SearchChrome.Input", () => {
       "--search-chrome-inline-start: 20px;",
     );
     expect(declarations(".bar")).toContain("padding: var(--ds-space-md);");
-    expect(declarations(".search")).toContain("padding-left: var(--ds-space-md);");
+    expect(declarations(".search")).toContain(
+      "padding-left: var(--ds-space-md);",
+    );
   });
 
   it("uses the primary field for Harvester", () => {

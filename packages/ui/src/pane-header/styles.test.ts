@@ -26,6 +26,8 @@ describe("pane chrome", () => {
   });
 
   it("keeps pane content on one horizontal inset", () => {
-    expect(declarations(".body")).toContain("padding-inline: var(--ds-space-2xl);");
+    expect(declarations(".body")).toContain(
+      "padding-inline: var(--ds-space-2xl);",
+    );
   });
 });

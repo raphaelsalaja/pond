@@ -37,10 +37,7 @@ function toShortUrl(url: string): string {
 }
 
 /** Facet offsets are UTF-8 bytes into the record text. */
-function facetRuns(
-  text: string,
-  facets: readonly CaptureFacet[],
-): TextRun[] {
+function facetRuns(text: string, facets: readonly CaptureFacet[]): TextRun[] {
   const bytes = new TextEncoder().encode(text);
   const decode = (a: number, b: number) =>
     new TextDecoder().decode(bytes.subarray(a, b));

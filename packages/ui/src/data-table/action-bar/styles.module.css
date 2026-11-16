@@ -6,7 +6,8 @@
   display: flex;
   gap: var(--ds-space-sm);
   align-items: center;
-  padding: var(--ds-space-md) var(--ds-space-md) var(--ds-space-md) var(--ds-space-xl);
+  padding: var(--ds-space-md) var(--ds-space-md) var(--ds-space-md)
+    var(--ds-space-xl);
   background: var(--ds-background-primary);
   border-radius: var(--ds-radius-full);
   box-shadow: var(--ds-shadow-overlay);

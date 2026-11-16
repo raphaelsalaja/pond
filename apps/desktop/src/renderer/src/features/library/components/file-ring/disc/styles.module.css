@@ -7,7 +7,11 @@
   padding: 0;
   margin: 0;
   color: var(--ds-foreground-primary);
-  background: color-mix(in srgb, var(--ds-background-secondary) 78%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--ds-background-secondary) 78%,
+    transparent
+  );
   border: 0;
   border-radius: 50%;
   box-shadow: var(--ds-shadow-overlay);

@@ -16,8 +16,7 @@
   text-decoration: none;
   border-radius: var(--ds-radius-2xl);
   box-shadow: var(--ds-shadow-border);
-  transition: background-color var(--ds-duration-fast)
-    var(--ds-easing-standard);
+  transition: background-color var(--ds-duration-fast) var(--ds-easing-standard);
 
   &:hover {
     background: var(--ds-surface-primary);
@@ -43,8 +42,8 @@
 
 .name {
   overflow: hidden;
-  font-weight: var(--ds-weight-strong);
   text-overflow: ellipsis;
+  font-weight: var(--ds-weight-strong);
   white-space: nowrap;
 }
 

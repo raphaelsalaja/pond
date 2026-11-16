@@ -31,6 +31,12 @@
   padding-left: 96px;
 }
 
+.breadcrumbs {
+  max-width: 100%;
+  min-width: 0;
+  -webkit-app-region: no-drag;
+}
+
 .main {
   display: flex;
   align-items: center;
@@ -49,12 +55,6 @@
   &[data-search] .breadcrumbs {
     justify-self: start;
   }
-}
-
-.breadcrumbs {
-  max-width: 100%;
-  min-width: 0;
-  -webkit-app-region: no-drag;
 }
 
 .trail {

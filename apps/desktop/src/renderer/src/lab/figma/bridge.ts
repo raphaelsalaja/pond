@@ -51,8 +51,19 @@ let chain: { id: string; endpoint: string } | null = null;
 
 async function loadCapture() {
   if (window.figma?.captureForDesign) return;
-  const source = await (await fetch(CAPTURE_URL)).text();
-  (0, eval)(source);
+  const source = await (await fetch(CAPTURE_URL)).blob();
+  const url = URL.createObjectURL(source);
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = url;
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error("capture script failed"));
+      document.head.append(script);
+    });
+  } finally {
+    URL.revokeObjectURL(url);
+  }
 }
 
 async function runJob(job: Job) {
@@ -75,7 +86,12 @@ async function runJob(job: Job) {
     job.endpoint = chain.endpoint;
   }
   if (job.captureId && job.endpoint) {
-    console.warn("[figma-bridge] capture start", job.path, job.theme, document.visibilityState);
+    console.warn(
+      "[figma-bridge] capture start",
+      job.path,
+      job.theme,
+      document.visibilityState,
+    );
     await loadCapture();
     const raf = window.requestAnimationFrame;
     const caf = window.cancelAnimationFrame;

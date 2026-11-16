@@ -49,11 +49,11 @@
 }
 
 .art {
+  opacity: 0.5;
   fill: none;
   stroke: var(--file-tone);
   stroke-width: 0.6;
   stroke-linecap: round;
-  opacity: 0.5;
 }
 
 .wedge {

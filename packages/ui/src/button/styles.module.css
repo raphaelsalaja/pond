@@ -164,14 +164,10 @@
 
   &:where([data-variant="primary"]) {
     color: var(--ds-foreground-inverse);
-    background:
-      var(--ds-sheen),
-      var(--ds-background-inverse);
+    background: var(--ds-sheen), var(--ds-background-inverse);
 
     &:where([data-icon]) {
-      background:
-        var(--ds-sheen),
-        var(--ds-foreground-secondary);
+      background: var(--ds-sheen), var(--ds-foreground-secondary);
     }
 
     &:hover,
@@ -204,9 +200,7 @@
 
   &:where([data-variant="accent"]) {
     color: var(--ds-accent-contrast);
-    background:
-      var(--ds-sheen),
-      var(--ds-accent);
+    background: var(--ds-sheen), var(--ds-accent);
 
     &:hover,
     &:active,

@@ -101,7 +101,9 @@ export function ColorFilter({
           <Input.Icon>
             <span
               className={styles.preview}
-              style={{ backgroundColor: match ? hex : "var(--ds-foreground-tertiary)" }}
+              style={{
+                backgroundColor: match ? hex : "var(--ds-foreground-tertiary)",
+              }}
             />
           </Input.Icon>
           <Input.Field

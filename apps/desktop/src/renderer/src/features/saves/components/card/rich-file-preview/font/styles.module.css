@@ -12,7 +12,11 @@
   color: var(--ds-foreground-primary);
   text-align: center;
   background:
-    radial-gradient(circle at 50% 25%, var(--ds-background-primary), transparent 55%),
+    radial-gradient(
+      circle at 50% 25%,
+      var(--ds-background-primary),
+      transparent 55%
+    ),
     var(--ds-background-tertiary);
   border-radius: var(--ds-radius-xs);
   box-shadow: var(--ds-shadow-border);

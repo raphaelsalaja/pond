@@ -28,10 +28,7 @@ export function ContentFilter({
     ]);
   return (
     <>
-      <Menu.Input
-        aria-label={`Search ${label}`}
-        placeholder="Search…"
-      />
+      <Menu.Input aria-label={`Search ${label}`} placeholder="Search…" />
       <Menu.FilterList>
         {draft && draft !== phrase ? (
           <Menu.Item

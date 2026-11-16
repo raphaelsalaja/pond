@@ -63,21 +63,6 @@ function Send({ children, ...props }: ActionProps) {
   );
 }
 
-function Stop({ children, ...props }: ActionProps) {
-  return (
-    <Button
-      type="button"
-      icon
-      variant="secondary"
-      size="md"
-      rounding="full"
-      {...props}
-    >
-      {children}
-    </Button>
-  );
-}
-
 export function ComposerView({
   leading,
   toolbar,

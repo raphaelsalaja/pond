@@ -12,7 +12,10 @@
   font-weight: var(--ds-weight-regular);
   line-height: 24px;
   color: var(--ds-foreground-primary);
-  background: light-dark(var(--ds-background-primary), var(--ds-background-secondary));
+  background: light-dark(
+    var(--ds-background-primary),
+    var(--ds-background-secondary)
+  );
   border-radius: var(--ds-radius-md);
   box-shadow:
     0 0 0 0.5px var(--ds-border-strong),

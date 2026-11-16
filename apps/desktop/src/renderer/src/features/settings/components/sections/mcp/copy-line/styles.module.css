@@ -17,7 +17,8 @@
   gap: var(--ds-space-md);
   align-items: center;
   min-width: 0;
-  padding: var(--ds-space-xs) var(--ds-space-xs) var(--ds-space-xs) var(--ds-space-lg);
+  padding: var(--ds-space-xs) var(--ds-space-xs) var(--ds-space-xs)
+    var(--ds-space-lg);
   background: var(--ds-background-secondary);
   border-radius: var(--ds-radius-md);
 }

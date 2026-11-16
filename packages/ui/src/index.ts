@@ -19,7 +19,7 @@ export { DatePicker, type DatePickerProps } from "./date-picker";
 export { Dialog } from "./dialog";
 export { Empty } from "./empty";
 export { Field } from "./field";
-export { type FileKind, FileIcon } from "./file-icon";
+export { FileIcon, type FileKind } from "./file-icon";
 export { Input } from "./input";
 export { Keyboard } from "./keyboard";
 export { Loader } from "./loader";

@@ -339,10 +339,7 @@ export function ModelPicker({
             alignOffset={-4}
           >
             <Menu.Popup className={styles.models}>
-              <Menu.Input
-                aria-label="Search models"
-                placeholder="Search…"
-              />
+              <Menu.Input aria-label="Search models" placeholder="Search…" />
               <Menu.FilterList className={styles.content} aria-label="Models">
                 <Menu.List className={styles.list}>
                   {catalog.isPending ? (

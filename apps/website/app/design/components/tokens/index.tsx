@@ -12,7 +12,14 @@ import { Shadows } from "../shadows";
 import { Spacing } from "../spacing";
 import { Typography } from "../typography";
 
-const HUE_ROLES = ["", "-hover", "-foreground", "-tint", "-border", "-contrast"];
+const HUE_ROLES = [
+  "",
+  "-hover",
+  "-foreground",
+  "-tint",
+  "-border",
+  "-contrast",
+];
 
 const hue = (name: string) => HUE_ROLES.map((suffix) => `${name}${suffix}`);
 
@@ -59,7 +66,8 @@ export function Tokens() {
         <Doc.Heading>Color</Doc.Heading>
         <Doc.Summary>
           Each ratio is WCAG contrast against{" "}
-          <Code.Inline>--ds-background-primary</Code.Inline>. Translucent colors show a dash.
+          <Code.Inline>--ds-background-primary</Code.Inline>. Translucent colors
+          show a dash.
         </Doc.Summary>
         {GROUPS.map((group) => (
           <Roles key={group.label} label={group.label} roles={group.roles} />

@@ -145,7 +145,11 @@ export function PreviewControls({
                 pressed={state.zoom !== null}
                 side={tooltipSide}
               >
-                {state.zoom === null ? <IconSizeLg /> : <IconArrowsExpandDiagonal />}
+                {state.zoom === null ? (
+                  <IconSizeLg />
+                ) : (
+                  <IconArrowsExpandDiagonal />
+                )}
               </PreviewTool>
             </div>
           ) : (

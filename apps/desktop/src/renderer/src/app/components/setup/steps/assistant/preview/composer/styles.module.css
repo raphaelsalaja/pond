@@ -3,7 +3,8 @@
   flex: none;
   flex-direction: column;
   gap: var(--ds-space-lg);
-  padding: var(--ds-space-lg) var(--ds-space-lg) var(--ds-space-lg) var(--ds-space-xl);
+  padding: var(--ds-space-lg) var(--ds-space-lg) var(--ds-space-lg)
+    var(--ds-space-xl);
   margin: 0 var(--ds-space-lg) var(--ds-space-lg);
   background: var(--ds-background-primary);
   border-radius: var(--ds-radius-lg);

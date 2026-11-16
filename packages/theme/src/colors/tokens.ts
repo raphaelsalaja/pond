@@ -439,7 +439,11 @@ const DANGER_ROLES = {
 } as const;
 
 /** The accent has alpha steps, so its tint and border stay translucent over any surface. */
-const ACCENT_ROLES = { ...DANGER_ROLES, "-tint": "a3", "-border": "a7" } as const;
+const ACCENT_ROLES = {
+  ...DANGER_ROLES,
+  "-tint": "a3",
+  "-border": "a7",
+} as const;
 
 const PALETTE_ROLES = {
   "": "9",

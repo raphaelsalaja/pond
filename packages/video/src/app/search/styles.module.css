@@ -7,7 +7,8 @@
   gap: var(--ds-space-sm);
   align-items: center;
   height: 56px;
-  padding: var(--ds-space-md) var(--ds-space-xl) var(--ds-space-md) var(--ds-space-2xl);
+  padding: var(--ds-space-md) var(--ds-space-xl) var(--ds-space-md)
+    var(--ds-space-2xl);
 }
 
 .field {

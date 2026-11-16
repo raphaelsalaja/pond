@@ -22,7 +22,7 @@ import { setAppRouter } from "@/shared/lib/app-router";
 import { CommandMenuHost } from "./";
 
 const openSave = vi.fn();
-const viewIds = { current: Array<string>() };
+const viewIds = { current: [] as string[] };
 const viewRequests: (LibraryQueryRequest | undefined)[] = [];
 
 async function query(method: string, request?: LibraryQueryRequest) {

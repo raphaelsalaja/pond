@@ -153,7 +153,8 @@
   display: flex;
   gap: var(--ds-space-sm);
   align-items: center;
-  padding: var(--ds-space-xs) var(--ds-space-sm) var(--ds-space-xs) var(--ds-space-xs);
+  padding: var(--ds-space-xs) var(--ds-space-sm) var(--ds-space-xs)
+    var(--ds-space-xs);
   background: var(--ds-background-primary);
   border-radius: var(--ds-radius-md);
   box-shadow:

@@ -82,7 +82,6 @@ import {
   recoverMissingLibrary,
   recoverUnreadableLibrary,
 } from "./library-recovery";
-import { closeMissingLibraryWindow } from "./missing-library-window";
 import {
   consoleLoggingEnabled,
   protocolRegistration,
@@ -91,6 +90,7 @@ import {
 } from "./lifecycle";
 import { resolveLogFile } from "./logging";
 import { installAppMenu, setMenuRecents } from "./menu";
+import { closeMissingLibraryWindow } from "./missing-library-window";
 import { openAppGroupContainer } from "./native/app-group";
 import { writeNativeHostManifests } from "./native/manifests";
 import { safariSocketPath } from "./native/paths";

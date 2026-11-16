@@ -18,8 +18,8 @@
 .count {
   margin-left: auto;
   font-size: var(--ds-text-small);
-  color: var(--ds-foreground-tertiary);
   font-variant-numeric: tabular-nums;
+  color: var(--ds-foreground-tertiary);
 }
 
 .board {
@@ -77,8 +77,8 @@
 .name {
   max-width: 100%;
   overflow: hidden;
+  text-overflow: ellipsis;
   font-size: var(--ds-text-small);
   color: var(--ds-foreground-secondary);
-  text-overflow: ellipsis;
   white-space: nowrap;
 }

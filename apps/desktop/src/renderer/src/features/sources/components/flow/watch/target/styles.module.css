@@ -89,7 +89,8 @@
   gap: var(--ds-space-lg);
   align-items: center;
   justify-content: space-between;
-  padding: var(--ds-space-lg) var(--ds-space-lg) var(--ds-space-lg) var(--ds-space-xl);
+  padding: var(--ds-space-lg) var(--ds-space-lg) var(--ds-space-lg)
+    var(--ds-space-xl);
   margin-top: var(--ds-space-xl);
   background: var(--ds-background-secondary);
   border: var(--ds-border-width) solid var(--ds-border-subtle);

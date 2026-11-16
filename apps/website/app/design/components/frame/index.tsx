@@ -10,8 +10,8 @@ import {
   useSyncExternalStore,
 } from "react";
 import { Nav } from "../nav";
-import { INTRODUCTION } from "../pages";
 import { Pager } from "../pager";
+import { INTRODUCTION } from "../pages";
 import { type Theme, ThemeContext, type ThemePreference } from "../theme";
 import styles from "./styles.module.css";
 

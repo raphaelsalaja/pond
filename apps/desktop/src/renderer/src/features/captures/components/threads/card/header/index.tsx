@@ -21,11 +21,7 @@ export function Header({ author }: { author: TweetCardAuthor }) {
           ) : null}
         </span>
       </div>
-      <IconThreadsLogo
-        className={styles.wordmark}
-        size={18}
-        title="Threads"
-      />
+      <IconThreadsLogo className={styles.wordmark} size={18} title="Threads" />
     </div>
   );
 }

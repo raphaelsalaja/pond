@@ -17,7 +17,8 @@
   display: flex;
   gap: var(--ds-space-md);
   align-items: center;
-  padding: var(--ds-space-2xs) var(--ds-space-sm) var(--ds-space-2xs) var(--ds-space-xs);
+  padding: var(--ds-space-2xs) var(--ds-space-sm) var(--ds-space-2xs)
+    var(--ds-space-xs);
 
   & svg {
     color: var(--ds-foreground-tertiary);
@@ -128,7 +129,8 @@
   width: 248px;
 
   & .workspace {
-    padding: var(--ds-space-xs) var(--ds-space-lg) var(--ds-space-xs) var(--ds-space-xl);
+    padding: var(--ds-space-xs) var(--ds-space-lg) var(--ds-space-xs)
+      var(--ds-space-xl);
   }
 
   & .group {

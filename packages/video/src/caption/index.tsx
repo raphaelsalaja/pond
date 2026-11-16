@@ -80,7 +80,8 @@ export function Caption({
           ? brands?.[group.map((word) => word.text).join(" ")]
           : undefined;
         const tint =
-          brand?.color ?? (chip === "accent" ? "var(--ds-accent-hover)" : undefined);
+          brand?.color ??
+          (chip === "accent" ? "var(--ds-accent-hover)" : undefined);
         const fill = ease.out(progress(t, enter + first * stagger + 260, 420));
         const gone = ease.in(progress(t, exit + 60, 260));
         const inner = group.map((word) => {

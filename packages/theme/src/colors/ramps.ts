@@ -1,7 +1,7 @@
 import {
   buildThemeTokens,
-  HUE_NAMES,
   type Gamut,
+  HUE_NAMES,
   type ThemeInput,
   type ThemeMode,
 } from "./tokens.ts";

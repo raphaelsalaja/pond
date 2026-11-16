@@ -272,7 +272,6 @@ describe("solveScales", () => {
       }
     },
   );
-
 });
 
 describe("buildThemeTokens", () => {

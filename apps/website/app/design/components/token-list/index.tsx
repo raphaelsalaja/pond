@@ -8,7 +8,8 @@ function Root({ className, ...props }: RootProps) {
   return <ul className={cn(styles.root, className)} {...props} />;
 }
 
-interface ItemProps extends Omit<React.ComponentPropsWithoutRef<"li">, "title"> {
+interface ItemProps
+  extends Omit<React.ComponentPropsWithoutRef<"li">, "title"> {
   visual: React.ReactNode;
   title: string;
   token?: string;

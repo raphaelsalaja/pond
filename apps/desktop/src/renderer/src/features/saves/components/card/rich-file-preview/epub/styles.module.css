@@ -14,7 +14,11 @@
   padding: 8%;
   overflow: hidden;
   background:
-    radial-gradient(circle at 50% 20%, var(--ds-media-foreground-primary), transparent 46%),
+    radial-gradient(
+      circle at 50% 20%,
+      var(--ds-media-foreground-primary),
+      transparent 46%
+    ),
     var(--epub-paper);
   border-radius: var(--ds-radius-xs);
   box-shadow: var(--ds-shadow-border);

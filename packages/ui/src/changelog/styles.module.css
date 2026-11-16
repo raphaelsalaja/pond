@@ -80,7 +80,11 @@
     height: 1px;
     margin-left: var(--ds-space-sm);
     content: "";
-    background: linear-gradient(to right, var(--ds-surface-tertiary), transparent);
+    background: linear-gradient(
+      to right,
+      var(--ds-surface-tertiary),
+      transparent
+    );
   }
 }
 

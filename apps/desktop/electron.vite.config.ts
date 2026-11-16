@@ -73,7 +73,10 @@ export default defineConfig({
       alias: {
         "@main": resolve(__dirname, "src/main"),
         "@shared": resolve(__dirname, "src/shared"),
-        "@pond/render": resolve(__dirname, "../../packages/render/src/index.ts"),
+        "@pond/render": resolve(
+          __dirname,
+          "../../packages/render/src/index.ts",
+        ),
       },
     },
     build: {

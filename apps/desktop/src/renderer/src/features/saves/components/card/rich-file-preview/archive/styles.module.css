@@ -15,9 +15,7 @@
 .icon {
   width: clamp(36px, 32cqw, 58px);
   overflow: visible;
-  filter: drop-shadow(
-    0 1px 1px var(--ds-shadow-color)
-  );
+  filter: drop-shadow(0 1px 1px var(--ds-shadow-color));
 }
 
 .page {

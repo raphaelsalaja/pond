@@ -79,9 +79,11 @@ const LABELS: Record<string, string> = {
 const PAGE =
   "M2 .5h7.5l4 4V16a1.5 1.5 0 0 1-1.5 1.5H2A1.5 1.5 0 0 1 .5 16V2A1.5 1.5 0 0 1 2 .5Z";
 const FOLD = "M9.5.5v3a1 1 0 0 0 1 1h3Z";
-const SHEET = "M2 .5h10A1.5 1.5 0 0 1 13.5 2v14a1.5 1.5 0 0 1-1.5 1.5H2A1.5 1.5 0 0 1 .5 16V2A1.5 1.5 0 0 1 2 .5Z";
+const SHEET =
+  "M2 .5h10A1.5 1.5 0 0 1 13.5 2v14a1.5 1.5 0 0 1-1.5 1.5H2A1.5 1.5 0 0 1 .5 16V2A1.5 1.5 0 0 1 2 .5Z";
 const BAND = "M.5 2A1.5 1.5 0 0 1 2 .5h10A1.5 1.5 0 0 1 13.5 2v3H.5Z";
-const ZIPPER = "M6 .5h1v1H6Zm1 1h1v1H7ZM6 2.5h1v1H6Zm1 1h1v1H7ZM6 4.5h1v1H6Zm1 1h1v1H7Z";
+const ZIPPER =
+  "M6 .5h1v1H6Zm1 1h1v1H7ZM6 2.5h1v1H6Zm1 1h1v1H7ZM6 4.5h1v1H6Zm1 1h1v1H7Z";
 
 const ART: Partial<Record<FileKind, React.ReactNode>> = {
   document: <path d="M2.5 3H7M2.5 5h6M2.5 7h9M2.5 9h6" />,
@@ -94,7 +96,14 @@ const ART: Partial<Record<FileKind, React.ReactNode>> = {
   ),
   pdf: (
     <>
-      <rect className={styles.wedge} x="2.5" y="2.5" width="3" height="3" rx=".5" />
+      <rect
+        className={styles.wedge}
+        x="2.5"
+        y="2.5"
+        width="3"
+        height="3"
+        rx=".5"
+      />
       <path d="M7 3h1.5M7 5h4.5M2.5 7.5h9" />
     </>
   ),
@@ -132,7 +141,9 @@ function FileIcon({ name, size = 18, className, ...props }: FileIconProps) {
       {flat ? null : <path className={styles.fold} d={FOLD} />}
       {ART[kind] ? <g className={styles.art}>{ART[kind]}</g> : null}
       {kind === "calendar" ? <path className={styles.band} d={BAND} /> : null}
-      {kind === "archive" ? <path className={styles.zipper} d={ZIPPER} /> : null}
+      {kind === "archive" ? (
+        <path className={styles.zipper} d={ZIPPER} />
+      ) : null}
       {label ? (
         <text className={styles.label} x="7" y="14.75" textAnchor="middle">
           {label}

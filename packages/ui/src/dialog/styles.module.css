@@ -140,7 +140,8 @@
   gap: var(--page-dialog-gap, 12px);
   width: min(var(--page-dialog-width, 400px), calc(100vw - 32px));
   max-height: calc(100dvh - var(--page-dialog-chrome-height, 112px) - 32px);
-  padding: var(--page-dialog-content-top, 0px) var(--ds-space-2xl) var(--ds-space-2xl);
+  padding: var(--page-dialog-content-top, 0px) var(--ds-space-2xl)
+    var(--ds-space-2xl);
   outline: none;
   transform-origin: center center;
 }

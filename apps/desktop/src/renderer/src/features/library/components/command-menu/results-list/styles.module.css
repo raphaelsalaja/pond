@@ -31,13 +31,21 @@
   &[data-edge="top"] {
     top: 0;
     margin-bottom: calc(var(--ds-space-2xl) * -1);
-    background: linear-gradient(to bottom, var(--ds-background-primary), transparent);
+    background: linear-gradient(
+      to bottom,
+      var(--ds-background-primary),
+      transparent
+    );
   }
 
   &[data-edge="bottom"] {
     bottom: 0;
     margin-top: calc(var(--ds-space-2xl) * -1);
-    background: linear-gradient(to top, var(--ds-background-primary), transparent);
+    background: linear-gradient(
+      to top,
+      var(--ds-background-primary),
+      transparent
+    );
   }
 }
 

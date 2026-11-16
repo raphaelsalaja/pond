@@ -9,7 +9,13 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { copyFileSync, existsSync, mkdirSync, readdirSync, statSync } from "node:fs";
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  statSync,
+} from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -21,7 +27,9 @@ const TARGET = "wasm32-unknown-unknown";
 const profile = process.argv.includes("--fast") ? "fast" : "release";
 
 if (!existsSync(join(XEET, "crates/xeet-core"))) {
-  console.error(`No xeet checkout at ${XEET}. Clone the fork there or set POND_XEET_DIR.`);
+  console.error(
+    `No xeet checkout at ${XEET}. Clone the fork there or set POND_XEET_DIR.`,
+  );
   process.exit(1);
 }
 
@@ -53,7 +61,8 @@ const open = [
     .filter((f) => /^(Noto|STIX)/.test(f))
     .map((f) => join(XEET, "assets/vendor/fonts", f)),
 ];
-for (const file of open) copyFileSync(file, join(OUT, "fonts", file.split("/").pop()));
+for (const file of open)
+  copyFileSync(file, join(OUT, "fonts", file.split("/").pop()));
 
 const mb = (statSync(join(OUT, "pond-render.wasm")).size / 1e6).toFixed(1);
 console.log(`pond-render.wasm ${mb} MB and ${open.length} fonts in ${OUT}`);

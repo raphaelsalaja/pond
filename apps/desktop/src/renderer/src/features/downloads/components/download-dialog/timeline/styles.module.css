@@ -118,7 +118,11 @@
   position: absolute;
   inset-block: 0;
   pointer-events: none;
-  background: color-mix(in oklab, var(--ds-background-primary) 70%, transparent);
+  background: color-mix(
+    in oklab,
+    var(--ds-background-primary) 70%,
+    transparent
+  );
 
   &[data-edge="start"] {
     left: 0;

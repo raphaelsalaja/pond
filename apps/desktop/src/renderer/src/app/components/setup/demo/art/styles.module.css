@@ -29,12 +29,20 @@
     }
 
     &::before {
-      background: color-mix(in oklab, var(--ds-green) 40%, var(--ds-background-tertiary));
+      background: color-mix(
+        in oklab,
+        var(--ds-green) 40%,
+        var(--ds-background-tertiary)
+      );
       clip-path: polygon(0 100%, 34% 38%, 72% 100%);
     }
 
     &::after {
-      background: color-mix(in oklab, var(--ds-green) 55%, var(--ds-surface-tertiary));
+      background: color-mix(
+        in oklab,
+        var(--ds-green) 55%,
+        var(--ds-surface-tertiary)
+      );
       clip-path: polygon(28% 100%, 66% 24%, 100% 64%, 100% 100%);
     }
   }
@@ -71,7 +79,11 @@
       width: 60%;
       height: 8px;
       margin-bottom: var(--ds-space-xs);
-      background: color-mix(in oklab, var(--ds-red) 60%, var(--ds-background-tertiary));
+      background: color-mix(
+        in oklab,
+        var(--ds-red) 60%,
+        var(--ds-background-tertiary)
+      );
     }
 
     > span:last-child {
@@ -94,19 +106,35 @@
     height: 100%;
 
     > span:nth-child(1) {
-      background: color-mix(in oklab, var(--ds-green) 55%, var(--ds-background-tertiary));
+      background: color-mix(
+        in oklab,
+        var(--ds-green) 55%,
+        var(--ds-background-tertiary)
+      );
     }
 
     > span:nth-child(2) {
-      background: color-mix(in oklab, var(--ds-yellow) 55%, var(--ds-background-tertiary));
+      background: color-mix(
+        in oklab,
+        var(--ds-yellow) 55%,
+        var(--ds-background-tertiary)
+      );
     }
 
     > span:nth-child(3) {
-      background: color-mix(in oklab, var(--ds-orange) 55%, var(--ds-background-tertiary));
+      background: color-mix(
+        in oklab,
+        var(--ds-orange) 55%,
+        var(--ds-background-tertiary)
+      );
     }
 
     > span:nth-child(4) {
-      background: color-mix(in oklab, var(--ds-purple) 55%, var(--ds-background-tertiary));
+      background: color-mix(
+        in oklab,
+        var(--ds-purple) 55%,
+        var(--ds-background-tertiary)
+      );
     }
   }
 }
@@ -146,7 +174,11 @@
   left: 39%;
   width: 22%;
   aspect-ratio: 1;
-  background: color-mix(in oklab, var(--ds-orange) 85%, var(--ds-background-primary));
+  background: color-mix(
+    in oklab,
+    var(--ds-orange) 85%,
+    var(--ds-background-primary)
+  );
   border-radius: var(--ds-radius-full);
 }
 
@@ -154,5 +186,9 @@
   position: absolute;
   inset: auto 0 0;
   height: 36%;
-  background: color-mix(in oklab, var(--ds-blue) 50%, var(--ds-background-tertiary));
+  background: color-mix(
+    in oklab,
+    var(--ds-blue) 50%,
+    var(--ds-background-tertiary)
+  );
 }

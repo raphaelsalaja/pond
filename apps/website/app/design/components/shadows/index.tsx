@@ -3,9 +3,18 @@ import { Code } from "../code";
 import styles from "./styles.module.css";
 
 const SHADOWS = [
-  { token: "--ds-shadow-border", use: "Surfaces in the page: cards, fields, panes." },
-  { token: "--ds-shadow-raised", use: "Raised controls: switch thumbs and selected segments." },
-  { token: "--ds-shadow-overlay", use: "Layers above the page: menus, popovers, tooltips." },
+  {
+    token: "--ds-shadow-border",
+    use: "Surfaces in the page: cards, fields, panes.",
+  },
+  {
+    token: "--ds-shadow-raised",
+    use: "Raised controls: switch thumbs and selected segments.",
+  },
+  {
+    token: "--ds-shadow-overlay",
+    use: "Layers above the page: menus, popovers, tooltips.",
+  },
   { token: "--ds-shadow-dialog", use: "Dialogs and the command menu." },
 ] as const;
 

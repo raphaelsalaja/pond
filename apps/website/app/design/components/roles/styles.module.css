@@ -46,8 +46,8 @@
 
 .name {
   overflow: hidden;
-  color: var(--ds-foreground-secondary);
   text-overflow: ellipsis;
+  color: var(--ds-foreground-secondary);
   white-space: nowrap;
 }
 

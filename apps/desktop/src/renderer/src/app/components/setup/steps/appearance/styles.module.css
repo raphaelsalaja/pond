@@ -17,7 +17,11 @@
     height: 45%;
     pointer-events: none;
     content: "";
-    background: linear-gradient(to bottom, transparent, var(--ds-background-secondary) 85%);
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      var(--ds-background-secondary) 85%
+    );
   }
 }
 

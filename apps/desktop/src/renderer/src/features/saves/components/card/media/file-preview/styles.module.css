@@ -6,7 +6,11 @@
   place-items: center;
   container-type: size;
   background:
-    radial-gradient(circle at 50% 34%, var(--ds-background-tertiary), transparent 44%),
+    radial-gradient(
+      circle at 50% 34%,
+      var(--ds-background-tertiary),
+      transparent 44%
+    ),
     var(--ds-background-secondary);
   border-radius: inherit;
 }
