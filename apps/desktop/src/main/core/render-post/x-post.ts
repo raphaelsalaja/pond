@@ -6,7 +6,7 @@ const isDataUrl = (url: string | undefined): url is string =>
   url?.startsWith("data:image/") === true;
 
 /** ISO 8601 in the machine's zone, so xeet prints the time the reader saw. */
-export function localIso(iso: string): string | undefined {
+function localIso(iso: string): string | undefined {
   const d = new Date(iso);
   if (!Number.isFinite(d.getTime())) return undefined;
   const pad = (n: number) => String(Math.abs(n)).padStart(2, "0");

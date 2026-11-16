@@ -28,17 +28,17 @@ function pop(t: number, at: number, duration = 520) {
 }
 
 function Glyph({ mark, pond }: { mark: Mark; pond?: boolean }) {
-  if (typeof mark === "object")
-    return (
-      <span className={styles.text} data-pond={pond || undefined}>
-        {mark.text}
-      </span>
-    );
   if (mark === "partly") return <span className={styles.partly}>Partly</span>;
   if (mark === "no")
     return (
       <span className={styles.no}>
         <IconXmark size={24} strokeWidth={2} />
+      </span>
+    );
+  if (mark !== "yes")
+    return (
+      <span className={styles.text} data-pond={pond || undefined}>
+        {mark.text}
       </span>
     );
   if (pond)

@@ -61,7 +61,7 @@ function scheduleIdleDispose(): void {
   idleTimer.unref?.();
 }
 
-export function disposePostRenderer(): void {
+function disposePostRenderer(): void {
   if (idleTimer) clearTimeout(idleTimer);
   idleTimer = null;
   const current = renderer;

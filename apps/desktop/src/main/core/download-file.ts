@@ -4,26 +4,28 @@ import { browserUserAgent } from "./refresh/harvest-window/constants";
 /** Files are held in memory on their way to a save or folder. */
 export const MAX_FILE_BYTES = 256 * 1024 * 1024;
 
-const EXTENSIONS: Readonly<Record<string, string>> = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/gif": "gif",
-  "image/webp": "webp",
-  "image/avif": "avif",
-  "image/svg+xml": "svg",
-  "image/heic": "heic",
-  "application/pdf": "pdf",
-  "application/zip": "zip",
-  "application/json": "json",
-  "text/plain": "txt",
-  "text/csv": "csv",
-  "audio/mpeg": "mp3",
-  "audio/mp4": "m4a",
-  "audio/wav": "wav",
-  "video/mp4": "mp4",
-  "video/webm": "webm",
-  "video/quicktime": "mov",
-};
+const EXTENSIONS = new Map(
+  Object.entries({
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/gif": "gif",
+    "image/webp": "webp",
+    "image/avif": "avif",
+    "image/svg+xml": "svg",
+    "image/heic": "heic",
+    "application/pdf": "pdf",
+    "application/zip": "zip",
+    "application/json": "json",
+    "text/plain": "txt",
+    "text/csv": "csv",
+    "audio/mpeg": "mp3",
+    "audio/mp4": "m4a",
+    "audio/wav": "wav",
+    "video/mp4": "mp4",
+    "video/webm": "webm",
+    "video/quicktime": "mov",
+  }),
+);
 
 export class FileTooLargeError extends Error {}
 
@@ -62,7 +64,7 @@ export function fileNameOf(url: string, headers: Headers): string {
   /** Image CDNs like Twitter's put the format in the query instead of the path. */
   const format = parsed.searchParams.get("format");
   const extension =
-    (mime ? EXTENSIONS[mime] : undefined) ??
+    (mime ? EXTENSIONS.get(mime) : undefined) ??
     (format && /^[a-z0-9]{2,5}$/i.test(format) ? format : null);
   return extension ? `${name}.${extension}` : name;
 }

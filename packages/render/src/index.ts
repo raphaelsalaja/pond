@@ -162,10 +162,16 @@ export interface RenderedPost {
   warnings: string[];
 }
 
+export interface PostBySource {
+  twitter: XPost;
+  bluesky: BlueskyPost;
+  threads: ThreadsPost;
+}
+
 export interface PostRenderer {
-  render(
-    source: RenderSource,
-    post: unknown,
+  render<S extends RenderSource>(
+    source: S,
+    post: PostBySource[S],
     options?: RenderOptions,
   ): Promise<RenderedPost>;
   dispose(): void;
@@ -188,6 +194,7 @@ interface HostFace {
 }
 
 interface Exports {
+  [name: string]: WebAssembly.ExportValue;
   memory: WebAssembly.Memory;
   alloc(len: number): number;
   dealloc(ptr: number, len: number): void;
@@ -219,29 +226,27 @@ const SYSTEM = "/System/Library/Fonts";
 const EMOJI_TTC = `${SYSTEM}/Apple Color Emoji.ttc`;
 
 /** macOS files for the faces xeet ships but Pond may not redistribute. */
-const MAC_FACES: Record<string, { path: string; index?: number }> = {
-  "Arial.ttf": { path: `${SYSTEM}/Supplemental/Arial.ttf` },
-  "Arial-Bold.ttf": { path: `${SYSTEM}/Supplemental/Arial Bold.ttf` },
-  "HiraginoSans-Regular.otf": { path: `${SYSTEM}/ヒラギノ角ゴシック W3.ttc` },
-  "HiraginoSans-Bold.otf": { path: `${SYSTEM}/ヒラギノ角ゴシック W6.ttc` },
-  "SFNS.ttf": { path: `${SYSTEM}/SFNS.ttf` },
-};
+const MAC_FACES = new Map<string, { path: string; index?: number }>([
+  ["Arial.ttf", { path: `${SYSTEM}/Supplemental/Arial.ttf` }],
+  ["Arial-Bold.ttf", { path: `${SYSTEM}/Supplemental/Arial Bold.ttf` }],
+  ["HiraginoSans-Regular.otf", { path: `${SYSTEM}/ヒラギノ角ゴシック W3.ttc` }],
+  ["HiraginoSans-Bold.otf", { path: `${SYSTEM}/ヒラギノ角ゴシック W6.ttc` }],
+  ["SFNS.ttf", { path: `${SYSTEM}/SFNS.ttf` }],
+]);
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
-/** Clipped text can end mid-surrogate pair, and serde rejects a lone `\ud83d` escape. */
-const LONE_SURROGATE =
-  /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g;
-const wellFormed = (_key: string, value: unknown) =>
-  typeof value === "string" ? value.replace(LONE_SURROGATE, "\uFFFD") : value;
+/** Clipped text can end mid-surrogate pair; JSON.stringify escapes only lone halves, and serde rejects them. */
+const LONE_SURROGATE_ESCAPE = /(?<!\\)((?:\\\\)*)\\ud[89a-f][0-9a-f]{2}/gi;
 
 export async function createPostRenderer(
   config: PostRendererConfig,
 ): Promise<PostRenderer> {
   const module = await WebAssembly.compile(await readFile(config.wasmPath));
   const instance = await WebAssembly.instantiate(module, {});
-  const wasm = instance.exports as unknown as Exports;
+  /** SAFETY: `pond-render.wasm` is built from packages/render/crates and exports exactly these symbols. */
+  const wasm = instance.exports as Exports;
   const registered = new Set<string>();
 
   const output = (): Uint8Array =>
@@ -279,6 +284,7 @@ export async function createPostRenderer(
   };
 
   wasm.host_faces();
+  /** SAFETY: `host_faces` writes a JSON array of `HostFace` records from the same wasm build. */
   const faces = JSON.parse(decoder.decode(output())) as HostFace[];
 
   const loadFace = async (face: HostFace) => {
@@ -288,7 +294,7 @@ export async function createPostRenderer(
       return;
     }
     const bundled = join(config.fontsDir, face.file);
-    const source = MAC_FACES[face.file] ?? { path: bundled };
+    const source = MAC_FACES.get(face.file) ?? { path: bundled };
     if (!existsSync(source.path))
       throw new Error(`Font ${face.file} not found at ${source.path}`);
     register(face.file, await readFile(source.path), source.index ?? 0);
@@ -312,8 +318,12 @@ export async function createPostRenderer(
     async render(source, post, options = {}) {
       if (disposed) throw new Error("Post renderer was disposed");
       const request = encoder.encode(
-        JSON.stringify({ source, post, options }, wellFormed),
+        JSON.stringify({ source, post, options }).replace(
+          LONE_SURROGATE_ESCAPE,
+          "$1\\ufffd",
+        ),
       );
+      /** SAFETY: `missing_packs` writes a JSON array of pack names. */
       const missing = JSON.parse(
         decoder.decode(call(wasm.missing_packs, request)),
       ) as string[];
@@ -321,6 +331,7 @@ export async function createPostRenderer(
       const out = call(wasm.render_post, request);
       const view = new DataView(out.buffer, out.byteOffset, out.byteLength);
       const headerLen = view.getUint32(0, true);
+      /** SAFETY: `render_post` prefixes the PNG with a JSON header holding width, height and warnings. */
       const header = JSON.parse(
         decoder.decode(out.subarray(4, 4 + headerLen)),
       ) as Omit<RenderedPost, "png">;

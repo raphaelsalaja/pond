@@ -43,6 +43,7 @@ describe("breadcrumb toolbar", () => {
       },
     );
     vi.stubGlobal("pond", {
+      onSyncAction: () => () => {},
       query: async (name: string) => {
         if (name === "settings.getPrefs") return PrefsSchema.parse({});
         if (name === "folders.list")

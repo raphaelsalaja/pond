@@ -7,7 +7,7 @@
   corner-shape: var(--ds-corner-icon);
   box-shadow: var(--ds-shadow-border);
 
-  &[data-shape="circle"] {
+  &[data-rounding="full"] {
     border-radius: var(--ds-radius-full);
     corner-shape: round;
   }

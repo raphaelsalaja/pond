@@ -48,7 +48,7 @@ it("focuses and selects the new folder name", () => {
   expect(field().selectionEnd).toBe("Untitled".length);
 });
 it("matches the normal row's icon-to-name spacing while editing", () => {
-  expect(css).toMatch(/\.icon\s*\{[^}]*margin-right:\s*8px;/s);
+  expect(css).toMatch(/\.icon\s*\{[^}]*margin-right:\s*var\(--ds-space-md\);/s);
   expect(css).toMatch(/\.field\s*\{[^}]*padding-inline:\s*0;/s);
 });
 it("saves the trimmed name once on Enter followed by blur", async () => {

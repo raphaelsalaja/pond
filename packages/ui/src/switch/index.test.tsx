@@ -17,7 +17,7 @@ describe("Switch", () => {
     expect(markup).toMatch(/^<span [^>]*data-disabled=""/);
     expect(css).not.toContain(":disabled");
     expect(css).toMatch(
-      /&\[data-disabled\] \{\s*cursor: not-allowed;\s*opacity: 0\.5;/,
+      /&\[data-disabled\] \{\s*cursor: not-allowed;\s*opacity: var\(--ds-opacity-disabled\);/,
     );
   });
 

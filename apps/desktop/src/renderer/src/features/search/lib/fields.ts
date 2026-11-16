@@ -28,7 +28,7 @@ import {
   IconGridLayoutCols as OrientationIcon,
   IconPalette as Palette,
   IconPencil as Pencil,
-  IconImage as PostIcon,
+  IconLayers as PostIcon,
   IconShieldCheck as SafetyIcon,
   IconCameraSparkle as SensitivityIcon,
   IconServer as SizeIcon,

@@ -10,6 +10,7 @@ import styles from "./styles.module.css";
 
 const SIZES = ["18", "24", "36"];
 
+/** SAFETY: every `Icon*` export of `@pond/icons` is an `IconComponent`, and the filter drops the rest. */
 const GLYPHS = Object.entries(icons as Record<string, IconComponent>)
   .filter(([name]) => name.startsWith("Icon"))
   .map(([name, Icon]) => ({
@@ -82,7 +83,10 @@ function Board() {
             <span
               className={styles.glyph}
               title={`Icon${name}`}
-              style={{ "--glyph-size": `${size}px` } as React.CSSProperties}
+              style={
+                /** SAFETY: React forwards custom properties, but `CSSProperties` has no `--*` keys. */
+                { "--glyph-size": `${size}px` } as React.CSSProperties
+              }
             >
               <Icon size={Number(size)} />
             </span>

@@ -6,20 +6,25 @@ import type {
   TextRun,
 } from "@pond/render";
 import type { Capture, CaptureFacet, CaptureMedia } from "@pond/schema/raw";
+import { z } from "zod";
 
 const isDataUrl = (url: string | undefined): url is string =>
   url?.startsWith("data:image/") === true;
 
+const FacetSchema = z.object({
+  start: z.number(),
+  end: z.number(),
+  type: z.enum(["link", "mention", "tag"]),
+}) satisfies z.ZodType<CaptureFacet>;
+
 /** Extras are stored JSON, so a facet from an older or hand-edited save is checked before use. */
 function facetsOf(capture: Capture): CaptureFacet[] {
-  const raw: unknown = capture.extras?.facets;
+  const raw = capture.extras?.facets;
   if (!Array.isArray(raw)) return [];
-  return raw.filter(
-    (f): f is CaptureFacet =>
-      typeof f?.start === "number" &&
-      typeof f?.end === "number" &&
-      typeof f?.type === "string",
-  );
+  return raw.flatMap((facet) => {
+    const parsed = FacetSchema.safeParse(facet);
+    return parsed.success ? [parsed.data] : [];
+  });
 }
 
 /** bsky.app's `toShortUrl`: host plus at most 13 characters of path, then "...". */

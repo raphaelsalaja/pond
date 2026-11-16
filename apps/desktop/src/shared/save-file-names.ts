@@ -51,7 +51,7 @@ type PostCardSource = (typeof POST_CARD_SOURCES)[number];
 export function rendersPostCard<S extends string>(
   source: S,
 ): source is Extract<S, PostCardSource> {
-  return (POST_CARD_SOURCES as readonly string[]).includes(source);
+  return POST_CARD_SOURCES.some((card) => card === source);
 }
 
 export function isOriginalImageKind(kind: string): boolean {

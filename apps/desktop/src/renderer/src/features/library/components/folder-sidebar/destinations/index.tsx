@@ -22,7 +22,7 @@ import {
   IconClockPlus,
   IconFolderBan,
   IconHistory,
-  IconImage,
+  IconLayers,
   IconNodes3,
   IconShuffle,
   IconTag,
@@ -142,7 +142,7 @@ function DestinationIcon({ destination }: { destination: SidebarDestination }) {
     case "random":
       return <IconShuffle />;
     case "splitPosts":
-      return <IconImage />;
+      return <IconLayers />;
     case "trash":
       return <IconTrashXmark />;
     case "downloads":
@@ -369,7 +369,7 @@ export function LibraryDestinations({
           <BuiltInVisibilityMenu destination={destination} key={destination}>
             <Row
               label="Split Posts"
-              icon={<IconImage />}
+              icon={<IconLayers />}
               count={counts.splitPosts}
               badgeStyle={badgeStyle}
               active={isDestinationActive(destination)}

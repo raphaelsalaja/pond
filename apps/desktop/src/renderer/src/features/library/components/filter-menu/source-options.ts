@@ -13,7 +13,7 @@ export function sourceOptions(values: readonly string[]): FilterOption[] {
         ? createElement(BrandTile, {
             source: source.source,
             size: 16,
-            shape: "circle",
+            rounding: "full",
           })
         : undefined,
     };

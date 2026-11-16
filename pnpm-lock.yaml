@@ -246,6 +246,9 @@ importers:
       '@pond/icons':
         specifier: workspace:*
         version: link:../../packages/icons
+      '@pond/render':
+        specifier: workspace:*
+        version: link:../../packages/render
       '@pond/schema':
         specifier: workspace:*
         version: link:../../packages/schema

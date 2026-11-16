@@ -1,11 +1,10 @@
-export const MISSING_LIBRARY_CHOICES = [
-  "locate",
-  "retry",
-  "new",
-  "quit",
-] as const;
+import { z } from "zod";
 
-export type MissingLibraryChoice = (typeof MISSING_LIBRARY_CHOICES)[number];
+const MISSING_LIBRARY_CHOICES = ["locate", "retry", "new", "quit"] as const;
+
+export const MissingLibraryChoiceSchema = z.enum(MISSING_LIBRARY_CHOICES);
+
+export type MissingLibraryChoice = z.infer<typeof MissingLibraryChoiceSchema>;
 
 export interface MissingLibraryView {
   name: string;

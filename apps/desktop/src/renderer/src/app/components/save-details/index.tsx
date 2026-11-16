@@ -36,7 +36,7 @@ export function inspectorSaveIds(input: {
   return [];
 }
 
-export function useInspectorSaveIds(): string[] {
+function useInspectorSaveIds(): string[] {
   const routeId = useRouterState({
     select: (s) => saveIdFromPath(s.location.pathname),
   });

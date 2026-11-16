@@ -311,7 +311,9 @@ describe("library Tags page", () => {
     }
     await act(async () => trigger.click());
 
-    const picker = document.body.querySelector('input[placeholder="Search…"]');
+    const picker = document.body.querySelector(
+      'input[placeholder="Search…"]:not([data-tags-search])',
+    );
     if (!(picker instanceof HTMLInputElement)) {
       throw new Error("Missing tag picker");
     }

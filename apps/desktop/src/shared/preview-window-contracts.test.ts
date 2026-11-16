@@ -58,7 +58,7 @@ describe("preview window contracts", () => {
       videoMuted: false,
       doubleClickAction: "open",
       middleClickAction: "open",
-      spaceAction: "preview",
+      spaceAction: process.platform === "darwin" ? "quick-look" : "preview",
     });
   });
 

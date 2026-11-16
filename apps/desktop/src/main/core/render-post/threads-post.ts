@@ -24,7 +24,7 @@ function prettifyUrl(url: string): string {
   return bare.length > 30 ? `${bare.slice(0, 30)}\u2026` : bare;
 }
 
-export function textRuns(text: string): TextRun[] {
+function textRuns(text: string): TextRun[] {
   const out: TextRun[] = [];
   let last = 0;
   for (const match of text.matchAll(ENTITY)) {

@@ -1,8 +1,8 @@
 import { BrowserWindow, ipcMain, nativeTheme, screen } from "electron";
 import {
-  MISSING_LIBRARY_CHOICES,
   MISSING_LIBRARY_WINDOW_IPC,
   type MissingLibraryChoice,
+  MissingLibraryChoiceSchema,
   type MissingLibraryView,
 } from "../shared/missing-library-contracts";
 import { safeHandle } from "./ipc/helpers";
@@ -13,10 +13,6 @@ const WIDTH = 760;
 const HEIGHT = 620;
 
 let current: BrowserWindow | null = null;
-
-function isChoice(value: unknown): value is MissingLibraryChoice {
-  return MISSING_LIBRARY_CHOICES.some((choice) => choice === value);
-}
 
 export interface MissingLibraryWindow {
   ask(detail: string): Promise<MissingLibraryChoice>;
@@ -92,9 +88,10 @@ export function openMissingLibraryWindow(
       delivered = true;
       return view;
     });
-    safeHandle(MISSING_LIBRARY_WINDOW_IPC.choose, (event, choice: unknown) => {
+    safeHandle(MISSING_LIBRARY_WINDOW_IPC.choose, (event, raw) => {
       if (!owns(event.sender.id)) throw new Error("Not the recovery window");
-      if (isChoice(choice)) answer(choice);
+      const choice = MissingLibraryChoiceSchema.safeParse(raw);
+      if (choice.success) answer(choice.data);
     });
 
     const devUrl = process.env.ELECTRON_RENDERER_URL;

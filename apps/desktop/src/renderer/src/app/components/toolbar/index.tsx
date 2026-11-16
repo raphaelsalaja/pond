@@ -4,7 +4,7 @@ import {
   IconDots,
   IconGear3,
   IconHistory,
-  IconImage,
+  IconLayers,
   IconNodes3,
   IconTag,
   IconTagSlash,
@@ -78,7 +78,7 @@ const ROOT_ICONS = {
   "/recents": IconHistory,
   "/downloads": IconWindowDownload,
   "/trash": IconTrashXmark,
-  "/split-posts": IconImage,
+  "/split-posts": IconLayers,
   "/settings": IconGear3,
 } as const;
 

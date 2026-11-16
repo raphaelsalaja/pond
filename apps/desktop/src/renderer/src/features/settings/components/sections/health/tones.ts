@@ -2,7 +2,7 @@ import type { BadgeTone } from "@pond/ui";
 import type { HealthStatus } from "./categories";
 
 export const STATUS_TONES = {
-  healthy: "positive",
+  healthy: "accent",
   pending: "neutral",
   processing: "accent",
   deferred: "neutral",

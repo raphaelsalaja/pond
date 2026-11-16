@@ -4,12 +4,12 @@ import styles from "./styles.module.css";
 
 interface BrandTileProps extends ComponentPropsWithoutRef<"span"> {
   size?: number;
-  shape?: "tile" | "circle";
+  rounding?: "rounded" | "full";
 }
 
 export function BrandTile({
   size = 36,
-  shape = "tile",
+  rounding = "rounded",
   className,
   style,
   ...props
@@ -18,7 +18,7 @@ export function BrandTile({
     <span
       aria-hidden
       className={cn(styles.root, className)}
-      data-shape={shape}
+      data-rounding={rounding}
       style={{ width: size, height: size, ...style }}
       {...props}
     />

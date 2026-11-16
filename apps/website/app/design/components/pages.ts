@@ -70,10 +70,12 @@ export function reveal(href: string) {
   document.getElementById(id)?.scrollIntoView();
 }
 
-export function neighbors(href: string): {
+interface Neighbors {
   previous: Page | undefined;
   next: Page | undefined;
-} {
+}
+
+export function neighbors(href: string): Neighbors {
   const order = pageOrder();
   const index = order.findIndex((page) => page.href === href);
   if (index === -1) return { previous: undefined, next: undefined };

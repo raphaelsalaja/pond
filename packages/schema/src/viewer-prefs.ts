@@ -9,10 +9,13 @@ const ViewerActionSchema = z.enum([
   "detached",
 ]);
 
+/** SAFETY: the renderer may have no `process`, so the cast only reads it as optional. */
+const nodePlatform = (globalThis as { process?: { platform?: string } }).process
+  ?.platform;
+
 /** Space defaults to native Quick Look on macOS; other platforms only have the in-app preview. */
 const IS_DARWIN =
-  (globalThis as { process?: { platform?: string } }).process?.platform ===
-    "darwin" || /Mac/.test(globalThis.navigator?.platform ?? "");
+  nodePlatform === "darwin" || /Mac/.test(globalThis.navigator?.platform ?? "");
 
 export const ViewerPrefsSchema = z.object({
   spaceBehavior: z.enum(["toggle", "hold"]).catch("toggle"),

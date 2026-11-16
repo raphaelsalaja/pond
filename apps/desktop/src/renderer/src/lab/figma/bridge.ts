@@ -40,8 +40,9 @@ declare global {
         captureId: string;
         endpoint: string;
         selector: string;
-      }) => Promise<unknown>;
+      }) => Promise<void>;
     };
+    __figmaBridge?: number;
   }
 }
 
@@ -105,6 +106,7 @@ async function runJob(job: Job) {
       window.fetch = async (input, init) => {
         const res = await nativeFetch(input, init);
         if (String(input).includes(`/capture/${job.captureId}/submit`)) {
+          /** SAFETY: Figma's submit endpoint answers with this JSON, and a failed read falls back to `{}`. */
           const body = (await res
             .clone()
             .json()
@@ -154,6 +156,7 @@ async function tick() {
   const res = await fetch("/src/lab/figma/job.txt", { cache: "no-store" });
   const text = (await res.text()).trim();
   if (!text.startsWith("{")) return;
+  /** SAFETY: job.txt is a local capture request written in the `Job` format. */
   const job = JSON.parse(text) as Job;
   if (localStorage.getItem(DONE_KEY) === job.id) return;
   localStorage.setItem(DONE_KEY, job.id);
@@ -174,9 +177,8 @@ async function tick() {
   }
 }
 
-const scope = window as unknown as { __figmaBridge?: number };
-clearInterval(scope.__figmaBridge);
-scope.__figmaBridge = window.setInterval(
+clearInterval(window.__figmaBridge);
+window.__figmaBridge = window.setInterval(
   () =>
     void tick().catch((error) => console.warn("[figma-bridge] tick", error)),
   1000,

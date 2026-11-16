@@ -128,9 +128,11 @@ describe("SaveDetails", () => {
     return router;
   }
 
-  it("renders nothing when the library has no selection", async () => {
+  it("shows an empty inspector when the library has no selection", async () => {
     await mount("/");
-    expect(host.textContent).toBe("");
+    await vi.waitFor(() =>
+      expect(host.textContent).toContain("Nothing selected"),
+    );
   });
 
   it("inspects the library selection without opening the save", async () => {

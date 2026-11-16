@@ -6,16 +6,16 @@ import { getSourceDef } from "@/features/sources/lib/registry";
 export function BrandTile({
   source,
   size = 36,
-  shape,
+  rounding,
 }: {
   source: Source;
   size?: number;
-  shape?: ComponentProps<typeof Tile>["shape"];
+  rounding?: ComponentProps<typeof Tile>["rounding"];
 }) {
   const { icon: Icon, logo } = getSourceDef(source);
 
   return (
-    <Tile size={size} shape={shape}>
+    <Tile size={size} rounding={rounding}>
       {Icon ? (
         <Icon width={size} height={size} />
       ) : logo ? (

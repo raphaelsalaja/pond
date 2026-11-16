@@ -17,10 +17,12 @@ function checksum(buf: Buffer): number {
   return sum;
 }
 
-function readFace(
-  ttc: Buffer,
-  face: number,
-): { version: number; tables: Table[] } {
+interface Face {
+  version: number;
+  tables: Table[];
+}
+
+function readFace(ttc: Buffer, face: number): Face {
   if (ttc.toString("latin1", 0, 4) !== "ttcf")
     throw new Error("not a font collection");
   const offset = ttc.readUInt32BE(12 + face * 4);

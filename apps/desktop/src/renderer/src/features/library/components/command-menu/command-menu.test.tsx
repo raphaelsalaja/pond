@@ -22,7 +22,7 @@ import { setAppRouter } from "@/shared/lib/app-router";
 import { CommandMenuHost } from "./";
 
 const openSave = vi.fn();
-const viewIds = { current: [] as string[] };
+let viewIds: string[] = [];
 const viewRequests: (LibraryQueryRequest | undefined)[] = [];
 
 async function query(method: string, request?: LibraryQueryRequest) {
@@ -30,7 +30,7 @@ async function query(method: string, request?: LibraryQueryRequest) {
   if (method === "tagGroups.list") return [];
   if (method === "saves.queryPage") {
     viewRequests.push(request);
-    return { ids: viewIds.current, total: viewIds.current.length };
+    return { ids: viewIds, total: viewIds.length };
   }
   return PrefsSchema.parse({});
 }
@@ -171,7 +171,7 @@ describe("command menu", () => {
     libraryChrome.setNav({ kind: "all" });
     lookups.hits.clear();
     lookups.pending.clear();
-    viewIds.current = [];
+    viewIds = [];
     viewRequests.length = 0;
     addSave("save-1", "Design systems field notes");
     lookups.hits.set("design", [{ id: "save-1", via: "keyword" }]);
@@ -287,7 +287,7 @@ describe("command menu", () => {
 
   it("finds Saves inside the current view that miss the Library's top hits", async () => {
     addSave("save-3", "Archive sheet", ["poster"]);
-    viewIds.current = ["save-3"];
+    viewIds = ["save-3"];
     libraryChrome.setNav({ kind: "tag", name: "poster" });
     await open();
     await type("design");
@@ -303,7 +303,7 @@ describe("command menu", () => {
 
   it("searches inside Trash", async () => {
     addSave("save-trashed", "Design leftovers", [], Date.now());
-    viewIds.current = ["save-trashed"];
+    viewIds = ["save-trashed"];
     libraryChrome.setNav({ kind: "trash" });
     await open("/trash");
     await type("design");
