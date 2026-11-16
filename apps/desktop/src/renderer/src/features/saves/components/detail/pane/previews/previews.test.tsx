@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { Save } from "@/features/saves/types";
 import { SavePreviews } from ".";
 
-function imageSave(id: string): Save {
+function imageSave(id: string, size?: { width: number; height: number }): Save {
   return {
     id,
     source: "local",
@@ -23,6 +23,7 @@ function imageSave(id: string): Save {
         mimeType: "image/jpeg",
         sha256: `fixture-${id}`,
         size: 1,
+        ...size,
       },
     ],
     tags: [],
@@ -85,6 +86,39 @@ describe("SavePreviews", () => {
 
     await decode("second");
     expect(layers()).toEqual(["shown second"]);
+  });
+
+  it("holds the shown preview for the newest Save while you step past others", async () => {
+    await show(imageSave("first"));
+    await decode("first");
+    await show(imageSave("second"));
+    await show(imageSave("third"));
+    expect(layers()).toEqual(["shown first", "pending third"]);
+
+    await decode("second");
+    expect(layers()).toEqual(["shown first", "pending third"]);
+
+    await decode("third");
+    expect(layers()).toEqual(["shown third"]);
+  });
+
+  it("reserves the preview's shape before its image loads", async () => {
+    await show(imageSave("wide", { width: 1600, height: 900 }));
+    const image = host.querySelector<HTMLImageElement>('img[alt="wide"]');
+    if (!image) throw new Error("Missing preview image");
+    expect(Number(image.style.getPropertyValue("--preview-aspect"))).toBe(
+      1600 / 900,
+    );
+
+    Object.defineProperties(image, {
+      naturalWidth: { configurable: true, value: 900 },
+      naturalHeight: { configurable: true, value: 1600 },
+    });
+    await act(async () => image.dispatchEvent(new Event("load")));
+
+    expect(Number(image.style.getPropertyValue("--preview-aspect"))).toBe(
+      900 / 1600,
+    );
   });
 
   it("swaps at once when the next preview fails to load", async () => {

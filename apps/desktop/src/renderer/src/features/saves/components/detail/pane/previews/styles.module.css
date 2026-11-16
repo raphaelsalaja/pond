@@ -11,13 +11,13 @@
   inset: 0;
   display: flex;
   justify-content: center;
+  container-type: size;
 
   &[data-pending] {
     pointer-events: none;
     opacity: 0;
   }
 }
-
 .preview {
   position: relative;
   display: flex;
@@ -36,6 +36,12 @@
   object-fit: contain;
   border: 1px solid var(--ds-gray-a4);
   border-radius: var(--ds-radius-md);
+}
+
+/* Sized from the expected aspect so the frame holds its shape before the image decodes. */
+.layer .preview img {
+  width: min(100cqw, 100cqh * var(--preview-aspect));
+  height: min(100cqh, 100cqw / var(--preview-aspect));
 }
 
 .preview figcaption {

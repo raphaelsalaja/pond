@@ -22,7 +22,10 @@ import {
   textCoverVersionFromRawJson,
 } from "@shared/text-card";
 import { hasArchive, isArchiveFile } from "@/features/saves/lib/media/archive";
-import { buildPondUrl } from "@/features/saves/lib/media/url";
+import {
+  buildPondUrl,
+  previewThumbUrlFor,
+} from "@/features/saves/lib/media/url";
 import {
   arenaBlockClass,
   isTextOnlyAsideFromCover,
@@ -222,6 +225,14 @@ export function pickCardUnit(
         requiresGeneratedPreview: true,
       }
     : null;
+}
+
+export function detailsPreviewUrl(unit: MediaUnit | null): string | null {
+  if (!unit) return null;
+  if (unit.isVideo) return unit.posterUrl ?? null;
+  return unit.requiresGeneratedPreview
+    ? previewThumbUrlFor(unit.url, 560)
+    : unit.url;
 }
 
 export function pickPrimaryFile(
