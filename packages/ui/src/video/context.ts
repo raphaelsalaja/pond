@@ -5,6 +5,7 @@ interface VideoState {
   ended: boolean;
   currentTime: number;
   duration: number;
+  metadataLoaded: boolean;
   buffered: number;
   buffering: boolean;
   volume: number;

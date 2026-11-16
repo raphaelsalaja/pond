@@ -142,6 +142,19 @@
   opacity: 1;
 }
 
+.root[data-pending] {
+  cursor: default;
+}
+
+.root[data-pending] .track {
+  height: 4px;
+}
+
+.root[data-pending] .indicator,
+.root[data-pending] .thumb {
+  visibility: hidden;
+}
+
 .root[data-chrome] .track {
   background: var(--ds-gray-a4);
 }

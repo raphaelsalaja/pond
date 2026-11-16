@@ -177,7 +177,7 @@ function CurrentTime({
   return (
     <span
       className={cn(styles.time, className)}
-      data-pending={state.duration > 0 ? undefined : ""}
+      data-pending={state.metadataLoaded ? undefined : ""}
       {...props}
     >
       {formatTime(state.currentTime)}
@@ -193,7 +193,7 @@ function Duration({
   return (
     <span
       className={cn(styles.time, className)}
-      data-pending={state.duration > 0 ? undefined : ""}
+      data-pending={state.metadataLoaded ? undefined : ""}
       {...props}
     >
       {formatTime(state.duration)}
@@ -210,6 +210,7 @@ function TimeDisplay({
     <div
       className={cn(styles["time-display"], className)}
       data-visible={chrome || state.controlsVisible ? "" : undefined}
+      data-pending={state.metadataLoaded ? undefined : ""}
       {...props}
     >
       <span>{formatTime(state.currentTime)}</span>

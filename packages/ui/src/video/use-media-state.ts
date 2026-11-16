@@ -6,6 +6,7 @@ interface MediaState {
   ended: boolean;
   currentTime: number;
   duration: number;
+  metadataLoaded: boolean;
   buffered: number;
   buffering: boolean;
   volume: number;
@@ -29,6 +30,8 @@ interface MediaActions {
 }
 
 const MEDIA_EVENTS = [
+  "emptied",
+  "loadstart",
   "play",
   "pause",
   "ended",
@@ -46,6 +49,7 @@ const INITIAL: MediaState = {
   ended: false,
   currentTime: 0,
   duration: 0,
+  metadataLoaded: false,
   buffered: 0,
   buffering: false,
   volume: 1,
@@ -94,6 +98,8 @@ export function useMediaState(
         ended: v.ended,
         currentTime: v.currentTime,
         duration: Number.isFinite(v.duration) ? v.duration : 0,
+        /** The media element reports NaN for `duration` until metadata loads, and again after a source change. */
+        metadataLoaded: !Number.isNaN(v.duration),
         volume: v.volume,
         muted: v.muted,
         rate: v.playbackRate,

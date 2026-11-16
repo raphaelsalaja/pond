@@ -17,9 +17,9 @@ export function Scrubber({ className, renderPreview }: ScrubberProps) {
     inside: boolean;
   } | null>(null);
   const hover = pointer?.inside ? pointer.at : null;
-  const max = state.duration > 0 ? state.duration : 1;
-  const current = Math.min(state.currentTime, max);
-  const hasDuration = state.duration > 0;
+  const hasDuration = state.metadataLoaded && state.duration > 0;
+  const max = hasDuration ? state.duration : 1;
+  const current = hasDuration ? Math.min(state.currentTime, max) : 0;
 
   const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -44,6 +44,8 @@ export function Scrubber({ className, renderPreview }: ScrubberProps) {
     <SliderBase.Root
       className={cn(styles.root, className)}
       data-chrome={chrome || undefined}
+      data-pending={hasDuration ? undefined : ""}
+      disabled={!hasDuration}
       value={current}
       min={0}
       max={max}
@@ -84,9 +86,11 @@ export function Scrubber({ className, renderPreview }: ScrubberProps) {
         >
           <div
             className={styles.buffer}
-            style={{ width: `${(state.buffered / max) * 100}%` }}
+            style={{
+              width: hasDuration ? `${(state.buffered / max) * 100}%` : 0,
+            }}
           />
-          {hover !== null ? (
+          {hover !== null && hasDuration ? (
             <div
               className={styles["hover-fill"]}
               style={{ width: `${hover * 100}%` }}
