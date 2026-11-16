@@ -15,6 +15,7 @@ import { NewMenuDialogHost } from "@/features/library/components/new-menu";
 import { OrganizationRenameDialogHost } from "@/features/library/components/organization-rename-dialog";
 import { AppShell } from "@/features/library/components/workspace-shell";
 import { enterFolder } from "@/features/library/operations/enter-folder";
+import { useDetailsOpen } from "@/features/library/state/library-chrome";
 import { savedViews } from "@/features/library/state/saved-views";
 import { DuplicateImportReviewHost } from "@/features/saves/components/duplicate-import-review";
 import { SnoozeDialogHost } from "@/features/saves/components/snooze-dialog";
@@ -81,6 +82,8 @@ export function RootShell() {
   const sourceDetail = parseSourceDetailPath(pathname, detailPage);
   const viewingFish = fishIdFromPath(pathname) !== null;
   const viewingLibrary = isSaveCollectionPath(pathname);
+  const viewingSave = saveIdFromPath(pathname) !== null;
+  const detailsOpen = useDetailsOpen();
   useEffect(() => {
     return window.pond.onNavigate((path) => {
       const pathname = path.split("?")[0] ?? "";
@@ -121,7 +124,9 @@ export function RootShell() {
       <UndoRedoBridge />
       <MenuBridge />
       <SaveHotkeys />
-      <ViewerPreload />
+      <ViewerPreload
+        details={detailsOpen && !viewingFish && (viewingLibrary || viewingSave)}
+      />
       <AppHotkeys />
       <NewMenuDialogHost />
       <OrganizationRenameDialogHost />
@@ -139,9 +144,7 @@ export function RootShell() {
             <SaveDetails />
           )
         }
-        rightOpen={
-          viewingFish || viewingLibrary || saveIdFromPath(pathname) !== null
-        }
+        rightOpen={viewingFish || viewingLibrary || viewingSave}
         left={
           isSettings ? (
             <Suspense fallback={null}>

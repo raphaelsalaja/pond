@@ -1,12 +1,17 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { Save, SaveFile } from "@/features/saves/types";
-import { heldImageUrls, preloadImage, viewerImageUrl } from "./preload";
+import {
+  cancelPreload,
+  heldImageUrls,
+  preloadImage,
+  saveImageUrls,
+} from "./preload";
 
-function file(path: string, mimeType: string): SaveFile {
+function file(path: string, mimeType: string, kind = "media"): SaveFile {
   return {
     path,
-    kind: "media",
+    kind,
     mimeType,
     width: 1200,
     height: 800,
@@ -35,30 +40,60 @@ function saveWith(files: SaveFile[]): Save {
   };
 }
 
-describe("viewerImageUrl", () => {
-  it("returns the first original image the viewer opens", () => {
+describe("saveImageUrls", () => {
+  it("prepares an image once when the viewer and Details show the same file", () => {
     expect(
-      viewerImageUrl(saveWith([file("a.jpg", "image/jpeg")]), "light"),
-    ).toBe("pond://s/a.jpg");
+      saveImageUrls(saveWith([file("a.jpg", "image/jpeg")]), "light", {
+        details: true,
+      }),
+    ).toEqual(["pond://s/a.jpg"]);
   });
 
-  it("skips videos, which the viewer streams instead of decoding", () => {
-    expect(
-      viewerImageUrl(saveWith([file("a.mp4", "video/mp4")]), "light"),
-    ).toBeNull();
+  it("prepares a video's poster and its Details thumbnail, not the stream", () => {
+    const video = saveWith([
+      file("clip.mp4", "video/mp4", "video"),
+      file("poster.jpg", "image/jpeg", "poster"),
+      file("thumb.jpg", "image/jpeg", "thumbnail"),
+    ]);
+
+    expect(saveImageUrls(video, "light", { details: true })).toEqual([
+      "pond://s/poster.jpg",
+      "pond://s/thumb.jpg",
+    ]);
+  });
+
+  it("skips the Details preview while Details is closed", () => {
+    const video = saveWith([
+      file("clip.mp4", "video/mp4", "video"),
+      file("poster.jpg", "image/jpeg", "poster"),
+      file("thumb.jpg", "image/jpeg", "thumbnail"),
+    ]);
+
+    expect(saveImageUrls(video, "light", { details: false })).toEqual([
+      "pond://s/poster.jpg",
+    ]);
   });
 });
 
 describe("preloadImage", () => {
+  let fail: (src: string) => void = () => {};
+
   /** jsdom never decodes, so pending decodes model originals still loading. */
   beforeEach(() => {
+    const rejects = new Map<string, () => void>();
+    fail = (src) => rejects.get(src)?.();
     Object.defineProperty(HTMLImageElement.prototype, "decode", {
       configurable: true,
-      value: () => new Promise<void>(() => {}),
+      value(this: HTMLImageElement) {
+        return new Promise<void>((_, reject) => {
+          rejects.set(this.src, () => reject(new Error("decode failed")));
+        });
+      },
     });
   });
 
   afterEach(() => {
+    for (const url of heldImageUrls()) cancelPreload(url);
     Reflect.deleteProperty(HTMLImageElement.prototype, "decode");
   });
 
@@ -68,5 +103,23 @@ describe("preloadImage", () => {
     preloadImage("pond://p/5");
 
     expect(heldImageUrls()).toEqual(["pond://p/4", "pond://p/2", "pond://p/5"]);
+  });
+
+  it("stops a preload that has not finished", () => {
+    preloadImage("pond://p/left");
+    cancelPreload("pond://p/left");
+
+    expect(heldImageUrls()).not.toContain("pond://p/left");
+  });
+
+  it("forgets an image that fails to decode so the next visit tries again", async () => {
+    preloadImage("pond://p/broken");
+    fail("pond://p/broken");
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(heldImageUrls()).not.toContain("pond://p/broken");
+    preloadImage("pond://p/broken");
+    expect(heldImageUrls()).toContain("pond://p/broken");
   });
 });
