@@ -94,8 +94,12 @@ export function libraryQueryWhere(
       ? sql`lower(${saves.source}) = ${scope.source.toLowerCase()}`
       : undefined,
     scope.untagged ? sql`json_array_length(${saves.tags}) = 0` : undefined,
+    // Member test as a one-shot semi-join (id in derived set), not a per-row
+    // exists: the exists re-evaluates the N-folder `in` for every save row,
+    // which measured ~3.8 s for a 4,716-folder descendant set. Deriving the
+    // member save ids once and matching `id` against that set is ~13 ms.
     scope.folderIds
-      ? sql`exists (select 1 from save_folders sf where sf.save_id = ${saves.id} and sf.folder_id in (select value from json_each(${JSON.stringify(scope.folderIds)})))`
+      ? sql`${saves.id} in (select sf.save_id from save_folders sf where sf.folder_id in (select value from json_each(${JSON.stringify(scope.folderIds)})))`
       : undefined,
     scope.uncategorized
       ? sql`not exists (select 1 from save_folders sf where sf.save_id = ${saves.id})`
