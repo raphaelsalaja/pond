@@ -1,7 +1,7 @@
 import { useDndContext } from "@dnd-kit/core";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { IconChevronRight, IconDotsFill } from "@pond/icons";
+import { IconChevronRight, IconDots } from "@pond/icons";
 import type { SavedView } from "@pond/schema/db";
 import { Button, cssVars, Menu, type MenuItemSpec, Sidebar } from "@pond/ui";
 import { useReducedMotionConfig } from "motion/react";
@@ -218,7 +218,7 @@ export function SmartFolderEntry({
                 aria-label={`More Actions for ${view.name}`}
                 tabIndex={-1}
               >
-                <IconDotsFill size={12} />
+                <IconDots size={12} />
               </Menu.Trigger>
             </SpecMenu>
           )}

@@ -52,8 +52,14 @@ export function HostPopover({
   return (
     <Popover.Root>
       <Popover.Trigger
-        render={<Button icon size="xs" variant="ghost" />}
-        aria-label={`Set up ${host.name}`}
+        render={
+          <Button
+            icon
+            size="xs"
+            variant="ghost"
+            aria-label={`Set up ${host.name}`}
+          />
+        }
       >
         <Help size={12} />
       </Popover.Trigger>

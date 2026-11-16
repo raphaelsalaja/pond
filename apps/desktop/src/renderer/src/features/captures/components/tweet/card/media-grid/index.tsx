@@ -1,4 +1,4 @@
-import { IconMediaPlayFill } from "@pond/icons";
+import { IconMediaPlay } from "@pond/icons";
 import type { CSSProperties } from "react";
 import type { TweetCardMedia } from "@/features/captures/components/tweet/card/lib/data";
 import { formatDuration } from "@/shared/lib/format";
@@ -87,7 +87,7 @@ function Tile({
       {media.type === "video" ? (
         <>
           <span className={styles["play-badge"]} aria-hidden>
-            <IconMediaPlayFill size={22} />
+            <IconMediaPlay size={22} />
           </span>
           {media.durationSec !== undefined ? (
             <span className={styles["duration-badge"]}>

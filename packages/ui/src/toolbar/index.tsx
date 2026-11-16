@@ -6,19 +6,21 @@ function Root({ className, ...props }: Base.Root.Props) {
   return <Base.Root className={cn(styles.root, className)} {...props} />;
 }
 
-function Row({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+interface RowProps extends React.ComponentPropsWithoutRef<"div"> {}
+
+function Row({ className, ...props }: RowProps) {
   return <div className={cn(styles.row, className)} {...props} />;
 }
 
-function Group({
-  fill,
-  className,
-  align = "start",
-  ...props
-}: Base.Group.Props & { fill?: boolean; align?: "start" | "end" }) {
+interface GroupProps extends Base.Group.Props {
+  fill?: boolean;
+  align?: "start" | "end";
+}
+
+function Group({ fill, className, align = "start", ...props }: GroupProps) {
   return (
     <Base.Group
-      data-fill={fill}
+      data-fill={fill || undefined}
       data-align={align}
       className={cn(styles.group, className)}
       {...props}

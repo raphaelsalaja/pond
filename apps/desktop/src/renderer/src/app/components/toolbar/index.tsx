@@ -1,13 +1,13 @@
 import {
   IconAlbum2,
-  IconBookmark,
-  IconBookmarkSlash,
   IconCanvas,
   IconDots,
   IconGear3,
   IconHistory,
-  IconImages,
+  IconImage,
   IconNodes3,
+  IconTag,
+  IconTagSlash,
   IconTrashXmark,
   IconWindowDownload,
 } from "@pond/icons";
@@ -17,12 +17,22 @@ import { lazy, Suspense, useState } from "react";
 import { ChromeHistoryNav } from "@/app/components/chrome-toolbar";
 import { canvasIdFromPath, useCanvas } from "@/features/canvas";
 import { fishIdFromPath } from "@/features/fish";
+import { LibrarySearch } from "@/features/library/components/chrome";
+import { FilterToggle } from "@/features/library/components/filter-menu";
 import { FolderCustomizeDialog } from "@/features/library/components/folder-customize-dialog";
 import { SidebarToggle } from "@/features/library/components/sidebar-toggle";
+import { ViewMenu } from "@/features/library/components/view-menu";
+import { ViewScopeMenu } from "@/features/library/components/view-scope-menu";
+import { useSearchView } from "@/features/library/hooks/use-search-view";
 import {
   folderColorMenuItems,
   folderIconMenuItems,
 } from "@/features/library/lib/folder-appearance-menu";
+import { showsLibraryGrid } from "@/features/library/lib/grid-path";
+import {
+  canSearchAllSaves,
+  searchViewName,
+} from "@/features/library/lib/search-view";
 import { saveFolderPresentation } from "@/features/library/state/folder-presentation";
 import { useFolders } from "@/features/library/state/folders";
 import {
@@ -34,6 +44,7 @@ import {
 import {
   resetFilters,
   useHasActiveSearch,
+  useSearchScope,
 } from "@/features/library/state/view-store";
 import { useSave } from "@/features/saves/hooks/use-saves";
 import {
@@ -62,12 +73,12 @@ const FishChatActions = lazy(() =>
 const ROOT_ICONS = {
   "/": IconAlbum2,
   "/sources": IconNodes3,
-  "/tags": IconBookmark,
-  "/untagged": IconBookmarkSlash,
+  "/tags": IconTag,
+  "/untagged": IconTagSlash,
   "/recents": IconHistory,
   "/downloads": IconWindowDownload,
   "/trash": IconTrashXmark,
-  "/split-posts": IconImages,
+  "/split-posts": IconImage,
   "/settings": IconGear3,
 } as const;
 
@@ -290,6 +301,22 @@ function Breadcrumbs() {
   );
 }
 
+function SearchActions() {
+  const view = useSearchView();
+  const scope = useSearchScope(view);
+  const folders = useFolders();
+  const name = searchViewName(view, folders);
+  return (
+    <>
+      {canSearchAllSaves(view) ? (
+        <ViewScopeMenu view={view} name={name} scope={scope} />
+      ) : null}
+      <FilterToggle />
+      <ViewMenu />
+    </>
+  );
+}
+
 export function Toolbar() {
   const sidebarOpen = useSidebarOpen();
   const detailsOpen = useDetailsOpen();
@@ -299,20 +326,25 @@ export function Toolbar() {
   const viewingSave = saveIdFromPath(pathname) !== null;
   const viewingFish = fishIdFromPath(pathname) !== null;
   const viewingLibrary = isSaveCollectionPath(pathname);
+  const searching = !viewingSave && showsLibraryGrid(pathname);
   return (
     <div className={styles.bar}>
       <div className={styles.chrome}>
         <SidebarToggle open={sidebarOpen} />
         <ChromeHistoryNav />
       </div>
-      <div className={styles.main}>{viewingFish ? null : <Breadcrumbs />}</div>
-      {viewingSave || viewingFish || viewingLibrary ? (
+      <div className={styles.main} data-search={searching || undefined}>
+        {viewingFish ? null : <Breadcrumbs />}
+        {searching ? <LibrarySearch /> : null}
+      </div>
+      {viewingSave || viewingFish || viewingLibrary || searching ? (
         <div className={styles.actions}>
           {viewingFish ? (
             <Suspense fallback={null}>
               <FishChatActions />
             </Suspense>
           ) : null}
+          {searching ? <SearchActions /> : null}
           <SidebarToggle side="right" open={detailsOpen} />
         </div>
       ) : null}

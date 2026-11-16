@@ -61,12 +61,20 @@ export function Link({ className, tone = "file", ...props }: LinkProps) {
   );
 }
 
-export function Clear({ className, children, ...props }: ButtonProps) {
+interface ClearProps extends Omit<ButtonProps, "icon"> {}
+
+export function Clear({
+  className,
+  children,
+  "aria-label": ariaLabel = "Remove",
+  ...props
+}: ClearProps) {
   return (
     <Button
       icon
       size="xs"
       variant="ghost"
+      aria-label={ariaLabel}
       className={cn(styles.clear, className)}
       {...props}
     >

@@ -6,22 +6,25 @@
 
 .clock {
   font-family: var(--ds-font-mono);
-  font-size: var(--ds-text-xs);
+  font-size: var(--ds-text-small);
   font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
 }
 
 .total {
-  color: var(--ds-gray-9);
+  color: var(--ds-foreground-tertiary);
 }
 
 .buttons {
   display: flex;
-  gap: 4px;
+  gap: var(--ds-space-xs);
   align-items: center;
 }
 
-.aside {
-  display: flex;
-  justify-content: flex-end;
+.length {
+  font-family: var(--ds-font-mono);
+  font-size: var(--ds-text-small);
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-foreground-tertiary);
+  text-align: end;
 }

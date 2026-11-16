@@ -1,6 +1,6 @@
 .field {
   display: grid;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   min-width: 0;
 
   & > [data-slot="root"] {
@@ -10,6 +10,6 @@
 
 .check {
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
 }

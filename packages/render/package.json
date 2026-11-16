@@ -1,0 +1,30 @@
+{
+  "name": "@pond/render",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Pond's post renderer: X, Bluesky and Threads posts drawn to PNG by a WebAssembly build of a xeet fork, using macOS and open-licensed fonts.",
+  "license": "MIT",
+  "author": {
+    "name": "Raphael Salaja",
+    "url": "https://github.com/raphaelsalaja"
+  },
+  "homepage": "https://github.com/raphaelsalaja/pond#readme",
+  "bugs": {
+    "url": "https://github.com/raphaelsalaja/pond/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/raphaelsalaja/pond.git",
+    "directory": "packages/render"
+  },
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit"
+  }
+}

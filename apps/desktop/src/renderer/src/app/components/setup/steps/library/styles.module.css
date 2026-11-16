@@ -1,10 +1,10 @@
 .form {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--ds-space-lg);
   align-items: center;
   width: min(320px, 100%);
-  margin-top: 8px;
+  margin-top: var(--ds-space-md);
 }
 
 .sr-only {
@@ -18,10 +18,10 @@
 
 .row {
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
   width: min(480px, 100%);
-  margin-top: 8px;
+  margin-top: var(--ds-space-md);
 }
 
 .field {
@@ -43,35 +43,35 @@
   overflow: hidden;
   text-overflow: ellipsis;
   font-family: var(--ds-font-mono);
-  font-size: var(--ds-text-sm);
-  color: var(--ds-gray-11);
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-secondary);
   white-space: nowrap;
 }
 
 .card {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--ds-space-xs);
   align-items: center;
   width: 100%;
-  padding: 16px;
-  background: var(--ds-gray-2);
+  padding: var(--ds-space-xl);
+  background: var(--ds-background-secondary);
   border-radius: var(--ds-radius-xl);
-  box-shadow: inset 0 0 0 var(--ds-border-width) var(--ds-gray-a4);
+  box-shadow: inset 0 0 0 var(--ds-border-width) var(--ds-border-subtle);
 }
 
 .name {
-  font-size: var(--ds-text-lg);
-  font-weight: var(--ds-weight-xl);
-  color: var(--ds-gray-12);
+  font-size: var(--ds-text-heading);
+  font-weight: var(--ds-weight-strong);
+  color: var(--ds-foreground-primary);
 }
 
 .stats {
-  font-size: var(--ds-text-sm);
+  font-size: var(--ds-text-small);
   font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-10);
+  color: var(--ds-foreground-tertiary);
 }
 
 .choice {
-  margin-top: 4px;
+  margin-top: var(--ds-space-xs);
 }

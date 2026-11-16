@@ -1,0 +1,12 @@
+[package]
+name = "kit"
+description = "Shared pieces for Pond's post layouts: options, images, text and output."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+xeet-core.workspace = true
+serde.workspace = true
+serde_json.workspace = true

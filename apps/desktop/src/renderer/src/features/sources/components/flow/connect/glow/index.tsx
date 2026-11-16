@@ -3,9 +3,9 @@ import { useConnectCompleted } from "@/features/sources/state/connect-flow";
 import { type GlowColors, startGlow } from "./shader";
 import styles from "./styles.module.css";
 
-function tokenColor(element: Element, token: string): number[] {
+function accentColor(element: Element, amount: number): number[] {
   const probe = document.createElement("span");
-  probe.style.color = `var(${token})`;
+  probe.style.color = `color-mix(in oklab, var(--ds-accent) ${amount}%, var(--ds-background-primary))`;
   element.append(probe);
   const color = getComputedStyle(probe).color;
   probe.remove();
@@ -25,10 +25,10 @@ export function ConnectGlow() {
     const canvas = canvasRef.current;
     if (!completed || !canvas) return;
     const colors: GlowColors = {
-      start: tokenColor(canvas, "--ds-accent-4"),
-      middle: tokenColor(canvas, "--ds-accent-3"),
-      end: tokenColor(canvas, "--ds-accent-2"),
-      core: tokenColor(canvas, "--ds-accent-6"),
+      start: accentColor(canvas, 18),
+      middle: accentColor(canvas, 11),
+      end: accentColor(canvas, 5),
+      core: accentColor(canvas, 32),
     };
     const origin = () => {
       const target = canvas.parentElement?.querySelector("[data-glow-origin]");

@@ -1,0 +1,19 @@
+.search {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  height: var(--ds-size-md);
+  padding-inline: var(--ds-space-lg);
+  background: var(--ds-surface-primary);
+  border: var(--ds-border-width) solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-full);
+  -webkit-app-region: no-drag;
+
+  &:is(:hover, :focus-within) {
+    background: var(--ds-surface-secondary);
+  }
+
+  &:focus-within {
+    border-color: var(--ds-border-strong);
+  }
+}

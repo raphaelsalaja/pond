@@ -1,5 +1,4 @@
-import { IconPaperclip } from "@pond/icons";
-import { Chip } from "@pond/ui";
+import { Chip, FileIcon } from "@pond/ui";
 import type { AssistantFileAttachment } from "@shared/assistant";
 import styles from "./styles.module.css";
 
@@ -17,10 +16,10 @@ export function FileAttachments({
         <Chip.Item
           key={file.id}
           kind={onRemove ? "value" : undefined}
-          tone="mention"
+          tone="file"
         >
           <Chip.Icon>
-            <IconPaperclip size={12} />
+            <FileIcon name={file.name} />
           </Chip.Icon>
           <Chip.Label>{file.name}</Chip.Label>
           {onRemove ? (

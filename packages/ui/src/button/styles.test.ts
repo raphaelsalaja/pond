@@ -8,7 +8,7 @@ const css = readFileSync(
   "utf8",
 );
 
-it("uses gray 11 for primary icon buttons without changing primary text buttons", () => {
+it("uses the secondary foreground for primary icon buttons without changing primary text buttons", () => {
   const primaryStart = css.indexOf('&:where([data-variant="primary"]) {');
   const iconStart = css.indexOf("&:where([data-icon]) {", primaryStart);
   expect(primaryStart).toBeGreaterThanOrEqual(0);
@@ -16,8 +16,8 @@ it("uses gray 11 for primary icon buttons without changing primary text buttons"
 
   const primaryDefault = css.slice(primaryStart, iconStart);
   const iconDefault = css.slice(iconStart, css.indexOf("}", iconStart));
-  expect(primaryDefault).toContain("var(--ds-gray-12)");
-  expect(iconDefault).toContain("var(--ds-gray-11)");
+  expect(primaryDefault).toContain("var(--ds-background-inverse)");
+  expect(iconDefault).toContain("var(--ds-foreground-secondary)");
 });
 
 it("holds an expanded popup trigger still after the press scale", () => {

@@ -18,7 +18,9 @@ describe("toast alignment", () => {
   it("keeps the message and controls in one centered row", () => {
     const content = declarations(".content");
     expect(content).toContain("align-items: center;");
-    expect(content).toContain("padding: 8px 8px 8px 12px;");
+    expect(content).toContain(
+      "padding: var(--ds-space-md) var(--ds-space-md) var(--ds-space-md) var(--ds-space-lg);",
+    );
   });
 
   it("keeps the close button in normal flow", () => {

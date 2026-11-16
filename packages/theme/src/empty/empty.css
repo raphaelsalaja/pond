@@ -8,14 +8,14 @@
   --ds-empty-gap: 20px;
   --ds-empty-copy-gap: 8px;
 
-  --ds-empty-title-size: var(--ds-text-lg);
-  --ds-empty-title-weight: var(--ds-weight-xl);
+  --ds-empty-title-size: var(--ds-text-heading);
+  --ds-empty-title-weight: var(--ds-weight-strong);
   --ds-empty-title-leading: 1.3;
-  --ds-empty-title-color: var(--ds-gray-12);
+  --ds-empty-title-color: var(--ds-foreground-primary);
 
-  --ds-empty-description-size: var(--ds-text-md);
-  --ds-empty-description-weight: var(--ds-weight-md);
+  --ds-empty-description-size: var(--ds-text-body);
+  --ds-empty-description-weight: var(--ds-weight-regular);
   --ds-empty-description-leading: 1.55;
-  --ds-empty-description-color: var(--ds-gray-11);
+  --ds-empty-description-color: var(--ds-foreground-secondary);
   --ds-empty-description-max-width: 36ch;
 }

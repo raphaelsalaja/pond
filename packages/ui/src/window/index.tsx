@@ -1,21 +1,20 @@
+import { createParts } from "@ui-sdk/react/primitive";
 import { clsx as cn } from "clsx";
 import {
   type ComponentPropsWithoutRef,
-  type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
-  type PointerEvent as ReactPointerEvent,
   useCallback,
+  useId,
   useLayoutEffect,
   useMemo,
   useState,
 } from "react";
 import { Tooltip } from "../tooltip";
 import { useWindow, WindowContext, type WindowEdge } from "./context";
+import { type WindowSide, windowHandle } from "./handle";
 import styles from "./styles.module.css";
-import { nextTrackWidth } from "./track";
 
-/** A still press held longer than this is an aborted drag, not a click to collapse. */
-const CLICK_MAX_MS = 300;
+const { Root: HandleRoot } = createParts(windowHandle, { root: "div" });
 
 interface RootProps extends ComponentPropsWithoutRef<"div"> {
   leftOpen?: boolean;
@@ -106,6 +105,8 @@ function Top({ className, open = true, ...props }: TopProps) {
 }
 
 interface SideProps extends ComponentPropsWithoutRef<"aside"> {
+  /** Both panes are `aside` landmarks, so each needs its own name. */
+  "aria-label": string;
   open?: boolean;
   minWidth?: number;
   maxWidth?: number;
@@ -119,6 +120,7 @@ interface SideProps extends ComponentPropsWithoutRef<"aside"> {
 
 function Left({
   className,
+  id,
   open = true,
   children,
   minWidth = 180,
@@ -132,9 +134,12 @@ function Left({
   ...props
 }: SideProps) {
   useEdgeOpen("left", open);
+  const fallbackId = useId();
+  const paneId = id ?? fallbackId;
   return (
     <aside
       className={cn(styles.left, className)}
+      id={paneId}
       data-slot="left"
       data-open={open || undefined}
       {...props}
@@ -145,6 +150,7 @@ function Left({
       {open ? (
         <Handle
           edge="left"
+          controls={paneId}
           minWidth={minWidth}
           maxWidth={maxWidth}
           defaultWidth={defaultWidth}
@@ -178,6 +184,7 @@ function Center({
 
 function Right({
   className,
+  id,
   open = true,
   children,
   minWidth = 280,
@@ -191,9 +198,12 @@ function Right({
   ...props
 }: SideProps) {
   useEdgeOpen("right", open);
+  const fallbackId = useId();
+  const paneId = id ?? fallbackId;
   return (
     <aside
       className={cn(styles.right, className)}
+      id={paneId}
       data-slot="right"
       data-open={open || undefined}
       {...props}
@@ -204,6 +214,7 @@ function Right({
       {open ? (
         <Handle
           edge="right"
+          controls={paneId}
           minWidth={minWidth}
           maxWidth={maxWidth}
           defaultWidth={defaultWidth}
@@ -218,26 +229,9 @@ function Right({
   );
 }
 
-function followPointer(event: ReactPointerEvent<HTMLHRElement>) {
-  const handle = event.currentTarget;
-  const y = event.clientY - handle.getBoundingClientRect().top;
-  handle
-    .closest<HTMLElement>('[data-slot="window"]')
-    ?.style.setProperty("--window-handle-y", `${Math.round(y)}px`);
-}
-
-function Handle({
-  edge,
-  minWidth,
-  maxWidth,
-  defaultWidth,
-  width,
-  resizeLabel,
-  collapseShortcut,
-  onResize,
-  onCollapse,
-}: {
-  edge: "left" | "right";
+interface HandleProps {
+  edge: WindowSide;
+  controls: string;
   minWidth: number;
   maxWidth: number;
   defaultWidth?: number;
@@ -246,150 +240,16 @@ function Handle({
   collapseShortcut?: ReactNode;
   onResize?: (width: number) => void;
   onCollapse?: () => void;
-}) {
-  const varName =
-    edge === "left" ? "--window-left-track" : "--window-right-track";
+}
 
-  const [liveWidth, setLiveWidth] = useState(width ?? defaultWidth ?? minWidth);
-  useLayoutEffect(() => {
-    setLiveWidth(width ?? defaultWidth ?? minWidth);
-  }, [width, defaultWidth, minWidth]);
-
-  const onKeyDown = (event: ReactKeyboardEvent<HTMLHRElement>) => {
-    if (
-      event.altKey ||
-      event.ctrlKey ||
-      event.metaKey ||
-      event.nativeEvent.isComposing
-    )
-      return;
-    if (event.key === "Enter" && onCollapse) {
-      event.preventDefault();
-      event.stopPropagation();
-      const center = event.currentTarget
-        .closest<HTMLElement>('[data-slot="window"]')
-        ?.querySelector<HTMLElement>('[data-slot="center"]');
-      onCollapse();
-      center?.focus({ preventScroll: true });
-      return;
-    }
-    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
-    event.preventDefault();
-    event.stopPropagation();
-    const step = event.shiftKey ? 40 : 10;
-    const delta =
-      (event.key === "ArrowRight" ? 1 : -1) * (edge === "left" ? 1 : -1) * step;
-    const next =
-      event.key === "Home"
-        ? minWidth
-        : event.key === "End"
-          ? maxWidth
-          : Math.min(maxWidth, Math.max(minWidth, liveWidth + delta));
-    const root = event.currentTarget.closest<HTMLElement>(
-      '[data-slot="window"]',
-    );
-    root?.style.setProperty(varName, `${next}px`);
-    setLiveWidth(next);
-    onResize?.(next);
-  };
-
-  const onPointerDown = (event: ReactPointerEvent<HTMLHRElement>) => {
-    if (event.button !== 0) return;
-    event.preventDefault();
-    event.stopPropagation();
-    const handle = event.currentTarget;
-    const root = handle.closest("[data-slot=window]");
-    const pane = root?.querySelector(`[data-slot="${edge}"]`);
-    if (!(pane instanceof HTMLElement) || !(root instanceof HTMLElement)) {
-      return;
-    }
-
-    const startX = event.clientX;
-    const startTime = event.timeStamp;
-    const startWidth = pane.getBoundingClientRect().width;
-    const previousTrack = root.style.getPropertyValue(varName);
-    let nextWidth = startWidth;
-    let dragged = false;
-    pane.dataset.resizing = "";
-    root.dataset.resizing = edge;
-    const previousCursor = document.body.style.cursor;
-    const previousSelect = document.body.style.userSelect;
-    document.body.style.cursor = "col-resize";
-    document.body.style.userSelect = "none";
-    handle.setPointerCapture(event.pointerId);
-
-    const restoreTrack = () => {
-      if (previousTrack) root.style.setProperty(varName, previousTrack);
-      else root.style.removeProperty(varName);
-    };
-
-    const finish = (ev: PointerEvent) => {
-      handle.removeEventListener("pointermove", move);
-      handle.removeEventListener("pointerup", up);
-      handle.removeEventListener("pointercancel", cancel);
-      handle.removeEventListener("lostpointercapture", cancel);
-      try {
-        handle.releasePointerCapture(ev.pointerId);
-      } catch {}
-      delete pane.dataset.resizing;
-      delete root.dataset.resizing;
-      document.body.style.cursor = previousCursor;
-      document.body.style.userSelect = previousSelect;
-    };
-
-    const collapse = (ev: PointerEvent) => {
-      finish(ev);
-      onCollapse?.();
-      restoreTrack();
-    };
-
-    const cancel = (ev: PointerEvent) => {
-      finish(ev);
-      restoreTrack();
-      setLiveWidth(startWidth);
-    };
-
-    const move = (ev: PointerEvent) => {
-      if (Math.abs(ev.clientX - startX) > 3) dragged = true;
-      const next = nextTrackWidth({
-        edge,
-        startWidth,
-        startX,
-        clientX: ev.clientX,
-        min: minWidth,
-        max: maxWidth,
-        collapseAtMin: edge === "left" && Boolean(onCollapse),
-      });
-      if (next === null) {
-        if (!dragged) return;
-        finish(ev);
-        root.style.setProperty(varName, `${minWidth}px`);
-        setLiveWidth(minWidth);
-        onResize?.(minWidth);
-        onCollapse?.();
-        return;
-      }
-      nextWidth = next;
-      setLiveWidth(next);
-      root.style.setProperty(varName, `${next}px`);
-    };
-
-    const up = (ev: PointerEvent) => {
-      if (!dragged) {
-        if (ev.timeStamp - startTime < CLICK_MAX_MS) collapse(ev);
-        else cancel(ev);
-        return;
-      }
-      finish(ev);
-      onResize?.(nextWidth);
-    };
-
-    handle.addEventListener("pointermove", move);
-    handle.addEventListener("pointerup", up);
-    handle.addEventListener("pointercancel", cancel);
-    handle.addEventListener("lostpointercapture", cancel);
-  };
-
+function Handle({
+  edge,
+  resizeLabel,
+  collapseShortcut,
+  onResize,
+  onCollapse,
+  ...options
+}: HandleProps) {
   return (
     <Tooltip
       label={Tooltip.Label("Click to collapse", collapseShortcut)}
@@ -397,23 +257,15 @@ function Handle({
       delay={400}
       trackCursorAxis="y"
     >
-      <hr
+      <HandleRoot
+        {...options}
+        edge={edge}
         className={styles.handle}
-        data-slot="handle"
-        data-edge={edge}
-        aria-orientation="vertical"
         aria-label={
-          resizeLabel ?? (edge === "left" ? "Resize sidebar" : "Resize panel")
+          resizeLabel ?? (edge === "left" ? "Resize Sidebar" : "Resize Panel")
         }
-        aria-valuemin={minWidth}
-        aria-valuemax={maxWidth}
-        aria-valuenow={liveWidth}
-        aria-valuetext={`${Math.round(liveWidth)} pixels`}
-        aria-keyshortcuts="ArrowLeft ArrowRight Home End Enter"
-        tabIndex={0}
-        onKeyDown={onKeyDown}
-        onPointerDown={onPointerDown}
-        onPointerMove={followPointer}
+        onWidthChange={onResize}
+        onCollapse={onCollapse}
       />
     </Tooltip>
   );

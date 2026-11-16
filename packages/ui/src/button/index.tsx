@@ -15,21 +15,38 @@ export interface ButtonProps extends Base.Props {
     | "destructive"
     | "link"
     | "bare";
-  size?: "xs" | "sm" | "md" | "lg" | "xl";
+  size?: "xs" | "sm" | "md";
   /** `compact` keeps the type and icon of `size` one height step shorter with half the inline padding, for dense trails. */
   density?: "default" | "compact";
-  rounding?: "default" | "full";
+  rounding?: "full" | "rounded";
   icon?: boolean;
   width?: "full" | "auto";
   loading?: boolean;
 }
 
+type AccessibleName = { "aria-label": string } | { "aria-labelledby": string };
+
+type OptionalName = Pick<
+  React.AriaAttributes,
+  "aria-label" | "aria-labelledby"
+>;
+
+/** A literal `icon` must carry a name; a forwarded `boolean` leaves that to the wrapper's own props. */
+export type IconName<Icon extends boolean | undefined> = boolean extends Icon
+  ? OptionalName
+  : true extends Icon
+    ? AccessibleName
+    : OptionalName;
+
+export function Button<Icon extends boolean | undefined = undefined>(
+  props: Omit<ButtonProps, "icon"> & { icon?: Icon } & IconName<Icon>,
+): React.JSX.Element;
 export function Button({
   className,
   variant = "primary",
   size = "md",
   density = "default",
-  rounding = "default",
+  rounding = "full",
   width = "auto",
   icon,
   loading,

@@ -136,7 +136,7 @@ export function ArchiveFileViewer({
                   <Input.Field
                     type="search"
                     value={query}
-                    placeholder="Filter files…"
+                    placeholder="Search…"
                     aria-label="Filter archive files"
                     onChange={(event) => setQuery(event.target.value)}
                   />

@@ -1,21 +1,21 @@
 .form {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--ds-space-md);
   min-inline-size: 0;
   width: 100%;
-  padding: 8px;
-  padding-inline: 16px;
+  padding: var(--ds-space-md);
+  padding-inline: var(--ds-space-xl);
 }
 
 .field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   width: 100%;
   min-width: 0;
-  font-size: var(--ds-text-sm);
-  color: var(--ds-gray-11);
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-secondary);
 
   :global([data-slot="root"]) {
     display: flex;
@@ -26,7 +26,7 @@
 
 .row {
   display: flex;
-  gap: 12px;
+  gap: var(--ds-space-lg);
   align-items: center;
   min-width: 0;
 }
@@ -38,7 +38,7 @@
 .row[data-date] {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 8px;
+  gap: var(--ds-space-md);
 }
 
 .unit {
@@ -48,20 +48,20 @@
 
 .separator {
   flex: none;
-  color: var(--ds-gray-9);
+  color: var(--ds-foreground-tertiary);
 }
 
 .dimension {
   display: grid;
   grid-template-columns: 18px minmax(0, 1fr) auto minmax(0, 1fr) auto;
-  gap: 4px;
+  gap: var(--ds-space-xs);
   align-items: center;
 }
 
 .label,
 .suffix {
-  font-size: var(--ds-text-sm);
-  color: var(--ds-gray-10);
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-tertiary);
 }
 
 .suffix {
@@ -70,6 +70,6 @@
 
 .error {
   margin: 0;
-  font-size: var(--ds-text-sm);
-  color: var(--ds-red-11);
+  font-size: var(--ds-text-small);
+  color: var(--ds-danger-foreground);
 }

@@ -4,7 +4,7 @@
 }
 
 .root[data-pinned] {
-  box-shadow: inset 0 0 0 1px var(--ds-accent-a6);
+  box-shadow: inset 0 0 0 1px var(--ds-accent-border);
 }
 
 .list {
@@ -18,7 +18,7 @@
 .root[data-layout="grid"] .group {
   display: grid;
   grid-template-columns: repeat(var(--tag-grid-columns), minmax(0, 1fr));
-  gap: 2px 0;
+  gap: var(--ds-space-2xs) 0;
 }
 
 .root[data-layout="grid"][data-grid-size="sm"] {
@@ -41,7 +41,7 @@
 }
 
 .root[data-layout="grid"] .group > [role="option"] {
-  margin-inline: 2px;
+  margin-inline: var(--ds-space-2xs);
 }
 
 .section svg {

@@ -9,13 +9,13 @@
 .youtube {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: flex-start;
 }
 
 .draft {
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
   width: 100%;
 }
@@ -28,7 +28,7 @@
 .frame {
   width: 100%;
   aspect-ratio: 16 / 9;
-  background: var(--ds-gray-2);
+  background: var(--ds-background-secondary);
   border: 0;
   border-radius: var(--ds-radius-sm);
 }

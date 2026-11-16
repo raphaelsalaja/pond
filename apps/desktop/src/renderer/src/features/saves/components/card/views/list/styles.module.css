@@ -1,6 +1,6 @@
 .body {
   display: flex;
-  gap: 10px;
+  gap: var(--ds-space-md);
   align-items: center;
   width: 100%;
   height: 100%;
@@ -25,7 +25,7 @@
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-sm);
-  color: var(--ds-gray-11);
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-secondary);
   white-space: nowrap;
 }

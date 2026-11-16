@@ -3,7 +3,7 @@
   flex-direction: column;
   gap: 0;
   width: 100%;
-  padding-top: 8px;
+  padding-top: var(--ds-space-md);
 }
 
 .copy[data-state] {
@@ -13,32 +13,32 @@
 .copy {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   justify-content: center;
   text-align: center;
 }
 
 .title {
   margin: 0;
-  font-size: var(--ds-text-lg);
-  font-weight: var(--ds-weight-xl);
+  font-size: var(--ds-text-heading);
+  font-weight: var(--ds-weight-strong);
   line-height: 24px;
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
 }
 
 .description {
   max-width: 350px;
   margin: 0 auto;
-  font-size: var(--ds-text-sm);
+  font-size: var(--ds-text-small);
   line-height: 20px;
-  color: var(--ds-gray-10);
+  color: var(--ds-foreground-tertiary);
 }
 
 .details {
-  padding: 18px 0 16px;
-  margin-top: 20px;
-  border-top: 1px solid var(--ds-gray-4);
-  border-bottom: 1px solid var(--ds-gray-4);
+  padding: var(--ds-space-xl) 0 var(--ds-space-xl);
+  margin-top: var(--ds-space-xl);
+  border-top: 1px solid var(--ds-border-subtle);
+  border-bottom: 1px solid var(--ds-border-subtle);
 
   &:last-child {
     border-bottom: none;
@@ -46,17 +46,17 @@
 }
 
 .heading {
-  margin: 0 0 10px;
-  font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-lg);
+  margin: 0 0 var(--ds-space-md);
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-medium);
   line-height: 18px;
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
 }
 
 .checklist {
   display: flex;
   flex-direction: column;
-  gap: 9px;
+  gap: var(--ds-space-md);
   padding: 0;
   margin: 0;
   list-style: none;
@@ -64,34 +64,34 @@
 
 .checklist li {
   display: flex;
-  gap: 9px;
+  gap: var(--ds-space-md);
   align-items: center;
-  font-size: var(--ds-text-sm);
+  font-size: var(--ds-text-small);
   line-height: 18px;
-  color: var(--ds-gray-11);
+  color: var(--ds-foreground-secondary);
 }
 
 .check {
   flex: 0 0 auto;
   width: 14px;
   height: 14px;
-  color: var(--ds-accent-9);
+  color: var(--ds-accent);
 }
 
 .note {
   max-width: 350px;
-  padding-top: 14px;
+  padding-top: var(--ds-space-xl);
   margin: 0;
-  font-size: var(--ds-text-xs);
+  font-size: var(--ds-text-small);
   line-height: 18px;
-  color: var(--ds-gray-10);
+  color: var(--ds-foreground-tertiary);
 
   & + & {
-    padding-top: 6px;
+    padding-top: var(--ds-space-sm);
   }
 
   &[data-state="silent"] {
-    color: var(--ds-gray-12);
+    color: var(--ds-foreground-primary);
   }
 }
 

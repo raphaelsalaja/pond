@@ -91,9 +91,9 @@ async function inlineCardMedia(capture: Capture, save: Save): Promise<void> {
     );
   }
 
-  if (capture.card?.imageUrl) {
-    const next = swap(capture.card.imageUrl);
-    if (next) capture.card.imageUrl = next;
+  for (const card of [capture.card, capture.quoted?.card]) {
+    const next = swap(card?.imageUrl);
+    if (card && next) card.imageUrl = next;
   }
 }
 
@@ -111,6 +111,7 @@ function collectCardImageUrls(capture: Capture): string[] {
     else if (m.type === "image") add(m.url);
   }
   add(capture.card?.imageUrl);
+  add(capture.quoted?.card?.imageUrl);
   return [...new Set(urls)];
 }
 

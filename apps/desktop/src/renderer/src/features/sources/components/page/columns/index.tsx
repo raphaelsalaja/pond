@@ -47,7 +47,7 @@ function StatusGlyph({ status }: { status: SourceStatusId }) {
         <path
           d="M5.2 8.2 7 10 10.8 6"
           fill="none"
-          stroke="var(--ds-gray-1)"
+          stroke="var(--ds-background-primary)"
           strokeWidth="1.4"
           strokeLinecap="round"
           strokeLinejoin="round"

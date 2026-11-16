@@ -1,9 +1,9 @@
-.wordmark {
+.root {
   display: inline-flex;
   gap: calc(var(--wordmark-size) * 0.25);
   align-items: center;
   font-size: calc(var(--wordmark-size) * 0.9167);
-  font-weight: var(--ds-weight-xxxl);
+  font-weight: var(--ds-weight-bold);
   line-height: var(--wordmark-size);
 }
 

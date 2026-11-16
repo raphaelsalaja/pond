@@ -1,4 +1,3 @@
-import { Empty } from "@pond/ui";
 import { useRouterState } from "@tanstack/react-router";
 import { lazy, Suspense, useDeferredValue, useMemo } from "react";
 import {
@@ -18,6 +17,11 @@ const SaveInspector = lazy(async () => {
   return { default: module.SaveInspector };
 });
 
+const EmptySaveInspector = lazy(async () => {
+  const module = await import("@/features/saves/components/detail/pane");
+  return { default: module.EmptySaveInspector };
+});
+
 /** The open Save route stays singular; the library inspector follows the current selection. */
 export function inspectorSaveIds(input: {
   routeId: string | null;
@@ -32,17 +36,21 @@ export function inspectorSaveIds(input: {
   return [];
 }
 
-export function SaveDetails() {
+export function useInspectorSaveIds(): string[] {
   const routeId = useRouterState({
     select: (s) => saveIdFromPath(s.location.pathname),
   });
   const selected = useSelectedIds();
   const primary = usePrimarySelection();
   const cursor = useSelectionCursor();
-  const currentIds = useMemo(
+  return useMemo(
     () => inspectorSaveIds({ routeId, selected, primary, cursor }),
     [routeId, selected, primary, cursor],
   );
+}
+
+export function SaveDetails() {
+  const currentIds = useInspectorSaveIds();
   /** The inspector renders after the selection paints, and a held arrow key skips the saves it passes. */
   const saveIds = useDeferredValue(currentIds);
   const saveId = saveIds[0];
@@ -50,16 +58,12 @@ export function SaveDetails() {
   const folders = useFolders();
   const [folderViews] = usePrefs("folderViews");
   return useMemo(() => {
-    if (!saveId) {
+    if (!saveId)
       return (
-        <Empty.Root role="status">
-          <Empty.Title>No save selected</Empty.Title>
-          <Empty.Description>
-            Select a save to tag it or edit details.
-          </Empty.Description>
-        </Empty.Root>
+        <Suspense fallback={null}>
+          <EmptySaveInspector />
+        </Suspense>
       );
-    }
     return (
       <Suspense fallback={null}>
         <SaveInspector

@@ -16,7 +16,7 @@ export function Wordmark({
 }: WordmarkProps) {
   return (
     <span
-      className={cn(styles.wordmark, className)}
+      className={cn(styles.root, className)}
       style={
         /** SAFETY: React forwards custom properties, but `CSSProperties` has no `--*` keys. */
         { "--wordmark-size": `${size}px`, ...style } as CSSProperties

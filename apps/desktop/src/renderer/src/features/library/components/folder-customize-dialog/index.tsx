@@ -139,7 +139,7 @@ export function FolderCustomizeDialog({
                   className={styles.tile}
                   style={cssVars({
                     "--tile-color":
-                      folderColorCss(color) ?? "var(--ds-gray-11)",
+                      folderColorCss(color) ?? "var(--ds-foreground-secondary)",
                   })}
                 >
                   <AnimatePresence mode="popLayout" initial={false}>

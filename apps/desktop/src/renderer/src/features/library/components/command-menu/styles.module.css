@@ -6,9 +6,9 @@
   width: min(680px, calc(100vw - 40px));
   max-height: min(450px, calc(100dvh - 80px));
   overflow: hidden;
-  background: var(--ds-gray-1);
+  background: var(--ds-background-primary);
   border-radius: var(--ds-radius-xl);
-  box-shadow: var(--ds-shadow-fullscreen);
+  box-shadow: var(--ds-shadow-dialog);
 }
 
 .sr-only {

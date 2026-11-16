@@ -6,10 +6,10 @@
   inset: 0;
   z-index: 0;
   overflow: hidden;
-  color: var(--ds-white-a12);
+  color: var(--ds-media-foreground-primary);
   background: var(--model-stage);
   border-radius: var(--ds-radius-xs);
-  box-shadow: var(--ds-shadow-save);
+  box-shadow: var(--ds-shadow-border);
 }
 
 .canvas,
@@ -22,20 +22,20 @@
   position: absolute;
   right: 8px;
   bottom: 8px;
-  font-size: var(--ds-text-xxs);
-  color: var(--ds-white-a9);
+  font-size: var(--ds-text-micro);
+  color: var(--ds-media-foreground-secondary);
 }
 
 .fallback {
   position: absolute;
   inset: 0;
   display: grid;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   align-content: center;
   justify-items: center;
   background:
-    linear-gradient(var(--ds-white-a2) 1px, transparent 1px),
-    linear-gradient(90deg, var(--ds-white-a2) 1px, transparent 1px),
+    linear-gradient(var(--ds-media-surface-primary) 1px, transparent 1px),
+    linear-gradient(90deg, var(--ds-media-surface-primary) 1px, transparent 1px),
     var(--model-stage);
   background-size: 22px 22px;
 }
@@ -45,8 +45,8 @@
 }
 
 .fallback span {
-  font-size: var(--ds-text-xxs);
-  color: var(--ds-white-a9);
+  font-size: var(--ds-text-micro);
+  color: var(--ds-media-foreground-secondary);
 }
 
 .model[data-view="list"] {

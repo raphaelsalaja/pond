@@ -1,0 +1,32 @@
+.root {
+  container-type: inline-size;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: var(--ds-space-2xl);
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-lg);
+  min-width: 0;
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+
+  & > * {
+    flex: 1;
+  }
+}
+
+@container (width < 760px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

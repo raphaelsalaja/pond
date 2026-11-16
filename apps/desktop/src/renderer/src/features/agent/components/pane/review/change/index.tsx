@@ -3,7 +3,7 @@ import {
   IconFolder,
   IconLayers,
   IconStar,
-  IconTags,
+  IconTag,
   IconText,
   IconTextAlignLeft,
   IconTrash,
@@ -26,7 +26,7 @@ export const statusLabels = {
 export const fieldIcons = {
   title: IconText,
   note: IconTextAlignLeft,
-  tags: IconTags,
+  tags: IconTag,
   folders: IconFolder,
   rating: IconStar,
   trash: IconTrash,

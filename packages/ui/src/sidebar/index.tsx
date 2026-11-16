@@ -1,6 +1,6 @@
 import { Button } from "@base-ui/react/button";
 import {
-  IconCaretRightFill as CaretRight,
+  IconCaretRight as CaretRight,
   IconMagnifier as Magnifier,
 } from "@pond/icons";
 import { clsx as cn } from "clsx";
@@ -18,6 +18,7 @@ import { Input } from "../input";
 import { pop } from "../shared/pop";
 import { useEasedScrollClamp } from "./scroll-clamp";
 import styles from "./styles.module.css";
+import { Tree, TreeGroup, TreeIndicator, TreeItem, TreeRow } from "./tree";
 
 interface RootProps extends React.ComponentPropsWithoutRef<"div"> {
   width?: "default" | "full";
@@ -326,4 +327,9 @@ export const Sidebar = {
   CollapsibleGroup,
   CollapsibleGroupLabel,
   CollapsibleGroupContent,
+  Tree,
+  TreeItem,
+  TreeRow,
+  TreeIndicator,
+  TreeGroup,
 };

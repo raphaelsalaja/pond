@@ -1,12 +1,12 @@
 .popup {
   --ds-popup-width: 280px;
   --ds-popup-min-width: 280px;
-  padding: 12px;
+  padding: var(--ds-space-lg);
 }
 
 .form {
   display: grid;
-  gap: 12px;
+  gap: var(--ds-space-lg);
   justify-items: end;
 
   & > :first-child {

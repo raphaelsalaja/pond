@@ -1,0 +1,30 @@
+.typography {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-xl);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-md);
+}
+
+.label {
+  margin: 0;
+  font-size: inherit;
+  font-weight: var(--ds-weight-strong);
+}
+
+.sample {
+  line-height: 1;
+  color: var(--ds-foreground-primary);
+
+  &[data-display] {
+    font-size: var(--ds-text-display);
+  }
+
+  &[data-mono] {
+    font-family: var(--ds-font-mono);
+  }
+}

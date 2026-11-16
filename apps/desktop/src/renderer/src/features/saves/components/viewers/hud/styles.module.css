@@ -30,7 +30,7 @@
 .cluster {
   position: absolute;
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
 
   &[data-anchor="top-left"] {
@@ -71,14 +71,14 @@
 }
 
 .pill {
-  padding: 2px;
+  padding: var(--ds-space-2xs);
   border-radius: var(--ds-radius-full);
-  box-shadow: var(--ds-shadow-float);
+  box-shadow: var(--ds-shadow-overlay);
 }
 
 .tools {
   display: flex;
-  gap: 2px;
+  gap: var(--ds-space-2xs);
   align-items: center;
   min-width: 0;
 }
@@ -91,7 +91,7 @@
   display: grid;
   flex: 1 1 auto;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  gap: 12px;
+  gap: var(--ds-space-lg);
   width: 100%;
   min-width: 0;
   pointer-events: none;
@@ -100,7 +100,7 @@
 .start,
 .center,
 .end {
-  gap: 2px;
+  gap: var(--ds-space-2xs);
   min-width: 0;
   max-width: 100%;
 
@@ -128,9 +128,9 @@
   width: auto;
   min-width: 40px;
   height: var(--ds-size-sm);
-  padding-inline: 6px;
-  font-size: var(--ds-text-sm);
+  padding-inline: var(--ds-space-sm);
+  font-size: var(--ds-text-small);
   font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-11);
+  color: var(--ds-foreground-secondary);
   white-space: nowrap;
 }

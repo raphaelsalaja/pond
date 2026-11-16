@@ -12,12 +12,12 @@
   box-sizing: border-box;
   width: 100%;
   height: 100%;
-  padding: 20px;
+  padding: var(--ds-space-2xl);
   margin: 0;
   overflow: hidden;
-  font-size: var(--ds-text-lg);
+  font-size: var(--ds-text-heading);
   line-height: 1.4;
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
   overflow-wrap: anywhere;
   white-space: pre-wrap;
 }
@@ -28,5 +28,5 @@
   height: 1.2em;
   margin-left: 1px;
   vertical-align: -0.2em;
-  background: var(--ds-accent-9);
+  background: var(--ds-accent);
 }

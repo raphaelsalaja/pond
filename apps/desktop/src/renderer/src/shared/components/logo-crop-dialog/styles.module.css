@@ -5,12 +5,12 @@
 .content {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--ds-space-xl);
 }
 
 .stage {
   display: flex;
-  gap: 16px;
+  gap: var(--ds-space-xl);
   align-items: flex-start;
   justify-content: center;
 }
@@ -25,7 +25,7 @@
   cursor: grab;
   user-select: none;
   outline-offset: 2px;
-  background: var(--ds-gray-a3);
+  background: var(--ds-surface-secondary);
   border-radius: var(--ds-radius-xl);
 
   &:focus-visible {
@@ -40,7 +40,7 @@
 .previews {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--ds-space-lg);
   align-items: center;
 }
 
@@ -49,7 +49,7 @@
   width: var(--crop-size);
   height: var(--crop-size);
   overflow: hidden;
-  background: var(--ds-gray-a3);
+  background: var(--ds-surface-secondary);
   border-radius: var(--ds-radius-2xl);
 
   &[data-size="small"] {
@@ -66,11 +66,11 @@
 }
 
 .zoom {
-  color: var(--ds-gray-10);
+  color: var(--ds-foreground-tertiary);
 }
 
 .error {
   margin: 0;
-  font-size: var(--ds-text-sm);
-  color: var(--ds-red-11);
+  font-size: var(--ds-text-small);
+  color: var(--ds-danger-foreground);
 }

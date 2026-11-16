@@ -9,17 +9,17 @@
 .download {
   display: grid;
   grid-template-columns: minmax(0, 2.2fr) 1.1fr 1.1fr 0.9fr;
-  column-gap: 16px;
+  column-gap: var(--ds-space-xl);
   align-items: center;
-  padding: 0 20px;
+  padding: 0 var(--ds-space-2xl);
 }
 
 .header {
   height: 40px;
-  font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-md);
-  color: var(--ds-gray-9);
-  border-bottom: 1px solid var(--ds-gray-a3);
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-regular);
+  color: var(--ds-foreground-tertiary);
+  border-bottom: 1px solid var(--ds-border-subtle);
 }
 
 .download {
@@ -29,7 +29,7 @@
 
 .lead {
   display: flex;
-  gap: 10px;
+  gap: var(--ds-space-md);
   align-items: center;
   min-width: 0;
 }
@@ -39,23 +39,23 @@
   flex: none;
   width: 32px;
   height: 24px;
-  background: var(--ds-gray-2);
+  background: var(--ds-background-secondary);
   border-radius: var(--ds-radius-xs);
 }
 
 .file {
   overflow: hidden;
   text-overflow: ellipsis;
-  font-weight: var(--ds-weight-xl);
+  font-weight: var(--ds-weight-strong);
   white-space: nowrap;
 }
 
 .source {
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
-  font-size: var(--ds-text-sm);
-  color: var(--ds-gray-11);
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-secondary);
 }
 
 .logo {
@@ -74,12 +74,12 @@
 
 .status {
   display: grid;
-  font-weight: var(--ds-weight-md);
+  font-weight: var(--ds-weight-regular);
 
   > span {
     display: flex;
     grid-area: 1 / 1;
-    gap: 6px;
+    gap: var(--ds-space-sm);
     align-items: center;
 
     &::before {
@@ -87,17 +87,17 @@
       width: 8px;
       height: 8px;
       content: "";
-      background: var(--ds-gray-8);
+      background: var(--ds-foreground-tertiary);
       border-radius: var(--ds-radius-full);
     }
   }
 
   > [data-status="progress"]::before {
-    background: var(--ds-yellow-9);
+    background: var(--ds-yellow);
   }
 
   > [data-status="complete"]::before {
-    background: var(--ds-accent-11);
+    background: var(--ds-accent-foreground);
   }
 
   > :nth-child(2) {
@@ -108,7 +108,7 @@
 .track {
   height: 4px;
   overflow: hidden;
-  background: var(--ds-gray-a3);
+  background: var(--ds-surface-secondary);
   border-radius: var(--ds-radius-full);
 }
 
@@ -116,7 +116,7 @@
   display: block;
   width: var(--progress);
   height: 100%;
-  background: var(--ds-accent-9);
+  background: var(--ds-accent);
   border-radius: inherit;
 }
 

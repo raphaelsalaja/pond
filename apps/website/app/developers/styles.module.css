@@ -10,7 +10,7 @@
 .home {
   display: flex;
   align-self: flex-start;
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
 }
 
 .article {
@@ -22,7 +22,7 @@
 .section {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--ds-space-lg);
 
   & > * {
     margin: 0;
@@ -33,17 +33,17 @@
 .title,
 .heading {
   font-size: inherit;
-  font-weight: var(--ds-weight-xl);
+  font-weight: var(--ds-weight-strong);
 }
 
 .code {
-  padding: 12px 14px;
+  padding: var(--ds-space-lg) var(--ds-space-xl);
   overflow-x: auto;
   font-family: var(--ds-font-mono);
-  font-size: var(--ds-text-sm);
-  color: var(--ds-gray-12);
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-primary);
   white-space: pre;
-  background: var(--ds-gray-a2);
+  background: var(--ds-surface-primary);
   border-radius: var(--ds-radius-md);
 }
 
@@ -56,27 +56,27 @@
 .terms {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--ds-space-xl);
 }
 
 .term {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--ds-space-xs);
 }
 
 .name {
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
 }
 
 .detail {
   margin: 0;
-  color: var(--ds-gray-11);
+  color: var(--ds-foreground-secondary);
 }
 
 .link {
   color: inherit;
   text-decoration: underline;
-  text-decoration-color: var(--ds-gray-a6);
+  text-decoration-color: var(--ds-foreground-tertiary);
   text-underline-offset: 3px;
 }

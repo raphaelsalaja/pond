@@ -5,9 +5,9 @@
   z-index: 2;
   width: 160px;
   pointer-events: auto;
-  background: var(--ds-gray-1);
+  background: var(--ds-background-primary);
   border-radius: var(--ds-radius-sm);
-  box-shadow: var(--ds-shadow-float);
+  box-shadow: var(--ds-shadow-overlay);
 }
 
 .map {
@@ -32,5 +32,5 @@
   position: absolute;
   pointer-events: none;
   border-radius: inherit;
-  box-shadow: inset 0 0 0 1px var(--ds-accent-8);
+  box-shadow: inset 0 0 0 1px var(--ds-accent-border);
 }

@@ -52,31 +52,31 @@
 }
 
 .response :is(p, ul, ol, pre, blockquote) {
-  margin-block: 12px;
+  margin-block: var(--ds-space-lg);
 }
 
 .response :is(h1, h2, h3, h4, h5, h6) {
-  font-weight: var(--ds-weight-xl);
+  font-weight: var(--ds-weight-strong);
   line-height: 1.4;
 }
 
 .response h1 {
-  margin: 0 0 8px;
+  margin: 0 0 var(--ds-space-md);
   font-size: 1.5em;
 }
 
 .response h2 {
-  margin: 12px 0 4px;
+  margin: var(--ds-space-lg) 0 var(--ds-space-xs);
   font-size: 1.25em;
 }
 
 .response h3 {
-  margin: 12px 0 4px;
+  margin: var(--ds-space-lg) 0 var(--ds-space-xs);
   font-size: 1.125em;
 }
 
 .response :is(h4, h5, h6) {
-  margin: 12px 0 0;
+  margin: var(--ds-space-lg) 0 0;
   font-size: 1em;
 }
 
@@ -94,13 +94,13 @@
 }
 
 .response li {
-  padding-inline-start: 6px;
+  padding-inline-start: var(--ds-space-sm);
   margin-block: 0;
   list-style: inherit;
 }
 
 .response :is(ul, ol) > li::marker {
-  font-weight: var(--ds-weight-xl);
+  font-weight: var(--ds-weight-strong);
   color: inherit;
 }
 
@@ -111,12 +111,12 @@
 
 .response :global(.task-list-item) {
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: baseline;
 }
 
 .response input[type="checkbox"] {
-  accent-color: var(--ds-gray-11);
+  accent-color: var(--ds-foreground-secondary);
 }
 
 .response li > p {
@@ -129,7 +129,7 @@
 }
 
 .response strong {
-  font-weight: var(--ds-weight-xl);
+  font-weight: var(--ds-weight-strong);
 }
 
 .response em {
@@ -137,25 +137,25 @@
 }
 
 .response blockquote {
-  padding-inline-start: 16px;
+  padding-inline-start: var(--ds-space-xl);
   color: inherit;
   border: 0;
-  border-left: 2px solid var(--ds-gray-6);
+  border-left: 2px solid var(--ds-border-strong);
 }
 
 .response code {
-  padding: 2px 4px;
+  padding: var(--ds-space-2xs) var(--ds-space-xs);
   font-family: var(--ds-font-mono);
   font-size: 0.875em;
-  background: var(--ds-gray-a3);
+  background: var(--ds-surface-secondary);
   border-radius: var(--ds-radius-xs);
 }
 
 .response pre {
-  padding: 14px;
+  padding: var(--ds-space-xl);
   overflow: auto;
   white-space: pre;
-  background: var(--ds-gray-a2);
+  background: var(--ds-surface-primary);
   border: 0;
   border-radius: var(--ds-radius-md);
 }
@@ -166,14 +166,14 @@
 }
 
 .response hr {
-  margin-block: 20px;
+  margin-block: var(--ds-space-xl);
   border: 0;
-  border-top: var(--ds-border-width) solid var(--ds-gray-5);
+  border-top: var(--ds-border-width) solid var(--ds-border-strong);
 }
 
 .table {
   max-width: 100%;
-  margin-block: 8px;
+  margin-block: var(--ds-space-md);
   overflow-x: auto;
 }
 
@@ -185,14 +185,14 @@
 }
 
 .table :is(th, td) {
-  padding: 6px 12px 6px 0;
+  padding: var(--ds-space-sm) var(--ds-space-lg) var(--ds-space-sm) 0;
   vertical-align: top;
   text-align: left;
   border-bottom: var(--ds-border-width) solid var(--ds-border-subtle);
 }
 
 .table th {
-  font-weight: var(--ds-weight-xl);
+  font-weight: var(--ds-weight-strong);
 }
 
 .table :is(th, td)[align="center"] {

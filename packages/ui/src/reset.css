@@ -32,7 +32,6 @@
     text-wrap: pretty;
     vertical-align: baseline;
     font-optical-sizing: auto;
-    font-variation-settings: "opsz" 14;
     font-feature-settings:
       "calt", "ccmp", "locl", "kern", "tnum", "zero", "cv11", "ss01";
     font-variant-numeric: tabular-nums;
@@ -54,8 +53,8 @@
 
   :focus-visible,
   [data-demo-state="focus"] {
-    outline: var(--ds-focus-width, 2px) solid var(--ds-focus-outline);
-    outline-offset: var(--ds-focus-offset, 0px);
+    outline: var(--ds-focus-width) solid var(--ds-focus-outline);
+    outline-offset: var(--ds-focus-offset);
   }
 
   /* Composite widgets render focus on their active child or interaction state. */
@@ -81,6 +80,12 @@
     )
   ) {
     outline-width: 0;
+  }
+
+  /* Only the outermost disabled element dims, so nested disabled parts never multiply. */
+  :where(:disabled, [data-disabled]):not(:where(:disabled, [data-disabled]) *),
+  :where(:disabled, [data-disabled]) + label {
+    opacity: var(--ds-opacity-disabled);
   }
 
   body {

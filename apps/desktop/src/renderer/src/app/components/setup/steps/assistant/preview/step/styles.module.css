@@ -1,9 +1,9 @@
 .step {
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
-  font-size: var(--ds-text-sm);
-  color: var(--ds-gray-11);
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-secondary);
 }
 
 .icon {
@@ -12,7 +12,7 @@
   place-items: center;
   width: 16px;
   height: 16px;
-  color: var(--ds-gray-10);
+  color: var(--ds-foreground-tertiary);
 
   > * {
     grid-area: 1 / 1;
@@ -26,15 +26,15 @@
 .spinner {
   width: 11px;
   height: 11px;
-  border: 1.5px solid var(--ds-gray-a5);
-  border-top-color: var(--ds-gray-11);
+  border: 1.5px solid var(--ds-border-strong);
+  border-top-color: var(--ds-foreground-secondary);
   border-radius: var(--ds-radius-full);
   animation: spin 700ms linear infinite;
 }
 
 .label {
   display: flex;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   min-width: 0;
   overflow: hidden;
   white-space: nowrap;
@@ -43,7 +43,7 @@
 .detail {
   overflow: hidden;
   text-overflow: ellipsis;
-  color: var(--ds-gray-9);
+  color: var(--ds-foreground-tertiary);
 }
 
 @keyframes spin {

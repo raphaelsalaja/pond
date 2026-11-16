@@ -8,9 +8,9 @@
 
 .title {
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
-  font-weight: var(--ds-weight-xl);
+  font-weight: var(--ds-weight-strong);
   cursor: pointer;
   list-style: none;
 
@@ -23,7 +23,7 @@
     height: 0;
     content: "";
     border: 5px solid transparent;
-    border-left-color: var(--ds-gray-8);
+    border-left-color: var(--ds-border-strong);
     transform: rotate(0deg);
     transition: transform var(--ds-duration-snap) var(--ds-easing-standard);
   }
@@ -34,6 +34,6 @@
 }
 
 .content {
-  padding-left: 18px;
+  padding-left: var(--ds-space-xl);
   margin-top: var(--note-space-small);
 }

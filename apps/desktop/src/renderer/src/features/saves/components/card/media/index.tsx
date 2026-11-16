@@ -197,6 +197,7 @@ export const PreparedCardThumb = memo(function PreparedCardThumb({
   return (
     <div
       className={styles.thumb}
+      data-card-thumb=""
       data-view={view}
       data-thumbnail-bg={
         thumbnailBackground !== "none" ? thumbnailBackground : undefined

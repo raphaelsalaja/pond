@@ -27,12 +27,9 @@ function Portal(props: Base.Portal.Props) {
   return <Base.Portal {...props} />;
 }
 
-function Viewport(props: Base.Viewport.Props) {
+function Viewport({ className, ...props }: Base.Viewport.Props) {
   return (
-    <Base.Viewport
-      className={clsx(styles.viewport, props.className)}
-      {...props}
-    />
+    <Base.Viewport className={clsx(styles.viewport, className)} {...props} />
   );
 }
 

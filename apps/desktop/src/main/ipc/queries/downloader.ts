@@ -2,6 +2,7 @@ import { join } from "node:path";
 import { app, BrowserWindow, clipboard, dialog, shell } from "electron";
 import { z } from "zod";
 import {
+  DownloadExportFilesInputSchema,
   DownloadExportInputSchema,
   DownloadFramesInputSchema,
   DownloadProbeInputSchema,
@@ -25,16 +26,27 @@ function loadExports(): Promise<ReturnType<typeof createDownloadExports>> {
     import("../../core/refresh/download-transcode"),
     import("../../core/refresh/yt-dlp"),
     import("../../core/refresh/yt-dlp-captions"),
-  ]).then(([{ createDownloadExports }, transcode, ytdlp, captions]) =>
-    createDownloadExports({
-      downloadVideo: ytdlp.downloadVideo,
-      downloadCaptions: captions.downloadCaptions,
-      transcodeItems: transcode.transcodeItems,
-      defaultFolder: () => app.getPath("downloads"),
-      clipboardFolder: () => join(app.getPath("temp"), "pond-clipboard"),
-      writeClipboardText: (text) => clipboard.writeText(text),
-      writeClipboardFiles: writeFileRefsToClipboard,
-    }),
+    import("../../core/download-file"),
+    import("../../core/manual-import"),
+  ]).then(
+    ([{ createDownloadExports }, transcode, ytdlp, captions, files, manual]) =>
+      createDownloadExports({
+        downloadVideo: ytdlp.downloadVideo,
+        downloadCaptions: captions.downloadCaptions,
+        transcodeItems: transcode.transcodeItems,
+        defaultFolder: () => app.getPath("downloads"),
+        clipboardFolder: () => join(app.getPath("temp"), "pond-clipboard"),
+        writeClipboardText: (text) => clipboard.writeText(text),
+        writeClipboardFiles: writeFileRefsToClipboard,
+        fetchFile: files.fetchFile,
+        saveFiles: ({ url, title, files: fetched, sourceUrls }) =>
+          manual.createManualSave({
+            url,
+            title,
+            memoryFiles: fetched,
+            fileSourceUrls: sourceUrls,
+          }),
+      }),
   );
   return exportsLoad;
 }
@@ -59,6 +71,10 @@ export const downloaderQueries = {
   ),
   "downloader.export": query(DownloadExportInputSchema, async (input) =>
     (await loadExports()).run(input),
+  ),
+  "downloader.exportFiles": query(
+    DownloadExportFilesInputSchema,
+    async (input) => (await loadExports()).files(input),
   ),
   "downloader.exportFolder": query(z.object({}), async () =>
     (await loadExports()).folder(),

@@ -54,7 +54,7 @@ describe("folder sidebar saved views", () => {
       '[aria-label="More Actions for Unread"]',
     );
     if (!(more instanceof HTMLElement)) throw new Error("Missing More Actions");
-    expect(more.dataset.rounding).toBe("default");
+    expect(more.dataset.rounding).toBe("full");
     expect(more.dataset.variant).toBe("text");
     await act(async () => more.click());
     await act(async () => harness.menuItem("Rename").click());

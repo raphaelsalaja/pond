@@ -4,7 +4,7 @@ import {
   IconGlobe as Extension,
   IconGear3 as General,
   IconShieldCheck as Health,
-  IconImages as Images,
+  IconImage as Images,
   IconFolder as Library,
   IconCode as LocalApi,
   IconBracketsCurly as Mcp,
@@ -17,7 +17,7 @@ import {
   IconKeyboard as Shortcuts,
   IconDownload as Sources,
   IconServer as Storage,
-  IconBookmark as Tags,
+  IconTag as Tags,
   IconMovie as Videos,
 } from "@pond/icons";
 import type { IconComponent } from "@pond/icons/types";

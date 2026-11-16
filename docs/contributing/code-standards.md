@@ -32,6 +32,20 @@ Use function components with explicit props. Keep domain mutations in operations
 
 Reuse the shared UI package and theme tokens. Preserve keyboard access, labels, focus behavior, loading and empty states, and reduced-motion behavior. Follow [design principles](../../apps/desktop/src/renderer/src/PRINCIPLES.md). Keep lazy imports for optional viewers, galleries, and inference workers. File organization must not change when code is loaded.
 
+## Shared UI components
+
+A component in `packages/ui` ships when it meets every item on this list:
+
+- `examples.tsx` exports its `ComponentDocs`: summary, parts, keyboard map, accessibility notes, and one example per state. Register it in `packages/ui/src/docs.ts`. The website's `/design` route renders it from there.
+- Every example renders with an accessible name for each control. `conformance.browser.test.tsx` runs axe on each example in the light and dark themes.
+- Each example has a light and dark screenshot baseline. Baselines come from Linux, so update them with the `Visual Baselines` workflow and commit the files it produces.
+- Interactive components have an `index.browser.test.tsx` that drives the WAI-ARIA keyboard pattern in a real browser: reaching the control with Tab, its keys, disabled states, and focus return after a popup closes.
+- Transitions and animations respect `prefers-reduced-motion`.
+- Icon-only controls require an accessible name in their props.
+- Every component folder has a `package.json` subpath.
+
+Keyboard, focus, and popup behavior comes from Base UI. Behavior Base UI lacks, such as reorder, resize, trees, and roving grids, comes from UI SDK inside `packages/ui`. Apps import neither library directly.
+
 ## Tests
 
 Test observable behavior through the same interface used by callers. A component may expose typed data, commands, or child slots so its behavior can be tested separately from application composition. Keep the real UI and browser interactions in those tests. Inject external dependencies and use faithful test implementations, temporary directories, and deterministic fixtures. Do not use Vitest/Jest module mocks or replace an imported implementation globally. A fake must model the contract's success, failure, and cleanup behavior; it must not merely mirror the implementation under test.

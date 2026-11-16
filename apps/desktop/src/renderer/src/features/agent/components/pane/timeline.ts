@@ -1,10 +1,10 @@
-import type { ThreadMark } from "@pond/ui/thread";
 import { plainPreview } from "@shared/assistant-text";
 import {
   fromUIMessage,
   messageText,
   type PondUIMessage,
 } from "@/features/agent/state/pond-messages";
+import type { ThreadMark } from "../thread";
 import { routineEventText } from "./chat-event/events";
 
 /** A quiet stretch this long starts a new block of the conversation. */

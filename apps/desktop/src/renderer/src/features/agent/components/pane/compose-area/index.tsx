@@ -1,8 +1,5 @@
 import type { AgentModelOptions } from "@pond/schema";
 import { Button } from "@pond/ui";
-import { ComposerView } from "@pond/ui/composer";
-import { ErrorNotice } from "@pond/ui/error-notice";
-import { useThreadScroll } from "@pond/ui/thread";
 import type { AssistantProvider, AssistantSource } from "@shared/assistant";
 import { type RefObject, useRef, useState } from "react";
 import {
@@ -13,6 +10,9 @@ import { isLibrarySaveDrag, saveDropIds } from "@/features/saves";
 import { ModelPicker } from "@/shared/components/model-picker";
 import { openSettings } from "@/shared/lib/open-settings";
 import { ComposerEditor, type ComposerEditorHandle } from "../../composer";
+import { ComposerView } from "../../composer-view";
+import { ErrorNotice } from "../../error-notice";
+import { useThreadScroll } from "../../thread";
 import { AddMenu } from "../add-menu";
 import { ReferencedSavesPopover } from "../consulted-saves";
 import { FileAttachments } from "../file-attachments";

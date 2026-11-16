@@ -1,4 +1,4 @@
-import { IconDotsFill, IconExternalLink, IconXmark } from "@pond/icons";
+import { IconDots, IconExternalLink, IconXmark } from "@pond/icons";
 import { Button, Pane as Header, Input, Tabs } from "@pond/ui";
 import { ease, progress } from "@pond/video";
 import type { CSSProperties } from "react";
@@ -50,7 +50,7 @@ export function Pane({
         }
       >
         <Button icon size="sm" variant="ghost" aria-label="More">
-          <IconDotsFill />
+          <IconDots />
         </Button>
         <Button icon size="sm" variant="ghost" aria-label="Close Details">
           <IconXmark />

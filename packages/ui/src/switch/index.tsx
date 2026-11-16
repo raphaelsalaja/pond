@@ -14,7 +14,27 @@ function Thumb({ className, ...props }: Base.Thumb.Props) {
   return <Base.Thumb className={cn(styles.thumb, className)} {...props} />;
 }
 
+interface MarkProps extends React.ComponentPropsWithoutRef<"span"> {
+  checked?: boolean;
+}
+
+/** The track without a control, for rows like `menuitemcheckbox` that are the switch themselves. */
+function Mark({ checked = false, className, ...props }: MarkProps) {
+  const state = checked ? { "data-checked": "" } : { "data-unchecked": "" };
+  return (
+    <span
+      aria-hidden
+      {...state}
+      className={cn(styles.root, className)}
+      {...props}
+    >
+      <span {...state} className={styles.thumb} />
+    </span>
+  );
+}
+
 export const Switch = {
   Root,
   Thumb,
+  Mark,
 };

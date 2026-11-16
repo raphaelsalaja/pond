@@ -8,8 +8,8 @@
   justify-content: center;
   width: 18px;
   height: 18px;
-  color: var(--ds-red-9);
+  color: var(--ds-danger);
   pointer-events: none;
-  background: var(--ds-red-3);
+  background: var(--ds-danger-tint);
   border-radius: var(--ds-radius-source);
 }

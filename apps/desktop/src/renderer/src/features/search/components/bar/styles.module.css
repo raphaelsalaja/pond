@@ -3,13 +3,13 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--ds-space-md);
   min-width: 0;
 }
 
 .bar {
   display: flex;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   align-items: center;
   width: 100%;
   min-width: 0;
@@ -31,9 +31,9 @@
   overflow-x: auto;
   overflow-y: hidden;
   font: inherit;
-  font-size: var(--ds-text-md);
+  font-size: var(--ds-text-body);
   line-height: 1.5;
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
   word-break: normal;
 
   /* Lexical inlines `pre-wrap`/`break-word` on the root element; !important beats the inline style, and `pre` keeps its space handling while never wrapping. */
@@ -63,10 +63,10 @@
   align-items: center;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-md);
+  font-size: var(--ds-text-body);
   font-weight: 400;
   line-height: 1.5;
-  color: var(--ds-gray-9);
+  color: var(--ds-foreground-tertiary);
   white-space: nowrap;
   pointer-events: none;
   user-select: none;
@@ -78,13 +78,13 @@
 
 .thinking {
   flex: none;
-  font-size: var(--ds-text-sm);
-  color: var(--ds-gray-10);
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-tertiary);
 }
 
 .status {
-  padding-inline: 0 6px;
-  padding-bottom: 4px;
-  font-size: var(--ds-text-md);
-  color: var(--ds-gray-10);
+  padding-inline: 0 var(--ds-space-sm);
+  padding-bottom: var(--ds-space-xs);
+  font-size: var(--ds-text-body);
+  color: var(--ds-foreground-tertiary);
 }

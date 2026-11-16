@@ -59,7 +59,7 @@ export function KoiQuestion({
       <Reveal visible={!answered} initial={false}>
         <Prompt.Body>
           <Prompt.Title>{question}</Prompt.Title>
-          <Prompt.Choices aria-label={question}>
+          <Prompt.Choices>
             {options.map((option, index) => (
               <Prompt.Choice
                 key={option}

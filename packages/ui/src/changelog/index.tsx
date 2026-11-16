@@ -1,8 +1,8 @@
 import {
-  IconCircleArrowUpFill,
-  IconCircleCheckFill,
-  IconSparkleFill,
-  IconTriangleWarningFill,
+  IconCircleArrowUp,
+  IconCircleCheck,
+  IconSparkle,
+  IconTriangleWarning,
 } from "@pond/icons";
 import { clsx as cn } from "clsx";
 import { createContext, use } from "react";
@@ -11,13 +11,13 @@ import styles from "./styles.module.css";
 export type ChangelogCategory = "important" | "new" | "improved" | "fixed";
 
 const CATEGORIES = {
-  important: { label: "Important", Icon: IconTriangleWarningFill },
-  new: { label: "New", Icon: IconSparkleFill },
-  improved: { label: "Improved", Icon: IconCircleArrowUpFill },
-  fixed: { label: "Fixed", Icon: IconCircleCheckFill },
+  important: { label: "Important", Icon: IconTriangleWarning },
+  new: { label: "New", Icon: IconSparkle },
+  improved: { label: "Improved", Icon: IconCircleArrowUp },
+  fixed: { label: "Fixed", Icon: IconCircleCheck },
 } satisfies Record<
   ChangelogCategory,
-  { label: string; Icon: typeof IconSparkleFill }
+  { label: string; Icon: typeof IconSparkle }
 >;
 
 const SectionContext = createContext<ChangelogCategory>("new");

@@ -4,12 +4,12 @@
   inset-inline-start: 50%;
   z-index: 10;
   display: flex;
-  gap: 2px;
+  gap: var(--ds-space-2xs);
   align-items: center;
   min-inline-size: 0;
-  padding: 4px;
+  padding: var(--ds-space-xs);
   margin: 0;
-  background: var(--ds-gray-1);
+  background: var(--ds-background-primary);
   border: 0;
   border-radius: var(--ds-radius-full);
   box-shadow: var(--canvas-shadow-float);
@@ -24,6 +24,6 @@
 .divider {
   inline-size: 1px;
   block-size: 12px;
-  margin-inline: 2px;
-  background: var(--ds-gray-a4);
+  margin-inline: var(--ds-space-2xs);
+  background: var(--ds-surface-tertiary);
 }

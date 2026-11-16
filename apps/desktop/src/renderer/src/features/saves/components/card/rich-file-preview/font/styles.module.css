@@ -9,13 +9,13 @@
   padding: 8%;
   container-type: inline-size;
   overflow: hidden;
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
   text-align: center;
   background:
-    radial-gradient(circle at 50% 25%, var(--ds-gray-1), transparent 55%),
-    var(--ds-gray-3);
+    radial-gradient(circle at 50% 25%, var(--ds-background-primary), transparent 55%),
+    var(--ds-background-tertiary);
   border-radius: var(--ds-radius-xs);
-  box-shadow: var(--ds-shadow-save);
+  box-shadow: var(--ds-shadow-border);
 }
 
 .font span {
@@ -42,5 +42,5 @@
 }
 
 .font[data-view="list"] span {
-  font-size: var(--ds-text-md);
+  font-size: var(--ds-text-body);
 }

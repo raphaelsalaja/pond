@@ -32,8 +32,8 @@
 .chevron {
   flex: 0 0 auto;
   width: 8px;
-  margin-left: 4px;
-  color: var(--ds-gray-9);
+  margin-left: var(--ds-space-xs);
+  color: var(--ds-foreground-tertiary);
 }
 
 .identity {
@@ -50,6 +50,6 @@
 .label {
   display: inline-flex;
   align-items: center;
-  font-weight: var(--ds-weight-lg);
-  color: var(--ds-gray-12);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-foreground-primary);
 }

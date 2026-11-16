@@ -1,30 +1,25 @@
-import { IconMusic, IconText, IconVideo } from "@pond/icons";
+import { IconMusicNote, IconText, IconVideo } from "@pond/icons";
 import { Toggle, ToggleGroup } from "@pond/ui";
 import type { DownloadMode } from "@shared/downloader-contracts";
 import type { ReactNode } from "react";
 import styles from "./styles.module.css";
 
-const MODES: readonly {
+export const MODES: readonly {
   value: DownloadMode;
   label: string;
   icon: ReactNode;
 }[] = [
   { value: "video", label: "Video", icon: <IconVideo size={16} /> },
-  { value: "audio", label: "Audio", icon: <IconMusic size={16} /> },
+  { value: "audio", label: "Audio", icon: <IconMusicNote size={16} /> },
   { value: "transcript", label: "Transcript", icon: <IconText size={16} /> },
 ];
 
 interface ModeToggleProps {
   value: DownloadMode;
   onValueChange: (mode: DownloadMode) => void;
-  unavailable?: Partial<Record<DownloadMode, boolean>>;
 }
 
-export function ModeToggle({
-  value,
-  onValueChange,
-  unavailable = {},
-}: ModeToggleProps) {
+export function ModeToggle({ value, onValueChange }: ModeToggleProps) {
   return (
     <ToggleGroup
       aria-label="Download As"
@@ -41,7 +36,6 @@ export function ModeToggle({
           type="button"
           size="md"
           value={mode.value}
-          disabled={unavailable[mode.value] ?? false}
           className={styles.mode}
         >
           {mode.icon}

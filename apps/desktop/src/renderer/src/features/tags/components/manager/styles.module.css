@@ -1,13 +1,13 @@
 .content {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-top: -16px;
+  gap: var(--ds-space-xl);
+  margin-top: calc(var(--ds-space-xl) * -1);
 }
 
 .toolbar {
   display: flex;
-  gap: 12px;
+  gap: var(--ds-space-lg);
   align-items: center;
 }
 
@@ -21,23 +21,23 @@
 }
 
 .selection-count {
-  font-size: var(--ds-text-md);
+  font-size: var(--ds-text-body);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
 }
 
 .list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--ds-space-lg);
   min-width: 0;
 }
 
 .groups {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--ds-space-lg);
   min-width: 0;
 }
 
@@ -47,7 +47,7 @@
 
 .field {
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
   min-width: 0;
 }

@@ -1,10 +1,10 @@
 .palette {
   display: flex;
-  gap: 4px;
+  gap: var(--ds-space-xs);
   align-items: center;
   min-width: 0;
   height: 28px;
-  padding-inline: 8px;
+  padding-inline: var(--ds-space-md);
   margin: 0;
   border: 0;
 }

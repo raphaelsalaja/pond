@@ -9,12 +9,6 @@ export const packageRoot = resolve(
 );
 export const repoRoot = resolve(packageRoot, "../..");
 
-export const STYLES = ["outline", "fill"];
-
-export function exportName(glyph, style) {
-  return `Icon${glyph}${style === "fill" ? "Fill" : ""}`;
-}
-
 /** `ArrowRotate2` becomes `arrow-rotate-2`. */
 export function fileName(glyph) {
   return glyph

@@ -1,0 +1,20 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  padding: var(--ds-space-xs);
+  background: var(--ds-background-primary);
+  border-radius: var(--ds-radius-2xl);
+  box-shadow: var(--ds-shadow-raised);
+
+  [data-theme="dark"] & {
+    background: var(--ds-surface-primary);
+  }
+}
+
+.stage {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ds-space-lg);
+  align-items: center;
+  padding: var(--ds-space-lg);
+}

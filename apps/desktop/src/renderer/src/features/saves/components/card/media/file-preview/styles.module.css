@@ -6,8 +6,8 @@
   place-items: center;
   container-type: size;
   background:
-    radial-gradient(circle at 50% 34%, var(--ds-gray-4), transparent 44%),
-    var(--ds-gray-2);
+    radial-gradient(circle at 50% 34%, var(--ds-background-tertiary), transparent 44%),
+    var(--ds-background-secondary);
   border-radius: inherit;
 }
 
@@ -18,11 +18,11 @@
   min-width: min(3.6em, 56cqw);
   min-height: min(4.6em, 70cqh);
   padding: 0.6em;
-  font-size: min(var(--ds-text-xs), 22cqmin);
+  font-size: min(var(--ds-text-small), 22cqmin);
   font-weight: 650;
   line-height: 1;
-  color: var(--ds-gray-11);
-  background: var(--ds-gray-1);
+  color: var(--ds-foreground-secondary);
+  background: var(--ds-background-primary);
   border-radius: var(--ds-radius-sm);
-  box-shadow: var(--ds-shadow-sm);
+  box-shadow: var(--ds-shadow-border);
 }

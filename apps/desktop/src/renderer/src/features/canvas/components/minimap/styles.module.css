@@ -6,7 +6,7 @@
   visibility: hidden;
   overflow: hidden;
   pointer-events: none;
-  background: var(--ds-gray-1);
+  background: var(--ds-background-primary);
   border-radius: var(--ds-radius-lg);
   box-shadow: var(--canvas-shadow-float);
   opacity: 0;
@@ -42,8 +42,8 @@
 
 .view {
   cursor: grab;
-  fill: var(--ds-accent-a3);
-  stroke: var(--ds-accent-9);
+  fill: var(--ds-accent-tint);
+  stroke: var(--ds-accent);
   stroke-width: 1.5;
 }
 
@@ -63,20 +63,20 @@
 }
 
 .item {
-  fill: var(--ds-gray-a6);
+  fill: var(--ds-foreground-tertiary);
 
   &[data-kind="section"] {
-    fill: var(--ds-gray-a2);
-    stroke: var(--ds-gray-a6);
+    fill: var(--ds-surface-primary);
+    stroke: var(--ds-foreground-tertiary);
     stroke-width: 1;
   }
 
   &[data-selected] {
-    fill: var(--ds-accent-9);
+    fill: var(--ds-accent);
   }
 
   &[data-kind="section"][data-selected] {
-    fill: var(--ds-accent-a3);
-    stroke: var(--ds-accent-9);
+    fill: var(--ds-accent-tint);
+    stroke: var(--ds-accent);
   }
 }

@@ -1,0 +1,28 @@
+.list {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--ds-space-xl) var(--ds-space-md);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.hue {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-sm);
+  align-items: center;
+  font-size: var(--ds-text-small);
+  line-height: var(--ds-leading-small);
+}
+
+.dot {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--ds-radius-full);
+  box-shadow: var(--ds-shadow-border);
+}
+
+.name {
+  color: var(--ds-foreground-secondary);
+}

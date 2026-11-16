@@ -25,6 +25,7 @@
     "./motion.css": "./src/motion/motion.css",
     "./radius.css": "./src/radius/radius.css",
     "./size.css": "./src/size/size.css",
+    "./space.css": "./src/space/space.css",
     "./shadow.css": "./src/shadow/shadow.css",
     "./typography.css": "./src/typography/typography.css",
     "./brand.css": "./src/brand/brand.css",

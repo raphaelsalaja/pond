@@ -101,9 +101,18 @@ function Chip({ className, children, ...props }: Base.Chip.Props) {
   );
 }
 
-function ChipRemove({ className, children, ...props }: Base.ChipRemove.Props) {
+function ChipRemove({
+  className,
+  children,
+  "aria-label": ariaLabel = "Remove",
+  ...props
+}: Base.ChipRemove.Props) {
   return (
-    <Base.ChipRemove className={cn(styles.remove, className)} {...props}>
+    <Base.ChipRemove
+      aria-label={ariaLabel}
+      className={cn(styles.remove, className)}
+      {...props}
+    >
       {children ?? <IconXmark size={12} />}
     </Base.ChipRemove>
   );

@@ -1,10 +1,10 @@
 .compose-area {
   width: 100%;
-  margin: 0 0 8px;
+  margin: 0 0 var(--ds-space-md);
 }
 
 .notices {
   display: grid;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: var(--ds-space-md);
+  margin-bottom: var(--ds-space-md);
 }

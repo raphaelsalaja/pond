@@ -9,11 +9,11 @@
 .bar {
   position: relative;
   display: flex;
-  gap: 2px;
+  gap: var(--ds-space-2xs);
   width: max-content;
-  padding: 4px;
-  color: var(--ds-gray-12);
-  background: var(--ds-gray-1);
+  padding: var(--ds-space-xs);
+  color: var(--ds-foreground-primary);
+  background: var(--ds-background-primary);
   border-radius: calc(var(--ds-radius-md) + 4px);
   box-shadow: var(--canvas-shadow-float);
 }
@@ -24,7 +24,7 @@
   left: 0;
   width: 32px;
   height: 32px;
-  background: var(--ds-gray-a3);
+  background: var(--ds-surface-secondary);
   border-radius: var(--ds-radius-md);
 }
 
@@ -33,11 +33,11 @@
   bottom: calc(100% + 8px);
   left: 50%;
   display: flex;
-  gap: 2px;
+  gap: var(--ds-space-2xs);
   align-items: center;
   width: max-content;
-  padding: 4px;
-  background: var(--ds-gray-1);
+  padding: var(--ds-space-xs);
+  background: var(--ds-background-primary);
   border-radius: calc(var(--ds-radius-sm) + 4px);
   box-shadow: var(--canvas-shadow-float);
   transform-origin: bottom center;
@@ -48,11 +48,11 @@
   height: 20px;
   background: var(--swatch);
   border-radius: var(--ds-radius-full);
-  box-shadow: inset 0 0 0 1px var(--ds-gray-a4);
+  box-shadow: inset 0 0 0 1px var(--ds-border-subtle);
 
   &[data-pressed] {
     box-shadow:
       inset 0 0 0 2px var(--swatch),
-      inset 0 0 0 4px var(--ds-gray-1);
+      inset 0 0 0 4px var(--ds-background-primary);
   }
 }

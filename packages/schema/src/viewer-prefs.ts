@@ -8,9 +8,15 @@ const ViewerActionSchema = z.enum([
   "presentation",
   "detached",
 ]);
+
+/** Space defaults to native Quick Look on macOS; other platforms only have the in-app preview. */
+const IS_DARWIN =
+  (globalThis as { process?: { platform?: string } }).process?.platform ===
+    "darwin" || /Mac/.test(globalThis.navigator?.platform ?? "");
+
 export const ViewerPrefsSchema = z.object({
   spaceBehavior: z.enum(["toggle", "hold"]).catch("toggle"),
-  spaceAction: ViewerActionSchema.catch("preview"),
+  spaceAction: ViewerActionSchema.catch(IS_DARWIN ? "quick-look" : "preview"),
   doubleClickAction: ViewerActionSchema.catch("open"),
   middleClickAction: ViewerActionSchema.catch("open"),
   dragToFile: z.boolean().catch(true),

@@ -1,24 +1,24 @@
 .cluster {
   display: inline-flex;
-  gap: 2px;
+  gap: var(--ds-space-2xs);
   align-items: center;
   vertical-align: middle;
 
   &[data-density="flat"] {
-    gap: 4px;
-    color: var(--ds-gray-10);
+    gap: var(--ds-space-xs);
+    color: var(--ds-foreground-tertiary);
   }
 }
 
 .row {
   display: inline-flex;
-  gap: 4px;
+  gap: var(--ds-space-xs);
   align-items: center;
 }
 
 .separator {
-  font-size: var(--ds-text-xxs);
-  color: var(--ds-gray-9);
+  font-size: var(--ds-text-micro);
+  color: var(--ds-foreground-tertiary);
   text-transform: lowercase;
 }
 
@@ -29,15 +29,15 @@
   justify-content: center;
   min-width: 18px;
   height: 18px;
-  padding: 0 4px;
-  font-size: var(--ds-text-xxs);
-  font-weight: 500;
+  padding: 0 var(--ds-space-xs);
+  font-size: var(--ds-text-micro);
+  font-weight: var(--ds-weight-strong);
   font-variant-numeric: tabular-nums;
   line-height: 1;
   vertical-align: middle;
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
   background: transparent;
-  border: 1px solid var(--ds-gray-3);
+  border: 1px solid var(--ds-border-subtle);
   border-bottom-width: 2px;
   border-radius: var(--ds-radius-xs);
 
@@ -52,7 +52,7 @@
     height: auto;
     padding: 0;
     font-size: inherit;
-    font-weight: var(--ds-weight-lg);
+    font-weight: var(--ds-weight-medium);
     line-height: inherit;
     color: inherit;
     background: none;

@@ -3,34 +3,34 @@
 }
 
 .content {
-  gap: 12px;
+  gap: var(--ds-space-lg);
 }
 
 .card {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--ds-space-lg);
   min-width: 0;
-  padding: 12px 14px 14px;
+  padding: var(--ds-space-lg) var(--ds-space-xl) var(--ds-space-xl);
   margin: 0;
-  background: var(--ds-gray-2);
+  background: var(--ds-background-secondary);
   border-radius: var(--ds-radius-lg);
 
   &[data-row] {
     flex-direction: row;
-    gap: 16px;
+    gap: var(--ds-space-xl);
     align-items: center;
     justify-content: space-between;
-    padding-block: 10px;
+    padding-block: var(--ds-space-lg);
   }
 }
 
 .heading {
   float: left;
   padding: 0;
-  font-size: var(--ds-text-md);
-  font-weight: var(--ds-weight-xl);
-  color: var(--ds-gray-12);
+  font-size: var(--ds-text-body);
+  font-weight: var(--ds-weight-strong);
+  color: var(--ds-foreground-primary);
 
   & + * {
     clear: both;
@@ -40,16 +40,16 @@
 .grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px 16px;
+  gap: var(--ds-space-md) var(--ds-space-xl);
 }
 
 .option {
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
   min-width: 0;
-  font-size: var(--ds-text-md);
-  color: var(--ds-gray-12);
+  font-size: var(--ds-text-body);
+  color: var(--ds-foreground-primary);
   cursor: default;
 
   & > span:last-child {

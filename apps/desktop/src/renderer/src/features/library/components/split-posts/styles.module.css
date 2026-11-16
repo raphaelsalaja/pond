@@ -34,7 +34,7 @@
   aspect-ratio: 1;
   padding: 8px;
   overflow: hidden;
-  background: var(--ds-gray-a3);
+  background: var(--ds-surface-secondary);
   border-radius: var(--ds-radius-xl);
 }
 
@@ -44,7 +44,7 @@
   min-width: 0;
   overflow: hidden;
   border-radius: var(--ds-radius-sm);
-  box-shadow: var(--ds-shadow-sm);
+  box-shadow: var(--ds-shadow-border);
 
   & img {
     width: 100%;
@@ -62,9 +62,9 @@
   grid-row: 1 / -1;
   grid-column: 1 / -1;
   place-items: center;
-  color: var(--ds-gray-9);
+  color: var(--ds-foreground-tertiary);
 }
 
 .trigger:hover .cover {
-  background: var(--ds-gray-a4);
+  background: var(--ds-surface-tertiary);
 }

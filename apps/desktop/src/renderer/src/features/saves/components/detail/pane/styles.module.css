@@ -1,29 +1,20 @@
 .root {
-  --pane-inset: var(--window-inset, 8px);
   display: flex;
   flex: 1;
   flex-direction: column;
-
-  width: calc(100% - 2 * var(--pane-inset));
   min-width: 0;
-  height: calc(100% - 2 * var(--pane-inset));
   min-height: 0;
-  margin: var(--pane-inset);
   container-type: inline-size;
   overflow: hidden;
-  background: var(--ds-gray-1);
-  border-radius: var(--ds-radius-xl);
-  box-shadow: var(--ds-shadow-float);
 }
 
 .header {
-  height: calc(var(--window-header-height, 56px) - 2 * var(--pane-inset));
+  height: var(--window-header-height, 56px);
   min-height: 0;
-  padding: 4px;
-  padding-inline: 6px;
+  padding: var(--ds-space-xs) var(--ds-space-2xl);
   border-bottom: none;
 
-  & [data-slot="pane-header-title"]:has([role="tablist"]) {
+  & [data-slot="pane-header-title"] {
     padding-left: 0;
   }
 }
@@ -33,9 +24,9 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--ds-space-lg);
   min-height: 0;
-  padding-block: 4px 20px;
+  padding-block: var(--ds-space-xs) var(--ds-space-2xl);
   overflow-y: auto;
 }
 
@@ -50,49 +41,49 @@
 .rating {
   display: flex;
   flex-direction: row;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
   min-width: 0;
   /* Match one line of a tile value so the label below lines up with its neighbors. */
   min-height: 1lh;
-  font-size: var(--ds-text-sm);
+  font-size: var(--ds-text-small);
 }
 
 .colors {
   display: flex;
   flex-wrap: wrap;
-  gap: 2px;
+  gap: var(--ds-space-2xs);
   justify-content: center;
 }
 .count {
   margin: 0;
-  color: var(--ds-gray-11);
+  color: var(--ds-foreground-secondary);
   text-align: center;
 }
 .count strong {
-  color: var(--ds-blue-9);
+  color: var(--ds-accent-foreground);
 }
 .muted {
-  font-size: var(--ds-text-xs);
-  color: var(--ds-gray-10);
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-tertiary);
 }
 .error {
-  font-size: var(--ds-text-xs);
-  color: var(--ds-red-11);
+  font-size: var(--ds-text-small);
+  color: var(--ds-danger-foreground);
 }
 .prose {
-  margin-inline: -8px;
+  margin-inline: calc(var(--ds-space-md) * -1);
 }
 
 .flag {
   display: flex;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   align-items: center;
   margin: 0;
-  font-size: var(--ds-text-sm);
-  color: var(--ds-orange-11);
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-secondary);
 
   &[data-band="possible-sensitive"] {
-    color: var(--ds-gray-10);
+    color: var(--ds-foreground-tertiary);
   }
 }

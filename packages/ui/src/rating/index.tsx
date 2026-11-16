@@ -1,6 +1,6 @@
 import { Radio } from "@base-ui/react/radio";
 import { RadioGroup } from "@base-ui/react/radio-group";
-import { IconStarFill } from "@pond/icons";
+import { IconStar } from "@pond/icons";
 import { clsx as cn } from "clsx";
 import type { KeyboardEvent } from "react";
 import styles from "./styles.module.css";
@@ -22,7 +22,8 @@ interface RatingProps
     React.ComponentPropsWithoutRef<"div">,
     "onChange" | "defaultValue"
   > {
-  value: number;
+  /** `null` is a mixed value, such as several saves with different ratings. */
+  value: number | null;
   onValueChange: (value: number) => void;
   size?: "sm" | "md";
 }
@@ -35,6 +36,7 @@ export function Rating({
   onKeyDown,
   ...props
 }: RatingProps) {
+  const current = value ?? 0;
   const jump = (event: KeyboardEvent<HTMLDivElement>) => {
     onKeyDown?.(event);
     const next = nextRating(event.key);
@@ -49,10 +51,11 @@ export function Rating({
 
   return (
     <RadioGroup
-      aria-label="Rating"
+      aria-label={value === null ? "Rating, multiple values" : "Rating"}
       data-size={size}
+      data-mixed={value === null || undefined}
       className={cn(styles.root, className)}
-      value={value > 0 ? value : null}
+      value={current > 0 ? current : null}
       onValueChange={(next: number | null) => onValueChange(next ?? 0)}
       onKeyDown={jump}
       {...props}
@@ -62,13 +65,13 @@ export function Rating({
           key={star}
           value={star}
           aria-label={`${star} ${star === 1 ? "Star" : "Stars"}`}
-          data-filled={star <= value || undefined}
+          data-filled={star <= current || undefined}
           className={styles.star}
           onClick={() => {
             if (star === value) onValueChange(0);
           }}
         >
-          <IconStarFill size={size === "sm" ? 12 : 14} />
+          <IconStar size={size === "sm" ? 12 : 14} />
         </Radio.Root>
       ))}
     </RadioGroup>

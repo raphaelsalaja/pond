@@ -7,10 +7,10 @@
   justify-content: flex-start;
   width: 100%;
   height: 100%;
-  padding: 10px;
-  background: var(--ds-gray-1);
+  padding: var(--ds-space-lg);
+  background: var(--ds-background-primary);
   border-radius: inherit;
-  box-shadow: var(--ds-shadow-save);
+  box-shadow: var(--ds-shadow-border);
 }
 
 .body {
@@ -19,10 +19,10 @@
   width: 100%;
   overflow: hidden;
   -webkit-line-clamp: 8;
-  font-size: var(--ds-text-xs);
+  font-size: var(--ds-text-small);
   font-weight: 400;
   line-height: 1.4;
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
   text-align: left;
   word-break: break-word;
   text-wrap: pretty;

@@ -1,9 +1,9 @@
 .summary {
   display: flex;
-  gap: 4px;
+  gap: var(--ds-space-xs);
   min-width: 0;
   overflow: hidden;
-  color: var(--ds-gray-10);
+  color: var(--ds-foreground-tertiary);
   white-space: nowrap;
 
   & > span {
@@ -11,17 +11,17 @@
   }
 
   & [data-tone="added"] {
-    color: var(--ds-gray-11);
+    color: var(--ds-foreground-secondary);
   }
 
   & [data-tone="removed"] {
-    color: var(--ds-red-11);
+    color: var(--ds-danger-foreground);
   }
 }
 
 .actions {
   display: flex;
   flex: none;
-  gap: 2px;
+  gap: var(--ds-space-2xs);
   align-items: center;
 }

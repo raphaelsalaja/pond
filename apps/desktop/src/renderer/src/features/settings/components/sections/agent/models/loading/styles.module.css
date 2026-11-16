@@ -14,24 +14,24 @@
 .toolbar,
 .header {
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
 }
 .header {
-  padding: 8px 12px 12px;
+  padding: var(--ds-space-md) var(--ds-space-lg) var(--ds-space-lg);
 }
 .row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 6rem 6rem 7rem 2rem;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
   height: 40px;
-  padding-inline: 12px;
+  padding-inline: var(--ds-space-lg);
 }
 .bone {
   display: block;
   height: 10px;
-  background: var(--ds-gray-4);
+  background: var(--ds-background-tertiary);
   border-radius: var(--ds-radius-sm);
   animation: pulse calc(var(--ds-duration-slow) * 4) var(--ds-easing-standard)
     infinite;
@@ -42,7 +42,7 @@
 }
 .bone[data-part="action"] {
   width: 48px;
-  margin-inline: 8px;
+  margin-inline: var(--ds-space-md);
 }
 .bone[data-part="logo"] {
   width: 20px;

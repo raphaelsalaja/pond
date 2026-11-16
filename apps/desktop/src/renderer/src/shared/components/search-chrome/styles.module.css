@@ -10,18 +10,18 @@
 
 .bar {
   display: flex;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   align-items: center;
   min-width: 0;
   min-height: var(--window-header-height, 48px);
-  padding: 8px;
+  padding: var(--ds-space-md);
 }
 
 .search {
   display: flex;
   flex: 1;
   min-width: 0;
-  padding-left: 8px;
+  padding-left: var(--ds-space-md);
 }
 
 .input {
@@ -31,24 +31,24 @@
 }
 
 .field[data-appearance="bare"] {
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
 
   /* Matches the Library search bar placeholder. */
   &::placeholder {
-    color: var(--ds-gray-9);
+    color: var(--ds-foreground-tertiary);
   }
 }
 
 .actions {
   display: flex;
   flex: none;
-  gap: 4px;
+  gap: var(--ds-space-xs);
   align-items: center;
 }
 
 .root[data-tone="plain"] .bar {
   min-height: 0;
-  padding-block: 8px 4px;
+  padding-block: var(--ds-space-md) var(--ds-space-xs);
 }
 
 .root[data-tone="header"] {
@@ -70,7 +70,7 @@
 .filters {
   display: flex;
   flex: none;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   align-items: center;
   min-width: 0;
   overflow-x: auto;

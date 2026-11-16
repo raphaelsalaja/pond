@@ -63,6 +63,7 @@ export const queryOperationAccess = {
   "conversion.status": "read",
   "downloader.clipboardLinks": "hidden",
   "downloader.export": "hidden",
+  "downloader.exportFiles": "hidden",
   "downloader.exportFolder": "hidden",
   "downloader.frames": "hidden",
   "downloader.pickExportFolder": "hidden",

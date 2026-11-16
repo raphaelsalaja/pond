@@ -1,10 +1,10 @@
 .popup {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--ds-space-md);
   width: 420px;
   max-height: min(520px, calc(100vh - 160px));
-  padding: 10px;
+  padding: var(--ds-space-lg);
 
   &[data-side] {
     transition:
@@ -36,9 +36,9 @@
 .grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
+  gap: var(--ds-space-xl);
   min-height: 120px;
-  padding: 8px;
+  padding: var(--ds-space-md);
   margin: 0;
   overflow-y: auto;
   list-style: none;

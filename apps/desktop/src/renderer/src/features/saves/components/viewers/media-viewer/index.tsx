@@ -29,10 +29,17 @@ export interface ViewerNav {
   step: (delta: number) => boolean;
 }
 
+export interface ViewerPosition {
+  index: number;
+  count: number;
+  fileIndex: number;
+}
+
 interface MediaViewerProps {
   save: Save;
   onNavigate?: (id: string) => void;
   onActiveFileIndexChange?: (fileIndex: number | null) => void;
+  onPositionChange?: (position: ViewerPosition | null) => void;
   navRef?: RefObject<ViewerNav | null>;
   showControls?: boolean;
 }
@@ -50,6 +57,7 @@ export function MediaViewer({
   save,
   onNavigate = openSave,
   onActiveFileIndexChange,
+  onPositionChange,
   navRef,
   showControls = true,
 }: MediaViewerProps) {
@@ -96,13 +104,20 @@ export function MediaViewer({
   const firstFileIndex = slides[0]?.fileIndex ?? null;
 
   useEffect(() => {
-    if (slides.length === 0) {
+    if (slides.length === 0 || firstFileIndex === null) {
       onActiveFileIndexChange?.(null);
+      onPositionChange?.(null);
       return;
     }
     if (slides.length !== 1) return;
     onActiveFileIndexChange?.(firstFileIndex);
-  }, [slides.length, firstFileIndex, onActiveFileIndexChange]);
+    onPositionChange?.({ index: 0, count: 1, fileIndex: firstFileIndex });
+  }, [
+    slides.length,
+    firstFileIndex,
+    onActiveFileIndexChange,
+    onPositionChange,
+  ]);
 
   if (slides.length === 0) {
     return null;
@@ -136,6 +151,7 @@ export function MediaViewer({
       slides={slides}
       chapters={slideChapters}
       onActiveFileIndexChange={onActiveFileIndexChange}
+      onPositionChange={onPositionChange}
       navRef={navRef}
       showControls={showControls}
     />
@@ -204,6 +220,7 @@ function Carousel({
   slides,
   chapters,
   onActiveFileIndexChange,
+  onPositionChange,
   navRef,
   showControls,
 }: {
@@ -212,6 +229,7 @@ function Carousel({
   slides: MediaSlide[];
   chapters?: ChapterCue[];
   onActiveFileIndexChange?: (fileIndex: number | null) => void;
+  onPositionChange?: (position: ViewerPosition | null) => void;
   navRef?: RefObject<ViewerNav | null>;
   showControls: boolean;
 }) {
@@ -249,8 +267,14 @@ function Carousel({
   );
 
   useEffect(() => {
-    onActiveFileIndexChange?.(slides[active]?.fileIndex ?? null);
-  }, [active, slides, onActiveFileIndexChange]);
+    const fileIndex = slides[active]?.fileIndex ?? null;
+    onActiveFileIndexChange?.(fileIndex);
+    onPositionChange?.(
+      fileIndex === null
+        ? null
+        : { index: active, count: slides.length, fileIndex },
+    );
+  }, [active, slides, onActiveFileIndexChange, onPositionChange]);
 
   useEffect(() => {
     if (!navRef) return;

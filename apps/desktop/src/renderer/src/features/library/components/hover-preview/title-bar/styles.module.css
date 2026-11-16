@@ -1,0 +1,14 @@
+.bar {
+  flex: none;
+  gap: var(--ds-space-md);
+  padding-inline: var(--ds-space-md);
+  border-bottom: 1px solid var(--ds-border-subtle);
+}
+
+.group {
+  gap: var(--ds-space-2xs);
+}
+
+.title {
+  overflow: hidden;
+}

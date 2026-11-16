@@ -1,7 +1,7 @@
 .nav {
   display: flex;
   flex-shrink: 0;
-  gap: 2px;
+  gap: var(--ds-space-2xs);
   align-items: center;
   -webkit-app-region: no-drag;
 }

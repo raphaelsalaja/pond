@@ -1,4 +1,4 @@
-import { IconCircleInfo, IconMessage, IconSliders } from "@pond/icons";
+import { IconChatBubble, IconCircleInfo, IconSliders } from "@pond/icons";
 import { PaneHeader } from "../pane-header";
 import styles from "./styles.module.css";
 
@@ -27,7 +27,7 @@ export function Inspector({
             <IconCircleInfo />
           </span>
           <span>
-            <IconMessage />
+            <IconChatBubble />
           </span>
         </span>
       </PaneHeader>

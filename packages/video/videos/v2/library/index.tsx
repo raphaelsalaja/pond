@@ -1,12 +1,12 @@
 import {
   IconAlbum2,
-  IconBookmark,
-  IconBookmarkSlash,
   IconClockPlus,
   IconFolderBan,
   IconHistory,
   IconNodes3,
   IconShuffle,
+  IconTag,
+  IconTagSlash,
   IconTrashXmark,
   IconWindowDownload,
 } from "@pond/icons";
@@ -74,11 +74,11 @@ const POINTER = [
 
 const PLACES = [
   { label: "All", icon: <IconAlbum2 />, count: "2,418", active: true },
-  { label: "Untagged", icon: <IconBookmarkSlash />, count: 37 },
+  { label: "Untagged", icon: <IconTagSlash />, count: 37 },
   { label: "Recently Added", icon: <IconClockPlus />, count: 64 },
   { label: "Uncategorized", icon: <IconFolderBan />, count: 112 },
   { label: "Recently Used", icon: <IconHistory /> },
-  { label: "Tags", icon: <IconBookmark />, count: 186 },
+  { label: "Tags", icon: <IconTag />, count: 186 },
   { label: "Trash", icon: <IconTrashXmark />, count: 3 },
   { label: "Random", icon: <IconShuffle /> },
 ];

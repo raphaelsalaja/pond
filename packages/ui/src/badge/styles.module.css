@@ -1,35 +1,30 @@
-.badge {
+.root {
   display: inline-flex;
   flex: none;
   align-items: center;
   height: 20px;
-  padding-inline: 8px;
-  font-size: var(--ds-text-xs);
-  font-weight: var(--ds-weight-lg);
+  padding-inline: var(--ds-space-md);
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-medium);
   line-height: 1;
-  color: var(--ds-gray-11);
+  color: var(--ds-foreground-secondary);
   white-space: nowrap;
-  background: var(--ds-gray-a3);
+  background: var(--ds-surface-secondary);
   border-radius: var(--ds-radius-full);
 
-  &[data-tone="positive"] {
-    color: var(--ds-green-11);
-    background: var(--ds-green-3);
-  }
-
   &[data-tone="inverted"] {
-    color: var(--ds-white-a12);
-    background: var(--ds-gray-12);
+    color: var(--ds-foreground-inverse);
+    background: var(--ds-background-inverse);
   }
 
   &[data-tone="negative"] {
-    color: var(--ds-white-a12);
-    background: var(--ds-red-9);
+    color: var(--ds-danger-contrast);
+    background: var(--ds-danger);
   }
 
   &[data-tone="accent"] {
-    color: var(--ds-white-a12);
-    background: var(--ds-accent-9);
+    color: var(--ds-accent-contrast);
+    background: var(--ds-accent);
   }
 }
 
@@ -38,22 +33,18 @@
   flex: none;
   width: 6px;
   height: 6px;
-  background: var(--ds-gray-9);
+  background: var(--ds-foreground-tertiary);
   border-radius: var(--ds-radius-full);
 
-  &[data-tone="positive"] {
-    background: var(--ds-green-9);
-  }
-
   &[data-tone="inverted"] {
-    background: var(--ds-gray-12);
+    background: var(--ds-background-inverse);
   }
 
   &[data-tone="negative"] {
-    background: var(--ds-red-9);
+    background: var(--ds-danger);
   }
 
   &[data-tone="accent"] {
-    background: var(--ds-accent-9);
+    background: var(--ds-accent);
   }
 }

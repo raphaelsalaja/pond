@@ -1,6 +1,7 @@
 import type { NewSave, Source } from "@pond/schema/db";
 import type { Capture, CaptureMedia, RawJson } from "@pond/schema/raw";
 import { QUOTE_DEPTH_CAP } from "@pond/schema/raw";
+import { rendersPostCard } from "@shared/save-file-names";
 import log from "electron-log/main.js";
 import { persistSave } from "../../persist-save";
 import {
@@ -10,6 +11,7 @@ import {
 } from "../../refresh/harvest-window";
 import {
   type RenderedCard,
+  renderBlueskyCardPng,
   renderThreadsCardPng,
   renderTweetCardPng,
 } from "../../render-card";
@@ -73,6 +75,7 @@ export interface CaptureTweetPorts<SaveRow extends CaptureTweetSave> {
   screenshotThreadsDual: typeof screenshotThreadsDual;
   renderTweetCardPng: typeof renderTweetCardPng;
   renderThreadsCardPng: typeof renderThreadsCardPng;
+  renderBlueskyCardPng: typeof renderBlueskyCardPng;
   inlineCaptureAvatars(
     capture: Capture,
     save: SaveRow,
@@ -158,7 +161,7 @@ async function runCaptureTweetWithPorts<SaveRow extends CaptureTweetSave>(
   };
   const save = await ports.readSave(saveId);
   if (!save || opts?.signal?.aborted) return idle;
-  if (save.source !== "twitter" && save.source !== "threads") return idle;
+  if (!rendersPostCard(save.source)) return idle;
   if (!save.sourceId) return idle;
 
   if (
@@ -194,7 +197,8 @@ async function runCaptureTweetWithPorts<SaveRow extends CaptureTweetSave>(
     };
   }
 
-  if (opts?.nativeOnly) {
+  /** Bluesky posts have no live screenshot path; the native card is the only card. */
+  if (opts?.nativeOnly || save.source === "bluesky") {
     log.debug(
       "[pond pipeline:capture-tweet] native miss, skipping live screenshot",
       saveId,
@@ -299,6 +303,7 @@ export const runCaptureTweet = createCaptureTweetRunner({
   screenshotThreadsDual,
   renderTweetCardPng,
   renderThreadsCardPng,
+  renderBlueskyCardPng,
   inlineCaptureAvatars,
 });
 
@@ -315,7 +320,9 @@ async function tryNativeRender<SaveRow extends CaptureTweetSave>(
   const render =
     save.source === "threads"
       ? ports.renderThreadsCardPng
-      : ports.renderTweetCardPng;
+      : save.source === "bluesky"
+        ? ports.renderBlueskyCardPng
+        : ports.renderTweetCardPng;
   const light = await render(inlined.capture, save.author, "light");
   if (!light) return false;
   const dark = await render(inlined.capture, save.author, "dark");

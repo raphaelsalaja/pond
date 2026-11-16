@@ -10,7 +10,7 @@
 .home {
   display: flex;
   align-self: flex-start;
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
 }
 
 .article {
@@ -22,7 +22,7 @@
 .section {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--ds-space-lg);
 
   & > * {
     margin: 0;
@@ -33,24 +33,24 @@
 .title,
 .heading {
   font-size: inherit;
-  font-weight: var(--ds-weight-xl);
+  font-weight: var(--ds-weight-strong);
 }
 
 .muted {
-  color: var(--ds-gray-9);
+  color: var(--ds-foreground-tertiary);
 }
 
 .list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding-inline-start: 20px;
+  gap: var(--ds-space-xs);
+  padding-inline-start: var(--ds-space-2xl);
   list-style: disc;
 }
 
 .link {
   color: inherit;
   text-decoration: underline;
-  text-decoration-color: var(--ds-gray-a6);
+  text-decoration-color: var(--ds-foreground-tertiary);
   text-underline-offset: 3px;
 }

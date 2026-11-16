@@ -9,14 +9,14 @@
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  background: var(--ds-gray-1);
+  background: var(--ds-background-primary);
 }
 
 .status {
   display: grid;
   flex: 1;
   place-items: center;
-  color: var(--ds-gray-10);
+  color: var(--ds-foreground-tertiary);
 }
 
 .scroll {
@@ -29,25 +29,25 @@
 .column {
   box-sizing: content-box;
   max-width: var(--article-measure);
-  padding: 88px 24px 96px;
+  padding: 88px var(--ds-space-2xl) 96px;
   margin: 0 auto;
   font-size: var(--article-text);
   line-height: 1.65;
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
   overflow-wrap: break-word;
 }
 
 .header {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--ds-space-lg);
   margin-bottom: 32px;
 }
 
 .title {
   margin: 0;
   font-size: var(--article-title);
-  font-weight: var(--ds-weight-xl);
+  font-weight: var(--ds-weight-strong);
   line-height: 1.2;
   text-wrap: balance;
 }
@@ -56,15 +56,15 @@
   margin: 0;
   font-size: 20px;
   line-height: 1.4;
-  color: var(--ds-gray-11);
+  color: var(--ds-foreground-secondary);
   text-wrap: pretty;
 }
 
 .byline {
   display: flex;
-  gap: 10px;
+  gap: var(--ds-space-md);
   align-items: center;
-  margin-top: 8px;
+  margin-top: var(--ds-space-md);
 }
 
 .avatar {
@@ -83,19 +83,19 @@
 }
 
 .author {
-  font-size: var(--ds-text-lg);
-  font-weight: var(--ds-weight-xl);
+  font-size: var(--ds-text-heading);
+  font-weight: var(--ds-weight-strong);
 }
 
 .facts {
-  font-size: var(--ds-text-md);
-  color: var(--ds-gray-10);
+  font-size: var(--ds-text-body);
+  color: var(--ds-foreground-tertiary);
 }
 
 .cover {
   width: 100%;
   height: auto;
-  margin-top: 16px;
+  margin-top: var(--ds-space-xl);
   border-radius: var(--ds-radius-md);
 }
 
@@ -106,7 +106,7 @@
 
   & :is(h1, h2, h3, h4, h5, h6) {
     margin: 1.8em 0 0.6em;
-    font-weight: var(--ds-weight-xl);
+    font-weight: var(--ds-weight-strong);
     line-height: 1.3;
     text-wrap: balance;
   }
@@ -128,7 +128,7 @@
   }
 
   & a {
-    color: var(--ds-blue-11);
+    color: var(--ds-accent-foreground);
     text-decoration: underline;
     text-decoration-thickness: 1px;
     text-underline-offset: 2px;
@@ -145,13 +145,13 @@
 
   & blockquote {
     padding-left: 1em;
-    color: var(--ds-gray-11);
-    border-left: 3px solid var(--ds-gray-6);
+    color: var(--ds-foreground-secondary);
+    border-left: 3px solid var(--ds-border-strong);
   }
 
   & cite {
     display: block;
-    font-size: var(--ds-text-lg);
+    font-size: var(--ds-text-heading);
     font-style: normal;
   }
 
@@ -166,12 +166,12 @@
   & figure {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: var(--ds-space-md);
   }
 
   & figcaption {
-    font-size: var(--ds-text-md);
-    color: var(--ds-gray-10);
+    font-size: var(--ds-text-body);
+    color: var(--ds-foreground-tertiary);
     text-align: center;
   }
 
@@ -179,14 +179,14 @@
     padding: 0.1em 0.3em;
     font-family: var(--ds-font-mono);
     font-size: 0.88em;
-    background: var(--ds-gray-3);
+    background: var(--ds-background-tertiary);
     border-radius: var(--ds-radius-xs);
   }
 
   & pre {
-    padding: 14px 16px;
+    padding: var(--ds-space-xl) var(--ds-space-xl);
     overflow-x: auto;
-    background: var(--ds-gray-3);
+    background: var(--ds-background-tertiary);
     border-radius: var(--ds-radius-md);
 
     & code {
@@ -197,20 +197,20 @@
 
   & hr {
     height: 1px;
-    background: var(--ds-gray-5);
+    background: var(--ds-surface-tertiary);
     border: 0;
   }
 
   & table {
     width: 100%;
-    font-size: var(--ds-text-lg);
+    font-size: var(--ds-text-heading);
     border-collapse: collapse;
   }
 
   & :is(th, td) {
-    padding: 6px 8px;
+    padding: var(--ds-space-sm) var(--ds-space-md);
     text-align: left;
-    border-bottom: 1px solid var(--ds-gray-5);
+    border-bottom: 1px solid var(--ds-border-strong);
   }
 
   & sup {
@@ -219,9 +219,9 @@
 
   & [data-footnote] {
     display: flex;
-    gap: 8px;
-    font-size: var(--ds-text-lg);
-    color: var(--ds-gray-11);
+    gap: var(--ds-space-md);
+    font-size: var(--ds-text-heading);
+    color: var(--ds-foreground-secondary);
 
     & p {
       margin-bottom: 0.5em;
@@ -230,13 +230,13 @@
 }
 
 .preview {
-  padding-top: 20px;
-  margin: 8px 0 0;
-  color: var(--ds-gray-11);
-  border-top: 1px solid var(--ds-gray-5);
+  padding-top: var(--ds-space-2xl);
+  margin: var(--ds-space-md) 0 0;
+  color: var(--ds-foreground-secondary);
+  border-top: 1px solid var(--ds-border-strong);
 
   & a {
-    color: var(--ds-blue-11);
+    color: var(--ds-accent-foreground);
     cursor: pointer;
   }
 }

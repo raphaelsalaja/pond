@@ -4,25 +4,19 @@
 
 .board {
   --xy-background-color: transparent;
-  --xy-background-pattern-color: var(--ds-gray-a6);
+  --xy-background-pattern-color: var(--ds-foreground-tertiary);
   --xy-edge-stroke-width: 1.5;
-  --xy-edge-stroke-selected: var(--ds-accent-9);
-  --xy-connectionline-stroke: var(--ds-accent-9);
+  --xy-edge-stroke-selected: var(--ds-accent);
+  --xy-connectionline-stroke: var(--ds-accent);
   --xy-connectionline-stroke-width: 1.5;
-  --xy-selection-background-color: var(--ds-accent-a3);
-  --xy-selection-border: 1px solid var(--ds-accent-9);
+  --xy-selection-background-color: var(--ds-accent-tint);
+  --xy-selection-border: 1px solid var(--ds-accent);
   --xy-node-border-radius: 0;
-  --xy-resize-background-color: var(--ds-accent-9);
-  --canvas-selection: 1.5px solid var(--ds-accent-9);
-  --canvas-shadow-rest:
-    0 0 0 0.5px var(--ds-shadow-faint), 0 1px 2px var(--ds-shadow-faint),
-    0 6px 16px -6px var(--ds-shadow-soft);
-  --canvas-shadow-lift:
-    0 0 0 0.5px var(--ds-shadow-faint), 0 2px 6px var(--ds-shadow-faint),
-    0 18px 40px -12px var(--ds-shadow-soft);
-  --canvas-shadow-float:
-    0 0 0 1px var(--ds-gray-a3), 0 1px 3px var(--ds-shadow-faint),
-    0 10px 30px -8px var(--ds-shadow-soft);
+  --xy-resize-background-color: var(--ds-accent);
+  --canvas-selection: 1.5px solid var(--ds-accent);
+  --canvas-shadow-rest: var(--ds-shadow-overlay);
+  --canvas-shadow-lift: var(--ds-shadow-dialog);
+  --canvas-shadow-float: var(--ds-shadow-overlay);
   position: relative;
   flex: 1;
   min-width: 0;
@@ -31,7 +25,7 @@
   container: canvas-board / inline-size;
   overflow: hidden;
   outline: none;
-  background: var(--ds-gray-2);
+  background: var(--ds-background-secondary);
 
   &[data-tool="note"] :global(.react-flow__pane),
   &[data-tool="figure"] :global(.react-flow__pane),
@@ -67,7 +61,7 @@
   }
 
   &[data-multiple] {
-    --canvas-selection: 1px solid var(--ds-accent-7);
+    --canvas-selection: 1px solid var(--ds-accent-border);
   }
 
   &[data-multiple] :global(.react-flow__node.selected .react-flow__handle),
@@ -81,7 +75,7 @@
   }
 
   & :global(.react-flow__node:has(textarea, [contenteditable="true"])) {
-    --canvas-selection: 1px solid var(--ds-accent-7);
+    --canvas-selection: 1px solid var(--ds-accent-border);
   }
 
   & :global(.react-flow__resize-control.line) {
@@ -101,8 +95,8 @@
   & :global(.react-flow__resize-control.handle) {
     width: 8px;
     height: 8px;
-    background: var(--ds-gray-1);
-    border: 1.5px solid var(--ds-accent-9);
+    background: var(--ds-background-primary);
+    border: 1.5px solid var(--ds-accent);
     border-radius: 2px;
   }
 

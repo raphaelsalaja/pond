@@ -1,32 +1,32 @@
 .body {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--ds-space-lg);
   align-items: flex-start;
 }
 
 .description {
   margin: 0;
-  font-size: var(--ds-text-sm);
+  font-size: var(--ds-text-small);
   line-height: 20px;
-  color: var(--ds-gray-11);
+  color: var(--ds-foreground-secondary);
 }
 
 .form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--ds-space-xl);
   width: 100%;
-  padding-top: 20px;
-  margin-top: 8px;
-  border-top: 1px solid var(--ds-gray-4);
+  padding-top: var(--ds-space-2xl);
+  margin-top: var(--ds-space-md);
+  border-top: 1px solid var(--ds-border-subtle);
 }
 
 .error {
   overflow: hidden;
-  font-size: var(--ds-text-sm);
+  font-size: var(--ds-text-small);
   line-height: 20px;
-  color: var(--ds-red-11);
+  color: var(--ds-danger-foreground);
 
   p {
     margin: 0;

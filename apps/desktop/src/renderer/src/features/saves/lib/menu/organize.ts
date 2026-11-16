@@ -1,11 +1,10 @@
 import {
   IconCanvas,
   IconClipboard,
+  IconFolder,
   IconFolderPlus,
   IconFolderSend,
-  IconFolders,
   IconHeart,
-  IconHeartFill,
   IconImage,
   IconPencil,
   IconPinTack,
@@ -119,7 +118,7 @@ function buildAddItems(ids: string[], batch: boolean): MenuItemSpec[] {
     {
       type: "submenu",
       label: "Add to Folders",
-      icon: glyph(IconFolders),
+      icon: glyph(IconFolder),
       items: buildFolderItems(ids, batch),
     },
     {
@@ -188,7 +187,7 @@ export function buildOrganizeItems(
     editing: [
       {
         label: favorited ? "Unfavorite" : "Favorite",
-        icon: glyph(favorited ? IconHeartFill : IconHeart),
+        icon: glyph(IconHeart),
         shortcut: shortcutGlyphs("save.favorite"),
         onClick: () => void toggleFavorite(ids),
       },

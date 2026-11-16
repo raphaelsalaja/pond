@@ -1,0 +1,5 @@
+.estimate {
+  font-size: var(--ds-text-small);
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-foreground-tertiary);
+}

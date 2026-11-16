@@ -5,8 +5,8 @@
   z-index: 45;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  color: var(--ds-gray-12);
-  background: var(--ds-gray-1);
+  color: var(--ds-foreground-primary);
+  background: var(--ds-background-primary);
 }
 
 /* The page covers the app shell's drag strip, so it carries its own. */

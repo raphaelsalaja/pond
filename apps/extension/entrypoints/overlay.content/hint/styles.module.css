@@ -2,15 +2,15 @@
   position: absolute;
   top: 16px;
   left: 50%;
-  padding: 8px 12px;
-  font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-lg);
-  color: var(--ds-gray-12);
+  padding: var(--ds-space-md) var(--ds-space-lg);
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-foreground-primary);
   white-space: nowrap;
   pointer-events: none;
-  background: var(--ds-gray-1);
+  background: var(--ds-background-primary);
   border-radius: var(--ds-radius-full);
-  box-shadow: var(--ds-shadow-menu);
+  box-shadow: var(--ds-shadow-overlay);
   transform: translateX(-50%);
   animation: rise var(--ds-duration-slow) var(--ds-easing-snap) both;
 }

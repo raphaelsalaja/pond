@@ -30,9 +30,9 @@
   }
 
   &[data-background="checkerboard"] {
-    background-color: var(--ds-gray-2);
+    background-color: var(--ds-background-secondary);
     background-image: repeating-conic-gradient(
-      var(--ds-gray-5) 0% 25%,
+      var(--ds-surface-tertiary) 0% 25%,
       transparent 0% 50%
     );
     background-size: 16px 16px;

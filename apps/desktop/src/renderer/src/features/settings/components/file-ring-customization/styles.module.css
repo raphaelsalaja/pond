@@ -13,7 +13,7 @@
   padding: 4px;
   margin: 0;
   list-style: none;
-  background: var(--ds-gray-2);
+  background: var(--ds-background-secondary);
   border-radius: var(--ds-radius-lg);
 }
 
@@ -25,14 +25,14 @@
   min-width: 0;
   height: 32px;
   padding-inline: 2px 4px;
-  font-size: var(--ds-text-md);
-  color: var(--ds-gray-12);
+  font-size: var(--ds-text-body);
+  color: var(--ds-foreground-primary);
   border-radius: var(--ds-radius-md);
 
   &[data-dragging] {
     z-index: 1;
-    background: var(--ds-gray-1);
-    box-shadow: var(--ds-shadow-md);
+    background: var(--ds-background-primary);
+    box-shadow: var(--ds-shadow-overlay);
   }
 }
 
@@ -44,7 +44,7 @@
 .icon {
   display: inline-flex;
   flex: none;
-  color: var(--ds-gray-11);
+  color: var(--ds-foreground-secondary);
 }
 
 .label {
@@ -57,12 +57,12 @@
 
 .slot {
   flex: none;
-  font-size: var(--ds-text-sm);
-  color: var(--ds-gray-10);
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-tertiary);
 }
 
 .row[data-missing] :is(.label, .icon) {
-  color: var(--ds-gray-9);
+  color: var(--ds-foreground-tertiary);
 }
 
 .controls {
@@ -73,7 +73,7 @@
 
 .empty {
   padding-block: 24px;
-  background: var(--ds-gray-2);
+  background: var(--ds-background-secondary);
   border-radius: var(--ds-radius-lg);
 }
 
@@ -85,7 +85,7 @@
 }
 
 .capacity {
-  font-size: var(--ds-text-sm);
+  font-size: var(--ds-text-small);
   font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-10);
+  color: var(--ds-foreground-tertiary);
 }

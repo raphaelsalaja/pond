@@ -11,7 +11,7 @@ export default function Command() {
   const failed = folders.error && !data.length ? toError(folders.error) : null;
 
   return (
-    <List isLoading={folders.isLoading} searchBarPlaceholder="Search folders…">
+    <List isLoading={folders.isLoading} searchBarPlaceholder="Search…">
       {failed ? (
         <ProblemView error={failed} onRetry={folders.revalidate} />
       ) : (

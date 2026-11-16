@@ -1,3 +1,4 @@
+import { IconMusicNote, IconVideo } from "@pond/icons";
 import { clsx as cn } from "clsx";
 import type { KeyboardEvent } from "react";
 import { Frame } from "../frame";
@@ -93,6 +94,10 @@ function Panel({ className, ...props }: React.ComponentPropsWithoutRef<"div">) {
 function Screen({ editor, className, ...props }: PartProps) {
   const { clip, player } = editor;
   const { probe } = clip;
+  const tile = probe.storyboard
+    ? storyboardTile(probe.storyboard, player.time)
+    : null;
+  const still = frameAt(clip, player.time) ?? probe.thumbnail;
   return (
     <div className={cn(styles.screen, className)} {...props}>
       {player.playable && probe.preview ? (
@@ -108,31 +113,26 @@ function Screen({ editor, className, ...props }: PartProps) {
         >
           <track kind="captions" />
         </video>
+      ) : tile || still ? (
+        <Frame className={styles.video} fit="contain" tile={tile} src={still} />
       ) : (
-        <Frame
-          className={styles.video}
-          tile={
-            probe.storyboard
-              ? storyboardTile(probe.storyboard, player.time)
-              : null
-          }
-          src={frameAt(clip, player.time) ?? probe.thumbnail}
-        />
+        <span className={cn(styles.video, styles.blank)}>
+          {probe.videoOptions.length > 0 ? (
+            <IconVideo size={24} />
+          ) : (
+            <IconMusicNote size={24} />
+          )}
+        </span>
       )}
     </div>
   );
 }
 
-interface ControlsProps extends PartProps {
-  aside?: React.ReactNode;
-}
-
-function Controls({ editor, aside, className }: ControlsProps) {
+function Controls({ editor, className }: PartProps) {
   return (
     <Transport
       clip={editor.clip}
       player={editor.player}
-      aside={aside}
       className={cn(styles.transport, className)}
     />
   );

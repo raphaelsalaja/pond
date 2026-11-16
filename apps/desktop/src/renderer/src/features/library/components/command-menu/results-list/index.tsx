@@ -1,4 +1,4 @@
-import { IconCaretRightFill, IconCheck } from "@pond/icons";
+import { IconCaretRight, IconCheck } from "@pond/icons";
 import { Keyboard, Loader, PickerPanel } from "@pond/ui";
 import {
   type CSSProperties,
@@ -121,7 +121,7 @@ const EntryRow = memo(function EntryRow({
         </Keyboard.Key>
       ) : null}
       {entry.page ? (
-        <IconCaretRightFill
+        <IconCaretRight
           className={styles.indicator}
           size={10}
           aria-hidden

@@ -56,6 +56,7 @@ export interface DataTableContextValue<T extends RowData> {
     rowElementId: (id: string) => string;
     columns: TableColumn<T>[];
     gridTemplate: string;
+    gridTemplateFor: (order: readonly string[]) => string;
     gridMinWidth: number;
     selectionEnabled: boolean;
     selectionCheckboxes: boolean;

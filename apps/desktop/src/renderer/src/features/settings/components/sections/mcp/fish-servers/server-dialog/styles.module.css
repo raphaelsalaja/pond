@@ -1,13 +1,13 @@
 .content {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--ds-space-xl);
 }
 
 .secrets {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--ds-space-md);
   min-width: 0;
   padding: 0;
   margin: 0;
@@ -16,16 +16,16 @@
 
 .legend {
   padding: 0;
-  margin-bottom: 8px;
-  font-size: var(--ds-text-sm);
+  margin-bottom: var(--ds-space-md);
+  font-size: var(--ds-text-small);
   font-weight: 500;
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
 }
 
 .secret {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
 }
 

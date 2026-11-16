@@ -2,16 +2,16 @@
   position: relative;
   display: flex;
   flex-shrink: 0;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
   width: 100%;
   min-width: 0;
   min-height: 28px;
-  padding: 4px 12px;
+  padding: var(--ds-space-xs) var(--ds-space-lg);
   font: inherit;
-  font-size: var(--ds-text-md);
-  font-weight: var(--ds-weight-md);
-  color: var(--ds-gray-11);
+  font-size: var(--ds-text-body);
+  font-weight: var(--ds-weight-regular);
+  color: var(--ds-foreground-secondary);
   text-align: start;
   cursor: default;
   user-select: none;
@@ -26,20 +26,20 @@
   inset: 0 6px;
   z-index: -1;
   content: "";
-  background: var(--ds-gray-a3);
+  background: var(--ds-surface-secondary);
   border-radius: var(--ds-radius-sm);
   opacity: 0;
   transition: opacity var(--ds-duration-fast) var(--ds-easing-standard);
 }
 
 .item:not([data-highlight="active"]):hover::before,
-.item[data-active]::before {
+.item[data-highlighted]::before {
   opacity: 1;
 }
 
 .item[data-selection="checked"],
 .item[data-selection="mixed"] {
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
 }
 
 .selection-mark {
@@ -50,13 +50,13 @@
   width: 16px;
   height: 16px;
   margin-inline-start: auto;
-  color: var(--ds-accent-9);
+  color: var(--ds-accent);
 
   &[data-selection="mixed"]::after {
     width: 8px;
     height: 1.5px;
     content: "";
-    background: var(--ds-gray-9);
+    background: var(--ds-foreground-tertiary);
     border-radius: var(--ds-radius-full);
   }
 }
@@ -68,7 +68,7 @@
   justify-content: center;
   width: 16px;
   height: 16px;
-  color: var(--ds-gray-9);
+  color: var(--ds-foreground-tertiary);
 }
 
 .label {
@@ -98,7 +98,7 @@
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: var(--ds-gray-10);
+  color: var(--ds-foreground-tertiary);
   white-space: nowrap;
 }
 
@@ -106,8 +106,8 @@
   flex: none;
   width: 12px;
   height: 12px;
-  margin-inline: 4px;
-  color: var(--ds-gray-9);
+  margin-inline: var(--ds-space-xs);
+  color: var(--ds-foreground-tertiary);
 }
 
 .name {
@@ -123,8 +123,8 @@
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-xs);
+  font-size: var(--ds-text-small);
   font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-10);
+  color: var(--ds-foreground-tertiary);
   white-space: nowrap;
 }

@@ -1,21 +1,21 @@
 .review {
   display: flex;
   flex-direction: column;
-  padding: 4px;
-  background: var(--ds-gray-1);
+  padding: var(--ds-space-xs);
+  background: var(--ds-background-primary);
   border-radius: var(--ds-radius-lg);
   box-shadow:
-    var(--ds-shadow-xs),
-    inset 0 0 0 var(--ds-border-width) var(--ds-gray-a3);
+    var(--ds-shadow-border),
+    inset 0 0 0 var(--ds-border-width) var(--ds-border-subtle);
 }
 
 .heading {
   display: flex;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   align-items: center;
-  padding: 6px 8px;
-  font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-xl);
+  padding: var(--ds-space-sm) var(--ds-space-md);
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-strong);
 }
 
 .count,
@@ -28,25 +28,25 @@
 }
 
 .count {
-  padding: 0 5px;
-  font-size: var(--ds-text-xxs);
-  color: var(--ds-gray-11);
-  background: var(--ds-gray-a3);
+  padding: 0 var(--ds-space-sm);
+  font-size: var(--ds-text-micro);
+  color: var(--ds-foreground-secondary);
+  background: var(--ds-surface-secondary);
 }
 
 .done {
-  color: var(--ds-green-11);
-  background: var(--ds-green-3);
+  color: var(--ds-foreground-secondary);
+  background: var(--ds-surface-secondary);
 }
 
 .change {
   display: flex;
-  gap: 10px;
+  gap: var(--ds-space-md);
   align-items: center;
   height: 36px;
-  padding: 0 8px;
-  font-size: var(--ds-text-sm);
-  border-top: var(--ds-border-width) solid var(--ds-gray-a3);
+  padding: 0 var(--ds-space-md);
+  font-size: var(--ds-text-small);
+  border-top: var(--ds-border-width) solid var(--ds-border-subtle);
 }
 
 .folder {
@@ -55,8 +55,8 @@
   place-items: center;
   width: 36px;
   height: 22px;
-  color: var(--ds-gray-11);
-  background: var(--ds-gray-a2);
+  color: var(--ds-foreground-secondary);
+  background: var(--ds-surface-primary);
   border-radius: var(--ds-radius-sm);
 }
 
@@ -72,29 +72,29 @@
     height: 16px;
     overflow: hidden;
     border-radius: var(--ds-radius-xs);
-    box-shadow: 0 0 0 1.5px var(--ds-gray-1);
+    box-shadow: 0 0 0 1.5px var(--ds-background-primary);
   }
 
   > span:not(:first-child) {
-    margin-left: -12px;
+    margin-left: calc(var(--ds-space-lg) * -1);
   }
 }
 
 .target {
-  padding: 0 6px;
+  padding: 0 var(--ds-space-sm);
   margin-left: auto;
-  font-size: var(--ds-text-xs);
+  font-size: var(--ds-text-small);
   line-height: 18px;
-  color: var(--ds-accent-11);
-  background: var(--ds-accent-a3);
+  color: var(--ds-accent-foreground);
+  background: var(--ds-accent-tint);
   border-radius: var(--ds-radius-full);
   transition:
     color var(--ds-duration-slow) var(--ds-easing-standard),
     background var(--ds-duration-slow) var(--ds-easing-standard);
 
   [data-applied] & {
-    color: var(--ds-green-11);
-    background: var(--ds-green-3);
+    color: var(--ds-foreground-secondary);
+    background: var(--ds-surface-secondary);
   }
 }
 
@@ -102,40 +102,40 @@
   display: flex;
   justify-content: flex-end;
   height: 38px;
-  padding: 6px 4px 2px;
-  font-size: var(--ds-text-sm);
-  border-top: var(--ds-border-width) solid var(--ds-gray-a3);
+  padding: var(--ds-space-sm) var(--ds-space-xs) var(--ds-space-2xs);
+  font-size: var(--ds-text-small);
+  border-top: var(--ds-border-width) solid var(--ds-border-subtle);
 }
 
 .buttons,
 .result {
   display: flex;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   align-items: center;
 }
 
 .result {
   flex: 1;
   justify-content: space-between;
-  padding-left: 4px;
-  color: var(--ds-gray-11);
+  padding-left: var(--ds-space-xs);
+  color: var(--ds-foreground-secondary);
 }
 
 .discard,
 .apply,
 .undo {
-  padding: 4px 10px;
+  padding: var(--ds-space-xs) var(--ds-space-lg);
   border-radius: var(--ds-radius-md);
 }
 
 .discard,
 .undo {
-  color: var(--ds-gray-11);
+  color: var(--ds-foreground-secondary);
 }
 
 .apply {
-  color: var(--ds-gray-1);
-  background: var(--ds-gray-12);
+  color: var(--ds-foreground-inverse);
+  background: var(--ds-background-inverse);
   transition:
     transform var(--ds-duration-snap) var(--ds-easing-standard),
     opacity var(--ds-duration-snap) var(--ds-easing-standard);

@@ -1,0 +1,29 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: var(--ds-space-2xl) var(--ds-space-xl);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-xs);
+  align-items: flex-start;
+  font-size: var(--ds-text-small);
+}
+
+.swatch {
+  width: 64px;
+  height: 64px;
+  margin-bottom: var(--ds-space-md);
+  background: var(--ds-background-tertiary);
+  box-shadow: var(--ds-shadow-border);
+}
+
+.value {
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-foreground-tertiary);
+}

@@ -7,18 +7,26 @@
 .row {
   display: grid;
   grid-template-columns: 80px minmax(0, 1fr);
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
   min-height: 28px;
+
+  /* Interactive rows render through Button, whose root rules tie with this one. */
+  &[data-interactive] {
+    display: grid;
+    gap: var(--ds-space-md);
+    width: auto;
+    line-height: inherit;
+  }
 }
 
 .label {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-md);
-  color: var(--ds-gray-10);
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-regular);
+  color: var(--ds-foreground-tertiary);
   white-space: nowrap;
 }
 
@@ -27,28 +35,28 @@
   margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-md);
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-regular);
   font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
   text-align: right;
   white-space: nowrap;
 }
 
 .root:is([data-layout="tiles"], [data-layout="grid"]) {
-  gap: 6px;
+  gap: var(--ds-space-sm);
 
   & .row {
     display: flex;
     flex-direction: column-reverse;
-    gap: 3px;
+    gap: var(--ds-space-2xs);
     align-items: flex-start;
     justify-content: flex-end;
     min-width: 0;
     max-width: 100%;
     min-height: 0;
-    padding: 8px 10px;
-    background: var(--ds-gray-a2);
+    padding: var(--ds-space-md) var(--ds-space-lg);
+    background: var(--ds-surface-primary);
     border-radius: var(--ds-radius-sm);
   }
 
@@ -58,14 +66,14 @@
 
     &:hover,
     &[data-popup-open] {
-      background: var(--ds-gray-a3);
+      background: var(--ds-surface-secondary);
     }
   }
 
   & .label {
-    font-size: var(--ds-text-xs);
-    font-weight: var(--ds-weight-lg);
-    color: var(--ds-gray-10);
+    font-size: var(--ds-text-small);
+    font-weight: var(--ds-weight-medium);
+    color: var(--ds-foreground-tertiary);
   }
 
   & .value {

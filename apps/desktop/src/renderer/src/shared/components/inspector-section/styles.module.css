@@ -1,6 +1,6 @@
 .section {
   flex-shrink: 0;
-  padding-top: 14px;
+  padding-top: var(--ds-space-xl);
   border-top: var(--ds-border-width) solid var(--ds-border-subtle);
 }
 
@@ -27,23 +27,23 @@
 
 .static {
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
   min-height: 20px;
 }
 
 .title {
   min-width: 0;
-  font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-lg);
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-medium);
   line-height: 1.5;
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
 }
 
 .chevron {
   display: inline-flex;
   flex-shrink: 0;
-  color: var(--ds-gray-9);
+  color: var(--ds-foreground-tertiary);
   opacity: 0;
   transition:
     transform var(--ds-duration-fast) var(--ds-easing-standard),
@@ -67,14 +67,14 @@
 .panel {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   min-width: 0;
   /* Collapsing content must shrink the scroll area with the height animation, not all at once on unmount. */
   overflow: clip;
   overflow-clip-margin: 4px;
 
   &[data-static] {
-    margin-top: 10px;
+    margin-top: var(--ds-space-md);
   }
 }
 

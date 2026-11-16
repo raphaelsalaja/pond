@@ -2,7 +2,7 @@
   --rating-star: 22px;
 
   display: inline-flex;
-  gap: 2px;
+  gap: var(--ds-space-2xs);
   align-items: center;
 
   &[data-size="sm"] {
@@ -18,7 +18,7 @@
   width: var(--rating-star);
   height: var(--rating-star);
   padding: 0;
-  color: var(--ds-gray-6);
+  color: var(--ds-foreground-tertiary);
   cursor: var(--ds-cursor-interactive, pointer);
   background: transparent;
   border: 0;
@@ -26,7 +26,11 @@
   transition: color var(--ds-duration-fast) var(--ds-easing-standard);
 
   &[data-filled] {
-    color: var(--ds-gold-9);
+    color: var(--ds-gold);
+  }
+
+  &[data-filled] > svg {
+    fill: currentColor;
   }
 
   &[data-filled] > svg {
@@ -42,12 +46,12 @@
 /* Hovering previews the rating a click would set. */
 @media (hover: hover) {
   .root:hover .star {
-    color: var(--ds-gray-6);
+    color: var(--ds-foreground-tertiary);
   }
 
   .root .star:hover,
   .root .star:has(~ .star:hover) {
-    color: var(--ds-gold-8);
+    color: var(--ds-gold-border);
   }
 }
 

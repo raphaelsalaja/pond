@@ -1,6 +1,6 @@
 .body,
 .field {
-  --text-base: var(--ds-text-lg);
+  --text-base: var(--ds-text-heading);
 
   box-sizing: border-box;
   width: 100%;
@@ -10,7 +10,7 @@
   font: inherit;
   font-size: calc(var(--text-base) * var(--text-scale, 1));
   line-height: 1.4;
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
   overflow-wrap: anywhere;
   white-space: pre-wrap;
 
@@ -57,14 +57,14 @@
   }
 
   &[data-variant="note"] {
-    padding: 20px;
+    padding: var(--ds-space-2xl);
   }
 
   &[data-variant="text"] {
-    --text-base: var(--ds-text-xl);
+    --text-base: var(--ds-text-display);
 
-    padding: 6px 8px;
-    font-weight: var(--ds-weight-lg);
+    padding: var(--ds-space-sm) var(--ds-space-md);
+    font-weight: var(--ds-weight-medium);
   }
 
   &[data-variant="figure"] {
@@ -73,39 +73,39 @@
   }
 
   &[data-variant="topic"] {
-    padding: 0 16px;
+    padding: 0 var(--ds-space-xl);
     text-align: center;
   }
 
   &[data-variant="section"] {
-    --text-base: var(--ds-text-md);
+    --text-base: var(--ds-text-body);
 
     width: auto;
     min-width: 4ch;
     max-width: 100%;
     height: auto;
-    padding: 2px 8px;
+    padding: var(--ds-space-2xs) var(--ds-space-md);
     overflow: hidden;
     text-overflow: ellipsis;
-    font-weight: var(--ds-weight-lg);
+    font-weight: var(--ds-weight-medium);
     white-space: nowrap;
   }
 
   &[data-variant="label"] {
-    --text-base: var(--ds-text-sm);
+    --text-base: var(--ds-text-small);
 
     width: auto;
     min-width: 2ch;
     max-width: 240px;
     height: auto;
-    padding: 2px 6px;
+    padding: var(--ds-space-2xs) var(--ds-space-sm);
     text-align: center;
-    background: var(--ds-gray-1);
+    background: var(--ds-background-primary);
     border-radius: var(--ds-radius-xs);
   }
 
   &[data-bold] {
-    font-weight: var(--ds-weight-xxl);
+    font-weight: var(--ds-weight-strong);
   }
 
   &[data-strike] {
@@ -149,7 +149,7 @@
 }
 
 .body[data-empty] {
-  color: var(--ds-gray-a9);
+  color: var(--ds-foreground-tertiary);
 }
 
 .rich {
@@ -162,8 +162,8 @@
 .format {
   display: flex;
   flex: none;
-  gap: 2px;
-  padding: 6px 8px 0;
+  gap: var(--ds-space-2xs);
+  padding: var(--ds-space-sm) var(--ds-space-md) 0;
 }
 
 .field {
@@ -172,6 +172,6 @@
   cursor: text;
 
   &::placeholder {
-    color: var(--ds-gray-a9);
+    color: var(--ds-foreground-tertiary);
   }
 }

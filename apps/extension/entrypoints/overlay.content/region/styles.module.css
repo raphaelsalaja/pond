@@ -8,7 +8,7 @@
   user-select: none;
 
   &[data-picking] {
-    background: var(--ds-black-a4);
+    background: var(--ds-scrim);
   }
 
   &[data-picking]:has(.highlight) {
@@ -20,12 +20,12 @@
 .highlight,
 .box {
   position: absolute;
-  box-shadow: 0 0 0 100vmax var(--ds-black-a4);
+  box-shadow: 0 0 0 100vmax var(--ds-scrim);
 }
 
 .highlight {
   pointer-events: none;
-  outline: 2px solid var(--ds-accent-9);
+  outline: 2px solid var(--ds-accent);
   outline-offset: -1px;
   transition-timing-function: var(--ds-easing-snap);
   transition-duration: var(--ds-duration-emphasized);
@@ -34,7 +34,7 @@
 
 .box {
   cursor: move;
-  outline: 1px solid var(--ds-accent-9);
+  outline: 1px solid var(--ds-accent);
 
   /* Rule-of-thirds guides, drawn as two framed bands. */
   &::before,
@@ -42,7 +42,7 @@
     position: absolute;
     pointer-events: none;
     content: "";
-    border: 0 solid var(--ds-accent-a8);
+    border: 0 solid var(--ds-accent-border);
   }
 
   &::before {
@@ -64,13 +64,13 @@
   position: absolute;
   bottom: calc(100% + 6px);
   left: 0;
-  padding: 2px 6px;
-  font-size: var(--ds-text-xs);
+  padding: var(--ds-space-2xs) var(--ds-space-sm);
+  font-size: var(--ds-text-small);
   font-variant-numeric: tabular-nums;
-  color: var(--ds-white-a12);
+  color: var(--ds-media-foreground-primary);
   white-space: nowrap;
   pointer-events: none;
-  background: var(--ds-black-a9);
+  background: var(--ds-media-background);
   border-radius: var(--ds-radius-sm);
 }
 
@@ -79,9 +79,9 @@
   z-index: 1;
   width: 10px;
   height: 10px;
-  margin: -5px 0 0 -5px;
-  background: var(--ds-white-a12);
-  border: 1px solid var(--ds-accent-9);
+  margin: calc(var(--ds-space-xs) * -1) 0 0 calc(var(--ds-space-xs) * -1);
+  background: var(--ds-media-foreground-primary);
+  border: 1px solid var(--ds-accent);
   border-radius: var(--ds-radius-full);
   animation: pop var(--ds-duration-slow) var(--ds-easing-spring) both;
 
@@ -144,7 +144,7 @@
 
 .toolbar {
   flex-direction: row;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   width: max-content;
 }
 

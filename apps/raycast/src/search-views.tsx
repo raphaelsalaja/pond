@@ -18,7 +18,7 @@ export default function Command() {
   }));
 
   return (
-    <List isLoading={views.isLoading} searchBarPlaceholder="Search saved views…">
+    <List isLoading={views.isLoading} searchBarPlaceholder="Search…">
       {failed ? (
         <ProblemView error={failed} onRetry={views.revalidate} />
       ) : (

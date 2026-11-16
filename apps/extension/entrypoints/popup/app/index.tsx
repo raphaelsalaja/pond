@@ -7,7 +7,7 @@ import {
   IconCoffee,
   IconCrop,
   IconGear3,
-  IconImages,
+  IconImage,
   IconKeyboard,
   IconLightbulb,
 } from "@pond/icons";
@@ -111,7 +111,7 @@ const GROUPS: readonly { label: string; commands: readonly Command[] }[] = [
         tool: "images",
         label: "Save Images",
         command: "save-images",
-        icon: <IconImages size={16} />,
+        icon: <IconImage size={16} />,
       },
     ],
   },

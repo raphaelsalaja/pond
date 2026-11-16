@@ -143,7 +143,7 @@ export function ChoiceFilter({
       {choiceIsSearchable(field, options.length) ? (
         <Menu.Input
           aria-label={`Filter ${meta.label}`}
-          placeholder={`Search ${meta.label.toLowerCase()}…`}
+          placeholder="Search…"
         />
       ) : null}
       <Menu.FilterList className={styles.list}>

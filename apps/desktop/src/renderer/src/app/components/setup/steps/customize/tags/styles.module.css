@@ -1,19 +1,19 @@
 .tags {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
 }
 
 .ghosts {
   display: flex;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   opacity: 0.5;
 
   > span {
     width: 44px;
     height: 20px;
-    background: var(--ds-gray-a3);
+    background: var(--ds-surface-secondary);
     border-radius: var(--ds-radius-full);
   }
 

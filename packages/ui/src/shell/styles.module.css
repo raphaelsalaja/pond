@@ -10,12 +10,9 @@
   flex-direction: column;
   min-width: 0;
   padding: var(--ds-mac-inset);
-  padding-inline: 24px;
+  padding-inline: var(--ds-space-2xl);
   overflow-y: auto;
-
-  &:has(> .header) {
-    --scroll-fade-start-size: 0px;
-  }
+  overscroll-behavior: contain;
 }
 
 .main[data-restoring-scroll] {
@@ -25,8 +22,8 @@
 .aside {
   display: flex;
   width: 220px;
-  padding-block: 16px;
-  padding-inline: 8px;
+  padding-block: var(--ds-space-xl);
+  padding-inline: var(--ds-space-md);
 }
 
 .drag {
@@ -47,7 +44,7 @@
   align-items: center;
   height: auto;
   min-height: fit-content;
-  margin-bottom: 24px;
+  margin-bottom: var(--ds-space-2xl);
 }
 
 .empty {
@@ -55,8 +52,8 @@
   flex: 1;
   align-items: center;
   justify-content: center;
-  font-size: var(--ds-text-md);
-  color: var(--ds-gray-11);
+  font-size: var(--ds-text-body);
+  color: var(--ds-foreground-secondary);
 }
 
 :global(html):not(:global(.electron-disable-drag)) .drag {

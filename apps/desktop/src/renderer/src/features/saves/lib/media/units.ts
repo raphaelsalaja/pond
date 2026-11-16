@@ -14,6 +14,7 @@ import {
   isTextCardThumbnailPath,
   isThumbnailKind,
   POSTER_KIND,
+  rendersPostCard,
   THUMBNAIL_DARK_KIND,
   THUMBNAIL_KIND,
 } from "@shared/save-file-names";
@@ -260,7 +261,9 @@ function pickThumbnailFile(
   theme: ResolvedTheme | undefined,
 ): SaveFile | null {
   const files = save.files ?? [];
-  const hasOriginal = files.some((file) => !isAuxiliaryFile(file));
+  const hasOriginal = files.some(
+    (file) => !isAuxiliaryFile(file) || isPostRenderKind(file.kind),
+  );
   const usable = (file: SaveFile) =>
     isThumbnailKind(file.kind) &&
     (!hasOriginal || !isTextCardThumbnailPath(file.path));
@@ -278,7 +281,7 @@ function pickTweetScreenshot(
   save: Save,
   theme: ResolvedTheme | undefined,
 ): SaveFile | null {
-  if (save.source !== "twitter" && save.source !== "threads") return null;
+  if (!rendersPostCard(save.source)) return null;
   const files = save.files ?? [];
   const resolved = theme ?? resolveCurrentTheme();
   const preferredKind =
@@ -297,7 +300,7 @@ function pickTweetScreenshot(
 }
 
 export function needsTextCover(save: Save): boolean {
-  if (save.source === "twitter" || save.source === "threads") return false;
+  if (rendersPostCard(save.source)) return false;
   if (hasArchive(save)) return false;
   if (!textBodyForSave(save)) return false;
   if (!isTextOnlyAsideFromCover(save)) return false;

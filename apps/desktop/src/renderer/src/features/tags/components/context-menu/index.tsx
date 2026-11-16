@@ -1,14 +1,13 @@
 import {
-  IconFolder as AddToGroup,
   IconArrowRight as ArrowRight,
   IconBarsFilter as Filter,
-  IconFolderFill as Folder,
+  IconFolder as Folder,
   IconMerge as Merge,
   IconPencil as Pencil,
   IconMinus as RemoveFromGroup,
   IconStarMinus as StarMinus,
   IconStarPlus as StarPlus,
-  IconTags as Tags,
+  IconTag as Tags,
   IconTrash as Trash,
 } from "@pond/icons";
 import type { MenuItemSpec } from "@pond/ui";
@@ -85,7 +84,7 @@ export function buildTagMenuItems(a: TagMenuActions): MenuItemSpec[] {
     {
       type: "submenu",
       label: "Add to Group",
-      icon: <AddToGroup />,
+      icon: <Folder />,
       disabled: targets.length === 0,
       items: groupItems(targets, a.onAddToGroup),
     },

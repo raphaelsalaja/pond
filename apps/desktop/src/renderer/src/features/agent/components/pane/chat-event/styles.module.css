@@ -1,13 +1,13 @@
 .event {
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
   justify-content: center;
   min-height: 24px;
-  margin-block: 8px;
-  font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-md);
-  color: var(--ds-gray-10);
+  margin-block: var(--ds-space-md);
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-regular);
+  color: var(--ds-foreground-tertiary);
 }
 
 .icon {

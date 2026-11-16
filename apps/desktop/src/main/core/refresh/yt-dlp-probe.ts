@@ -86,6 +86,14 @@ function classifyProbeFailure(
       message: "Pond can't download from this site.",
     };
   }
+  if (
+    /no video could be found|no (video|media) (formats )?found/i.test(stderr)
+  ) {
+    return {
+      reason: "unavailable",
+      message: "This post has no video or audio to download.",
+    };
+  }
   if (/drm/i.test(stderr)) {
     return {
       reason: "unsupported",

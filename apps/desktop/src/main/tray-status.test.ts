@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   buildTrayTemplate,
-  trayBadge,
   trayHeaderLabel,
   traySavingLabel,
   trayVersionLabel,
@@ -34,13 +33,6 @@ function findByLabel(
     if (nested) return nested;
   }
 }
-
-describe("trayBadge", () => {
-  it("shows running work, not the ingest queue", () => {
-    expect(trayBadge({ inflight: 4 })).toBe("4");
-    expect(trayBadge({ inflight: 0 })).toBe("");
-  });
-});
 
 describe("traySavingLabel", () => {
   it("stays quiet when nothing is ingesting", () => {

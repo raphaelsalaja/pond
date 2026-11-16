@@ -6,20 +6,20 @@
 
 .header {
   min-height: 52px;
-  padding: 0 20px;
-  border-bottom: 1px solid var(--ds-gray-a4);
+  padding: 0 var(--ds-space-2xl);
+  border-bottom: 1px solid var(--ds-border-subtle);
 }
 
 .title {
-  font-size: var(--ds-text-md);
+  font-size: var(--ds-text-body);
 }
 
 .version {
-  margin-left: 6px;
-  font-weight: var(--ds-weight-md);
-  color: var(--ds-gray-10);
+  margin-left: var(--ds-space-sm);
+  font-weight: var(--ds-weight-regular);
+  color: var(--ds-foreground-tertiary);
 }
 
 .content {
-  padding-block: 16px 24px;
+  padding-block: var(--ds-space-xl) var(--ds-space-2xl);
 }

@@ -10,7 +10,11 @@ export function sourceOptions(values: readonly string[]): FilterOption[] {
         source?.source === "local" ? "Local Files" : (source?.label ?? value),
       predicate: { field: "source", operator: "eq", value },
       icon: source
-        ? createElement(BrandTile, { source: source.source, size: 16 })
+        ? createElement(BrandTile, {
+            source: source.source,
+            size: 16,
+            shape: "circle",
+          })
         : undefined,
     };
   });

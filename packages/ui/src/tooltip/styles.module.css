@@ -8,13 +8,13 @@
 .popup {
   max-width: 320px;
   padding: 0;
-  font-size: var(--ds-text-xs);
-  font-weight: var(--ds-weight-lg);
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-medium);
   text-align: center;
-  color: var(--ds-gray-11);
-  background: var(--ds-gray-1);
+  color: var(--ds-foreground-secondary);
+  background: var(--ds-background-primary);
   border-radius: var(--ds-radius-sm);
-  box-shadow: var(--ds-shadow-tooltip);
+  box-shadow: var(--ds-shadow-overlay);
   transition:
     opacity var(--ds-duration-snap) var(--ds-easing-decelerate),
     transform var(--ds-duration-snap) var(--ds-easing-decelerate);
@@ -58,11 +58,20 @@
   .sized {
     transition: none;
   }
+
+  .popup {
+    transition: opacity var(--ds-duration-snap) var(--ds-easing-decelerate);
+
+    &[data-starting-style],
+    &[data-ending-style] {
+      transform: none;
+    }
+  }
 }
 
 .body {
   display: block;
-  padding: 5px 8px;
+  padding: var(--ds-space-sm) var(--ds-space-md);
 }
 
 .note {
@@ -71,7 +80,7 @@
 
 .row {
   display: inline-flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
 }
 
@@ -85,12 +94,12 @@
 }
 
 .viewport {
-  --viewport-inline-padding: 8px;
+  --viewport-inline-padding: var(--ds-space-md);
   position: relative;
   box-sizing: border-box;
   width: 100%;
   height: 100%;
-  padding: 5px var(--viewport-inline-padding);
+  padding: var(--ds-space-sm) var(--viewport-inline-padding);
   overflow: clip;
 
   [data-previous],
@@ -126,6 +135,13 @@
     opacity: 0;
     translate: -50% 0;
   }
+
+  @media (prefers-reduced-motion: reduce) {
+    &[data-activation-direction] [data-current][data-starting-style],
+    &[data-activation-direction] [data-previous][data-ending-style] {
+      translate: 0;
+    }
+  }
 }
 
 .info {
@@ -136,10 +152,10 @@
   width: 16px;
   height: 16px;
   padding: 0;
-  color: var(--ds-gray-10);
+  color: var(--ds-foreground-tertiary);
   vertical-align: middle;
   cursor: var(--ds-cursor-interactive, pointer);
-  background: var(--ds-gray-a3);
+  background: var(--ds-surface-secondary);
   border: 0;
   border-radius: var(--ds-radius-xs);
   transition:
@@ -149,7 +165,7 @@
 
   &:hover,
   &[data-popup-open] {
-    color: var(--ds-gray-12);
-    background: var(--ds-gray-a4);
+    color: var(--ds-foreground-primary);
+    background: var(--ds-surface-tertiary);
   }
 }

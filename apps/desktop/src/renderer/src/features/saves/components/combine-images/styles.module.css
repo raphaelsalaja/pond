@@ -2,16 +2,16 @@
   -webkit-app-region: drag;
   display: grid;
   grid-template-columns: 296px minmax(0, 1fr) 64px;
-  gap: 8px;
+  gap: var(--ds-space-md);
   box-sizing: border-box;
   height: 100dvh;
-  padding: 8px;
-  background: var(--ds-gray-3);
+  padding: var(--ds-space-md);
+  background: var(--ds-background-tertiary);
 }
 
 .placeholder {
   -webkit-app-region: no-drag;
-  background: var(--ds-gray-1);
+  background: var(--ds-background-primary);
   border-radius: var(--ds-radius-lg);
-  box-shadow: var(--ds-shadow-sm);
+  box-shadow: var(--ds-shadow-border);
 }

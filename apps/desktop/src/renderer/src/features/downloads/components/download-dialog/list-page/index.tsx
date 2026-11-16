@@ -19,6 +19,8 @@ export interface ListRow {
   title: string | null;
   duration: number | null;
   thumbnail: string | null;
+  /** Media goes to yt-dlp, a post or page to Pond's importer, a file straight into a save. */
+  kind: "media" | "post" | "file";
   state: "loading" | "ready" | "failed";
   message?: string | undefined;
   selected: boolean;
@@ -51,7 +53,7 @@ export function ListPage({
         onValueChange={(mode) => onRequestChange({ mode })}
       />
       {request.mode === "video" ? (
-        <OptionRow label="Quality" hint="Each download uses the closest match">
+        <OptionRow label="Quality" hint="Each download uses the closest match.">
           <EnumSelect
             aria-label="Quality"
             value={request.maxHeight ?? 1080}
@@ -77,9 +79,10 @@ export function ListPage({
           />
         </OptionRow>
       ) : (
-        <OptionRow label="Language" hint="Links without captions are skipped">
-          <span className={styles.language}>English</span>
-        </OptionRow>
+        <OptionRow
+          label="Language"
+          hint="English. Links without captions are skipped."
+        />
       )}
       <div className={styles.list}>
         <label className={styles.all} htmlFor={`${id}-all`}>

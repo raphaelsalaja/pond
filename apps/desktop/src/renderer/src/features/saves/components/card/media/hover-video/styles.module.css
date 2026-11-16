@@ -3,7 +3,6 @@
   display: block;
   margin: auto;
   border-radius: var(--ds-radius-xs);
-  box-shadow: var(--ds-shadow-save);
   -webkit-user-drag: none;
 }
 

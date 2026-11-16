@@ -1,19 +1,19 @@
 .list {
   display: flex;
   flex-direction: column;
-  padding: 4px;
+  padding: var(--ds-space-xs);
   margin: 0;
   list-style: none;
   border-radius: var(--ds-radius-xl);
-  box-shadow: var(--ds-shadow-xs);
+  box-shadow: var(--ds-shadow-border);
 }
 
 .row {
   position: relative;
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
-  padding: 6px 8px;
+  padding: var(--ds-space-sm) var(--ds-space-md);
   border-radius: var(--ds-radius-md);
   isolation: isolate;
 
@@ -29,7 +29,7 @@
   }
 
   &:hover::before {
-    background: var(--ds-gray-a3);
+    background: var(--ds-surface-secondary);
   }
 }
 
@@ -67,17 +67,17 @@
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-md);
+  font-size: var(--ds-text-body);
   line-height: 18px;
   white-space: nowrap;
 }
 
 .name {
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
 }
 
 .schedule {
-  color: var(--ds-gray-10);
+  color: var(--ds-foreground-tertiary);
 }
 
 .switch {
@@ -87,7 +87,7 @@
 
 .empty {
   margin: 0;
-  font-size: var(--ds-text-sm);
+  font-size: var(--ds-text-small);
   line-height: 1.45;
-  color: var(--ds-gray-10);
+  color: var(--ds-foreground-tertiary);
 }

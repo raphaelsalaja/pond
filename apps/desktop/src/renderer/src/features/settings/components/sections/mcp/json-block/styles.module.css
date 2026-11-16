@@ -1,12 +1,12 @@
 .code {
   max-height: 140px;
-  padding: 8px 10px;
+  padding: var(--ds-space-md) var(--ds-space-lg);
   margin: 0;
   overflow: auto;
   font-family: var(--ds-font-mono);
-  font-size: var(--ds-text-xs);
+  font-size: var(--ds-text-small);
   line-height: 1.5;
-  background: var(--ds-gray-2);
+  background: var(--ds-background-secondary);
   border-radius: var(--ds-radius-md);
 }
 

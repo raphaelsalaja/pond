@@ -1,27 +1,27 @@
 .card {
-  --status-color: var(--ds-green-11);
+  --status-color: var(--ds-accent-foreground);
 
   container-type: inline-size;
 
   &[data-state="processing"] {
-    --status-color: var(--ds-gray-11);
+    --status-color: var(--ds-foreground-secondary);
   }
 
   &[data-state="off"] {
-    --status-color: var(--ds-gray-9);
+    --status-color: var(--ds-foreground-tertiary);
   }
 
   &[data-state="attention"] {
-    --status-color: var(--ds-orange-11);
+    --status-color: var(--ds-danger-foreground);
   }
 }
 
 .row {
   display: grid;
   grid-template-columns: 18px minmax(0, 1fr) auto;
-  gap: 12px;
+  gap: var(--ds-space-lg);
   align-items: start;
-  padding: 16px 20px;
+  padding: var(--ds-space-xl) var(--ds-space-2xl);
 }
 
 .indicator {
@@ -35,14 +35,14 @@
 .copy {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--ds-space-md);
   min-width: 0;
 }
 
 .summary {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--ds-space-2xs);
   min-width: 0;
 }
 
@@ -53,14 +53,14 @@
 
 .detail {
   display: flex;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   align-items: center;
   min-height: 20px;
   margin: 0;
-  font-size: var(--ds-text-sm);
+  font-size: var(--ds-text-small);
   font-variant-numeric: tabular-nums;
   line-height: 20px;
-  color: var(--ds-gray-10);
+  color: var(--ds-foreground-tertiary);
   overflow-wrap: anywhere;
 }
 
@@ -71,7 +71,7 @@
 .failures {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--ds-space-md);
   min-width: 0;
   padding: 0;
   margin: 0;
@@ -81,19 +81,19 @@
 .failureGroup {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--ds-space-2xs);
   min-width: 0;
 }
 
 .failureHead {
   display: flex;
-  gap: 12px;
+  gap: var(--ds-space-lg);
   align-items: baseline;
   justify-content: space-between;
   min-width: 0;
-  font-size: var(--ds-text-sm);
+  font-size: var(--ds-text-small);
   line-height: 20px;
-  color: var(--ds-gray-11);
+  color: var(--ds-foreground-secondary);
 }
 
 .taskLabel {
@@ -106,7 +106,7 @@
 .failureCount {
   flex: none;
   font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-10);
+  color: var(--ds-foreground-tertiary);
 }
 
 .failureItems {
@@ -120,12 +120,12 @@
 
 .failureItem {
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: baseline;
   min-width: 0;
-  font-size: var(--ds-text-sm);
+  font-size: var(--ds-text-small);
   line-height: 20px;
-  color: var(--ds-gray-10);
+  color: var(--ds-foreground-tertiary);
 }
 
 .saveTitle {
@@ -144,7 +144,7 @@
   max-width: 45%;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: var(--ds-gray-9);
+  color: var(--ds-foreground-tertiary);
   white-space: nowrap;
 }
 
@@ -162,7 +162,7 @@
 .breakdown {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--ds-space-md);
   width: min(280px, var(--available-width, 280px));
   max-height: min(240px, calc(var(--available-height, 240px) - 10px));
   overflow: auto;
@@ -174,13 +174,13 @@
 .group {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--ds-space-2xs);
   min-width: 0;
 }
 
 .groupHead {
   display: flex;
-  gap: 24px;
+  gap: var(--ds-space-2xl);
   justify-content: space-between;
 }
 

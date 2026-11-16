@@ -1,11 +1,10 @@
 import {
-  IconCheckFill,
+  IconCheck,
   IconChevronDown,
   IconFaceSmile,
   IconFolder,
   IconFolderOpen,
   IconFolderPlus,
-  IconFolders,
   IconLayers,
 } from "@pond/icons";
 import { cssVars, Menu, Tooltip } from "@pond/ui";
@@ -101,7 +100,7 @@ function LibraryMenuContent({
                     className={styles.label}
                     aria-label="Current Library"
                   >
-                    <IconCheckFill size={12} />
+                    <IconCheck size={12} />
                   </Menu.SecondaryLabel>
                 ) : null}
               </Menu.Item>
@@ -135,7 +134,7 @@ function LibraryMenuContent({
         </Menu.Item>
         <Menu.Item onClick={() => void mergeLibrary()}>
           <Menu.ItemIcon>
-            <IconFolders />
+            <IconFolder />
           </Menu.ItemIcon>
           <Menu.ItemLabel>Merge Library</Menu.ItemLabel>
         </Menu.Item>

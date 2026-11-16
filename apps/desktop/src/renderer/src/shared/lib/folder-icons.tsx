@@ -699,15 +699,15 @@ export function FolderIcon({
 }
 
 export const FOLDER_SWATCHES = [
-  { id: null, label: "Default", css: "var(--ds-gray-8)" },
-  { id: "red", label: "Red", css: "var(--ds-red-9)" },
-  { id: "orange", label: "Orange", css: "var(--ds-orange-9)" },
-  { id: "yellow", label: "Yellow", css: "var(--ds-yellow-9)" },
-  { id: "green", label: "Green", css: "var(--ds-green-9)" },
-  { id: "teal", label: "Teal", css: "var(--ds-teal-9)" },
-  { id: "blue", label: "Blue", css: "var(--ds-blue-9)" },
-  { id: "purple", label: "Purple", css: "var(--ds-purple-9)" },
-  { id: "pink", label: "Pink", css: "var(--ds-pink-9)" },
+  { id: null, label: "Default", css: "var(--ds-foreground-tertiary)" },
+  { id: "red", label: "Red", css: "var(--ds-red)" },
+  { id: "orange", label: "Orange", css: "var(--ds-orange)" },
+  { id: "yellow", label: "Yellow", css: "var(--ds-yellow)" },
+  { id: "green", label: "Green", css: "var(--ds-green)" },
+  { id: "teal", label: "Teal", css: "var(--ds-teal)" },
+  { id: "blue", label: "Blue", css: "var(--ds-blue)" },
+  { id: "purple", label: "Purple", css: "var(--ds-purple)" },
+  { id: "pink", label: "Pink", css: "var(--ds-pink)" },
 ] as const;
 
 function searchTerms(icon: FolderIconOption): string[] {

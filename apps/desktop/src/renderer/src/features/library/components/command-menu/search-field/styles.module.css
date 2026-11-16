@@ -2,13 +2,13 @@
   display: flex;
   flex: none;
   flex-direction: column;
-  padding: 0 14px;
+  padding: 0 var(--ds-space-xl);
 }
 
 .crumbs {
   display: flex;
-  padding-top: 12px;
-  margin-left: -4px;
+  padding-top: var(--ds-space-lg);
+  margin-left: calc(var(--ds-space-xs) * -1);
 }
 
 .crumb {
@@ -18,7 +18,7 @@
 
 .context {
   flex: none;
-  color: var(--ds-gray-9);
+  color: var(--ds-foreground-tertiary);
 }
 
 .title {
@@ -30,7 +30,7 @@
 
 .field {
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
   min-height: 48px;
 }
@@ -39,7 +39,7 @@
   flex: none;
   width: 16px;
   height: 16px;
-  color: var(--ds-gray-9);
+  color: var(--ds-foreground-tertiary);
 }
 
 .input {
@@ -53,7 +53,7 @@
   flex: none;
   width: 14px;
   height: 14px;
-  color: var(--ds-gray-9);
+  color: var(--ds-foreground-tertiary);
   animation: reveal var(--ds-duration-fast) var(--ds-easing-standard) 200ms both;
 }
 

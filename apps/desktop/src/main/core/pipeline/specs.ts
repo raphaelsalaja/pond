@@ -1,5 +1,6 @@
 import { OPS, type Op, type Save, type Source } from "@pond/schema/db";
 import { type RawJson, walkCaptureMedia } from "@pond/schema/raw";
+import { rendersPostCard } from "@shared/save-file-names";
 
 const UNIVERSAL_SPEC: readonly Op[] = OPS;
 
@@ -38,7 +39,7 @@ export function planOps(source: Source): readonly Op[] {
         op !== "fetch_video_ytdlp",
     );
   }
-  if (source === "twitter" || source === "threads") {
+  if (rendersPostCard(source)) {
     return UNIVERSAL_SPEC.filter(
       (op) => op !== "archive_page" && op !== "render_text_cover",
     );

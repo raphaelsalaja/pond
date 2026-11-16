@@ -3,7 +3,7 @@
   flex: 1;
   grid-template-rows: repeat(2, 44px);
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 8px;
+  gap: var(--ds-space-md);
   width: 100%;
   min-width: 0;
 }
@@ -15,7 +15,7 @@
   justify-self: center;
   width: 44px;
   height: 44px;
-  padding: 2px;
+  padding: var(--ds-space-2xs);
   border: 2px solid transparent;
   border-radius: var(--ds-radius-app-icon);
   corner-shape: var(--ds-corner-icon);
@@ -24,13 +24,13 @@
   &:hover {
     border-color: color-mix(
       in srgb,
-      var(--tint, var(--ds-gray-8)) 50%,
+      var(--tint, var(--ds-border-strong)) 50%,
       transparent
     );
   }
 
   &[data-selected] {
-    border-color: var(--tint, var(--ds-gray-12));
+    border-color: var(--tint, var(--ds-foreground-primary));
   }
 }
 

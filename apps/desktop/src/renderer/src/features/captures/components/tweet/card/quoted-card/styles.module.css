@@ -1,34 +1,34 @@
 .quoted {
-  padding: 12px;
-  margin-top: 12px;
+  padding: var(--ds-space-lg);
+  margin-top: var(--ds-space-lg);
   border: 1px solid var(--tw-border);
   border-radius: var(--ds-radius-xl);
 }
 
 .header {
   display: flex;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   align-items: center;
   min-width: 0;
 }
 
 .name {
   display: inline-flex;
-  gap: 3px;
+  gap: var(--ds-space-2xs);
   align-items: center;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-lg);
+  font-size: var(--ds-text-heading);
   font-weight: 700;
-  line-height: 20px;
+  line-height: var(--ds-leading-heading);
   white-space: nowrap;
 }
 
 .handle {
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-lg);
-  line-height: 20px;
+  font-size: var(--ds-text-heading);
+  line-height: var(--ds-leading-heading);
   color: var(--tw-secondary);
   white-space: nowrap;
 }
@@ -36,11 +36,11 @@
 .body {
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  margin: 4px 0 0;
+  margin: var(--ds-space-xs) 0 0;
   overflow: hidden;
   -webkit-line-clamp: 6;
-  font-size: var(--ds-text-lg);
-  line-height: 20px;
+  font-size: var(--ds-text-heading);
+  line-height: var(--ds-leading-heading);
   overflow-wrap: anywhere;
   white-space: pre-wrap;
 }

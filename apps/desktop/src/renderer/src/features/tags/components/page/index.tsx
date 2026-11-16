@@ -1,12 +1,4 @@
-import {
-  IconBookmark,
-  IconFolder,
-  IconFolderFill,
-  IconPlus,
-  IconStar,
-  IconStarFill,
-  IconTagFill,
-} from "@pond/icons";
+import { IconFolder, IconPlus, IconStar, IconTag } from "@pond/icons";
 import { Button, Empty, Input, Sidebar, Tooltip } from "@pond/ui";
 import { DataTable } from "@pond/ui/data-table";
 import { defaultRangeExtractor, useVirtualizer } from "@tanstack/react-virtual";
@@ -420,7 +412,7 @@ export function TagsPage() {
             value={q}
             onChange={(event) => setQ(event.target.value)}
             spellCheck={false}
-            placeholder="Search tags…"
+            placeholder="Search…"
             aria-label="Search Tags"
             data-tags-search=""
           />
@@ -440,7 +432,7 @@ export function TagsPage() {
                         onClick={() => setScope("all")}
                       >
                         <Sidebar.Icon>
-                          <IconBookmark size={12} aria-hidden="true" />
+                          <IconTag size={12} aria-hidden="true" />
                         </Sidebar.Icon>
                         <Sidebar.ItemLabel>All</Sidebar.ItemLabel>
                         <Sidebar.Count>{total}</Sidebar.Count>
@@ -655,7 +647,7 @@ export function TagsPage() {
               ) : total === 0 && !q ? (
                 <Empty.Root className={styles.empty}>
                   <Empty.Media>
-                    <IconTagFill size={32} />
+                    <IconTag size={32} />
                   </Empty.Media>
                   <Empty.Title>No tags yet</Empty.Title>
                   <Empty.Description>
@@ -687,11 +679,11 @@ export function TagsPage() {
                 >
                   <Empty.Media>
                     {scope === "starred" ? (
-                      <IconStarFill size={32} />
+                      <IconStar size={32} />
                     ) : scope === "ungrouped" ? (
-                      <IconTagFill size={32} />
+                      <IconTag size={32} />
                     ) : (
-                      <IconFolderFill size={32} />
+                      <IconFolder size={32} />
                     )}
                   </Empty.Media>
                   <Empty.Title>No tags in {scopeLabel}</Empty.Title>

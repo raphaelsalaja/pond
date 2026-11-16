@@ -64,7 +64,7 @@ export default function Command(props: LaunchProps) {
       throttle
       searchText={searchText}
       onSearchTextChange={setSearchText}
-      searchBarPlaceholder="Search images and videos…"
+      searchBarPlaceholder="Search…"
       pagination={media.pagination}
       onSelectionChange={setSelectedId}
       searchBarAccessory={

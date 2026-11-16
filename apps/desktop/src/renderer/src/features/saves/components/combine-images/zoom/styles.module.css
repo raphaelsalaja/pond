@@ -3,25 +3,25 @@
   inset-block-end: 16px;
   inset-inline-start: 50%;
   display: flex;
-  gap: 4px;
+  gap: var(--ds-space-xs);
   align-items: center;
-  padding: 4px;
-  background: var(--ds-gray-1);
+  padding: var(--ds-space-xs);
+  background: var(--ds-background-primary);
   border-radius: var(--ds-radius-lg);
-  box-shadow: var(--ds-shadow-md);
+  box-shadow: var(--ds-shadow-overlay);
   transform: translateX(-50%);
 }
 
 .slider {
   width: 96px;
-  margin-inline: 4px;
+  margin-inline: var(--ds-space-xs);
 }
 
 .divider {
   align-self: stretch;
   width: 1px;
-  margin-block: 2px;
-  background: var(--ds-gray-a4);
+  margin-block: var(--ds-space-2xs);
+  background: var(--ds-surface-tertiary);
 }
 
 .percent {

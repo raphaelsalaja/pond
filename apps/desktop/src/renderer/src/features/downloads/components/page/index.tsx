@@ -3,8 +3,8 @@ import {
   IconBroom,
   IconCircleCheck,
   IconLink2,
-  IconMediaPauseFill,
-  IconMediaPlayFill,
+  IconMediaPause,
+  IconMediaPlay,
 } from "@pond/icons";
 import { sourceLabel } from "@pond/schema/sources";
 import { Button, Keyboard, Tooltip } from "@pond/ui";
@@ -255,7 +255,7 @@ export function DownloadsPage() {
               onClick={() => pause.mutate()}
               aria-label={paused ? "Resume Queue" : "Pause Queue"}
             >
-              {paused ? <IconMediaPlayFill /> : <IconMediaPauseFill />}
+              {paused ? <IconMediaPlay /> : <IconMediaPause />}
             </Button>
           </Tooltip>
         </>
@@ -287,7 +287,7 @@ export function DownloadsPage() {
         value={filters.q}
         onChange={(e) => downloadsFilters.setQ(e.target.value)}
         spellCheck={false}
-        placeholder="Search downloads…"
+        placeholder="Search…"
         aria-label="Search Downloads"
         data-downloads-search=""
       />

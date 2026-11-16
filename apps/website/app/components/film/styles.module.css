@@ -3,7 +3,7 @@
   flex: 1;
   place-items: start;
   min-height: 200px;
-  padding: 24px var(--page-inset) 40px;
+  padding: var(--ds-space-2xl) var(--page-inset) 40px;
   container-type: size;
   animation: enter 700ms calc(var(--splash-land) + 240ms)
     var(--ds-easing-decelerate) backwards;
@@ -15,9 +15,9 @@
   width: min(100%, 1040px, 100cqh * 16 / 9);
   height: auto;
   aspect-ratio: 16 / 9;
-  background: var(--ds-gray-2);
+  background: var(--ds-background-secondary);
   border-radius: var(--ds-radius-lg);
-  box-shadow: var(--ds-shadow-md);
+  box-shadow: var(--ds-shadow-overlay);
 }
 
 @keyframes enter {

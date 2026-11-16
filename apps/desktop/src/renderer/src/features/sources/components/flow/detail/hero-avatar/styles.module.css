@@ -9,7 +9,7 @@
   position: absolute;
   inset: -4px;
   content: "";
-  border: 1.5px solid var(--ds-gray-a5);
+  border: 1.5px solid var(--ds-border-strong);
   border-radius: calc(var(--ds-radius-source) + 2px);
   corner-shape: var(--ds-corner-icon);
 }
@@ -26,7 +26,7 @@
   height: 100%;
   object-fit: cover;
   border-radius: 50%;
-  box-shadow: var(--ds-shadow-sm);
+  box-shadow: var(--ds-shadow-border);
 }
 
 /* The ring is padding, not an outline, so the shadow falls outside it. */
@@ -35,12 +35,12 @@
   right: -5px;
   bottom: -5px;
   box-sizing: border-box;
-  padding: 2px;
+  padding: var(--ds-space-2xs);
   overflow: hidden;
-  background: var(--ds-gray-1);
+  background: var(--ds-background-primary);
   border-radius: calc(var(--ds-radius-source) + 2px);
   corner-shape: var(--ds-corner-icon);
-  box-shadow: var(--ds-shadow-sm);
+  box-shadow: var(--ds-shadow-border);
 }
 
 .badge svg,
@@ -55,7 +55,7 @@
 .badge[data-large] {
   right: -4px;
   bottom: -4px;
-  padding: 7px;
+  padding: var(--ds-space-md);
   border-radius: 50%;
 }
 
@@ -65,9 +65,9 @@
 
 .tile[data-large] {
   overflow: hidden;
-  background: var(--ds-gray-1);
+  background: var(--ds-background-primary);
   border-radius: var(--ds-radius-2xl);
-  box-shadow: var(--ds-shadow-sm);
+  box-shadow: var(--ds-shadow-border);
 }
 
 .tile[data-large] > span {

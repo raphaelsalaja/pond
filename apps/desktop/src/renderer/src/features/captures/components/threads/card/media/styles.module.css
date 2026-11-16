@@ -1,13 +1,13 @@
 .strip {
   display: flex;
-  gap: 6px;
-  margin-top: 8px;
+  gap: var(--ds-space-sm);
+  margin-top: var(--ds-space-md);
   overflow: hidden;
 }
 
 .single {
   max-width: 100%;
-  margin-top: 8px;
+  margin-top: var(--ds-space-md);
   overflow: hidden;
   background: var(--tw-placeholder);
   border-radius: var(--ds-radius-md);
@@ -73,7 +73,7 @@
   width: 44px;
   height: 44px;
   color: white;
-  background: var(--ds-black-a8);
+  background: var(--ds-media-background);
   border-radius: var(--ds-radius-full);
   transform: translate(-50%, -50%);
 }
@@ -82,10 +82,10 @@
   position: absolute;
   bottom: 8px;
   left: 8px;
-  padding: 1px 6px;
-  font-size: var(--ds-text-sm);
+  padding: 1px var(--ds-space-sm);
+  font-size: var(--ds-text-small);
   font-weight: 600;
   color: white;
-  background: var(--ds-black-a10);
+  background: var(--ds-media-background);
   border-radius: var(--ds-radius-xs);
 }

@@ -1,6 +1,6 @@
 .count {
   display: inline-flex;
-  gap: 4px;
+  gap: var(--ds-space-xs);
   align-items: center;
 }
 

@@ -1,7 +1,7 @@
 .media-grid {
   display: grid;
-  gap: 2px;
-  margin-top: 12px;
+  gap: var(--ds-space-2xs);
+  margin-top: var(--ds-space-lg);
   overflow: hidden;
   background: var(--tw-border);
   border: 1px solid var(--tw-border);
@@ -9,7 +9,7 @@
 }
 
 .media-grid[data-compact="true"] {
-  margin-top: 8px;
+  margin-top: var(--ds-space-md);
   border-radius: var(--ds-radius-xl);
 }
 
@@ -83,8 +83,8 @@
   position: absolute;
   bottom: 8px;
   left: 8px;
-  padding: 1px 6px;
-  font-size: var(--ds-text-sm);
+  padding: 1px var(--ds-space-sm);
+  font-size: var(--ds-text-small);
   font-weight: 600;
   color: white;
   background: var(--tw-scrim-strong);

@@ -11,7 +11,7 @@
 .header {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
-  padding-bottom: 16px;
+  padding-bottom: var(--ds-space-xl);
   border-bottom: var(--ds-border-width) solid var(--ds-border-subtle);
 }
 
@@ -21,14 +21,14 @@
 }
 
 .count {
-  font-weight: var(--ds-weight-md);
+  font-weight: var(--ds-weight-regular);
   font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-10);
+  color: var(--ds-foreground-tertiary);
 }
 
 .zoom {
   display: flex;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   align-items: center;
 }
 
@@ -39,7 +39,7 @@
 
 .actions {
   flex-direction: row;
-  gap: 4px;
+  gap: var(--ds-space-xs);
   justify-self: end;
   width: auto;
 }
@@ -54,23 +54,23 @@
 .grid {
   display: grid;
   grid-auto-rows: min-content;
-  gap: 12px;
-  padding: 16px;
+  gap: var(--ds-space-lg);
+  padding: var(--ds-space-xl);
   overflow: auto;
 }
 
 .tile {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--ds-space-2xs);
   min-width: 0;
-  padding: 6px;
+  padding: var(--ds-space-sm);
   cursor: pointer;
   user-select: none;
   border-radius: var(--ds-radius-lg);
 
   &:hover {
-    background: var(--ds-gray-a2);
+    background: var(--ds-surface-primary);
   }
 }
 
@@ -80,16 +80,16 @@
   align-items: center;
   justify-content: center;
   aspect-ratio: 1;
-  margin-bottom: 4px;
+  margin-bottom: var(--ds-space-xs);
   overflow: hidden;
   outline: 2px solid transparent;
   outline-offset: -2px;
-  background: var(--ds-gray-2);
+  background: var(--ds-background-secondary);
   border-radius: var(--ds-radius-md);
   transition: outline-color var(--ds-duration-snap) var(--ds-easing-standard);
 
   .tile[data-checked] & {
-    outline-color: var(--ds-accent-9);
+    outline-color: var(--ds-accent);
   }
 }
 
@@ -125,17 +125,17 @@
 .name {
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-xs);
-  font-weight: var(--ds-weight-lg);
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-medium);
   white-space: nowrap;
 }
 
 .size {
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-xs);
+  font-size: var(--ds-text-small);
   font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-10);
+  color: var(--ds-foreground-tertiary);
   white-space: nowrap;
 }
 

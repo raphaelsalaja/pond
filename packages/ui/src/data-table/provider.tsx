@@ -399,25 +399,36 @@ export function DataTableProvider<T extends RowData>({
     return ordered;
   }, [columns, columnOrder]);
 
-  const gridTemplate = useMemo(() => {
-    const parts: string[] = [];
-    if (selectionEnabled && selectionCheckboxes)
-      parts.push(`${SELECT_WIDTH}px`);
-    if (expansionEnabled) parts.push(`${CARET_WIDTH}px`);
-    for (const col of orderedColumns) {
-      const sized = columnSizing[col.id];
-      parts.push(
-        sized != null ? `${sized}px` : (col.width ?? "minmax(0, 1fr)"),
-      );
-    }
-    return parts.join(" ");
-  }, [
-    selectionEnabled,
-    selectionCheckboxes,
-    expansionEnabled,
-    orderedColumns,
-    columnSizing,
-  ]);
+  const gridTemplateFor = useCallback(
+    (order: readonly string[]) => {
+      const byId = new Map(columns.map((c) => [c.id, c]));
+      const parts: string[] = [];
+      if (selectionEnabled && selectionCheckboxes)
+        parts.push(`${SELECT_WIDTH}px`);
+      if (expansionEnabled) parts.push(`${CARET_WIDTH}px`);
+      for (const id of order) {
+        const col = byId.get(id);
+        if (!col) continue;
+        const sized = columnSizing[id];
+        parts.push(
+          sized != null ? `${sized}px` : (col.width ?? "minmax(0, 1fr)"),
+        );
+      }
+      return parts.join(" ");
+    },
+    [
+      columns,
+      selectionEnabled,
+      selectionCheckboxes,
+      expansionEnabled,
+      columnSizing,
+    ],
+  );
+
+  const gridTemplate = useMemo(
+    () => gridTemplateFor(orderedColumns.map((col) => col.id)),
+    [gridTemplateFor, orderedColumns],
+  );
 
   const gridMinWidth = useMemo(() => {
     let width = 0;
@@ -493,6 +504,7 @@ export function DataTableProvider<T extends RowData>({
         rowElementId,
         columns: orderedColumns,
         gridTemplate,
+        gridTemplateFor,
         gridMinWidth,
         selectionEnabled,
         selectionCheckboxes,
@@ -513,6 +525,7 @@ export function DataTableProvider<T extends RowData>({
       rowElementId,
       orderedColumns,
       gridTemplate,
+      gridTemplateFor,
       gridMinWidth,
       selectionEnabled,
       selectionCheckboxes,

@@ -1,6 +1,6 @@
 .root {
   display: flex;
-  gap: 12px;
+  gap: var(--ds-space-lg);
   align-items: center;
   width: 100%;
   /* Shrink-wrapped parents (settings ItemControl) otherwise collapse the track. */
@@ -8,9 +8,9 @@
 }
 
 .label {
-  font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-lg);
-  color: var(--ds-gray-11);
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-foreground-secondary);
 }
 
 .control {
@@ -27,23 +27,23 @@
   position: relative;
   width: 100%;
   height: 4px;
-  background: var(--ds-gray-a4);
+  background: var(--ds-surface-tertiary);
   border-radius: var(--ds-radius-full);
 }
 
 .indicator {
   position: absolute;
   height: 100%;
-  background: var(--ds-accent-9);
+  background: var(--ds-accent);
   border-radius: inherit;
 }
 
 .thumb {
   width: 14px;
   height: 14px;
-  background: var(--ds-gray-1);
+  background: var(--ds-background-primary);
   border-radius: var(--ds-radius-full);
-  box-shadow: var(--ds-shadow-sm);
+  box-shadow: var(--ds-shadow-raised);
 
   &:has(> :focus-visible) {
     outline-color: var(--ds-focus-outline);
@@ -56,8 +56,8 @@
 
 .value {
   min-width: 36px;
-  font-size: var(--ds-text-sm);
+  font-size: var(--ds-text-small);
   font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-11);
+  color: var(--ds-foreground-secondary);
   text-align: right;
 }

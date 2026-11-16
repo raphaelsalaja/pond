@@ -20,6 +20,7 @@ out
 coverage/
 playwright-report/
 test-results/
+.vitest/
 
 # packed tarballs
 *.tgz
@@ -73,6 +74,8 @@ apps/desktop/resources/replay/sw.js
 apps/desktop/resources/bin/pond-native-host
 apps/desktop/resources/bin/pond-native-host.exe
 apps/desktop/resources/bin/pond-apple-model
+apps/desktop/resources/render/
+packages/render/target/
 # Per-architecture Mac ffmpeg fetched by apps/desktop/scripts/fetch-mac-ffmpeg.mjs
 apps/desktop/vendor/
 

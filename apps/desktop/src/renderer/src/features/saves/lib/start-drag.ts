@@ -70,7 +70,7 @@ function createDragPreview(ids: readonly string[]): HTMLElement {
   for (const [index, id] of ids.slice(0, 3).entries()) {
     const layer = document.createElement("div");
     const offset = index * 5;
-    layer.style.cssText = `position:absolute;inset:${offset}px ${12 - offset}px ${12 - offset}px ${offset}px;overflow:hidden;background:var(--ds-gray-3,#e5e5e5);border:1px solid color-mix(in srgb,var(--ds-gray-12,#111),transparent 82%);border-radius:10px;box-shadow:0 4px 12px rgb(0 0 0 / 20%);`;
+    layer.style.cssText = `position:absolute;inset:${offset}px ${12 - offset}px ${12 - offset}px ${offset}px;overflow:hidden;background:var(--ds-background-tertiary,#e5e5e5);border:1px solid color-mix(in srgb,var(--ds-foreground-primary,#111),transparent 82%);border-radius:10px;box-shadow:0 4px 12px rgb(0 0 0 / 20%);`;
     const image = cardImage(id);
     if (image) {
       /** SAFETY: cloning an img element always yields an img element. */
@@ -86,7 +86,7 @@ function createDragPreview(ids: readonly string[]): HTMLElement {
   const count = document.createElement("span");
   count.textContent = formatPlural(ids.length, SAVES);
   count.style.cssText =
-    "position:absolute;right:0;bottom:0;display:flex;align-items:center;min-height:24px;padding:0 8px;color:white;font:600 11px/1 system-ui,sans-serif;background:var(--ds-accent-9,#1677ff);border:2px solid white;border-radius:999px;box-shadow:0 2px 8px rgb(0 0 0 / 24%);white-space:nowrap;";
+    "position:absolute;right:0;bottom:0;display:flex;align-items:center;min-height:24px;padding:0 8px;color:white;font:600 11px/1 system-ui,sans-serif;background:var(--ds-accent,#1677ff);border:2px solid white;border-radius:999px;box-shadow:0 2px 8px rgb(0 0 0 / 24%);white-space:nowrap;";
   preview.append(count);
   document.body.append(preview);
   return preview;

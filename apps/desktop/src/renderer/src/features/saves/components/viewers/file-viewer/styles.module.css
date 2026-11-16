@@ -9,7 +9,7 @@
 .preview {
   position: relative;
   flex-direction: column;
-  background: var(--ds-gray-2);
+  background: var(--ds-background-secondary);
 }
 
 .status {
@@ -17,8 +17,8 @@
   inset: 0;
   display: grid;
   place-items: center;
-  font-size: var(--ds-text-md);
-  color: var(--ds-gray-10);
+  font-size: var(--ds-text-body);
+  color: var(--ds-foreground-tertiary);
 }
 
 .root {
@@ -26,5 +26,5 @@
   justify-content: center;
   padding: 48px;
   overflow: auto;
-  background: var(--ds-gray-2);
+  background: var(--ds-background-secondary);
 }

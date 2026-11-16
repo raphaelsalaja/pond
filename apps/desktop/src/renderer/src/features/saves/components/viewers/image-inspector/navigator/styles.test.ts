@@ -14,11 +14,11 @@ describe("image navigator", () => {
     const map = css.match(/\.map\s*\{(?<rules>[^}]*)\}/)?.groups?.rules;
     const viewport = css.match(/\.viewport\s*\{(?<rules>[^}]*)\}/)?.groups
       ?.rules;
-    expect(root).toContain("var(--ds-shadow-float)");
+    expect(root).toContain("var(--ds-shadow-overlay)");
     expect(root).not.toContain("overflow: hidden");
     expect(map).toContain("overflow: hidden");
     expect(map).toContain("border-radius: inherit");
     expect(viewport).toContain("border-radius: inherit");
-    expect(viewport).toContain("inset 0 0 0 1px var(--ds-accent-8)");
+    expect(viewport).toContain("inset 0 0 0 1px var(--ds-accent-border)");
   });
 });

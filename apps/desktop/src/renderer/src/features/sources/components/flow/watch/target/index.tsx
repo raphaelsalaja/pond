@@ -1,4 +1,4 @@
-import { IconCircleCheckFill } from "@pond/icons";
+import { IconCircleCheck } from "@pond/icons";
 import type { Source } from "@pond/schema/db";
 import { WATCH_NEEDS_SESSION, watchSourceLabel } from "@pond/schema/watches";
 import { Button, Dialog } from "@pond/ui";
@@ -269,7 +269,7 @@ export function WatchTargetSection() {
         <ul className={styles.list}>
           {kinds.map((kind) => (
             <li key={kind.label} className={styles.kind}>
-              <IconCircleCheckFill size={12} className={styles.check} />
+              <IconCircleCheck size={12} className={styles.check} />
               <span>{kind.label}</span>
               <span className={styles.example}>{kind.example}</span>
             </li>

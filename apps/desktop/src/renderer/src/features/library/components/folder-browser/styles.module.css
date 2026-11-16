@@ -1,43 +1,43 @@
 .root {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: var(--ds-space-2xl);
   min-width: 0;
 }
 
 .section {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--ds-space-lg);
   min-width: 0;
 }
 
 .header {
   display: flex;
-  gap: 10px;
+  gap: var(--ds-space-md);
   align-items: center;
   min-width: 0;
-  color: var(--ds-gray-9);
+  color: var(--ds-foreground-tertiary);
 
   & h2 {
     margin: 0;
-    font-size: var(--ds-text-sm);
-    font-weight: var(--ds-weight-lg);
+    font-size: var(--ds-text-small);
+    font-weight: var(--ds-weight-medium);
   }
 
   & [role="status"],
   & [role="alert"] {
-    font-size: var(--ds-text-sm);
+    font-size: var(--ds-text-small);
   }
 
   & [role="alert"] {
-    color: var(--ds-red-11);
+    color: var(--ds-danger-foreground);
   }
 }
 
 .downloading {
   display: inline-flex;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   align-items: center;
   margin-left: auto;
 }
@@ -54,12 +54,12 @@
   display: grid;
   grid-template-rows: repeat(2, 1fr);
   grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
+  gap: var(--ds-space-md);
   width: 100%;
   aspect-ratio: 1;
-  padding: 8px;
+  padding: var(--ds-space-md);
   overflow: hidden;
-  background: var(--ds-gray-a3);
+  background: var(--ds-surface-secondary);
   border-radius: var(--ds-radius-xl);
 }
 
@@ -69,7 +69,7 @@
   min-width: 0;
   overflow: hidden;
   border-radius: var(--ds-radius-sm);
-  box-shadow: var(--ds-shadow-sm);
+  box-shadow: var(--ds-shadow-border);
 }
 
 .fallback {
@@ -77,7 +77,7 @@
   grid-row: 1 / -1;
   grid-column: 1 / -1;
   place-items: center;
-  color: var(--ds-gray-9);
+  color: var(--ds-foreground-tertiary);
 }
 
 .preview img {
@@ -91,12 +91,12 @@
 }
 
 .trigger:hover .cover {
-  background: var(--ds-gray-a4);
+  background: var(--ds-surface-tertiary);
 }
 
 .selection {
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
   padding: 0;
   margin: 0;
@@ -104,6 +104,6 @@
 }
 
 .trigger[aria-selected="true"] .cover {
-  outline: 1px solid var(--ds-gray-8);
-  background: var(--ds-gray-a5);
+  outline: 1px solid var(--ds-border-strong);
+  background: var(--ds-surface-tertiary);
 }

@@ -1,0 +1,8 @@
+.code {
+  padding: 1px var(--ds-space-xs);
+  font-family: var(--ds-font-mono);
+  font-size: 0.9em;
+  color: var(--ds-foreground-primary);
+  background: var(--ds-surface-secondary);
+  border-radius: var(--ds-radius-xs);
+}

@@ -1,5 +1,5 @@
 .option {
   display: inline-flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
 }

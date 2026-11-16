@@ -44,6 +44,7 @@ export function DatePicker({
   "aria-label": ariaLabel,
 }: DatePickerProps) {
   const [open, setOpen] = useState(false);
+  const popup = useRef<HTMLDivElement>(null);
   const selected = parseDay(value);
   const label = selected
     ? new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(selected)
@@ -67,8 +68,15 @@ export function DatePicker({
       <Popover.Portal>
         <Popover.Positioner align="end">
           <Popover.Popup
+            ref={popup}
+            aria-label="Choose Date"
             className={styles.popup}
             style={cssVars({ "--ds-popup-width": "max-content" })}
+            initialFocus={() =>
+              popup.current?.querySelector<HTMLElement>(
+                '[role="gridcell"][tabindex="0"]',
+              ) ?? true
+            }
           >
             <Calendar
               selected={selected}
@@ -149,7 +157,7 @@ function Calendar({
     if (!moved.current) return;
     moved.current = false;
     grid.current
-      ?.querySelector<HTMLButtonElement>(`[data-day="${formatDay(focused)}"]`)
+      ?.querySelector<HTMLElement>(`[data-day="${formatDay(focused)}"]`)
       ?.focus();
   }, [focused]);
 
@@ -159,6 +167,11 @@ function Calendar({
   };
 
   const onKeyDown = (event: KeyboardEvent) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      if (!outside(focused)) onSelect(focused);
+      return;
+    }
     const target = keyTarget(event, focused, weekStart);
     if (!target) return;
     event.preventDefault();
@@ -200,9 +213,10 @@ function Calendar({
       </div>
       <table
         ref={grid}
+        // biome-ignore lint/a11y/noNoninteractiveElementToInteractiveRole: the WAI-ARIA date picker grid is a table with role="grid".
+        role="grid"
         aria-label={monthLabel}
         className={styles.grid}
-        onKeyDown={onKeyDown}
       >
         <thead>
           <tr>
@@ -224,29 +238,34 @@ function Calendar({
               {days.slice(week * 7, week * 7 + 7).map((day) => {
                 const key = formatDay(day);
                 const isSelected = sameDay(day, selected);
+                const disabled = outside(day);
                 return (
-                  <td key={key}>
-                    <button
-                      type="button"
-                      className={styles.day}
-                      data-day={key}
-                      data-selected={isSelected || undefined}
-                      data-today={sameDay(day, today) || undefined}
-                      data-outside={
-                        day.getMonth() !== focused.getMonth() || undefined
-                      }
-                      tabIndex={sameDay(day, focused) ? 0 : -1}
-                      aria-pressed={isSelected}
-                      aria-current={sameDay(day, today) ? "date" : undefined}
-                      disabled={outside(day)}
-                      aria-label={dayName.format(day)}
-                      onClick={() => onSelect(day)}
-                      onFocus={() => {
-                        if (!sameDay(day, focused)) setFocused(day);
-                      }}
-                    >
-                      {day.getDate()}
-                    </button>
+                  <td
+                    key={key}
+                    // biome-ignore lint/a11y/noNoninteractiveElementToInteractiveRole: WAI-ARIA date picker days are gridcells in the table.
+                    role="gridcell"
+                    className={styles.day}
+                    data-day={key}
+                    data-selected={isSelected || undefined}
+                    data-today={sameDay(day, today) || undefined}
+                    data-outside={
+                      day.getMonth() !== focused.getMonth() || undefined
+                    }
+                    data-disabled={disabled || undefined}
+                    tabIndex={
+                      disabled ? undefined : sameDay(day, focused) ? 0 : -1
+                    }
+                    aria-selected={isSelected}
+                    aria-disabled={disabled || undefined}
+                    aria-current={sameDay(day, today) ? "date" : undefined}
+                    aria-label={dayName.format(day)}
+                    onClick={disabled ? undefined : () => onSelect(day)}
+                    onKeyDown={onKeyDown}
+                    onFocus={() => {
+                      if (!sameDay(day, focused)) setFocused(day);
+                    }}
+                  >
+                    {day.getDate()}
                   </td>
                 );
               })}

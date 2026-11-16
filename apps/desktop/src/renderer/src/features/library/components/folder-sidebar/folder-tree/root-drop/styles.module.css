@@ -11,7 +11,7 @@
     height: 2px;
     pointer-events: none;
     content: "";
-    background: var(--ds-accent-9);
+    background: var(--ds-accent);
     border-radius: var(--ds-radius-full);
   }
 }

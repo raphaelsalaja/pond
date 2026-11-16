@@ -1,4 +1,4 @@
-import { IconImageFill } from "@pond/icons";
+import { IconImage } from "@pond/icons";
 import { Empty } from "@pond/ui";
 import type {
   CombineImagesOptions,
@@ -87,7 +87,7 @@ export function Preview({
       {images.length === 0 ? (
         <Empty.Root className={styles.empty}>
           <Empty.Media>
-            <IconImageFill size={32} />
+            <IconImage size={32} />
           </Empty.Media>
           <Empty.Title>No images selected</Empty.Title>
           <Empty.Description>

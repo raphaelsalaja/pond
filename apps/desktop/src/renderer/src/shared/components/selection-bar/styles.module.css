@@ -11,39 +11,39 @@
 
 .bar {
   display: flex;
-  gap: 4px;
+  gap: var(--ds-space-xs);
   align-items: center;
   max-width: 100%;
   min-width: 0;
-  padding: 4px;
+  padding: var(--ds-space-xs);
   pointer-events: auto;
-  background: var(--ds-gray-1);
+  background: var(--ds-background-primary);
   border-radius: var(--ds-radius-lg);
-  box-shadow: var(--ds-shadow-menu);
+  box-shadow: var(--ds-shadow-overlay);
   -webkit-app-region: no-drag;
 }
 
 .count {
   flex: none;
-  padding-inline: 8px 4px;
-  font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-md);
-  color: var(--ds-gray-11);
+  padding-inline: var(--ds-space-md) var(--ds-space-xs);
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-regular);
+  color: var(--ds-foreground-secondary);
   white-space: nowrap;
 }
 
 .number {
   font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
 }
 
 .actions {
   display: flex;
-  gap: 2px;
+  gap: var(--ds-space-2xs);
   align-items: center;
   min-width: 0;
-  padding: 2px;
-  margin: -2px;
+  padding: var(--ds-space-2xs);
+  margin: calc(var(--ds-space-2xs) * -1);
   overflow-x: auto;
   scrollbar-width: none;
 

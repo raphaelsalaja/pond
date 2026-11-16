@@ -1,11 +1,11 @@
 .header {
   display: flex;
   flex: none;
-  gap: 10px;
+  gap: var(--ds-space-md);
   align-items: center;
   min-height: 28px;
   padding-inline: 0;
-  color: var(--ds-gray-9);
+  color: var(--ds-foreground-tertiary);
 }
 
 .preview {
@@ -13,7 +13,7 @@
   width: 48px;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-xs);
+  font-size: var(--ds-text-small);
   white-space: nowrap;
 }
 
@@ -23,7 +23,7 @@
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-xs);
+  font-size: var(--ds-text-small);
   text-align: left;
   white-space: nowrap;
 }

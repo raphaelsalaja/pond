@@ -1,4 +1,8 @@
-import { isAuxiliaryKind, isOriginalImageKind } from "@shared/save-file-names";
+import {
+  isAuxiliaryKind,
+  isOriginalImageKind,
+  isPostRenderKind,
+} from "@shared/save-file-names";
 import {
   arenaBlockClassFromRawJson,
   textBodyFromFields,
@@ -53,6 +57,7 @@ export function isTextOnlyAsideFromCover(save: Save): boolean {
 
 export function isTextOnlySave(save: Save): boolean {
   if (save.source === "twitter" || save.source === "threads") return false;
+  if ((save.files ?? []).some((f) => isPostRenderKind(f.kind))) return false;
   if (hasArchive(save)) return false;
   if (!isTextOnlyAsideFromCover(save)) return false;
   if (save.mediaType?.toLowerCase() === "text") return true;

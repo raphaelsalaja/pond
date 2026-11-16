@@ -16,11 +16,9 @@ describe("Badge", () => {
   });
 
   it("renders a semantic status dot", () => {
-    const markup = renderToStaticMarkup(<Badge.Dot tone="positive" />);
-    const accent = renderToStaticMarkup(<Badge.Dot tone="accent" />);
+    const markup = renderToStaticMarkup(<Badge.Dot tone="accent" />);
 
-    expect(markup).toContain('data-tone="positive"');
+    expect(markup).toContain('data-tone="accent"');
     expect(markup).toContain('aria-hidden="true"');
-    expect(accent).toContain('data-tone="accent"');
   });
 });

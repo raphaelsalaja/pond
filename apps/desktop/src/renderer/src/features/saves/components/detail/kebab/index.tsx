@@ -1,4 +1,4 @@
-import { IconDotsFill as Ellipsis } from "@pond/icons";
+import { IconDots as Ellipsis } from "@pond/icons";
 import { Menu } from "@pond/ui";
 import { useState } from "react";
 import {

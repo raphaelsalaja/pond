@@ -228,7 +228,7 @@ function LibraryIdentitySettings({ info }: { info?: LibraryInfo }) {
           <Tooltip label={logo ? "Change Logo" : "Choose Logo"} side="bottom">
             <Button
               icon
-              size="xl"
+              size="md"
               variant="secondary"
               className={styles.logo}
               disabled={!info || logoBusy}

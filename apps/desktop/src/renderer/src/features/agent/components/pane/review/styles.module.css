@@ -1,25 +1,25 @@
 .review {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--ds-space-md);
 }
 
 .rows {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--ds-space-2xs);
   padding: 0;
-  margin: 0 -6px;
+  margin: 0 calc(var(--ds-space-sm) * -1);
   list-style: none;
   transition: margin-bottom var(--ds-duration-medium) var(--ds-easing-standard);
 
   &[data-closed] {
-    margin-bottom: 6px;
+    margin-bottom: var(--ds-space-sm);
   }
 }
 
 .error {
   margin: 0;
-  font-size: var(--ds-text-sm);
-  color: var(--ds-orange-11);
+  font-size: var(--ds-text-small);
+  color: var(--ds-danger-foreground);
 }

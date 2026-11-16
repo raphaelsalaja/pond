@@ -86,7 +86,7 @@ export function Fish({
       style={{
         width: size,
         height: size,
-        color: `var(--ds-${color}-9)`,
+        color: `var(--ds-${color})`,
       }}
       aria-hidden
     >

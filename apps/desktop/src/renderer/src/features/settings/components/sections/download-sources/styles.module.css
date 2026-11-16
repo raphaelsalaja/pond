@@ -1,7 +1,7 @@
 .identity {
   display: flex;
   flex: 1 1 auto;
-  gap: 10px;
+  gap: var(--ds-space-md);
   align-items: center;
   min-width: 0;
 }
@@ -12,5 +12,5 @@
   overflow: hidden;
   border-radius: var(--ds-radius-source);
   corner-shape: var(--ds-corner-icon);
-  box-shadow: var(--ds-shadow-xs);
+  box-shadow: var(--ds-shadow-border);
 }

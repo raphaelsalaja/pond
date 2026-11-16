@@ -1,19 +1,19 @@
 .card {
-  --status-color: var(--ds-green-11);
+  --status-color: var(--ds-accent-foreground);
 
   container-type: inline-size;
 
   &[data-state="loading"],
   &[data-state="checking"] {
-    --status-color: var(--ds-gray-11);
+    --status-color: var(--ds-foreground-secondary);
   }
 
   &[data-state="unchecked"] {
-    --status-color: var(--ds-gray-9);
+    --status-color: var(--ds-foreground-tertiary);
   }
 
   &[data-state="attention"] {
-    --status-color: var(--ds-orange-11);
+    --status-color: var(--ds-danger-foreground);
   }
 }
 
@@ -55,21 +55,21 @@
 .detail,
 .meta {
   margin: 0;
-  font-size: var(--ds-text-sm);
+  font-size: var(--ds-text-small);
   font-variant-numeric: tabular-nums;
   line-height: 20px;
   overflow-wrap: anywhere;
 }
 
 .detail {
-  color: var(--ds-gray-10);
+  color: var(--ds-foreground-tertiary);
 }
 
 .meta {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  color: var(--ds-gray-9);
+  color: var(--ds-foreground-tertiary);
 }
 
 .progress {
@@ -77,16 +77,16 @@
   height: 4px;
   overflow: hidden;
   appearance: none;
-  background: var(--ds-gray-4);
+  background: var(--ds-surface-tertiary);
   border: 0;
   border-radius: 2px;
 
   &::-webkit-progress-bar {
-    background: var(--ds-gray-4);
+    background: var(--ds-surface-tertiary);
   }
 
   &::-webkit-progress-value {
-    background: var(--ds-gray-11);
+    background: var(--ds-foreground-secondary);
     transition: width var(--ds-duration-medium) var(--ds-easing-standard);
   }
 }

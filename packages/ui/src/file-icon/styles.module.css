@@ -1,0 +1,91 @@
+.file {
+  --file-tone: var(--ds-foreground-secondary);
+  flex: none;
+  overflow: visible;
+
+  &[data-kind="document"] {
+    --file-tone: var(--ds-blue);
+  }
+
+  &[data-kind="sheet"] {
+    --file-tone: var(--ds-green);
+  }
+
+  &[data-kind="slides"] {
+    --file-tone: var(--ds-orange);
+  }
+
+  &[data-kind="pdf"] {
+    --file-tone: var(--ds-red);
+  }
+
+  &[data-kind="calendar"] {
+    --file-tone: var(--ds-pink);
+  }
+
+  &[data-kind="image"] {
+    --file-tone: var(--ds-purple);
+  }
+
+  &[data-kind="video"] {
+    --file-tone: var(--ds-violet);
+  }
+
+  &[data-kind="audio"] {
+    --file-tone: var(--ds-magenta);
+  }
+
+  &[data-kind="code"] {
+    --file-tone: var(--ds-teal);
+  }
+}
+
+.page,
+.fold {
+  stroke: var(--ds-border-strong);
+  stroke-width: 1;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.art {
+  fill: none;
+  stroke: var(--file-tone);
+  stroke-width: 0.6;
+  stroke-linecap: round;
+  opacity: 0.5;
+}
+
+.wedge {
+  fill: var(--file-tone);
+  stroke: none;
+}
+
+.page {
+  fill: var(--ds-background-primary);
+}
+
+.fold {
+  fill: var(--ds-surface-primary);
+}
+
+.band {
+  fill: var(--file-tone);
+}
+
+.zipper {
+  fill: var(--ds-foreground-secondary);
+}
+
+.label {
+  font-family: inherit;
+  font-size: 5px;
+  font-weight: var(--ds-weight-bold);
+  letter-spacing: -0.02em;
+  fill: var(--file-tone);
+}
+
+[data-kind="calendar"] > .label,
+[data-kind="archive"] > .label {
+  fill: var(--ds-foreground-secondary);
+}

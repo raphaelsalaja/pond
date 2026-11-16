@@ -1,7 +1,7 @@
 .controls {
   display: flex;
   flex: 0 0 auto;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   align-items: center;
   width: auto;
   min-width: 0;

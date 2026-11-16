@@ -1,20 +1,13 @@
-/** Generates index.ts and manifest.ts from the SVG sources in svg/. */
+/** Generates index.ts from the SVG sources in svg/. */
 import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import {
-  emit,
-  exportName,
-  fileName,
-  packageRoot,
-  repoRoot,
-  STYLES,
-} from "./lib.mjs";
+import { emit, fileName, packageRoot, repoRoot } from "./lib.mjs";
 
 const check = process.argv.includes("--check");
 const command = "pnpm --filter @pond/icons generate";
 
-const ROOT = /^<svg\b[^>]*\bviewBox="0 0 18 18"[^>]*>([\s\S]*)<\/svg>\s*$/;
+const ROOT = /^<svg\b([^>]*\bviewBox="0 0 18 18"[^>]*)>([\s\S]*)<\/svg>\s*$/;
 const ELEMENT = /<(path|circle|rect)\s([^>]*?)\/>/g;
 const ATTRIBUTE = /([\w-]+)="([^"]*)"/g;
 
@@ -27,8 +20,9 @@ const pascal = (file) =>
 
 function parse(path) {
   const svg = readFileSync(path, "utf8");
-  const body = ROOT.exec(svg)?.[1];
-  if (body === undefined) throw new Error(`${path}: expected an 18×18 <svg>.`);
+  const match = ROOT.exec(svg);
+  if (!match) throw new Error(`${path}: expected an 18×18 <svg>.`);
+  const [, root, body] = match;
   const nodes = [...body.matchAll(ELEMENT)].map(([, tag, attrs]) => [
     tag,
     Object.fromEntries(
@@ -37,27 +31,22 @@ function parse(path) {
   ]);
   const rest = body.replace(ELEMENT, "").trim();
   if (rest) throw new Error(`${path}: unsupported markup ${rest.slice(0, 40)}`);
-  return nodes;
+  const style = /\bfill="currentColor"/.test(root) ? "fill" : "outline";
+  return { style, nodes };
 }
 
 function glyphs() {
-  const found = new Map();
-  for (const style of STYLES) {
-    const dir = resolve(packageRoot, "svg", style);
-    if (!existsSync(dir)) continue;
-    for (const file of readdirSync(dir).sort()) {
-      if (!file.endsWith(".svg")) continue;
-      const glyph = pascal(file.slice(0, -4));
-      if (fileName(glyph) !== file.slice(0, -4)) {
-        throw new Error(
-          `svg/${style}/${file}: rename to ${fileName(glyph)}.svg`,
-        );
-      }
-      if (!found.has(glyph)) found.set(glyph, new Map());
-      found.get(glyph).set(style, parse(resolve(dir, file)));
+  const dir = resolve(packageRoot, "svg");
+  const found = [];
+  for (const file of readdirSync(dir).sort()) {
+    if (!file.endsWith(".svg")) continue;
+    const glyph = pascal(file.slice(0, -4));
+    if (fileName(glyph) !== file.slice(0, -4)) {
+      throw new Error(`svg/${file}: rename to ${fileName(glyph)}.svg`);
     }
+    found.push([glyph, parse(resolve(dir, file))]);
   }
-  return new Map([...found].sort(([a], [b]) => (a < b ? -1 : 1)));
+  return found.sort(([a], [b]) => (a < b ? -1 : 1));
 }
 
 const IMPORT = /import\s*(?:type\s*)?\{([^}]*)\}\s*from\s*"@pond\/icons"/g;
@@ -92,17 +81,10 @@ function imported() {
 }
 
 const all = glyphs();
-const exports = [];
-const manifest = [];
-for (const [glyph, styles] of all) {
-  const present = STYLES.filter((style) => styles.has(style));
-  manifest.push(`${glyph}: ${JSON.stringify(present)},`);
-  for (const style of present) {
-    exports.push(
-      `export const ${exportName(glyph, style)} = /* @__PURE__ */ createIcon(${JSON.stringify(glyph)}, ${JSON.stringify(style)}, ${JSON.stringify(styles.get(style))});`,
-    );
-  }
-}
+const exports = all.map(
+  ([glyph, { style, nodes }]) =>
+    `export const Icon${glyph} = /* @__PURE__ */ createIcon(${JSON.stringify(glyph)}, ${JSON.stringify(style)}, ${JSON.stringify(nodes)});`,
+);
 
 emit(
   [
@@ -110,23 +92,15 @@ emit(
       resolve(packageRoot, "index.ts"),
       `import { createIcon } from "./create-icon";\n\n${exports.join("\n")}\n`,
     ],
-    [
-      resolve(packageRoot, "manifest.ts"),
-      `import type { IconManifest } from "./types";\n\n/** Every glyph in svg/. Regenerate with \`${command}\`. */\nexport const manifest: IconManifest = {${manifest.join("\n")}};\n`,
-    ],
   ],
   { check, command },
 );
 
 const used = imported();
-const unused = [...all].flatMap(([glyph, styles]) =>
-  [...styles.keys()]
-    .map((style) => exportName(glyph, style))
-    .filter((name) => !used.has(name)),
-);
-console.log(
-  `${check ? "Verified" : "Wrote"} index.ts (${exports.length} icons, ${all.size} glyphs)`,
-);
+const unused = all
+  .map(([glyph]) => `Icon${glyph}`)
+  .filter((name) => !used.has(name));
+console.log(`${check ? "Verified" : "Wrote"} index.ts (${all.length} icons)`);
 if (unused.length > 0) {
   console.log(`Not imported outside @pond/icons: ${unused.join(", ")}`);
 }

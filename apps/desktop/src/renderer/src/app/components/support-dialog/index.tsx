@@ -1,4 +1,4 @@
-import { IconCircleCheckFill } from "@pond/icons";
+import { IconCircleCheck } from "@pond/icons";
 import { Button, Dialog } from "@pond/ui";
 import { supportDialog, useSupportDialogOpen } from "@/shared/state/support";
 import styles from "./styles.module.css";
@@ -51,7 +51,7 @@ export function SupportDialog() {
                 <ul className={styles.checklist}>
                   {PROMISES.map((promise) => (
                     <li key={promise}>
-                      <IconCircleCheckFill size={12} className={styles.check} />
+                      <IconCircleCheck size={12} className={styles.check} />
                       <span>{promise}</span>
                     </li>
                   ))}

@@ -1,5 +1,5 @@
 import {
-  IconCircleCheckFill as Connected,
+  IconCircleCheck as Connected,
   IconInputPasswordEdit as Edit,
   IconExternalLink as ExternalLink,
   IconEye as Eye,

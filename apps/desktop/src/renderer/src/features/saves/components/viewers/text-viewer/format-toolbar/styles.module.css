@@ -1,6 +1,6 @@
 .toolbar {
   flex-direction: row;
-  gap: 2px;
+  gap: var(--ds-space-2xs);
   align-items: center;
   width: max-content;
 }
@@ -8,18 +8,18 @@
 .bubble {
   display: flex;
   flex-direction: row;
-  gap: 2px;
+  gap: var(--ds-space-2xs);
   align-items: center;
   width: max-content;
   min-width: 0;
   max-width: min(calc(100vw - 24px), var(--available-width));
-  padding: 3px 4px;
+  padding: var(--ds-space-xs) var(--ds-space-xs);
   overflow-x: auto;
   overflow-y: hidden;
   white-space: nowrap;
-  background: var(--ds-gray-1);
+  background: var(--ds-background-primary);
   border-radius: var(--ds-radius-full);
-  box-shadow: var(--ds-shadow-float);
+  box-shadow: var(--ds-shadow-overlay);
 
   &[data-link] {
     overflow-x: hidden;
@@ -34,27 +34,27 @@
   width: 160px;
   min-width: 0;
   height: 28px;
-  padding: 0 8px;
-  font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-lg);
-  color: var(--ds-gray-12);
+  padding: 0 var(--ds-space-md);
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-foreground-primary);
   background: transparent;
   border-radius: var(--ds-radius-full);
   box-shadow: none;
 
   &::placeholder {
-    color: var(--ds-gray-8);
+    color: var(--ds-foreground-tertiary);
   }
 }
 
 .aa,
 .list {
-  gap: 2px;
+  gap: var(--ds-space-2xs);
 }
 
 .aa {
-  font-size: var(--ds-text-md);
-  font-weight: var(--ds-weight-xl);
+  font-size: var(--ds-text-body);
+  font-weight: var(--ds-weight-strong);
 }
 
 .menu {

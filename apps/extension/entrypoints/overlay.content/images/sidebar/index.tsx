@@ -117,7 +117,7 @@ export function Sidebar({
       <Panel.Scroll className={styles.scroll}>
         <Panel.Search
           aria-label="Search Images"
-          placeholder="Search images…"
+          placeholder="Search…"
           value={filters.query}
           onChange={(event) => set({ query: event.target.value })}
         />

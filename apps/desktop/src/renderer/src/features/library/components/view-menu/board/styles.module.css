@@ -6,8 +6,8 @@
 .section {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 12px;
+  gap: var(--ds-space-lg);
+  padding: var(--ds-space-lg);
   border-bottom: var(--ds-border-width) solid var(--ds-border-subtle);
 
   &:last-child {
@@ -16,17 +16,17 @@
 }
 
 .title {
-  margin: 0 0 4px;
-  font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-lg);
+  margin: 0 0 var(--ds-space-xs);
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-medium);
   line-height: normal;
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
 }
 
 .property {
   display: grid;
   grid-template-columns: 72px minmax(0, 1fr);
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
   min-width: 0;
 }
@@ -35,10 +35,10 @@
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-md);
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-regular);
   line-height: normal;
-  color: var(--ds-gray-9);
+  color: var(--ds-foreground-tertiary);
   white-space: nowrap;
 }
 
@@ -51,7 +51,7 @@
 }
 
 .property > .select {
-  font-weight: var(--ds-weight-md);
+  font-weight: var(--ds-weight-regular);
 }
 
 .property > .field {
@@ -61,15 +61,15 @@
 
 .field [data-slot="field"] {
   min-width: 0;
-  font-weight: var(--ds-weight-md);
+  font-weight: var(--ds-weight-regular);
   font-variant-numeric: tabular-nums;
 }
 
 .field [data-slot="suffix"] {
-  padding-right: 8px;
-  padding-left: 4px;
-  font-weight: var(--ds-weight-md);
-  color: var(--ds-gray-9);
+  padding-right: var(--ds-space-md);
+  padding-left: var(--ds-space-xs);
+  font-weight: var(--ds-weight-regular);
+  color: var(--ds-foreground-tertiary);
 }
 
 .field input::-webkit-outer-spin-button,

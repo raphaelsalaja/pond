@@ -1,9 +1,9 @@
 import {
-  IconTweetBookmarkFill,
-  IconTweetLikeFill,
-  IconTweetReplyFill,
-  IconTweetRepostFill,
-  IconTweetViewsFill,
+  IconTweetBookmark,
+  IconTweetLike,
+  IconTweetReply,
+  IconTweetRepost,
+  IconTweetViews,
 } from "@pond/icons";
 import type { IconComponent } from "@pond/icons/types";
 import type { TweetCardMetrics } from "@/features/captures/components/tweet/card/lib/data";
@@ -20,31 +20,31 @@ export function Metrics({ metrics }: { metrics: TweetCardMetrics }) {
     {
       key: "replies",
       label: "Replies",
-      Icon: IconTweetReplyFill,
+      Icon: IconTweetReply,
       value: metrics.replies,
     },
     {
       key: "retweets",
       label: "Retweets",
-      Icon: IconTweetRepostFill,
+      Icon: IconTweetRepost,
       value: metrics.retweets,
     },
     {
       key: "likes",
       label: "Likes",
-      Icon: IconTweetLikeFill,
+      Icon: IconTweetLike,
       value: metrics.likes,
     },
     {
       key: "views",
       label: "Views",
-      Icon: IconTweetViewsFill,
+      Icon: IconTweetViews,
       value: metrics.views,
     },
     {
       key: "bookmarks",
       label: "Bookmarks",
-      Icon: IconTweetBookmarkFill,
+      Icon: IconTweetBookmark,
       value: metrics.bookmarks,
     },
   ];

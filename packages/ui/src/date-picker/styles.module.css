@@ -1,97 +1,97 @@
 .trigger {
-  gap: 6px;
+  gap: var(--ds-space-sm);
 
   & [data-placeholder] {
-    color: var(--ds-gray-10);
+    color: var(--ds-foreground-tertiary);
   }
 }
 
 .icon {
   flex: none;
-  color: var(--ds-gray-10);
+  color: var(--ds-foreground-tertiary);
 }
 
 .popup {
-  padding: 8px;
+  padding: var(--ds-space-md);
 }
 
 .calendar {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--ds-space-xs);
 }
 
 .header {
   display: flex;
-  gap: 2px;
+  gap: var(--ds-space-2xs);
   align-items: center;
-  padding-inline-start: 6px;
+  padding-inline-start: var(--ds-space-sm);
 }
 
 .month {
   flex: 1;
-  font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-xl);
-  color: var(--ds-gray-12);
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-strong);
+  color: var(--ds-foreground-primary);
 }
 
 .grid {
-  border-spacing: 0;
-  border-collapse: collapse;
-
-  & td {
-    padding: 1px;
-  }
+  border-spacing: 2px;
+  border-collapse: separate;
 }
 
 .weekday {
   height: 24px;
   padding: 0;
-  font-size: var(--ds-text-xs);
-  font-weight: var(--ds-weight-md);
-  color: var(--ds-gray-9);
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-regular);
+  color: var(--ds-foreground-tertiary);
   text-align: center;
 }
 
 .day {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   width: 30px;
   height: 30px;
   padding: 0;
-  font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-lg);
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-medium);
   font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-12);
+  vertical-align: middle;
+  color: var(--ds-foreground-primary);
+  text-align: center;
   cursor: var(--ds-cursor-interactive, pointer);
   background: transparent;
-  border: 0;
   border-radius: var(--ds-radius-sm);
   transition:
     background var(--ds-duration-fast) var(--ds-easing-standard),
     color var(--ds-duration-fast) var(--ds-easing-standard);
 
   &:hover {
-    background: var(--ds-gray-a3);
+    background: var(--ds-surface-secondary);
   }
 
   &[data-outside] {
-    color: var(--ds-gray-8);
+    color: var(--ds-foreground-tertiary);
   }
 
   &[data-today] {
-    color: var(--ds-accent-11);
+    color: var(--ds-accent-foreground);
   }
 
   &[data-selected] {
     color: var(--ds-accent-contrast);
-    background: var(--ds-accent-9);
+    background: var(--ds-accent);
   }
 
-  &:disabled {
-    color: var(--ds-gray-7);
+  &[data-disabled] {
     cursor: not-allowed;
     background: transparent;
+    opacity: var(--ds-opacity-disabled);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .day {
+    transition: none;
   }
 }

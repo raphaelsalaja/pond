@@ -12,7 +12,7 @@
   color: var(--ds-accent-contrast);
   cursor: var(--ds-cursor-interactive, pointer);
   background: transparent;
-  border: 1px solid var(--ds-gray-4);
+  border: 1px solid var(--ds-border-strong);
   border-radius: var(--ds-radius-xs);
   transition:
     background-color var(--ds-duration-snap) var(--ds-easing-standard),
@@ -43,33 +43,33 @@
 
   &[data-checked],
   &[data-indeterminate] {
-    background: var(--ds-accent-9);
-    border-color: var(--ds-accent-9);
+    background: var(--ds-accent);
+    border-color: var(--ds-accent);
   }
 
   &:hover,
   &[data-demo-state="hover"] {
-    border-color: var(--ds-gray-6);
+    border-color: var(--ds-border-strong);
   }
 
   &[data-checked]:hover,
   &[data-checked][data-demo-state="hover"],
   &[data-indeterminate]:hover {
-    background: var(--ds-accent-9);
+    background: var(--ds-accent);
   }
 
   &[data-disabled] {
     cursor: not-allowed;
-    opacity: 0.5;
+    opacity: var(--ds-opacity-disabled);
   }
 
   &[data-variant="media"] {
     width: 18px;
     height: 18px;
-    background: var(--ds-black-a6);
-    border: 1.5px solid var(--ds-white-a12);
+    background: var(--ds-scrim);
+    border: 1.5px solid var(--ds-media-foreground-primary);
     border-radius: var(--ds-radius-full);
-    box-shadow: 0 0 0 0.5px var(--ds-black-a4);
+    box-shadow: 0 0 0 0.5px var(--ds-media-edge);
   }
 
   &[data-variant="media"][data-size="sm"] {
@@ -79,14 +79,14 @@
 
   &[data-variant="media"]:hover,
   &[data-variant="media"][data-demo-state="hover"] {
-    background: var(--ds-black-a8);
-    border-color: var(--ds-white-a12);
+    background: var(--ds-media-background);
+    border-color: var(--ds-media-foreground-primary);
   }
 
   &[data-variant="media"][data-checked],
   &[data-variant="media"][data-checked]:hover {
-    background: var(--ds-accent-9);
-    border-color: var(--ds-white-a12);
+    background: var(--ds-accent);
+    border-color: var(--ds-media-foreground-primary);
   }
 }
 
@@ -121,7 +121,17 @@
   transition-duration: var(--ds-duration-snap);
 }
 
+.root:not([data-checked]) > .indicator > [data-mark="checked"] path {
+  stroke-dashoffset: 17;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .root,
+  .root:active:not([data-disabled]) {
+    scale: none;
+    transition: none;
+  }
+
   .indicator > [data-mark="checked"] path {
     transition: none;
   }

@@ -1,0 +1,47 @@
+.groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-xl);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-md);
+}
+
+.label {
+  margin: 0;
+  font-size: inherit;
+  font-weight: var(--ds-weight-strong);
+}
+
+.box {
+  width: 36px;
+  height: 24px;
+  margin-inline: var(--ds-space-xs);
+  background: var(--ds-background-primary);
+  border-radius: var(--ds-radius-sm);
+  box-shadow: var(--ds-shadow-border);
+  outline: var(--ds-focus-width) solid var(--ds-focus-outline);
+
+  &[data-ring="outside"] {
+    outline-offset: var(--ds-focus-offset);
+  }
+
+  &[data-ring="inside"] {
+    outline-offset: var(--ds-focus-inset);
+  }
+}
+
+.field {
+  width: 44px;
+  height: 24px;
+  background: var(--ds-background-primary);
+  border-radius: var(--ds-radius-sm);
+  box-shadow: var(--ds-shadow-border);
+
+  &[data-focused] {
+    box-shadow: 0 0 0 1px var(--ds-border-strong);
+  }
+}

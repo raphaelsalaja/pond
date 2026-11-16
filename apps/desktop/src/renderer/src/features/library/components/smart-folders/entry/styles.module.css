@@ -21,7 +21,7 @@
     height: 2px;
     pointer-events: none;
     content: "";
-    background: var(--ds-accent-9);
+    background: var(--ds-accent);
     border-radius: var(--ds-radius-full);
   }
 
@@ -43,10 +43,10 @@
   width: 16px;
   min-width: 16px;
   height: 16px;
-  color: var(--ds-gray-9);
+  color: var(--ds-foreground-tertiary);
 
   &:hover {
-    color: var(--ds-gray-11);
+    color: var(--ds-foreground-secondary);
   }
 }
 
@@ -62,12 +62,12 @@
 .item {
   flex: 1;
   min-width: 0;
-  padding-right: 24px;
+  padding-right: var(--ds-space-2xl);
 }
 
 .row[data-drop="into"] .item {
-  color: var(--ds-gray-12);
-  background: var(--ds-gray-a4);
+  color: var(--ds-foreground-primary);
+  background: var(--ds-surface-tertiary);
 }
 
 .editor {
@@ -76,11 +76,11 @@
   align-items: center;
   min-width: 0;
   height: var(--sidebar-height-md);
-  padding: 0 6px;
+  padding: 0 var(--ds-space-sm);
   overflow: hidden;
-  font-size: var(--ds-text-md);
-  font-weight: var(--ds-weight-lg);
-  color: var(--ds-gray-12);
+  font-size: var(--sidebar-text);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-foreground-primary);
 }
 
 .icon {
@@ -90,20 +90,20 @@
   justify-content: center;
   width: 16px;
   height: 16px;
-  margin-right: 8px;
+  margin-right: var(--ds-space-md);
   overflow: hidden;
 }
 
 .field {
   padding-inline: 0;
-  font-size: var(--ds-text-md);
+  font-size: var(--sidebar-text);
   line-height: 1;
 }
 
 .more {
   position: absolute;
   right: 2px;
-  margin: 2px;
+  margin: var(--ds-space-2xs);
   pointer-events: none;
   opacity: 0;
   transition: opacity var(--ds-duration-fast) var(--ds-easing-standard);
@@ -117,8 +117,8 @@
 }
 
 .row:hover .item:not([data-status="active"]) {
-  color: var(--ds-gray-11);
-  background: var(--ds-gray-a3);
+  color: var(--ds-foreground-secondary);
+  background: var(--ds-surface-secondary);
 }
 
 @keyframes appear {

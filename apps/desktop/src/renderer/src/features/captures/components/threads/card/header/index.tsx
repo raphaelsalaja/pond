@@ -1,4 +1,4 @@
-import { IconThreadsLogoFill } from "@pond/icons";
+import { IconThreadsLogo } from "@pond/icons";
 import { MetaVerifiedIcon } from "@/features/captures/components/threads/card/icons";
 import { Avatar } from "@/features/captures/components/tweet/card/header";
 import type { TweetCardAuthor } from "@/features/captures/components/tweet/card/lib/data";
@@ -21,7 +21,7 @@ export function Header({ author }: { author: TweetCardAuthor }) {
           ) : null}
         </span>
       </div>
-      <IconThreadsLogoFill
+      <IconThreadsLogo
         className={styles.wordmark}
         size={18}
         title="Threads"

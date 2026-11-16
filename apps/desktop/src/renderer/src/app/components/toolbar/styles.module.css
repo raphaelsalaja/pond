@@ -17,13 +17,13 @@
 .chrome {
   display: flex;
   flex-shrink: 0;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
   justify-content: space-between;
   width: 100%;
   height: 100%;
-  padding-right: 12px;
-  padding-left: 12px;
+  padding-right: var(--ds-space-lg);
+  padding-left: var(--ds-space-lg);
   -webkit-app-region: drag;
 }
 
@@ -39,6 +39,16 @@
   margin-right: var(--window-inset);
   margin-left: var(--window-inset);
   transition: margin-left var(--window-edge-duration) var(--window-edge-easing);
+
+  &[data-search] {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 440px) minmax(0, 1fr);
+    gap: var(--ds-space-lg);
+  }
+
+  &[data-search] .breadcrumbs {
+    justify-self: start;
+  }
 }
 
 .breadcrumbs {
@@ -49,7 +59,7 @@
 
 .trail {
   display: flex;
-  gap: 4px;
+  gap: var(--ds-space-xs);
   align-items: center;
   min-width: 0;
   padding: 0;
@@ -60,7 +70,7 @@
 .segment {
   display: flex;
   flex: 0 1 auto;
-  gap: 4px;
+  gap: var(--ds-space-xs);
   align-items: center;
   min-width: 64px;
   max-width: 180px;
@@ -81,14 +91,14 @@
 .overflow {
   display: flex;
   flex: none;
-  gap: 4px;
+  gap: var(--ds-space-xs);
   align-items: center;
 }
 
 .separator {
   flex: none;
-  font-size: var(--ds-text-md);
-  color: var(--ds-gray-8);
+  font-size: var(--ds-text-body);
+  color: var(--ds-foreground-tertiary);
   user-select: none;
 }
 
@@ -99,15 +109,15 @@
 
 .current {
   display: inline-flex;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   align-items: center;
   min-width: 0;
   height: var(--ds-size-sm);
-  padding: 0 6px;
-  font-size: var(--ds-text-md);
-  font-weight: var(--ds-weight-lg);
-  line-height: 20px;
-  color: var(--ds-gray-12);
+  padding: 0 var(--ds-space-sm);
+  font-size: var(--ds-text-body);
+  font-weight: var(--ds-weight-medium);
+  line-height: var(--ds-leading-body);
+  color: var(--ds-foreground-primary);
 }
 
 .current svg {
@@ -123,25 +133,25 @@
 }
 
 .more {
-  color: var(--ds-gray-10);
+  color: var(--ds-foreground-tertiary);
 }
 
 .position {
   flex: none;
-  margin-left: 2px;
-  font-weight: var(--ds-weight-md);
-  color: var(--ds-gray-9);
+  margin-left: var(--ds-space-2xs);
+  font-weight: var(--ds-weight-regular);
+  color: var(--ds-foreground-tertiary);
   white-space: nowrap;
 }
 
 .actions {
   display: flex;
   flex-shrink: 0;
-  gap: 4px;
+  gap: var(--ds-space-xs);
   align-items: center;
   justify-content: flex-end;
   height: 100%;
-  padding-right: 12px;
+  padding-right: var(--ds-space-lg);
   -webkit-app-region: no-drag;
 }
 

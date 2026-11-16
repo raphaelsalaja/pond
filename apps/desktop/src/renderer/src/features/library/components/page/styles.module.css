@@ -42,13 +42,13 @@
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  background: var(--ds-gray-1);
+  background: var(--ds-background-primary);
 }
 
 .main {
   min-height: 0;
-  padding-block: 16px 20px;
-  padding-inline: 20px;
+  padding-block: var(--ds-space-xl) var(--ds-space-2xl);
+  padding-inline: var(--ds-space-2xl);
   scroll-timeline: --library-grid block;
 }
 
@@ -63,7 +63,7 @@
     height: 1px;
     pointer-events: none;
     content: "";
-    background: var(--ds-gray-a4);
+    background: var(--ds-surface-tertiary);
     opacity: 0;
     animation: divider-show linear both;
     animation-timeline: --library-grid;

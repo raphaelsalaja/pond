@@ -27,11 +27,11 @@
 
 .message {
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
-  padding: 12px;
-  font-size: var(--ds-text-md);
-  color: var(--ds-gray-11);
+  padding: var(--ds-space-lg);
+  font-size: var(--ds-text-body);
+  color: var(--ds-foreground-secondary);
 }
 
 .sentinel {

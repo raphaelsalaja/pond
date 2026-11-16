@@ -3,18 +3,21 @@
     "IBM Plex Mono", ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas,
     monospace;
 
-  --ds-weight-xs: 300;
-  --ds-weight-sm: 350;
-  --ds-weight-md: 400;
-  --ds-weight-lg: 450;
-  --ds-weight-xl: 500;
-  --ds-weight-xxl: 550;
-  --ds-weight-xxxl: 600;
+  --ds-weight-regular: 400;
+  --ds-weight-medium: 450;
+  --ds-weight-strong: 500;
+  --ds-weight-bold: 600;
 
-  --ds-text-xxs: 10px;
-  --ds-text-xs: 11px;
-  --ds-text-sm: 12px;
-  --ds-text-md: 13px;
-  --ds-text-lg: 15px;
-  --ds-text-xl: 24px;
+  --ds-text-micro: 10px;
+  --ds-leading-micro: 14px;
+  --ds-text-small: 12px;
+  --ds-leading-small: 16px;
+  --ds-text-body: 14px;
+  --ds-leading-body: 20px;
+  --ds-text-heading: 16px;
+  --ds-leading-heading: 20px;
+  --ds-text-title: 18px;
+  --ds-leading-title: 24px;
+  --ds-text-display: 24px;
+  --ds-leading-display: 30px;
 }

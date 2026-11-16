@@ -6,6 +6,7 @@ import { bootPool } from "./features/saves/state/bootstrap";
 import "./styles.css";
 
 void bootPool();
+if (import.meta.env.DEV) void import("./lab/figma/bridge");
 
 const root = document.getElementById("root");
 if (!root) throw new Error("#root element missing");

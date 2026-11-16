@@ -27,9 +27,9 @@ import { useMenuModel } from "./use-menu-model";
 const PAGE_STEP = 8;
 
 const PLACEHOLDERS = {
-  root: "Search Pond or type a command…",
-  actions: "Search actions…",
-  views: "Search saved views…",
+  root: "Search…",
+  actions: "Search…",
+  views: "Search…",
 } satisfies Record<MenuPage["kind"] | "root", string>;
 
 interface Frame {

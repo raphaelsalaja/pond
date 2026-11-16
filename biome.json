@@ -67,6 +67,30 @@
   },
   "overrides": [
     {
+      "includes": ["apps/**/*.{ts,tsx}"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@base-ui/react", "@base-ui/react/*"],
+                    "message": "Use the @pond/ui component that wraps this Base UI primitive."
+                  },
+                  {
+                    "group": ["@ui-sdk/*"],
+                    "message": "Build the behavior in packages/ui and import it from @pond/ui."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
       "includes": ["apps/raycast/**"],
       "formatter": {
         "lineWidth": 120

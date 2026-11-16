@@ -40,7 +40,7 @@ function notifyOpenWith(result: {
     });
 }
 
-function openWith(
+export function openWith(
   ids: string[],
   fileIndex: number | null,
   application: string,

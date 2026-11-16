@@ -5,7 +5,7 @@
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  background: var(--ds-gray-1);
+  background: var(--ds-background-primary);
 }
 
 .field {
@@ -18,7 +18,7 @@
   place-items: center;
   min-height: 0;
   padding: 48px;
-  color: var(--ds-gray-10);
+  color: var(--ds-foreground-tertiary);
   text-align: center;
 }
 
@@ -34,22 +34,22 @@
 .row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 24px;
+  gap: var(--ds-space-2xl);
   align-items: center;
   min-height: 38px;
-  padding: 7px 14px;
-  font-size: var(--ds-text-sm);
-  border-bottom: 1px solid var(--ds-gray-3);
+  padding: var(--ds-space-md) var(--ds-space-xl);
+  font-size: var(--ds-text-small);
+  border-bottom: 1px solid var(--ds-border-subtle);
 }
 
 .row > :first-child {
   overflow: hidden;
   text-overflow: ellipsis;
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
   white-space: nowrap;
 }
 
 .row > :last-child {
   font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-9);
+  color: var(--ds-foreground-tertiary);
 }

@@ -12,10 +12,10 @@
 
 .bar {
   display: flex;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   align-items: center;
   min-width: 0;
-  padding: 8px;
+  padding: var(--ds-space-md);
 }
 
 .viewport {
@@ -27,11 +27,11 @@
 /* Room for the chip clear badge, which overhangs the chip top by 5px and would be clipped by the scroller. */
 .filters {
   display: flex;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   align-items: center;
   width: 100%;
   height: 38px;
-  margin-block: -5px;
+  margin-block: calc(var(--ds-space-xs) * -1);
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;
@@ -68,6 +68,6 @@
 .actions {
   display: flex;
   flex: none;
-  gap: 4px;
+  gap: var(--ds-space-xs);
   align-items: center;
 }

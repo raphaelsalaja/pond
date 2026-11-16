@@ -1,13 +1,12 @@
 import { Shell } from "@pond/ui";
 import { Outlet, useRouterState } from "@tanstack/react-router";
 import { useLayoutEffect, useMemo } from "react";
-import { canvasIdFromPath } from "@/features/canvas";
-import { fishIdFromPath } from "@/features/fish";
-import { LibraryChrome } from "@/features/library/components/chrome";
 import { FileRing } from "@/features/library/components/file-ring";
+import { FilterBar } from "@/features/library/components/filter-menu";
 import { InboxReview } from "@/features/library/components/inbox-review";
 import { LibraryView } from "@/features/library/components/view";
 import { AppShell } from "@/features/library/components/workspace-shell";
+import { showsLibraryGrid } from "@/features/library/lib/grid-path";
 import { useLibraryNav } from "@/features/library/state/library-chrome";
 import {
   getLastListPath,
@@ -27,22 +26,7 @@ export function Library() {
   const search = useRouterState({ select: (s) => s.location.searchStr });
   const isSave = saveIdFromPath(pathname) !== null;
   const nav = useLibraryNav();
-  const isSources = pathname.startsWith("/sources");
-  const isDownloads = pathname.startsWith("/downloads");
-  const isFish = fishIdFromPath(pathname) !== null;
-  const isTags = pathname === "/tags";
-  const isSplitPosts = pathname === "/split-posts";
-  const isSettings = pathname.startsWith("/settings");
-  const isCanvas =
-    canvasIdFromPath(isSave ? getLastListPath() : pathname) !== null;
-  const showLibraryGrid =
-    !isSources &&
-    !isDownloads &&
-    !isFish &&
-    !isTags &&
-    !isSplitPosts &&
-    !isSettings &&
-    !isCanvas;
+  const showLibraryGrid = showsLibraryGrid(pathname);
 
   useLayoutEffect(() => {
     rememberListPath(pathname, search);
@@ -66,7 +50,11 @@ export function Library() {
         >
           <AppShell.Content>
             <Shell.Body className={styles.body}>
-              {isSave ? null : <LibraryChrome className={styles.chrome} />}
+              {isSave ? null : (
+                <div className={styles.chrome}>
+                  <FilterBar />
+                </div>
+              )}
               <ScrollRestorationContext.Provider value={restoration}>
                 <Shell.Main
                   ref={restoration.ref}

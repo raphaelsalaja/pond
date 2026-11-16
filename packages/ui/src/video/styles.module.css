@@ -24,17 +24,17 @@
   inset: auto 0 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--ds-space-md);
   justify-content: flex-end;
-  padding: 64px 16px 16px;
-  color: var(--ds-white-a12);
+  padding: 64px var(--ds-space-xl) var(--ds-space-xl);
+  color: var(--ds-media-foreground-primary);
   pointer-events: none;
   background: linear-gradient(
     to top,
-    var(--ds-black-a8) 0,
-    var(--ds-black-a6) 24px,
-    var(--ds-black-a3) 58px,
-    var(--ds-black-a1) 98px,
+    color-mix(in oklch, var(--ds-media-background) 75%, transparent) 0,
+    color-mix(in oklch, var(--ds-media-background) 53%, transparent) 24px,
+    color-mix(in oklch, var(--ds-media-background) 20%, transparent) 58px,
+    color-mix(in oklch, var(--ds-media-background) 4%, transparent) 98px,
     transparent 120px
   );
   opacity: 0;
@@ -52,9 +52,9 @@
 .controls[data-chrome] {
   position: relative;
   inset: auto;
-  gap: 8px;
+  gap: var(--ds-space-md);
 
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
   pointer-events: auto;
   background: none;
   opacity: 1;
@@ -64,7 +64,7 @@
 .bar {
   display: flex;
   flex: 0 0 auto;
-  gap: 16px;
+  gap: var(--ds-space-xl);
   align-items: center;
   height: 32px;
   pointer-events: auto;
@@ -82,18 +82,18 @@
   width: 32px;
   height: 32px;
   padding: 0;
-  color: var(--ds-white-a12);
+  color: var(--ds-media-foreground-primary);
   cursor: var(--ds-cursor-interactive, pointer);
   background: transparent;
   border: 0;
   border-radius: var(--ds-radius-full);
 
   &:hover {
-    background: var(--ds-white-a3);
+    background: var(--ds-media-surface-secondary);
   }
 
   &:focus-visible {
-    outline: 2px solid var(--ds-white-a10);
+    outline: 2px solid var(--ds-media-foreground-primary);
     outline-offset: 0;
   }
 }
@@ -101,9 +101,9 @@
 .time {
   flex-shrink: 0;
   min-width: 40px;
-  font-size: var(--ds-text-md);
+  font-size: var(--ds-text-body);
   font-variant-numeric: tabular-nums;
-  color: var(--ds-white-a12);
+  color: var(--ds-media-foreground-primary);
   text-align: center;
   white-space: nowrap;
   user-select: none;
@@ -112,11 +112,11 @@
 .time-display {
   display: flex;
   flex: 0 0 auto;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   align-items: center;
-  font-size: var(--ds-text-md);
+  font-size: var(--ds-text-body);
   font-variant-numeric: tabular-nums;
-  color: var(--ds-white-a12);
+  color: var(--ds-media-foreground-primary);
   white-space: nowrap;
   pointer-events: none;
   user-select: none;
@@ -134,23 +134,23 @@
 }
 
 .time-display-separator {
-  color: var(--ds-white-a8);
+  color: var(--ds-media-foreground-secondary);
 }
 
 .controls[data-chrome] .button {
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
 
   &:hover {
-    background: var(--ds-gray-a3);
+    background: var(--ds-surface-secondary);
   }
 
   &:focus-visible {
-    outline-color: var(--ds-gray-12);
+    outline-color: var(--ds-foreground-primary);
   }
 }
 
 .controls[data-chrome] .bar {
-  gap: 8px;
+  gap: var(--ds-space-md);
   height: var(--ds-size-sm);
 }
 
@@ -167,9 +167,9 @@
 
 .controls[data-chrome] .time,
 .controls[data-chrome] .time-display {
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
 }
 
 .controls[data-chrome] .time-display-separator {
-  color: var(--ds-gray-8);
+  color: var(--ds-foreground-tertiary);
 }

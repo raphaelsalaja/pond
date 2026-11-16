@@ -1,4 +1,4 @@
-import { IconTweetVerifiedFill } from "@pond/icons";
+import { IconTweetVerified } from "@pond/icons";
 import { useState } from "react";
 import type { TweetCardAuthor } from "@/features/captures/components/tweet/card/lib/data";
 import { initials } from "@/shared/lib/initials";
@@ -12,7 +12,7 @@ export function Header({ author }: { author: TweetCardAuthor }) {
         <span className={styles.name}>
           {author.name}
           {author.verified ? (
-            <IconTweetVerifiedFill
+            <IconTweetVerified
               className={styles.verified}
               size={19}
               title="Verified"

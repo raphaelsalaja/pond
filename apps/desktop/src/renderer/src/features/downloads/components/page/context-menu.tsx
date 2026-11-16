@@ -2,7 +2,7 @@ import {
   IconArrowRotateClockwise,
   IconArrowUpRight,
   IconBan,
-  IconCircleXmarkFill,
+  IconCircleXmark,
   IconCopy,
   IconLink2,
   IconMediaPause,
@@ -132,7 +132,7 @@ export function buildDownloadMenuItems(
     { type: "separator" },
     {
       label: "Clear Selection",
-      icon: <IconCircleXmarkFill />,
+      icon: <IconCircleXmark />,
       onClick: downloadsSelection.clear,
     },
   ];

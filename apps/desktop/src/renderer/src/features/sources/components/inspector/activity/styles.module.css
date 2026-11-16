@@ -3,16 +3,16 @@
 }
 
 .control {
-  gap: 8px;
+  gap: var(--ds-space-md);
 }
 
 .outcome {
-  font-size: var(--ds-text-sm);
+  font-size: var(--ds-text-small);
   font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-11);
+  color: var(--ds-foreground-secondary);
   white-space: nowrap;
 
   &[data-tone="warn"] {
-    color: var(--ds-red-11);
+    color: var(--ds-danger-foreground);
   }
 }

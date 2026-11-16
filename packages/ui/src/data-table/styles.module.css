@@ -65,11 +65,11 @@
 .row:hover,
 .row:focus-visible {
   outline: none;
-  background: var(--ds-gray-2);
+  background: var(--ds-background-secondary);
 }
 
 .row[data-selected] {
-  background: var(--ds-accent-a1);
+  background: var(--ds-accent-tint);
   border-radius: 0;
 }
 
@@ -93,7 +93,7 @@
 }
 
 .cell[data-pinned] {
-  --pin-bg: var(--data-table-bg, var(--ds-gray-1));
+  --pin-bg: var(--data-table-bg, var(--ds-background-primary));
   --pin-tint: transparent;
   border-top-left-radius: inherit;
   border-bottom-left-radius: inherit;
@@ -101,12 +101,12 @@
 
 .row:hover .cell[data-pinned],
 .row:focus-visible .cell[data-pinned] {
-  --pin-bg: var(--ds-gray-2);
+  --pin-bg: var(--ds-background-secondary);
 }
 
 .row[data-selected] .cell[data-pinned] {
-  --pin-bg: var(--data-table-bg, var(--ds-gray-1));
-  --pin-tint: var(--ds-accent-a1);
+  --pin-bg: var(--data-table-bg, var(--ds-background-primary));
+  --pin-tint: var(--ds-accent-tint);
 }
 
 .cell[data-align="end"] {
@@ -153,7 +153,7 @@
   width: 16px;
   height: 16px;
   padding: 0;
-  color: var(--ds-gray-10);
+  color: var(--ds-foreground-tertiary);
   cursor: var(--ds-cursor-interactive, pointer);
   background: transparent;
   border: 0;
@@ -176,12 +176,12 @@
 :global(html[data-focus-source="keyboard"])
   .container:focus-visible
   [data-cursor]:not([data-selected]) {
-  background: var(--ds-gray-2);
+  background: var(--ds-background-secondary);
 }
 
 :global(html[data-focus-source="keyboard"])
   .container:focus-visible
   [data-cursor]:not([data-selected])
   .cell[data-pinned] {
-  --pin-bg: var(--ds-gray-2);
+  --pin-bg: var(--ds-background-secondary);
 }

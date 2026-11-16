@@ -25,6 +25,10 @@ export function useViewerChromeRoot(): HTMLElement | null {
   return use(ChromeContext)?.root ?? null;
 }
 
+export function useViewerChromeEnabled(): boolean {
+  return use(ChromeContext)?.enabled ?? true;
+}
+
 export function ChromePortal({
   slot,
   children,

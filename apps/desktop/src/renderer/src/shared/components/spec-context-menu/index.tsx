@@ -195,7 +195,7 @@ export function SpecContextMenu({
                   <ContextMenu.Input
                     autoFocus
                     aria-label={searchLabel}
-                    placeholder="Filter…"
+                    placeholder="Search…"
                   />
                   <SearchResults items={items} Items={ContextMenu.Items} />
                 </>
@@ -262,7 +262,7 @@ export function SpecMenu({
                   <Menu.Input
                     autoFocus
                     aria-label={searchLabel}
-                    placeholder="Filter…"
+                    placeholder="Search…"
                   />
                   <SearchResults items={items} Items={Menu.Items} />
                 </>

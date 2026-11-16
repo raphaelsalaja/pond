@@ -1,6 +1,6 @@
 .trigger {
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
   justify-content: space-between;
   min-width: 180px;
@@ -10,7 +10,7 @@
 .value {
   overflow: hidden;
   text-overflow: ellipsis;
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
   white-space: nowrap;
 }
 
@@ -19,14 +19,14 @@
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  margin-left: 6px;
-  color: var(--ds-gray-11);
+  margin-left: var(--ds-space-sm);
+  color: var(--ds-foreground-secondary);
 }
 
 .label {
-  font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-lg);
-  color: var(--ds-gray-11);
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-foreground-secondary);
 }
 
 .positioner {
@@ -56,13 +56,13 @@
   max-height: min(320px, var(--available-height, 320px));
   overflow-y: auto;
   overscroll-behavior: contain;
-  scroll-padding-block: 4px;
+  scroll-padding-block: var(--ds-space-xs);
 }
 
 .empty {
-  padding: 8px 12px;
-  font-size: var(--ds-text-md);
-  color: var(--ds-gray-9);
+  padding: var(--ds-space-md) var(--ds-space-lg);
+  font-size: var(--ds-text-body);
+  color: var(--ds-foreground-tertiary);
 
   &:empty {
     display: none;
@@ -71,7 +71,7 @@
 
 .item {
   composes: item from "../shared/styles/popup/styles.module.css";
-  gap: 8px;
+  gap: var(--ds-space-md);
 }
 
 .text {
@@ -86,16 +86,16 @@
 .end {
   display: inline-flex;
   flex-shrink: 0;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   align-items: center;
   margin-left: auto;
-  color: var(--ds-gray-9);
+  color: var(--ds-foreground-tertiary);
 }
 
 .meta {
-  font-size: var(--ds-text-sm);
+  font-size: var(--ds-text-small);
   font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-9);
+  color: var(--ds-foreground-tertiary);
 }
 
 .indicator {
@@ -119,25 +119,19 @@
   box-sizing: border-box;
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: var(--ds-space-xs);
   align-items: center;
   width: 100%;
   min-height: var(--ds-size-sm);
-  padding: 3px 4px;
+  padding: var(--ds-space-xs) var(--ds-space-xs);
   cursor: text;
-  background: var(--ds-gray-1);
+  background: var(--ds-background-primary);
   border-radius: var(--ds-radius-sm);
-  box-shadow: var(--ds-shadow-xs);
-  transition: box-shadow var(--ds-duration-medium) var(--ds-easing-standard);
-
-  &:hover,
-  &:focus-within {
-    box-shadow: var(--ds-shadow-sm);
-  }
+  box-shadow: var(--ds-shadow-border);
 
   &[data-disabled] {
     cursor: not-allowed;
-    opacity: 0.8;
+    opacity: var(--ds-opacity-disabled);
   }
 }
 
@@ -145,30 +139,30 @@
   display: flex;
   flex: 1;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: var(--ds-space-xs);
   align-items: center;
   min-width: 0;
 }
 
 .chip {
   display: inline-flex;
-  gap: 2px;
+  gap: var(--ds-space-2xs);
   align-items: center;
   max-width: 100%;
   height: 22px;
-  padding-inline: 8px 3px;
-  font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-lg);
-  color: var(--ds-gray-12);
+  padding-inline: var(--ds-space-md) var(--ds-space-xs);
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-foreground-primary);
   cursor: default;
   outline: none;
-  background: var(--ds-gray-a3);
+  background: var(--ds-surface-secondary);
   border-radius: var(--ds-radius-xs);
   transition: background var(--ds-duration-fast) var(--ds-easing-standard);
 
   &:focus-within,
   &[data-highlighted] {
-    background: var(--ds-gray-a5);
+    background: var(--ds-surface-tertiary);
   }
 }
 
@@ -180,15 +174,15 @@
   width: 16px;
   height: 16px;
   padding: 0;
-  color: var(--ds-gray-10);
+  color: var(--ds-foreground-tertiary);
   cursor: var(--ds-cursor-interactive, pointer);
   background: transparent;
   border: 0;
   border-radius: var(--ds-radius-xs);
 
   &:hover {
-    color: var(--ds-gray-12);
-    background: var(--ds-gray-a4);
+    color: var(--ds-foreground-primary);
+    background: var(--ds-surface-tertiary);
   }
 }
 
@@ -196,15 +190,22 @@
   flex: 1;
   min-width: 48px;
   height: 22px;
-  padding: 0 4px;
-  font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-lg);
-  color: var(--ds-gray-12);
+  padding: 0 var(--ds-space-xs);
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-foreground-primary);
   outline: none;
   background: transparent;
   border: 0;
 
   &::placeholder {
-    color: var(--ds-gray-10);
+    color: var(--ds-foreground-tertiary);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .field,
+  .chip {
+    transition: none;
   }
 }

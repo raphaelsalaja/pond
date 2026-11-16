@@ -268,7 +268,7 @@ export function SourcesPage() {
         value={filters.q}
         onChange={(e) => sourcesFilters.setQ(e.target.value)}
         spellCheck={false}
-        placeholder="Search sources…"
+        placeholder="Search…"
         aria-label="Search Sources"
         data-sources-search=""
       />

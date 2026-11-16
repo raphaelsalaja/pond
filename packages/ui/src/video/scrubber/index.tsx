@@ -97,7 +97,13 @@ export function Scrubber({ className, renderPreview }: ScrubberProps) {
             />
           ) : null}
           <SliderBase.Indicator className={styles.indicator} />
-          <SliderBase.Thumb className={styles.thumb} />
+          <SliderBase.Thumb
+            className={styles.thumb}
+            aria-label="Seek"
+            getAriaValueText={(_, value) =>
+              `${formatTime(value)} of ${formatTime(state.duration)}`
+            }
+          />
         </SliderBase.Track>
       </SliderBase.Control>
     </SliderBase.Root>

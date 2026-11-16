@@ -55,9 +55,9 @@ const ROOT_LIMITS = { Folders: 5, "Saved Views": 5 } satisfies Record<
 >;
 
 const PLACEHOLDERS = {
-  root: "Search Pond or type a command…",
-  actions: "Search actions…",
-  folders: "Search folders…",
+  root: "Search…",
+  actions: "Search…",
+  folders: "Search…",
 };
 
 function command(spec: Command): Item {

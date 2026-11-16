@@ -209,9 +209,9 @@ export function LibraryView() {
               position: "fixed",
               pointerEvents: "none",
               zIndex: 10,
-              border: "1px solid var(--ds-accent-9)",
+              border: "1px solid var(--ds-accent)",
               background:
-                "color-mix(in srgb, var(--ds-accent-9) 15%, transparent)",
+                "color-mix(in srgb, var(--ds-accent) 15%, transparent)",
               ...marquee.rectangle,
             }}
           />

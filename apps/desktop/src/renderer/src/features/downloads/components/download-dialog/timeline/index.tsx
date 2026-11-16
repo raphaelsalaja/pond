@@ -1,24 +1,38 @@
 import { IconFlame } from "@pond/icons";
 import { clsx as cn } from "clsx";
 import { type PointerEvent, useRef, useState } from "react";
-import { type Clip, percentOf, rangeStyle } from "../lib/clip";
+import { Frame } from "../frame";
+import { type Clip, frameAt, percentOf, rangeStyle } from "../lib/clip";
 import type { useRangeDrag } from "../lib/drag";
 import type { Player } from "../lib/player";
-import { formatClock } from "../lib/range";
+import { formatClock, storyboardTile } from "../lib/range";
 import styles from "./styles.module.css";
 
 const STEPS = [1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 1800, 3600];
 const HEAT_BARS = 72;
+const STRIP_CELLS = 10;
 
 function rulerTimes(duration: number, most: number) {
   const step = STEPS.find((candidate) => duration / candidate <= most) ?? 3600;
   const labels: number[] = [];
-  const dots: number[] = [];
   for (let time = step; time < duration - step * 0.3; time += step) {
     labels.push(time);
   }
-  for (let time = step / 2; time < duration; time += step) dots.push(time);
-  return { labels, dots };
+  return labels;
+}
+
+/** Evenly spaced pictures for the track, from the storyboard or the pulled frames. */
+function stripCells(clip: Clip) {
+  const { storyboard } = clip.probe;
+  if (!storyboard && clip.frames.length < 2) return [];
+  return Array.from({ length: STRIP_CELLS }, (_, index) => {
+    const time = ((index + 0.5) / STRIP_CELLS) * clip.duration;
+    return {
+      time,
+      tile: storyboard ? storyboardTile(storyboard, time) : null,
+      src: storyboard ? null : frameAt(clip, time),
+    };
+  });
 }
 
 function heatBars(clip: Clip, count: number) {
@@ -38,7 +52,7 @@ interface TimelineProps extends React.ComponentPropsWithoutRef<"div"> {
   marks?: number;
 }
 
-/** Ruler, one clip bar and a Most Replayed lane under a draggable playhead. */
+/** Ruler, a filmstrip track with the trim frame, and a Most Replayed lane under a draggable playhead. */
 export function Timeline({
   clip,
   drag,
@@ -52,7 +66,8 @@ export function Timeline({
   const scrubbing = useRef(false);
   const [hover, setHover] = useState<number | null>(null);
   const { range, duration, replay } = clip;
-  const { labels, dots } = rulerTimes(duration, marks);
+  const labels = rulerTimes(duration, marks);
+  const strip = stripCells(clip);
   const onReplay =
     replay != null &&
     Math.abs(replay.start - range.start) < 0.5 &&
@@ -91,13 +106,6 @@ export function Timeline({
       {...props}
     >
       <div ref={ruler} className={styles.ruler} {...scrubProps}>
-        {dots.map((dot) => (
-          <span
-            key={dot}
-            className={styles.dot}
-            style={{ left: percentOf(clip, dot) }}
-          />
-        ))}
         {labels.map((label) => (
           <span
             key={label}
@@ -113,13 +121,24 @@ export function Timeline({
         ref={drag.track}
         className={styles.lane}
         data-dragging={drag.active || undefined}
+        data-strip={strip.length > 0 || undefined}
         {...drag.trackProps}
       >
+        {strip.length ? (
+          <div className={styles.strip}>
+            {strip.map((cell) => (
+              <Frame
+                key={cell.time}
+                className={styles.cell}
+                tile={cell.tile}
+                src={cell.src}
+              />
+            ))}
+          </div>
+        ) : null}
+        <span className={styles.shade} data-edge="start" />
+        <span className={styles.shade} data-edge="end" />
         <div className={styles.clip} {...drag.windowProps}>
-          <span className={styles.name}>Clip</span>
-          <span className={styles.length}>
-            {formatClock(range.end - range.start)}
-          </span>
           <span
             className={styles.handle}
             data-edge="start"

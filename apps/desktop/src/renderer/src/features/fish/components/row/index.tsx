@@ -1,4 +1,4 @@
-import { IconDotsFill, IconTriangleWarningFill } from "@pond/icons";
+import { IconDots, IconTriangleWarning } from "@pond/icons";
 import { Badge, Menu, Sidebar } from "@pond/ui";
 import type { FishSummary } from "@shared/fish-contracts";
 import {
@@ -55,7 +55,7 @@ export function FishRow({
           ) : null}
           {mood === "worried" ? (
             <span className={styles.status}>
-              <IconTriangleWarningFill className={styles.failed} size={12} />
+              <IconTriangleWarning className={styles.failed} size={12} />
             </span>
           ) : null}
           {mood === "pleased" ? (
@@ -78,7 +78,7 @@ export function FishRow({
             aria-label={`More Actions for ${fish.name}`}
             tabIndex={-1}
           >
-            <IconDotsFill size={12} />
+            <IconDots size={12} />
           </Menu.Trigger>
         </SpecMenu>
       </div>

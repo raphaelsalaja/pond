@@ -1,5 +1,4 @@
 import { Button, Popover, Reveal } from "@pond/ui";
-import type { ReferenceItem } from "@pond/ui/reference-list";
 import type { AssistantSource } from "@shared/assistant";
 import { sourceExcerpt } from "@shared/assistant-text";
 import type { ReactNode, RefObject } from "react";
@@ -10,6 +9,13 @@ import { useSave } from "@/features/saves/pool";
 import { formatAbsolute } from "@/shared/lib/format";
 import { SourceThumbnail, useSourceCovers } from "../save-preview";
 import styles from "./styles.module.css";
+
+interface ReferenceItem {
+  id: string;
+  title: string;
+  description?: string;
+  media?: ReactNode;
+}
 
 function toReferenceItems(
   ids: string[],

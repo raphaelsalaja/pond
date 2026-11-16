@@ -9,34 +9,34 @@
 }
 .body {
   flex: 1;
-  padding: 20px;
+  padding: var(--ds-space-2xl);
   overflow: auto;
 }
 .name {
   width: 100%;
 }
 .body .description {
-  margin: 12px 0 0;
+  margin: var(--ds-space-lg) 0 0;
 }
 .inherited {
-  font-size: var(--ds-text-md);
-  color: var(--ds-gray-11);
+  font-size: var(--ds-text-body);
+  color: var(--ds-foreground-secondary);
 }
 .editor {
   min-width: 0;
   padding: 0;
-  margin: 40px 0 24px;
+  margin: 40px 0 var(--ds-space-2xl);
   border: 0;
 }
 .count {
   min-width: 0;
   margin: 0;
-  font-size: var(--ds-text-md);
-  color: var(--ds-gray-10);
+  font-size: var(--ds-text-body);
+  color: var(--ds-foreground-tertiary);
 }
 .error {
-  font-size: var(--ds-text-md);
-  color: var(--ds-red-11);
+  font-size: var(--ds-text-body);
+  color: var(--ds-danger-foreground);
 }
 .hidden {
   position: absolute;

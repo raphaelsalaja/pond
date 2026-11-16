@@ -210,7 +210,7 @@ export function Chat({ t }: { t: number }) {
             style={{ transform: `translateY(${-scroll}px)` }}
           >
             <Enter t={t} at={CUES.askSend} origin="100% 100%">
-              <Message.View role={USER}>{QUESTION}</Message.View>
+              <Message.View from={USER}>{QUESTION}</Message.View>
             </Enter>
             <div
               className={styles.status}
@@ -225,7 +225,7 @@ export function Chat({ t }: { t: number }) {
               Searching your library
             </div>
             <Enter t={t} at={CUES.answer}>
-              <Message.View role={KOI}>
+              <Message.View from={KOI}>
                 <Message.Bubble>
                   {reveal(ANSWER, progress(t, CUES.answer, 900))}
                 </Message.Bubble>
@@ -265,7 +265,7 @@ export function Chat({ t }: { t: number }) {
               </Enter>
             </div>
             <Enter t={t} at={CUES.routineReply}>
-              <Message.View role={KOI}>
+              <Message.View from={KOI}>
                 <Message.Bubble>
                   {reveal(REPLY, progress(t, CUES.routineReply, 700))}
                 </Message.Bubble>

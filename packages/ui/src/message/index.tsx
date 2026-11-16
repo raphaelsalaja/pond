@@ -4,17 +4,19 @@ import type { ComponentPropsWithoutRef, ReactNode } from "react";
 import { ActionBar } from "./message-actions";
 import styles from "./styles.module.css";
 
+type Sender = "user" | "assistant" | "system";
+
 interface RootProps extends ComponentPropsWithoutRef<"article"> {
-  role: "user" | "assistant" | "system";
+  from: Sender;
 }
 
-function Root({ className, role, ...props }: RootProps) {
+function Root({ className, from, ...props }: RootProps) {
   const reduced = useReducedMotionConfig();
   return (
     <article
       {...props}
       data-reduced-motion={reduced || undefined}
-      data-role={role}
+      data-from={from}
       className={cn(styles.message, className)}
     />
   );
@@ -49,14 +51,14 @@ function Actions({ children }: { children?: ReactNode }) {
 }
 
 function View({
-  role,
+  from,
   leading,
   footer,
   actions,
   children,
   animateEntrance = false,
 }: {
-  role: "user" | "assistant" | "system";
+  from: Sender;
   leading?: ReactNode;
   footer?: ReactNode;
   actions?: ReactNode;
@@ -64,7 +66,7 @@ function View({
   animateEntrance?: boolean;
 }) {
   return (
-    <Root role={role} data-enter={animateEntrance || undefined}>
+    <Root from={from} data-enter={animateEntrance || undefined}>
       <Leading>{leading}</Leading>
       <div className={styles.body}>
         {children}

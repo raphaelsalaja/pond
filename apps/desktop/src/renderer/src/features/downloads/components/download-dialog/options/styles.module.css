@@ -5,13 +5,13 @@
 
 .mode {
   flex: 1;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   justify-content: center;
 }
 
 .row {
   display: flex;
-  gap: 12px;
+  gap: var(--ds-space-lg);
   align-items: center;
   justify-content: space-between;
   min-height: 32px;
@@ -24,12 +24,12 @@
 }
 
 .label {
-  font-size: var(--ds-text-md);
-  font-weight: var(--ds-weight-lg);
-  color: var(--ds-gray-12);
+  font-size: var(--ds-text-body);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-foreground-primary);
 }
 
 .hint {
-  font-size: var(--ds-text-sm);
-  color: var(--ds-gray-10);
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-tertiary);
 }

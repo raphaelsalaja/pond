@@ -1,8 +1,8 @@
 .icons {
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
-  color: var(--ds-gray-10);
+  color: var(--ds-foreground-tertiary);
 }
 
 .toolbar {
@@ -11,7 +11,7 @@
   display: flex;
   align-items: center;
   height: 44px;
-  padding: 0 16px;
+  padding: 0 var(--ds-space-xl);
 
   > .icons {
     margin-left: 28px;
@@ -20,7 +20,7 @@
 
 .lights {
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
 
   > span {
     width: 12px;
@@ -29,15 +29,15 @@
   }
 
   > [data-tone="red"] {
-    background: var(--ds-red-9);
+    background: var(--ds-red);
   }
 
   > [data-tone="yellow"] {
-    background: var(--ds-yellow-9);
+    background: var(--ds-yellow);
   }
 
   > [data-tone="green"] {
-    background: var(--ds-green-9);
+    background: var(--ds-green);
   }
 }
 
@@ -45,14 +45,14 @@
   position: absolute;
   left: 190px;
   display: flex;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   align-items: center;
   white-space: nowrap;
 }
 
 .leaf {
   display: flex;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   max-width: 0;
   overflow: hidden;
   opacity: 0;
@@ -62,7 +62,7 @@
 }
 
 .slash {
-  color: var(--ds-gray-8);
+  color: var(--ds-foreground-tertiary);
 }
 
 [data-state="preview"] .leaf {

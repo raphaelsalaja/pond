@@ -17,9 +17,9 @@
   place-items: center;
   width: 40px;
   height: 40px;
-  color: var(--ds-white-a12);
+  color: var(--ds-media-foreground-primary);
   pointer-events: none;
-  background: var(--ds-black-a8);
+  background: var(--ds-media-background);
   border-radius: var(--ds-radius-full);
   opacity: 0;
   transform: translate(-50%, -50%);
@@ -53,7 +53,7 @@
 }
 
 .row {
-  gap: 8px;
+  gap: var(--ds-space-md);
   width: 100%;
 }
 
@@ -62,7 +62,7 @@
   flex: 1;
   min-width: 0;
   height: calc(var(--ds-size-sm) + 4px);
-  padding-inline: 12px;
+  padding-inline: var(--ds-space-lg);
 }
 
 /* Speed is a Select trigger, not a Button, so the pill's rounding override misses it. */
@@ -73,18 +73,18 @@
 .controls[data-chrome] .current-time,
 .controls[data-chrome] .duration {
   min-width: 32px;
-  font-size: var(--ds-text-sm);
+  font-size: var(--ds-text-small);
   font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-9);
+  color: var(--ds-foreground-tertiary);
 }
 
 .controls[data-chrome] .current-time {
-  margin-inline: 0 8px;
+  margin-inline: 0 var(--ds-space-md);
   text-align: left;
 }
 
 .controls[data-chrome] .duration {
-  margin-inline: 8px 0;
+  margin-inline: var(--ds-space-md) 0;
   text-align: right;
 }
 

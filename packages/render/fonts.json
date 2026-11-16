@@ -1,0 +1,10 @@
+[
+  { "kind": "primary", "stack": "bluesky", "family": "Inter", "weight": 400, "file": "Inter-Regular.otf", "pack": "inter", "ranges": [[0, 1114111]] },
+  { "kind": "primary", "stack": "bluesky", "family": "Inter", "weight": 500, "file": "Inter-Medium.otf", "pack": "inter", "ranges": [[0, 1114111]] },
+  { "kind": "primary", "stack": "bluesky", "family": "Inter", "weight": 600, "file": "Inter-SemiBold.otf", "pack": "inter", "ranges": [[0, 1114111]] },
+  { "kind": "primary", "stack": "bluesky", "family": "Inter", "weight": 700, "file": "Inter-Bold.otf", "pack": "inter", "ranges": [[0, 1114111]] },
+  { "kind": "primary", "stack": "threads", "family": "SF Pro", "weight": 400, "file": "SFNS.ttf", "pack": "sf", "variations": { "wght": 400, "opsz": 17 }, "ranges": [[0, 1114111]] },
+  { "kind": "primary", "stack": "threads", "family": "SF Pro", "weight": 500, "file": "SFNS.ttf", "pack": "sf", "variations": { "wght": 510, "opsz": 17 }, "ranges": [[0, 1114111]] },
+  { "kind": "primary", "stack": "threads", "family": "SF Pro", "weight": 600, "file": "SFNS.ttf", "pack": "sf", "variations": { "wght": 590, "opsz": 17 }, "ranges": [[0, 1114111]] },
+  { "kind": "primary", "stack": "threads", "family": "SF Pro", "weight": 700, "file": "SFNS.ttf", "pack": "sf", "variations": { "wght": 700, "opsz": 17 }, "ranges": [[0, 1114111]] }
+]

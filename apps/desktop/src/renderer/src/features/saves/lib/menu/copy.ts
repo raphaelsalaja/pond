@@ -5,7 +5,7 @@ import {
   IconImage,
   IconLink2,
   IconPath,
-  IconTags,
+  IconTag,
   IconText,
 } from "@pond/icons";
 import type { MenuItemSpec } from "@pond/ui";
@@ -127,7 +127,7 @@ export function buildCopyItems({
     },
     {
       label: "Copy Tags",
-      icon: glyph(IconTags),
+      icon: glyph(IconTag),
       hidden: !hasTags,
       shortcut: shortcutGlyphs("save.copy-tags"),
       onClick: () => {

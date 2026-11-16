@@ -1,31 +1,26 @@
+import {
+  ColorPicker,
+  ColorPickerArea,
+  ColorPickerAreaThumb,
+  ColorPickerSlider,
+  ColorPickerSliderThumb,
+} from "@ui-sdk/react/color-picker";
 import { clsx as cn } from "clsx";
 import {
   type ComponentPropsWithoutRef,
   createContext,
   type ReactNode,
   use,
-  useRef,
   useState,
 } from "react";
-import {
-  useColorArea,
-  useColorSlider,
-  useFocusRing,
-  useLocale,
-  VisuallyHidden,
-} from "react-aria";
-import {
-  type Color,
-  parseColor,
-  useColorAreaState,
-  useColorSliderState,
-} from "react-stately";
 import { Input } from "../input";
 import { Popover } from "../popover";
 import styles from "./styles.module.css";
 
 const AREA_SIZE = 156;
 const TRACK_WIDTH = 12;
+
+type HueOrientation = "horizontal" | "vertical";
 
 /**
  * A finished color is six hex digits. Three-digit shorthand is an unfinished
@@ -39,14 +34,6 @@ function defaultNormalize(input: string): string | null {
 
 function sameHex(a: string, b: string): boolean {
   return a.toLowerCase() === b.toLowerCase();
-}
-
-function toHsb(hex: string): Color {
-  try {
-    return parseColor(hex).toFormat("hsb");
-  } catch {
-    return parseColor("#000000").toFormat("hsb");
-  }
 }
 
 interface RootProps
@@ -136,22 +123,27 @@ function Root({
   );
 }
 
-interface PickerContextValue {
-  color: Color;
-  ariaLabel: string;
-  onChange: (color: Color) => void;
-}
+const LabelContext = createContext<string | null>(null);
 
-const PickerContext = createContext<PickerContextValue | null>(null);
-
-function usePicker(): PickerContextValue {
-  const context = use(PickerContext);
-  if (!context) {
+function useLabel(): string {
+  const label = use(LabelContext);
+  if (label === null) {
     throw new Error(
       "ColorField picker parts must be rendered within ColorField.PickerRoot",
     );
   }
-  return context;
+  return label;
+}
+
+interface PickerRootProps
+  extends Omit<
+    ComponentPropsWithoutRef<"div">,
+    "onChange" | "onSelect" | "defaultValue" | "children"
+  > {
+  value: string;
+  ariaLabel: string;
+  onChange: (hex: string) => void;
+  children: ReactNode;
 }
 
 function PickerRoot({
@@ -159,54 +151,45 @@ function PickerRoot({
   ariaLabel,
   onChange,
   children,
-}: {
-  value: string;
-  ariaLabel: string;
-  onChange: (hex: string) => void;
-  children: ReactNode;
-}) {
-  /** Hex drops hue at zero saturation, so keep the last HSB color while it still matches `value`. */
-  const [stored, setColor] = useState<Color>(() => toHsb(value));
-  const color =
-    stored.toString("hex").toLowerCase() === value.toLowerCase()
-      ? stored
-      : toHsb(value);
-
-  const apply = (next: Color) => {
-    setColor(next);
-    onChange(next.toString("hex"));
-  };
-
+  ...props
+}: PickerRootProps) {
   return (
-    <PickerContext value={{ color, ariaLabel, onChange: apply }}>
-      {children}
-    </PickerContext>
+    <LabelContext value={ariaLabel}>
+      <ColorPicker
+        aria-label={ariaLabel}
+        value={value}
+        onValueChange={(next) => onChange(next)}
+        {...props}
+      >
+        {children}
+      </ColorPicker>
+    </LabelContext>
   );
 }
 
-function Picker({
-  value,
-  ariaLabel,
-  onChange,
-  areaWidth = AREA_SIZE,
-  areaHeight = AREA_SIZE,
-}: {
-  value: string;
-  ariaLabel: string;
-  onChange: (hex: string) => void;
+interface PickerProps extends Omit<PickerRootProps, "children"> {
   areaWidth?: number;
   areaHeight?: number;
-}) {
+}
+
+function Picker({
+  areaWidth = AREA_SIZE,
+  areaHeight = AREA_SIZE,
+  className,
+  ...props
+}: PickerProps) {
   return (
-    <PickerRoot value={value} ariaLabel={ariaLabel} onChange={onChange}>
-      <div className={styles.picker}>
-        <div className={styles.body}>
-          <Area width={areaWidth} height={areaHeight} />
-          <Hue height={areaHeight} />
-        </div>
-      </div>
+    <PickerRoot className={cn(styles.picker, className)} {...props}>
+      <Area width={areaWidth} height={areaHeight} />
+      <Hue height={areaHeight} />
     </PickerRoot>
   );
+}
+
+interface AreaProps extends Omit<ComponentPropsWithoutRef<"div">, "children"> {
+  width?: number;
+  height?: number;
+  thumbClassName?: string;
 }
 
 function Area({
@@ -214,123 +197,54 @@ function Area({
   height = AREA_SIZE,
   className,
   thumbClassName,
-}: {
-  width?: number;
-  height?: number;
-  className?: string;
-  thumbClassName?: string;
-}) {
-  const { color, ariaLabel, onChange } = usePicker();
-  const inputXRef = useRef<HTMLInputElement>(null);
-  const inputYRef = useRef<HTMLInputElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  const state = useColorAreaState({
-    value: color,
-    onChange,
-    xChannel: "saturation",
-    yChannel: "brightness",
-  });
-
-  const { isFocusVisible, focusProps } = useFocusRing();
-  const { colorAreaProps, xInputProps, yInputProps, thumbProps } = useColorArea(
-    {
-      "aria-label": `${ariaLabel} saturation and brightness`,
-      inputXRef,
-      inputYRef,
-      containerRef,
-    },
-    state,
-  );
-
+  style,
+  ...props
+}: AreaProps) {
+  const label = useLabel();
   return (
-    <div
-      ref={containerRef}
-      {...colorAreaProps}
-      className={cn(styles.saturation, className)}
-      style={{
-        ...colorAreaProps.style,
-        width: width ? `${width}px` : "100%",
-        height,
-      }}
+    <ColorPickerArea
+      className={cn(styles.area, className)}
+      style={{ width: width ?? "100%", height, ...style }}
+      {...props}
     >
-      <div
-        {...thumbProps}
-        className={cn(styles.handle, thumbClassName)}
-        data-focus={isFocusVisible || undefined}
-        style={thumbProps.style}
-      >
-        <VisuallyHidden>
-          <input ref={inputXRef} {...xInputProps} {...focusProps} />
-          <input ref={inputYRef} {...yInputProps} {...focusProps} />
-        </VisuallyHidden>
-      </div>
-    </div>
+      <ColorPickerAreaThumb
+        aria-label={`${label} saturation and brightness`}
+        className={cn(styles.thumb, thumbClassName)}
+      />
+    </ColorPickerArea>
   );
 }
 
+interface HueProps extends Omit<ComponentPropsWithoutRef<"div">, "children"> {
+  width?: number;
+  height?: number;
+  orientation?: HueOrientation;
+  thumbClassName?: string;
+}
+
 function Hue({
-  height = AREA_SIZE,
   width = TRACK_WIDTH,
+  height = AREA_SIZE,
   orientation = "vertical",
   className,
   thumbClassName,
-}: {
-  height?: number;
-  width?: number;
-  orientation?: "horizontal" | "vertical";
-  className?: string;
-  thumbClassName?: string;
-}) {
-  const { color, ariaLabel, onChange } = usePicker();
-  const { locale } = useLocale();
-  const trackRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const state = useColorSliderState({
-    value: color,
-    onChange,
-    channel: "hue",
-    orientation,
-    locale,
-  });
-
-  const { isFocusVisible, focusProps } = useFocusRing();
-  const { trackProps, thumbProps, inputProps, labelProps } = useColorSlider(
-    {
-      "aria-label": `${ariaLabel} hue`,
-      channel: "hue",
-      orientation,
-      trackRef,
-      inputRef,
-    },
-    state,
-  );
-
+  style,
+  ...props
+}: HueProps) {
+  const label = useLabel();
   return (
-    <div
-      {...trackProps}
-      ref={trackRef}
+    <ColorPickerSlider
+      channel="hue"
+      orientation={orientation}
       className={cn(styles.hue, className)}
-      style={{ ...trackProps.style, width, height }}
+      style={{ width, height, ...style }}
+      {...props}
     >
-      <VisuallyHidden>
-        <span {...labelProps}>{ariaLabel} hue</span>
-      </VisuallyHidden>
-      <div
-        {...thumbProps}
-        className={cn(styles.handle, thumbClassName)}
-        data-focus={isFocusVisible || undefined}
-        style={{
-          ...thumbProps.style,
-          ...(orientation === "vertical" ? { left: "50%" } : { top: "50%" }),
-        }}
-      >
-        <VisuallyHidden>
-          <input ref={inputRef} {...inputProps} {...focusProps} />
-        </VisuallyHidden>
-      </div>
-    </div>
+      <ColorPickerSliderThumb
+        aria-label={`${label} hue`}
+        className={cn(styles.thumb, thumbClassName)}
+      />
+    </ColorPickerSlider>
   );
 }
 

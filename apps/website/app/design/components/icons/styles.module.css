@@ -1,0 +1,84 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-xl);
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ds-space-md);
+  align-items: center;
+}
+
+.search {
+  width: 240px;
+}
+
+.count {
+  margin-left: auto;
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: var(--ds-space-sm);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-md);
+  align-items: center;
+  min-width: 0;
+  padding: var(--ds-space-lg) var(--ds-space-sm) var(--ds-space-md);
+  color: var(--ds-foreground-primary);
+  border-radius: var(--ds-radius-md);
+  box-shadow: var(--ds-shadow-border);
+}
+
+.glyph {
+  position: relative;
+  display: inline-flex;
+  width: var(--glyph-size);
+  height: var(--glyph-size);
+
+  & > svg {
+    position: relative;
+  }
+}
+
+/* One cell per grid unit; the tinted square is the 2.25 to 15.75 live area. */
+.board[data-grid] .glyph::before {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background-image:
+    linear-gradient(var(--ds-accent-tint) 0 0),
+    linear-gradient(to right, var(--ds-border-subtle) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--ds-border-subtle) 1px, transparent 1px);
+  background-repeat: no-repeat, repeat, repeat;
+  background-position:
+    center,
+    0 0,
+    0 0;
+  background-size:
+    75% 75%,
+    calc(var(--glyph-size) / 18) 100%,
+    100% calc(var(--glyph-size) / 18);
+}
+
+.name {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

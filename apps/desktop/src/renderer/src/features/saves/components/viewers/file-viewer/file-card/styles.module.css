@@ -1,13 +1,13 @@
 .card {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: var(--ds-space-2xl);
   align-items: center;
   width: min(100%, 34rem);
   padding: 32px;
-  background: var(--ds-gray-1);
+  background: var(--ds-background-primary);
   border-radius: var(--ds-radius-lg);
-  box-shadow: var(--ds-shadow-md);
+  box-shadow: var(--ds-shadow-border);
 }
 
 .heading {
@@ -16,17 +16,17 @@
 }
 
 .heading h1 {
-  margin: 0 0 6px;
+  margin: 0 0 var(--ds-space-sm);
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-lg);
-  color: var(--ds-gray-12);
+  font-size: var(--ds-text-heading);
+  color: var(--ds-foreground-primary);
 }
 
 .heading p {
-  margin: 4px 0 0;
-  font-size: var(--ds-text-sm);
-  color: var(--ds-gray-10);
+  margin: var(--ds-space-xs) 0 0;
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-tertiary);
   word-break: break-word;
 }
 
@@ -35,18 +35,18 @@
   place-items: end center;
   width: 104px;
   height: 128px;
-  padding: 16px;
-  font-size: var(--ds-text-md);
-  font-weight: var(--ds-weight-xl);
-  color: var(--ds-gray-11);
-  background: var(--ds-gray-2);
+  padding: var(--ds-space-xl);
+  font-size: var(--ds-text-body);
+  font-weight: var(--ds-weight-strong);
+  color: var(--ds-foreground-secondary);
+  background: var(--ds-background-secondary);
   border-radius: var(--ds-radius-md);
-  box-shadow: var(--ds-shadow-sm);
+  box-shadow: var(--ds-shadow-border);
 }
 
 .actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--ds-space-md);
   justify-content: center;
 }

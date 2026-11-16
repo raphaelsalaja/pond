@@ -14,17 +14,17 @@
   padding: 8%;
   overflow: hidden;
   background:
-    radial-gradient(circle at 50% 20%, var(--ds-white-a12), transparent 46%),
+    radial-gradient(circle at 50% 20%, var(--ds-media-foreground-primary), transparent 46%),
     var(--epub-paper);
   border-radius: var(--ds-radius-xs);
-  box-shadow: var(--ds-shadow-save);
+  box-shadow: var(--ds-shadow-border);
 }
 
 .epub img {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  filter: drop-shadow(0 8px 14px var(--ds-black-a4));
+  filter: drop-shadow(0 8px 14px var(--ds-shadow-color));
 }
 
 .fallback {
@@ -40,7 +40,7 @@
     var(--ds-radius-xs);
   box-shadow:
     -5px 0 0 var(--epub-spine),
-    0 10px 20px var(--ds-black-a4);
+    0 10px 20px var(--ds-shadow-color);
 }
 
 .fallback span {

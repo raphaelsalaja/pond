@@ -1,4 +1,4 @@
-import { IconMediaPlayFill } from "@pond/icons";
+import { IconMediaPlay } from "@pond/icons";
 import styles from "./styles.module.css";
 
 const WAVE = [4, 8, 12, 7, 14, 10, 16, 9, 6, 13, 8, 15, 6, 11, 5, 9];
@@ -15,7 +15,7 @@ export function TranscriptPlayer() {
     <span className={styles.player}>
       <span className={styles.controls}>
         <span className={styles.play}>
-          <IconMediaPlayFill size={10} />
+          <IconMediaPlay size={10} />
         </span>
         <span className={styles.wave}>
           {WAVE.map((height, index) => (

@@ -30,7 +30,7 @@ export function ContentFilter({
     <>
       <Menu.Input
         aria-label={`Search ${label}`}
-        placeholder={`Search ${label.toLowerCase()}…`}
+        placeholder="Search…"
       />
       <Menu.FilterList>
         {draft && draft !== phrase ? (

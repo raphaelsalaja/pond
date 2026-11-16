@@ -7,7 +7,7 @@
 .list {
   flex: 1 1 auto;
   min-height: 0;
-  padding-block: 4px;
+  padding-block: var(--ds-space-xs);
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -29,8 +29,8 @@
   justify-content: center;
   width: 16px;
   height: 16px;
-  margin-inline: -2px -4px;
-  color: var(--ds-gray-9);
+  margin-inline: calc(var(--ds-space-2xs) * -1) calc(var(--ds-space-xs) * -1);
+  color: var(--ds-foreground-tertiary);
   border-radius: var(--ds-radius-xs);
 
   &:empty {
@@ -38,8 +38,8 @@
   }
 
   &:not(:empty):hover {
-    color: var(--ds-gray-12);
-    background: var(--ds-gray-a4);
+    color: var(--ds-foreground-primary);
+    background: var(--ds-surface-tertiary);
   }
 
   & svg {
@@ -54,7 +54,7 @@
 }
 
 .icon {
-  color: var(--ds-gray-10);
+  color: var(--ds-foreground-tertiary);
 }
 
 .footer {

@@ -7,7 +7,7 @@
 .hero {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--ds-space-xl);
   align-items: center;
   text-align: center;
 }
@@ -15,7 +15,7 @@
 .identity {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--ds-space-xs);
   min-width: 0;
   max-width: 100%;
 }
@@ -24,16 +24,16 @@
   margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-xl);
-  font-weight: var(--ds-weight-lg);
-  color: var(--ds-gray-12);
+  font-size: var(--ds-text-display);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-foreground-primary);
   white-space: nowrap;
 }
 
 .handle {
   margin: 0;
-  font-size: var(--ds-text-sm);
-  color: var(--ds-gray-10);
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-tertiary);
 }
 
 .stats {
@@ -41,18 +41,18 @@
   grid-template-columns: repeat(5, minmax(0, 1fr));
   margin: 0;
   overflow: hidden;
-  background-color: var(--ds-gray-1);
+  background-color: var(--ds-background-primary);
   border-radius: var(--ds-radius-xl);
-  box-shadow: var(--ds-shadow-sm);
+  box-shadow: var(--ds-shadow-border);
 }
 
 .stat {
   display: flex;
   flex-direction: column-reverse;
-  gap: 4px;
+  gap: var(--ds-space-xs);
   align-items: center;
   min-width: 0;
-  padding: 16px 8px;
+  padding: var(--ds-space-xl) var(--ds-space-md);
   text-align: center;
 
   &:not(:last-child) {
@@ -61,8 +61,8 @@
 }
 
 .label {
-  font-size: var(--ds-text-xs);
-  color: var(--ds-gray-10);
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-tertiary);
 }
 
 .value {
@@ -70,19 +70,19 @@
   margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-lg);
-  font-weight: var(--ds-weight-lg);
+  font-size: var(--ds-text-heading);
+  font-weight: var(--ds-weight-medium);
   font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
   white-space: nowrap;
 }
 
 .empty {
-  padding: 16px;
+  padding: var(--ds-space-xl);
   margin: 0;
-  color: var(--ds-gray-11);
+  color: var(--ds-foreground-secondary);
   text-align: center;
-  background-color: var(--ds-gray-1);
+  background-color: var(--ds-background-primary);
   border-radius: var(--ds-radius-xl);
-  box-shadow: var(--ds-shadow-sm);
+  box-shadow: var(--ds-shadow-border);
 }

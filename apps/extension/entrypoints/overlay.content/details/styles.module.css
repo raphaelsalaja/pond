@@ -13,15 +13,15 @@
   flex: 1;
   grid-template-columns: 320px 1fr;
   min-height: 0;
-  margin-top: 16px;
+  margin-top: var(--ds-space-xl);
   border-top: var(--ds-border-width) solid var(--ds-border-subtle);
 }
 
 .fields {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 16px 20px;
+  gap: var(--ds-space-md);
+  padding: var(--ds-space-xl) var(--ds-space-2xl);
   overflow: auto;
   border-right: var(--ds-border-width) solid var(--ds-border-subtle);
 }
@@ -34,7 +34,7 @@
   justify-content: center;
   height: 168px;
   overflow: hidden;
-  background: var(--ds-gray-2);
+  background: var(--ds-background-secondary);
   border-radius: var(--ds-radius-lg);
 }
 
@@ -47,19 +47,19 @@
 .placeholder {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
   max-width: 100%;
-  padding: 0 16px;
-  color: var(--ds-gray-9);
+  padding: 0 var(--ds-space-xl);
+  color: var(--ds-foreground-tertiary);
 }
 
 .host {
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-sm);
-  color: var(--ds-gray-11);
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-secondary);
   white-space: nowrap;
 }
 
@@ -67,11 +67,11 @@
   position: absolute;
   bottom: 8px;
   left: 8px;
-  padding: 2px 6px;
-  font-size: var(--ds-text-xs);
+  padding: var(--ds-space-2xs) var(--ds-space-sm);
+  font-size: var(--ds-text-small);
   font-variant-numeric: tabular-nums;
-  color: var(--ds-white-a12);
-  background: var(--ds-black-a9);
+  color: var(--ds-media-foreground-primary);
+  background: var(--ds-media-background);
   border-radius: var(--ds-radius-sm);
 }
 
@@ -81,7 +81,7 @@
 
 .leading {
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
   min-width: 0;
 }

@@ -41,6 +41,7 @@
     "test": {
       "dependsOn": ["transit", "generate:check"],
       "inputs": ["$TURBO_DEFAULT$"],
+      "passThroughEnv": ["HOME", "LOCALAPPDATA", "PLAYWRIGHT_BROWSERS_PATH"],
       "outputs": []
     },
     "//#lint:repo": {

@@ -148,7 +148,7 @@ describe("library Tags page", () => {
 
   it("filters tags using the existing manager", async () => {
     await mount();
-    const search = host.querySelector('input[placeholder="Search tags…"]');
+    const search = host.querySelector('input[placeholder="Search…"]');
     if (!(search instanceof HTMLInputElement))
       throw new Error("Missing search");
     await fill(search, "animation");

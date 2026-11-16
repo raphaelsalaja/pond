@@ -3,7 +3,7 @@ import {
   IconFigures,
   IconHand,
   IconHighlighter,
-  IconImages,
+  IconImage,
   IconNoteEdit,
   IconText,
 } from "@pond/icons";
@@ -20,7 +20,7 @@ export const CANVAS_TOOLS = [
   { label: "Sticky Note", Icon: IconNoteEdit },
   { label: "Shape", Icon: IconFigures },
   { label: "Text", Icon: IconText },
-  { label: "Add Saves", Icon: IconImages },
+  { label: "Add Saves", Icon: IconImage },
 ] as const;
 
 export type CanvasTool = (typeof CANVAS_TOOLS)[number]["label"];

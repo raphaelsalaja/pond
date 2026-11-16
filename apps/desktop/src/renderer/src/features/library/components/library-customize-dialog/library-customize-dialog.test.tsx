@@ -199,7 +199,7 @@ it("reopens a mark with a retired shade on its hue", async () => {
   await render({ kind: "emoji", emoji: "🐳", color: "navy-deep" });
   expect(
     document
-      .querySelector('[role="radio"][aria-label="Navy"]')
+      .querySelector('[role="radio"][aria-label="Blue"]')
       ?.getAttribute("aria-checked"),
   ).toBe("true");
 });

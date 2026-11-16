@@ -53,9 +53,9 @@ export function FishAppearance({ fish }: { fish: FishSummary }) {
                   variant="secondary"
                   rounding="full"
                   className={styles.edit}
+                  aria-label="Species and Color"
                 />
               }
-              aria-label="Species and Color"
             >
               <IconDots size={12} />
             </Popover.Trigger>
@@ -72,7 +72,7 @@ export function FishAppearance({ fish }: { fish: FishSummary }) {
                       <Button
                         type="button"
                         icon
-                        size="xl"
+                        size="md"
                         width="full"
                         variant={
                           fish.species === species ? "tertiary" : "ghost"
@@ -96,7 +96,7 @@ export function FishAppearance({ fish }: { fish: FishSummary }) {
                       <Button
                         type="button"
                         icon
-                        size="xl"
+                        size="md"
                         width="full"
                         variant="ghost"
                         aria-label={COLOR_LABELS[color]}

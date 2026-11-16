@@ -4,13 +4,13 @@
   display: flex;
   align-items: center;
   pointer-events: auto;
-  background: var(--ds-gray-1);
+  background: var(--ds-background-primary);
   border-radius: var(--ds-radius-xl);
-  box-shadow: var(--ds-shadow-sm);
-}
+  box-shadow: var(--ds-shadow-border);
 
-.pill[data-orientation="vertical"] {
-  flex-direction: column;
+  &[data-orientation="vertical"] {
+    flex-direction: column;
+  }
 }
 
 .item {
@@ -22,7 +22,7 @@
   width: 32px;
   height: 32px;
   padding: 0;
-  color: var(--ds-gray-9);
+  color: var(--ds-foreground-tertiary);
   cursor: var(--ds-cursor-interactive, pointer);
   background: none;
   border: 0;
@@ -39,7 +39,7 @@
 
   &:hover,
   &[data-status="active"] {
-    color: var(--ds-gray-12);
+    color: var(--ds-foreground-primary);
   }
 
   &:active > svg {
@@ -47,14 +47,20 @@
   }
 
   &:focus-visible {
-    color: var(--ds-gray-12);
+    color: var(--ds-foreground-primary);
   }
 
-  &[data-disabled="true"] {
-    color: var(--ds-gray-7);
+  &[data-disabled] {
+    color: var(--ds-foreground-tertiary);
+    cursor: default;
+    opacity: var(--ds-opacity-disabled);
 
     &:hover {
-      color: var(--ds-gray-8);
+      color: var(--ds-foreground-tertiary);
+    }
+
+    &:active > svg {
+      transform: none;
     }
   }
 }
@@ -63,7 +69,7 @@
   position: absolute;
   inset: 2px;
   z-index: 0;
-  background: var(--ds-gray-3);
+  background: var(--ds-background-tertiary);
   border-radius: var(--ds-radius-lg);
 }
 
@@ -72,14 +78,21 @@
   align-self: center;
   width: 1px;
   height: 16px;
-  margin-inline: 4px;
-  background: var(--ds-gray-3);
+  margin-inline: var(--ds-space-xs);
+  background: var(--ds-background-tertiary);
   border-radius: var(--ds-radius-full);
+
+  &[data-orientation="horizontal"] {
+    width: 16px;
+    height: 1px;
+    margin-block: var(--ds-space-xs);
+    margin-inline: 0;
+  }
 }
 
-.pill[data-orientation="vertical"] .separator {
-  width: 16px;
-  height: 1px;
-  margin-block: 4px;
-  margin-inline: 0;
+@media (prefers-reduced-motion: reduce) {
+  .item,
+  .item > svg {
+    transition: none;
+  }
 }

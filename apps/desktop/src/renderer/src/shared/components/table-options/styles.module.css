@@ -14,22 +14,22 @@
 .section {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 12px 14px;
+  gap: var(--ds-space-md);
+  padding: var(--ds-space-lg) var(--ds-space-xl);
 }
 
 .row {
   flex-direction: row;
-  gap: 12px;
+  gap: var(--ds-space-lg);
   align-items: center;
   justify-content: space-between;
 }
 
 .label {
   flex-shrink: 0;
-  font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-md);
-  color: var(--ds-gray-11);
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-regular);
+  color: var(--ds-foreground-secondary);
 }
 
 .fieldset {
@@ -47,7 +47,7 @@
 .controls {
   display: flex;
   flex: none;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   align-items: center;
 }
 
@@ -59,7 +59,7 @@
 .properties {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   min-width: 0;
 }
 

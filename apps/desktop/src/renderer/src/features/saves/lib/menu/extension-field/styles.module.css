@@ -1,4 +1,4 @@
 .field {
   width: 160px;
-  padding: 4px;
+  padding: var(--ds-space-xs);
 }

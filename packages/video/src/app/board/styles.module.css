@@ -1,19 +1,13 @@
 .board {
-  --canvas-selection: 1.5px solid var(--ds-accent-9);
-  --canvas-shadow-rest:
-    0 0 0 0.5px var(--ds-shadow-faint), 0 1px 2px var(--ds-shadow-faint),
-    0 6px 16px -6px var(--ds-shadow-soft);
-  --canvas-shadow-lift:
-    0 0 0 0.5px var(--ds-shadow-faint), 0 2px 6px var(--ds-shadow-faint),
-    0 18px 40px -12px var(--ds-shadow-soft);
-  --canvas-shadow-float:
-    0 0 0 1px var(--ds-gray-a3), 0 1px 3px var(--ds-shadow-faint),
-    0 10px 30px -8px var(--ds-shadow-soft);
+  --canvas-selection: 1.5px solid var(--ds-accent);
+  --canvas-shadow-rest: var(--ds-shadow-overlay);
+  --canvas-shadow-lift: var(--ds-shadow-dialog);
+  --canvas-shadow-float: var(--ds-shadow-overlay);
 
   position: absolute;
   inset: 0;
   overflow: hidden;
-  background: var(--ds-gray-2);
+  background: var(--ds-background-secondary);
 }
 
 .dots {

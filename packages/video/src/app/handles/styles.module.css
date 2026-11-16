@@ -1,13 +1,13 @@
 .handle {
-  --handle-gap: 12px;
+  --handle-gap: var(--ds-space-lg);
 
   position: absolute;
   z-index: 2;
   width: 8px;
   height: 8px;
-  margin: -4px 0 0 -4px;
-  background: var(--ds-gray-1);
-  border: 1.5px solid var(--ds-accent-9);
+  margin: calc(var(--ds-space-xs) * -1) 0 0 calc(var(--ds-space-xs) * -1);
+  background: var(--ds-background-primary);
+  border: 1.5px solid var(--ds-accent);
   border-radius: var(--ds-radius-full);
 
   &[data-side="top"] {
@@ -31,7 +31,7 @@
   }
 
   &[data-active] {
-    background: var(--ds-accent-9);
+    background: var(--ds-accent);
     scale: 1.3;
   }
 }

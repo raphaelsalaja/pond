@@ -4,7 +4,7 @@
 
 .list {
   display: flex;
-  gap: 4px;
+  gap: var(--ds-space-xs);
   align-items: center;
   min-width: 0;
 }
@@ -12,15 +12,15 @@
 .tab {
   display: inline-flex;
   flex-shrink: 0;
-  gap: 5px;
+  gap: var(--ds-space-xs);
   align-items: center;
   justify-content: center;
   height: var(--ds-size-sm);
-  padding: 0 10px;
-  font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-lg);
+  padding: 0 var(--ds-space-lg);
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-medium);
   line-height: 1;
-  color: var(--ds-gray-11);
+  color: var(--ds-foreground-secondary);
   cursor: var(--ds-cursor-interactive, pointer);
   user-select: none;
   background: transparent;
@@ -31,13 +31,13 @@
     background var(--ds-duration-fast) var(--ds-easing-standard);
 
   &:hover {
-    color: var(--ds-gray-12);
-    background: var(--ds-gray-a2);
+    color: var(--ds-foreground-primary);
+    background: var(--ds-surface-primary);
   }
 
   &[data-active] {
-    color: var(--ds-gray-12);
-    background: var(--ds-gray-3);
+    color: var(--ds-foreground-primary);
+    background: var(--ds-background-tertiary);
   }
 
   &:focus-visible {

@@ -2,11 +2,19 @@ import { mkdir } from "node:fs/promises";
 import { basename, extname } from "node:path";
 import type {
   DownloadExportDestination,
+  DownloadExportFilesInputSchema,
+  DownloadExportFilesResult,
   DownloadExportFolder,
   DownloadExportResult,
   DownloadRequest,
 } from "@shared/downloader-contracts";
 import log from "electron-log/main.js";
+import type { z } from "zod";
+import {
+  FileTooLargeError,
+  type fetchFile,
+  type RemoteFile,
+} from "./download-file";
 import { copyExportFile, writeExportFile } from "./export-files";
 import { normalizeUrl } from "./pipeline/enqueue-input";
 import { classifyUrlToSource } from "./pipeline/extractors";
@@ -29,11 +37,21 @@ export interface DownloadExportRuntime {
   clipboardFolder: () => string;
   writeClipboardText: (text: string) => void;
   writeClipboardFiles: (paths: string[]) => Promise<void>;
+  fetchFile: typeof fetchFile;
+  saveFiles: (input: {
+    url: string;
+    title: string | null;
+    files: RemoteFile[];
+    sourceUrls: string[];
+  }) => Promise<{ ok: boolean }>;
 }
 
 const FAILED = "Pond couldn't download this link. Try again.";
 const NO_CAPTIONS = "This link has no captions in that language.";
+const FILES_FAILED = "Pond couldn't download these files. Try again.";
+const TOO_LARGE = "This file is too large. Pond downloads files up to 256 MB.";
 const MAX_STEM = 120;
+const FILES_TIMEOUT_MS = 120_000;
 
 function stemOf(title: string | null | undefined): string {
   return title?.trim().slice(0, MAX_STEM) || "Download";
@@ -115,6 +133,45 @@ export function createDownloadExports(runtime: DownloadExportRuntime) {
     /** Reveal only what this session exported, never an arbitrary path from the renderer. */
     owns(path: string): boolean {
       return exported.has(path);
+    },
+
+    async files(
+      input: z.output<typeof DownloadExportFilesInputSchema>,
+    ): Promise<DownloadExportFilesResult> {
+      try {
+        const signal = AbortSignal.timeout(FILES_TIMEOUT_MS);
+        const fetched = await Promise.all(
+          input.files.map((url) => runtime.fetchFile(url, signal)),
+        );
+        if (input.destination === "library") {
+          const saved = await runtime.saveFiles({
+            url: input.url,
+            title: input.title,
+            files: fetched,
+            sourceUrls: input.files,
+          });
+          return saved.ok
+            ? { ok: true, paths: [] }
+            : { ok: false, message: FILES_FAILED };
+        }
+        const folder = await destinationFolder(input.destination);
+        const paths: string[] = [];
+        for (const file of fetched) {
+          const path = await writeExportFile(folder, file.filename, file.bytes);
+          exported.add(path);
+          paths.push(path);
+        }
+        if (input.destination === "clipboard")
+          await runtime.writeClipboardFiles(paths);
+        return { ok: true, paths };
+      } catch (error) {
+        log.warn("[pond downloader] file export failed", input.url, error);
+        return {
+          ok: false,
+          message:
+            error instanceof FileTooLargeError ? TOO_LARGE : FILES_FAILED,
+        };
+      }
     },
 
     async run(input: {

@@ -189,7 +189,7 @@ export function AddFilter({
         <Menu.Portal>
           <Menu.Positioner side="bottom" align="end" sideOffset={8}>
             <FilterPopup className={styles.popup}>
-              <Menu.Input aria-label="Add Filter" placeholder="Filter…" />
+              <Menu.Input aria-label="Add Filter" placeholder="Search…" />
               <Menu.FilterList className={styles.content}>
                 {groups.map((group, index) => (
                   <Fragment key={group.key}>

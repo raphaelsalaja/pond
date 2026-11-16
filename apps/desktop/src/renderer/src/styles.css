@@ -13,6 +13,24 @@
 }
 
 @font-face {
+  font-family: intern-variable;
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("./assets/fonts/intern/variable.woff2") format("woff2");
+}
+
+/* Intern has no italic, so its family borrows Inter's instead of a synthesized oblique. */
+@font-face {
+  font-family: intern-variable;
+  font-style: italic;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("./assets/fonts/inter/variable-italic.woff2") format("woff2");
+}
+
+/* Same metrics as Intern; covers the symbols, Greek and Cyrillic Intern lacks. */
+@font-face {
   font-family: inter-variable;
   font-style: normal;
   font-weight: 100 900;
@@ -57,16 +75,16 @@
 
 :root {
   --ds-ui-font-family:
-    inter-variable, ui-sans-serif, system-ui, -apple-system, "SF Pro Text",
-    "Segoe UI", sans-serif;
+    intern-variable, inter-variable, ui-sans-serif, system-ui, -apple-system,
+    "SF Pro Text", "Segoe UI", sans-serif;
   --ds-code-font-family:
     jetbrains-mono, ui-monospace, "SF Mono", "Menlo", "Consolas", monospace;
-  --ds-ui-font-size: var(--ds-text-md);
-  --ds-code-font-size: var(--ds-text-sm);
+  --ds-ui-font-size: var(--ds-text-body);
+  --ds-code-font-size: var(--ds-text-small);
 
   font-family: var(--ds-ui-font-family);
   font-size: var(--ds-ui-font-size);
-  font-weight: var(--ds-weight-md);
+  font-weight: var(--ds-weight-regular);
 
   font-feature-settings:
     "liga" 1,

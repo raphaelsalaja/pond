@@ -103,7 +103,7 @@ function Composition({ t }: { t: number }) {
         y={540}
         size={72}
         text="Pond {2.0} is out now."
-        brands={{ "2.0": { color: "var(--ds-orange-9)" } }}
+        brands={{ "2.0": { color: "var(--ds-orange)" } }}
         enter={start("release") + 150}
         exit={end("release") - 400}
       />

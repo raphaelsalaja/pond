@@ -1,4 +1,6 @@
 import {
+  type DownloadFileProbe,
+  type DownloadPostProbe,
   DownloadProbeInputSchema,
   type DownloadProbeResult,
   type DownloadSingleProbe,
@@ -34,9 +36,32 @@ const VIDEO: DownloadSingleProbe = {
   existingSaveId: null,
 };
 
+const POST: DownloadPostProbe = {
+  kind: "post",
+  url: "https://x.com/pond/status/1",
+  source: "twitter",
+  site: "Twitter",
+  title: "Two photos from the lake",
+  author: "Pond",
+  text: "Two photos from the lake",
+  images: ["https://pbs.twimg.com/a.jpg", "https://pbs.twimg.com/b.jpg"],
+  existingSaveId: null,
+};
+
+const FILE: DownloadFileProbe = {
+  kind: "file",
+  url: "https://example.com/pond-field-guide.pdf",
+  site: "example.com",
+  name: "pond-field-guide.pdf",
+  mimeType: "application/pdf",
+  size: 2_457_600,
+  existingSaveId: null,
+};
+
 interface StubInput {
   url?: string;
   urls?: string[];
+  files?: string[];
 }
 
 interface Call {
@@ -95,6 +120,12 @@ async function renderDialog(
         const { url } = DownloadProbeInputSchema.parse(input);
         return probes[url] ?? { ok: false, reason: "failed", message: "Nope." };
       }
+      if (name === "saves.quickAdd") return { ok: true, id: "save-post" };
+      if (name === "downloader.exportFiles")
+        return {
+          ok: true,
+          paths: (input.files ?? []).map((_, index) => `/tmp/${index}.jpg`),
+        };
       if (name === "downloader.start") {
         const { urls } = DownloadStartInputSchema.parse(input);
         return { ids: urls.map((_, index) => `save-${index}`), failed: [] };
@@ -122,6 +153,22 @@ async function renderDialog(
     calls,
     text: () => document.body.textContent ?? "",
     button,
+    async type(value: string) {
+      const field = document.body.querySelector<HTMLInputElement>(
+        'input[aria-label="Link"]',
+      );
+      if (!field) throw new Error("No link field");
+      const setValue = Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype,
+        "value",
+      )?.set;
+      await act(async () => {
+        setValue?.call(field, value);
+        field.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+      await act(() => new Promise((resolve) => setTimeout(resolve, 10)));
+      await flush();
+    },
     async click(label: string) {
       const target = button(label);
       if (!target) throw new Error(`No button labelled ${label}`);
@@ -144,10 +191,9 @@ it("previews one link and downloads it as audio to the library", async () => {
   ]);
   try {
     expect(view.text()).toContain("A talk about ponds");
-    await view.click("Download");
     expect(view.text()).toContain("Adds a save to your library.");
     await view.click("Audio");
-    await view.click("Export");
+    await view.click("Download");
     const start = view.calls.find((call) => call.name === "downloader.start");
     expect(start?.input).toEqual({
       urls: [VIDEO.url],
@@ -173,12 +219,11 @@ it("exports a re-encoded file to the chosen folder", async () => {
     VIDEO.url,
   ]);
   try {
-    await view.click("Download");
     await view.click("WebM");
     await view.click("Small");
     await view.click("File");
     expect(view.text()).toContain("Saves to Downloads.");
-    await view.click("Export");
+    await view.click("Download");
     const exported = view.calls.find(
       (call) => call.name === "downloader.export",
     );
@@ -225,7 +270,23 @@ it("lists several links and downloads the ones that resolved", async () => {
   }
 });
 
-it("keeps the link page open with the reason a link can't be read", async () => {
+it("reads a link as soon as it's entered and opens the editor", async () => {
+  const view = await renderDialog(
+    { [VIDEO.url]: { ok: true, probe: VIDEO } },
+    [],
+  );
+  try {
+    expect(view.text()).toContain("Paste a link to a video, post, page");
+    expect(view.button("Download")).toBeUndefined();
+    await view.type(VIDEO.url);
+    expect(view.text()).toContain("A talk about ponds");
+    expect(view.button("Download")?.disabled).toBe(false);
+  } finally {
+    await view.cleanup();
+  }
+});
+
+it("shows the reason a link can't be read under the link field", async () => {
   const view = await renderDialog(
     {
       "https://example.com/private": {
@@ -238,10 +299,110 @@ it("keeps the link page open with the reason a link can't be read", async () => 
   );
   try {
     expect(view.text()).toContain("This link isn't available.");
-    expect(view.button("Continue")).toBeDefined();
+    expect(view.button("Download")).toBeUndefined();
     expect(view.calls.some((call) => call.name === "downloader.start")).toBe(
       false,
     );
+  } finally {
+    await view.cleanup();
+  }
+});
+
+it("saves a post with no media through the importer", async () => {
+  const view = await renderDialog({ [POST.url]: { ok: true, probe: POST } }, [
+    POST.url,
+  ]);
+  try {
+    expect(view.text()).toContain("Two photos from the lake");
+    expect(view.text()).toContain("2 images and text");
+    await view.click("Download");
+    expect(view.calls.filter((call) => call.name === "saves.quickAdd")).toEqual(
+      [{ name: "saves.quickAdd", input: { url: POST.url } }],
+    );
+    expect(view.calls.some((call) => call.name === "downloader.start")).toBe(
+      false,
+    );
+  } finally {
+    await view.cleanup();
+  }
+});
+
+it("sends media to the downloader and posts to the importer from one list", async () => {
+  const view = await renderDialog(
+    {
+      [VIDEO.url]: { ok: true, probe: VIDEO },
+      [POST.url]: { ok: true, probe: POST },
+    },
+    [VIDEO.url, POST.url],
+  );
+  try {
+    await view.click("Download 2");
+    const start = view.calls.find((call) => call.name === "downloader.start");
+    expect(start?.input).toMatchObject({ urls: [VIDEO.url] });
+    expect(view.calls.filter((call) => call.name === "saves.quickAdd")).toEqual(
+      [{ name: "saves.quickAdd", input: { url: POST.url } }],
+    );
+  } finally {
+    await view.cleanup();
+  }
+});
+
+it("copies a post's images to the clipboard", async () => {
+  const view = await renderDialog({ [POST.url]: { ok: true, probe: POST } }, [
+    POST.url,
+  ]);
+  try {
+    await view.click("Clipboard");
+    expect(view.text()).toContain("Copies the images, ready to paste.");
+    await view.click("Download");
+    expect(
+      view.calls.find((call) => call.name === "downloader.exportFiles")?.input,
+    ).toEqual({
+      url: POST.url,
+      title: POST.title,
+      files: POST.images,
+      destination: "clipboard",
+    });
+    expect(view.calls.some((call) => call.name === "saves.quickAdd")).toBe(
+      false,
+    );
+  } finally {
+    await view.cleanup();
+  }
+});
+
+it("keeps a post with no images to the library", async () => {
+  const textOnly = { ...POST, images: [] };
+  const view = await renderDialog(
+    { [POST.url]: { ok: true, probe: textOnly } },
+    [POST.url],
+  );
+  try {
+    expect(view.button("File")?.disabled).toBe(true);
+    expect(view.button("Clipboard")?.disabled).toBe(true);
+  } finally {
+    await view.cleanup();
+  }
+});
+
+it("downloads a linked file to the export folder", async () => {
+  const view = await renderDialog({ [FILE.url]: { ok: true, probe: FILE } }, [
+    FILE.url,
+  ]);
+  try {
+    expect(view.text()).toContain("pond-field-guide.pdf");
+    expect(view.text()).toContain("PDF, ");
+    await view.click("File");
+    expect(view.text()).toContain("Saves to Downloads.");
+    await view.click("Download");
+    expect(
+      view.calls.find((call) => call.name === "downloader.exportFiles")?.input,
+    ).toEqual({
+      url: FILE.url,
+      title: null,
+      files: [FILE.url],
+      destination: "file",
+    });
   } finally {
     await view.cleanup();
   }

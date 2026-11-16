@@ -17,11 +17,11 @@
   width: 100%;
   height: 100%;
   overflow: hidden;
-  font-size: calc(var(--ds-text-md) * var(--text-scale, 1));
+  font-size: calc(var(--ds-text-body) * var(--text-scale, 1));
   table-layout: fixed;
   border-spacing: 0;
   border-collapse: collapse;
-  background: var(--ds-gray-1);
+  background: var(--ds-background-primary);
 
   &[data-size="small"] {
     --text-scale: 0.8;
@@ -50,24 +50,24 @@
 
 .cell {
   box-sizing: border-box;
-  padding: 8px 10px;
+  padding: var(--ds-space-md) var(--ds-space-lg);
   overflow: hidden;
   font-weight: inherit;
   line-height: 1.4;
   vertical-align: top;
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
   text-align: start;
   overflow-wrap: anywhere;
   white-space: pre-wrap;
   border: 1px solid var(--table-edge);
 
   &:where(th) {
-    font-weight: var(--ds-weight-lg);
+    font-weight: var(--ds-weight-medium);
     background: var(--table-head);
   }
 
   &:focus-within {
-    box-shadow: inset 0 0 0 1.5px var(--ds-blue-9);
+    box-shadow: inset 0 0 0 1.5px var(--ds-blue);
   }
 }
 

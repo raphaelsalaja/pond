@@ -1,6 +1,6 @@
 .header {
   display: flex;
-  gap: 12px;
+  gap: var(--ds-space-lg);
   align-items: center;
 }
 
@@ -13,13 +13,13 @@
 
 .name {
   display: inline-flex;
-  gap: 4px;
+  gap: var(--ds-space-xs);
   align-items: center;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-lg);
+  font-size: var(--ds-text-heading);
   font-weight: 700;
-  line-height: 20px;
+  line-height: var(--ds-leading-heading);
   white-space: nowrap;
 }
 

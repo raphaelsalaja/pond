@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "description": "Pond icons: one scalable outline and fill drawing per glyph, plus social and brand marks.",
+  "description": "Pond icons: one scalable drawing per glyph, plus social and brand marks.",
   "license": "MIT",
   "author": {
     "name": "Raphael Salaja",
@@ -20,7 +20,6 @@
   },
   "exports": {
     ".": "./index.ts",
-    "./manifest": "./manifest.ts",
     "./social-media": "./social-media/index.ts",
     "./types": "./types.ts"
   },

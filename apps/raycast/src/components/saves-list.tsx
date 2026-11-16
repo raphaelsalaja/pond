@@ -162,7 +162,6 @@ export function SavesList({ filter: pinned, navigationTitle, searchText: initial
     );
   }
 
-  const placeholder = meaning || (byMeaning && scope) ? "Search by meaning…" : "Search saves…";
   const failed = saves.error && !data.length ? toError(saves.error) : null;
 
   return (
@@ -174,7 +173,7 @@ export function SavesList({ filter: pinned, navigationTitle, searchText: initial
       throttle
       searchText={searchText}
       onSearchTextChange={setSearchText}
-      searchBarPlaceholder={placeholder}
+      searchBarPlaceholder="Search…"
       pagination={saves.pagination}
       onSelectionChange={setSelectedId}
       searchBarAccessory={

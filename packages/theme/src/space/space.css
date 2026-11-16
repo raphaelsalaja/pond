@@ -1,0 +1,9 @@
+:root {
+  --ds-space-2xs: 2px;
+  --ds-space-xs: 4px;
+  --ds-space-sm: 6px;
+  --ds-space-md: 8px;
+  --ds-space-lg: 12px;
+  --ds-space-xl: 16px;
+  --ds-space-2xl: 24px;
+}

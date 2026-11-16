@@ -1,20 +1,20 @@
 .content {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--ds-space-xl);
 }
 
 .count {
   margin: 0;
-  font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-lg);
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-medium);
   line-height: 20px;
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
 }
 
 .option {
   display: flex;
-  gap: 10px;
+  gap: var(--ds-space-md);
   align-items: flex-start;
   cursor: var(--ds-cursor-interactive, pointer);
 }
@@ -22,22 +22,22 @@
 .text {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--ds-space-2xs);
 }
 
 .label {
-  font-size: var(--ds-text-sm);
-  color: var(--ds-gray-12);
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-primary);
 }
 
 .hint {
-  font-size: var(--ds-text-xs);
-  color: var(--ds-gray-11);
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-secondary);
 }
 
 .note {
   margin: 0;
-  font-size: var(--ds-text-xs);
+  font-size: var(--ds-text-small);
   line-height: 18px;
-  color: var(--ds-gray-11);
+  color: var(--ds-foreground-secondary);
 }

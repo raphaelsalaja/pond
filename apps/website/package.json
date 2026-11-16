@@ -25,6 +25,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@pond/icons": "workspace:*",
     "@pond/theme": "workspace:*",
     "@pond/ui": "workspace:*",
     "@web-kits/audio": "^0.2.0",

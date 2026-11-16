@@ -5,7 +5,7 @@
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: var(--ds-gray-1);
+  background: var(--ds-background-primary);
 }
 
 .media {
@@ -15,5 +15,5 @@
 }
 
 .status {
-  color: var(--ds-gray-11);
+  color: var(--ds-foreground-secondary);
 }

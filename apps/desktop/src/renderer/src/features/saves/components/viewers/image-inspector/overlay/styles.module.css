@@ -1,7 +1,7 @@
 .selection {
   position: absolute;
   pointer-events: none;
-  background: var(--ds-black-a4);
+  background: var(--ds-scrim);
   border: 1px solid white;
 
   &[data-cropping] {
@@ -18,7 +18,7 @@
     position: absolute;
     pointer-events: none;
     content: "";
-    border-color: var(--ds-white-a7);
+    border-color: var(--ds-media-border);
     border-style: solid;
   }
 
@@ -46,10 +46,10 @@
   padding: 0;
   pointer-events: auto;
   background: white;
-  border: 1px solid var(--ds-gray-12);
+  border: 1px solid var(--ds-foreground-primary);
 
   &:focus-visible {
-    outline: 2px solid var(--ds-gray-12);
+    outline: 2px solid var(--ds-foreground-primary);
     outline-offset: 1px;
   }
 

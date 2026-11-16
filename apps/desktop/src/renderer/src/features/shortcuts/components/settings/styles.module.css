@@ -1,17 +1,17 @@
 .root {
   display: grid;
-  gap: 16px;
+  gap: var(--ds-space-xl);
 }
 
 .groups {
   display: grid;
-  gap: 24px;
+  gap: var(--ds-space-2xl);
 }
 
 .row {
   display: grid;
   grid-template-columns: minmax(180px, 1fr) minmax(260px, 1fr);
-  gap: 24px;
+  gap: var(--ds-space-2xl);
   min-width: 0;
 }
 
@@ -27,13 +27,13 @@
 
 .error {
   margin: 0;
-  font-size: var(--ds-text-sm);
-  color: var(--ds-red-11);
+  font-size: var(--ds-text-small);
+  color: var(--ds-danger-foreground);
 }
 
 @container (max-width: 560px) {
   .row {
     grid-template-columns: 1fr;
-    gap: 12px;
+    gap: var(--ds-space-lg);
   }
 }

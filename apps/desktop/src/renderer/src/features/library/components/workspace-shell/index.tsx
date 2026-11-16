@@ -71,6 +71,7 @@ function Root({
       })}
     >
       <Window.Left
+        aria-label="Sidebar"
         open={leftOpen}
         minWidth={SIDEBAR_WIDTH_MIN}
         maxWidth={SIDEBAR_WIDTH_MAX}
@@ -85,6 +86,7 @@ function Root({
       <Window.Top>{header}</Window.Top>
       <Window.Center>{children}</Window.Center>
       <Window.Right
+        aria-label="Details"
         open={rightOpen}
         minWidth={DETAILS_WIDTH_MIN}
         maxWidth={DETAILS_WIDTH_MAX}

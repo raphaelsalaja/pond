@@ -1,22 +1,22 @@
 .player {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--ds-space-md);
   justify-self: stretch;
   min-width: 0;
-  margin-inline: 12px;
+  margin-inline: var(--ds-space-lg);
 }
 
 .controls {
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
-  padding: 8px;
-  background: var(--ds-gray-1);
+  padding: var(--ds-space-md);
+  background: var(--ds-background-primary);
   border-radius: var(--ds-radius-md);
   box-shadow:
-    var(--ds-shadow-sm),
-    inset 0 0 0 var(--ds-border-width) var(--ds-gray-a3);
+    var(--ds-shadow-border),
+    inset 0 0 0 var(--ds-border-width) var(--ds-border-subtle);
 }
 
 .play {
@@ -25,15 +25,15 @@
   place-items: center;
   width: 22px;
   height: 22px;
-  color: var(--ds-gray-1);
-  background: var(--ds-gray-12);
+  color: var(--ds-foreground-inverse);
+  background: var(--ds-background-inverse);
   border-radius: var(--ds-radius-full);
 }
 
 .wave {
   display: flex;
   flex: 1;
-  gap: 2px;
+  gap: var(--ds-space-2xs);
   align-items: center;
   min-width: 0;
   height: 20px;
@@ -42,19 +42,19 @@
   > span {
     flex: none;
     width: 2px;
-    background: var(--ds-gray-a6);
+    background: var(--ds-surface-tertiary);
     border-radius: var(--ds-radius-full);
   }
 
   > [data-played] {
-    background: var(--ds-accent-9);
+    background: var(--ds-accent);
   }
 }
 
 .cues {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--ds-space-2xs);
   mask-image: linear-gradient(to bottom, black 60%, transparent);
 }
 
@@ -62,23 +62,23 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  padding: 5px 8px;
+  padding: var(--ds-space-sm) var(--ds-space-md);
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-sm);
-  line-height: 16px;
-  color: var(--ds-gray-10);
+  font-size: var(--ds-text-small);
+  line-height: var(--ds-leading-small);
+  color: var(--ds-foreground-tertiary);
   white-space: nowrap;
   border-radius: var(--ds-radius-sm);
 
   &[data-current] {
-    color: var(--ds-gray-12);
-    background: var(--ds-gray-a3);
+    color: var(--ds-foreground-primary);
+    background: var(--ds-surface-secondary);
   }
 }
 
 .time {
-  font-size: var(--ds-text-xs);
+  font-size: var(--ds-text-small);
   font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-9);
+  color: var(--ds-foreground-tertiary);
 }

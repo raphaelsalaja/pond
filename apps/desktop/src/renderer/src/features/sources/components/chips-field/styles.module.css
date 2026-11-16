@@ -3,5 +3,5 @@
 }
 
 .detail {
-  margin-left: 6px;
+  margin-left: var(--ds-space-sm);
 }

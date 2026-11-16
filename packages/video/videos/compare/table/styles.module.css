@@ -1,0 +1,140 @@
+.table {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+}
+
+.card {
+  position: absolute;
+  background: color-mix(in oklab, var(--ds-blue) 5%, #fff);
+  border-radius: 22px;
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--ds-blue) 22%, transparent),
+    0 2px 4px rgb(0 0 0 / 0.03),
+    0 40px 90px -40px color-mix(in oklab, var(--ds-blue) 45%, transparent);
+}
+
+.head {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-lg);
+  align-items: center;
+  justify-content: center;
+}
+
+.logo {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+}
+
+.mark {
+  display: flex;
+}
+
+.name {
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--ds-foreground-secondary);
+  letter-spacing: -0.01em;
+
+  &[data-pond] {
+    font-weight: 600;
+    color: var(--ds-foreground-primary);
+  }
+}
+
+.rule {
+  position: absolute;
+  height: 1px;
+  background: var(--ds-surface-tertiary);
+  transform-origin: left center;
+}
+
+.label {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  font-size: 28px;
+  font-weight: 500;
+  color: var(--ds-foreground-primary);
+  letter-spacing: -0.015em;
+  white-space: nowrap;
+}
+
+.cell {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.glyph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.yes {
+  display: flex;
+  color: var(--ds-foreground-primary);
+}
+
+.no {
+  display: flex;
+  color: var(--ds-foreground-tertiary);
+}
+
+.partly {
+  padding: var(--ds-space-sm) var(--ds-space-xl);
+  font-size: 19px;
+  font-weight: 500;
+  color: var(--ds-foreground-secondary);
+  background: var(--ds-surface-secondary);
+  border-radius: 999px;
+}
+
+.text {
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--ds-foreground-primary);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+
+  &[data-pond] {
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--ds-accent-hover);
+  }
+}
+
+.badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  color: #fff;
+  background: var(--ds-blue);
+  border-radius: 999px;
+  box-shadow: 0 6px 16px -6px
+    color-mix(in oklab, var(--ds-blue) 70%, transparent);
+}
+
+.ring {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  border: 2px solid var(--ds-blue);
+  border-radius: 999px;
+}
+
+.note {
+  position: absolute;
+  left: 0;
+  width: 1920px;
+  font-size: 18px;
+  color: var(--ds-foreground-tertiary);
+  text-align: center;
+}

@@ -4,7 +4,7 @@
       140px,
       1.5fr
     ) auto auto auto;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
 }
 

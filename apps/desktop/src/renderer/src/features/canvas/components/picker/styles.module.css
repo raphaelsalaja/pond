@@ -1,8 +1,8 @@
 .grid {
   display: grid;
   grid-template-columns: repeat(var(--picker-columns), auto);
-  gap: 2px;
-  padding-inline: 4px;
+  gap: var(--ds-space-2xs);
+  padding-inline: var(--ds-space-xs);
 }
 
 .swatch {
@@ -10,7 +10,7 @@
   height: 16px;
   background: var(--swatch);
   border-radius: var(--ds-radius-full);
-  box-shadow: inset 0 0 0 1px var(--ds-gray-a4);
+  box-shadow: inset 0 0 0 1px var(--ds-border-subtle);
   transition:
     box-shadow var(--ds-duration-fast) var(--ds-easing-standard),
     scale var(--ds-duration-fast) var(--ds-easing-standard);
@@ -23,19 +23,19 @@
 
   &[data-mixed] {
     background: conic-gradient(
-      var(--ds-yellow-6),
-      var(--ds-red-6),
-      var(--ds-purple-6),
-      var(--ds-blue-6),
-      var(--ds-green-6),
-      var(--ds-yellow-6)
+      var(--ds-yellow-border),
+      var(--ds-red-border),
+      var(--ds-purple-border),
+      var(--ds-blue-border),
+      var(--ds-green-border),
+      var(--ds-yellow-border)
     );
   }
 
   [data-pressed] > & {
     box-shadow:
-      inset 0 0 0 1px var(--ds-gray-1),
-      0 0 0 1.5px var(--ds-accent-9);
+      inset 0 0 0 1px var(--ds-background-primary),
+      0 0 0 1.5px var(--ds-accent);
   }
 }
 

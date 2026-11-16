@@ -8,7 +8,7 @@
   grid-area: description;
   align-items: center;
   justify-self: start;
-  color: var(--ds-green-11);
+  color: var(--ds-accent-foreground);
 }
 .setup {
   grid-column: 1 / -1;
@@ -18,24 +18,24 @@
 .content {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--ds-space-lg);
 }
 .input {
   width: 100%;
 }
 .instructions {
   margin: 0;
-  font-size: var(--ds-text-sm);
-  color: var(--ds-gray-11);
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-secondary);
 }
 .error {
   margin: 0;
-  font-size: var(--ds-text-sm);
-  color: var(--ds-red-11);
+  font-size: var(--ds-text-small);
+  color: var(--ds-danger-foreground);
 }
 .footer {
-  gap: 8px;
-  padding-top: 16px;
-  margin-top: 16px;
-  border-top: var(--ds-border-width) solid var(--ds-gray-6);
+  gap: var(--ds-space-md);
+  padding-top: var(--ds-space-xl);
+  margin-top: var(--ds-space-xl);
+  border-top: var(--ds-border-width) solid var(--ds-border-strong);
 }

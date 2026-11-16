@@ -45,7 +45,7 @@ export default function Command() {
   const failed = tags.error && !data.length ? toError(tags.error) : null;
 
   return (
-    <List isLoading={tags.isLoading} searchBarPlaceholder="Search tags…">
+    <List isLoading={tags.isLoading} searchBarPlaceholder="Search…">
       {failed ? (
         <ProblemView error={failed} onRetry={tags.revalidate} />
       ) : (

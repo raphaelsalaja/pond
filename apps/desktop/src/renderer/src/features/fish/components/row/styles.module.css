@@ -18,11 +18,11 @@
 
 .time {
   flex: none;
-  margin-left: 8px;
-  font-size: var(--ds-text-xs);
-  font-weight: var(--ds-weight-md);
+  margin-left: var(--ds-space-md);
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-regular);
   font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-9);
+  color: var(--ds-foreground-tertiary);
 }
 
 .status {
@@ -32,12 +32,12 @@
   justify-content: center;
   width: 12px;
   height: 12px;
-  margin-left: 6px;
+  margin-left: var(--ds-space-sm);
   animation: pop var(--ds-duration-bounce) var(--ds-easing-bounce);
 }
 
 .failed {
-  color: var(--ds-red-9);
+  color: var(--ds-danger);
 }
 
 .more {
@@ -63,8 +63,8 @@
 }
 
 .row:hover .item:not([data-status="active"]) {
-  color: var(--ds-gray-11);
-  background: var(--ds-gray-a3);
+  color: var(--ds-foreground-secondary);
+  background: var(--ds-surface-secondary);
 }
 
 @keyframes appear {

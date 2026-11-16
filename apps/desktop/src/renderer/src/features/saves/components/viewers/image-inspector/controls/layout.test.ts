@@ -29,7 +29,7 @@ it("uses the integrated top toolbar for the image controls", () => {
   expect(hudCss).toContain("position: absolute");
   expect(hudCss).toContain("pointer-events: none");
   expect(hudCss).toContain("border-radius: var(--ds-radius-full)");
-  expect(hudCss).toContain("box-shadow: var(--ds-shadow-float)");
+  expect(hudCss).toContain("box-shadow: var(--ds-shadow-overlay)");
   expect(chromeCss).toContain("container-type: inline-size");
   expect(hudCss).toContain(
     "grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr)",

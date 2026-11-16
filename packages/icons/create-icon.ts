@@ -2,7 +2,7 @@ import { createElement } from "react";
 import type { IconComponent, IconNode, IconProps, IconStyle } from "./types";
 
 const GRID = 18;
-const STROKE = 1.5;
+const STROKE = 1.7;
 
 /** Default stroke below the grid thins by the square root of the scale, so small glyphs lighten without going spindly. */
 function defaultStroke(rendered: number) {
@@ -63,6 +63,6 @@ export function createIcon(
       extra,
     );
   }
-  Icon.displayName = `Icon${glyph}${style === "fill" ? "Fill" : ""}`;
+  Icon.displayName = `Icon${glyph}`;
   return Icon;
 }

@@ -97,7 +97,7 @@ export function ModelCatalogTable({
         <Input.Root size="sm">
           <Input.Field
             aria-label="Search models"
-            placeholder="Search models…"
+            placeholder="Search…"
             value={search}
             onValueChange={(value) => {
               setSearch(value);

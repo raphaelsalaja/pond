@@ -14,7 +14,20 @@ function clamp(
   return Math.max(min, Math.min(max, Math.round(value)));
 }
 
-interface StepperProps {
+/** Native number stepping snaps to `min`, so arrows step from the shown value like the buttons do. */
+function stepDirection(key: string) {
+  if (key === "ArrowUp") return 1;
+  if (key === "ArrowDown") return -1;
+  return 0;
+}
+
+type StepperName =
+  | { "aria-label": string; "aria-labelledby"?: string }
+  | { "aria-label"?: string; "aria-labelledby": string };
+
+type StepperProps = StepperFields & StepperName;
+
+interface StepperFields {
   value: number;
   min: number;
   max: number;
@@ -27,8 +40,6 @@ interface StepperProps {
   decrementLabel?: string;
   incrementLabel?: string;
   resetLabel?: string;
-  "aria-label"?: string;
-  "aria-labelledby"?: string;
   "aria-describedby"?: string;
   className?: string;
 }
@@ -55,7 +66,11 @@ export function Stepper({
   const set = (next: number) => onValueChange(clamp(next, min, max, fallback));
 
   return (
-    <div className={cn(styles.root, className)}>
+    <fieldset
+      aria-label={ariaLabel}
+      aria-labelledby={ariaLabelledBy}
+      className={cn(styles.root, className)}
+    >
       <Button
         size="xs"
         variant="ghost"
@@ -74,6 +89,12 @@ export function Stepper({
         aria-describedby={ariaDescribedBy}
         value={String(safe)}
         onChange={(e) => set(Number(e.target.value) || fallback)}
+        onKeyDown={(event) => {
+          const delta = stepDirection(event.key);
+          if (delta === 0) return;
+          event.preventDefault();
+          set(safe + delta * step);
+        }}
         className={styles.input}
       />
       <Button
@@ -96,6 +117,6 @@ export function Stepper({
           {resetIcon}
         </Button>
       ) : null}
-    </div>
+    </fieldset>
   );
 }

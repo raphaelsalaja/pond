@@ -5,7 +5,12 @@ import {
 } from "@pond/schema/db";
 import { describe, expect, it } from "vitest";
 import { DEFAULT_THEMES } from "./ramps";
-import { buildThemeTokens, type Gamut, type ThemeTokens } from "./tokens";
+import {
+  buildThemeTokens,
+  type Gamut,
+  solveScales,
+  type ThemeTokens,
+} from "./tokens";
 
 type Rgb = [number, number, number];
 
@@ -18,7 +23,6 @@ interface Painted {
 
 const CONTRASTS = [0, 25, 50, 75, 100];
 const GAMUTS: Gamut[] = ["srgb", "p3"];
-const STATUS_HUES = ["red", "orange", "yellow", "green"];
 
 const toLinear = (c: number) =>
   c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
@@ -95,10 +99,15 @@ function token(theme: ThemeTokens, name: string): string {
   return value;
 }
 
-function build(presetId: string, contrast: number, gamut: Gamut) {
+function build(
+  presetId: string,
+  contrast: number,
+  gamut: Gamut,
+  solve = solveScales,
+) {
   const preset = THEME_PRESETS.find((p) => p.id === presetId);
   if (!preset) throw new Error(`missing preset ${presetId}`);
-  return buildThemeTokens({ ...preset.def, contrast }, gamut);
+  return solve({ ...preset.def, contrast }, gamut);
 }
 
 const cases = THEME_PRESETS.flatMap((preset) =>
@@ -107,7 +116,7 @@ const cases = THEME_PRESETS.flatMap((preset) =>
   ),
 );
 
-describe("buildThemeTokens", () => {
+describe("solveScales", () => {
   it.each(cases)(
     "$id at contrast $contrast in $gamut keeps text readable",
     ({ id, gamut, contrast }) => {
@@ -119,10 +128,8 @@ describe("buildThemeTokens", () => {
         ratio(token(t, "gray-11"), token(t, "gray-1")),
       ).toBeGreaterThanOrEqual(4.5);
       expect(ratio(token(t, "accent-11"), gray2)).toBeGreaterThanOrEqual(4.5);
-      for (const hue of STATUS_HUES) {
-        expect(ratio(token(t, `${hue}-11`), gray2)).toBeGreaterThanOrEqual(4.5);
-        expect(ratio(token(t, `${hue}-12`), gray2)).toBeGreaterThanOrEqual(7);
-      }
+      expect(ratio(token(t, "red-11"), gray2)).toBeGreaterThanOrEqual(4.5);
+      expect(ratio(token(t, "red-12"), gray2)).toBeGreaterThanOrEqual(7);
     },
   );
 
@@ -236,6 +243,39 @@ describe("buildThemeTokens", () => {
     }
   });
 
+  it.each(cases)(
+    "$id at contrast $contrast in $gamut keeps the focus ring and checked fills at 3:1",
+    ({ id, gamut, contrast }) => {
+      const t = build(id, contrast, gamut);
+      for (const surface of ["gray-1", "gray-2"]) {
+        expect(
+          ratio(token(t, "accent-9"), token(t, surface)),
+        ).toBeGreaterThanOrEqual(3);
+      }
+    },
+  );
+
+  it.each(
+    THEME_PRESETS.flatMap((preset) =>
+      GAMUTS.map((gamut) => ({ id: preset.id, gamut })),
+    ),
+  )(
+    "$id in $gamut gives control edges 3:1 on both surfaces at full contrast",
+    ({ id, gamut }) => {
+      const t = build(id, 100, gamut);
+      for (const edge of ["gray-8", "gray-9"]) {
+        for (const surface of ["gray-1", "gray-2"]) {
+          expect(
+            ratio(token(t, edge), token(t, surface)),
+          ).toBeGreaterThanOrEqual(3);
+        }
+      }
+    },
+  );
+
+});
+
+describe("buildThemeTokens", () => {
   it("generates the static defaults from the schema's default themes", () => {
     expect(DEFAULT_THEMES).toEqual({
       light: DEFAULT_LIGHT_THEME,
@@ -253,8 +293,8 @@ describe("buildThemeTokens", () => {
       },
       "p3",
     );
-    expect(token(t, "gray-1")).toBe("#f7f3eb");
-    expect(token(t, "gray-12")).toBe("#1c1914");
+    expect(token(t, "background-primary")).toBe("#f7f3eb");
+    expect(token(t, "foreground-primary")).toBe("#1c1914");
     expect(t.mode).toBe("light");
   });
 
@@ -268,16 +308,23 @@ describe("buildThemeTokens", () => {
       },
       "srgb",
     );
-    expect(token(t, "accent-9")).toBe("#2563eb");
+    expect(token(t, "accent")).toBe("#2563eb");
   });
 
   it("emits the same token names for every theme and gamut", () => {
-    const names = Object.keys(build("light", 50, "srgb").tokens).sort();
+    const names = Object.keys(
+      build("light", 50, "srgb", buildThemeTokens).tokens,
+    ).sort();
     expect(names).toContain("--ds-accent-contrast");
-    expect(names).toContain("--ds-pink-12");
-    expect(names).toContain("--ds-gray-a12");
+    expect(names).toContain("--ds-danger-foreground");
+    expect(names).toContain("--ds-pink-tint");
+    expect(names).not.toContain("--ds-pink-foreground");
+    expect(names).toContain("--ds-surface-tertiary");
+    expect(names.some((name) => /-a?\d+$/.test(name))).toBe(false);
     for (const gamut of GAMUTS) {
-      expect(Object.keys(build("dark", 0, gamut).tokens).sort()).toEqual(names);
+      expect(
+        Object.keys(build("dark", 0, gamut, buildThemeTokens).tokens).sort(),
+      ).toEqual(names);
     }
   });
 
@@ -292,7 +339,7 @@ describe("buildThemeTokens", () => {
       "srgb",
     );
     expect(t.mode).toBe("light");
-    expect(token(t, "gray-1")).toBe("#ffffff");
+    expect(token(t, "background-primary")).toBe("#ffffff");
     for (const value of Object.values(t.tokens)) {
       expect(value).not.toContain("NaN");
     }

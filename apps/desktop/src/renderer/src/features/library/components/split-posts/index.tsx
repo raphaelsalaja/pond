@@ -1,4 +1,4 @@
-import { IconImages } from "@pond/icons";
+import { IconImage } from "@pond/icons";
 import { Empty } from "@pond/ui";
 import type { SplitPostSummary } from "@shared/split-posts";
 import { useQuery } from "@tanstack/react-query";
@@ -59,7 +59,7 @@ function PostCard({
               ))
             ) : (
               <span className={styles.fallback}>
-                <IconImages />
+                <IconImage />
               </span>
             )}
           </span>
@@ -122,7 +122,7 @@ export function SplitPostsPage() {
         ) : (posts.data ?? []).length === 0 ? (
           <Empty.Root>
             <Empty.Media>
-              <IconImages size={32} />
+              <IconImage size={32} />
             </Empty.Media>
             <Empty.Title>Split Posts</Empty.Title>
             <Empty.Description>

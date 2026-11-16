@@ -1,0 +1,18 @@
+[package]
+name = "pond-render"
+description = "WebAssembly entry for Pond's post renderer: one call per post, PNG out."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+xeet-core.workspace = true
+kit.workspace = true
+bluesky.workspace = true
+threads.workspace = true
+serde.workspace = true
+serde_json.workspace = true

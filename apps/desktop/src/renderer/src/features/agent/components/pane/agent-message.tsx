@@ -1,6 +1,5 @@
 import { useTextReveal } from "@pond/ui";
 import { Message } from "@pond/ui/message";
-import { RunStatus } from "@pond/ui/run-status";
 import type {
   AssistantActivity,
   AssistantProvider,
@@ -19,6 +18,7 @@ import {
   partData,
 } from "@/features/agent/state/pond-messages";
 import { openSave } from "@/features/saves/navigation";
+import { RunStatus } from "../run-status";
 import { currentActivityLabel } from "./activity-label";
 import { AssistantResponse } from "./assistant-response";
 import { FileAttachments } from "./file-attachments";
@@ -115,7 +115,7 @@ export function AgentMessage({
   return (
     <Message.View
       animateEntrance={entering}
-      role={message.role === "user" ? "user" : "assistant"}
+      from={message.role === "user" ? "user" : "assistant"}
       footer={
         message.role === "assistant" && settled ? (
           <ResponseExtras

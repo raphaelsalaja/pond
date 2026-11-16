@@ -1,13 +1,12 @@
-import { IconBookmark, IconTriangleWarning, IconXmark } from "@pond/icons";
+import { IconTag, IconTriangleWarning, IconXmark } from "@pond/icons";
 import { sensitiveContentBand } from "@pond/schema/content-safety";
-import { Button, Empty, Pane, Tabs } from "@pond/ui";
+import { Button, Empty, Pane, Rating, Tabs } from "@pond/ui";
 import { mediaEmbeddingVersion } from "@shared/embeddings";
 import { useEffect, useMemo, useState } from "react";
 import { DISABLED_HINTS, TASK_ENABLED } from "@/features/enrichment";
 import { ColorSwatch } from "@/features/saves/components/detail/color-swatch";
 import { SaveInfoSections } from "@/features/saves/components/detail/info-sections";
 import { KebabMenu } from "@/features/saves/components/detail/kebab";
-import { RatingStars } from "@/features/saves/components/detail/rating";
 import { RelatedSaves } from "@/features/saves/components/detail/related-saves";
 import { useRetainedSaves, useSaves } from "@/features/saves/hooks/use-saves";
 import { ensureSaves, reloadSaves } from "@/features/saves/lib/ensure-saves";
@@ -82,6 +81,32 @@ function folderOptions(folders: readonly InspectorFolder[]): FolderOption[] {
     return parts.join(" / ");
   };
   return folders.map((folder) => ({ ...folder, path: path(folder) }));
+}
+
+function CloseDetails() {
+  return (
+    <Button
+      type="button"
+      icon
+      size="sm"
+      variant="ghost"
+      aria-label="Close Details"
+      onClick={saveLibraryBridge.closeDetails}
+    >
+      <IconXmark />
+    </Button>
+  );
+}
+
+export function EmptySaveInspector() {
+  return (
+    <section className={styles.root} aria-label="Details">
+      <Empty.Root role="status">
+        <Empty.Title>Nothing selected</Empty.Title>
+        <Empty.Description>Select a save to see its details.</Empty.Description>
+      </Empty.Root>
+    </section>
+  );
 }
 
 export function SaveInspector({
@@ -189,7 +214,7 @@ export function SaveInspector({
     key,
     label: name,
     crumb: tagGroupOf.get(key),
-    icon: <IconBookmark />,
+    icon: <IconTag />,
     state: applied.has(key) ? "on" : tagCounts.has(key) ? "mixed" : "off",
   }));
   const suggestedTags = new Set(
@@ -487,7 +512,7 @@ export function SaveInspector({
                     <PropertyList.Row>
                       <PropertyList.Label>Rating</PropertyList.Label>
                       <div className={styles.rating}>
-                        <RatingStars value={rating} onChange={setRating} />
+                        <Rating value={rating} onValueChange={setRating} />
                       </div>
                     </PropertyList.Row>
                   </SpecContextMenu>
@@ -519,9 +544,9 @@ export function SaveInspector({
                 <PropertyList.Row>
                   <PropertyList.Label>Rating</PropertyList.Label>
                   <div className={styles.rating}>
-                    <RatingStars
+                    <Rating
                       value={rating}
-                      onChange={(next) =>
+                      onValueChange={(next) =>
                         void run(async () => {
                           await bulkMutation([...ids], {
                             kind: "rating",
@@ -570,16 +595,7 @@ export function SaveInspector({
         }
       >
         {single ? <KebabMenu save={single} fileIndex={fileIndex} /> : null}
-        <Button
-          type="button"
-          icon
-          size="sm"
-          variant="ghost"
-          aria-label="Close Details"
-          onClick={saveLibraryBridge.closeDetails}
-        >
-          <IconXmark />
-        </Button>
+        <CloseDetails />
       </Pane.Header>
       {single ? (
         <>

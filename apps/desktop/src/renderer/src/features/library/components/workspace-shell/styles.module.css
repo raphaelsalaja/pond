@@ -40,12 +40,12 @@
 .toolbar {
   display: flex;
   flex-shrink: 0;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
   justify-content: center;
   height: 44px;
-  padding-inline: 12px;
-  border-bottom: 1px solid var(--ds-gray-a3);
+  padding-inline: var(--ds-space-lg);
+  border-bottom: 1px solid var(--ds-border-subtle);
 }
 
 .content {

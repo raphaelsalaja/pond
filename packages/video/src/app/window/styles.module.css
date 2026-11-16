@@ -23,7 +23,7 @@
   font-size: 13px;
   font-weight: 450;
   line-height: 19.5px;
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
   transform-origin: 0 0;
 
   & svg {
@@ -42,7 +42,7 @@
   top: 16px;
   left: 20px;
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
 
   & i {
     width: 12px;
@@ -65,17 +65,17 @@
   top: 14px;
   left: 102px;
   display: flex;
-  gap: 26px;
-  color: var(--ds-gray-11);
+  gap: var(--ds-space-2xl);
+  color: var(--ds-foreground-secondary);
 }
 
 .history {
   display: flex;
-  gap: 14px;
-  color: var(--ds-gray-10);
+  gap: var(--ds-space-lg);
+  color: var(--ds-foreground-tertiary);
 
   & svg:last-child {
-    color: var(--ds-gray-8);
+    color: var(--ds-foreground-tertiary);
   }
 }
 
@@ -84,11 +84,11 @@
   top: 12px;
   left: 234px;
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
 
   & svg {
-    color: var(--ds-gray-11);
+    color: var(--ds-foreground-secondary);
   }
 }
 
@@ -97,8 +97,8 @@
   top: 14px;
   right: 20px;
   display: flex;
-  gap: 22px;
-  color: var(--ds-gray-11);
+  gap: var(--ds-space-2xl);
+  color: var(--ds-foreground-secondary);
 }
 
 .flip {
@@ -106,20 +106,20 @@
 }
 
 .separator {
-  color: var(--ds-gray-8);
+  color: var(--ds-foreground-tertiary);
 }
 
 .trail {
-  color: var(--ds-gray-11);
+  color: var(--ds-foreground-secondary);
 }
 
 .window[data-look="2.0"] {
   & .chrome {
-    background: var(--ds-gray-1);
+    background: var(--ds-background-primary);
   }
 
   & .crumb {
     left: 256px;
-    font-weight: var(--ds-weight-lg);
+    font-weight: var(--ds-weight-medium);
   }
 }

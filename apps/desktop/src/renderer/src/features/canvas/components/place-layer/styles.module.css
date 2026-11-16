@@ -9,7 +9,7 @@
 .preview {
   position: absolute;
   pointer-events: none;
-  background: var(--ds-accent-a3);
-  border: 1.5px solid var(--ds-accent-9);
+  background: var(--ds-accent-tint);
+  border: 1.5px solid var(--ds-accent);
   border-radius: var(--ds-radius-sm);
 }

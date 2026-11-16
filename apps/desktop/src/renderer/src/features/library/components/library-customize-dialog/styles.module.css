@@ -5,7 +5,7 @@
 .content {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--ds-space-xl);
 }
 
 .hero {
@@ -64,17 +64,17 @@
 
 .picker {
   --ds-popup-width: 296px;
-  padding: 2px;
+  padding: var(--ds-space-2xs);
 }
 
 /* Padding inside the scroller keeps the selected and focus rings from clipping. */
 .grid {
   display: grid;
   grid-template-columns: repeat(8, 1fr);
-  gap: 2px;
+  gap: var(--ds-space-2xs);
   justify-items: center;
   max-height: 240px;
-  padding: 4px;
+  padding: var(--ds-space-xs);
   overflow-y: auto;
   overscroll-behavior: contain;
 }
@@ -99,9 +99,9 @@
 .swatches {
   display: grid;
   grid-template-columns: repeat(var(--swatch-columns), 1fr);
-  row-gap: 2px;
+  row-gap: var(--ds-space-2xs);
   justify-items: center;
-  margin-inline: -4px;
+  margin-inline: calc(var(--ds-space-xs) * -1);
 }
 
 .cell {
@@ -110,6 +110,6 @@
 
 .error {
   margin: 0;
-  font-size: var(--ds-text-sm);
-  color: var(--ds-red-11);
+  font-size: var(--ds-text-small);
+  color: var(--ds-danger-foreground);
 }

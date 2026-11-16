@@ -130,12 +130,20 @@ export interface CaptureArticle {
 
 export const QUOTE_DEPTH_CAP = 3;
 
+/** A rich-text span of the post text, in UTF-8 byte offsets as Bluesky records store them. */
+export interface CaptureFacet {
+  start: number;
+  end: number;
+  type: "link" | "mention" | "tag";
+}
+
 export interface CaptureExtras {
   blockClass?: string;
   board?: { name?: string; url: string };
   clusters?: unknown;
   dominantColor?: string;
   externalLink?: string;
+  facets?: CaptureFacet[];
   faviconUrl?: string;
   /** The web page sells a product, book, album or magazine issue. */
   product?: boolean;

@@ -1,0 +1,74 @@
+.frame {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  height: 100dvh;
+  color: var(--ds-foreground-primary);
+  color-scheme: light;
+  background: var(--ds-background-secondary);
+
+  &[data-theme="dark"] {
+    color-scheme: dark;
+    background: var(--ds-background-primary);
+  }
+}
+
+.panel {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  margin: var(--ds-space-xs) var(--ds-space-xs) var(--ds-space-xs) 0;
+  overflow: hidden;
+  background: var(--ds-background-primary);
+  border-radius: var(--ds-radius-2xl);
+  box-shadow: var(--ds-shadow-raised);
+
+  [data-theme="dark"] & {
+    background: var(--ds-background-tertiary);
+  }
+}
+
+.tiles {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-xs);
+  min-width: 0;
+  height: auto;
+  padding: var(--ds-space-xs) var(--ds-space-xs) var(--ds-space-xs) 0;
+  overflow-y: auto;
+}
+
+/* Global `main` is one screen tall for the homepage; here it is the scroller. */
+.content {
+  box-sizing: border-box;
+  flex: 1;
+  min-width: 0;
+  height: auto;
+  padding: 60px 40px;
+  overflow-y: auto;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  width: 100%;
+  max-width: 760px;
+  margin-inline: auto;
+}
+
+@media (max-width: 720px) {
+  .frame {
+    grid-template-columns: minmax(0, 1fr);
+    height: auto;
+  }
+
+  .panel {
+    margin: 0 var(--ds-space-xs) var(--ds-space-xs);
+  }
+
+  .content {
+    padding: 40px var(--ds-space-2xl);
+    overflow: visible;
+  }
+}

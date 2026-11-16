@@ -2,7 +2,7 @@
   position: absolute;
   z-index: 1000;
   pointer-events: none;
-  background: var(--ds-pink-9);
+  background: var(--ds-pink);
 
   &[data-axis="x"] {
     top: var(--guide-from);

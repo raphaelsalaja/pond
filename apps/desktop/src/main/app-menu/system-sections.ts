@@ -68,6 +68,8 @@ export function buildDeveloperSections(context: AppMenuContext): AppMenuItem[] {
         { role: "reload" },
         { role: "forceReload" },
         { role: "toggleDevTools" },
+        { type: "separator" },
+        { label: "Download Lab", click: context.navTo("/lab/download") },
       ],
     },
   ];

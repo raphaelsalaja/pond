@@ -55,6 +55,14 @@ describe("color filter", () => {
     return result;
   }
 
+  function slider(label: string) {
+    const result = [
+      ...host.querySelectorAll<HTMLElement>('[role="slider"]'),
+    ].find((node) => node.getAttribute("aria-label") === label);
+    if (!result) throw new Error(`Missing slider: ${label}`);
+    return result;
+  }
+
   function current() {
     return JSON.parse(host.querySelector("output")?.textContent ?? "null");
   }
@@ -62,7 +70,7 @@ describe("color filter", () => {
   it("shows custom controls immediately and keeps them in sync with presets", async () => {
     await act(async () => root.render(<Harness />));
     expect(input("Color Hex").value).toBe("");
-    expect(input("Filter Color hue")).toBeTruthy();
+    expect(slider("Filter Color hue")).toBeTruthy();
     expect(input("Color Accuracy").disabled).toBe(true);
     expect(current()).toBeNull();
     await act(async () => button("Blue").click());
@@ -90,7 +98,7 @@ describe("color filter", () => {
       ),
     );
     expect(input("Color Hex").value).toBe("#a044cc");
-    const hue = input("Filter Color hue");
+    const hue = slider("Filter Color hue");
     expect(hue.getAttribute("aria-orientation")).toBe("vertical");
     await act(async () => {
       hue.focus();

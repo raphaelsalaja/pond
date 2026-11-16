@@ -3,13 +3,13 @@
   flex-shrink: 0;
   object-fit: cover;
   border-radius: var(--ds-radius-source);
-  box-shadow: var(--ds-shadow-xs);
+  box-shadow: var(--ds-shadow-border);
 
   &[data-fit="contain"] {
     box-sizing: border-box;
-    padding: 3px;
+    padding: var(--ds-space-xs);
     object-fit: contain;
-    background: var(--ds-gray-1);
+    background: var(--ds-background-primary);
   }
 }
 
@@ -19,7 +19,7 @@
   place-items: center;
   width: 20px;
   height: 20px;
-  color: var(--ds-gray-11);
-  background: var(--ds-gray-3);
+  color: var(--ds-foreground-secondary);
+  background: var(--ds-background-tertiary);
   border-radius: var(--ds-radius-source);
 }

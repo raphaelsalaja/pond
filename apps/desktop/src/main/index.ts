@@ -82,6 +82,7 @@ import {
   recoverMissingLibrary,
   recoverUnreadableLibrary,
 } from "./library-recovery";
+import { closeMissingLibraryWindow } from "./missing-library-window";
 import {
   consoleLoggingEnabled,
   protocolRegistration,
@@ -344,6 +345,7 @@ app.whenReady().then(async () => {
   } else {
     void settleDockAfterClose();
   }
+  closeMissingLibraryWindow();
   launched = true;
   flushDroppedFiles();
   watchMainThreadStalls();

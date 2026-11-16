@@ -11,28 +11,28 @@
 .note {
   padding-inline: var(--settings-padding);
   margin: 0;
-  font-size: var(--ds-text-md);
+  font-size: var(--ds-text-body);
   line-height: 1.5;
-  color: var(--ds-gray-11);
+  color: var(--ds-foreground-secondary);
 }
 
 .status {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--ds-space-md);
 }
 
 .error {
   padding-inline: var(--settings-padding);
   margin: 0;
-  font-size: var(--ds-text-sm);
+  font-size: var(--ds-text-small);
   line-height: 1.4;
-  color: var(--ds-red-11);
+  color: var(--ds-danger-foreground);
 }
 
 .titled {
   display: inline-flex;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   align-items: center;
 }
 

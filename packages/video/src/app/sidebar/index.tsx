@@ -1,7 +1,5 @@
 import {
   IconAlbum2,
-  IconBookmark,
-  IconBookmarkSlash,
   IconCanvas,
   IconChevronDown,
   IconClockPlus,
@@ -9,6 +7,8 @@ import {
   IconFolderBan,
   IconFolderSearch,
   IconPlus,
+  IconTag,
+  IconTagSlash,
   IconTrash,
 } from "@pond/icons";
 import { Logo } from "@pond/ui/logo";
@@ -48,9 +48,9 @@ export const libraryPlaces = (
 ): Place[] => [
   { label: "All", icon: <IconAlbum2 />, count: all, active: allActive },
   { label: "Uncategorized", icon: <IconFolderBan />, count: 0 },
-  { label: "Untagged", icon: <IconBookmarkSlash />, count: 0 },
+  { label: "Untagged", icon: <IconTagSlash />, count: 0 },
   { label: "Recently Added", icon: <IconClockPlus />, count: all },
-  { label: "Tags", icon: <IconBookmark />, count: tags },
+  { label: "Tags", icon: <IconTag />, count: tags },
   { label: "Trash", icon: <IconTrash />, count: 0 },
 ];
 
@@ -81,7 +81,7 @@ function Row({ t, at, icon, label, count, depth = 0, color, pulse }: RowProps) {
         paddingLeft: 6 + depth * 18,
         background:
           flash > 0.01
-            ? `color-mix(in oklab, ${color ?? "var(--ds-gray-9)"} ${flash * 14}%, transparent)`
+            ? `color-mix(in oklab, ${color ?? "var(--ds-foreground-tertiary)"} ${flash * 14}%, transparent)`
             : undefined,
       }}
     >

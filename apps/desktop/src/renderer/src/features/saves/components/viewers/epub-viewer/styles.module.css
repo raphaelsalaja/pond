@@ -29,11 +29,11 @@
 
 .size {
   display: flex;
-  gap: 4px;
+  gap: var(--ds-space-xs);
   align-items: center;
-  padding: 2px 8px 2px 2px;
+  padding: var(--ds-space-2xs) var(--ds-space-md) var(--ds-space-2xs) var(--ds-space-2xs);
 }
 
 .contents {
-  padding: 2px 4px;
+  padding: var(--ds-space-2xs) var(--ds-space-xs);
 }

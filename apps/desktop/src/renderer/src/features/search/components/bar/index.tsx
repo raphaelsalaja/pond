@@ -5,7 +5,7 @@ import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { PlainTextPlugin } from "@lexical/react/LexicalPlainTextPlugin";
-import { IconCircleXmarkFill } from "@pond/icons";
+import { IconCircleXmark } from "@pond/icons";
 import { Button, Loader, Tooltip } from "@pond/ui";
 import {
   $createTextNode,
@@ -61,7 +61,7 @@ export interface SearchComposerProps {
 
 export function SearchComposer({
   compile,
-  placeholder = "Search your library…",
+  placeholder = "Search…",
   children,
 }: SearchComposerProps = {}) {
   const initialConfig = useMemo(
@@ -310,7 +310,7 @@ function SearchField({
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={clearField}
               >
-                <IconCircleXmarkFill />
+                <IconCircleXmark />
               </Button>
             </Tooltip>
           ) : null}

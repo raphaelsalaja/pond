@@ -142,11 +142,12 @@ export const appearanceSection = defineCustomSection({
           control: "select",
           key: "tweetCover",
           title: "Post Cover",
-          description: "Cover image for X and Threads posts.",
+          description: "Cover image for X, Threads and Bluesky posts.",
           keywords: [
             "twitter",
             "x",
             "threads",
+            "bluesky",
             "screenshot",
             "media",
             "thumbnail",

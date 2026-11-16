@@ -1,12 +1,7 @@
 .page {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-}
-
-.language {
-  font-size: var(--ds-text-md);
-  color: var(--ds-gray-11);
+  gap: var(--ds-space-xl);
 }
 
 .list {
@@ -17,12 +12,12 @@
 
 .all {
   display: flex;
-  gap: 10px;
+  gap: var(--ds-space-md);
   align-items: center;
-  padding: 10px 0;
-  font-size: var(--ds-text-sm);
+  padding: var(--ds-space-lg) 0;
+  font-size: var(--ds-text-small);
   font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-10);
+  color: var(--ds-foreground-tertiary);
   cursor: var(--ds-cursor-interactive, pointer);
   user-select: none;
 }
@@ -53,9 +48,9 @@
 
 .pick {
   display: flex;
-  gap: 10px;
+  gap: var(--ds-space-md);
   align-items: center;
-  padding: 6px 0;
+  padding: var(--ds-space-sm) 0;
   cursor: var(--ds-cursor-interactive, pointer);
 }
 
@@ -63,7 +58,7 @@
   flex-shrink: 0;
   width: 64px;
   aspect-ratio: 16 / 9;
-  outline: 1px solid light-dark(var(--ds-black-a2), var(--ds-white-a2));
+  outline: 1px solid var(--ds-border-subtle);
   outline-offset: -1px;
   border-radius: var(--ds-radius-sm);
 }
@@ -72,16 +67,16 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--ds-space-2xs);
   min-width: 0;
 }
 
 .title {
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-md);
-  font-weight: var(--ds-weight-lg);
-  color: var(--ds-gray-12);
+  font-size: var(--ds-text-body);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-foreground-primary);
   white-space: nowrap;
 }
 
@@ -89,13 +84,13 @@
   min-height: 16px;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-sm);
+  font-size: var(--ds-text-small);
   font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-10);
+  color: var(--ds-foreground-tertiary);
   white-space: nowrap;
 
   .row[data-failed] & {
-    color: var(--ds-red-11);
+    color: var(--ds-danger-foreground);
   }
 }
 
@@ -103,6 +98,6 @@
   display: inline-block;
   width: 60%;
   height: 10px;
-  background: var(--ds-gray-a3);
+  background: var(--ds-surface-secondary);
   border-radius: var(--ds-radius-xs);
 }

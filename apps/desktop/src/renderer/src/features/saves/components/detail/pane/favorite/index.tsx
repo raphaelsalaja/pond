@@ -1,4 +1,4 @@
-import { IconHeart, IconHeartFill } from "@pond/icons";
+import { IconHeart } from "@pond/icons";
 import { Toggle, Tooltip } from "@pond/ui";
 import { toggleFavorite } from "@/features/saves/lib/triage";
 import type { Save } from "@/features/saves/types";
@@ -22,7 +22,7 @@ export function FavoriteRow({ saves }: { saves: readonly Save[] }) {
               void toggleFavorite(saves.map((save) => save.id))
             }
           >
-            {favorited ? <IconHeartFill /> : <IconHeart />}
+            <IconHeart fill={favorited ? "currentColor" : "none"} />
           </Toggle>
         </Tooltip>
       </PropertyList.Value>

@@ -2,8 +2,8 @@ import {
   IconBracketsCurly,
   IconEnvelope,
   IconLink2,
-  IconSparkleFill,
-  IconTrophyFill,
+  IconSparkle,
+  IconTrophy,
   IconWindowDownload,
 } from "@pond/icons";
 import {
@@ -68,7 +68,7 @@ function shareMilestone(count: string): void {
 
 function milestone(count: string): PromptSpec {
   return {
-    icon: <IconSparkleFill />,
+    icon: <IconSparkle />,
     tone: "gold",
     title: `${count} Saves`,
     description: `Your library passed ${count} saves, all kept on this computer.`,
@@ -86,7 +86,7 @@ export function promptSpec(id: PromptId): PromptSpec {
   switch (id) {
     case "cosign":
       return {
-        icon: <IconTrophyFill />,
+        icon: <IconTrophy />,
         tone: "gold",
         variant: "spotlight",
         title: "Cosign Awards 2026",

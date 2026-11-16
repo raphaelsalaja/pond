@@ -15,6 +15,25 @@ export type Container = DownloadContainer;
 export type CompressionLevel = DownloadCompression;
 export type ExportDestination = "library" | "file" | "clipboard";
 
+export function saveToHint({
+  destination,
+  folder,
+  existingSaveId,
+  copies,
+}: {
+  destination: ExportDestination;
+  folder: string | null;
+  existingSaveId: string | null;
+  copies: string;
+}): string | null {
+  if (destination === "library")
+    return existingSaveId
+      ? "Already in your library. This adds to the same save."
+      : "Adds a save to your library.";
+  if (destination === "clipboard") return `Copies ${copies}, ready to paste.`;
+  return folder ? `Saves to ${folder}.` : null;
+}
+
 export interface ExportSettings {
   container: Container;
   /** Frames per second, or null to keep the source rate. */
@@ -37,13 +56,14 @@ export const COMPRESSION_FACTOR = {
   small: 0.25,
 } satisfies Record<CompressionLevel, number>;
 
-export function useExportSettings(): Settings {
+export function useExportSettings(initial?: Partial<ExportSettings>): Settings {
   const [value, setValue] = useState<ExportSettings>({
     container: "mp4",
     fps: null,
     compression: "original",
     transcript: "txt",
     destination: "library",
+    ...initial,
   });
   return {
     value,

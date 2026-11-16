@@ -35,9 +35,9 @@
 .label {
   padding-inline: 4px;
   margin: 0;
-  font-size: var(--ds-text-xs);
-  font-weight: var(--ds-weight-md);
-  color: var(--ds-gray-10);
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-regular);
+  color: var(--ds-foreground-tertiary);
 }
 
 .grid {
@@ -57,7 +57,7 @@
   gap: 8px;
   padding: 8px 8px 0;
   margin-inline: -8px;
-  border-top: var(--ds-border-width) solid var(--ds-gray-a4);
+  border-top: var(--ds-border-width) solid var(--ds-border-subtle);
 }
 
 .swatches {

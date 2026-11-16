@@ -8,10 +8,10 @@
 .header {
   display: flex;
   flex-wrap: nowrap;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
-  font-size: var(--ds-text-sm);
-  color: var(--ds-gray-11);
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-secondary);
 }
 
 .spacer {
@@ -19,11 +19,11 @@
 }
 
 .rules {
-  --gap: 12px;
+  --gap: var(--ds-space-lg);
   --arm: 16px;
   --stem: 14px;
   --inset: 8px;
-  --line: var(--ds-gray-5);
+  --line: var(--ds-border-strong);
 
   display: flex;
   flex-direction: column;
@@ -59,8 +59,8 @@
 
 .no-value {
   margin: 0;
-  font-size: var(--ds-text-sm);
-  color: var(--ds-gray-10);
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-tertiary);
 }
 
 .sr-only {

@@ -3,7 +3,7 @@
 
   position: relative;
   height: 72px;
-  margin-bottom: 16px;
+  margin-bottom: var(--ds-space-xl);
   overflow: hidden;
   mask-image: linear-gradient(
     to right,
@@ -22,7 +22,7 @@
   place-items: center;
   width: 40px;
   height: 40px;
-  margin: -20px 0 0 -20px;
+  margin: calc(var(--ds-space-xl) * -1) 0 0 calc(var(--ds-space-xl) * -1);
   transform: translateX(calc(var(--offset) * var(--school-pitch))) scale(0.8);
   transition: transform 1000ms var(--ds-easing-snap);
 

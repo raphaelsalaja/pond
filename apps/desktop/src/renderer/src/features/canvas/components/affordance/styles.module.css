@@ -21,8 +21,8 @@
   height: 8px;
   padding: 0;
   pointer-events: all;
-  background: var(--ds-gray-1);
-  border: 1.5px solid var(--ds-accent-9);
+  background: var(--ds-background-primary);
+  border: 1.5px solid var(--ds-accent);
   border-radius: 2px;
 
   &::before {

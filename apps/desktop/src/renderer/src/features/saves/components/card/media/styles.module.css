@@ -5,9 +5,9 @@
   justify-content: stretch;
   width: 100%;
   height: 100%;
-  background-color: var(--ds-gray-2);
+  background-color: var(--ds-background-secondary);
   border-radius: var(--ds-radius-xs);
-  box-shadow: var(--ds-shadow-save);
+  box-shadow: var(--ds-shadow-border);
   isolation: isolate;
 
   &[data-thumbnail-bg="black"] {
@@ -25,10 +25,10 @@
   &[data-thumbnail-bg="grid"] {
     background-color: white;
     background-image:
-      linear-gradient(45deg, var(--ds-black-a4) 25%, transparent 25%),
-      linear-gradient(-45deg, var(--ds-black-a4) 25%, transparent 25%),
-      linear-gradient(45deg, transparent 75%, var(--ds-black-a4) 75%),
-      linear-gradient(-45deg, transparent 75%, var(--ds-black-a4) 75%);
+      linear-gradient(45deg, var(--ds-surface-tertiary) 25%, transparent 25%),
+      linear-gradient(-45deg, var(--ds-surface-tertiary) 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, var(--ds-surface-tertiary) 75%),
+      linear-gradient(-45deg, transparent 75%, var(--ds-surface-tertiary) 75%);
     background-position:
       0 0,
       0 8px,
@@ -36,16 +36,6 @@
       -8px 0;
     background-size: 16px 16px;
   }
-}
-
-.thumb:not([data-thumbnail-bg]):has(> .visual > :is(img, video))::after {
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  pointer-events: none;
-  content: "";
-  border-radius: inherit;
-  box-shadow: inset 0 0 0 1px var(--ds-gray-a3);
 }
 
 .visual {
@@ -85,6 +75,6 @@
   z-index: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, var(--ds-gray-2), var(--ds-gray-3));
+  background: linear-gradient(135deg, var(--ds-background-secondary), var(--ds-background-tertiary));
   border-radius: inherit;
 }

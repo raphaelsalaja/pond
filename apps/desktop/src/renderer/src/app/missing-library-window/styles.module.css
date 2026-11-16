@@ -1,0 +1,41 @@
+.root {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--ds-background-primary);
+}
+
+.drag {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 44px;
+  -webkit-app-region: drag;
+}
+
+.empty {
+  --empty-max-width: 620px;
+  --empty-title-size: var(--ds-text-display);
+  --empty-description-max-width: 56ch;
+}
+
+.path {
+  padding: 1px var(--ds-space-xs);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-danger-foreground);
+  overflow-wrap: anywhere;
+  background: var(--ds-danger-tint);
+  border-radius: var(--ds-radius-xs);
+  box-decoration-break: clone;
+}
+
+.hint {
+  display: flex;
+  gap: var(--ds-space-xs);
+  align-items: center;
+  margin: var(--ds-space-xs) 0 0;
+  font-size: var(--ds-text-small);
+  line-height: var(--ds-leading-small);
+  color: var(--ds-foreground-tertiary);
+}

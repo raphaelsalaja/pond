@@ -18,7 +18,7 @@ import {
   IconNodes3,
   IconTrashXmark,
   IconTrophy,
-  IconVersions,
+  IconWindow,
   IconWindowDownload,
 } from "@pond/icons";
 import { DEFAULT_FISH_ID } from "@shared/fish-contracts";
@@ -69,7 +69,7 @@ export const COMMANDS: readonly CommandSpec[] = [
     id: "new-tag-group",
     group: "Create",
     label: "New Tag Group",
-    icon: IconVersions,
+    icon: IconWindow,
     keywords: "create labels organize",
     shortcut: "library.new-tag-group",
     run: () => newTag("tag-group"),

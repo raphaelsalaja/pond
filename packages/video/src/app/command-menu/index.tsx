@@ -1,4 +1,4 @@
-import { IconCaretRightFill, IconMagnifier } from "@pond/icons";
+import { IconCaretRight, IconMagnifier } from "@pond/icons";
 import { Button, Keyboard } from "@pond/ui";
 import type { CSSProperties, ReactNode } from "react";
 import { ease, mix, progress } from "../../motion";
@@ -129,7 +129,7 @@ function Entry({ entry, active }: { entry: PaletteEntry; active: boolean }) {
         </Keyboard.Key>
       ) : null}
       {entry.page ? (
-        <IconCaretRightFill className={styles.indicator} size={10} />
+        <IconCaretRight className={styles.indicator} size={10} />
       ) : null}
     </span>
   );

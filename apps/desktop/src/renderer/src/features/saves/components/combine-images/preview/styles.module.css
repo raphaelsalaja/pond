@@ -7,7 +7,7 @@
   transition: box-shadow var(--ds-duration-snap) var(--ds-easing-standard);
 
   &[data-dropping] {
-    box-shadow: inset 0 0 0 2px var(--ds-accent-9);
+    box-shadow: inset 0 0 0 2px var(--ds-accent);
   }
 }
 
@@ -35,7 +35,7 @@
 .canvas {
   position: relative;
   overflow: hidden;
-  box-shadow: var(--ds-shadow-sm);
+  box-shadow: var(--ds-shadow-border);
 }
 
 .image {
@@ -48,16 +48,16 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  outline: 1px dashed var(--ds-accent-9);
+  outline: 1px dashed var(--ds-accent);
   outline-offset: -1px;
-  border-color: var(--ds-accent-a6);
+  border-color: var(--ds-accent-border);
   border-style: solid;
 }
 
 .gap {
   position: absolute;
   pointer-events: none;
-  outline: 1px dashed var(--ds-accent-9);
+  outline: 1px dashed var(--ds-accent);
   outline-offset: -1px;
-  background: var(--ds-accent-a6);
+  background: var(--ds-accent-border);
 }

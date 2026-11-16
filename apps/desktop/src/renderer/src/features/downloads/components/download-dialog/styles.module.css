@@ -1,20 +1,27 @@
 .popup {
   --page-dialog-width: 600px;
+  --page-dialog-content-top: 6px;
 
-  &[data-page="single"] {
-    --page-dialog-width: 760px;
+  &[data-page="video"],
+  &[data-page="post"],
+  &[data-page="file"] {
+    --page-dialog-width: 1080px;
+    --page-dialog-content-top: 14px;
   }
 }
 
+/* Back and Close sit absolutely in the header, so the title keeps clear of both. */
 .header {
-  justify-content: center;
-  padding-inline: 48px;
+  padding-inline-end: 48px;
+
+  &[data-back] {
+    padding-inline-start: 48px;
+  }
 }
 
 .title {
   overflow: hidden;
   text-overflow: ellipsis;
-  text-align: center;
   white-space: nowrap;
 }
 

@@ -1,13 +1,13 @@
 .content {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--ds-space-lg);
 }
 
 .list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--ds-space-lg);
   max-height: 360px;
   padding: 0;
   margin: 0;
@@ -17,7 +17,7 @@
 
 .tool {
   display: flex;
-  gap: 12px;
+  gap: var(--ds-space-lg);
   align-items: center;
   justify-content: space-between;
 }
@@ -25,21 +25,21 @@
 .text {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--ds-space-2xs);
   min-width: 0;
 }
 
 .heading {
   display: flex;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   align-items: center;
 }
 
 .name {
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-sm);
-  color: var(--ds-gray-12);
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-primary);
   white-space: nowrap;
 }
 
@@ -48,6 +48,6 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
   -webkit-line-clamp: 2;
-  font-size: var(--ds-text-xs);
-  color: var(--ds-gray-11);
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-secondary);
 }

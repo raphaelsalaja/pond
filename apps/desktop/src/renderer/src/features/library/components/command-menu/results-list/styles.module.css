@@ -13,7 +13,7 @@
   max-height: 370px;
   overflow-y: auto;
   overscroll-behavior: contain;
-  scroll-padding-block: 24px;
+  scroll-padding-block: var(--ds-space-2xl);
 
   &[data-sized] {
     transition: height var(--ds-duration-medium) var(--ds-easing-snap);
@@ -30,14 +30,14 @@
 
   &[data-edge="top"] {
     top: 0;
-    margin-bottom: -24px;
-    background: linear-gradient(to bottom, var(--ds-gray-1), transparent);
+    margin-bottom: calc(var(--ds-space-2xl) * -1);
+    background: linear-gradient(to bottom, var(--ds-background-primary), transparent);
   }
 
   &[data-edge="bottom"] {
     bottom: 0;
-    margin-top: -24px;
-    background: linear-gradient(to top, var(--ds-gray-1), transparent);
+    margin-top: calc(var(--ds-space-2xl) * -1);
+    background: linear-gradient(to top, var(--ds-background-primary), transparent);
   }
 }
 
@@ -76,7 +76,7 @@
 }
 
 .content {
-  padding-block: 6px;
+  padding-block: var(--ds-space-sm);
 
   &[data-direction="forward"] {
     animation: enter-forward var(--ds-duration-medium) var(--ds-easing-snap);
@@ -106,14 +106,14 @@
   display: flex;
   align-items: center;
   height: 30px;
-  padding-inline: 14px;
-  font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-lg);
-  color: var(--ds-gray-9);
+  padding-inline: var(--ds-space-xl);
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-foreground-tertiary);
 
   &[data-divided] {
     height: 42px;
-    padding-top: 12px;
+    padding-top: var(--ds-space-lg);
   }
 }
 
@@ -122,7 +122,7 @@
   height: 32px;
   min-height: 0;
   padding-block: 0;
-  padding-inline: 14px;
+  padding-inline: var(--ds-space-xl);
   transition: color var(--ds-duration-fast) var(--ds-easing-standard);
 
   &[data-tall] {
@@ -130,12 +130,12 @@
   }
 
   &[data-active] {
-    color: var(--ds-gray-12);
+    color: var(--ds-foreground-primary);
   }
 }
 
 .root[data-inactive] .item::before {
-  background: var(--ds-gray-a2);
+  background: var(--ds-surface-primary);
 }
 
 .icon {
@@ -144,18 +144,18 @@
   place-items: center;
   min-width: 16px;
   min-height: 16px;
-  color: var(--ds-gray-9);
+  color: var(--ds-foreground-tertiary);
   transition: color var(--ds-duration-fast) var(--ds-easing-standard);
 
   .item[data-active] & {
-    color: var(--ds-gray-12);
+    color: var(--ds-foreground-primary);
   }
 }
 
 .copy {
   display: flex;
   flex: 1;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: baseline;
   min-width: 0;
 }
@@ -165,17 +165,17 @@
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-md);
-  font-weight: var(--ds-weight-lg);
+  font-size: var(--ds-text-body);
+  font-weight: var(--ds-weight-medium);
   white-space: nowrap;
 
   &[data-matched] {
-    color: var(--ds-gray-10);
+    color: var(--ds-foreground-tertiary);
   }
 }
 
 .match {
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
   background: none;
 }
 
@@ -184,8 +184,8 @@
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-md);
-  color: var(--ds-gray-9);
+  font-size: var(--ds-text-body);
+  color: var(--ds-foreground-tertiary);
   white-space: nowrap;
 }
 
@@ -193,36 +193,36 @@
   display: inline-flex;
   flex: none;
   align-items: center;
-  font-size: var(--ds-text-xs);
-  font-weight: var(--ds-weight-lg);
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-medium);
   font-feature-settings: "cv08" on;
-  color: var(--ds-gray-10);
+  color: var(--ds-foreground-tertiary);
 }
 
 .hint {
   flex: none;
-  font-size: var(--ds-text-xs);
-  color: var(--ds-gray-10);
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-tertiary);
 }
 
 .indicator {
   flex: none;
-  color: var(--ds-gray-8);
+  color: var(--ds-foreground-tertiary);
 
   .item[data-active] & {
-    color: var(--ds-gray-11);
+    color: var(--ds-foreground-secondary);
   }
 }
 
 .status {
   box-sizing: border-box;
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
   height: 32px;
-  padding-inline: 14px;
-  font-size: var(--ds-text-md);
-  color: var(--ds-gray-9);
+  padding-inline: var(--ds-space-xl);
+  font-size: var(--ds-text-body);
+  color: var(--ds-foreground-tertiary);
 
   /* Hold the spinner back so fast lookups resolve before it shows. */
   &[data-busy] {
@@ -244,7 +244,7 @@
 
 .footer {
   flex: none;
-  padding-block: 6px;
+  padding-block: var(--ds-space-sm);
 }
 
 @media (max-width: 620px) {

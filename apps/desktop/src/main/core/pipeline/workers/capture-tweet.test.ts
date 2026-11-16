@@ -84,6 +84,12 @@ function makePorts(
     ): Promise<Awaited<ReturnType<TestPorts["renderThreadsCardPng"]>>> =>
       rendered,
   );
+  const renderBlueskyCardPng = vi.fn(
+    async (
+      ..._args: Parameters<TestPorts["renderBlueskyCardPng"]>
+    ): Promise<Awaited<ReturnType<TestPorts["renderBlueskyCardPng"]>>> =>
+      rendered,
+  );
   const inlineCaptureAvatars = vi.fn(async (capture: Capture) => ({ capture }));
   const ports = {
     readSave: async () => stored,
@@ -92,6 +98,7 @@ function makePorts(
     screenshotThreadsDual,
     renderTweetCardPng,
     renderThreadsCardPng,
+    renderBlueskyCardPng,
     inlineCaptureAvatars,
   } satisfies TestPorts;
 
@@ -103,8 +110,60 @@ function makePorts(
     screenshotThreadsDual,
     renderTweetCardPng,
     renderThreadsCardPng,
+    renderBlueskyCardPng,
   };
 }
+
+function blueskySave(): CaptureTweetSave {
+  return {
+    id: "save-1",
+    source: "bluesky",
+    sourceId: "3n25h2hetys2m",
+    url: "https://bsky.app/profile/atproto.com/post/3n25h2hetys2m",
+    author: "@atproto.com",
+    rawJson: {
+      extractorId: "test",
+      extractedAt: "2026-11-16T00:00:00.000Z",
+      capture: {
+        id: "3n25h2hetys2m",
+        source: "bluesky",
+        url: "https://bsky.app/profile/atproto.com/post/3n25h2hetys2m",
+        description: "A Bluesky post",
+        media: [],
+      },
+    },
+  };
+}
+
+describe("runCaptureTweet for Bluesky", () => {
+  it("writes the native card and stamps the version", async () => {
+    const harness = makePorts(blueskySave(), {
+      light: { ok: true, png: rendered },
+      dark: { ok: true, png: rendered },
+    });
+
+    await expect(harness.runCaptureTweet("save-1")).resolves.toMatchObject({
+      captured: 2,
+    });
+    expect(harness.renderBlueskyCardPng).toHaveBeenCalledTimes(2);
+    expect(harness.renderTweetCardPng).not.toHaveBeenCalled();
+    expect(isCaptureTweetStale(harness.getStored().rawJson)).toBe(false);
+  });
+
+  it("never opens a live screenshot when the native card misses", async () => {
+    const harness = makePorts(blueskySave(), {
+      light: { ok: true, png: rendered },
+      dark: { ok: true, png: rendered },
+    });
+    harness.renderBlueskyCardPng.mockResolvedValue(null);
+
+    await expect(harness.runCaptureTweet("save-1")).resolves.toMatchObject({
+      captured: 0,
+    });
+    expect(harness.screenshotTweetDual).not.toHaveBeenCalled();
+    expect(harness.screenshotThreadsDual).not.toHaveBeenCalled();
+  });
+});
 
 describe("isCaptureTweetStale", () => {
   it("recaptures a reply whose image still leads with the parent post", () => {

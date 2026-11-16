@@ -1,6 +1,5 @@
 import {
   IconAlbum2,
-  IconBookmark,
   IconChevronDown,
   IconCircleWarning,
   IconEye,
@@ -10,6 +9,7 @@ import {
   IconHistory,
   IconPlus,
   IconShuffle,
+  IconTag,
   IconTrashXmark,
   IconUser,
   IconWindowDownload,
@@ -37,7 +37,7 @@ const library: ReadonlyArray<{
     count: "18",
     icon: <IconHistory />,
   },
-  { id: "tags", label: "Tags", count: "58", icon: <IconBookmark /> },
+  { id: "tags", label: "Tags", count: "58", icon: <IconTag /> },
   { id: "random", label: "Random", count: "", icon: <IconShuffle /> },
   { id: "trash", label: "Trash", count: "3", icon: <IconTrashXmark /> },
 ];

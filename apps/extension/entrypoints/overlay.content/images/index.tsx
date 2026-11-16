@@ -2,7 +2,7 @@ import {
   IconArrowsExpandY,
   IconCheckboxChecked,
   IconContrast,
-  IconImageFill,
+  IconImage,
   IconMinus,
   IconPlus,
 } from "@pond/icons";
@@ -283,8 +283,14 @@ export function ImagePicker({
                 container={container}
               >
                 <Toolbar.Button
-                  render={<Button icon size="sm" variant="ghost" />}
-                  aria-label={allShown ? "Deselect All" : "Select All"}
+                  render={
+                    <Button
+                      icon
+                      size="sm"
+                      variant="ghost"
+                      aria-label={allShown ? "Deselect All" : "Select All"}
+                    />
+                  }
                   disabled={shown.length === 0}
                   onClick={() =>
                     setMany(
@@ -298,8 +304,14 @@ export function ImagePicker({
               </Tooltip>
               <Tooltip label="Invert Selection" container={container}>
                 <Toolbar.Button
-                  render={<Button icon size="sm" variant="ghost" />}
-                  aria-label="Invert Selection"
+                  render={
+                    <Button
+                      icon
+                      size="sm"
+                      variant="ghost"
+                      aria-label="Invert Selection"
+                    />
+                  }
                   disabled={shown.length === 0}
                   onClick={invert}
                 >
@@ -375,7 +387,7 @@ export function ImagePicker({
             ) : (
               <Empty.Root className={styles.empty}>
                 <Empty.Media>
-                  <IconImageFill size={32} />
+                  <IconImage size={32} />
                 </Empty.Media>
                 <Empty.Title>
                   {images.length === 0

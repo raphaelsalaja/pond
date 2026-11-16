@@ -108,7 +108,7 @@ function Filter({
   active,
   ariaLabel,
   variant = "ghost",
-  clearLabel,
+  clearLabel = "Clear Filter",
   onClear,
   onOpenChange,
   search,

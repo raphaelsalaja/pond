@@ -1,6 +1,6 @@
 import { AlertDialog as Alert } from "@base-ui/react/alert-dialog";
 import { Dialog as Base } from "@base-ui/react/dialog";
-import { IconAlertQuestionFill, IconChevronLeft, IconXmark } from "@pond/icons";
+import { IconAlertQuestion, IconChevronLeft, IconXmark } from "@pond/icons";
 import { clsx as cn } from "clsx";
 import {
   AnimatePresence,
@@ -275,10 +275,11 @@ function Title({ className, children, ...props }: Base.Title.Props) {
 
 interface DescriptionProps extends ComponentPropsWithoutRef<"p"> {}
 
+/** An exiting page keeps a plain paragraph so its unmount can't clear the incoming page's `aria-describedby`. */
 function Description({ className, ...props }: DescriptionProps) {
-  const page = use(DialogPageContext);
   const preview = use(DialogPreviewContext);
-  if (page || preview)
+  const present = useIsPresent();
+  if (preview || !present)
     return <p className={cn(styles.description, className)} {...props} />;
   return (
     <Base.Description
@@ -392,7 +393,7 @@ function Back(props: ComponentPropsWithoutRef<"button">) {
 function Help(props: ComponentPropsWithoutRef<"button">) {
   return (
     <Action aria-label="Help" {...props}>
-      <IconAlertQuestionFill size={12} strokeWidth={2} />
+      <IconAlertQuestion size={12} strokeWidth={2} />
     </Action>
   );
 }

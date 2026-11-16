@@ -14,7 +14,7 @@ import { CUES, DURATION, end, start } from "./timeline";
 import { CanvasWindow } from "./window";
 
 const BRANDS = {
-  Canvases: { color: "var(--ds-blue-9)" },
+  Canvases: { color: "var(--ds-blue)" },
 };
 
 /** Stage-space crops the camera eases between. */

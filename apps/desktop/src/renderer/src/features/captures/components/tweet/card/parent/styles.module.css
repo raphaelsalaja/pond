@@ -1,7 +1,7 @@
 /* X draws ancestors as timeline rows: 40px avatar rail, 15px / 20px text, a 2px spine down to the focal avatar. */
 .parent {
   display: flex;
-  gap: 12px;
+  gap: var(--ds-space-lg);
 }
 
 .rail {
@@ -15,19 +15,19 @@
 .line {
   flex: 1;
   width: 2px;
-  margin: 4px 0;
+  margin: var(--ds-space-xs) 0;
   background: var(--tw-thread);
 }
 
 .content {
   flex: 1;
   min-width: 0;
-  padding-bottom: 16px;
+  padding-bottom: var(--ds-space-xl);
 }
 
 .identity {
   display: flex;
-  gap: 4px;
+  gap: var(--ds-space-xs);
   align-items: center;
   min-width: 0;
   line-height: 20px;
@@ -37,11 +37,11 @@
 .name {
   display: inline-flex;
   flex-shrink: 1;
-  gap: 2px;
+  gap: var(--ds-space-2xs);
   align-items: center;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-lg);
+  font-size: var(--ds-text-heading);
   font-weight: 700;
 }
 
@@ -53,12 +53,12 @@
 .handle {
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-lg);
+  font-size: var(--ds-text-heading);
   color: var(--tw-secondary);
 }
 
 .content .text {
-  margin: 2px 0 0;
-  font-size: var(--ds-text-lg);
-  line-height: 20px;
+  margin: var(--ds-space-2xs) 0 0;
+  font-size: var(--ds-text-heading);
+  line-height: var(--ds-leading-heading);
 }

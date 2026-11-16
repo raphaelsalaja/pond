@@ -3,7 +3,7 @@ import {
   IconArrowUpRight,
   IconCrop,
   IconDuplicate,
-  IconImages,
+  IconImage,
   IconTrash,
 } from "@pond/icons";
 import { Button, type MenuItemSpec } from "@pond/ui";
@@ -154,7 +154,7 @@ export function SelectionBar({
                 rounding="full"
                 aria-label="Replace Save"
               >
-                <IconImages />
+                <IconImage />
               </Button>
             </AddSaves>
           ) : null}

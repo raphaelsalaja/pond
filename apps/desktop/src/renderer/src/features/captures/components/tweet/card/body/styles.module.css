@@ -1,6 +1,6 @@
 /* X renders the focal tweet text at 17px / 24px. */
 .body {
-  margin: 12px 0 0;
+  margin: var(--ds-space-lg) 0 0;
   font-size: 17px;
   line-height: 24px;
   overflow-wrap: anywhere;

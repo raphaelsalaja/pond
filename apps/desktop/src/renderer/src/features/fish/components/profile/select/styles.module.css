@@ -1,6 +1,6 @@
 .field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   min-width: 0;
 }

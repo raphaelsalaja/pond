@@ -33,8 +33,8 @@ describe("SearchChrome.Input", () => {
     expect(declarations(".root")).toContain(
       "--search-chrome-inline-start: 20px;",
     );
-    expect(declarations(".bar")).toContain("padding: 8px;");
-    expect(declarations(".search")).toContain("padding-left: 8px;");
+    expect(declarations(".bar")).toContain("padding: var(--ds-space-md);");
+    expect(declarations(".search")).toContain("padding-left: var(--ds-space-md);");
   });
 
   it("uses the primary field for Harvester", () => {
@@ -47,7 +47,7 @@ describe("SearchChrome.Input", () => {
 
   it("matches the Library search placeholder emphasis", () => {
     expect(declarations("&::placeholder")).toContain(
-      "color: var(--ds-gray-9);",
+      "color: var(--ds-foreground-tertiary);",
     );
   });
 });

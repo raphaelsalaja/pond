@@ -65,14 +65,14 @@ describe("folder colors", () => {
   });
 
   it("previews swatches and custom hex colors as picked", () => {
-    expect(folderSwatchCss("pink")).toBe("var(--ds-pink-9)");
+    expect(folderSwatchCss("pink")).toBe("var(--ds-pink)");
     expect(folderSwatchCss("#ab12cd")).toBe("#ab12cd");
     expect(folderSwatchCss("plum")).toBeUndefined();
     expect(folderSwatchCss(null)).toBeUndefined();
   });
 
   it("clamps custom colors to the theme's lightness band", () => {
-    expect(folderColorCss("pink")).toBe("var(--ds-pink-9)");
+    expect(folderColorCss("pink")).toBe("var(--ds-pink)");
     expect(folderColorCss("#ffffff")).toBe(
       "oklch(from #ffffff clamp(var(--folder-ink-min, 0), l, var(--folder-ink-max, 1)) c h)",
     );

@@ -1,9 +1,9 @@
 .list {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--ds-space-2xs);
   min-height: 0;
-  padding: 8px;
+  padding: var(--ds-space-md);
   margin: 0;
   overflow-y: auto;
   list-style: none;
@@ -18,14 +18,14 @@
 .row {
   display: grid;
   grid-template-columns: 40px minmax(0, 1fr) auto auto 24px;
-  gap: 12px;
+  gap: var(--ds-space-lg);
   align-items: center;
   min-height: 52px;
-  padding: 6px 8px;
+  padding: var(--ds-space-sm) var(--ds-space-md);
   border-radius: var(--ds-radius-md);
 
   &:hover {
-    background: var(--ds-gray-a2);
+    background: var(--ds-surface-primary);
   }
 }
 
@@ -35,35 +35,35 @@
   width: 40px;
   height: 40px;
   overflow: hidden;
-  background: var(--ds-gray-a2);
+  background: var(--ds-surface-primary);
   border-radius: var(--ds-radius-sm);
-  box-shadow: 0 0 0 1px var(--ds-gray-a4);
+  box-shadow: 0 0 0 1px var(--ds-border-subtle);
 }
 
 .caption {
   display: grid;
-  gap: 2px;
+  gap: var(--ds-space-2xs);
   min-width: 0;
 }
 
 .title {
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-md);
-  color: var(--ds-gray-12);
+  font-size: var(--ds-text-body);
+  color: var(--ds-foreground-primary);
   white-space: nowrap;
 }
 
 .status {
-  font-size: var(--ds-text-sm);
-  color: var(--ds-orange-11);
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-tertiary);
 }
 
 .format,
 .size {
-  font-size: var(--ds-text-sm);
+  font-size: var(--ds-text-small);
   font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-11);
+  color: var(--ds-foreground-secondary);
   white-space: nowrap;
 }
 

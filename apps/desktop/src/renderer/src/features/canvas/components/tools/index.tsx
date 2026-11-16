@@ -5,7 +5,7 @@ import {
   IconFigures,
   IconHand,
   IconHighlighter,
-  IconImages,
+  IconImage,
   IconMindMap,
   IconNoteEdit,
   IconPencil,
@@ -218,11 +218,16 @@ export function Tools({
                   else buttons.current.delete(mode);
                 }}
                 render={
-                  <Button icon size="sm" variant="text" rounding="full" />
+                  <Button
+                    icon
+                    size="sm"
+                    variant="text"
+                    rounding="full"
+                    aria-label={label}
+                  />
                 }
                 className={styles.mode}
                 data-pressed={tool === mode || undefined}
-                aria-label={label}
                 aria-pressed={tool === mode}
                 onClick={() => onTool(mode)}
               >
@@ -232,10 +237,18 @@ export function Tools({
           ))}
           <AddSaves onCanvas={onCanvas} onAdd={onAddSaves}>
             <Toolbar.Button
-              render={<Button icon size="sm" variant="text" rounding="full" />}
+              render={
+                <Button
+                  icon
+                  size="sm"
+                  variant="text"
+                  rounding="full"
+                  aria-label="Add Saves"
+                />
+              }
               className={styles.mode}
             >
-              <IconImages />
+              <IconImage />
             </Toolbar.Button>
           </AddSaves>
         </Toolbar.Root>

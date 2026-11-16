@@ -7,7 +7,7 @@
   --window-left-width: var(--window-left-min);
   --window-right-track: 352px;
   --window-left-track: 352px;
-  --window-background: var(--ds-gray-1);
+  --window-background: var(--ds-background-primary);
   --window-edge-duration: var(--ds-duration-medium);
   --window-edge-easing: var(--ds-easing-decelerate);
 
@@ -36,6 +36,26 @@
 
 .root[data-left-open] {
   --window-left-width: var(--window-left-track);
+}
+
+/* Drawn on the root so the dividers cross the top row and run the full window height. */
+.root[data-left-open]::before,
+.root[data-right-open]::after {
+  position: absolute;
+  inset-block: 0;
+  z-index: 1;
+  width: 1px;
+  pointer-events: none;
+  content: "";
+  background: var(--ds-border-subtle);
+}
+
+.root[data-left-open]::before {
+  left: calc(var(--window-left-width) - 1px);
+}
+
+.root[data-right-open]::after {
+  right: calc(var(--window-right-width) - 1px);
 }
 
 .top {
@@ -142,9 +162,6 @@
   z-index: 3;
   width: var(--handle-hit);
   height: 100%;
-  margin: 0;
-  background: transparent;
-  border: 0;
   touch-action: none;
   cursor: col-resize;
   -webkit-app-region: no-drag;
@@ -162,7 +179,7 @@
     height: var(--pill-height);
     pointer-events: none;
     content: "";
-    background: var(--ds-gray-a8);
+    background: var(--ds-surface-tertiary);
     border-radius: var(--ds-radius-full);
     opacity: 0;
     scale: 1 0.6;
@@ -190,11 +207,11 @@
 
   [data-resizing] > &::after {
     --pill-height: 40px;
-    background: var(--ds-gray-a11);
+    background: var(--ds-foreground-secondary);
   }
 
   &:focus-visible::after {
-    background: var(--ds-accent-9);
+    background: var(--ds-accent);
   }
 
   &:focus-visible {

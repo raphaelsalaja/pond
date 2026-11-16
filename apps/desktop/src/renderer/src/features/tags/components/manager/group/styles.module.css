@@ -1,17 +1,17 @@
 .card {
   overflow: hidden;
-  background: var(--ds-gray-1);
+  background: var(--ds-background-primary);
   border-radius: var(--ds-radius-xl);
-  box-shadow: var(--ds-shadow-xs);
+  box-shadow: var(--ds-shadow-border);
 }
 
 .header {
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
   min-height: 40px;
-  padding: 0 8px 0 12px;
-  background: var(--ds-gray-2);
+  padding: 0 var(--ds-space-md) 0 var(--ds-space-lg);
+  background: var(--ds-background-secondary);
 }
 
 .heading {
@@ -32,7 +32,7 @@
   justify-content: center;
   width: 16px;
   height: 16px;
-  color: var(--ds-gray-10);
+  color: var(--ds-foreground-tertiary);
   transition: transform var(--ds-duration-fast) var(--ds-easing-standard);
 }
 
@@ -45,30 +45,30 @@
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-md);
-  font-weight: var(--ds-weight-lg);
-  color: var(--ds-gray-12);
+  font-size: var(--ds-text-body);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-foreground-primary);
   white-space: nowrap;
 }
 
 .rename {
   display: flex;
   flex: 1;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
   min-width: 0;
 }
 
 .input {
   height: 24px;
-  font-size: var(--ds-text-md);
+  font-size: var(--ds-text-body);
 }
 
 .panel {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: var(--ds-gray-1);
+  background: var(--ds-background-primary);
   border-top: var(--ds-border-width) solid var(--ds-border-subtle);
 }
 

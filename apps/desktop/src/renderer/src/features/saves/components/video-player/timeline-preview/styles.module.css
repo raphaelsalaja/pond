@@ -2,11 +2,11 @@
   display: block;
   width: clamp(120px, 16vw, 180px);
   max-height: min(40vh, 320px);
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
   object-fit: contain;
-  background: var(--ds-gray-12);
+  background: var(--ds-background-inverse);
   border-radius: var(--ds-radius-lg);
-  box-shadow: var(--ds-shadow-lg);
+  box-shadow: var(--ds-shadow-dialog);
   opacity: 0;
   transition: opacity var(--ds-duration-fast) var(--ds-easing-standard);
 }

@@ -1,6 +1,5 @@
 import { $convertToMarkdownString } from "@lexical/mdast";
 import { Dialog } from "@pond/ui";
-import { ComposerView } from "@pond/ui/composer";
 import type { AssistantSource } from "@shared/assistant";
 import {
   $getRoot,
@@ -13,6 +12,7 @@ import {
 import { act, createRef, type Ref, useRef, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { ComposerView } from "../composer-view";
 import { ComposerEditor, type ComposerEditorHandle } from "./";
 
 const send = vi.fn();

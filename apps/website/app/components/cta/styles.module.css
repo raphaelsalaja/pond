@@ -1,11 +1,10 @@
 .root {
-  --ds-focus-offset: 2px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   height: var(--ds-size-md);
-  padding: 0 12px;
-  font-weight: var(--ds-weight-xl);
+  padding: 0 var(--ds-space-lg);
+  font-weight: var(--ds-weight-strong);
   line-height: 1;
   white-space: nowrap;
   text-decoration: none;
@@ -20,8 +19,8 @@
 }
 
 .root[data-variant="solid"] {
-  color: var(--ds-gray-1);
-  background: var(--ds-gray-12);
+  color: var(--ds-foreground-inverse);
+  background: var(--ds-background-inverse);
 
   &:hover {
     opacity: 0.86;
@@ -29,10 +28,10 @@
 }
 
 .root[data-variant="soft"] {
-  color: var(--ds-gray-12);
-  background: var(--ds-gray-3);
+  color: var(--ds-foreground-primary);
+  background: var(--ds-background-tertiary);
 
   &:hover {
-    background: var(--ds-gray-4);
+    background: var(--ds-background-tertiary);
   }
 }

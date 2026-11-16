@@ -1,5 +1,5 @@
 .link-card {
-  margin-top: 12px;
+  margin-top: var(--ds-space-lg);
 }
 
 .link-card:not([data-large="true"]) {
@@ -13,7 +13,7 @@
 .link-card[data-large="true"] {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--ds-space-xs);
 }
 
 .media {
@@ -48,37 +48,37 @@
   bottom: 12px;
   left: 12px;
   max-width: calc(100% - 24px);
-  padding: 2px 6px;
+  padding: var(--ds-space-2xs) var(--ds-space-sm);
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-md);
+  font-size: var(--ds-text-body);
   line-height: 16px;
   color: white;
   white-space: nowrap;
-  background: var(--ds-black-a11);
+  background: var(--ds-media-background);
   border-radius: var(--ds-radius-xs);
 }
 
 .domain-below {
-  font-size: var(--ds-text-lg);
-  line-height: 20px;
+  font-size: var(--ds-text-heading);
+  line-height: var(--ds-leading-heading);
   color: var(--tw-secondary);
 }
 
 .detail {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--ds-space-2xs);
   justify-content: center;
   min-width: 0;
-  padding: 12px;
+  padding: var(--ds-space-lg);
 }
 
 .domain {
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-lg);
-  line-height: 20px;
+  font-size: var(--ds-text-heading);
+  line-height: var(--ds-leading-heading);
   color: var(--tw-secondary);
   white-space: nowrap;
 }
@@ -88,8 +88,8 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
   -webkit-line-clamp: 1;
-  font-size: var(--ds-text-lg);
-  line-height: 20px;
+  font-size: var(--ds-text-heading);
+  line-height: var(--ds-leading-heading);
 }
 
 .description {
@@ -97,7 +97,7 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
   -webkit-line-clamp: 2;
-  font-size: var(--ds-text-lg);
-  line-height: 20px;
+  font-size: var(--ds-text-heading);
+  line-height: var(--ds-leading-heading);
   color: var(--tw-secondary);
 }

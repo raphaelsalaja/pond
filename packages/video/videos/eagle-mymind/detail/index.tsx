@@ -3,7 +3,7 @@ import {
   IconChevronRight,
   IconFolder,
   IconGlobe,
-  IconStarFill,
+  IconStar,
 } from "@pond/icons";
 import { ease, envelope, progress, styled } from "@pond/video";
 import type { ReactNode } from "react";
@@ -21,7 +21,7 @@ const PROPERTIES: Property[] = [
     label: "Folder",
     value: (
       <span className={styles.inline}>
-        <IconFolder size={20} style={{ color: "var(--ds-orange-9)" }} />
+        <IconFolder size={20} style={{ color: "var(--ds-orange)" }} />
         Fashion
         <IconChevronRight size={12} className={styles.dim} />
         Runway
@@ -45,7 +45,7 @@ const PROPERTIES: Property[] = [
     value: (
       <span className={styles.stars}>
         {[0, 1, 2, 3, 4].map((index) => (
-          <IconStarFill key={index} size={20} />
+          <IconStar key={index} size={20} />
         ))}
       </span>
     ),
@@ -90,7 +90,7 @@ export function Detail({ t }: { t: number }) {
     <div className={styles.panel} style={styled(e)}>
       <header className={styles.header}>
         <span className={styles.crumbs}>
-          <IconFolder size={18} style={{ color: "var(--ds-orange-9)" }} />
+          <IconFolder size={18} style={{ color: "var(--ds-orange)" }} />
           Fashion
           <IconChevronRight size={10} className={styles.dim} />
           Runway

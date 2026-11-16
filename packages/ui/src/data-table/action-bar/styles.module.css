@@ -4,12 +4,12 @@
   left: 50%;
   z-index: 50;
   display: flex;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   align-items: center;
-  padding: 7px 8px 7px 14px;
-  background: var(--ds-gray-1);
+  padding: var(--ds-space-md) var(--ds-space-md) var(--ds-space-md) var(--ds-space-xl);
+  background: var(--ds-background-primary);
   border-radius: var(--ds-radius-full);
-  box-shadow: var(--ds-shadow-md);
+  box-shadow: var(--ds-shadow-overlay);
   transform: translateX(calc(-50% + var(--data-table-action-bar-offset, 0px)));
   animation: data-table-action-bar-in var(--ds-duration-fast)
     var(--ds-easing-standard);
@@ -18,8 +18,8 @@
 .divider {
   width: 1px;
   height: 18px;
-  margin: 0 2px;
-  background: var(--ds-gray-a5);
+  margin: 0 var(--ds-space-2xs);
+  background: var(--ds-surface-tertiary);
 }
 
 @keyframes data-table-action-bar-in {

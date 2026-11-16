@@ -7,8 +7,8 @@
   width: 100%;
 }
 .error {
-  font-size: var(--ds-text-xs);
-  color: var(--ds-red-11);
+  font-size: var(--ds-text-small);
+  color: var(--ds-danger-foreground);
 }
 .root[data-clamped] .area:not(:focus) {
   max-height: calc(var(--clamp-lines) * 1lh + 16px);

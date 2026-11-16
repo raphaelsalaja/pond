@@ -8,18 +8,18 @@
   flex: 1;
   grid-template-columns: 300px minmax(0, 1fr);
   min-height: 0;
-  margin-top: 16px;
-  border-top: 1px solid var(--ds-gray-a4);
+  margin-top: var(--ds-space-xl);
+  border-top: 1px solid var(--ds-border-subtle);
 }
 
 .settings {
-  padding-top: 16px;
-  border-inline-end: 1px solid var(--ds-gray-a4);
+  padding-top: var(--ds-space-xl);
+  border-inline-end: 1px solid var(--ds-border-subtle);
 }
 
 .fields {
   display: grid;
-  gap: 14px;
+  gap: var(--ds-space-lg);
   min-width: 0;
   padding: 0;
   margin: 0;
@@ -28,13 +28,13 @@
 
 .hint {
   margin: 0;
-  font-size: var(--ds-text-sm);
-  color: var(--ds-gray-10);
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-tertiary);
 }
 
 .job {
   display: grid;
-  gap: 6px;
+  gap: var(--ds-space-sm);
 
   & p {
     margin: 0;
@@ -47,7 +47,7 @@
 
 .error {
   margin: 0;
-  color: var(--ds-red-11);
+  color: var(--ds-danger-foreground);
 }
 
 .files {
@@ -55,13 +55,13 @@
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  background: var(--ds-gray-1);
+  background: var(--ds-background-primary);
 }
 
 .skipped {
   flex: none;
-  padding: 12px 16px 0;
+  padding: var(--ds-space-lg) var(--ds-space-xl) 0;
   margin: 0;
-  font-size: var(--ds-text-sm);
-  color: var(--ds-orange-11);
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-secondary);
 }

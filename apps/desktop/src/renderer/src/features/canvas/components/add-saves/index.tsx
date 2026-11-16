@@ -99,7 +99,7 @@ function Picker({ onCanvas, onAdd }: PickerProps) {
         <Input.Field
           autoFocus
           aria-label="Search saves"
-          placeholder="Search saves…"
+          placeholder="Search…"
           value={query}
           onChange={(event) => setQuery(event.currentTarget.value)}
         />

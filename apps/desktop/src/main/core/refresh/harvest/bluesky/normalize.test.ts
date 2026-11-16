@@ -141,4 +141,36 @@ describe("Bluesky post entries", () => {
       media: [{ url: FULLSIZE, type: "image" }],
     });
   });
+
+  it("keeps the link card inside a quoted post", () => {
+    const post = parsePost({
+      ...RAW_POST,
+      embed: {
+        $type: "app.bsky.embed.record#view",
+        record: {
+          uri: "at://did:plc:other/app.bsky.feed.post/x",
+          author: { did: "did:plc:other", handle: "dholms.at" },
+          value: { text: "read the forum post" },
+          embeds: [
+            {
+              $type: "app.bsky.embed.external#view",
+              external: {
+                uri: "https://www.example.com/t/updates",
+                title: "Updates",
+                description: "What changed",
+                thumb: "https://cdn.bsky.app/thumb",
+              },
+            },
+          ],
+        },
+      },
+    });
+    expect(captureFromPost(post).quoted?.card).toEqual({
+      url: "https://www.example.com/t/updates",
+      domain: "example.com",
+      title: "Updates",
+      description: "What changed",
+      imageUrl: "https://cdn.bsky.app/thumb",
+    });
+  });
 });

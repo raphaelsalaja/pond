@@ -1,28 +1,28 @@
 .panel {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 16px;
+  gap: var(--ds-space-lg);
+  padding: var(--ds-space-xl);
 }
 .panel h2 {
   margin: 0;
-  font-size: var(--ds-text-md);
+  font-size: var(--ds-text-body);
   font-weight: 600;
 }
 .row {
   display: flex;
-  gap: 12px;
+  gap: var(--ds-space-lg);
   align-items: center;
-  padding-block: 10px;
+  padding-block: var(--ds-space-lg);
   border-bottom: var(--ds-border-width) solid var(--ds-border-subtle);
 }
 .details {
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 5px;
+  gap: var(--ds-space-xs);
   min-width: 0;
-  font-size: var(--ds-text-sm);
+  font-size: var(--ds-text-small);
 }
 .destination {
   overflow: hidden;
@@ -37,9 +37,9 @@
 .actions {
   display: flex;
   flex: none;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
 }
 .error {
-  color: var(--ds-red-11);
+  color: var(--ds-danger-foreground);
 }

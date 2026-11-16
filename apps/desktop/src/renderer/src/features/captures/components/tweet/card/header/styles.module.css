@@ -1,6 +1,6 @@
 .header {
   display: flex;
-  gap: 12px;
+  gap: var(--ds-space-lg);
   align-items: center;
 }
 
@@ -22,7 +22,7 @@
 }
 
 .fallback {
-  font-size: var(--ds-text-lg);
+  font-size: var(--ds-text-heading);
   font-weight: 700;
   color: var(--tw-secondary);
 }
@@ -36,13 +36,13 @@
 
 .name {
   display: inline-flex;
-  gap: 3px;
+  gap: var(--ds-space-2xs);
   align-items: center;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-lg);
+  font-size: var(--ds-text-heading);
   font-weight: 700;
-  line-height: 20px;
+  line-height: var(--ds-leading-heading);
   white-space: nowrap;
 }
 
@@ -54,8 +54,8 @@
 .handle {
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-lg);
-  line-height: 20px;
+  font-size: var(--ds-text-heading);
+  line-height: var(--ds-leading-heading);
   color: var(--tw-secondary);
   white-space: nowrap;
 }

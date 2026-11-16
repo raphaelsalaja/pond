@@ -3,7 +3,7 @@
 }
 
 .content {
-  gap: 20px;
+  gap: var(--ds-space-xl);
   max-height: min(70vh, 680px);
 }
 
@@ -15,55 +15,55 @@
 }
 
 .section {
-  gap: 12px;
+  gap: var(--ds-space-lg);
 }
 
 .section + .section {
-  padding-top: 20px;
-  border-top: 1px solid var(--ds-gray-a4);
+  padding-top: var(--ds-space-2xl);
+  border-top: 1px solid var(--ds-border-subtle);
 }
 
 .field {
-  gap: 6px;
+  gap: var(--ds-space-sm);
 }
 
 .members {
-  gap: 4px;
+  gap: var(--ds-space-xs);
 }
 
 .heading {
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: baseline;
   justify-content: space-between;
 
   & h3 {
     margin: 0;
-    font-size: var(--ds-text-md);
-    font-weight: var(--ds-weight-xl);
-    color: var(--ds-gray-12);
+    font-size: var(--ds-text-body);
+    font-weight: var(--ds-weight-strong);
+    color: var(--ds-foreground-primary);
   }
 }
 
 .meta {
   margin: 0;
-  font-size: var(--ds-text-sm);
+  font-size: var(--ds-text-small);
   font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-11);
+  color: var(--ds-foreground-secondary);
 }
 
 .error {
   margin: 0;
-  font-size: var(--ds-text-sm);
-  color: var(--ds-red-11);
+  font-size: var(--ds-text-small);
+  color: var(--ds-danger-foreground);
 }
 
 .representatives,
 .scores {
-  padding-left: 20px;
+  padding-left: var(--ds-space-2xl);
   margin: 0;
-  font-size: var(--ds-text-sm);
-  color: var(--ds-gray-12);
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-primary);
 }
 
 .scores {
@@ -72,6 +72,6 @@
 
 .actions {
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   justify-content: flex-end;
 }

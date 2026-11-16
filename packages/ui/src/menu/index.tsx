@@ -1,5 +1,5 @@
 import { Menu as Base } from "@base-ui/react/menu";
-import { IconChevronRightFill as CaretRight, IconCheckFill } from "@pond/icons";
+import { IconChevronRight as CaretRight, IconCheck } from "@pond/icons";
 import { clsx as cn } from "clsx";
 import { forwardRef } from "react";
 import { Button, type ButtonProps } from "../button";
@@ -253,13 +253,7 @@ function SwitchItemIndicator({
       keepMounted={keepMounted}
       className={cn(styles.indicator, className)}
       render={(renderProps, state) => (
-        <Switch.Root
-          checked={state.checked}
-          readOnly
-          tabIndex={-1}
-          aria-hidden
-          {...renderProps}
-        />
+        <Switch.Mark checked={state.checked} {...renderProps} />
       )}
       {...props}
     />
@@ -286,7 +280,7 @@ function CheckboxItemIndicator({
         className={cn(styles["check-indicator"], className)}
         {...props}
       >
-        <IconCheckFill size={12} aria-hidden />
+        <IconCheck size={12} aria-hidden />
       </Base.CheckboxItemIndicator>
     );
   }
@@ -297,17 +291,12 @@ function CheckboxItemIndicator({
       className={cn(styles.indicator, className)}
       data-reveal={reveal === "active" && !indeterminate ? reveal : undefined}
       render={(renderProps, state) => (
-        <Checkbox.Root
+        <Checkbox.Mark
           size="sm"
           checked={state.checked}
           indeterminate={indeterminate}
-          readOnly
-          tabIndex={-1}
-          aria-hidden
           {...renderProps}
-        >
-          <Checkbox.Indicator />
-        </Checkbox.Root>
+        />
       )}
       {...props}
     />

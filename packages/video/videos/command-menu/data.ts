@@ -1,7 +1,5 @@
 import {
   IconAlbum2,
-  IconBookmark,
-  IconBookmarkSlash,
   IconChatBubble,
   IconCoffee,
   IconCompass,
@@ -15,8 +13,10 @@ import {
   IconGear3,
   IconLayers,
   IconNodes3,
+  IconTag,
+  IconTagSlash,
   IconTrashXmark,
-  IconVersions,
+  IconWindow,
   IconWindowDownload,
 } from "@pond/icons";
 import type { ComponentType } from "react";
@@ -216,14 +216,14 @@ export const COMMANDS: Command[] = [
   {
     group: "Create",
     label: "New Tag",
-    icon: IconBookmark,
+    icon: IconTag,
     keywords: "create label organize",
     shortcut: [["⌘", "T"]],
   },
   {
     group: "Create",
     label: "New Tag Group",
-    icon: IconVersions,
+    icon: IconWindow,
     keywords: "create labels organize",
     shortcut: [["⌘", "⌥", "T"]],
   },
@@ -291,7 +291,7 @@ export const COMMANDS: Command[] = [
     group: "Navigate",
     label: "Untagged",
     detail: "Saves without tags",
-    icon: IconBookmarkSlash,
+    icon: IconTagSlash,
     keywords: "no tags labels",
   },
   {
@@ -314,7 +314,7 @@ export const COMMANDS: Command[] = [
     group: "Navigate",
     label: "Tags",
     detail: "Organize your library",
-    icon: IconBookmark,
+    icon: IconTag,
     keywords: "labels organize",
   },
   {

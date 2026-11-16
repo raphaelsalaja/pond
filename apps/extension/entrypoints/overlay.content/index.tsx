@@ -19,15 +19,21 @@ export default defineContentScript({
     });
     ctx.onInvalidated(stop);
 
-    /** Shadow roots ignore `@font-face`, so the face goes on the page's font set under a name pages won't use. */
-    const inter = new FontFace(
-      "pond-inter",
-      `url(${browser.runtime.getURL("/fonts/inter/variable.woff2")})`,
-      { weight: "100 900", display: "swap" },
-    );
-    document.fonts.add(inter);
-    void inter.load().catch(() => undefined);
-    ctx.onInvalidated(() => document.fonts.delete(inter));
+    /** Shadow roots ignore `@font-face`, so the faces go on the page's font set under names pages won't use. */
+    const faces = [
+      ["pond-intern", "/fonts/intern/variable.woff2"],
+      ["pond-inter", "/fonts/inter/variable.woff2"],
+    ] as const;
+    for (const [family, path] of faces) {
+      const face = new FontFace(
+        family,
+        `url(${browser.runtime.getURL(path)})`,
+        { weight: "100 900", display: "swap" },
+      );
+      document.fonts.add(face);
+      void face.load().catch(() => undefined);
+      ctx.onInvalidated(() => document.fonts.delete(face));
+    }
 
     void createShadowRootUi(ctx, {
       name: "pond-overlay",

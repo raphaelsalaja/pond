@@ -3,10 +3,14 @@
   display: block;
   container-type: size;
   overflow: hidden;
-  background: var(--ds-gray-3);
+  background: var(--ds-background-tertiary);
 
   &[data-empty] {
-    background: var(--ds-gray-a3);
+    background: var(--ds-surface-secondary);
+  }
+
+  &[data-fit="contain"] {
+    background: transparent;
   }
 }
 
@@ -18,6 +22,11 @@
   height: max(100cqh, calc(100cqw / var(--aspect)));
   background-repeat: no-repeat;
   transform: translate(-50%, -50%);
+
+  .frame[data-fit="contain"] & {
+    width: min(100cqw, calc(100cqh * var(--aspect)));
+    height: min(100cqh, calc(100cqw / var(--aspect)));
+  }
 }
 
 .image {
@@ -25,4 +34,8 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+
+  .frame[data-fit="contain"] & {
+    object-fit: contain;
+  }
 }

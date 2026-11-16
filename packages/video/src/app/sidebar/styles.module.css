@@ -10,17 +10,17 @@
   align-items: center;
   justify-content: space-between;
   height: 44px;
-  padding: 4px 16px;
+  padding: var(--ds-space-xs) var(--ds-space-xl);
 }
 
 .switcher {
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
-  padding: 2px 6px 2px 4px;
+  padding: var(--ds-space-2xs) var(--ds-space-sm) var(--ds-space-2xs) var(--ds-space-xs);
 
   & svg {
-    color: var(--ds-gray-10);
+    color: var(--ds-foreground-tertiary);
   }
 }
 
@@ -47,11 +47,11 @@
   place-items: center;
   width: 26px;
   height: 26px;
-  color: var(--ds-gray-11);
+  color: var(--ds-foreground-secondary);
   border-radius: var(--ds-radius-sm);
 
   &[data-pressed] {
-    background: var(--ds-gray-a3);
+    background: var(--ds-surface-secondary);
   }
 }
 
@@ -59,20 +59,20 @@
   display: flex;
   flex-direction: column;
   gap: 1px;
-  padding: 8px 0 0 14px;
+  padding: var(--ds-space-md) 0 0 var(--ds-space-xl);
 }
 
 .place,
 .row {
   display: flex;
   flex: none;
-  gap: 12px;
+  gap: var(--ds-space-lg);
   align-items: center;
   width: 186px;
   height: 28px;
-  padding: 0 10px 0 6px;
+  padding: 0 var(--ds-space-lg) 0 var(--ds-space-sm);
   overflow: hidden;
-  color: var(--ds-gray-11);
+  color: var(--ds-foreground-secondary);
   border-radius: 8px;
 
   & svg {
@@ -84,22 +84,22 @@
 
 .place {
   & svg {
-    color: var(--ds-gray-11);
+    color: var(--ds-foreground-secondary);
   }
 
   &[data-active] {
-    color: var(--ds-gray-12);
-    background: var(--ds-gray-a3);
+    color: var(--ds-foreground-primary);
+    background: var(--ds-surface-secondary);
 
     & svg {
-      color: var(--ds-gray-12);
+      color: var(--ds-foreground-primary);
     }
   }
 }
 
 .glyph {
   display: flex;
-  color: var(--ds-gray-11);
+  color: var(--ds-foreground-secondary);
 }
 
 .label {
@@ -110,7 +110,7 @@
 .count {
   font-family: var(--ds-code-font-family);
   font-size: 11px;
-  color: var(--ds-gray-10);
+  color: var(--ds-foreground-tertiary);
 }
 
 .section {
@@ -118,62 +118,62 @@
   align-items: center;
   justify-content: space-between;
   height: 28px;
-  padding: 0 20px;
-  margin-top: 14px;
+  padding: 0 var(--ds-space-2xl);
+  margin-top: var(--ds-space-lg);
   font-size: 12px;
-  color: var(--ds-gray-10);
+  color: var(--ds-foreground-tertiary);
 }
 
 .sidebar[data-look="2.0"] {
   width: 248px;
 
   & .workspace {
-    padding: 4px 12px 4px 14px;
+    padding: var(--ds-space-xs) var(--ds-space-lg) var(--ds-space-xs) var(--ds-space-xl);
   }
 
   & .group {
-    padding: 4px 12px 0 18px;
+    padding: var(--ds-space-xs) var(--ds-space-lg) 0 var(--ds-space-xl);
   }
 
   & .place,
   & .row {
-    gap: 8px;
+    gap: var(--ds-space-md);
     width: 100%;
-    padding: 0 6px;
-    font-weight: var(--ds-weight-lg);
-    color: var(--ds-gray-10);
+    padding: 0 var(--ds-space-sm);
+    font-weight: var(--ds-weight-medium);
+    color: var(--ds-foreground-tertiary);
     border-radius: var(--ds-radius-md);
 
     & svg {
       width: 16px;
       height: 16px;
-      color: var(--ds-gray-10);
+      color: var(--ds-foreground-tertiary);
     }
   }
 
   & .place[data-active] {
-    color: var(--ds-gray-12);
-    background: var(--ds-gray-a4);
+    color: var(--ds-foreground-primary);
+    background: var(--ds-surface-tertiary);
 
     & svg {
-      color: var(--ds-gray-12);
+      color: var(--ds-foreground-primary);
     }
   }
 
   & .count {
-    margin-right: 4px;
+    margin-right: var(--ds-space-xs);
     font-family: inherit;
-    font-size: var(--ds-text-sm);
-    font-weight: var(--ds-weight-lg);
+    font-size: var(--ds-text-small);
+    font-weight: var(--ds-weight-medium);
     font-variant-numeric: tabular-nums;
-    color: var(--ds-gray-9);
+    color: var(--ds-foreground-tertiary);
   }
 
   & .section {
-    padding: 0 20px 0 26px;
-    margin-top: 12px;
-    font-size: var(--ds-text-sm);
-    font-weight: var(--ds-weight-lg);
-    color: var(--ds-gray-9);
+    padding: 0 var(--ds-space-2xl) 0 var(--ds-space-2xl);
+    margin-top: var(--ds-space-lg);
+    font-size: var(--ds-text-small);
+    font-weight: var(--ds-weight-medium);
+    color: var(--ds-foreground-tertiary);
   }
 }

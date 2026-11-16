@@ -12,7 +12,7 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  padding: 16px;
+  padding: var(--ds-space-xl);
   overflow: hidden;
   font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   color: var(--tw-text);
@@ -37,14 +37,14 @@
 }
 
 .card .caption {
-  margin: 4px 0 0;
-  font-size: var(--ds-text-lg);
-  line-height: 20px;
+  margin: var(--ds-space-xs) 0 0;
+  font-size: var(--ds-text-heading);
+  line-height: var(--ds-leading-heading);
 }
 
 .reply-context {
-  margin: 4px 0 0;
-  font-size: var(--ds-text-lg);
+  margin: var(--ds-space-xs) 0 0;
+  font-size: var(--ds-text-heading);
   color: var(--tw-secondary);
 }
 
@@ -53,7 +53,7 @@
 }
 
 .timestamp {
-  margin: 16px 0 0;
-  font-size: var(--ds-text-lg);
+  margin: var(--ds-space-xl) 0 0;
+  font-size: var(--ds-text-heading);
   color: var(--tw-secondary);
 }

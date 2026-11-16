@@ -9,7 +9,7 @@
 .item {
   flex: 1;
   min-width: 0;
-  padding-right: 24px;
+  padding-right: var(--ds-space-2xl);
 }
 
 .editor {
@@ -18,11 +18,11 @@
   align-items: center;
   min-width: 0;
   height: var(--sidebar-height-md);
-  padding: 0 6px;
+  padding: 0 var(--ds-space-sm);
   overflow: hidden;
-  font-size: var(--ds-text-md);
-  font-weight: var(--ds-weight-lg);
-  color: var(--ds-gray-12);
+  font-size: var(--ds-text-body);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-foreground-primary);
 }
 
 .icon {
@@ -32,19 +32,19 @@
   justify-content: center;
   width: 16px;
   height: 16px;
-  margin-right: 8px;
+  margin-right: var(--ds-space-md);
   overflow: hidden;
 }
 
 .field {
-  font-size: var(--ds-text-md);
+  font-size: var(--ds-text-body);
   line-height: 1;
 }
 
 .more {
   position: absolute;
   right: 2px;
-  margin: 2px;
+  margin: var(--ds-space-2xs);
   pointer-events: none;
   opacity: 0;
   transition: opacity var(--ds-duration-fast) var(--ds-easing-standard);
@@ -58,8 +58,8 @@
 }
 
 .row:hover .item:not([data-status="active"]) {
-  color: var(--ds-gray-11);
-  background: var(--ds-gray-a3);
+  color: var(--ds-foreground-secondary);
+  background: var(--ds-surface-secondary);
 }
 
 @keyframes appear {

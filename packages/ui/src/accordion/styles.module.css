@@ -5,20 +5,19 @@
   margin: 0;
 }
 .trigger {
-  --ds-focus-offset: 2px;
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
   width: 100%;
-  padding: 8px 0;
-  font-size: var(--ds-text-sm);
-  color: var(--ds-gray-10);
+  padding: var(--ds-space-md) 0;
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-tertiary);
   text-align: left;
   cursor: var(--ds-cursor-interactive, pointer);
   border-radius: var(--ds-radius-sm);
 }
 .trigger:hover {
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
 }
 .trigger[data-variant="bare"] {
   padding: 0;

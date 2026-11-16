@@ -50,7 +50,7 @@
   width: 12px;
   height: 12px;
   margin-left: auto;
-  color: var(--ds-gray-11);
+  color: var(--ds-foreground-secondary);
 
   &[data-unchecked] {
     visibility: hidden;

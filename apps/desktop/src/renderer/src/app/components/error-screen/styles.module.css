@@ -11,64 +11,64 @@
 .card {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--ds-space-xl);
   width: 100%;
   max-width: 440px;
-  padding: 24px;
-  background: var(--ds-gray-1);
+  padding: var(--ds-space-2xl);
+  background: var(--ds-background-primary);
   border-radius: var(--ds-radius-xl);
-  box-shadow: var(--ds-shadow-modal);
+  box-shadow: var(--ds-shadow-dialog);
 }
 
 .title {
   margin: 0;
-  font-size: var(--ds-text-lg);
-  font-weight: var(--ds-weight-xl);
-  color: var(--ds-gray-12);
+  font-size: var(--ds-text-heading);
+  font-weight: var(--ds-weight-strong);
+  color: var(--ds-foreground-primary);
 }
 
 .message {
   margin: 0;
-  font-size: var(--ds-text-md);
-  line-height: 20px;
-  color: var(--ds-gray-11);
+  font-size: var(--ds-text-body);
+  line-height: var(--ds-leading-body);
+  color: var(--ds-foreground-secondary);
   word-break: break-word;
 }
 
 .summary {
-  font-size: var(--ds-text-sm);
+  font-size: var(--ds-text-small);
   font-weight: 500;
-  color: var(--ds-gray-10);
+  color: var(--ds-foreground-tertiary);
   cursor: var(--ds-cursor-interactive, pointer);
   user-select: none;
 
   &:hover {
-    color: var(--ds-gray-12);
+    color: var(--ds-foreground-primary);
   }
 }
 
 .details[open] .summary {
-  margin-bottom: 8px;
+  margin-bottom: var(--ds-space-md);
 }
 
 .stack {
   max-height: 240px;
-  padding: 12px;
+  padding: var(--ds-space-lg);
   margin: 0;
   overflow: auto;
   font-family:
     ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-  font-size: var(--ds-text-xs);
-  line-height: 16px;
-  color: var(--ds-gray-11);
+  font-size: var(--ds-text-small);
+  line-height: var(--ds-leading-small);
+  color: var(--ds-foreground-secondary);
   word-break: break-word;
   white-space: pre-wrap;
-  background: var(--ds-gray-2);
+  background: var(--ds-background-secondary);
   border-radius: var(--ds-radius-md);
 }
 
 .actions {
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   justify-content: flex-end;
 }

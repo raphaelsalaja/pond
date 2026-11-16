@@ -61,7 +61,7 @@ export function Connector({
   const [c1x, c1y] = control(from, target);
   const [c2x, c2y] = control(target, from);
   const path = `M${from.x} ${from.y} C${c1x} ${c1y} ${c2x} ${c2y} ${target.x} ${target.y}`;
-  const ink = pending ? "var(--ds-accent-9)" : INK[color];
+  const ink = pending ? "var(--ds-accent)" : INK[color];
   return (
     <svg className={styles.connector} aria-hidden>
       <defs>

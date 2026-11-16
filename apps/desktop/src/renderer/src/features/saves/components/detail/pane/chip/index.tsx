@@ -75,7 +75,6 @@ function Item({
         icon
         size="xs"
         variant="ghost"
-        rounding="full"
         aria-label={removeLabel}
         onClick={onRemove}
       >

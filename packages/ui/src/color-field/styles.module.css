@@ -1,7 +1,7 @@
 .root {
   display: flex;
   flex: none;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
   max-width: 100%;
   height: 32px;
@@ -13,17 +13,17 @@
   padding: 0;
   cursor: var(--ds-cursor-interactive, pointer);
   border-radius: var(--ds-radius-md);
-  box-shadow: var(--ds-shadow-xs);
-}
+  box-shadow: var(--ds-shadow-border);
 
-.swatch[data-empty] {
-  background: transparent;
-  border: 1.5px dashed var(--ds-gray-a7);
-  box-shadow: none;
+  &[data-empty] {
+    background: transparent;
+    border: 1.5px dashed var(--ds-border-strong);
+    box-shadow: none;
+  }
 }
 
 .popup {
-  padding: 12px;
+  padding: var(--ds-space-lg);
   overflow: hidden;
 }
 
@@ -41,45 +41,47 @@
 
 .picker {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.body {
-  display: flex;
-  gap: 12px;
+  gap: var(--ds-space-lg);
   width: fit-content;
 }
 
-.saturation {
+.area {
   position: relative;
+  flex: none;
   touch-action: none;
+  background: var(--color-area-background);
   border-radius: var(--ds-radius-sm);
-  box-shadow: inset 0 0 0 1px var(--ds-gray-a3);
+  box-shadow: inset 0 0 0 1px var(--ds-border-subtle);
 }
 
 .hue {
-  --handle-size: 16px;
+  --thumb-size: 16px;
 
   position: relative;
   flex: none;
   touch-action: none;
+  background: var(--color-slider-background);
   border-radius: var(--ds-radius-full);
-  box-shadow: inset 0 0 0 1px var(--ds-gray-a3);
+  box-shadow: inset 0 0 0 1px var(--ds-border-subtle);
 }
 
-.handle {
+.thumb {
   box-sizing: border-box;
-  width: var(--handle-size, 14px);
-  height: var(--handle-size, 14px);
+  width: var(--thumb-size, 14px);
+  height: var(--thumb-size, 14px);
   background: transparent;
-  border: 2px solid var(--ds-white-a12);
+  border: 2px solid var(--ds-media-foreground-primary);
   border-radius: var(--ds-radius-full);
   box-shadow:
-    0 0 0 1px var(--ds-black-a4),
-    0 1px 3px var(--ds-black-a6);
+    0 0 0 1px var(--ds-media-edge),
+    0 1px 3px var(--ds-shadow-color);
+  translate: -50% -50%;
 
-  &[data-focus] {
-    outline-color: var(--ds-focus-outline);
+  &[data-orientation="vertical"] {
+    left: 50%;
+  }
+
+  &[data-orientation="horizontal"] {
+    top: 50%;
   }
 }

@@ -34,7 +34,7 @@
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
-  border: 1px solid var(--ds-gray-a4);
+  border: 1px solid var(--ds-border-subtle);
   border-radius: var(--ds-radius-md);
 }
 
@@ -48,11 +48,11 @@
   position: absolute;
   top: 8px;
   right: 8px;
-  padding: 2px 6px;
-  font-size: var(--ds-text-xs);
-  font-weight: var(--ds-weight-lg);
+  padding: var(--ds-space-2xs) var(--ds-space-sm);
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-medium);
   color: white;
-  background: var(--ds-black-a10);
+  background: var(--ds-media-background);
   border-radius: var(--ds-radius-sm);
 }
 
@@ -62,8 +62,8 @@
   width: 68%;
   height: 82%;
   overflow: hidden;
-  background: var(--ds-gray-2);
-  border: 1px solid var(--ds-gray-a4);
+  background: var(--ds-background-secondary);
+  border: 1px solid var(--ds-border-subtle);
   border-radius: var(--ds-radius-md);
 }
 
@@ -93,7 +93,7 @@
 
 .placeholder {
   padding: 30px;
-  font-size: var(--ds-text-xs);
-  color: var(--ds-gray-10);
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-tertiary);
   text-align: center;
 }

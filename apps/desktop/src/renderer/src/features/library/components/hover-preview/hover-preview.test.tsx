@@ -61,8 +61,11 @@ it("hydrates and previews the next logical save beyond loaded grid rows", async 
     );
     expect(document.body.textContent).toContain("First reference");
     expect(
+      document.querySelector("[data-quick-preview][data-open]"),
+    ).not.toBeNull();
+    expect(
       document.querySelector("[data-quick-preview] [aria-label='Close']"),
-    ).toBeNull();
+    ).not.toBeNull();
     await act(async () =>
       document.dispatchEvent(
         new KeyboardEvent("keydown", {
@@ -77,6 +80,19 @@ it("hydrates and previews the next logical save beyond loaded grid rows", async 
       ids: ["quick-next"],
     });
     expect(document.body.textContent).toContain("Next reference");
+    await act(async () =>
+      document.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: " ",
+          code: "Space",
+          bubbles: true,
+          cancelable: true,
+        }),
+      ),
+    );
+    expect(
+      document.querySelector("[data-quick-preview][data-open]"),
+    ).toBeNull();
   } finally {
     await act(async () => root.unmount());
     resultNavigation.setSource({ ids: [] });

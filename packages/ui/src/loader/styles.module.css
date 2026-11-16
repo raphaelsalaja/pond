@@ -1,17 +1,17 @@
 .root {
   display: inline-flex;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   align-items: baseline;
-  font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-lg);
-  color: var(--ds-gray-9);
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-foreground-tertiary);
 }
 
 .dots {
   display: inline-flex;
-  gap: 5px;
+  gap: var(--ds-space-xs);
   align-items: center;
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
 }
 
 .dots > span {
@@ -87,5 +87,10 @@
 }
 
 :global(html[data-reduce-motion="true"]) :is(.spinner, .arc) {
+  animation: none;
+}
+
+:global(html[data-reduce-motion="true"]) .dots > span {
+  opacity: 0.55;
   animation: none;
 }

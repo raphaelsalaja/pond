@@ -1,8 +1,8 @@
 import {
   IconAnimationFrames,
+  IconArrowsExpandDiagonal,
   IconCheck,
   IconCrop,
-  IconExpand,
   IconFlipHorizontal2,
   IconImagePlus,
   IconMediaFastBackwards,
@@ -217,7 +217,7 @@ function Hud({
                     shortcut={<ShortcutKeys id="viewer.zoom-fit" />}
                     onClick={onFit}
                   >
-                    <IconExpand />
+                    <IconArrowsExpandDiagonal />
                   </ViewerHud.Tool>
                   {isGif && onToggleGifFrames ? (
                     <ViewerHud.Tool

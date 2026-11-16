@@ -1,5 +1,5 @@
 .root {
-  padding: 0 8px 12px 12px;
+  padding: 0 var(--ds-space-md) var(--ds-space-lg) var(--ds-space-lg);
 }
 
 /* Lifts the search above the frameless window's drag strip so it stays clickable. */

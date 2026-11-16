@@ -19,14 +19,14 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import {
   IconAlbum2,
-  IconBookmark,
-  IconBookmarkSlash,
   IconClockPlus,
   IconFolderBan,
   IconHistory,
-  IconImages,
+  IconImage,
   IconNodes3,
   IconShuffle,
+  IconTag,
+  IconTagSlash,
   IconTrashXmark,
   IconWindowDownload,
 } from "@pond/icons";
@@ -132,17 +132,17 @@ function DestinationIcon({ destination }: { destination: SidebarDestination }) {
     case "uncategorized":
       return <IconFolderBan />;
     case "untagged":
-      return <IconBookmarkSlash />;
+      return <IconTagSlash />;
     case "recentlyAdded":
       return <IconClockPlus />;
     case "recentlyUsed":
       return <IconHistory />;
     case "tags":
-      return <IconBookmark />;
+      return <IconTag />;
     case "random":
       return <IconShuffle />;
     case "splitPosts":
-      return <IconImages />;
+      return <IconImage />;
     case "trash":
       return <IconTrashXmark />;
     case "downloads":
@@ -293,7 +293,7 @@ export function LibraryDestinations({
           <BuiltInVisibilityMenu destination={destination} key={destination}>
             <Row
               label="Untagged"
-              icon={<IconBookmarkSlash />}
+              icon={<IconTagSlash />}
               count={counts.untagged}
               badgeStyle={badgeStyle}
               active={isDestinationActive(destination)}
@@ -338,7 +338,7 @@ export function LibraryDestinations({
           <BuiltInVisibilityMenu destination={destination} key={destination}>
             <Row
               label="Tags"
-              icon={<IconBookmark />}
+              icon={<IconTag />}
               count={tags.length}
               badgeStyle={badgeStyle}
               active={isDestinationActive(destination)}
@@ -369,7 +369,7 @@ export function LibraryDestinations({
           <BuiltInVisibilityMenu destination={destination} key={destination}>
             <Row
               label="Split Posts"
-              icon={<IconImages />}
+              icon={<IconImage />}
               count={counts.splitPosts}
               badgeStyle={badgeStyle}
               active={isDestinationActive(destination)}

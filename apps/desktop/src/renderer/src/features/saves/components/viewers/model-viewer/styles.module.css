@@ -23,7 +23,7 @@
   inset: 0;
   display: grid;
   place-items: center;
-  font-size: var(--ds-text-md);
-  color: var(--ds-white-a10);
+  font-size: var(--ds-text-body);
+  color: var(--ds-media-foreground-secondary);
   pointer-events: none;
 }

@@ -9,5 +9,5 @@
   display: block;
   object-fit: contain;
   border-radius: var(--ds-radius-xs);
-  box-shadow: var(--ds-shadow-save);
+  box-shadow: var(--ds-shadow-border);
 }

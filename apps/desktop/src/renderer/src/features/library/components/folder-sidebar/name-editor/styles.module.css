@@ -3,8 +3,8 @@
   align-items: center;
   width: 100%;
   height: var(--sidebar-height-md);
-  padding: 0 6px;
-  color: var(--ds-gray-12);
+  padding: 0 var(--ds-space-sm);
+  color: var(--ds-foreground-primary);
 }
 
 .icon {
@@ -14,12 +14,12 @@
   justify-content: center;
   width: 16px;
   height: 16px;
-  margin-right: 8px;
+  margin-right: var(--ds-space-md);
   overflow: hidden;
 }
 
 .field {
   padding-inline: 0;
-  font-size: var(--ds-text-md);
+  font-size: var(--sidebar-text);
   line-height: 1;
 }

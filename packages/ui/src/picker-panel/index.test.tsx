@@ -37,8 +37,8 @@ describe("PickerPanel", () => {
   it("renders a structured collection with truncating labels", () => {
     const markup = renderToStaticMarkup(
       <PickerPanel.Surface>
-        <PickerPanel.Collection id="tags" role="listbox">
-          <PickerPanel.Item id="tag-long" role="option" active selected="mixed">
+        <PickerPanel.Collection id="tags">
+          <PickerPanel.Item id="tag-long" active selected="mixed">
             <PickerPanel.ItemLabel title="A very long tag name">
               A very long tag name
             </PickerPanel.ItemLabel>
@@ -49,9 +49,38 @@ describe("PickerPanel", () => {
 
     expect(markup).toContain('role="listbox"');
     expect(markup).toContain('role="option"');
-    expect(markup).toContain('data-active=""');
+    expect(markup).toContain('data-highlighted=""');
+    expect(markup).toContain('aria-selected="false"');
     expect(markup).toContain('data-selection="mixed"');
     expect(markup).toContain('data-slot="picker-label"');
+  });
+
+  it("marks checked options selected and lets callers override it", () => {
+    const checked = renderToStaticMarkup(
+      <PickerPanel.Item selected="checked">Design</PickerPanel.Item>,
+    );
+    const overridden = renderToStaticMarkup(
+      <PickerPanel.Item selected="mixed" aria-selected>
+        Design
+      </PickerPanel.Item>,
+    );
+    const action = renderToStaticMarkup(
+      <PickerPanel.Item role="menuitem" selected="checked">
+        Rename
+      </PickerPanel.Item>,
+    );
+
+    expect(checked).toContain('aria-selected="true"');
+    expect(overridden).toContain('aria-selected="true"');
+    expect(action).not.toContain("aria-selected");
+  });
+
+  it("names the search field", () => {
+    const markup = renderToStaticMarkup(
+      <PickerPanel.Search aria-label="Search Tags" placeholder="Search…" />,
+    );
+
+    expect(markup).toContain('aria-label="Search Tags"');
   });
 
   it("can limit the row fill to the active row", () => {
@@ -70,8 +99,8 @@ describe("PickerPanel", () => {
     const sectionButton = declarations(".section-button", 1);
 
     expect(sharedHeaders).toContain("font-family: inherit;");
-    expect(sharedHeaders).toContain("font-size: var(--ds-text-sm);");
-    expect(sharedHeaders).toContain("font-weight: var(--ds-weight-lg);");
+    expect(sharedHeaders).toContain("font-size: var(--ds-text-small);");
+    expect(sharedHeaders).toContain("font-weight: var(--ds-weight-medium);");
     expect(sectionButton).not.toContain("font: inherit;");
   });
 });

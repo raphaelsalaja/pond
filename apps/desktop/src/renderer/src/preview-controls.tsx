@@ -1,8 +1,8 @@
 import {
   IconArrowLeft,
   IconArrowRight,
+  IconArrowsExpandDiagonal,
   IconContrast,
-  IconExpand,
   IconFileExport,
   IconFlipHorizontal2,
   IconFullScreen,
@@ -145,7 +145,7 @@ export function PreviewControls({
                 pressed={state.zoom !== null}
                 side={tooltipSide}
               >
-                {state.zoom === null ? <IconSizeLg /> : <IconExpand />}
+                {state.zoom === null ? <IconSizeLg /> : <IconArrowsExpandDiagonal />}
               </PreviewTool>
             </div>
           ) : (
@@ -156,7 +156,7 @@ export function PreviewControls({
                 pressed={state.size === "fill"}
                 side={tooltipSide}
               >
-                <IconExpand />
+                <IconArrowsExpandDiagonal />
               </PreviewTool>
             </div>
           )}

@@ -24,12 +24,14 @@ export const viewerSection = defineCustomSection({
           control: "select",
           key: "spaceAction",
           title: "Space Action",
-          description: "What Space opens for the selected Save.",
+          description: IS_MAC
+            ? "Saves without a file open in Quick Preview."
+            : "What Space opens for the selected Save.",
           options: [
-            { value: "preview", label: "Quick Preview" },
             ...(IS_MAC
               ? [{ value: "quick-look", label: "macOS Quick Look" }]
               : []),
+            { value: "preview", label: "Quick Preview" },
             { value: "presentation", label: "Presentation" },
             { value: "detached", label: "Detached Window" },
             { value: "open", label: "Save Details" },

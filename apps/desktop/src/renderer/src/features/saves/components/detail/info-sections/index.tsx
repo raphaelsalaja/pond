@@ -1,4 +1,5 @@
 import type { IconComponent } from "@pond/icons/types";
+import { Button } from "@pond/ui";
 import { type ReactNode, useState } from "react";
 import { ColorSwatch } from "@/features/saves/components/detail/color-swatch";
 import { useSaveDetail } from "@/features/saves/hooks/use-save-detail";
@@ -298,51 +299,55 @@ function PropertyRow({
   SourceIcon: IconComponent | null;
 }) {
   const action = primaryRowAction(row, save);
+  const span =
+    row.kind === "author" || row.kind === "account" ? "full" : undefined;
+  const content = (
+    <>
+      <PropertyList.Label>{row.label}</PropertyList.Label>
+      {row.kind === "author" || row.kind === "account" ? (
+        <span className={styles.inline}>
+          <AuthorAvatar
+            name={row.value}
+            avatarUrl={
+              row.kind === "author" ? avatarUrl : (row.avatarUrl ?? null)
+            }
+          />
+          <PropertyList.Value>{row.value}</PropertyList.Value>
+        </span>
+      ) : row.kind === "platform" ? (
+        <span className={styles.inline}>
+          {sourceLogo ? (
+            <span className={styles.icon} aria-hidden>
+              <img src={sourceLogo} alt="" width={16} height={16} />
+            </span>
+          ) : SourceIcon ? (
+            <span className={styles.icon} aria-hidden>
+              <SourceIcon width={16} height={16} />
+            </span>
+          ) : null}
+          <PropertyList.Value>{row.value}</PropertyList.Value>
+        </span>
+      ) : (
+        <PropertyList.Value title={row.value}>{row.value}</PropertyList.Value>
+      )}
+    </>
+  );
   return (
     <SpecContextMenu buildItems={() => buildRowMenu(row, save)}>
-      <PropertyList.Row
-        span={
-          row.kind === "author" || row.kind === "account" ? "full" : undefined
-        }
-        data-interactive={action ? "" : undefined}
-        role={action ? "button" : undefined}
-        tabIndex={action ? 0 : undefined}
-        title={action?.label}
-        onClick={action?.run}
-        onKeyDown={(event) => {
-          if (!action || (event.key !== "Enter" && event.key !== " ")) return;
-          event.preventDefault();
-          action.run();
-        }}
-      >
-        <PropertyList.Label>{row.label}</PropertyList.Label>
-        {row.kind === "author" || row.kind === "account" ? (
-          <span className={styles.inline}>
-            <AuthorAvatar
-              name={row.value}
-              avatarUrl={
-                row.kind === "author" ? avatarUrl : (row.avatarUrl ?? null)
-              }
-            />
-            <PropertyList.Value>{row.value}</PropertyList.Value>
-          </span>
-        ) : row.kind === "platform" ? (
-          <span className={styles.inline}>
-            {sourceLogo ? (
-              <span className={styles.icon} aria-hidden>
-                <img src={sourceLogo} alt="" width={16} height={16} />
-              </span>
-            ) : SourceIcon ? (
-              <span className={styles.icon} aria-hidden>
-                <SourceIcon width={16} height={16} />
-              </span>
-            ) : null}
-            <PropertyList.Value>{row.value}</PropertyList.Value>
-          </span>
-        ) : (
-          <PropertyList.Value title={row.value}>{row.value}</PropertyList.Value>
-        )}
-      </PropertyList.Row>
+      {action ? (
+        <Button
+          variant="bare"
+          rounding="rounded"
+          nativeButton={false}
+          title={action.label}
+          onClick={action.run}
+          render={<PropertyList.Row span={span} data-interactive="" />}
+        >
+          {content}
+        </Button>
+      ) : (
+        <PropertyList.Row span={span}>{content}</PropertyList.Row>
+      )}
     </SpecContextMenu>
   );
 }

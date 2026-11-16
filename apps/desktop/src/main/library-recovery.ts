@@ -1,9 +1,10 @@
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { app, dialog } from "electron";
+import { app, dialog, type OpenDialogOptions } from "electron";
 import log from "electron-log/main.js";
 import { DEFAULT_LIBRARY_NAME } from "../shared/constants";
+import type { MissingLibraryChoice } from "../shared/missing-library-contracts";
 import { createPondBundle } from "./core/ensure-default-library";
 import {
   commitLibraryPointer,
@@ -19,6 +20,7 @@ import {
 import { checkPointerSafety } from "./lib/library-pointer";
 import { normalizeLibraryPath } from "./lib/path-identity";
 import { relaunchApp } from "./lib/relaunch-app";
+import { openMissingLibraryWindow } from "./missing-library-window";
 
 export interface OpenProblem {
   message: string;
@@ -50,9 +52,7 @@ function displayPath(path: string): string {
   return path.startsWith(`${home}/`) ? `~${path.slice(home.length)}` : path;
 }
 
-const MISSING_LIBRARY_CHOICES = ["locate", "retry", "new", "quit"] as const;
-
-export type MissingLibraryChoice = (typeof MISSING_LIBRARY_CHOICES)[number];
+export type { MissingLibraryChoice };
 
 export interface MissingLibraryPorts {
   ask(detail: string): Promise<MissingLibraryChoice>;
@@ -60,28 +60,24 @@ export interface MissingLibraryPorts {
   check(path: string): OpenProblem | null;
   create(): boolean;
   adopt(missing: string, located: string): void;
+  settle?(): void;
 }
 
-function nativeMissingLibraryPorts(name: string): MissingLibraryPorts {
+function windowMissingLibraryPorts(missing: string): MissingLibraryPorts {
+  const name = libraryNameFromPath(missing);
+  const page = openMissingLibraryWindow(name, displayPath(missing));
   return {
-    async ask(detail) {
-      const { response } = await dialog.showMessageBox({
-        type: "warning",
-        title: "Library not found",
-        message: `Pond can't find ${name}.`,
-        detail,
-        buttons: ["Locate Library", "Try Again", "New Library", "Quit"],
-        defaultId: 0,
-        cancelId: 3,
-      });
-      return MISSING_LIBRARY_CHOICES[response] ?? "quit";
-    },
+    ask: (detail) => page.ask(detail),
     async pick() {
-      const picked = await dialog.showOpenDialog({
+      const options: OpenDialogOptions = {
         title: `Locate ${name}`,
         buttonLabel: "Open",
         properties: ["openFile", "openDirectory"],
-      });
+      };
+      const parent = page.window();
+      const picked = await (parent
+        ? dialog.showOpenDialog(parent, options)
+        : dialog.showOpenDialog(options));
       const path = picked.filePaths[0];
       return picked.canceled || !path ? null : path;
     },
@@ -104,23 +100,33 @@ function nativeMissingLibraryPorts(name: string): MissingLibraryPorts {
       }
       commitLibraryPointer(located);
     },
+    settle: () => page.settle(),
   };
 }
 
 /** Runs before paths resolve, since resolving a missing pointer recreates an empty Library in its place. */
 export async function recoverMissingLibrary(
   missing: string,
-  ports: MissingLibraryPorts = nativeMissingLibraryPorts(
-    libraryNameFromPath(missing),
-  ),
+  ports: MissingLibraryPorts = windowMissingLibraryPorts(missing),
 ): Promise<boolean> {
-  let detail = `It was at ${displayPath(missing)}. If you moved it, locate it. If it's on a drive or in iCloud, wait until it's available, then try again.`;
+  const recovered = await recoverMissingLibraryLoop(missing, ports);
+  if (recovered) ports.settle?.();
+  return recovered;
+}
+
+async function recoverMissingLibraryLoop(
+  missing: string,
+  ports: MissingLibraryPorts,
+): Promise<boolean> {
+  let detail =
+    "If you moved it, locate it. If it's on a drive or in iCloud, wait until it's available, then try again.";
   for (;;) {
     const choice = await ports.ask(detail);
     if (choice === "quit") return false;
     if (choice === "retry") {
       if (existsSync(missing)) return true;
-      detail = `It's still missing from ${displayPath(missing)}. Locate it, or connect the drive it's on and try again.`;
+      detail =
+        "It's still missing. Connect the drive it's on and try again, or locate it.";
       continue;
     }
     if (choice === "new") {

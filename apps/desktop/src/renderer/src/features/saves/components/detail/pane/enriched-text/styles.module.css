@@ -1,17 +1,17 @@
 .root {
   overflow: hidden;
-  background: var(--ds-gray-a2);
+  background: var(--ds-surface-primary);
   border-radius: var(--ds-radius-sm);
 }
 
 .text {
   max-height: 200px;
-  padding: 8px 10px;
+  padding: var(--ds-space-md) var(--ds-space-lg);
   margin: 0;
   overflow-y: auto;
-  font-size: var(--ds-text-sm);
+  font-size: var(--ds-text-small);
   line-height: 1.5;
-  color: var(--ds-gray-11);
+  color: var(--ds-foreground-secondary);
   overflow-wrap: anywhere;
   white-space: pre-wrap;
   user-select: text;

@@ -1,8 +1,8 @@
 import {
-  IconThreadsLikeFill,
-  IconThreadsReplyFill,
-  IconThreadsRepostFill,
-  IconThreadsShareFill,
+  IconThreadsLike,
+  IconThreadsReply,
+  IconThreadsRepost,
+  IconThreadsShare,
 } from "@pond/icons";
 import type { IconComponent } from "@pond/icons/types";
 import type { TweetCardMetrics } from "@/features/captures/components/tweet/card/lib/data";
@@ -19,25 +19,25 @@ export function Metrics({ metrics }: { metrics: TweetCardMetrics }) {
     {
       key: "likes",
       label: "Likes",
-      Icon: IconThreadsLikeFill,
+      Icon: IconThreadsLike,
       value: metrics.likes,
     },
     {
       key: "replies",
       label: "Replies",
-      Icon: IconThreadsReplyFill,
+      Icon: IconThreadsReply,
       value: metrics.replies,
     },
     {
       key: "retweets",
       label: "Reposts",
-      Icon: IconThreadsRepostFill,
+      Icon: IconThreadsRepost,
       value: metrics.retweets,
     },
     {
       key: "shares",
       label: "Shares",
-      Icon: IconThreadsShareFill,
+      Icon: IconThreadsShare,
       value: metrics.shares,
     },
   ];

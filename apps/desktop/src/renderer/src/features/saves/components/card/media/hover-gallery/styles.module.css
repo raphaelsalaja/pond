@@ -8,7 +8,6 @@
   margin: auto;
   object-fit: contain;
   border-radius: var(--ds-radius-xs);
-  box-shadow: var(--ds-shadow-save);
   opacity: 0;
 
   &[data-fit="fill"] {

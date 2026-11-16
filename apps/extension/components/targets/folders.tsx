@@ -1,4 +1,4 @@
-import { IconFolderFill } from "@pond/icons";
+import { IconFolder } from "@pond/icons";
 import { PickerPanel, usePickerCursor } from "@pond/ui/picker-panel";
 import { clsx as cn } from "clsx";
 import {
@@ -29,7 +29,7 @@ const SWATCHES = new Set([
 
 function folderColor(color: string | null): string | undefined {
   if (!color) return undefined;
-  if (SWATCHES.has(color)) return `var(--ds-${color}-9)`;
+  if (SWATCHES.has(color)) return `var(--ds-${color})`;
   return /^#[\da-f]{3,8}$/i.test(color) ? color : undefined;
 }
 
@@ -114,7 +114,7 @@ export function Folders({
         <PickerPanel.Search
           {...cursor.inputProps}
           aria-label="Search Folders"
-          placeholder="Search folders…"
+          placeholder="Search…"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />
@@ -149,7 +149,7 @@ export function Folders({
                   <PickerPanel.ItemIcon
                     style={{ color: folderColor(folder.color) }}
                   >
-                    <IconFolderFill size={14} />
+                    <IconFolder size={14} />
                   </PickerPanel.ItemIcon>
                   <PickerPanel.ItemLabel
                     title={[...entry.row.path, folder.name].join(" / ")}

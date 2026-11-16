@@ -163,9 +163,9 @@ export function CanvasWindow({
           { label: "Studio Visit" },
         ]}
         folders={[
-          { label: "Fashion", at: 0, count: 96, color: "var(--ds-orange-9)" },
-          { label: "Interiors", at: 0, count: 58, color: "var(--ds-green-9)" },
-          { label: "Objects", at: 0, count: 37, color: "var(--ds-purple-9)" },
+          { label: "Fashion", at: 0, count: 96, color: "var(--ds-orange)" },
+          { label: "Interiors", at: 0, count: 58, color: "var(--ds-green)" },
+          { label: "Objects", at: 0, count: 37, color: "var(--ds-purple)" },
         ]}
       />
       <App.Panel>

@@ -1,6 +1,5 @@
 import { useChat } from "@ai-sdk/react";
 import type { AgentModelOptions } from "@pond/schema";
-import { Thread } from "@pond/ui/thread";
 import {
   agentModelOptionsFor,
   agentModelOptionsKey,
@@ -34,6 +33,7 @@ import { errorCopy } from "@/shared/lib/error-copy";
 import { notify } from "@/shared/lib/toast";
 import { usePrefs } from "@/shared/state/prefs";
 import type { ComposerEditorHandle } from "../composer";
+import { Thread } from "../thread";
 import { AgentMessage } from "./agent-message";
 import { ChatEvent } from "./chat-event";
 import { reviewOutcomeText, routineEventText } from "./chat-event/events";

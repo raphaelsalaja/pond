@@ -7,7 +7,7 @@ export function Search({ query = "" }: { query?: string }) {
   return (
     <div className={styles.search}>
       <span className={styles.field} data-empty={!query || undefined}>
-        {query || "Search your library…"}
+        {query || "Search…"}
       </span>
       <span className={styles.actions}>
         <Button icon size="sm" variant="ghost" aria-label="Filter">

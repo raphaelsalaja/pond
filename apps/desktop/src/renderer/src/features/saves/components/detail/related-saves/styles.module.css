@@ -1,14 +1,14 @@
 .list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 24px 16px;
+  gap: var(--ds-space-2xl) var(--ds-space-xl);
   padding: 0;
   margin: 0;
   list-style: none;
 }
 
 .item {
-  gap: 8px;
+  gap: var(--ds-space-md);
   min-width: 0;
 }
 
@@ -37,11 +37,11 @@
 
 .message {
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
   justify-content: space-between;
   min-height: 28px;
   margin: 0;
-  font-size: var(--ds-text-xs);
-  color: var(--ds-gray-10);
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-tertiary);
 }

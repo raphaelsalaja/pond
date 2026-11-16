@@ -1,4 +1,4 @@
-import { IconCanvas, IconDotsFill } from "@pond/icons";
+import { IconCanvas, IconDots } from "@pond/icons";
 import { Menu, Sidebar } from "@pond/ui";
 import type { CanvasSummary } from "@shared/canvas-contracts";
 import { useState } from "react";
@@ -88,7 +88,7 @@ export function CanvasRow({ canvas, active, renaming }: CanvasRowProps) {
               aria-label={`More Actions for ${canvas.name}`}
               tabIndex={-1}
             >
-              <IconDotsFill size={12} />
+              <IconDots size={12} />
             </Menu.Trigger>
           </SpecMenu>
         )}

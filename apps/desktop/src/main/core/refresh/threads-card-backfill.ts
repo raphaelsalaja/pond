@@ -58,7 +58,7 @@ export async function startThreadsCardBackfill(): Promise<{
       .from(saves)
       .where(
         and(
-          inArray(saves.source, ["twitter", "threads"]),
+          inArray(saves.source, ["twitter", "threads", "bluesky"]),
           inArray(saves.status, ["complete", "failed"]),
           isNull(saves.deletedAt),
         ),
@@ -71,15 +71,24 @@ export async function startThreadsCardBackfill(): Promise<{
 
     for (const row of page) {
       if (!isCaptureTweetStale(row.rawJson)) continue;
-      if (row.source !== "twitter" && row.source !== "threads") continue;
       const source = row.source;
+      if (
+        source !== "twitter" &&
+        source !== "threads" &&
+        source !== "bluesky"
+      ) {
+        continue;
+      }
       jobs.push(
         limit(async () => {
           try {
             const result = await runCaptureTweet(row.id, { nativeOnly: true });
             if (result.captured > 0) {
               recaptured += 1;
-            } else if (needsLiveReplyRecapture(row.rawJson)) {
+            } else if (
+              source !== "bluesky" &&
+              needsLiveReplyRecapture(row.rawJson)
+            ) {
               liveReplies.push({ id: row.id, source });
             }
           } catch (err) {

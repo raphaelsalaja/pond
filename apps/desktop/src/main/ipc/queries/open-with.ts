@@ -3,6 +3,7 @@ import { existsSync } from "node:fs";
 import { promisify } from "node:util";
 import {
   app,
+  BrowserWindow,
   clipboard,
   dialog,
   type NativeImage,
@@ -143,14 +144,17 @@ export const openWithQueries = {
       id: z.string().min(1),
       fileIndex: z.number().int().nonnegative().optional(),
     }),
-    async ({ id, fileIndex }) => {
+    async ({ id, fileIndex }, event) => {
       if (process.platform !== "darwin")
         return { ok: false as const, error: "Quick Look requires macOS." };
       const target = await resolveSaveFilePath(id, fileIndex);
       if (!target.ok)
         return { ok: false as const, error: "This Save has no original file." };
-      const file = target.path;
-      execFile("/usr/bin/qlmanage", ["-p", file]).unref();
+      const window =
+        (event ? BrowserWindow.fromWebContents(event.sender) : null) ??
+        BrowserWindow.getFocusedWindow();
+      if (window) window.previewFile(target.path);
+      else execFile("/usr/bin/qlmanage", ["-p", target.path]).unref();
       return { ok: true as const };
     },
   ),

@@ -84,7 +84,7 @@ it("does not paint a theme from a partial background hex", async () => {
     root.render(<LiveBackground initial="#FCFBF8" />);
   });
 
-  // #FCF is the first three digits of a light background. Expanding it yields #ffccff.
+  /** #FCF is the first three digits of a light background. Expanding it yields #ffccff. */
   for (const partial of [
     "#FCFBF",
     "#FCFB",
@@ -107,7 +107,7 @@ it("does not paint a theme from a partial background hex", async () => {
   await act(async () => {
     root.render(<LiveBackground key="dark" initial="#0A0A0A" />);
   });
-  // #0A0 is the first three digits of a dark background. Expanding it yields #00aa00.
+  /** #0A0 is the first three digits of a dark background. Expanding it yields #00aa00. */
   await typeHex("#0A0");
   expect(hexInput().value).toBe("#0A0");
   expect(appliedColor()).toBe("#0A0A0A");

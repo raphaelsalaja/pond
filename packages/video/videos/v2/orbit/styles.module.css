@@ -19,10 +19,7 @@
   position: absolute;
   overflow: hidden;
   border-radius: var(--ds-radius-source);
-  box-shadow:
-    0 0 0 0.5px var(--ds-shadow-faint),
-    0 2px 6px var(--ds-shadow-faint),
-    0 18px 40px -12px var(--ds-shadow-soft);
+  box-shadow: var(--ds-shadow-dialog);
   translate: -50% -50%;
 
   & svg {
@@ -37,7 +34,7 @@
   left: 0;
   font-size: 22px;
   font-weight: 500;
-  color: var(--ds-gray-10);
+  color: var(--ds-foreground-tertiary);
   white-space: nowrap;
   translate: -50% 0;
 }

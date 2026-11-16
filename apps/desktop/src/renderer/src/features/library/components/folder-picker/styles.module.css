@@ -6,9 +6,9 @@
 }
 
 .error {
-  padding: 8px 12px;
+  padding: var(--ds-space-md) var(--ds-space-lg);
   margin: 0;
-  font-size: var(--ds-text-sm);
-  color: var(--ds-red-11);
-  border-top: var(--ds-border-width) solid var(--ds-gray-a3);
+  font-size: var(--ds-text-small);
+  color: var(--ds-danger-foreground);
+  border-top: var(--ds-border-width) solid var(--ds-border-subtle);
 }

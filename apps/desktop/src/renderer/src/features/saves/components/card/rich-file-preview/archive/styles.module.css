@@ -6,41 +6,41 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  color: var(--ds-gray-9);
-  background: var(--ds-gray-2);
+  color: var(--ds-foreground-tertiary);
+  background: var(--ds-background-secondary);
   border-radius: var(--ds-radius-xs);
-  box-shadow: var(--ds-shadow-save);
+  box-shadow: var(--ds-shadow-border);
 }
 
 .icon {
   width: clamp(36px, 32cqw, 58px);
   overflow: visible;
   filter: drop-shadow(
-    0 1px 1px light-dark(var(--ds-black-a3), var(--ds-black-a6))
+    0 1px 1px var(--ds-shadow-color)
   );
 }
 
 .page {
-  fill: var(--ds-gray-1);
+  fill: var(--ds-foreground-inverse);
   stroke: currentColor;
   stroke-width: 2;
   stroke-linejoin: round;
 }
 
 .fold {
-  fill: var(--ds-gray-3);
+  fill: var(--ds-background-tertiary);
   stroke: currentColor;
   stroke-width: 2;
   stroke-linejoin: round;
 }
 
 .zip {
-  fill: var(--ds-gray-8);
+  fill: var(--ds-foreground-tertiary);
 }
 
 .pull {
-  fill: var(--ds-gray-3);
-  stroke: var(--ds-gray-8);
+  fill: var(--ds-background-tertiary);
+  stroke: var(--ds-foreground-tertiary);
   stroke-width: 2;
   stroke-linejoin: round;
 }

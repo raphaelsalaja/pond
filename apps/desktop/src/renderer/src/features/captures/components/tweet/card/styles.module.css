@@ -53,7 +53,7 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  padding: 16px;
+  padding: var(--ds-space-xl);
   overflow: hidden;
   font-family: Chirp, "Helvetica Neue", -apple-system, "Segoe UI", sans-serif;
   color: var(--tw-text);
@@ -79,8 +79,8 @@
 }
 
 .reply-context {
-  margin: 12px 0 0;
-  font-size: var(--ds-text-lg);
+  margin: var(--ds-space-lg) 0 0;
+  font-size: var(--ds-text-heading);
   color: var(--tw-secondary);
 }
 
@@ -89,7 +89,7 @@
 }
 
 .timestamp {
-  margin: 16px 0 0;
-  font-size: var(--ds-text-lg);
+  margin: var(--ds-space-xl) 0 0;
+  font-size: var(--ds-text-heading);
   color: var(--tw-secondary);
 }

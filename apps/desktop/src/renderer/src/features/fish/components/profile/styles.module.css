@@ -1,49 +1,41 @@
 .root {
-  --pane-inset: var(--window-inset, 8px);
   display: flex;
   flex: 1;
   flex-direction: column;
-
-  width: calc(100% - 2 * var(--pane-inset));
   min-width: 0;
-  height: calc(100% - 2 * var(--pane-inset));
   min-height: 0;
-  margin: var(--pane-inset);
   overflow: hidden;
-  background: var(--ds-gray-1);
-  border-radius: var(--ds-radius-xl);
-  box-shadow: var(--ds-shadow-float);
 }
 
 .header {
   justify-content: flex-end;
-  height: calc(var(--window-header-height, 56px) - 2 * var(--pane-inset));
+  height: var(--window-header-height, 56px);
   min-height: 0;
-  padding: 4px 6px;
+  padding: var(--ds-space-xs) var(--ds-space-2xl);
   border-bottom: none;
 }
 
 .hero {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
-  padding: 0 20px 12px;
+  padding: 0 var(--ds-space-2xl) var(--ds-space-lg);
 }
 
 .name {
   justify-content: center;
   width: 100%;
-  min-height: var(--ds-size-lg);
-  font-size: var(--ds-text-lg);
-  font-weight: var(--ds-weight-xl);
-  color: var(--ds-gray-12);
+  min-height: var(--ds-size-md);
+  font-size: var(--ds-text-heading);
+  font-weight: var(--ds-weight-strong);
+  color: var(--ds-foreground-primary);
   text-align: center;
 }
 
 .tabs {
   justify-content: center;
-  padding-bottom: 8px;
+  padding-bottom: var(--ds-space-md);
 }
 
 .panels {
@@ -100,18 +92,18 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--ds-space-lg);
   min-height: 0;
-  padding-block: 4px 20px;
+  padding-block: var(--ds-space-xs) var(--ds-space-2xl);
   overflow-y: auto;
 }
 
 .fields {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--ds-space-lg);
 }
 
 .link {
-  margin-inline: -8px;
+  margin-inline: calc(var(--ds-space-md) * -1);
 }

@@ -4,22 +4,22 @@
 
 .content {
   display: grid;
-  gap: 12px;
+  gap: var(--ds-space-lg);
   min-height: 100px;
 }
 
 .status,
 .error {
   margin: 0;
-  font-size: var(--ds-text-md);
+  font-size: var(--ds-text-body);
 }
 
 .status {
-  color: var(--ds-gray-11);
+  color: var(--ds-foreground-secondary);
 }
 
 .error {
-  color: var(--ds-red-11);
+  color: var(--ds-danger-foreground);
 }
 
 .list {
@@ -33,8 +33,8 @@
 
 .issue {
   display: grid;
-  gap: 4px;
-  padding: 12px;
+  gap: var(--ds-space-xs);
+  padding: var(--ds-space-lg);
   border-bottom: var(--ds-border-width) solid var(--ds-border-subtle);
 
   &:last-child {
@@ -49,19 +49,19 @@
   }
 
   & strong {
-    font-size: var(--ds-text-md);
-    color: var(--ds-gray-12);
+    font-size: var(--ds-text-body);
+    color: var(--ds-foreground-primary);
   }
 
   & span,
   & small {
-    color: var(--ds-gray-11);
+    color: var(--ds-foreground-secondary);
   }
 }
 
 .confirmation {
   display: grid;
-  gap: 4px;
-  font-size: var(--ds-text-sm);
-  color: var(--ds-gray-11);
+  gap: var(--ds-space-xs);
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-secondary);
 }

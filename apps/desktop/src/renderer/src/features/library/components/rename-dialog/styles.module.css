@@ -4,15 +4,15 @@
 
 .editor {
   display: grid;
-  gap: 8px;
-  padding: 16px 20px;
+  gap: var(--ds-space-md);
+  padding: var(--ds-space-xl) var(--ds-space-2xl);
   margin: 0;
   border: 0;
 }
 
 .editor label {
   display: grid;
-  gap: 6px;
+  gap: var(--ds-space-sm);
 }
 
 .editor label > [data-slot="root"] {
@@ -20,7 +20,7 @@
 }
 
 .error {
-  padding: 0 20px 12px;
+  padding: 0 var(--ds-space-2xl) var(--ds-space-lg);
   margin: 0;
-  color: var(--ds-red-11);
+  color: var(--ds-danger-foreground);
 }

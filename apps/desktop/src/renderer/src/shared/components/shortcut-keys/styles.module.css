@@ -1,11 +1,11 @@
 .sequence {
   display: inline-flex;
-  gap: 4px;
+  gap: var(--ds-space-xs);
   align-items: center;
 }
 
 .then {
-  font-size: var(--ds-text-xxs);
-  color: var(--ds-gray-9);
+  font-size: var(--ds-text-micro);
+  color: var(--ds-foreground-tertiary);
   text-transform: lowercase;
 }

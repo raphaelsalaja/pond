@@ -104,19 +104,19 @@
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-sm);
+  font-size: var(--ds-text-small);
   line-height: 1.3;
   white-space: nowrap;
 }
 
 .title {
   font-weight: 500;
-  color: var(--ds-gray-11);
+  color: var(--ds-foreground-secondary);
 }
 
 .time {
   font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-9);
+  color: var(--ds-foreground-tertiary);
 }
 
 .stamp {
@@ -124,31 +124,31 @@
   top: 16px;
   z-index: 1;
   padding: 4px 10px;
-  font-size: var(--ds-text-md);
-  font-weight: var(--ds-weight-xl);
+  font-size: var(--ds-text-body);
+  font-weight: var(--ds-weight-strong);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   pointer-events: none;
-  background: var(--ds-gray-1);
+  background: var(--ds-background-primary);
   border: 2px solid currentcolor;
   border-radius: 8px;
 
   &[data-tone="keep"] {
     left: 16px;
-    color: var(--ds-green-9);
+    color: var(--ds-accent);
     rotate: -8deg;
   }
 
   &[data-tone="trash"] {
     right: 16px;
-    color: var(--ds-red-9);
+    color: var(--ds-danger);
     rotate: 8deg;
   }
 
   &[data-tone="folder"],
   &[data-tone="skip"] {
     left: 50%;
-    color: var(--ds-gray-12);
+    color: var(--ds-foreground-primary);
     translate: -50% 0;
   }
 

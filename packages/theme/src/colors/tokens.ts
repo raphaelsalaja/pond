@@ -36,26 +36,27 @@ interface Lch {
 interface Ramp {
   hue: number;
   chroma: number;
+  /** Step 9's lightness. Warm hues sit high and take dark text, since they turn muddy when darkened for white. */
+  lightness: number;
 }
 
+/** The palette for colors you pick, in picker order. Red also seeds the danger role. */
 const HUE_RAMPS = {
-  ruby: { hue: 12, chroma: 0.19 },
-  red: { hue: 25, chroma: 0.2 },
-  orange: { hue: 50, chroma: 0.18 },
-  gold: { hue: 75, chroma: 0.15 },
-  yellow: { hue: 100, chroma: 0.16 },
-  lime: { hue: 128, chroma: 0.18 },
-  green: { hue: 150, chroma: 0.17 },
-  jade: { hue: 168, chroma: 0.14 },
-  teal: { hue: 185, chroma: 0.12 },
-  cyan: { hue: 210, chroma: 0.12 },
-  blue: { hue: 250, chroma: 0.15 },
-  navy: { hue: 262, chroma: 0.15 },
-  indigo: { hue: 275, chroma: 0.17 },
-  violet: { hue: 292, chroma: 0.19 },
-  purple: { hue: 310, chroma: 0.21 },
-  magenta: { hue: 328, chroma: 0.22 },
-  pink: { hue: 350, chroma: 0.21 },
+  red: { hue: 25, chroma: 0.2, lightness: 0.65 },
+  orange: { hue: 50, chroma: 0.18, lightness: 0.73 },
+  gold: { hue: 75, chroma: 0.15, lightness: 0.83 },
+  yellow: { hue: 100, chroma: 0.16, lightness: 0.9 },
+  lime: { hue: 128, chroma: 0.18, lightness: 0.87 },
+  green: { hue: 150, chroma: 0.17, lightness: 0.72 },
+  jade: { hue: 168, chroma: 0.14, lightness: 0.72 },
+  teal: { hue: 185, chroma: 0.12, lightness: 0.72 },
+  cyan: { hue: 210, chroma: 0.12, lightness: 0.75 },
+  blue: { hue: 250, chroma: 0.15, lightness: 0.65 },
+  indigo: { hue: 275, chroma: 0.17, lightness: 0.62 },
+  violet: { hue: 292, chroma: 0.19, lightness: 0.62 },
+  purple: { hue: 310, chroma: 0.21, lightness: 0.64 },
+  magenta: { hue: 328, chroma: 0.22, lightness: 0.66 },
+  pink: { hue: 350, chroma: 0.21, lightness: 0.66 },
 } as const satisfies Record<string, Ramp>;
 
 /** WCAG 2 ratio against gray-1 for gray steps 2 to 11 at contrast 50, matching the previous mix curves. */
@@ -69,9 +70,8 @@ const TINT_CHROMA = [0.16, 0.32, 0.51, 0.69, 0.85, 0.95, 1, 1] as const;
 /** Dark tints at full chroma read as neon on near-black backgrounds. */
 const DARK_TINT_CHROMA = 0.6;
 
-/** Hue solids keep the lightness of the previous static ramps so existing fills and dots look the same. */
-const HUE_SOLID_LIGHTNESS = 0.575;
-const HUE_SOLID_CHROMA = 0.97;
+/** Share of the sRGB chroma edge a hue solid takes; the full edge reads as neon. */
+const HUE_SOLID_CHROMA = 0.95;
 
 const TEXT_MIN = 4.5;
 const TEXT_STRONG_MIN = 7;
@@ -298,6 +298,13 @@ function whiteFill(seed: Lch, gamut: Gamut): Lch | null {
   return at(bisect((t) => wcag(white, linearOf(at(t), gamut)) >= target));
 }
 
+/** Keeps a solid whose text already reaches 4.5:1, else darkens it just enough for white text. */
+function readableSolid(solid: Lch, gamut: Gamut): Lch {
+  const text = linearOf(onColor(solid, gamut), gamut);
+  if (wcag(text, linearOf(solid, gamut)) >= TEXT_MIN) return solid;
+  return whiteFill(solid, gamut) ?? solid;
+}
+
 interface Scale {
   steps: Lch[];
   contrast: Lch;
@@ -403,7 +410,65 @@ function readColor(input: string, fallback: string): Rgb {
   return [toLinear(r), toLinear(g), toLinear(b)];
 }
 
+export const HUE_NAMES = Object.keys(HUE_RAMPS);
+
+/** Gray roles and the ramp step each one takes. */
+const GRAY_ROLES = {
+  "background-primary": "gray-1",
+  "background-secondary": "gray-2",
+  "background-tertiary": "gray-3",
+  "background-inverse": "gray-12",
+  "surface-primary": "gray-a2",
+  "surface-secondary": "gray-a3",
+  "surface-tertiary": "gray-a4",
+  "border-subtle": "gray-a4",
+  "border-strong": "gray-a5",
+  "foreground-primary": "gray-12",
+  "foreground-secondary": "gray-11",
+  "foreground-tertiary": "gray-10",
+  "foreground-inverse": "gray-1",
+} as const;
+
+const DANGER_ROLES = {
+  "": "9",
+  "-hover": "10",
+  "-foreground": "11",
+  "-tint": "3",
+  "-border": "6",
+  "-contrast": "contrast",
+} as const;
+
+/** The accent has alpha steps, so its tint and border stay translucent over any surface. */
+const ACCENT_ROLES = { ...DANGER_ROLES, "-tint": "a3", "-border": "a7" } as const;
+
+const PALETTE_ROLES = {
+  "": "9",
+  "-tint": "3",
+  "-border": "6",
+  "-contrast": "contrast",
+} as const;
+
+/** Every `--ds-*` color role, picked from the ramps `solveScales` builds. */
 export function buildThemeTokens(input: ThemeInput, gamut: Gamut): ThemeTokens {
+  const { mode, tokens: steps } = solveScales(input, gamut);
+  const step = (name: string) => steps[`--ds-${name}`] ?? "";
+  const tokens: Record<ThemeTokenName, string> = {};
+  for (const [role, source] of Object.entries(GRAY_ROLES)) {
+    tokens[`--ds-${role}`] = step(source);
+  }
+  const pick = (name: string, ramp: string, roles: Record<string, string>) => {
+    for (const [suffix, source] of Object.entries(roles)) {
+      tokens[`--ds-${name}${suffix}`] = step(`${ramp}-${source}`);
+    }
+  };
+  pick("accent", "accent", ACCENT_ROLES);
+  pick("danger", "red", DANGER_ROLES);
+  for (const name of HUE_NAMES) pick(name, name, PALETTE_ROLES);
+  return { mode, tokens };
+}
+
+/** Solves the 12-step gray, accent, and hue ramps that the roles are picked from. */
+export function solveScales(input: ThemeInput, gamut: Gamut): ThemeTokens {
   const bgLinear = readColor(input.background, FALLBACK.background);
   const fgLinear = readColor(input.foreground, FALLBACK.foreground);
   const bg = linearToLab(bgLinear);
@@ -494,8 +559,14 @@ export function buildThemeTokens(input: ThemeInput, gamut: Gamut): ThemeTokens {
   writeScale("accent", accent, true);
 
   for (const [name, ramp] of Object.entries(HUE_RAMPS)) {
-    const seed: Lch = { l: HUE_SOLID_LIGHTNESS, c: ramp.chroma, h: ramp.hue };
-    const solid: Lch = { ...seed, c: ramp.chroma * HUE_SOLID_CHROMA };
+    const seed: Lch = { l: ramp.lightness, c: ramp.chroma, h: ramp.hue };
+    const solid = readableSolid(
+      {
+        ...seed,
+        c: cMax(ramp.lightness, ramp.hue, "srgb") * HUE_SOLID_CHROMA,
+      },
+      gamut,
+    );
     writeScale(
       name,
       tintedScale(seed, solid, onColor(solid, gamut), scaleTargets, ctx),

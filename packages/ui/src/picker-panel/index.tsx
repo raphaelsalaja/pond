@@ -1,177 +1,17 @@
 import { clsx as cn } from "clsx";
-import {
-  forwardRef,
-  type KeyboardEvent,
-  type MouseEvent,
-  type PointerEvent,
-  type Ref,
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { forwardRef, type Ref } from "react";
 import { Button, type ButtonProps } from "../button";
 import { Popover } from "../popover";
 import { stopPageHotkeys } from "../stop-page-hotkeys";
 import { Item, ItemIcon, ItemLabel, ItemMeta, SelectionMark } from "./item";
 import styles from "./styles.module.css";
 
+export {
+  nextPickerIndex,
+  type PickerCursorOptions,
+  usePickerCursor,
+} from "./cursor";
 export type { PickerSelectionState } from "./item";
-
-type ArrowKey = "ArrowDown" | "ArrowLeft" | "ArrowRight" | "ArrowUp";
-
-export function nextPickerIndex(
-  current: number,
-  length: number,
-  key: ArrowKey,
-  columns = 1,
-): number {
-  if (length <= 0) return -1;
-  const safeCurrent = current >= 0 && current < length ? current : 0;
-  const step =
-    key === "ArrowDown"
-      ? Math.max(1, columns)
-      : key === "ArrowUp"
-        ? -Math.max(1, columns)
-        : key === "ArrowRight"
-          ? 1
-          : -1;
-  return (safeCurrent + step + length) % length;
-}
-
-function domId(prefix: string, value: string) {
-  return `${prefix}-${value.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
-}
-
-function isArrowKey(key: string): key is ArrowKey {
-  return (
-    key === "ArrowDown" ||
-    key === "ArrowUp" ||
-    key === "ArrowLeft" ||
-    key === "ArrowRight"
-  );
-}
-
-export interface PickerCursorOptions<T> {
-  activeId?: string | null;
-  collectionId?: string;
-  columns?: number;
-  getId(item: T): string;
-  items: readonly T[];
-  onActivate(item: T): void;
-  onActiveIdChange?(id: string | null): void;
-  onHorizontalKey?(key: "ArrowLeft" | "ArrowRight", item: T): boolean;
-  onTab?(direction: 1 | -1): void;
-}
-
-export function usePickerCursor<T>({
-  activeId: controlledActiveId,
-  collectionId: requestedCollectionId,
-  columns = 1,
-  getId,
-  items,
-  onActivate,
-  onActiveIdChange,
-  onHorizontalKey,
-  onTab,
-}: PickerCursorOptions<T>) {
-  const reactId = useId().replace(/:/g, "");
-  const collectionId = requestedCollectionId ?? `picker-collection-${reactId}`;
-  const itemDomPrefix = `${collectionId}-item`;
-  const [internalActiveId, setInternalActiveId] = useState<string | null>(null);
-  const composing = useRef(false);
-  const ids = useMemo(() => items.map(getId), [getId, items]);
-  const requestedActiveId = controlledActiveId ?? internalActiveId;
-  const activeId =
-    requestedActiveId && ids.includes(requestedActiveId)
-      ? requestedActiveId
-      : (ids[0] ?? null);
-  const activeIndex = activeId ? ids.indexOf(activeId) : -1;
-
-  function setActiveId(id: string | null) {
-    if (controlledActiveId === undefined) setInternalActiveId(id);
-    onActiveIdChange?.(id);
-  }
-
-  useEffect(() => {
-    if (!activeId) return;
-    const activeElement = document.getElementById(
-      domId(itemDomPrefix, activeId),
-    );
-    activeElement?.scrollIntoView?.({ block: "nearest" });
-  }, [activeId, itemDomPrefix]);
-
-  function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
-    const { key } = event;
-
-    if (event.key === "Tab" && onTab) {
-      event.preventDefault();
-      onTab(event.shiftKey ? -1 : 1);
-      return;
-    }
-
-    if (isArrowKey(key) && items.length > 0) {
-      const activeItem = activeIndex >= 0 ? items[activeIndex] : items[0];
-      if (
-        activeItem &&
-        (key === "ArrowLeft" || key === "ArrowRight") &&
-        onHorizontalKey?.(key, activeItem)
-      ) {
-        event.preventDefault();
-        return;
-      }
-      if (columns === 1 && (key === "ArrowLeft" || key === "ArrowRight"))
-        return;
-      event.preventDefault();
-      const next = nextPickerIndex(activeIndex, items.length, key, columns);
-      setActiveId(next >= 0 ? (ids[next] ?? null) : null);
-      return;
-    }
-
-    if (event.key === "Enter" && !composing.current && activeIndex >= 0) {
-      const item = items[activeIndex];
-      if (!item) return;
-      event.preventDefault();
-      onActivate(item);
-    }
-  }
-
-  function getItemProps(item: T) {
-    const id = getId(item);
-    return {
-      id: domId(itemDomPrefix, id),
-      active: id === activeId,
-      onClick: () => onActivate(item),
-      onMouseDown: (event: MouseEvent<HTMLElement>) => event.preventDefault(),
-      onPointerMove: (_event: PointerEvent<HTMLElement>) => setActiveId(id),
-    };
-  }
-
-  return {
-    activeId,
-    activeIndex,
-    collectionId,
-    getItemProps,
-    inputProps: {
-      "aria-activedescendant": activeId
-        ? domId(itemDomPrefix, activeId)
-        : undefined,
-      "aria-autocomplete": "list" as const,
-      "aria-controls": collectionId,
-      "aria-expanded": true,
-      role: "combobox" as const,
-      onCompositionEnd: () => {
-        composing.current = false;
-      },
-      onCompositionStart: () => {
-        composing.current = true;
-      },
-      onKeyDown,
-    },
-    setActiveId,
-  };
-}
 
 function Positioner({
   className,
@@ -241,8 +81,18 @@ function Header({ className, ...props }: React.ComponentProps<"div">) {
   return <div {...props} className={cn(styles.header, className)} />;
 }
 
+type SearchName =
+  | { "aria-label": string; "aria-labelledby"?: string }
+  | { "aria-label"?: string; "aria-labelledby": string };
+
+type SearchProps = Omit<
+  React.ComponentPropsWithoutRef<"input">,
+  "aria-label" | "aria-labelledby"
+> &
+  SearchName;
+
 const Search = forwardRef(function Search(
-  { className, onKeyDown, ...props }: React.ComponentProps<"input">,
+  { className, onKeyDown, ...props }: SearchProps,
   ref: Ref<HTMLInputElement>,
 ) {
   return (
@@ -295,12 +145,14 @@ function Sidebar({ className, ...props }: React.ComponentProps<"div">) {
 
 function Collection({
   className,
+  role = "listbox",
   ...props
 }: React.ComponentPropsWithoutRef<"div">) {
   return (
     <div
       data-scroll-fade="vertical"
       {...props}
+      role={role}
       className={cn(styles.collection, className)}
     />
   );

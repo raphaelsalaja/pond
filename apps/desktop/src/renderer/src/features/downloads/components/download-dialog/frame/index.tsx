@@ -6,14 +6,21 @@ import styles from "./styles.module.css";
 interface FrameProps extends React.ComponentPropsWithoutRef<"span"> {
   tile?: StoryboardTile | null;
   src?: string | null;
+  fit?: "cover" | "contain";
 }
 
 function percent(index: number, count: number): string {
   return count > 1 ? `${(index / (count - 1)) * 100}%` : "0%";
 }
 
-/** One storyboard cell, or a plain image, cropped to cover its box. */
-export function Frame({ tile, src, className, ...props }: FrameProps) {
+/** One storyboard cell, or a plain image, cropped to cover its box or letterboxed inside it. */
+export function Frame({
+  tile,
+  src,
+  fit = "cover",
+  className,
+  ...props
+}: FrameProps) {
   if (tile) {
     const style: CSSProperties & { "--aspect": number } = {
       "--aspect": tile.aspect,
@@ -22,7 +29,7 @@ export function Frame({ tile, src, className, ...props }: FrameProps) {
       backgroundPosition: `${percent(tile.column, tile.columns)} ${percent(tile.row, tile.rows)}`,
     };
     return (
-      <span className={cn(styles.frame, className)} {...props}>
+      <span className={cn(styles.frame, className)} data-fit={fit} {...props}>
         <span className={styles.sprite} style={style} />
       </span>
     );
@@ -30,6 +37,7 @@ export function Frame({ tile, src, className, ...props }: FrameProps) {
   return (
     <span
       className={cn(styles.frame, className)}
+      data-fit={fit}
       data-empty={src ? undefined : ""}
       {...props}
     >

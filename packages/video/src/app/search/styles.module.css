@@ -4,24 +4,24 @@
   right: 0;
   left: 248px;
   display: flex;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   align-items: center;
   height: 56px;
-  padding: 8px 16px 8px 20px;
+  padding: var(--ds-space-md) var(--ds-space-xl) var(--ds-space-md) var(--ds-space-2xl);
 }
 
 .field {
   flex: 1;
-  font-size: var(--ds-text-md);
-  color: var(--ds-gray-12);
+  font-size: var(--ds-text-body);
+  color: var(--ds-foreground-primary);
 
   &[data-empty] {
-    color: var(--ds-gray-9);
+    color: var(--ds-foreground-tertiary);
   }
 }
 
 .actions {
   display: flex;
-  gap: 4px;
-  color: var(--ds-gray-10);
+  gap: var(--ds-space-xs);
+  color: var(--ds-foreground-tertiary);
 }

@@ -17,7 +17,7 @@
   display: inline-block;
 
   &[data-accent] {
-    color: var(--ds-orange-9);
+    color: var(--ds-orange);
   }
 }
 

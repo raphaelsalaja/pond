@@ -1,5 +1,5 @@
 .handle {
-  --handle-gap: 14px;
+  --handle-gap: var(--ds-space-lg);
 
   display: flex;
   align-items: center;
@@ -7,10 +7,10 @@
   width: 10px;
   height: 10px;
   color: var(--ds-accent-contrast);
-  background: var(--ds-accent-7);
-  border: 2px solid var(--ds-gray-1);
+  background: var(--ds-accent-border);
+  border: 2px solid var(--ds-background-primary);
   border-radius: var(--ds-radius-full);
-  box-shadow: 0 0 0 0.5px var(--ds-gray-a5);
+  box-shadow: 0 0 0 0.5px var(--ds-border-strong);
   opacity: 0;
   transition:
     opacity var(--ds-duration-fast) var(--ds-easing-standard),
@@ -44,13 +44,13 @@
   }
 
   &:global(.connectingto) {
-    background: var(--ds-accent-9);
+    background: var(--ds-accent);
     scale: 1.3;
   }
 
   @media (hover: hover) and (pointer: fine) {
     &:hover {
-      background: var(--ds-accent-9);
+      background: var(--ds-accent);
       scale: 1.3;
     }
   }

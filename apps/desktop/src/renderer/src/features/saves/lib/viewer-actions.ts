@@ -1,10 +1,12 @@
 import type { Prefs } from "@pond/schema/db";
 import { previewMediaType } from "@shared/preview-window-contracts";
+import { pickPrimaryFile } from "@/features/saves/lib/media/units";
 import { openSave } from "@/features/saves/lib/save-nav";
 import { selectOnlySave } from "@/features/saves/lib/select";
 import { pool } from "@/features/saves/state/pool";
 import { requestQuickPreview } from "@/features/saves/state/quick-preview";
 import { errorCopy } from "@/shared/lib/error-copy";
+import { IS_MAC } from "@/shared/lib/platform";
 import { notify } from "@/shared/lib/toast";
 
 type ViewerAction = Prefs["viewer"]["doubleClickAction"];
@@ -52,14 +54,21 @@ export function runViewerAction(saveId: string, action: ViewerAction): void {
     return;
   }
   if (action === "quick-look") {
-    void window.pond.query("saves.quickLook", { id: saveId }).then((result) => {
-      if (!result.ok)
-        notify({
-          id: "quick-look",
-          title: "Couldn't open Quick Look",
-          description: result.error,
-        });
-    });
+    const save = pool.get(saveId);
+    const file = save ? pickPrimaryFile(save) : null;
+    if (!IS_MAC || !save || !file) {
+      requestQuickPreview(saveId);
+      return;
+    }
+    void window.pond
+      .query("saves.quickLook", {
+        id: saveId,
+        fileIndex: save.files.indexOf(file),
+      })
+      .then((result) => {
+        if (!result.ok) requestQuickPreview(saveId);
+      })
+      .catch(() => requestQuickPreview(saveId));
     return;
   }
   const fileIndex = previewFileIndex(saveId, action);

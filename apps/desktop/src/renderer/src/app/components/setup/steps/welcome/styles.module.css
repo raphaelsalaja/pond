@@ -1,24 +1,24 @@
 .mark {
   flex: none;
-  margin-bottom: 16px;
-  color: var(--ds-gray-12);
+  margin-bottom: var(--ds-space-xl);
+  color: var(--ds-foreground-primary);
 }
 
 .owner {
   display: inline-flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
   margin: 0;
-  font-size: var(--ds-text-md);
-  color: var(--ds-gray-11);
+  font-size: var(--ds-text-body);
+  color: var(--ds-foreground-secondary);
 }
 
 .name {
-  font-weight: var(--ds-weight-xl);
-  color: var(--ds-gray-12);
+  font-weight: var(--ds-weight-strong);
+  color: var(--ds-foreground-primary);
 }
 
 .meta {
   font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-10);
+  color: var(--ds-foreground-tertiary);
 }

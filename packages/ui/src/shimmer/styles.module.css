@@ -2,9 +2,9 @@
   color: transparent;
   background: linear-gradient(
     90deg,
-    var(--ds-accent-9) 35%,
-    var(--ds-accent-12) 50%,
-    var(--ds-accent-9) 65%
+    var(--ds-accent) 35%,
+    var(--ds-accent-foreground) 50%,
+    var(--ds-accent) 65%
   );
   background-clip: text;
   background-size: 300% 100%;
@@ -23,7 +23,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .root {
-    color: var(--ds-accent-11);
+    color: var(--ds-accent-foreground);
     background: none;
     animation: none;
   }

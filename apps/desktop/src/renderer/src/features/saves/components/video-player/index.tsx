@@ -13,6 +13,7 @@ import {
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
 import {
   ChromePortal,
+  useViewerChromeEnabled,
   useViewerChromeRoot,
 } from "@/features/saves/components/viewers/media-viewer/chrome";
 import { useReportMediaReady } from "@/features/saves/hooks/use-media-ready";
@@ -228,6 +229,7 @@ export function VideoPlayer({
   const save = useSave(saveId);
   const [viewer] = usePrefs("viewer");
   const chromeRoot = useViewerChromeRoot();
+  const chrome = useViewerChromeEnabled();
   const trackUrl = useChaptersTrackUrl(chapters);
   const subtitle = save?.files.find((file) => file.kind === "subtitle");
   const subtitleUrl = save && subtitle ? buildPondUrl(save.id, subtitle) : null;
@@ -293,7 +295,7 @@ export function VideoPlayer({
       frameRate={frameRate}
       fullscreenTarget={chromeRoot}
       initialMuted={viewer.videoMuted}
-      chrome
+      chrome={chrome}
     >
       <MediaBridge
         key={src}
@@ -320,7 +322,25 @@ export function VideoPlayer({
       >
         <Poster.End src={poster} />
       </VideoSurface>
-      {active ? (
+      {active && !chrome ? (
+        <Video.Controls role="toolbar" aria-label="Playback">
+          <Video.Row>
+            <Video.PlayButton />
+            <Video.CurrentTime aria-label="Elapsed time" />
+            <div className={styles.timeline}>
+              <Video.Scrubber
+                renderPreview={(time) => (
+                  <TimelinePreview src={src} time={time} />
+                )}
+              />
+            </div>
+            <Video.Duration aria-label="Duration" />
+            <Video.MuteButton />
+            <Video.FullscreenButton />
+          </Video.Row>
+        </Video.Controls>
+      ) : null}
+      {active && chrome ? (
         <>
           <VideoToolbarContent
             save={save}

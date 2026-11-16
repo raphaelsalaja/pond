@@ -1,4 +1,4 @@
-import { IconFolderSearch, IconGrid, IconVersions } from "@pond/icons";
+import { IconFolderSearch, IconGrid, IconWindow } from "@pond/icons";
 import type { Prefs } from "@pond/schema";
 import type { Folder } from "@pond/schema/db";
 import { type MenuItemSpec, Sidebar } from "@pond/ui";
@@ -30,7 +30,7 @@ import { quickAccessRows } from "./order";
 const SAVED_VIEW_ICONS = {
   smart_folder: IconFolderSearch,
   group: IconGrid,
-  saved_view: IconVersions,
+  saved_view: IconWindow,
 } as const;
 
 interface QuickAccessProps {

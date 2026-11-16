@@ -159,7 +159,7 @@ export function CustomizeFilters({
         <Menu.Portal>
           <Menu.Positioner side="bottom" align="start" sideOffset={6}>
             <FilterPopup className={styles.popup}>
-              <Menu.Input aria-label="Find Filter" placeholder="Find Filter…" />
+              <Menu.Input aria-label="Find Filter" placeholder="Search…" />
               <Menu.FilterList className={styles.content}>
                 <Menu.List>
                   {searching ? (

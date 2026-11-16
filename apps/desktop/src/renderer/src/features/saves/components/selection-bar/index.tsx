@@ -3,7 +3,7 @@ import {
   IconCheckboxChecked,
   IconDots,
   IconFileExport,
-  IconFolders,
+  IconFolderPlus,
   IconStar,
   IconTagPlus,
   IconTrash,
@@ -150,7 +150,7 @@ export function SaveSelectionBar() {
             shortcut={shortcutGlyphs("save.assign-folders")}
             onClick={() => saveLibraryBridge.openFolderPicker([...ids])}
           >
-            <IconFolders />
+            <IconFolderPlus />
           </SelectionBar.Action>
           <SelectionBar.Action
             label="Add Tags"

@@ -1,8 +1,8 @@
 .token {
-  padding: 1px 4px;
-  font-weight: var(--ds-weight-lg);
-  color: var(--ds-gray-12);
-  background: var(--ds-gray-a3);
+  padding: 1px var(--ds-space-xs);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-foreground-primary);
+  background: var(--ds-surface-secondary);
   border-radius: var(--ds-radius-full);
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;

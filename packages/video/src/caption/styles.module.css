@@ -31,7 +31,7 @@
     inset: 0.04em 0 0.02em;
     z-index: -1;
     content: "";
-    background: var(--ds-gray-a3);
+    background: var(--ds-surface-secondary);
     border-radius: 0.16em;
     opacity: var(--fill);
     transform: scaleX(calc(0.92 + var(--fill) * 0.08));
@@ -54,7 +54,7 @@
   }
 
   &[data-accent]::before {
-    background: color-mix(in oklab, var(--ds-blue-9) 12%, transparent);
+    background: color-mix(in oklab, var(--ds-blue) 12%, transparent);
   }
 
   &[data-brand]::before {

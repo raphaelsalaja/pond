@@ -70,6 +70,8 @@ interface MarkSelection {
   swatch: LibrarySwatch;
 }
 
+const RETIRED_HUES: Record<string, string> = { ruby: "red", navy: "blue" };
+
 function restoreMark(
   library: LibraryCustomizeDialogProps["library"],
 ): MarkSelection {
@@ -82,7 +84,8 @@ function restoreMark(
       swatch: DEFAULT_LIBRARY_SWATCH,
     };
   }
-  const hue = source.color.split("-")[0];
+  const base = source.color.split("-")[0] ?? "";
+  const hue = RETIRED_HUES[base] ?? base;
   /** A retired shade keeps its hue so the mark still reopens as an emoji or icon. */
   const swatch =
     LIBRARY_SWATCHES.find((entry) => entry.id === source.color) ??

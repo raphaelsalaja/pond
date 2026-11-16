@@ -6,7 +6,7 @@
 .backdrop {
   position: fixed;
   inset: 0;
-  background: light-dark(var(--ds-black-a4), var(--ds-black-a6));
+  background: var(--ds-scrim);
   transition: opacity var(--ds-duration-medium) var(--ds-easing-standard);
   -webkit-app-region: no-drag;
 
@@ -27,11 +27,11 @@
   height: var(--height, auto);
   max-height: calc(100dvh - 32px);
   overflow: hidden;
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
   outline: none;
-  background: var(--ds-gray-1);
+  background: var(--ds-background-primary);
   border-radius: var(--ds-radius-lg);
-  box-shadow: var(--ds-shadow-modal);
+  box-shadow: var(--ds-shadow-dialog);
   transform: translate(-50%, var(--dialog-offset-y, -50%));
   transform-origin: top center;
   -webkit-app-region: no-drag;
@@ -69,9 +69,9 @@
 .header {
   display: flex;
   flex: none;
-  gap: 12px;
+  gap: var(--ds-space-lg);
   align-items: center;
-  padding: 20px 20px 0;
+  padding: var(--ds-space-2xl) var(--ds-space-2xl) 0;
 }
 
 .header[data-empty] {
@@ -81,9 +81,9 @@
 .title {
   max-width: 100%;
   margin: 0;
-  font-size: var(--ds-text-lg);
-  font-weight: var(--ds-weight-xxl);
-  color: var(--ds-gray-12);
+  font-size: var(--ds-text-heading);
+  font-weight: var(--ds-weight-strong);
+  color: var(--ds-foreground-primary);
   text-align: start;
 }
 
@@ -100,20 +100,20 @@
   width: 28px;
   height: 28px;
   padding: 0;
-  color: var(--ds-gray-11);
+  color: var(--ds-foreground-secondary);
   cursor: var(--ds-cursor-interactive, pointer);
   background: transparent;
   border: 0;
   border-radius: var(--ds-radius-sm);
 
   &:hover:not(:disabled) {
-    color: var(--ds-gray-12);
-    background: var(--ds-gray-3);
+    color: var(--ds-foreground-primary);
+    background: var(--ds-background-tertiary);
   }
 
   &:disabled {
     cursor: not-allowed;
-    opacity: 0.5;
+    opacity: var(--ds-opacity-disabled);
   }
 
   &[data-position="start"] {
@@ -140,41 +140,41 @@
   gap: var(--page-dialog-gap, 12px);
   width: min(var(--page-dialog-width, 400px), calc(100vw - 32px));
   max-height: calc(100dvh - var(--page-dialog-chrome-height, 112px) - 32px);
-  padding: var(--page-dialog-content-top, 0px) 20px 20px;
+  padding: var(--page-dialog-content-top, 0px) var(--ds-space-2xl) var(--ds-space-2xl);
   outline: none;
   transform-origin: center center;
 }
 
 .description {
   margin: 0;
-  font-size: var(--ds-text-md);
-  font-weight: var(--ds-weight-md);
+  font-size: var(--ds-text-body);
+  font-weight: var(--ds-weight-regular);
   line-height: 24px;
-  color: var(--ds-gray-11);
+  color: var(--ds-foreground-secondary);
 }
 
 .popup > .description,
 .popup > form > .description {
-  padding: 6px 20px 0;
+  padding: var(--ds-space-sm) var(--ds-space-2xl) 0;
 }
 
 .option {
   display: flex;
-  gap: 10px;
+  gap: var(--ds-space-md);
   align-items: center;
-  font-size: var(--ds-text-md);
-  color: var(--ds-gray-12);
+  font-size: var(--ds-text-body);
+  color: var(--ds-foreground-primary);
 }
 
 .footer {
   display: flex;
   flex: none;
-  gap: 16px;
+  gap: var(--ds-space-xl);
   align-items: center;
   justify-content: flex-end;
-  padding: 12px 20px;
-  background: var(--ds-gray-2);
-  border-top: 1px solid var(--ds-gray-a4);
+  padding: var(--ds-space-lg) var(--ds-space-2xl);
+  background: var(--ds-background-secondary);
+  border-top: 1px solid var(--ds-border-subtle);
 
   &[data-leading] {
     justify-content: space-between;
@@ -184,15 +184,15 @@
 .leading {
   flex: 1;
   min-width: 0;
-  font-size: var(--ds-text-md);
-  color: var(--ds-gray-10);
+  font-size: var(--ds-text-body);
+  color: var(--ds-foreground-tertiary);
 }
 
 .actions {
   display: inline-grid;
   grid-auto-columns: 1fr;
   grid-auto-flow: column;
-  gap: 8px;
+  gap: var(--ds-space-md);
 
   > button {
     width: 100%;
@@ -240,11 +240,11 @@
 .content {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding-block: 6px 20px;
-  padding-inline: 20px;
+  gap: var(--ds-space-lg);
+  padding-block: var(--ds-space-sm) var(--ds-space-2xl);
+  padding-inline: var(--ds-space-2xl);
 }
 
 .description[data-error] {
-  color: var(--ds-red-11);
+  color: var(--ds-danger-foreground);
 }

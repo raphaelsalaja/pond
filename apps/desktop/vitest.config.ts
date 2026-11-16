@@ -36,6 +36,9 @@ export default defineConfig({
       "electron-log/main.js": stub("electron-log.ts"),
       "@": fileURLToPath(new URL("./src/renderer/src", import.meta.url)),
       "@shared": fileURLToPath(new URL("./src/shared", import.meta.url)),
+      "@pond/render": fileURLToPath(
+        new URL("../../packages/render/src/index.ts", import.meta.url),
+      ),
     },
   },
   test: {

@@ -9,8 +9,8 @@
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: var(--ds-gray-1);
-  border: 1px solid var(--ds-gray-a4);
+  background: var(--ds-background-primary);
+  border: 1px solid var(--ds-border-subtle);
   border-radius: var(--ds-radius-md);
   box-shadow: var(--canvas-shadow-rest);
 
@@ -21,10 +21,10 @@
 
 .header {
   flex: none;
-  padding: 6px 12px;
-  font-size: var(--ds-text-xs);
-  color: var(--ds-gray-11);
-  border-bottom: 1px solid var(--ds-gray-a4);
+  padding: var(--ds-space-sm) var(--ds-space-lg);
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-secondary);
+  border-bottom: 1px solid var(--ds-border-subtle);
 }
 
 .source {
@@ -32,19 +32,19 @@
   flex: 1;
   width: 100%;
   min-height: 0;
-  padding: 10px 12px;
+  padding: var(--ds-space-lg) var(--ds-space-lg);
   margin: 0;
   overflow: auto;
   font-family: var(--ds-font-mono);
-  font-size: var(--ds-text-md);
+  font-size: var(--ds-text-body);
   line-height: 1.5;
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
   tab-size: 2;
   white-space: pre;
 
   &[data-empty] {
     font-family: inherit;
-    color: var(--ds-gray-a9);
+    color: var(--ds-foreground-tertiary);
   }
 }
 

@@ -1,12 +1,16 @@
 import { clsx as cn } from "clsx";
-import type { ComponentProps } from "react";
 import { Button, type ButtonProps } from "../button";
 import styles from "./styles.module.css";
 
-function Root({ className, ...props }: ComponentProps<"article">) {
+interface RootProps extends React.ComponentPropsWithoutRef<"article"> {}
+
+function Root({ className, ...props }: RootProps) {
   return <article className={cn(styles.root, className)} {...props} />;
 }
-function Trigger({ className, ...props }: ComponentProps<"button">) {
+
+interface TriggerProps extends React.ComponentPropsWithoutRef<"button"> {}
+
+function Trigger({ className, ...props }: TriggerProps) {
   return (
     <button
       type="button"
@@ -15,24 +19,35 @@ function Trigger({ className, ...props }: ComponentProps<"button">) {
     />
   );
 }
-function Media({
-  className,
-  size = "icon",
-  ...props
-}: ComponentProps<"span"> & { size?: "icon" | "thumbnail" }) {
+
+interface MediaProps extends React.ComponentPropsWithoutRef<"span"> {
+  size?: "icon" | "thumbnail";
+}
+
+function Media({ className, size = "icon", ...props }: MediaProps) {
   return (
     <span className={cn(styles.media, className)} data-size={size} {...props} />
   );
 }
-function Content({ className, ...props }: ComponentProps<"span">) {
+
+interface ContentProps extends React.ComponentPropsWithoutRef<"span"> {}
+
+function Content({ className, ...props }: ContentProps) {
   return <span className={cn(styles.content, className)} {...props} />;
 }
-function Title({ className, ...props }: ComponentProps<"span">) {
+
+interface TitleProps extends React.ComponentPropsWithoutRef<"span"> {}
+
+function Title({ className, ...props }: TitleProps) {
   return <span className={cn(styles.title, className)} {...props} />;
 }
-function Description({ className, ...props }: ComponentProps<"span">) {
+
+interface DescriptionProps extends React.ComponentPropsWithoutRef<"span"> {}
+
+function Description({ className, ...props }: DescriptionProps) {
   return <span className={cn(styles.description, className)} {...props} />;
 }
+
 function Action({
   size = "xs",
   variant = "ghost",
@@ -41,6 +56,7 @@ function Action({
 }: ButtonProps) {
   return <Button size={size} variant={variant} icon={icon} {...props} />;
 }
+
 export const ContentRow = {
   Root,
   Trigger,

@@ -1,19 +1,19 @@
 .options {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--ds-space-lg);
   align-items: flex-start;
 }
 
 .list {
-  --settings-padding: 12px;
+  --settings-padding: var(--ds-space-lg);
 
   align-self: stretch;
 }
 
 .option {
   display: inline-flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
 }
 

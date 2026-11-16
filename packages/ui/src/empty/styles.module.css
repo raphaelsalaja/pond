@@ -59,7 +59,7 @@
   justify-content: center;
   width: 32px;
   height: 32px;
-  color: var(--ds-gray-9);
+  color: var(--ds-foreground-tertiary);
   border-radius: var(--ds-radius-sm);
 
   &:not(:last-child) {
@@ -106,7 +106,7 @@
 
 .action {
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
   justify-content: center;
 

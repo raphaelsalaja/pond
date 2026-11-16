@@ -1,7 +1,7 @@
 .message {
   display: block;
-  margin-top: 2px;
-  color: var(--ds-green-11);
+  margin-top: var(--ds-space-2xs);
+  color: var(--ds-foreground-secondary);
 
   &[data-celebrate] {
     animation: backup-flourish var(--ds-duration-slow)
@@ -9,7 +9,7 @@
   }
 
   &[data-error] {
-    color: var(--ds-red-11);
+    color: var(--ds-danger-foreground);
   }
 }
 

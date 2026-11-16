@@ -53,10 +53,8 @@ async function openPicker(props: {
   );
 }
 
-function day(value: string): HTMLButtonElement {
-  const found = document.querySelector<HTMLButtonElement>(
-    `[data-day="${value}"]`,
-  );
+function day(value: string): HTMLElement {
+  const found = document.querySelector<HTMLElement>(`[data-day="${value}"]`);
   if (!found) throw new Error(`Missing day ${value}`);
   return found;
 }
@@ -67,7 +65,8 @@ it("opens on the chosen month and picks a day", async () => {
   expect(document.querySelector("table")?.getAttribute("aria-label")).toBe(
     "January 2026",
   );
-  expect(day("2026-01-15").dataset.selected).toBe("true");
+  expect(day("2026-01-15").getAttribute("aria-selected")).toBe("true");
+  expect(day("2026-01-16").getAttribute("aria-selected")).toBe("false");
   await act(async () => day("2026-01-20").click());
   expect(onValueChange).toHaveBeenCalledWith("2026-01-20");
 });
@@ -78,8 +77,9 @@ it("moves by day, week, and month from the keyboard", async () => {
     onValueChange: vi.fn(),
   });
   const press = async (key: string) => {
+    const cell = grid.querySelector('[role="gridcell"][tabindex="0"]');
     await act(async () => {
-      grid.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
+      cell?.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
     });
   };
   await press("ArrowRight");
@@ -96,8 +96,8 @@ it("won't pick a day after the latest allowed", async () => {
     max: "2026-10-17",
     onValueChange: vi.fn(),
   });
-  expect(day("2026-10-17").disabled).toBe(false);
-  expect(day("2026-10-18").disabled).toBe(true);
+  expect(day("2026-10-17").getAttribute("aria-disabled")).toBeNull();
+  expect(day("2026-10-18").getAttribute("aria-disabled")).toBe("true");
   expect(
     document.querySelector<HTMLButtonElement>('[aria-label="Next Month"]')
       ?.disabled,

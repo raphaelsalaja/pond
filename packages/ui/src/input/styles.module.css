@@ -1,9 +1,9 @@
 .root {
   --input-min-height: var(--ds-size-md);
-  --input-padding-inline: 12px;
+  --input-padding-inline: var(--ds-space-lg);
   --input-padding-start: var(--input-padding-inline);
   --input-padding-end: var(--input-padding-inline);
-  --input-font-size: var(--ds-text-md);
+  --input-font-size: var(--ds-text-body);
   --input-radius: var(--ds-radius-md);
   --input-icon-size: 16px;
   --input-icon-inset: 8px;
@@ -15,52 +15,32 @@
 
   &:where([data-size="xs"]) {
     --input-min-height: var(--ds-size-xs);
-    --input-font-size: var(--ds-text-xs);
+    --input-font-size: var(--ds-text-small);
     --input-radius: var(--ds-radius-sm);
-    --input-padding-inline: 6px;
+    --input-padding-inline: var(--ds-space-sm);
     --input-icon-size: 12px;
     --input-icon-inset: 5px;
-    --input-icon-padding-start: 20px;
+    --input-icon-padding-start: var(--ds-space-2xl);
   }
 
   &:where([data-size="sm"]) {
     --input-min-height: var(--ds-size-sm);
-    --input-font-size: var(--ds-text-sm);
+    --input-font-size: var(--ds-text-small);
     --input-radius: var(--ds-radius-sm);
-    --input-padding-inline: 8px;
+    --input-padding-inline: var(--ds-space-md);
     --input-icon-size: 14px;
     --input-icon-inset: 6px;
-    --input-icon-padding-start: 24px;
+    --input-icon-padding-start: var(--ds-space-2xl);
   }
 
   &:where([data-size="md"]) {
     --input-min-height: var(--ds-size-md);
-    --input-font-size: var(--ds-text-md);
+    --input-font-size: var(--ds-text-body);
     --input-radius: var(--ds-radius-md);
-    --input-padding-inline: 12px;
+    --input-padding-inline: var(--ds-space-lg);
     --input-icon-size: 16px;
     --input-icon-inset: 8px;
     --input-icon-padding-start: 28px;
-  }
-
-  &:where([data-size="lg"]) {
-    --input-min-height: var(--ds-size-lg);
-    --input-font-size: var(--ds-text-lg);
-    --input-radius: var(--ds-radius-lg);
-    --input-padding-inline: 14px;
-    --input-icon-size: 18px;
-    --input-icon-inset: 10px;
-    --input-icon-padding-start: 34px;
-  }
-
-  &:where([data-size="xl"]) {
-    --input-min-height: var(--ds-size-xl);
-    --input-font-size: var(--ds-text-xl);
-    --input-radius: var(--ds-radius-xl);
-    --input-padding-inline: 16px;
-    --input-icon-size: 20px;
-    --input-icon-inset: 12px;
-    --input-icon-padding-start: 38px;
   }
 
   &:has(> [data-slot="icon"]) {
@@ -74,7 +54,6 @@
   &:has(> .affix) {
     overflow: hidden;
     border-radius: var(--input-radius);
-    transition: box-shadow var(--ds-duration-medium) var(--ds-easing-standard);
   }
 
   &:has(> [data-multiline]) {
@@ -92,8 +71,8 @@
   min-height: var(--input-min-height);
   padding-inline: var(--input-padding-inline);
   font-size: var(--input-font-size);
-  font-weight: var(--ds-weight-lg);
-  color: var(--ds-gray-10);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-foreground-tertiary);
   user-select: none;
 }
 
@@ -110,7 +89,7 @@
   justify-content: center;
   width: var(--input-icon-size);
   height: var(--input-icon-size);
-  color: var(--ds-gray-8);
+  color: var(--ds-foreground-tertiary);
   pointer-events: none;
 }
 
@@ -123,32 +102,34 @@
   align-items: center;
   justify-content: center;
   width: var(--input-min-height);
-  border-inline-start: var(--ds-border-width) solid var(--ds-gray-6);
+  border-inline-start: var(--ds-border-width) solid var(--ds-border-strong);
 }
 
+/* Typing already shows where focus is, so text fields firm their edge instead of taking the ring. */
 .field {
+  --ds-focus-outline: transparent;
+
   flex: 1 1 auto;
   width: 100%;
   height: 100%;
   min-height: var(--input-min-height);
   padding: 0 var(--input-padding-end) 0 var(--input-padding-start);
   font-size: var(--input-font-size);
-  font-weight: var(--ds-weight-lg);
-  color: var(--ds-gray-12);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-foreground-primary);
   border-radius: var(--input-radius);
-  transition: box-shadow var(--ds-duration-medium) var(--ds-easing-standard);
 
   &::placeholder {
-    color: var(--ds-gray-8);
+    color: var(--ds-foreground-tertiary);
   }
 
   &:disabled {
     cursor: not-allowed;
-    opacity: 0.8;
+    opacity: var(--ds-opacity-disabled);
   }
 
   &[aria-invalid="true"] {
-    color: var(--ds-red-11);
+    color: var(--ds-danger-foreground);
   }
 
   &[data-multiline]:not([data-appearance="bare"]) {
@@ -157,13 +138,13 @@
     max-width: 100%;
     height: auto;
     min-height: calc(2lh + 16px);
-    padding-block: 8px;
+    padding-block: var(--ds-space-md);
     line-height: 1.5;
     resize: none;
   }
 
   &[data-multiline][data-padding="comfortable"] {
-    padding: 16px;
+    padding: var(--ds-space-xl);
   }
 
   &[data-multiline][data-padding="compact"] {
@@ -177,8 +158,6 @@
 }
 
 .field:where([data-appearance="bare"]) {
-  --ds-focus-outline: transparent;
-
   height: auto;
   min-height: 0;
   padding: 0;
@@ -192,21 +171,16 @@
 }
 
 .root:where([data-variant="primary"]) > .field {
-  background: var(--ds-gray-1);
-  box-shadow: var(--ds-shadow-xs);
+  background: var(--ds-background-primary);
+  box-shadow: var(--ds-shadow-border);
 
-  &:is(
-      :hover,
-      :focus-visible,
-      [data-demo-state="hover"],
-      [data-demo-state="focus"]
-    ) {
-    box-shadow: var(--ds-shadow-sm);
+  &:is(:focus-visible, [data-demo-state="focus"]) {
+    box-shadow: 0 0 0 1px var(--ds-border-strong);
   }
 }
 
 .root:where([data-variant="secondary"]) > .field {
-  background: var(--ds-gray-a2);
+  background: var(--ds-surface-primary);
   border: var(--ds-border-width) solid var(--ds-border-subtle);
 
   &:is(
@@ -215,18 +189,16 @@
       [data-demo-state="hover"],
       [data-demo-state="focus"]
     ) {
-    background: var(--ds-gray-a3);
+    background: var(--ds-surface-secondary);
   }
 
   &:is(:focus-visible, [data-demo-state="focus"]) {
-    border-color: var(--ds-gray-a6);
+    border-color: var(--ds-border-strong);
   }
 }
 
 .root:where([data-variant="borderless"]) > .field {
-  --ds-focus-outline: transparent;
-
-  font-weight: var(--ds-weight-md);
+  font-weight: var(--ds-weight-regular);
   background: transparent;
 }
 
@@ -240,21 +212,16 @@
 }
 
 .root:where([data-variant="primary"]):has(> .affix) {
-  background: var(--ds-gray-1);
-  box-shadow: var(--ds-shadow-xs);
+  background: var(--ds-background-primary);
+  box-shadow: var(--ds-shadow-border);
 
-  &:is(
-      :hover,
-      :focus-within,
-      [data-demo-state="hover"],
-      [data-demo-state="focus"]
-    ) {
-    box-shadow: var(--ds-shadow-sm);
+  &:is(:has(> .field:focus-visible), [data-demo-state="focus"]) {
+    box-shadow: 0 0 0 1px var(--ds-border-strong);
   }
 }
 
 .root:where([data-variant="secondary"]):has(> .affix) {
-  background: var(--ds-gray-a2);
+  background: var(--ds-surface-primary);
   border: var(--ds-border-width) solid var(--ds-border-subtle);
 
   &:is(
@@ -263,19 +230,17 @@
       [data-demo-state="hover"],
       [data-demo-state="focus"]
     ) {
-    background: var(--ds-gray-a3);
+    background: var(--ds-surface-secondary);
   }
 
-  &:is(:focus-within, [data-demo-state="focus"]) {
-    border-color: var(--ds-gray-a6);
+  &:is(:has(> .field:focus-visible), [data-demo-state="focus"]) {
+    border-color: var(--ds-border-strong);
   }
 }
 
-.root:has(> .affix):focus-within {
-  outline: var(--ds-focus-width, 2px) solid var(--ds-focus-outline);
-  outline-offset: var(--ds-focus-offset, 0);
-}
-
-.root:has(> .affix) > .affix :focus-visible {
-  outline: none;
+@media (prefers-reduced-motion: reduce) {
+  .root:has(> .affix),
+  .field {
+    transition: none;
+  }
 }

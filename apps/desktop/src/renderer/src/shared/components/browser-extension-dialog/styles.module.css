@@ -5,33 +5,33 @@
 .body {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 20px 24px 24px;
+  gap: var(--ds-space-sm);
+  padding: var(--ds-space-2xl) var(--ds-space-2xl) var(--ds-space-2xl);
 }
 
 .popup .title {
-  font-size: var(--ds-text-lg);
-  font-weight: var(--ds-weight-xxxl);
+  font-size: var(--ds-text-heading);
+  font-weight: var(--ds-weight-bold);
 }
 
 .error {
-  margin: 8px 0 0;
-  font-size: var(--ds-text-md);
-  color: var(--ds-red-11);
+  margin: var(--ds-space-md) 0 0;
+  font-size: var(--ds-text-body);
+  color: var(--ds-danger-foreground);
 }
 
 .stores {
   display: flex;
   flex-direction: column;
-  margin-top: 14px;
+  margin-top: var(--ds-space-lg);
   border-top: var(--ds-border-width) solid var(--ds-border-subtle);
 }
 
 .store {
   display: flex;
-  gap: 16px;
+  gap: var(--ds-space-xl);
   align-items: center;
-  padding: 12px 0;
+  padding: var(--ds-space-lg) 0;
 
   & + & {
     border-top: var(--ds-border-width) solid var(--ds-border-subtle);
@@ -42,38 +42,38 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--ds-space-2xs);
   min-width: 0;
 }
 
 .name {
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
-  font-size: var(--ds-text-md);
-  font-weight: var(--ds-weight-xl);
+  font-size: var(--ds-text-body);
+  font-weight: var(--ds-weight-strong);
 }
 
 .browsers {
-  font-size: var(--ds-text-sm);
-  color: var(--ds-gray-11);
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-secondary);
 }
 
 .badge {
-  padding: 1px 6px;
-  font-size: var(--ds-text-xs);
-  font-weight: var(--ds-weight-xl);
-  color: var(--ds-green-11);
-  background: var(--ds-green-3);
+  padding: 1px var(--ds-space-sm);
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-strong);
+  color: var(--ds-accent-foreground);
+  background: var(--ds-accent-tint);
   border-radius: var(--ds-radius-xs);
 }
 
 .steps {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding-left: 20px;
-  margin: 12px 0 0;
-  font-size: var(--ds-text-sm);
-  color: var(--ds-gray-11);
+  gap: var(--ds-space-xs);
+  padding-left: var(--ds-space-2xl);
+  margin: var(--ds-space-lg) 0 0;
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-secondary);
 }

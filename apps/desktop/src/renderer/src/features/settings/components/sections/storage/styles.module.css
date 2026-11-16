@@ -1,5 +1,5 @@
 .error {
   display: block;
-  margin-top: 2px;
-  color: var(--ds-red-11);
+  margin-top: var(--ds-space-2xs);
+  color: var(--ds-danger-foreground);
 }

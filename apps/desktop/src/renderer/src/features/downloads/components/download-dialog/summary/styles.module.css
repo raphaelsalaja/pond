@@ -1,0 +1,32 @@
+.root {
+  display: flex;
+  flex-direction: column;
+}
+
+.fields {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--ds-space-xl);
+  padding-block: var(--ds-space-2xs) var(--ds-space-xl);
+}
+
+.value {
+  font-size: var(--ds-text-body);
+  color: var(--ds-foreground-primary);
+  overflow-wrap: anywhere;
+}
+
+.foot {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: var(--ds-space-md);
+  align-items: center;
+  padding-top: var(--ds-space-xl);
+  border-top: 1px solid var(--ds-border-subtle);
+}
+
+.download {
+  width: 100%;
+}

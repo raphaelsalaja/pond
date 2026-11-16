@@ -1,0 +1,110 @@
+.nav {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  font-size: var(--ds-text-body);
+  line-height: var(--ds-leading-body);
+}
+
+.top {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2xl);
+  padding: 20px var(--ds-space-xl) var(--ds-space-xl);
+}
+
+.logo {
+  display: flex;
+  align-self: flex-start;
+  padding-inline: var(--ds-space-md);
+  color: var(--ds-foreground-primary);
+}
+
+.groups {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--ds-space-xl);
+  min-height: 0;
+  padding: 0 var(--ds-space-xl) var(--ds-space-xl);
+  overflow-y: auto;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2xs);
+}
+
+.label {
+  padding: var(--ds-space-xs) var(--ds-space-md);
+  margin: 0;
+  font-size: inherit;
+  font-weight: var(--ds-weight-strong);
+  color: var(--ds-foreground-tertiary);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.link {
+  display: flex;
+  align-items: center;
+  min-height: var(--ds-size-sm);
+  padding: 0 var(--ds-space-md);
+  font-weight: var(--ds-weight-strong);
+  color: var(--ds-foreground-secondary);
+  text-decoration: none;
+  border-radius: var(--ds-radius-sm);
+  transition:
+    color var(--ds-duration-fast) var(--ds-easing-standard),
+    background-color var(--ds-duration-fast) var(--ds-easing-standard);
+
+  &:hover {
+    color: var(--ds-foreground-primary);
+  }
+
+  &[data-active] {
+    color: var(--ds-foreground-primary);
+    background: var(--ds-surface-secondary);
+  }
+
+  &:focus-visible {
+    outline-offset: var(--ds-focus-inset);
+  }
+}
+
+.footer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-md);
+  padding: var(--ds-space-xl);
+  border-top: var(--ds-border-width) solid var(--ds-border-subtle);
+}
+
+.theme {
+  display: flex;
+
+  & > * {
+    flex: 1;
+  }
+}
+
+@media (max-width: 720px) {
+  .groups {
+    flex: none;
+    overflow: visible;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .link {
+    transition: none;
+  }
+}

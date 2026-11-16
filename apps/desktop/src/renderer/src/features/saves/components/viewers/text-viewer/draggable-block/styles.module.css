@@ -31,7 +31,7 @@
   left: 0;
   height: 2px;
   pointer-events: none;
-  background: var(--ds-accent-9);
+  background: var(--ds-accent);
   border-radius: var(--ds-radius-full);
   opacity: 0;
   will-change: transform;

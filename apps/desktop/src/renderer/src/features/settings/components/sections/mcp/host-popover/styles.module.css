@@ -1,32 +1,32 @@
 .title {
   margin: 0;
-  font-size: var(--ds-text-md);
-  font-weight: var(--ds-weight-xl);
+  font-size: var(--ds-text-body);
+  font-weight: var(--ds-weight-strong);
 }
 
 .popup {
   --ds-popup-width: 320px;
   --ds-popup-min-width: 280px;
-  gap: 10px;
-  padding: 12px;
+  gap: var(--ds-space-md);
+  padding: var(--ds-space-lg);
 }
 
 .lead {
   margin: 0;
-  font-size: var(--ds-text-sm);
+  font-size: var(--ds-text-small);
   line-height: 1.4;
-  color: var(--ds-gray-11);
+  color: var(--ds-foreground-secondary);
 }
 
 .merge {
   margin: 0;
-  font-size: var(--ds-text-sm);
+  font-size: var(--ds-text-small);
   line-height: 1.4;
-  color: var(--ds-gray-11);
+  color: var(--ds-foreground-secondary);
 }
 
 .error {
   margin: 0;
-  font-size: var(--ds-text-sm);
-  color: var(--ds-red-11);
+  font-size: var(--ds-text-small);
+  color: var(--ds-danger-foreground);
 }

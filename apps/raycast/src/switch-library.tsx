@@ -46,7 +46,7 @@ export default function Command() {
   const failed = libraries.error && !data.length ? toError(libraries.error) : null;
 
   return (
-    <List isLoading={libraries.isLoading} searchBarPlaceholder="Search libraries…">
+    <List isLoading={libraries.isLoading} searchBarPlaceholder="Search…">
       {failed ? (
         <ProblemView error={failed} onRetry={libraries.revalidate} />
       ) : (

@@ -6,9 +6,9 @@
   align-items: center;
   width: 26px;
   height: 16px;
-  padding: 2px;
+  padding: var(--ds-space-2xs);
   cursor: var(--ds-cursor-interactive, pointer);
-  background: var(--ds-gray-6);
+  background: var(--ds-foreground-tertiary);
   border: 0;
   border-radius: var(--ds-radius-full);
   transition:
@@ -22,23 +22,23 @@
   }
 
   &[data-checked] {
-    background: var(--ds-accent-9);
+    background: var(--ds-accent);
   }
 
   &:hover:not([data-disabled]),
   &[data-demo-state="hover"] {
-    background: var(--ds-gray-a7);
+    background: var(--ds-foreground-tertiary);
   }
 
   &[data-checked]:hover:not([data-disabled]),
   &[data-checked][data-demo-state="hover"] {
-    background: var(--ds-accent-10);
+    background: var(--ds-accent-hover);
   }
 
   /* Base UI renders the root as a `<span>`, so `:disabled` never matches. */
   &[data-disabled] {
     cursor: not-allowed;
-    opacity: 0.5;
+    opacity: var(--ds-opacity-disabled);
   }
 }
 
@@ -46,7 +46,7 @@
   flex-shrink: 0;
   width: 12px;
   height: 12px;
-  background: var(--ds-gray-1);
+  background: var(--ds-background-primary);
   border-radius: var(--ds-radius-full);
   transition:
     translate var(--ds-duration-bounce) var(--ds-easing-bounce),
@@ -54,7 +54,7 @@
     background var(--ds-duration-snap) var(--ds-easing-standard);
 
   &[data-checked] {
-    background: light-dark(var(--ds-gray-1), var(--ds-gray-12));
+    background: light-dark(var(--ds-background-primary), var(--ds-background-inverse));
     translate: 10px 0;
   }
 }
@@ -68,5 +68,13 @@
 
   &[data-checked] {
     translate: 7px 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root,
+  .thumb,
+  .root:active:not([data-disabled]) .thumb {
+    transition: none;
   }
 }

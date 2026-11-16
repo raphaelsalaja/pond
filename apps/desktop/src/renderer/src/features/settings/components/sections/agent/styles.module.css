@@ -24,7 +24,7 @@
 .bone {
   display: block;
   flex: none;
-  background: var(--ds-gray-4);
+  background: var(--ds-background-tertiary);
   animation: pending 1.2s var(--ds-easing-in-out) infinite;
 
   &[data-part="logo"] {

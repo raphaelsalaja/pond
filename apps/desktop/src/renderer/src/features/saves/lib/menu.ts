@@ -30,6 +30,7 @@ import type { BuildSaveMenuOptions } from "./menu/types";
 export {
   loadOpenWithApps,
   type OpenWithApp,
+  openWith,
   openWithKind,
   peekOpenWithApps,
 } from "@/features/saves/lib/open-with-menu";

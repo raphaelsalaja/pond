@@ -16,12 +16,13 @@ function storedRawJson(value: { capture?: StoredCapture }): RawJson {
 }
 
 describe("planOps", () => {
-  it("captures Threads posts like tweets and skips text covers", () => {
+  it("captures Threads and Bluesky posts like tweets and skips text covers", () => {
     const ops = planOps("threads");
     expect(ops).toContain("capture_tweet");
     expect(ops).not.toContain("render_text_cover");
     expect(ops).not.toContain("archive_page");
     expect(planOps("twitter")).toEqual(ops);
+    expect(planOps("bluesky")).toEqual(ops);
   });
 });
 

@@ -1,0 +1,63 @@
+.root {
+  display: flex;
+  gap: var(--ds-space-md);
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  padding-block: var(--ds-space-xs);
+  font-size: var(--ds-text-body);
+  color: var(--ds-foreground-tertiary);
+}
+
+.working-label {
+  overflow-wrap: anywhere;
+  background-image: linear-gradient(
+    90deg,
+    var(--ds-foreground-tertiary) 40%,
+    color-mix(in srgb, var(--ds-accent) 25%, var(--ds-foreground-tertiary)) 50%,
+    var(--ds-foreground-tertiary) 60%
+  );
+  animation: thinking-sweep calc(var(--ds-duration-medium) * 12) linear infinite;
+}
+
+@keyframes thinking-sweep {
+  from {
+    background-position: 100% 0;
+  }
+
+  40%,
+  to {
+    background-position: -100% 0;
+  }
+}
+
+.root > svg {
+  width: 16px;
+  height: 16px;
+}
+
+.stop-mark {
+  width: 7px;
+  height: 7px;
+  background: currentColor;
+  border-radius: 2px;
+}
+
+.root[data-reduced-motion="true"] * {
+  animation: none;
+}
+
+.root[data-reduced-motion="true"] .working-label,
+:global(html[data-reduce-motion="true"]) .working-label {
+  color: var(--ds-foreground-tertiary);
+  background: none;
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce), (forced-colors: active) {
+  .working-label {
+    color: var(--ds-foreground-tertiary);
+    background: none;
+    animation: none;
+  }
+}

@@ -1,5 +1,5 @@
 .diagram {
   margin-top: var(--note-space-small);
   overflow-x: auto;
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
 }

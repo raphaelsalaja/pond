@@ -70,6 +70,12 @@ async function setup() {
     clipboardFolder: () => clipboard,
     writeClipboardText: vi.fn(),
     writeClipboardFiles: vi.fn(async () => {}),
+    fetchFile: vi.fn(async (url: string) => ({
+      bytes: Buffer.from(url),
+      filename: `${url.split("/").at(-1)}.jpg`,
+      mimeType: "image/jpeg",
+    })),
+    saveFiles: vi.fn(async () => ({ ok: true })),
   };
   return {
     exports: createDownloadExports(runtime),
@@ -158,5 +164,74 @@ describe("download exports", () => {
       destination: "file",
     });
     expect(result.ok).toBe(false);
+  });
+
+  describe("files", () => {
+    const POST = "https://x.com/a/status/1";
+    const IMAGES = [
+      "https://pbs.twimg.com/media/one",
+      "https://pbs.twimg.com/media/two",
+    ];
+
+    it("writes every file into the export folder", async () => {
+      const { exports, downloads } = await setup();
+      const result = await exports.files({
+        url: POST,
+        title: "Post",
+        files: IMAGES,
+        destination: "file",
+      });
+      const paths = [join(downloads, "one.jpg"), join(downloads, "two.jpg")];
+      expect(result).toEqual({ ok: true, paths });
+      expect(await readFile(paths[0] ?? "", "utf8")).toBe(IMAGES[0]);
+      expect(exports.owns(paths[1] ?? "")).toBe(true);
+    });
+
+    it("puts every file on the clipboard", async () => {
+      const { exports, runtime } = await setup();
+      const result = await exports.files({
+        url: POST,
+        title: null,
+        files: IMAGES,
+        destination: "clipboard",
+      });
+      expect(result.ok && result.paths.map((path) => basename(path))).toEqual([
+        "one.jpg",
+        "two.jpg",
+      ]);
+      expect(runtime.writeClipboardFiles).toHaveBeenCalledWith(
+        result.ok ? result.paths : [],
+      );
+    });
+
+    it("saves the files to the library with the page they came from", async () => {
+      const { exports, runtime } = await setup();
+      const result = await exports.files({
+        url: POST,
+        title: "Post",
+        files: IMAGES,
+        destination: "library",
+      });
+      expect(result).toEqual({ ok: true, paths: [] });
+      expect(runtime.saveFiles).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: POST,
+          title: "Post",
+          sourceUrls: IMAGES,
+        }),
+      );
+    });
+
+    it("reports a failed fetch", async () => {
+      const { exports, runtime } = await setup();
+      vi.mocked(runtime.fetchFile).mockRejectedValueOnce(new Error("HTTP 404"));
+      const result = await exports.files({
+        url: POST,
+        title: null,
+        files: IMAGES,
+        destination: "file",
+      });
+      expect(result.ok).toBe(false);
+    });
   });
 });

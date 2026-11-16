@@ -1,23 +1,21 @@
 .timeline {
-  --clip: var(--ds-gold-7);
-  --clip-edge: var(--ds-gold-8);
-  --clip-ink: var(--ds-black-a11);
-  --ruler-height: 26px;
-  --lane-height: 40px;
-  --lane-radius: 10px;
-  --handle-width: 10px;
+  --clip: var(--ds-gold-border);
+  --clip-ink: var(--ds-foreground-primary);
+  --ruler-height: 22px;
+  --lane-height: 44px;
+  --lane-radius: var(--ds-radius-md);
+  --handle-width: 12px;
 
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding-bottom: 2px;
+  gap: var(--ds-space-sm);
+  padding-bottom: var(--ds-space-2xs);
   user-select: none;
 
-  /* The dark gold scale has no bright amber, so dark mode uses its pale step. */
+  /* The dark gold border is too dim to read as a clip, so dark mode uses the solid. */
   :global([data-theme="dark"]) & {
-    --clip: var(--ds-gold-12);
-    --clip-edge: var(--ds-gold-11);
+    --clip: var(--ds-gold);
   }
 }
 
@@ -28,7 +26,7 @@
   z-index: 1;
   width: 1px;
   pointer-events: none;
-  background: var(--ds-gray-12);
+  background: var(--ds-background-inverse);
   opacity: 0.7;
   transform: translateX(-50%);
 }
@@ -40,7 +38,7 @@
   z-index: 1;
   width: 1px;
   pointer-events: none;
-  background: var(--ds-gray-a6);
+  background: var(--ds-surface-tertiary);
   transform: translateX(-50%);
 }
 
@@ -48,16 +46,16 @@
   position: absolute;
   top: 0;
   left: 50%;
-  padding: 0 4px;
+  padding: 0 var(--ds-space-xs);
   font-family: var(--ds-font-mono);
-  font-size: 11px;
+  font-size: var(--ds-text-small);
   font-variant-numeric: tabular-nums;
   line-height: 14px;
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
   white-space: nowrap;
-  background: var(--ds-gray-3);
-  border-radius: 4px;
-  box-shadow: 0 0 0 1px var(--ds-gray-a4);
+  background: var(--ds-background-tertiary);
+  border-radius: var(--ds-radius-xs);
+  box-shadow: 0 0 0 1px var(--ds-border-subtle);
   transform: translateX(-50%);
 }
 
@@ -68,47 +66,68 @@
   cursor: col-resize;
 }
 
-.dot {
-  position: absolute;
-  top: 21px;
-  width: 3px;
-  height: 3px;
-  background: var(--ds-gray-a6);
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-}
-
 .label {
   position: absolute;
   top: 0;
   font-family: var(--ds-font-mono);
-  font-size: 11px;
+  font-size: var(--ds-text-small);
   font-variant-numeric: tabular-nums;
   line-height: 14px;
-  color: var(--ds-gray-9);
+  color: var(--ds-foreground-tertiary);
   transform: translateX(-50%);
 
   &::after {
     position: absolute;
-    top: 19px;
+    top: 17px;
     left: 50%;
     width: 1px;
-    height: 5px;
+    height: 4px;
     content: "";
-    background: var(--ds-gray-a6);
+    background: var(--ds-surface-tertiary);
   }
 }
 
 .lane {
   position: relative;
   height: var(--lane-height);
+  overflow: hidden;
   touch-action: none;
-  background: var(--ds-gray-a2);
+  background: var(--ds-surface-secondary);
   border-radius: var(--lane-radius);
 
   &[data-kind="replay"] {
     height: 30px;
-    overflow: hidden;
+    background: var(--ds-surface-primary);
+  }
+}
+
+.strip {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  pointer-events: none;
+}
+
+.cell {
+  flex: 1;
+  height: 100%;
+}
+
+/* Washes the track outside the trim so the kept part reads at a glance. */
+.shade {
+  position: absolute;
+  inset-block: 0;
+  pointer-events: none;
+  background: color-mix(in oklab, var(--ds-background-primary) 70%, transparent);
+
+  &[data-edge="start"] {
+    left: 0;
+    width: var(--start);
+  }
+
+  &[data-edge="end"] {
+    right: 0;
+    left: var(--end);
   }
 }
 
@@ -117,41 +136,15 @@
   inset-block: 0;
   right: calc(100% - var(--end));
   left: var(--start);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-width: calc(var(--handle-width) * 2 + 8px);
-  container-type: inline-size;
+  min-width: calc(var(--handle-width) * 2 + 4px);
   overflow: hidden;
-  line-height: 1.15;
-  color: var(--clip-ink);
   cursor: grab;
-  background: var(--clip);
+  border-block: 2px solid var(--clip);
   border-radius: var(--lane-radius);
-  box-shadow:
-    inset 0 0 0 1px var(--clip-edge),
-    0 1px 2px var(--ds-black-a4);
 
   .lane[data-dragging="window"] & {
     cursor: grabbing;
   }
-}
-
-.name {
-  font-size: 11px;
-  color: var(--ds-black-a9);
-
-  @container (width < 96px) {
-    display: none;
-  }
-}
-
-.length {
-  font-family: var(--ds-font-mono);
-  font-size: var(--ds-text-xs);
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
 }
 
 .handle {
@@ -162,15 +155,16 @@
   width: var(--handle-width);
   cursor: ew-resize;
   outline: none;
+  background: var(--clip);
 
   &::before {
     width: 2px;
     height: 14px;
     content: "";
-    background: var(--ds-black-a7);
+    background: var(--clip-ink);
     border-radius: 1px;
-    opacity: 0.6;
-    transition: opacity 120ms ease;
+    opacity: 0.45;
+    transition: opacity var(--ds-duration-snap) var(--ds-easing-standard);
   }
 
   &[data-edge="start"] {
@@ -181,13 +175,18 @@
     right: 0;
   }
 
-  .clip:hover &::before,
   &[data-active]::before {
-    opacity: 1;
+    opacity: 0.8;
+  }
+
+  @media (hover: hover) {
+    .clip:hover &::before {
+      opacity: 0.8;
+    }
   }
 
   &:focus-visible::before {
-    box-shadow: 0 0 0 2px var(--ds-accent-9);
+    box-shadow: 0 0 0 2px var(--ds-accent);
     opacity: 1;
   }
 }
@@ -196,18 +195,18 @@
   position: absolute;
   inset: 4px 8px;
   display: flex;
-  gap: 2px;
+  gap: var(--ds-space-2xs);
   align-items: flex-end;
   pointer-events: none;
 }
 
 .bar {
   flex: 1;
-  background: var(--ds-gray-a3);
+  background: var(--ds-surface-secondary);
   border-radius: 1px;
 
   &[data-inside] {
-    background: var(--ds-gray-a6);
+    background: var(--ds-surface-tertiary);
   }
 }
 
@@ -215,41 +214,43 @@
   position: absolute;
   inset-block: 3px;
   display: flex;
-  gap: 4px;
+  gap: var(--ds-space-xs);
   align-items: center;
   justify-content: center;
   min-width: 22px;
   padding: 0;
-  color: var(--ds-orange-10);
+  color: var(--ds-foreground-primary);
   cursor: pointer;
-  background: var(--ds-orange-3);
+  background: var(--ds-gold-tint);
   border: 0;
-  border-radius: 7px;
-  box-shadow: inset 0 0 0 1px var(--ds-orange-6);
+  border-radius: var(--ds-radius-sm);
+  box-shadow: inset 0 0 0 1px var(--ds-gold-border);
 
-  &:hover {
-    background: var(--ds-orange-4);
+  @media (hover: hover) {
+    &:hover {
+      background: var(--ds-gold-tint);
+    }
   }
 
   &[data-active] {
-    background: var(--ds-orange-4);
-    box-shadow: inset 0 0 0 1.5px var(--ds-orange-8);
+    background: var(--ds-gold-tint);
+    box-shadow: inset 0 0 0 1.5px var(--ds-gold-border);
   }
 
   &:focus-visible {
-    outline: 2px solid var(--ds-accent-9);
+    outline: 2px solid var(--ds-accent);
     outline-offset: 1px;
   }
 }
 
 .playhead {
   position: absolute;
-  top: 17px;
+  top: 15px;
   bottom: 0;
   z-index: 2;
   width: 2px;
   pointer-events: none;
-  background: var(--ds-accent-9);
+  background: var(--ds-background-inverse);
   border-radius: 1px;
   transform: translateX(-50%);
 }
@@ -263,8 +264,8 @@
   pointer-events: auto;
   touch-action: none;
   cursor: col-resize;
-  background: var(--ds-accent-9);
+  background: var(--ds-background-inverse);
   border-radius: 50%;
-  box-shadow: 0 0 0 2px var(--ds-gray-1);
+  box-shadow: 0 0 0 2px var(--ds-background-primary);
   transform: translateX(-50%);
 }

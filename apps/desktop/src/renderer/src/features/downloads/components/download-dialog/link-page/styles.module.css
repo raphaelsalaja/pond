@@ -1,20 +1,15 @@
 .page {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--ds-space-xl);
 }
 
 .description {
   text-wrap: pretty;
 }
 
-.row {
-  display: flex;
-  gap: 8px;
-}
-
 .input {
-  flex: 1;
+  flex: none;
   min-width: 0;
 }
 
@@ -24,16 +19,16 @@
 
 .skeleton {
   display: flex;
-  gap: 12px;
+  gap: var(--ds-space-lg);
   align-items: center;
-  padding-top: 4px;
+  padding-top: var(--ds-space-xs);
 }
 
 .poster {
   flex-shrink: 0;
   width: 96px;
   aspect-ratio: 16 / 9;
-  background: var(--ds-gray-a3);
+  background: var(--ds-surface-secondary);
   border-radius: var(--ds-radius-sm);
 }
 
@@ -41,32 +36,32 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--ds-space-md);
   min-width: 0;
 }
 
 .reading {
-  font-size: var(--ds-text-md);
-  font-weight: var(--ds-weight-lg);
+  font-size: var(--ds-text-body);
+  font-weight: var(--ds-weight-medium);
 }
 
 .line {
   width: 40%;
   height: 10px;
-  background: var(--ds-gray-a3);
+  background: var(--ds-surface-secondary);
   border-radius: var(--ds-radius-xs);
 }
 
 .error {
   margin: 0;
-  font-size: var(--ds-text-md);
-  color: var(--ds-red-11);
+  font-size: var(--ds-text-body);
+  color: var(--ds-danger-foreground);
   text-wrap: pretty;
 }
 
 .failure {
   display: flex;
-  gap: 12px;
+  gap: var(--ds-space-lg);
   align-items: center;
   justify-content: space-between;
 }

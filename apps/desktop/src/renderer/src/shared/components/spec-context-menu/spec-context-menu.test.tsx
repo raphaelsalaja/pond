@@ -100,7 +100,7 @@ describe("spec menu search", () => {
     }).toEqual({
       type: "text",
       role: "searchbox",
-      placeholder: "Filter…",
+      placeholder: "Search…",
       parentRole: "dialog",
       hasIcon: false,
     });

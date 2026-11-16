@@ -156,7 +156,7 @@ export function AssignMenu({
             <Chip.Popup className={styles.popup} aria-label={plural}>
               <Menu.Input
                 aria-label={`Search ${plural}`}
-                placeholder={`Search ${plural.toLowerCase()}…`}
+                placeholder="Search…"
                 onKeyDown={(event) => {
                   if (
                     !batch ||

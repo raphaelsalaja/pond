@@ -194,7 +194,7 @@ it("splits provider and model choices into separate submenus", async () => {
   expect(document.querySelector("aside")?.style.insetBlockStart).toBe("140px");
 
   const input = document.querySelector<HTMLInputElement>(
-    'input[placeholder="Search models…"]',
+    'input[placeholder="Search…"]',
   );
   if (!input) throw new Error("Missing model search");
   await act(async () => setInput(input, "sol"));
@@ -269,7 +269,9 @@ it("keeps unsupported controls visibly unavailable", async () => {
   const fast = menuItem("Fast");
   expect(fast?.textContent).not.toContain("Unavailable");
   expect(fast?.getAttribute("aria-disabled")).toBe("true");
-  expect(fast?.querySelector('[role="switch"]')).not.toBeNull();
+  expect(
+    fast?.querySelector('[aria-hidden="true"][data-unchecked]'),
+  ).not.toBeNull();
   expect(menuItem("Context")?.getAttribute("aria-disabled")).toBe("true");
   expect(menuItem("Reasoning")?.getAttribute("aria-disabled")).toBe("true");
 });

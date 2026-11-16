@@ -3,7 +3,7 @@
   align-items: center;
   justify-content: space-between;
   height: 48px;
-  padding: 0 10px;
-  color: var(--ds-gray-10);
-  border-bottom: 1px solid var(--ds-gray-a3);
+  padding: 0 var(--ds-space-lg);
+  color: var(--ds-foreground-tertiary);
+  border-bottom: 1px solid var(--ds-border-subtle);
 }

@@ -1,11 +1,11 @@
 .section {
-  gap: 16px;
+  gap: var(--ds-space-xl);
 }
 .notice {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
-  font-size: var(--ds-text-sm);
-  color: var(--ds-red-11);
+  font-size: var(--ds-text-small);
+  color: var(--ds-danger-foreground);
 }

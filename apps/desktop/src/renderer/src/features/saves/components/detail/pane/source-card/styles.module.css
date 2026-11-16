@@ -1,15 +1,15 @@
 .root {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 12px 14px 8px;
-  background: var(--ds-gray-a2);
+  gap: var(--ds-space-md);
+  padding: var(--ds-space-lg) var(--ds-space-xl) var(--ds-space-md);
+  background: var(--ds-surface-primary);
   border-radius: var(--ds-radius-sm);
 }
 
 .author {
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
   min-width: 0;
 }
@@ -23,8 +23,8 @@
   height: 28px;
   overflow: hidden;
   font-size: 10px;
-  font-weight: var(--ds-weight-lg);
-  color: var(--ds-gray-1);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-foreground-inverse);
   text-transform: uppercase;
   border-radius: var(--ds-radius-full);
 
@@ -50,22 +50,22 @@
 }
 
 .name {
-  font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-lg);
-  color: var(--ds-gray-12);
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-foreground-primary);
 }
 
 .handle {
-  font-size: var(--ds-text-xs);
-  color: var(--ds-gray-10);
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-tertiary);
 }
 
 .body {
   margin: 0;
-  font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-md);
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-regular);
   line-height: 1.5;
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
   overflow-wrap: anywhere;
   white-space: pre-wrap;
   user-select: text;
@@ -80,26 +80,26 @@
 
 .more {
   align-self: flex-start;
-  margin: -4px 0 0 -8px;
+  margin: calc(var(--ds-space-xs) * -1) 0 0 calc(var(--ds-space-md) * -1);
 }
 
 .footer {
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
   justify-content: space-between;
   min-height: 32px;
-  padding-top: 6px;
+  padding-top: var(--ds-space-sm);
   border-top: var(--ds-border-width) solid var(--ds-border-subtle);
 }
 
 .platform {
   display: inline-flex;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   align-items: center;
   min-width: 0;
-  font-size: var(--ds-text-xs);
-  color: var(--ds-gray-10);
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-tertiary);
   white-space: nowrap;
 }
 
@@ -111,5 +111,5 @@
 }
 
 .open {
-  margin-inline-end: -6px;
+  margin-inline-end: calc(var(--ds-space-sm) * -1);
 }

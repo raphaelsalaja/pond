@@ -1,32 +1,34 @@
 .list {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--ds-space-sm);
 }
 
 .item {
   display: inline-flex;
-  gap: 2px;
+  gap: var(--ds-space-sm);
   align-items: center;
   min-width: 0;
   max-width: 100%;
-  padding: 2px 2px 2px 10px;
+  height: var(--ds-size-sm);
+  padding-inline: var(--ds-space-lg) 2px;
   overflow: hidden;
-  font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-md);
-  color: var(--ds-gray-12);
-  background: var(--ds-gray-a2);
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-foreground-primary);
+  background: var(--ds-background-primary);
   border-radius: var(--ds-radius-full);
+  box-shadow: var(--ds-shadow-raised);
 
   &[data-mixed] {
     background: transparent;
-    box-shadow: inset 0 0 0 1px var(--ds-gray-a5);
+    box-shadow: inset 0 0 0 var(--ds-border-width) var(--ds-border-strong);
   }
 }
 
 .label {
   display: inline-flex;
-  gap: 4px;
+  gap: var(--ds-space-xs);
   align-items: baseline;
   min-width: 0;
   max-width: 180px;
@@ -50,7 +52,7 @@ button.label {
 .separator,
 .count {
   flex: none;
-  color: var(--ds-gray-9);
+  color: var(--ds-foreground-tertiary);
 }
 
 .crumb {

@@ -1,7 +1,7 @@
 .page {
   --settings-margin-block: 64px;
   --settings-width: 640px;
-  --settings-padding: 16px;
+  --settings-padding: var(--ds-space-xl);
   --settings-padding-inline-inset: var(--settings-padding);
 
   display: flex;
@@ -9,7 +9,7 @@
   gap: 40px;
   width: var(--settings-width);
   max-width: 100%;
-  padding-inline: 24px;
+  padding-inline: var(--ds-space-2xl);
   margin-block: var(--settings-margin-block);
   margin-inline: auto;
 
@@ -19,7 +19,7 @@
 .header {
   display: flex;
   flex-direction: row;
-  gap: 16px;
+  gap: var(--ds-space-xl);
   align-items: flex-start;
   justify-content: space-between;
   padding-inline: var(--settings-padding-inline-inset);
@@ -29,31 +29,31 @@
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--ds-space-xs);
   min-width: 0;
 }
 
 .title {
-  font-size: var(--ds-text-xl);
-  font-weight: var(--ds-weight-xl);
-  color: var(--ds-gray-12);
+  font-size: var(--ds-text-display);
+  font-weight: var(--ds-weight-strong);
+  color: var(--ds-foreground-primary);
 }
 
 .description {
   max-width: 64ch;
-  font-size: var(--ds-text-md);
-  font-weight: var(--ds-weight-md);
+  font-size: var(--ds-text-body);
+  font-weight: var(--ds-weight-regular);
   line-height: 1.5;
-  color: var(--ds-gray-11);
+  color: var(--ds-foreground-secondary);
 }
 
 .columns {
   columns: 2;
-  column-gap: 24px;
+  column-gap: var(--ds-space-2xl);
 }
 
 .columns > * {
-  margin-bottom: 24px;
+  margin-bottom: var(--ds-space-2xl);
   break-inside: avoid;
 }
 
@@ -70,24 +70,24 @@
 .section-details {
   display: grid;
   grid-template-columns: 1fr auto;
-  row-gap: 4px;
-  column-gap: 12px;
+  row-gap: var(--ds-space-xs);
+  column-gap: var(--ds-space-lg);
   align-items: center;
   min-width: 0;
-  padding: 0 var(--settings-padding) 12px;
+  padding: 0 var(--settings-padding) var(--ds-space-lg);
 }
 
 .section-title {
-  padding: 0 var(--settings-padding) 12px;
-  font-weight: var(--ds-weight-lg);
-  color: var(--ds-gray-11);
+  padding: 0 var(--settings-padding) var(--ds-space-lg);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-foreground-secondary);
 }
 
 .section-description {
-  padding: 0 var(--settings-padding-inline-inset) 12px;
+  padding: 0 var(--settings-padding-inline-inset) var(--ds-space-lg);
   margin: 0;
-  font-weight: var(--ds-weight-md);
-  color: var(--ds-gray-11);
+  font-weight: var(--ds-weight-regular);
+  color: var(--ds-foreground-secondary);
 }
 
 .section-details .section-title,
@@ -116,7 +116,7 @@
 }
 
 .item[data-disabled] {
-  opacity: 0.5;
+  opacity: var(--ds-opacity-disabled);
 
   /* The row already dims, so a disabled control inside must not dim twice. */
   & :is(:disabled, [data-disabled]) {
@@ -131,8 +131,8 @@
 @keyframes settings-highlight {
   0%,
   30% {
-    background-color: var(--ds-accent-a4);
-    box-shadow: inset 0 0 0 1px var(--ds-accent-a7);
+    background-color: var(--ds-accent-tint);
+    box-shadow: inset 0 0 0 1px var(--ds-accent-border);
   }
 
   100% {
@@ -142,8 +142,12 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .item {
+    transition: none;
+  }
+
   .item[data-highlight] {
-    background-color: var(--ds-accent-a3);
+    background-color: var(--ds-accent-tint);
     animation: none;
   }
 }
@@ -152,38 +156,38 @@
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--ds-space-2xs);
   min-width: 0;
   margin-inline-end: auto;
 }
 
 .item-title {
   display: inline-flex;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   align-items: center;
-  font-size: var(--ds-text-md);
-  font-weight: var(--ds-weight-lg);
-  color: var(--ds-gray-12);
+  font-size: var(--ds-text-body);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-foreground-primary);
 }
 
 .item-description {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-md);
-  font-weight: var(--ds-weight-md);
-  color: var(--ds-gray-11);
+  font-size: var(--ds-text-body);
+  font-weight: var(--ds-weight-regular);
+  color: var(--ds-foreground-secondary);
   white-space: nowrap;
 
   &[data-error] {
-    color: var(--ds-red-11);
+    color: var(--ds-danger-foreground);
   }
 }
 
 .control {
   display: flex;
   flex: none;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
   justify-content: flex-end;
 }
@@ -196,23 +200,23 @@
 
 /* Narrow hosts like a browser extension popup: tighter rhythm, and descriptions wrap instead of clipping. */
 .page[data-density="compact"] {
-  --settings-margin-block: 12px;
+  --settings-margin-block: var(--ds-space-lg);
   --settings-width: 100%;
-  --settings-padding: 12px;
+  --settings-padding: var(--ds-space-lg);
 
-  gap: 20px;
-  padding-inline: 12px;
+  gap: var(--ds-space-xl);
+  padding-inline: var(--ds-space-lg);
 
   & .section-title {
-    padding-bottom: 8px;
+    padding-bottom: var(--ds-space-md);
   }
 
   & .item {
-    gap: 12px;
+    gap: var(--ds-space-lg);
   }
 
   & .item-description {
-    font-size: var(--ds-text-sm);
+    font-size: var(--ds-text-small);
     white-space: normal;
   }
 }

@@ -18,14 +18,14 @@ describe("pane chrome", () => {
   it("keeps every pane header on one geometry and typography contract", () => {
     const root = declarations(".root");
     expect(root).toContain("height: var(--ds-title-bar-height);");
-    expect(root).toContain("padding: 8px;");
-    expect(root).toContain("border-bottom: 1px solid var(--ds-gray-a3);");
+    expect(root).toContain("padding: var(--ds-space-md);");
+    expect(root).toContain("border-bottom: 1px solid var(--ds-border-subtle);");
 
-    expect(declarations(".title")).toContain("font-size: var(--ds-text-md);");
-    expect(declarations(".actions")).toContain("gap: 4px;");
+    expect(declarations(".title")).toContain("font-size: var(--ds-text-body);");
+    expect(declarations(".actions")).toContain("gap: var(--ds-space-xs);");
   });
 
   it("keeps pane content on one horizontal inset", () => {
-    expect(declarations(".body")).toContain("padding-inline: 20px;");
+    expect(declarations(".body")).toContain("padding-inline: var(--ds-space-2xl);");
   });
 });

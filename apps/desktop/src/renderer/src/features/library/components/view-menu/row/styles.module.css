@@ -1,6 +1,6 @@
 .row {
   display: flex;
-  gap: 12px;
+  gap: var(--ds-space-lg);
   align-items: center;
   justify-content: space-between;
   width: 100%;
@@ -9,9 +9,9 @@
 
 .label {
   flex-shrink: 0;
-  font-size: var(--ds-text-md);
-  font-weight: var(--ds-weight-md);
-  color: var(--ds-gray-12);
+  font-size: var(--ds-text-body);
+  font-weight: var(--ds-weight-regular);
+  color: var(--ds-foreground-primary);
 }
 
 .select {

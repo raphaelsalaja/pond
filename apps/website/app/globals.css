@@ -2,6 +2,15 @@
 @import "@pond/theme/theme.css";
 
 @font-face {
+  font-family: intern-variable;
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/intern-variable.woff2") format("woff2");
+}
+
+/* Same metrics as Intern; covers the symbols, Greek and Cyrillic Intern lacks. */
+@font-face {
   font-family: inter-variable;
   font-style: normal;
   font-weight: 100 900;
@@ -28,13 +37,13 @@
 /* The page uses one text size; hierarchy comes from weight and color. */
 html {
   font-family:
-    inter-variable, ui-sans-serif, system-ui, -apple-system, "SF Pro Text",
-    "Segoe UI", sans-serif;
+    intern-variable, inter-variable, ui-sans-serif, system-ui, -apple-system,
+    "SF Pro Text", "Segoe UI", sans-serif;
   font-size: 14px;
   line-height: 22px;
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
   color-scheme: light;
-  background: var(--ds-gray-1);
+  background: var(--ds-background-primary);
 }
 
 body {
@@ -48,7 +57,7 @@ main {
 }
 
 ::selection {
-  background: var(--ds-gray-a4);
+  background: var(--ds-surface-tertiary);
 }
 
 @media (max-width: 640px) {

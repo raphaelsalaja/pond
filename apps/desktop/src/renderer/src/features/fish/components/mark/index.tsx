@@ -32,7 +32,7 @@ export function fishMood(
 }
 
 export function fishColorCss(color: FishColor): string {
-  return `var(--ds-${color}-9)`;
+  return `var(--ds-${color})`;
 }
 
 function taskOf(activity: FishPresence, mood: FishMood): Task | null {

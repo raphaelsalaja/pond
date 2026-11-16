@@ -1,24 +1,24 @@
 .thumbnail {
-  --ds-focus-offset: -2px;
+  --ds-focus-offset: var(--ds-focus-inset);
 
   display: grid;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   justify-items: center;
   width: 112px;
-  padding: 7px;
-  color: var(--ds-gray-10);
+  padding: var(--ds-space-md);
+  color: var(--ds-foreground-tertiary);
   border: var(--ds-border-width) solid transparent;
   border-radius: var(--ds-radius-md);
 }
 
 .thumbnail:hover {
-  background: var(--ds-gray-a3);
+  background: var(--ds-surface-secondary);
 }
 
 .thumbnail[data-active] {
-  color: var(--ds-gray-12);
-  background: var(--ds-accent-a3);
-  border-color: var(--ds-accent-a7);
+  color: var(--ds-foreground-primary);
+  background: var(--ds-accent-tint);
+  border-color: var(--ds-accent-border);
 }
 
 .thumbnail canvas,
@@ -27,11 +27,11 @@
   width: 96px;
   min-height: 124px;
   background: white;
-  box-shadow: var(--ds-shadow-sm);
+  box-shadow: var(--ds-shadow-border);
 }
 
 .thumbnail strong {
-  font-size: var(--ds-text-xs);
-  font-weight: var(--ds-weight-lg);
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-medium);
   font-variant-numeric: tabular-nums;
 }

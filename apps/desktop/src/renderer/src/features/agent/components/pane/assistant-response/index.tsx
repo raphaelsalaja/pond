@@ -1,4 +1,3 @@
-import { CodeBlock } from "@pond/ui/code-block";
 import type { AssistantSource } from "@shared/assistant";
 import {
   Children,
@@ -13,6 +12,7 @@ import {
   defaultRemarkPlugins,
   Streamdown,
 } from "streamdown";
+import { CodeBlock } from "../../code-block";
 import { parseSaveMentionHref, SaveMentionChip } from "../../composer/mention";
 import { remarkSaveCitations } from "../remark-save-citations";
 import { SaveCitation } from "../save-preview";

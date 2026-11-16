@@ -14,7 +14,7 @@
     align-items: flex-start;
     height: auto;
     min-height: 44px;
-    padding-block: 6px;
+    padding-block: var(--ds-space-sm);
   }
 
   &:has(.description) .icon {
@@ -60,7 +60,7 @@
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
-  scroll-padding-block: 4px;
+  scroll-padding-block: var(--ds-space-xs);
 }
 
 /* A scrolling list owns the popup's edge padding, so rows scroll to the rim instead of clipping above it. */
@@ -100,9 +100,9 @@
 .description {
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-xs);
+  font-size: var(--ds-text-small);
   line-height: 1.35;
-  color: var(--ds-gray-9);
+  color: var(--ds-foreground-tertiary);
   white-space: nowrap;
 }
 
@@ -122,7 +122,7 @@
   width: 12px;
   height: 12px;
   margin-left: auto;
-  color: var(--ds-gray-11);
+  color: var(--ds-foreground-secondary);
 
   &[data-unchecked] {
     visibility: hidden;
@@ -136,9 +136,9 @@
 .secondary-label {
   flex: none;
   margin-left: auto;
-  font-size: var(--ds-text-xs);
-  font-weight: var(--ds-weight-md);
-  color: var(--ds-gray-10);
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-regular);
+  color: var(--ds-foreground-tertiary);
   white-space: nowrap;
 }
 

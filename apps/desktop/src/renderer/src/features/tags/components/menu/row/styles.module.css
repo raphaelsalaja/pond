@@ -1,6 +1,6 @@
 .count {
   flex-shrink: 0;
-  padding-inline-start: 6px;
+  padding-inline-start: var(--ds-space-sm);
 }
 
 .row {
@@ -14,8 +14,8 @@
   justify-content: center;
   width: 16px;
   height: 16px;
-  margin-inline: -2px -4px;
-  color: var(--ds-gray-9);
+  margin-inline: calc(var(--ds-space-2xs) * -1) calc(var(--ds-space-xs) * -1);
+  color: var(--ds-foreground-tertiary);
   transition: transform var(--ds-duration-fast) var(--ds-easing-standard);
 
   &[data-expanded] {

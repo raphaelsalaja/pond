@@ -14,33 +14,33 @@
   flex: 1;
   grid-template-columns: 272px minmax(0, 1fr);
   min-height: 0;
-  margin-top: 16px;
-  border-top: 1px solid var(--ds-gray-a4);
+  margin-top: var(--ds-space-xl);
+  border-top: 1px solid var(--ds-border-subtle);
 }
 
 .options {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--ds-space-xl);
   min-width: 0;
   min-height: 0;
-  padding: 16px 20px;
+  padding: var(--ds-space-xl) var(--ds-space-2xl);
   margin: 0;
   overflow-y: auto;
   border: 0;
-  border-right: 1px solid var(--ds-gray-a4);
+  border-right: 1px solid var(--ds-border-subtle);
 }
 
 .field {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--ds-space-md);
 }
 
 .label {
-  font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-lg);
-  color: var(--ds-gray-11);
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-foreground-secondary);
 }
 
 .segment {
@@ -50,7 +50,7 @@
 .tokens {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   min-width: 0;
   padding: 0;
   margin: 0;
@@ -79,8 +79,8 @@
   top: 0;
   z-index: 1;
   height: 36px;
-  background: var(--ds-gray-1);
-  box-shadow: inset 0 -1px 0 var(--ds-gray-a4);
+  background: var(--ds-background-primary);
+  box-shadow: inset 0 -1px 0 var(--ds-border-subtle);
 }
 
 .thumb {
@@ -93,8 +93,8 @@
     width: 32px;
     height: 24px;
     overflow: hidden;
-    color: var(--ds-gray-10);
-    background: var(--ds-gray-a2);
+    color: var(--ds-foreground-tertiary);
+    background: var(--ds-surface-primary);
     border-radius: var(--ds-radius-xs);
   }
 }
@@ -110,16 +110,16 @@
   height: 40px;
 
   &:nth-child(even) {
-    background: var(--ds-gray-a2);
+    background: var(--ds-surface-primary);
   }
 
   &[data-status="unchanged"] .next,
   &[data-status="empty"] .next {
-    color: var(--ds-gray-10);
+    color: var(--ds-foreground-tertiary);
   }
 
   &[data-status="repeated"] .next {
-    color: var(--ds-yellow-11);
+    color: var(--ds-danger-foreground);
   }
 }
 
@@ -129,17 +129,17 @@
   border-radius: var(--ds-radius-xs);
 
   &[data-tone="find"] {
-    background: var(--ds-yellow-4);
+    background: var(--ds-yellow-tint);
   }
 
   &[data-tone="replace"] {
-    background: var(--ds-green-4);
+    background: var(--ds-green-tint);
   }
 }
 
 .error {
   margin: 0;
-  color: var(--ds-red-11);
+  color: var(--ds-danger-foreground);
 }
 
 .hidden {

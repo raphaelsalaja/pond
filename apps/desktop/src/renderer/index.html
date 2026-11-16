@@ -10,6 +10,13 @@
 		<title>Pond</title>
 		<link
 			rel="preload"
+			href="/src/assets/fonts/intern/variable.woff2"
+			as="font"
+			type="font/woff2"
+			crossorigin="anonymous"
+		/>
+		<link
+			rel="preload"
 			href="/src/assets/fonts/inter/variable.woff2"
 			as="font"
 			type="font/woff2"
@@ -28,8 +35,8 @@
 			   looks like Pond before main.tsx parses. */
 			:root {
 				font-family:
-					inter-variable, ui-sans-serif, system-ui, -apple-system,
-					"SF Pro Text", "Segoe UI", sans-serif;
+					intern-variable, inter-variable, ui-sans-serif, system-ui,
+					-apple-system, "SF Pro Text", "Segoe UI", sans-serif;
 				color-scheme: light dark;
 			}
 			html[data-theme="light"] {
@@ -87,11 +94,11 @@
 				display: block;
 				width: 32px;
 				height: 32px;
-				color: var(--ds-gray-4, #ebebeb);
+				color: var(--ds-border-subtle, #ebebeb);
 				animation: boot-pulse 1.4s ease-in-out infinite;
 			}
 			html[data-theme="dark"] #boot .boot-mark {
-				color: var(--ds-gray-4, #2a2a2a);
+				color: var(--ds-border-subtle, #2a2a2a);
 			}
 			#boot .boot-mark svg {
 				display: block;

@@ -7,6 +7,11 @@ import log from "electron-log/main.js";
 import sharp from "sharp";
 import { z } from "zod";
 import { resolveMainOut } from "../../lib/resolve-preload";
+import {
+  renderBlueskyPostPng,
+  renderThreadsPostPng,
+  renderXPostPng,
+} from "../render-post";
 import { captureDocumentTarget } from "./capture-target";
 
 export interface RenderedCard {
@@ -347,6 +352,8 @@ export async function renderTweetCardPng(
   if (!data || (!data.text && (!data.media || data.media.length === 0))) {
     return null;
   }
+  const native = await renderXPostPng(capture, fallbackAuthor, scheme);
+  if (native) return pad(native.png, scheme, TWEET_PAD_CSS, TWEET_RADIUS_CSS);
   return enqueueRender("tweet", data, scheme, TWEET_PAD_CSS, TWEET_RADIUS_CSS);
 }
 
@@ -359,6 +366,8 @@ export async function renderThreadsCardPng(
   if (!data || (!data.text && (!data.media || data.media.length === 0))) {
     return null;
   }
+  const native = await renderThreadsPostPng(data, scheme);
+  if (native) return pad(native.png, scheme, TWEET_PAD_CSS, TWEET_RADIUS_CSS);
   return enqueueRender(
     "threads",
     data,
@@ -366,6 +375,18 @@ export async function renderThreadsCardPng(
     TWEET_PAD_CSS,
     TWEET_RADIUS_CSS,
   );
+}
+
+/** There is no React Bluesky card to fall back to. */
+export async function renderBlueskyCardPng(
+  capture: Capture | undefined | null,
+  fallbackAuthor: string | null | undefined,
+  scheme: "light" | "dark",
+): Promise<RenderedCard | null> {
+  const native = await renderBlueskyPostPng(capture, fallbackAuthor, scheme);
+  return native
+    ? pad(native.png, scheme, TWEET_PAD_CSS, TWEET_RADIUS_CSS)
+    : null;
 }
 
 export async function renderTextCardPng(

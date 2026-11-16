@@ -1,0 +1,105 @@
+/* Solid black: the theme's black steps are translucent and read as gray over the dialog. */
+.stage {
+  display: grid;
+  flex: 1 0 auto;
+  grid-template-columns: 1fr;
+  gap: var(--ds-space-2xs);
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: black;
+  border-radius: var(--ds-radius-lg);
+
+  &[data-count="2"] {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  &[data-count="3"],
+  &[data-count="4"] {
+    grid-template-rows: 1fr 1fr;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  &[data-count="3"] .cell:first-child {
+    grid-row: span 2;
+  }
+}
+
+.cell {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+}
+
+.cell > .image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.more {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: var(--ds-text-display);
+  font-weight: var(--ds-weight-medium);
+  color: white;
+  background: rgb(0 0 0 / 0.5);
+}
+
+.card {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+  gap: var(--ds-space-md);
+  justify-content: center;
+  aspect-ratio: 16 / 9;
+  padding: 32px;
+  overflow: hidden;
+  background: var(--ds-surface-primary);
+  border-radius: var(--ds-radius-lg);
+}
+
+.cover {
+  flex: none;
+  width: 100%;
+  max-height: 45%;
+  aspect-ratio: 1.91 / 1;
+  margin-bottom: var(--ds-space-md);
+  border-radius: var(--ds-radius-md);
+}
+
+.site {
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-tertiary);
+}
+
+.heading {
+  font-size: var(--ds-text-display);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-foreground-primary);
+  text-wrap: balance;
+}
+
+.text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  margin: 0;
+  overflow: hidden;
+  -webkit-line-clamp: 8;
+  font-size: var(--ds-text-body);
+  color: var(--ds-foreground-secondary);
+  white-space: pre-line;
+}
+
+.excerpt {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  margin: 0;
+  overflow: hidden;
+  -webkit-line-clamp: 6;
+  font-size: var(--ds-text-body);
+  color: var(--ds-foreground-secondary);
+  white-space: pre-line;
+}

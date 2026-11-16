@@ -11,7 +11,7 @@
   composes: item from "../../../../ui/src/shared/styles/popup/styles.module.css";
 
   &[data-pressed]::before {
-    background: var(--ds-gray-a4);
+    background: var(--ds-surface-tertiary);
   }
 }
 

@@ -1,4 +1,4 @@
-import { IconTweetVerifiedFill } from "@pond/icons";
+import { IconTweetVerified } from "@pond/icons";
 import type { IconComponent } from "@pond/icons/types";
 import { Avatar } from "@/features/captures/components/tweet/card/header";
 import type { TweetCardData } from "@/features/captures/components/tweet/card/lib/data";
@@ -7,7 +7,7 @@ import styles from "./styles.module.css";
 
 export function QuotedCard({
   data,
-  Verified = IconTweetVerifiedFill,
+  Verified = IconTweetVerified,
 }: {
   data: TweetCardData;
   Verified?: IconComponent;

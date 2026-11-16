@@ -9,7 +9,7 @@
   min-height: 0;
 
   &:fullscreen {
-    background: var(--ds-gray-1);
+    background: var(--ds-background-primary);
   }
 }
 
@@ -56,7 +56,7 @@
 .tools {
   display: flex;
   flex: 1 1 auto;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
   width: 100%;
   min-width: 0;
@@ -70,8 +70,8 @@
 .fallback {
   display: flex;
   flex-wrap: wrap;
-  gap: 2px;
+  gap: var(--ds-space-2xs);
   align-items: center;
   justify-content: center;
-  padding: 8px;
+  padding: var(--ds-space-md);
 }

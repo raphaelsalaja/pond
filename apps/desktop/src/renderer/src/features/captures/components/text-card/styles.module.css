@@ -6,7 +6,7 @@
   box-sizing: border-box;
   width: 100%;
   aspect-ratio: 1 / 1;
-  padding: 16px;
+  padding: var(--ds-space-xl);
   overflow: hidden;
   background: var(--card-paper);
 }
@@ -19,7 +19,7 @@
 .body {
   margin: 0;
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-  font-size: var(--ds-text-lg);
+  font-size: var(--ds-text-heading);
   font-weight: 400;
   line-height: 1.4;
   color: var(--card-ink);

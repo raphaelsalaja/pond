@@ -2,15 +2,15 @@
   -webkit-app-region: no-drag;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--ds-space-md);
   min-height: 0;
-  padding: 8px;
+  padding: var(--ds-space-md);
   margin: 0;
   overflow-y: auto;
   list-style: none;
-  background: var(--ds-gray-1);
+  background: var(--ds-background-primary);
   border-radius: var(--ds-radius-lg);
-  box-shadow: var(--ds-shadow-sm);
+  box-shadow: var(--ds-shadow-border);
 }
 
 .remove {
@@ -27,7 +27,7 @@
   aspect-ratio: 1;
   cursor: grab;
   border-radius: var(--ds-radius-sm);
-  box-shadow: 0 0 0 1px var(--ds-gray-a4);
+  box-shadow: 0 0 0 1px var(--ds-border-subtle);
   transition: opacity var(--ds-duration-snap) var(--ds-easing-standard);
 
   &[data-dragging] {
@@ -36,8 +36,8 @@
 
   &[data-over] {
     box-shadow:
-      0 0 0 1px var(--ds-gray-1),
-      0 0 0 3px var(--ds-accent-9);
+      0 0 0 1px var(--ds-background-primary),
+      0 0 0 3px var(--ds-accent);
   }
 
   &:hover .remove,

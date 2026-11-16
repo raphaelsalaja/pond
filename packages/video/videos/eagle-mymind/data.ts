@@ -130,12 +130,12 @@ export interface Folder {
 
 /** Eagle's folder tree, with the Pond swatch each Eagle color maps to. */
 export const FOLDERS: Folder[] = [
-  { name: "Fashion", color: "var(--ds-orange-9)", count: 96 },
-  { name: "Runway", color: "var(--ds-orange-9)", count: 41, depth: 1 },
-  { name: "Interiors", color: "var(--ds-green-9)", count: 58 },
-  { name: "Objects", color: "var(--ds-purple-9)", count: 37 },
-  { name: "Cars", color: "var(--ds-blue-9)", count: 12 },
-  { name: "Branding", color: "var(--ds-red-9)", count: 23 },
+  { name: "Fashion", color: "var(--ds-orange)", count: 96 },
+  { name: "Runway", color: "var(--ds-orange)", count: 41, depth: 1 },
+  { name: "Interiors", color: "var(--ds-green)", count: 58 },
+  { name: "Objects", color: "var(--ds-purple)", count: 37 },
+  { name: "Cars", color: "var(--ds-blue)", count: 12 },
+  { name: "Branding", color: "var(--ds-red)", count: 23 },
 ];
 
 export const SMART = ["Five Stars", "Warm Palette"];

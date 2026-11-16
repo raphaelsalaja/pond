@@ -3,5 +3,5 @@
   flex-shrink: 0;
   object-fit: cover;
   border-radius: var(--ds-radius-source);
-  box-shadow: var(--ds-shadow-xs);
+  box-shadow: var(--ds-shadow-border);
 }

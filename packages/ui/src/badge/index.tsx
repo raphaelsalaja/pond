@@ -4,7 +4,6 @@ import styles from "./styles.module.css";
 
 export type BadgeTone =
   | "neutral"
-  | "positive"
   | "inverted"
   | "negative"
   | "accent";
@@ -16,7 +15,7 @@ interface RootProps extends ComponentPropsWithoutRef<"span"> {
 function Root({ className, tone = "neutral", ...props }: RootProps) {
   return (
     <span
-      className={cn(styles.badge, className)}
+      className={cn(styles.root, className)}
       data-tone={tone === "neutral" ? undefined : tone}
       {...props}
     />

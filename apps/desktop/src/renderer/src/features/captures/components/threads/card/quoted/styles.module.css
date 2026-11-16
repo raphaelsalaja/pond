@@ -1,37 +1,37 @@
 .quoted {
-  padding: 16px;
-  margin-top: 12px;
+  padding: var(--ds-space-xl);
+  margin-top: var(--ds-space-lg);
   border: 1px solid var(--tw-border);
   border-radius: var(--ds-radius-md);
 }
 
 .header {
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
   min-width: 0;
 }
 
 .name {
   display: inline-flex;
-  gap: 4px;
+  gap: var(--ds-space-xs);
   align-items: center;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-lg);
+  font-size: var(--ds-text-heading);
   font-weight: 700;
-  line-height: 20px;
+  line-height: var(--ds-leading-heading);
   white-space: nowrap;
 }
 
 .body {
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  margin: 8px 0 0;
+  margin: var(--ds-space-md) 0 0;
   overflow: hidden;
   -webkit-line-clamp: 6;
-  font-size: var(--ds-text-lg);
-  line-height: 20px;
+  font-size: var(--ds-text-heading);
+  line-height: var(--ds-leading-heading);
   overflow-wrap: anywhere;
   white-space: pre-wrap;
 }

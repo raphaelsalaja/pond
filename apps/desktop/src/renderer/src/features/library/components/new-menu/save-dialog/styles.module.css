@@ -1,7 +1,7 @@
 .content {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--ds-space-xl);
 }
 
 .control {
@@ -9,6 +9,6 @@
 }
 
 .error {
-  font-size: var(--ds-text-md);
-  color: var(--ds-red-11);
+  font-size: var(--ds-text-body);
+  color: var(--ds-danger-foreground);
 }

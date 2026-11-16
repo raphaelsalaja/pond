@@ -6,12 +6,12 @@
 
 .area {
   min-height: 160px;
-  font-weight: var(--ds-weight-md);
+  font-weight: var(--ds-weight-regular);
 }
 
 .error {
   padding-inline: var(--settings-padding);
   margin: 0;
-  font-size: var(--ds-text-sm);
-  color: var(--ds-red-11);
+  font-size: var(--ds-text-small);
+  color: var(--ds-danger-foreground);
 }

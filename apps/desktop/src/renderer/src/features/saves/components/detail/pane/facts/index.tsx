@@ -1,3 +1,4 @@
+import { Button } from "@pond/ui";
 import type { ReactNode } from "react";
 import { useSaveDetail } from "@/features/saves/hooks/use-save-detail";
 import {
@@ -111,22 +112,17 @@ function FactTile({
   };
   return (
     <SpecContextMenu buildItems={() => factMenu(label, value, filters)}>
-      <PropertyList.Row
-        span={span}
-        data-interactive=""
-        role="button"
-        tabIndex={0}
+      <Button
+        variant="bare"
+        rounding="rounded"
+        nativeButton={false}
         title={primary.label}
         onClick={primary.run}
-        onKeyDown={(event) => {
-          if (event.key !== "Enter" && event.key !== " ") return;
-          event.preventDefault();
-          primary.run();
-        }}
+        render={<PropertyList.Row span={span} data-interactive="" />}
       >
         <PropertyList.Label>{label}</PropertyList.Label>
         {children}
-      </PropertyList.Row>
+      </Button>
     </SpecContextMenu>
   );
 }

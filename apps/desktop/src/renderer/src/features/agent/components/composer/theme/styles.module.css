@@ -3,8 +3,8 @@
 }
 
 .heading {
-  margin: 8px 0 4px;
-  font-size: var(--ds-text-md);
+  margin: var(--ds-space-md) 0 var(--ds-space-xs);
+  font-size: var(--ds-text-body);
   font-weight: 600;
 }
 
@@ -25,13 +25,13 @@
 }
 
 .link {
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
 
 .list {
-  padding-left: 24px;
+  padding-left: var(--ds-space-2xl);
   margin: 0;
 }
 
@@ -61,38 +61,38 @@ ol.list {
   width: 14px;
   height: 14px;
   content: "";
-  border: 1px solid var(--ds-gray-8);
+  border: 1px solid var(--ds-border-strong);
   border-radius: var(--ds-radius-xs);
 }
 
 .checked::before {
-  background: var(--ds-gray-12);
+  background: var(--ds-background-inverse);
 }
 
 .quote {
-  padding-left: 12px;
-  margin: 4px 0;
-  border-left: 3px solid var(--ds-gray-5);
+  padding-left: var(--ds-space-lg);
+  margin: var(--ds-space-xs) 0;
+  border-left: 3px solid var(--ds-border-strong);
 }
 
 .code {
   display: block;
-  padding: 8px 12px;
-  margin: 4px 0;
+  padding: var(--ds-space-md) var(--ds-space-lg);
+  margin: var(--ds-space-xs) 0;
   overflow-x: auto;
   font-family: var(--ds-font-mono);
-  font-size: var(--ds-text-sm);
+  font-size: var(--ds-text-small);
   white-space: pre;
-  background: var(--ds-gray-2);
-  border: 1px solid var(--ds-gray-4);
+  background: var(--ds-background-secondary);
+  border: 1px solid var(--ds-border-subtle);
   border-radius: var(--ds-radius-sm);
 }
 
 .inline-code {
-  padding: 1px 4px;
+  padding: 1px var(--ds-space-xs);
   font-family: var(--ds-font-mono);
   font-size: 0.95em;
-  background: var(--ds-gray-3);
+  background: var(--ds-background-tertiary);
   border-radius: var(--ds-radius-xs);
 }
 
@@ -102,19 +102,19 @@ ol.list {
 
 .table {
   width: 100%;
-  margin: 4px 0;
+  margin: var(--ds-space-xs) 0;
   border-collapse: collapse;
 }
 
 .cell {
   min-width: 80px;
-  padding: 4px 8px;
+  padding: var(--ds-space-xs) var(--ds-space-md);
   vertical-align: top;
   text-align: left;
-  border: 1px solid var(--ds-gray-5);
+  border: 1px solid var(--ds-border-strong);
 }
 
 .header {
   font-weight: 600;
-  background: var(--ds-gray-2);
+  background: var(--ds-background-secondary);
 }

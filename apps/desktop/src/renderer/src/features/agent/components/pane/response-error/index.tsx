@@ -1,6 +1,6 @@
 import { Button } from "@pond/ui";
-import { ErrorNotice } from "@pond/ui/error-notice";
 import { openSettings } from "@/shared/lib/open-settings";
+import { ErrorNotice } from "../../error-notice";
 import styles from "./styles.module.css";
 
 const OPENAI_BILLING_URL =

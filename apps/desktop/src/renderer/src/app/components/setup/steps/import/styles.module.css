@@ -1,46 +1,46 @@
 .root {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: var(--ds-space-xl);
   align-items: center;
   width: min(760px, 100%);
-  margin-top: 4px;
+  margin-top: var(--ds-space-xs);
 }
 
 .featured {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
+  gap: var(--ds-space-lg);
   width: 100%;
   text-align: left;
 }
 
 .card {
   flex-direction: column;
-  gap: 14px;
+  gap: var(--ds-space-lg);
   align-items: flex-start;
   justify-content: flex-start;
-  padding: 14px;
+  padding: var(--ds-space-xl);
   overflow: hidden;
-  color: var(--ds-gray-12);
-  background: var(--ds-gray-2);
+  color: var(--ds-foreground-primary);
+  background: var(--ds-background-secondary);
   border-radius: var(--ds-radius-xl);
-  box-shadow: inset 0 0 0 var(--ds-border-width) var(--ds-gray-a4);
+  box-shadow: inset 0 0 0 var(--ds-border-width) var(--ds-border-subtle);
 
   &:hover {
-    background: var(--ds-gray-a3);
+    background: var(--ds-surface-secondary);
   }
 }
 
 .card .icon {
   width: 32px;
   height: 32px;
-  color: var(--ds-gray-12);
-  background: var(--ds-gray-1);
+  color: var(--ds-foreground-primary);
+  background: var(--ds-background-primary);
   border-radius: var(--ds-radius-md);
   box-shadow:
-    var(--ds-shadow-sm),
-    inset 0 0 0 var(--ds-border-width) var(--ds-gray-a3);
+    var(--ds-shadow-border),
+    inset 0 0 0 var(--ds-border-width) var(--ds-border-subtle);
 }
 
 .spinner {
@@ -54,15 +54,15 @@
 .more {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   align-items: center;
   justify-content: center;
 }
 
 .label {
-  margin-right: 4px;
-  font-size: var(--ds-text-sm);
-  color: var(--ds-gray-10);
+  margin-right: var(--ds-space-xs);
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-tertiary);
 }
 
 @media (width < 900px) {

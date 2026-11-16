@@ -23,7 +23,7 @@ export function Board({ viewport, children, chrome }: BoardProps) {
         style={{
           backgroundSize: `${gap}px ${gap}px`,
           backgroundPosition: `${viewport.x - gap / 2}px ${viewport.y - gap / 2}px`,
-          backgroundImage: `radial-gradient(circle, var(--ds-gray-a6) ${dot}px, transparent ${dot + 0.5}px)`,
+          backgroundImage: `radial-gradient(circle, var(--ds-surface-tertiary) ${dot}px, transparent ${dot + 0.5}px)`,
         }}
       />
       <div

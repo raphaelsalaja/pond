@@ -1,4 +1,4 @@
-import { IconCircleCheckFill, IconXmark } from "@pond/icons";
+import { IconCircleCheck, IconXmark } from "@pond/icons";
 import { Button, Empty, Keyboard, Loader, TitleBar, Tooltip } from "@pond/ui";
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
@@ -106,7 +106,7 @@ function InboxPage({
         <div className={styles.center}>
           <Empty.Root role="status">
             <Empty.Media>
-              <IconCircleCheckFill size={32} />
+              <IconCircleCheck size={32} />
             </Empty.Media>
             <Empty.Title>
               {scope === "snoozed" ? "Nothing snoozed" : "You're all caught up"}

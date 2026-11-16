@@ -138,7 +138,35 @@ export interface DownloadPlaylistProbe {
   entries: DownloadPlaylistEntry[];
 }
 
-export type DownloadProbe = DownloadSingleProbe | DownloadPlaylistProbe;
+/** A link with no media for yt-dlp: a post, page or file that Pond saves through its importer. */
+export interface DownloadPostProbe {
+  kind: "post";
+  url: string;
+  source: Source | null;
+  site: string;
+  title: string;
+  author: string | null;
+  text: string | null;
+  images: string[];
+  existingSaveId: string | null;
+}
+
+/** A link straight to a file, like an image, PDF or archive. */
+export interface DownloadFileProbe {
+  kind: "file";
+  url: string;
+  site: string;
+  name: string;
+  mimeType: string | null;
+  size: number | null;
+  existingSaveId: string | null;
+}
+
+export type DownloadProbe =
+  | DownloadSingleProbe
+  | DownloadPlaylistProbe
+  | DownloadPostProbe
+  | DownloadFileProbe;
 
 export const DOWNLOAD_PROBE_FAILURES = [
   "invalid",
@@ -204,6 +232,18 @@ export interface DownloadExportFolder {
   name: string;
 }
 
+export const DownloadExportFilesInputSchema = z.object({
+  /** The page the files came from, kept on the save. */
+  url: z.string().trim().min(1).max(4096),
+  title: z.string().max(500).nullable(),
+  files: z.array(z.string().trim().url().max(4096)).min(1).max(50),
+  destination: z.enum(["library", "file", "clipboard"]),
+});
+
+export type DownloadExportFilesResult =
+  | { ok: true; paths: string[] }
+  | { ok: false; message: string };
+
 export const DownloadRevealInputSchema = z.object({
   path: z.string().min(1).max(4096),
 });
@@ -214,6 +254,7 @@ export interface DownloaderQueryInputs {
   "downloader.frames": z.input<typeof DownloadFramesInputSchema>;
   "downloader.start": z.input<typeof DownloadStartInputSchema>;
   "downloader.export": z.input<typeof DownloadExportInputSchema>;
+  "downloader.exportFiles": z.input<typeof DownloadExportFilesInputSchema>;
   "downloader.exportFolder": Record<string, never>;
   "downloader.pickExportFolder": Record<string, never>;
   "downloader.reveal": z.input<typeof DownloadRevealInputSchema>;
@@ -225,6 +266,7 @@ export interface DownloaderQueryResults {
   "downloader.frames": { frames: string[] };
   "downloader.start": DownloadStartResult;
   "downloader.export": DownloadExportResult;
+  "downloader.exportFiles": DownloadExportFilesResult;
   "downloader.exportFolder": DownloadExportFolder;
   "downloader.pickExportFolder": DownloadExportFolder | null;
   "downloader.reveal": { ok: boolean };

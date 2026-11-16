@@ -1,4 +1,4 @@
-import { IconCircleCheckFill } from "@pond/icons";
+import { IconCircleCheck } from "@pond/icons";
 import { Button, Empty } from "@pond/ui";
 import {
   countOutcomes,
@@ -36,7 +36,7 @@ export function ReviewFinished({
   return (
     <Empty.Root role="status">
       <Empty.Media>
-        <IconCircleCheckFill size={32} />
+        <IconCircleCheck size={32} />
       </Empty.Media>
       <Empty.Title>Review complete</Empty.Title>
       <Empty.Description>

@@ -17,14 +17,15 @@ export { ContextMenu } from "./context-menu";
 export { cssVars } from "./css-vars";
 export { DatePicker, type DatePickerProps } from "./date-picker";
 export { Dialog } from "./dialog";
-export { Drawer } from "./drawer";
 export { Empty } from "./empty";
 export { Field } from "./field";
+export { type FileKind, FileIcon } from "./file-icon";
 export { Input } from "./input";
 export { Keyboard } from "./keyboard";
 export { Loader } from "./loader";
 export { LOGO_PATH, LOGO_VIEW_BOX, Logo, type LogoProps } from "./logo";
 export { Menu, type MenuItemSpec, menuLabelText } from "./menu";
+export { Message } from "./message";
 export { Pane } from "./pane-header";
 export {
   PickerPanel,
@@ -32,12 +33,11 @@ export {
   usePickerCursor,
 } from "./picker-panel";
 export { Popover } from "./popover";
+export { Prompt } from "./prompt";
 export { Rating } from "./rating";
 export { Reveal } from "./reveal";
-export { ScrollArea, type ScrollAreaOrientation } from "./scroll-area";
 export { Select, type SelectItemSpec } from "./select";
 export { Settings } from "./settings";
-export { pop } from "./shared/pop";
 export { Shell } from "./shell";
 export { Shimmer } from "./shimmer";
 export { Sidebar } from "./sidebar";
@@ -45,7 +45,6 @@ export { Slider } from "./slider";
 export { Stepper } from "./stepper";
 export { Swap } from "./swap";
 export { Switch } from "./switch";
-export { Tab } from "./tab";
 export { Table } from "./table";
 export { type TabProps as TabsTabProps, Tabs } from "./tabs";
 export { useTextReveal } from "./text-reveal";
@@ -58,15 +57,6 @@ export { Tooltip } from "./tooltip";
 export { Tray } from "./tray";
 export { Video } from "./video";
 export { useVideo, type VideoContextValue } from "./video/context";
-export {
-  SPEED_OPTIONS,
-  stepPlaybackRate,
-  stepVolume,
-} from "./video/lib";
-export {
-  useWindow,
-  Window,
-  type WindowContextValue,
-  type WindowEdge,
-} from "./window";
+export { stepPlaybackRate, stepVolume } from "./video/lib";
+export { Window, type WindowContextValue, type WindowEdge } from "./window";
 export { Wordmark, type WordmarkProps } from "./wordmark";

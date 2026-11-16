@@ -15,7 +15,7 @@
 
 .error {
   display: block;
-  margin-top: 4px;
-  font-size: var(--ds-text-sm);
-  color: var(--ds-red-11);
+  margin-top: var(--ds-space-xs);
+  font-size: var(--ds-text-small);
+  color: var(--ds-danger-foreground);
 }

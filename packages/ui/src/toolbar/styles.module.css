@@ -1,25 +1,25 @@
 .root {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--ds-space-lg);
   align-items: center;
   width: 100%;
 }
 
 .row {
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
   width: 100%;
 }
 
 .group {
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
   min-width: 0;
 
-  &[data-fill="true"] {
+  &[data-fill] {
     flex: 1;
   }
 
@@ -35,5 +35,5 @@
 .separator {
   width: 1px;
   height: 18px;
-  background: var(--ds-gray-a4);
+  background: var(--ds-surface-tertiary);
 }

@@ -1,0 +1,42 @@
+.root {
+  min-width: 0;
+  overflow: hidden;
+  background: var(--ds-background-secondary);
+  border: var(--ds-border-width) solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-xl);
+}
+
+.header {
+  display: flex;
+  gap: var(--ds-space-md);
+  align-items: center;
+  min-height: 32px;
+  padding: var(--ds-space-xs) var(--ds-space-lg);
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-tertiary);
+  background: var(--ds-background-secondary);
+  border-radius: var(--ds-radius-xl) var(--ds-radius-xl) 0 0;
+}
+
+.pre {
+  padding: var(--ds-space-lg) var(--ds-space-lg) var(--ds-space-lg);
+  margin: 0;
+  overflow-x: auto;
+  font-family: var(--ds-font-mono);
+  font-size: var(--ds-text-small);
+  line-height: 1.8;
+  tab-size: 2;
+  user-select: text;
+}
+
+.header > button {
+  --button-icon-size: 14px;
+  margin-left: auto;
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-regular);
+  color: inherit;
+}
+
+.code {
+  font: inherit;
+}

@@ -7,8 +7,8 @@
 
 .placeholder {
   aspect-ratio: 1 / 1;
-  color: var(--ds-gray-9);
-  background: var(--ds-gray-a2);
+  color: var(--ds-foreground-tertiary);
+  background: var(--ds-surface-primary);
 }
 
 .controls {

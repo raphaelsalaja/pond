@@ -39,9 +39,19 @@ export const POST_RENDER_LIGHT_KIND = "tweet_screenshot_light";
 export const POST_RENDER_DARK_KIND = "tweet_screenshot_dark";
 const POST_RENDER_KIND = /^tweet_screenshot_(?:quote\d+_)?(?:light|dark)$/;
 
-/** Rendered X and Threads post cards only stand in for a post that has no media of its own. */
+/** Rendered post cards only stand in for a post that has no media of its own. */
 export function isPostRenderKind(kind: string): boolean {
   return POST_RENDER_KIND.test(kind);
+}
+
+const POST_CARD_SOURCES = ["twitter", "threads", "bluesky"] as const;
+type PostCardSource = (typeof POST_CARD_SOURCES)[number];
+
+/** These sources get a rendered post card in place of the generic text cover. */
+export function rendersPostCard<S extends string>(
+  source: S,
+): source is Extract<S, PostCardSource> {
+  return (POST_CARD_SOURCES as readonly string[]).includes(source);
 }
 
 export function isOriginalImageKind(kind: string): boolean {

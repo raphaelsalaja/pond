@@ -13,7 +13,15 @@ const DidDocSchema = z.object({
     .catch([]),
 });
 
-const ImageViewSchema = z.object({ fullsize: z.string() });
+const AspectRatioSchema = z
+  .object({ width: z.number(), height: z.number() })
+  .optional()
+  .catch(undefined);
+
+const ImageViewSchema = z.object({
+  fullsize: z.string(),
+  aspectRatio: AspectRatioSchema,
+});
 
 const MediaEmbedSchema = z.object({
   $type: z.string(),
@@ -21,34 +29,76 @@ const MediaEmbedSchema = z.object({
   items: z.array(ImageViewSchema).optional().catch(undefined),
   playlist: z.string().optional().catch(undefined),
   thumbnail: z.string().optional().catch(undefined),
+  aspectRatio: AspectRatioSchema,
   external: z
-    .object({ thumb: z.string().optional().catch(undefined) })
+    .object({
+      uri: z.string().optional().catch(undefined),
+      title: z.string().optional().catch(undefined),
+      description: z.string().optional().catch(undefined),
+      thumb: z.string().optional().catch(undefined),
+    })
     .optional()
     .catch(undefined),
 });
 
+const AuthorSchema = z.object({
+  did: z.string(),
+  handle: z.string(),
+  displayName: z.string().optional().catch(undefined),
+  avatar: z.string().optional().catch(undefined),
+  verification: z
+    .object({ verifiedStatus: z.string().optional().catch(undefined) })
+    .optional()
+    .catch(undefined),
+});
+
+const FacetSchema = z.object({
+  index: z.object({ byteStart: z.number(), byteEnd: z.number() }),
+  features: z.array(
+    z.object({
+      $type: z.string(),
+      uri: z.string().optional().catch(undefined),
+      did: z.string().optional().catch(undefined),
+      tag: z.string().optional().catch(undefined),
+    }),
+  ),
+});
+
+const RecordValueSchema = z
+  .object({
+    text: z.string().optional().catch(undefined),
+    createdAt: z.string().optional().catch(undefined),
+    facets: z.array(FacetSchema).optional().catch(undefined),
+  })
+  .catch({});
+
+/** A quoted post. Blocked, deleted and detached quotes carry no `value` and fail this. */
+const ViewRecordSchema = z.object({
+  uri: z.string(),
+  author: AuthorSchema,
+  value: RecordValueSchema,
+  embeds: z.array(MediaEmbedSchema).optional().catch(undefined),
+});
+
 const EmbedSchema = MediaEmbedSchema.extend({
   media: MediaEmbedSchema.optional().catch(undefined),
+  /** `record#view` holds the quote here; `recordWithMedia#view` nests it one level down. */
+  record: z
+    .union([ViewRecordSchema, z.object({ record: ViewRecordSchema })])
+    .optional()
+    .catch(undefined),
 });
 
 export const PostSchema = z.object({
   uri: z.string(),
-  author: z.object({
-    did: z.string(),
-    handle: z.string(),
-    displayName: z.string().optional().catch(undefined),
-    avatar: z.string().optional().catch(undefined),
-  }),
-  record: z
-    .object({
-      text: z.string().optional().catch(undefined),
-      createdAt: z.string().optional().catch(undefined),
-    })
-    .catch({}),
+  author: AuthorSchema,
+  record: RecordValueSchema,
   embed: EmbedSchema.optional().catch(undefined),
   likeCount: z.number().optional().catch(undefined),
   replyCount: z.number().optional().catch(undefined),
   repostCount: z.number().optional().catch(undefined),
+  quoteCount: z.number().optional().catch(undefined),
+  bookmarkCount: z.number().optional().catch(undefined),
 });
 
 export const PostsSchema = z.object({
@@ -82,6 +132,9 @@ export const ProfileSchema = z.object({
 
 export type BlueskyPost = z.infer<typeof PostSchema>;
 export type BlueskyEmbed = z.infer<typeof MediaEmbedSchema>;
+export type BlueskyAuthor = z.infer<typeof AuthorSchema>;
+export type BlueskyRecord = z.infer<typeof RecordValueSchema>;
+export type BlueskyViewRecord = z.infer<typeof ViewRecordSchema>;
 
 /** A TID packs microseconds since the epoch above a 10-bit clock id, in a sortable base32. */
 export function tidToDate(tid: string): string | undefined {

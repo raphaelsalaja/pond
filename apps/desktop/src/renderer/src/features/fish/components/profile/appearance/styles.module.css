@@ -11,9 +11,9 @@
   justify-content: center;
   width: 88px;
   height: 88px;
-  background: var(--ds-gray-1);
+  background: var(--ds-background-primary);
   border-radius: var(--ds-radius-full);
-  box-shadow: var(--ds-shadow-sm);
+  box-shadow: var(--ds-shadow-border);
 }
 
 .edit {
@@ -24,21 +24,21 @@
 
 .picker {
   --ds-popup-width: var(--anchor-width);
-  gap: 8px;
-  padding: 8px;
+  gap: var(--ds-space-md);
+  padding: var(--ds-space-md);
 }
 
 .grid,
 .swatches {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 4px;
+  gap: var(--ds-space-xs);
 }
 
 .swatches {
-  padding: 8px 8px 0;
-  margin-inline: -8px;
-  border-top: var(--ds-border-width) solid var(--ds-gray-a4);
+  padding: var(--ds-space-md) var(--ds-space-md) 0;
+  margin-inline: calc(var(--ds-space-md) * -1);
+  border-top: var(--ds-border-width) solid var(--ds-border-subtle);
 }
 
 .picker .swatch {

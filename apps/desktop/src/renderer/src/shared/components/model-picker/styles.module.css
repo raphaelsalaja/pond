@@ -15,7 +15,7 @@
 }
 
 .name {
-  margin-left: 2px;
+  margin-left: var(--ds-space-2xs);
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: normal;
@@ -25,12 +25,12 @@
 .chevron {
   flex: 0 0 auto;
   width: 8px;
-  margin-left: 2px;
-  color: var(--ds-gray-9);
+  margin-left: var(--ds-space-2xs);
+  color: var(--ds-foreground-tertiary);
 }
 
 .option-submenu > svg:last-child {
-  margin-inline-start: 8px;
+  margin-inline-start: var(--ds-space-md);
 }
 
 .fast[data-disabled] .switch {
@@ -65,8 +65,8 @@
 
 .check {
   flex: 0 0 auto;
-  margin-left: 8px;
-  color: var(--ds-gray-12);
+  margin-left: var(--ds-space-md);
+  color: var(--ds-foreground-primary);
 }
 
 .details {
@@ -74,40 +74,40 @@
   inset-block-start: 0;
   inset-inline-start: calc(100% + 6px);
   width: min(260px, calc(100vw - 32px));
-  padding: 12px;
-  color: var(--ds-gray-12);
+  padding: var(--ds-space-lg);
+  color: var(--ds-foreground-primary);
   pointer-events: none;
-  background: var(--ds-gray-1);
+  background: var(--ds-background-primary);
   border-radius: var(--ds-radius-lg);
-  box-shadow: var(--ds-shadow-menu);
+  box-shadow: var(--ds-shadow-overlay);
 }
 
 .title {
   margin: 0;
-  font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-xl);
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-strong);
 }
 
 .description {
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  margin: 6px 0 0;
+  margin: var(--ds-space-sm) 0 0;
   overflow: hidden;
   -webkit-line-clamp: 4;
-  font-size: var(--ds-text-sm);
+  font-size: var(--ds-text-small);
   line-height: 1.4;
-  color: var(--ds-gray-11);
+  color: var(--ds-foreground-secondary);
 }
 
 .specs {
   display: grid;
-  gap: 8px;
-  margin: 14px 0 0;
+  gap: var(--ds-space-md);
+  margin: var(--ds-space-lg) 0 0;
 }
 
 .specs > div {
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: baseline;
   justify-content: space-between;
 }
@@ -115,9 +115,9 @@
 .specs dt,
 .specs dd {
   margin: 0;
-  font-size: var(--ds-text-xs);
+  font-size: var(--ds-text-small);
 }
 
 .specs dt {
-  color: var(--ds-gray-10);
+  color: var(--ds-foreground-tertiary);
 }

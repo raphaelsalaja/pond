@@ -20,4 +20,13 @@ describe("Rating", () => {
     expect(markup.match(/aria-checked="true"/g)).toHaveLength(1);
     expect(markup.match(/data-filled=/g)).toHaveLength(3);
   });
+
+  it("names a mixed value and checks no star", () => {
+    const markup = renderToStaticMarkup(
+      <Rating value={null} onValueChange={() => {}} />,
+    );
+    expect(markup).toContain('aria-label="Rating, multiple values"');
+    expect(markup).not.toContain('aria-checked="true"');
+    expect(markup).not.toContain("data-filled=");
+  });
 });

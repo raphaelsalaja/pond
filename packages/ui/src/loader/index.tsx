@@ -1,14 +1,17 @@
 import { clsx as cn } from "clsx";
-import type { ComponentProps } from "react";
 import styles from "./styles.module.css";
 
-function Root({ className, ...props }: ComponentProps<"span">) {
+interface RootProps extends React.ComponentPropsWithoutRef<"span"> {}
+
+function Root({ className, ...props }: RootProps) {
   return (
     <span role="status" className={cn(styles.root, className)} {...props} />
   );
 }
 
-function Dots({ className, ...props }: ComponentProps<"span">) {
+interface DotsProps extends React.ComponentPropsWithoutRef<"span"> {}
+
+function Dots({ className, ...props }: DotsProps) {
   return (
     <span className={cn(styles.dots, className)} aria-hidden {...props}>
       <span />
@@ -23,7 +26,9 @@ const SPINNER_VIEW_BOX = 207;
 const SPINNER_RADIUS = 77;
 const SPINNER_THICKNESS = 30;
 
-function Spinner({ className, ...props }: ComponentProps<"svg">) {
+interface SpinnerProps extends React.ComponentPropsWithoutRef<"svg"> {}
+
+function Spinner({ className, ...props }: SpinnerProps) {
   const center = SPINNER_VIEW_BOX / 2;
   return (
     <svg

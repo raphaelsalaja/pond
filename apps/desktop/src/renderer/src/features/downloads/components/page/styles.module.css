@@ -15,8 +15,8 @@
 }
 
 .activity-error {
-  padding: 8px 24px;
+  padding: var(--ds-space-md) var(--ds-space-2xl);
   margin: 0;
-  font-size: var(--ds-text-md);
-  color: var(--ds-orange-11);
+  font-size: var(--ds-text-body);
+  color: var(--ds-danger-foreground);
 }

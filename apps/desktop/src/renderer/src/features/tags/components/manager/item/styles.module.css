@@ -1,11 +1,11 @@
 .row {
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
   width: 100%;
   min-height: 44px;
-  padding: 0 8px 0 12px;
-  background: var(--ds-gray-1);
+  padding: 0 var(--ds-space-md) 0 var(--ds-space-lg);
+  background: var(--ds-background-primary);
 
   &:first-child {
     border-top: 0;
@@ -13,12 +13,12 @@
 
   &[data-card] {
     border-radius: var(--ds-radius-xl);
-    box-shadow: var(--ds-shadow-xs);
+    box-shadow: var(--ds-shadow-border);
   }
 
   &[data-index] {
     min-height: 34px;
-    padding: 0 4px;
+    padding: 0 var(--ds-space-xs);
     cursor: pointer;
     background: transparent;
     border-radius: var(--ds-radius-md);
@@ -26,10 +26,10 @@
 
   &[data-index]:hover,
   &[data-index]:focus-within {
-    background: var(--ds-gray-a2);
+    background: var(--ds-surface-primary);
   }
 
   &[data-index][data-selected] {
-    background: var(--ds-accent-a2);
+    background: var(--ds-accent-tint);
   }
 }

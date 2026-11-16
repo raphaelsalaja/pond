@@ -8,17 +8,17 @@
   border-radius: inherit;
 
   &[data-over] {
-    background: var(--ds-gray-a2);
+    background: var(--ds-surface-primary);
   }
 }
 
 .hint {
-  padding: 4px 8px 6px;
+  padding: var(--ds-space-xs) var(--ds-space-md) var(--ds-space-sm);
   margin: 0;
-  font-size: var(--ds-text-xs);
-  color: var(--ds-gray-10);
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-tertiary);
 
   &[data-error] {
-    color: var(--ds-red-11);
+    color: var(--ds-danger-foreground);
   }
 }

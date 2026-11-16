@@ -7,16 +7,16 @@
     "sounds launch similar similar titles titles";
   grid-template-rows: repeat(4, minmax(0, 1fr));
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 12px;
+  gap: var(--ds-space-lg);
   height: 100%;
-  padding-bottom: 16px;
+  padding-bottom: var(--ds-space-xl);
 }
 
 .intro {
   display: grid;
   grid-area: intro;
   place-items: center;
-  padding: 0 16px;
+  padding: 0 var(--ds-space-xl);
 }
 
 @media (width < 900px) {
@@ -40,6 +40,6 @@
   }
 
   .intro {
-    padding: 16px;
+    padding: var(--ds-space-xl);
   }
 }

@@ -1,5 +1,7 @@
 import { Button, Dialog } from "@pond/ui";
 import {
+  type DownloadFileProbe,
+  type DownloadPostProbe,
   type DownloadProbeResult,
   type DownloadRequest,
   type DownloadSingleProbe,
@@ -11,19 +13,25 @@ import {
   useDownloadDialog,
 } from "@/features/downloads/state/download-dialog";
 import { getSourceDef, startConnect } from "@/features/sources";
-import { getAppRouter } from "@/shared/lib/app-router";
 import { formatBytes } from "@/shared/lib/format";
-import { notify } from "@/shared/lib/toast";
+import type {
+  ExportDestination,
+  ExportSettings,
+} from "./export-options/settings";
+import { FilePage } from "./file-page";
 import { estimateByDuration } from "./lib/estimate";
+import { exportFiles, startLinks } from "./lib/start";
 import { type LinkError, LinkPage } from "./link-page";
 import { ListPage, type ListRow } from "./list-page";
-import { SinglePage } from "./single-page";
+import { PostPage } from "./post-page";
 import styles from "./styles.module.css";
+import { VideoPage } from "./video-page";
 
 const PROBE_CONCURRENCY = 3;
 const READ_FAILED = "Pond couldn't read this link. Check it and try again.";
+const TYPING_PAUSE_MS = 400;
 
-type Page = "link" | "single" | "list";
+export type DownloadPage = "link" | "video" | "post" | "file" | "list";
 
 const LIST_REQUEST: DownloadRequest = {
   mode: "video",
@@ -37,7 +45,7 @@ const LIST_REQUEST: DownloadRequest = {
   transcriptFormat: "txt",
 };
 
-function singleRequest(probe: DownloadSingleProbe): DownloadRequest {
+export function singleRequest(probe: DownloadSingleProbe): DownloadRequest {
   const heights = probe.videoOptions.map((option) => option.height);
   return {
     mode: heights.length ? "video" : "audio",
@@ -59,6 +67,7 @@ function rowOf(url: string): ListRow {
     title: null,
     duration: null,
     thumbnail: null,
+    kind: "media",
     state: "loading",
     selected: true,
   };
@@ -104,16 +113,68 @@ export function DownloadDialogHost() {
   );
 }
 
-function DownloadFlow({ links }: { links: string[] }) {
-  const [page, setPage] = useState<Page>("link");
-  const [input, setInput] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<LinkError | null>(null);
-  const [single, setSingle] = useState<DownloadSingleProbe | null>(null);
-  const [listTitle, setListTitle] = useState<string | null>(null);
-  const [rows, setRows] = useState<ListRow[]>([]);
-  const [request, setRequest] = useState<DownloadRequest>(LIST_REQUEST);
+export interface DownloadFlowState {
+  page: DownloadPage;
+  input: string;
+  busy: boolean;
+  error: LinkError | null;
+  single: DownloadSingleProbe | null;
+  post: DownloadPostProbe | null;
+  file: DownloadFileProbe | null;
+  listTitle: string | null;
+  rows: ListRow[];
+  request: DownloadRequest;
+}
+
+interface DownloadFlowProps {
+  links: string[];
+  initial?: Partial<DownloadFlowState>;
+  initialSettings?: Partial<ExportSettings>;
+}
+
+export function DownloadFlow({
+  links,
+  initial,
+  initialSettings,
+}: DownloadFlowProps) {
+  const [page, setPage] = useState<DownloadPage>(initial?.page ?? "link");
+  const [input, setInput] = useState(initial?.input ?? "");
+  const [busy, setBusy] = useState(initial?.busy ?? false);
+  const [error, setError] = useState<LinkError | null>(initial?.error ?? null);
+  const [single, setSingle] = useState<DownloadSingleProbe | null>(
+    initial?.single ?? null,
+  );
+  const [post, setPost] = useState<DownloadPostProbe | null>(
+    initial?.post ?? null,
+  );
+  const [file, setFile] = useState<DownloadFileProbe | null>(
+    initial?.file ?? null,
+  );
+  const [listTitle, setListTitle] = useState<string | null>(
+    initial?.listTitle ?? null,
+  );
+  const [rows, setRows] = useState<ListRow[]>(initial?.rows ?? []);
+  const [request, setRequest] = useState<DownloadRequest>(
+    initial?.request ??
+      (initial?.single ? singleRequest(initial.single) : LIST_REQUEST),
+  );
   const attempt = useRef(0);
+  const reads = useRef(new Map<string, Promise<DownloadProbeResult>>());
+  const readKey = useRef("");
+  const typing = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(typing.current), []);
+
+  /** One read per link, so retyping a link or going back to it reuses the result. */
+  const probeOnce = (url: string) => {
+    const known = reads.current.get(url);
+    if (known) return known;
+    const next = probe(url).then((result) => {
+      if (!result.ok) reads.current.delete(url);
+      return result;
+    });
+    reads.current.set(url, next);
+    return next;
+  };
 
   const patchRequest = (patch: Partial<DownloadRequest>) =>
     setRequest((current) => ({ ...current, ...patch }));
@@ -130,7 +191,7 @@ function DownloadFlow({ links }: { links: string[] }) {
     const queue = [...urls];
     const work = async () => {
       for (let url = queue.shift(); url; url = queue.shift()) {
-        const result = await probe(url);
+        const result = await probeOnce(url);
         if (attempt.current !== id) return;
         setRows((current) =>
           current.flatMap((row): ListRow[] => {
@@ -143,9 +204,32 @@ function DownloadFlow({ links }: { links: string[] }) {
                 .filter((entry) => !current.some((it) => it.url === entry.url))
                 .map((entry) => ({
                   ...entry,
+                  kind: "media",
                   state: "ready",
                   selected: true,
                 }));
+            if (found.kind === "post")
+              return [
+                {
+                  ...row,
+                  title: found.title,
+                  thumbnail: found.images[0] ?? null,
+                  kind: "post",
+                  state: "ready",
+                },
+              ];
+            if (found.kind === "file")
+              return [
+                {
+                  ...row,
+                  title: found.name,
+                  thumbnail: found.mimeType?.startsWith("image/")
+                    ? found.url
+                    : null,
+                  kind: "file",
+                  state: "ready",
+                },
+              ];
             return [
               {
                 ...row,
@@ -165,9 +249,13 @@ function DownloadFlow({ links }: { links: string[] }) {
 
   const read = async (urls: string[]) => {
     if (urls.length === 0) {
-      setError({ message: "Paste a link that starts with https://." });
+      setError({
+        message:
+          "That's not a link. Paste a web address to a video, post, page or file.",
+      });
       return;
     }
+    readKey.current = urls.join(" ");
     if (urls.length > 1) {
       openList(urls);
       return;
@@ -176,10 +264,11 @@ function DownloadFlow({ links }: { links: string[] }) {
     const id = attempt.current;
     setBusy(true);
     setError(null);
-    const result = await probe(urls[0] ?? "");
+    const result = await probeOnce(urls[0] ?? "");
     if (attempt.current !== id) return;
     setBusy(false);
     if (!result.ok) {
+      readKey.current = "";
       setError(failureOf(result, () => void read(urls)));
       return;
     }
@@ -190,6 +279,7 @@ function DownloadFlow({ links }: { links: string[] }) {
       setRows(
         found.entries.map((entry) => ({
           ...entry,
+          kind: "media",
           state: "ready",
           selected: true,
         })),
@@ -198,22 +288,41 @@ function DownloadFlow({ links }: { links: string[] }) {
       setPage("list");
       return;
     }
-    setSingle(found);
-    setRequest(singleRequest(found));
-    setPage("single");
-  };
-
-  const pasteFromClipboard = async () => {
-    const { urls } = await window.pond.query("downloader.clipboardLinks", {});
-    if (urls.length === 0) {
-      setError({
-        message:
-          "Your clipboard doesn't have a link. Copy one, then try again.",
-      });
+    if (found.kind === "post") {
+      setPost(found);
+      setPage("post");
       return;
     }
-    setInput(urls.join("\n"));
-    void read(urls);
+    if (found.kind === "file") {
+      setFile(found);
+      setPage("file");
+      return;
+    }
+    setSingle(found);
+    setRequest(singleRequest(found));
+    setPage("video");
+  };
+
+  /** A paste into an empty field reads at once; typing waits for a pause. */
+  const changeLink = (value: string) => {
+    const pasted = input.trim() === "";
+    setInput(value);
+    setError(null);
+    clearTimeout(typing.current);
+    const urls = extractLinks(value);
+    if (urls.join(" ") === readKey.current) return;
+    if (urls.length === 0) {
+      if (value.trim() !== "") return;
+      attempt.current += 1;
+      readKey.current = "";
+      setBusy(false);
+      setPage("link");
+      return;
+    }
+    typing.current = setTimeout(
+      () => void read(urls),
+      pasted ? 0 : TYPING_PAUSE_MS,
+    );
   };
 
   const opened = useRef<string[] | null>(null);
@@ -221,72 +330,83 @@ function DownloadFlow({ links }: { links: string[] }) {
     if (opened.current === links) return;
     opened.current = links;
     if (links.length > 0) {
-      setInput(links.join("\n"));
+      setInput(links.join(" "));
       void read(links);
       return;
     }
+    if (initial) return;
     void window.pond
       .query("downloader.clipboardLinks", {})
       .then(({ urls }) => {
-        if (urls.length === 1 && urls[0])
-          setInput((current) => current || (urls[0] ?? ""));
+        const [url] = urls;
+        if (urls.length !== 1 || !url || readKey.current !== "") return;
+        setInput(url);
+        void read([url]);
       })
       .catch(() => {});
   });
 
   const start = () => {
-    const urls = rows
-      .filter((row) => row.selected && row.state === "ready")
-      .map((row) => row.url);
-    if (urls.length === 0) return;
-    const label = listTitle;
+    const picked = rows.filter((row) => row.selected && row.state === "ready");
+    if (picked.length === 0) return;
     downloadDialog.close();
-    void window.pond
-      .query("downloader.start", { urls, request })
-      .then(({ ids, failed }) => {
-        if (ids.length === 0) {
-          notify({
-            id: "download-start",
-            title: "Download didn't start",
-            description: "Pond couldn't add this link. Try again.",
-          });
-          return;
-        }
-        notify({
-          id: "download-start",
-          title:
-            ids.length === 1
-              ? "Downloading"
-              : `Downloading ${ids.length} links`,
-          ...(failed.length
-            ? {
-                description: `${failed.length} ${failed.length === 1 ? "link" : "links"} couldn't start.`,
-              }
-            : label
-              ? { description: label }
-              : {}),
-          action: {
-            label: "Show Downloads",
-            onClick: () => getAppRouter()?.history.push("/downloads"),
-          },
-        });
-      })
-      .catch(() =>
-        notify({
-          id: "download-start",
-          title: "Download didn't start",
-          description: "Pond couldn't add this link. Try again.",
-        }),
-      );
+    void startLinks({
+      media: picked.filter((row) => row.kind === "media").map((row) => row.url),
+      posts: picked.filter((row) => row.kind === "post").map((row) => row.url),
+      files: picked.filter((row) => row.kind === "file").map((row) => row.url),
+      request,
+      label: listTitle,
+    });
+  };
+
+  const downloadPost = (
+    found: DownloadPostProbe,
+    destination: ExportDestination,
+  ) => {
+    downloadDialog.close();
+    if (destination === "library") {
+      void startLinks({
+        media: [],
+        posts: [found.url],
+        files: [],
+        request,
+        label: null,
+      });
+      return;
+    }
+    void exportFiles({
+      url: found.url,
+      title: found.title,
+      files: found.images,
+      destination,
+      label: found.title,
+    });
+  };
+
+  const downloadFile = (
+    found: DownloadFileProbe,
+    destination: ExportDestination,
+  ) => {
+    downloadDialog.close();
+    void exportFiles({
+      url: found.url,
+      title: null,
+      files: [found.url],
+      destination,
+      label: found.name,
+    });
   };
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    if (page === "link") {
-      if (!busy) void read(extractLinks(input));
+    if (page === "list") {
+      start();
       return;
     }
-    if (page === "list") start();
+    clearTimeout(typing.current);
+    const urls = extractLinks(input);
+    if (urls.length === 0 || urls.join(" ") !== readKey.current)
+      void read(urls);
   };
 
   const back = () => {
@@ -301,11 +421,15 @@ function DownloadFlow({ links }: { links: string[] }) {
     0,
   );
   const title =
-    page === "single"
-      ? (single?.title ?? "Download")
-      : page === "list"
-        ? (listTitle ?? `${rows.length} Links`)
-        : "Download";
+    page === "list"
+      ? (listTitle ?? `${rows.length} Links`)
+      : page === "video"
+        ? (single?.title ?? "Download")
+        : page === "post"
+          ? (post?.title ?? "Download")
+          : page === "file"
+            ? (file?.name ?? "Download")
+            : "Download";
 
   return (
     <Dialog.Popup
@@ -315,19 +439,16 @@ function DownloadFlow({ links }: { links: string[] }) {
       data-page={page}
     >
       <form onSubmit={submit}>
-        <Dialog.Header className={styles.header}>
-          {page !== "link" ? <Dialog.Back onClick={back} /> : null}
+        <Dialog.Header
+          className={styles.header}
+          data-back={page === "list" || undefined}
+        >
+          {page === "list" ? <Dialog.Back onClick={back} /> : null}
           <Dialog.Title className={styles.title}>{title}</Dialog.Title>
           <Dialog.Close />
         </Dialog.Header>
         <Dialog.Viewport>
-          {page === "single" && single ? (
-            <SinglePage
-              probe={single}
-              request={request}
-              onRequestChange={patchRequest}
-            />
-          ) : page === "list" ? (
+          {page === "list" ? (
             <ListPage
               rows={rows}
               request={request}
@@ -345,53 +466,66 @@ function DownloadFlow({ links }: { links: string[] }) {
                 )
               }
             />
+          ) : page === "video" && single ? (
+            <VideoPage
+              key={single.url}
+              probe={single}
+              request={request}
+              onRequestChange={patchRequest}
+              link={input}
+              onLinkChange={changeLink}
+              busy={busy}
+              error={error}
+              initialSettings={initialSettings}
+            />
+          ) : page === "post" && post ? (
+            <PostPage
+              key={post.url}
+              probe={post}
+              link={input}
+              onLinkChange={changeLink}
+              busy={busy}
+              error={error}
+              onDownload={(destination) => downloadPost(post, destination)}
+            />
+          ) : page === "file" && file ? (
+            <FilePage
+              key={file.url}
+              probe={file}
+              link={input}
+              onLinkChange={changeLink}
+              busy={busy}
+              error={error}
+              onDownload={(destination) => downloadFile(file, destination)}
+            />
           ) : (
             <LinkPage
               value={input}
-              onValueChange={(value) => {
-                setInput(value);
-                setError(null);
-              }}
-              onPaste={() => void pasteFromClipboard()}
+              onValueChange={changeLink}
               busy={busy}
               error={error}
             />
           )}
         </Dialog.Viewport>
-        {page === "single" ? null : (
+        {page === "list" ? (
           <Dialog.Footer
             leading={
-              page === "list" &&
-              listTotal > 0 &&
-              request.mode !== "transcript" ? (
+              listTotal > 0 && request.mode !== "transcript" ? (
                 <span className={styles.total}>
                   About {formatBytes(listTotal)}
                 </span>
               ) : null
             }
           >
-            {page === "link" ? (
-              <>
-                <Dialog.Cancel />
-                <Button
-                  type="submit"
-                  variant="primary"
-                  disabled={busy || input.trim() === ""}
-                >
-                  Continue
-                </Button>
-              </>
-            ) : (
-              <Button
-                type="submit"
-                variant="primary"
-                disabled={picked.length === 0}
-              >
-                {`Download ${picked.length}`}
-              </Button>
-            )}
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={picked.length === 0}
+            >
+              {`Download ${picked.length}`}
+            </Button>
           </Dialog.Footer>
-        )}
+        ) : null}
       </form>
     </Dialog.Popup>
   );

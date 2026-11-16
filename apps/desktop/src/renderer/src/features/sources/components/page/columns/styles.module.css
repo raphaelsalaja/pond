@@ -1,13 +1,13 @@
 .source {
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
   min-width: 0;
 }
 
 .status {
   display: flex;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   align-items: center;
   min-width: 0;
 }
@@ -15,31 +15,27 @@
 .name {
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-md);
+  font-size: var(--ds-text-body);
   font-weight: 500;
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
   white-space: nowrap;
 }
 
 .mark {
   display: inline-flex;
   flex: none;
-  color: var(--ds-gray-8);
+  color: var(--ds-foreground-tertiary);
 
   &[data-status="active"] {
-    color: var(--ds-accent-11);
+    color: var(--ds-accent-foreground);
   }
 
   &[data-status="syncing"] {
-    color: var(--ds-yellow-11);
+    color: var(--ds-accent-foreground);
   }
 
   &[data-status="failed"] {
-    color: var(--ds-red-11);
-  }
-
-  &[data-status="paused"] {
-    color: var(--ds-orange-11);
+    color: var(--ds-danger-foreground);
   }
 }
 
@@ -51,16 +47,16 @@
 .meta {
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-md);
+  font-size: var(--ds-text-body);
   font-weight: 400;
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
   white-space: nowrap;
 }
 
 .metric {
-  font-size: var(--ds-text-sm);
+  font-size: var(--ds-text-small);
   font-weight: 400;
   font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-11);
+  color: var(--ds-foreground-secondary);
   white-space: nowrap;
 }

@@ -1,11 +1,11 @@
 .row {
-  --activity-color: var(--ds-blue-11);
+  --activity-color: var(--ds-accent-foreground);
   position: relative;
   height: var(--data-table-row-height, 48px);
 }
 
 .row[data-processing] {
-  --activity-color: var(--ds-green-11);
+  --activity-color: var(--ds-foreground-secondary);
 }
 
 .lead {
@@ -17,15 +17,15 @@
 .name {
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-md);
+  font-size: var(--ds-text-body);
   font-weight: 500;
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
   white-space: nowrap;
 }
 
 .source {
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
   min-width: 0;
 }
@@ -33,14 +33,14 @@
 .source > .label {
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-sm);
-  color: var(--ds-gray-11);
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-secondary);
   white-space: nowrap;
 }
 
 .status {
   display: flex;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   align-items: center;
   min-width: 0;
 }
@@ -48,22 +48,18 @@
 .mark {
   display: inline-flex;
   flex: none;
-  color: var(--ds-gray-8);
+  color: var(--ds-foreground-tertiary);
 
   &[data-status="complete"] {
-    color: var(--ds-accent-11);
+    color: var(--ds-accent-foreground);
   }
 
   &[data-status="progress"] {
-    color: var(--ds-yellow-11);
+    color: var(--ds-accent-foreground);
   }
 
   &[data-status="failed"] {
-    color: var(--ds-red-11);
-  }
-
-  &[data-status="paused"] {
-    color: var(--ds-orange-11);
+    color: var(--ds-danger-foreground);
   }
 }
 
@@ -74,21 +70,21 @@
 .status > .label {
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-md);
+  font-size: var(--ds-text-body);
   font-weight: 400;
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
   white-space: nowrap;
 }
 
 .row[data-stalled] .status > .label {
-  color: var(--ds-orange-11);
+  color: var(--ds-foreground-tertiary);
 }
 
 .metric {
-  font-size: var(--ds-text-sm);
+  font-size: var(--ds-text-small);
   font-weight: 400;
   font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-11);
+  color: var(--ds-foreground-secondary);
   white-space: nowrap;
 }
 
@@ -100,7 +96,7 @@
 
 .progress-cell {
   display: flex;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   align-items: center;
   min-width: 0;
 }
@@ -108,11 +104,11 @@
 .progress-ring {
   display: block;
   flex: none;
-  color: var(--ds-accent-10);
+  color: var(--ds-accent-hover);
 }
 
 .track {
-  stroke: var(--ds-gray-a5);
+  stroke: var(--ds-border-strong);
 }
 
 .value {

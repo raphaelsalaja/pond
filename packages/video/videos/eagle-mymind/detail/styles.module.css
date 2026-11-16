@@ -21,18 +21,18 @@
   height: 64px;
   padding: 0 28px;
   font-size: 19px;
-  color: var(--ds-gray-11);
-  border-bottom: 1px solid var(--ds-gray-a3);
+  color: var(--ds-foreground-secondary);
+  border-bottom: 1px solid var(--ds-border-subtle);
 }
 
 .crumbs {
   display: flex;
-  gap: 10px;
+  gap: var(--ds-space-md);
   align-items: center;
 }
 
 .current {
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
 }
 
 .body {
@@ -53,7 +53,7 @@
 .info {
   flex: 1;
   min-width: 0;
-  padding-top: 6px;
+  padding-top: var(--ds-space-sm);
 }
 
 .title {
@@ -61,13 +61,13 @@
   font-size: 34px;
   font-weight: 600;
   line-height: 1.2;
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
 }
 
 .subtitle {
-  margin: 8px 0 22px;
+  margin: var(--ds-space-md) 0 var(--ds-space-2xl);
   font-size: 19px;
-  color: var(--ds-gray-10);
+  color: var(--ds-foreground-tertiary);
 }
 
 .list {
@@ -86,14 +86,14 @@
   flex: none;
   width: 160px;
   font-size: 20px;
-  color: var(--ds-gray-10);
+  color: var(--ds-foreground-tertiary);
 }
 
 .value {
   flex: 1;
   margin: 0;
   font-size: 21px;
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
 }
 
 .tick {
@@ -101,35 +101,39 @@
   place-items: center;
   width: 26px;
   height: 26px;
-  color: var(--ds-green-10);
-  background: color-mix(in oklab, var(--ds-green-9) 14%, transparent);
+  color: var(--ds-green);
+  background: color-mix(in oklab, var(--ds-green) 14%, transparent);
   border-radius: 50%;
 }
 
 .inline {
   display: inline-flex;
-  gap: 10px;
+  gap: var(--ds-space-md);
   align-items: center;
 }
 
 .dim {
-  color: var(--ds-gray-9);
+  color: var(--ds-foreground-tertiary);
 }
 
 .tag {
   height: 32px;
-  padding: 0 12px;
+  padding: 0 var(--ds-space-lg);
   font-size: 18px;
   line-height: 32px;
-  color: var(--ds-gray-12);
-  background: var(--ds-gray-a3);
+  color: var(--ds-foreground-primary);
+  background: var(--ds-surface-secondary);
   border-radius: var(--ds-radius-sm);
 }
 
 .stars {
   display: inline-flex;
-  gap: 4px;
-  color: var(--ds-gold-9);
+  gap: var(--ds-space-xs);
+  color: var(--ds-gold);
+
+  & > svg {
+    fill: currentColor;
+  }
 }
 
 .swatch {

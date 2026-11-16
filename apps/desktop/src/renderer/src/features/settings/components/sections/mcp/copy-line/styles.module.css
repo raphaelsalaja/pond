@@ -1,24 +1,24 @@
 .merge {
   margin: 0;
-  font-size: var(--ds-text-sm);
+  font-size: var(--ds-text-small);
   line-height: 1.4;
-  color: var(--ds-gray-11);
+  color: var(--ds-foreground-secondary);
 }
 
 .step {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   min-width: 0;
 }
 
 .command {
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
   min-width: 0;
-  padding: 4px 4px 4px 10px;
-  background: var(--ds-gray-2);
+  padding: var(--ds-space-xs) var(--ds-space-xs) var(--ds-space-xs) var(--ds-space-lg);
+  background: var(--ds-background-secondary);
   border-radius: var(--ds-radius-md);
 }
 
@@ -28,7 +28,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   font-family: var(--ds-font-mono);
-  font-size: var(--ds-text-xs);
+  font-size: var(--ds-text-small);
   line-height: 1.4;
   white-space: nowrap;
 }

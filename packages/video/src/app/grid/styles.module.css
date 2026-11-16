@@ -13,7 +13,7 @@
   position: relative;
   display: block;
   overflow: hidden;
-  background: var(--ds-gray-2);
+  background: var(--ds-background-secondary);
   border-radius: 4px;
   box-shadow:
     0 0 0 1px rgb(0 0 0 / 0.08),
@@ -31,7 +31,7 @@
   top: 6px;
   left: 6px;
   height: 18px;
-  padding: 0 6px;
+  padding: 0 var(--ds-space-sm);
   font-family: var(--ds-code-font-family);
   font-size: 10px;
   font-weight: 600;
@@ -48,13 +48,13 @@
 .title,
 .date {
   display: block;
-  padding: 10px 2px 0;
+  padding: var(--ds-space-lg) var(--ds-space-2xs) 0;
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 10px;
   font-weight: 500;
   line-height: 13px;
-  color: var(--ds-gray-11);
+  color: var(--ds-foreground-secondary);
   text-align: center;
   white-space: nowrap;
 }
@@ -80,32 +80,32 @@
 
   & .image {
     border-radius: var(--ds-radius-xs);
-    box-shadow: var(--ds-shadow-save);
+    box-shadow: var(--ds-shadow-border);
   }
 
   & .card[data-selected] .thumb::before {
-    border-color: var(--ds-accent-9);
+    border-color: var(--ds-accent);
   }
 
   & .card[data-selected] .title {
-    color: var(--ds-gray-12);
+    color: var(--ds-foreground-primary);
   }
 
   & .meta {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    padding-top: 12px;
+    gap: var(--ds-space-xs);
+    padding-top: var(--ds-space-lg);
   }
 
   & .title,
   & .date {
-    padding: 0 2px;
+    padding: 0 var(--ds-space-2xs);
   }
 
   & .date {
     font-weight: 400;
     font-variant-numeric: tabular-nums;
-    color: var(--ds-gray-9);
+    color: var(--ds-foreground-tertiary);
   }
 }

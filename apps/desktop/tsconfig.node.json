@@ -14,7 +14,8 @@
     "noEmit": true,
     "paths": {
       "@main/*": ["./src/main/*"],
-      "@shared/*": ["./src/shared/*"]
+      "@shared/*": ["./src/shared/*"],
+      "@pond/render": ["../../packages/render/src/index.ts"]
     }
   },
   "include": [
@@ -22,6 +23,7 @@
     "css-composes-hmr.ts",
     "src/main/**/*.ts",
     "src/preload/**/*.ts",
-    "src/shared/**/*.ts"
+    "src/shared/**/*.ts",
+    "../../packages/render/src/**/*.ts"
   ]
 }

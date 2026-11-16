@@ -185,7 +185,7 @@ function filterChoices(
         ? {
             ...option,
             shortLabel: accountDisplayName(ref),
-            icon: <BrandTile source={ref.source} size={16} />,
+            icon: <BrandTile source={ref.source} size={16} shape="circle" />,
           }
         : option;
     }),

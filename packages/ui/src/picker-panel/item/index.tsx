@@ -8,27 +8,38 @@ import styles from "./styles.module.css";
 
 export type PickerSelectionState = "checked" | "mixed" | "unchecked";
 
+const SELECTABLE_ROLES = new Set(["option", "treeitem", "gridcell", "row"]);
+
+interface ItemProps extends React.ComponentProps<"button"> {
+  active?: boolean;
+  /** `active` fills only the active row, for lists whose pointer moves the active row. */
+  highlight?: "hover" | "active";
+  selected?: PickerSelectionState;
+}
+
 export function Item({
   active,
   className,
   highlight = "hover",
   role = "option",
   selected = "unchecked",
+  "aria-selected": ariaSelected,
   onMouseDown,
   ...props
-}: React.ComponentProps<"button"> & {
-  active?: boolean;
-  /** `active` fills only the active row, for lists whose pointer moves the active row. */
-  highlight?: "hover" | "active";
-  selected?: PickerSelectionState;
-}) {
+}: ItemProps) {
   return (
+    // biome-ignore lint/a11y/useAriaPropsSupportedByRole: aria-selected is only set for SELECTABLE_ROLES, which all support it.
     <button
       {...props}
       type="button"
       role={role}
       tabIndex={-1}
+      aria-selected={
+        ariaSelected ??
+        (SELECTABLE_ROLES.has(role) ? selected === "checked" : undefined)
+      }
       data-active={active ? "" : undefined}
+      data-highlighted={active ? "" : undefined}
       data-highlight={highlight === "active" ? highlight : undefined}
       data-selection={selected}
       className={cn(styles.item, className)}

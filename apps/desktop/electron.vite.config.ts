@@ -73,6 +73,7 @@ export default defineConfig({
       alias: {
         "@main": resolve(__dirname, "src/main"),
         "@shared": resolve(__dirname, "src/shared"),
+        "@pond/render": resolve(__dirname, "../../packages/render/src/index.ts"),
       },
     },
     build: {
@@ -106,6 +107,10 @@ export default defineConfig({
           index: resolve(__dirname, "src/preload/index.ts"),
           "combine-images": resolve(__dirname, "src/preload/combine-images.ts"),
           "file-ring": resolve(__dirname, "src/preload/file-ring.ts"),
+          "missing-library": resolve(
+            __dirname,
+            "src/preload/missing-library.ts",
+          ),
           preview: resolve(__dirname, "src/preload/preview.ts"),
           scrape: resolve(__dirname, "src/preload/scrape.cjs.ts"),
         },
@@ -207,6 +212,10 @@ export default defineConfig({
             "src/renderer/combine-images.html",
           ),
           "file-ring": resolve(__dirname, "src/renderer/file-ring.html"),
+          "missing-library": resolve(
+            __dirname,
+            "src/renderer/missing-library.html",
+          ),
           preview: resolve(__dirname, "src/renderer/preview.html"),
         },
         preserveEntrySignatures: false,

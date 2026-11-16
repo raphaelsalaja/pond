@@ -4,10 +4,10 @@
   left: 50%;
   z-index: 10;
   display: flex;
-  gap: 2px;
+  gap: var(--ds-space-2xs);
   align-items: center;
-  padding: 4px;
-  background: var(--ds-gray-1);
+  padding: var(--ds-space-xs);
+  background: var(--ds-background-primary);
   border-radius: calc(var(--ds-radius-md) + 4px);
   box-shadow: var(--canvas-shadow-float);
   translate: -50% 0;

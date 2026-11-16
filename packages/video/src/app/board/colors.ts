@@ -12,23 +12,23 @@ export const CANVAS_COLORS = [
 export type CanvasColor = (typeof CANVAS_COLORS)[number];
 
 export const NOTE_FILL = {
-  gray: "var(--ds-gray-3)",
-  yellow: "var(--ds-yellow-3)",
-  orange: "var(--ds-orange-3)",
-  red: "var(--ds-red-3)",
-  pink: "var(--ds-pink-3)",
-  purple: "var(--ds-purple-3)",
-  blue: "var(--ds-blue-3)",
-  green: "var(--ds-green-3)",
+  gray: "var(--ds-background-tertiary)",
+  yellow: "var(--ds-yellow-tint)",
+  orange: "var(--ds-orange-tint)",
+  red: "var(--ds-red-tint)",
+  pink: "var(--ds-pink-tint)",
+  purple: "var(--ds-purple-tint)",
+  blue: "var(--ds-blue-tint)",
+  green: "var(--ds-green-tint)",
 } satisfies Record<CanvasColor, string>;
 
 export const INK = {
-  gray: "var(--ds-gray-12)",
-  yellow: "var(--ds-yellow-9)",
-  orange: "var(--ds-orange-9)",
-  red: "var(--ds-red-9)",
-  pink: "var(--ds-pink-9)",
-  purple: "var(--ds-purple-9)",
-  blue: "var(--ds-blue-9)",
-  green: "var(--ds-green-9)",
+  gray: "var(--ds-foreground-primary)",
+  yellow: "var(--ds-yellow)",
+  orange: "var(--ds-orange)",
+  red: "var(--ds-red)",
+  pink: "var(--ds-pink)",
+  purple: "var(--ds-purple)",
+  blue: "var(--ds-blue)",
+  green: "var(--ds-green)",
 } satisfies Record<CanvasColor, string>;

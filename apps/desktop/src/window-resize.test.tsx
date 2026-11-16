@@ -26,6 +26,7 @@ describe("sidebar resize handle", () => {
     return (
       <Window.Root leftOpen={open} style={style}>
         <Window.Left
+          aria-label="Sidebar"
           open={open}
           minWidth={220}
           maxWidth={420}
@@ -50,10 +51,24 @@ describe("sidebar resize handle", () => {
     return node;
   }
 
+  /** Pointer moves land on the next animation frame, so each event waits for one. */
   async function pointer(target: HTMLElement, type: string, clientX: number) {
-    const event = new MouseEvent(type, { bubbles: true, button: 0, clientX });
-    Object.defineProperty(event, "pointerId", { value: 1 });
-    await act(() => target.dispatchEvent(event));
+    const event = new MouseEvent(type, {
+      bubbles: true,
+      cancelable: true,
+      button: 0,
+      buttons: type === "pointerup" ? 0 : 1,
+      clientX,
+    });
+    Object.defineProperties(event, {
+      pointerId: { value: 1 },
+      pointerType: { value: "mouse" },
+      isPrimary: { value: true },
+    });
+    await act(async () => {
+      target.dispatchEvent(event);
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+    });
   }
 
   beforeEach(async () => {
@@ -75,6 +90,7 @@ describe("sidebar resize handle", () => {
     Object.defineProperties(element('[data-slot="handle"]'), {
       setPointerCapture: { value: vi.fn(), configurable: true },
       releasePointerCapture: { value: vi.fn(), configurable: true },
+      hasPointerCapture: { value: vi.fn(() => true), configurable: true },
     });
   });
 
@@ -91,6 +107,11 @@ describe("sidebar resize handle", () => {
     const handle = element('[data-slot="handle"]');
     handle.focus();
     expect(document.activeElement).toBe(handle);
+    expect(handle.getAttribute("role")).toBe("separator");
+    expect(handle.getAttribute("aria-orientation")).toBe("vertical");
+    expect(handle.getAttribute("aria-controls")).toBe(
+      element('[data-slot="left"]').id,
+    );
     expect(handle.getAttribute("aria-valuenow")).toBe("300");
     const key = async (key: string, shiftKey = false) => {
       await act(() =>

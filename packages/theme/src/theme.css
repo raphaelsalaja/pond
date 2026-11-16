@@ -2,6 +2,7 @@
 @import "./motion/motion.css";
 @import "./radius/radius.css";
 @import "./size/size.css";
+@import "./space/space.css";
 @import "./shadow/shadow.css";
 @import "./typography/typography.css";
 @import "./brand/brand.css";
@@ -13,13 +14,12 @@
   --ds-mac-inset: 16px;
 
   --ds-border-width: 0.5px;
-  --ds-border-subtle: color-mix(
-    in oklab,
-    var(--ds-gray-12) 8%,
-    var(--ds-gray-1)
-  );
 
-  --ds-focus-width: 1px;
-  --ds-focus-offset: 0px;
-  --ds-focus-outline: var(--ds-accent-a6);
+  --ds-focus-width: 2px;
+  --ds-focus-offset: 2px;
+  /* Rows in a scroller, segments in a track, and cells would clip an outside ring. */
+  --ds-focus-inset: -2px;
+  --ds-focus-outline: var(--ds-accent);
+
+  --ds-opacity-disabled: 0.5;
 }

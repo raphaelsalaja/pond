@@ -11,14 +11,14 @@
   display: grid;
   place-items: center;
   overflow: hidden;
-  color: var(--ds-gray-10);
-  background: var(--ds-gray-2);
+  color: var(--ds-foreground-tertiary);
+  background: var(--ds-background-secondary);
   border-radius: var(--ds-radius-xs);
-  box-shadow: var(--ds-shadow-save);
+  box-shadow: var(--ds-shadow-border);
 }
 
 .status span {
-  font-size: var(--ds-text-xs);
+  font-size: var(--ds-text-small);
 }
 
 .root[data-view="list"] .status {

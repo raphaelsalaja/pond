@@ -1,5 +1,5 @@
 .chevron {
-  color: var(--ds-gray-9);
+  color: var(--ds-foreground-tertiary);
   transition: transform var(--ds-duration-fast) var(--ds-easing-standard);
 
   @media (prefers-reduced-motion: reduce) {
@@ -41,8 +41,8 @@
 .title {
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-md);
-  color: var(--ds-gray-12);
+  font-size: var(--ds-text-body);
+  color: var(--ds-foreground-primary);
   white-space: nowrap;
 }
 
@@ -50,8 +50,8 @@
   max-width: 260px;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-sm);
-  color: var(--ds-gray-10);
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-tertiary);
   white-space: nowrap;
 }
 
@@ -71,31 +71,31 @@
   display: grid;
   grid-template-columns: 96px minmax(0, 1fr);
   gap: 12px;
-  font-size: var(--ds-text-sm);
+  font-size: var(--ds-text-small);
   line-height: 20px;
 
   & dt {
-    color: var(--ds-gray-10);
+    color: var(--ds-foreground-tertiary);
   }
 
   & dd {
     margin: 0;
-    color: var(--ds-gray-12);
+    color: var(--ds-foreground-primary);
     overflow-wrap: anywhere;
   }
 }
 
 .files {
   width: 100%;
-  font-size: var(--ds-text-sm);
+  font-size: var(--ds-text-small);
   font-variant-numeric: tabular-nums;
   table-layout: fixed;
   border-collapse: collapse;
 
   & th {
     padding: 4px 8px 4px 0;
-    font-weight: var(--ds-weight-md);
-    color: var(--ds-gray-10);
+    font-weight: var(--ds-weight-regular);
+    color: var(--ds-foreground-tertiary);
     text-align: start;
   }
 
@@ -107,13 +107,13 @@
     padding: 4px 8px 4px 0;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: var(--ds-gray-11);
+    color: var(--ds-foreground-secondary);
     white-space: nowrap;
     border-top: var(--ds-border-width) solid var(--ds-border-subtle);
   }
 
   & tr[data-problem] td:last-child {
-    color: var(--ds-red-11);
+    color: var(--ds-danger-foreground);
   }
 }
 
@@ -128,8 +128,8 @@
   gap: 2px;
   padding: 0;
   margin: 0;
-  font-size: var(--ds-text-sm);
-  color: var(--ds-gray-11);
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-secondary);
   overflow-wrap: anywhere;
   list-style: none;
 }
@@ -137,15 +137,15 @@
 .note,
 .error {
   margin: 0;
-  font-size: var(--ds-text-sm);
+  font-size: var(--ds-text-small);
 }
 
 .note {
-  color: var(--ds-gray-10);
+  color: var(--ds-foreground-tertiary);
 }
 
 .error {
-  color: var(--ds-red-11);
+  color: var(--ds-danger-foreground);
 }
 
 .actions {

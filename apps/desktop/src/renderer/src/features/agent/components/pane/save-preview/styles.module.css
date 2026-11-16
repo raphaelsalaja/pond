@@ -9,8 +9,8 @@
   height: 52px;
   aspect-ratio: 1;
   overflow: hidden;
-  color: var(--ds-gray-9);
-  background: var(--ds-gray-3);
+  color: var(--ds-foreground-tertiary);
+  background: var(--ds-background-tertiary);
   border-radius: var(--ds-radius-sm);
 }
 .thumbnail[data-size="compact"] {
@@ -32,7 +32,7 @@
   pointer-events: none;
   content: "";
   border-radius: inherit;
-  box-shadow: inset 0 0 0 var(--ds-border-width) var(--ds-gray-a4);
+  box-shadow: inset 0 0 0 var(--ds-border-width) var(--ds-border-subtle);
 }
 .thumbnail img {
   width: 100%;
@@ -55,9 +55,9 @@
 [data-visual] .cover-fallback {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--ds-space-lg);
   align-items: flex-start;
-  padding: 15px;
+  padding: var(--ds-space-xl);
   overflow: hidden;
 }
 .cover-fallback > span {
@@ -65,9 +65,9 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
   -webkit-line-clamp: 5;
-  font-size: var(--ds-text-sm);
+  font-size: var(--ds-text-small);
   line-height: 1.7;
-  color: var(--ds-gray-11);
+  color: var(--ds-foreground-secondary);
 }
 [data-visual] .cover-fallback > svg {
   flex-shrink: 0;
@@ -85,17 +85,16 @@
 }
 
 .citation {
-  --ds-focus-offset: 2px;
   display: inline-flex;
-  gap: 4px;
+  gap: var(--ds-space-xs);
   align-items: baseline;
-  font-size: var(--ds-text-md);
-  font-weight: var(--ds-weight-lg);
+  font-size: var(--ds-text-body);
+  font-weight: var(--ds-weight-medium);
   line-height: 1;
-  color: var(--ds-accent-11);
+  color: var(--ds-accent-foreground);
 
   &:hover {
-    color: var(--ds-accent-12);
+    color: var(--ds-accent-foreground);
   }
 
   &:hover > span {

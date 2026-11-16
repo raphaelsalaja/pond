@@ -1,0 +1,6 @@
+.box {
+  width: 48px;
+  background: var(--ds-background-primary);
+  border-radius: var(--ds-radius-sm);
+  box-shadow: var(--ds-shadow-border);
+}

@@ -5,7 +5,12 @@
   overflow: hidden;
   border-radius: var(--ds-radius-source);
   corner-shape: var(--ds-corner-icon);
-  box-shadow: var(--ds-shadow-sm);
+  box-shadow: var(--ds-shadow-border);
+
+  &[data-shape="circle"] {
+    border-radius: var(--ds-radius-full);
+    corner-shape: round;
+  }
 
   > svg,
   > img {

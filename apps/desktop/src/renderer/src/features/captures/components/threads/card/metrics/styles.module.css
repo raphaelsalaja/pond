@@ -1,15 +1,15 @@
 .metrics {
   display: flex;
-  gap: 16px;
+  gap: var(--ds-space-xl);
   align-items: center;
-  margin-top: 8px;
+  margin-top: var(--ds-space-md);
 }
 
 .metric {
   display: inline-flex;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   align-items: center;
-  font-size: var(--ds-text-md);
+  font-size: var(--ds-text-body);
   color: var(--tw-secondary);
 }
 

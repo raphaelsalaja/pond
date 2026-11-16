@@ -1,4 +1,4 @@
-import { IconNodes3Fill } from "@pond/icons";
+import { IconNodes3 } from "@pond/icons";
 import { Button, Empty } from "@pond/ui";
 import { useState } from "react";
 import { sourceNewMenu } from "@/features/sources/state/source-new-menu";
@@ -9,7 +9,7 @@ export function SourcesEmpty() {
   return (
     <Empty.Root>
       <Empty.Media>
-        <IconNodes3Fill size={32} />
+        <IconNodes3 size={32} />
       </Empty.Media>
       <Empty.Title>No sources yet</Empty.Title>
       <Empty.Description>

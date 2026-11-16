@@ -7,14 +7,14 @@
 
 .end {
   pointer-events: none;
-  fill: var(--ds-gray-1);
-  stroke: var(--ds-accent-9);
+  fill: var(--ds-foreground-inverse);
+  stroke: var(--ds-accent);
 }
 
 /* Clicks fall through to the line underneath, so the label selects and double-click edits like the line does. */
 .label {
   position: absolute;
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
 
   &[data-editing] {
     pointer-events: all;

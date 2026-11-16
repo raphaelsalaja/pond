@@ -4,15 +4,15 @@
 }
 
 .scroll {
-  padding: 12px 12px 20px;
+  padding: var(--ds-space-lg) var(--ds-space-lg) var(--ds-space-2xl);
 }
 
 .minimums {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 6px;
+  gap: var(--ds-space-sm);
   width: 100%;
-  padding-top: 6px;
+  padding-top: var(--ds-space-sm);
 }
 
 .minimum {

@@ -1,37 +1,37 @@
 .root {
   display: flex;
   flex-shrink: 0;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
   justify-content: space-between;
   width: 100%;
   height: var(--ds-title-bar-height);
   min-height: var(--ds-title-bar-height);
-  padding: 8px;
-  border-bottom: 1px solid var(--ds-gray-a3);
+  padding: var(--ds-space-md);
+  border-bottom: 1px solid var(--ds-border-subtle);
   -webkit-app-region: no-drag;
 }
 
 .title {
   display: flex;
-  gap: 10px;
+  gap: var(--ds-space-md);
   align-items: center;
   min-width: 0;
-  padding-left: 8px;
+  padding-left: var(--ds-space-md);
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-md);
-  font-weight: var(--ds-weight-lg);
+  font-size: var(--ds-text-body);
+  font-weight: var(--ds-weight-medium);
   white-space: nowrap;
 }
 
 .actions {
   display: flex;
   flex: none;
-  gap: 4px;
+  gap: var(--ds-space-xs);
   align-items: center;
 }
 
 .body {
-  padding-inline: 20px;
+  padding-inline: var(--ds-space-2xl);
 }

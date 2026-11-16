@@ -3,6 +3,7 @@ import type { Capture, RawJson } from "@pond/schema/raw";
 import {
   isAuxiliaryKind,
   isOriginalImageKind,
+  rendersPostCard,
   TEXT_THUMBNAIL_FILE,
   THUMBNAIL_DARK_FILE,
   THUMBNAIL_DARK_KIND,
@@ -151,7 +152,7 @@ async function renderTextCover(
 ): Promise<number> {
   const save = await runtime.readSave(saveId);
   if (!save) return 0;
-  if (save.source === "twitter") return 0;
+  if (rendersPostCard(save.source)) return 0;
   if (!needsTextCover(save, opts.imageFallback === true)) return 0;
 
   if (

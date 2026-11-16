@@ -48,9 +48,9 @@ export function AppearancePicker({
               rounding="full"
               className={styles.edit}
               disabled={disabled}
+              aria-label="Icon and Color"
             />
           }
-          aria-label="Icon and Color"
         >
           <IconDots size={12} />
         </Popover.Trigger>

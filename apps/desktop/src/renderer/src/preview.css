@@ -11,7 +11,7 @@ body,
 body {
   position: relative;
   overflow: hidden;
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
   background: black;
 }
 
@@ -23,8 +23,8 @@ body {
 }
 
 .preview-window-chrome button {
-  background: var(--ds-gray-1);
-  box-shadow: var(--ds-shadow-sm);
+  background: var(--ds-background-primary);
+  box-shadow: var(--ds-shadow-border);
 }
 
 #preview-ui button,
@@ -74,14 +74,14 @@ body {
   left: 50%;
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: var(--ds-space-xs);
   align-items: center;
   justify-content: center;
   max-width: calc(100vw - 96px);
-  padding: 4px;
-  background: var(--ds-gray-1);
+  padding: var(--ds-space-xs);
+  background: var(--ds-background-primary);
   border-radius: var(--ds-radius-lg);
-  box-shadow: var(--ds-shadow-tooltip);
+  box-shadow: var(--ds-shadow-overlay);
   transform: translateX(-50%);
 }
 
@@ -92,13 +92,13 @@ body[data-media-type="video"] .preview-controls {
 
 .preview-control-group {
   display: flex;
-  gap: 2px;
+  gap: var(--ds-space-2xs);
   align-items: center;
 }
 
 .preview-control-group + .preview-control-group {
-  padding-left: 4px;
-  border-left: 1px solid var(--ds-gray-a5);
+  padding-left: var(--ds-space-xs);
+  border-left: 1px solid var(--ds-border-strong);
 }
 
 .preview-opacity {
@@ -110,31 +110,31 @@ body[data-media-type="video"] .preview-controls {
   position: absolute;
   inset: 50% auto auto 50%;
   display: grid;
-  gap: 12px;
+  gap: var(--ds-space-lg);
   justify-items: center;
   max-width: min(360px, calc(100vw - 48px));
-  padding: 20px;
+  padding: var(--ds-space-2xl);
   text-align: center;
-  background: var(--ds-gray-2);
+  background: var(--ds-background-secondary);
   border-radius: var(--ds-radius-lg);
-  box-shadow: var(--ds-shadow-lg);
+  box-shadow: var(--ds-shadow-dialog);
   transform: translate(-50%, -50%);
 }
 
 #retry {
   height: var(--ds-size-sm);
-  padding: 0 10px;
-  font-size: var(--ds-text-sm);
-  font-weight: var(--ds-weight-lg);
+  padding: 0 var(--ds-space-lg);
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-medium);
   line-height: 1;
-  color: var(--ds-gray-12);
+  color: var(--ds-foreground-primary);
   cursor: var(--ds-cursor-interactive);
-  background: var(--ds-gray-a3);
+  background: var(--ds-surface-secondary);
   border-radius: var(--ds-radius-md);
 }
 
 #retry:hover {
-  background: var(--ds-gray-a4);
+  background: var(--ds-surface-tertiary);
 }
 
 #image[hidden],

@@ -1,12 +1,11 @@
 import { clsx as cn } from "clsx";
-import type { ComponentProps } from "react";
 import styles from "./styles.module.css";
 
-function Root({
-  className,
-  containerClassName,
-  ...props
-}: ComponentProps<"table"> & { containerClassName?: string }) {
+interface RootProps extends React.ComponentPropsWithoutRef<"table"> {
+  containerClassName?: string;
+}
+
+function Root({ className, containerClassName, ...props }: RootProps) {
   return (
     <div
       className={cn(styles.container, containerClassName)}
@@ -17,31 +16,45 @@ function Root({
   );
 }
 
-function Header({ className, ...props }: ComponentProps<"thead">) {
+interface HeaderProps extends React.ComponentPropsWithoutRef<"thead"> {}
+
+function Header({ className, ...props }: HeaderProps) {
   return <thead className={cn(styles.header, className)} {...props} />;
 }
 
-function Body({ className, ...props }: ComponentProps<"tbody">) {
+interface BodyProps extends React.ComponentPropsWithoutRef<"tbody"> {}
+
+function Body({ className, ...props }: BodyProps) {
   return <tbody className={cn(styles.body, className)} {...props} />;
 }
 
-function Footer({ className, ...props }: ComponentProps<"tfoot">) {
+interface FooterProps extends React.ComponentPropsWithoutRef<"tfoot"> {}
+
+function Footer({ className, ...props }: FooterProps) {
   return <tfoot className={cn(styles.footer, className)} {...props} />;
 }
 
-function Row({ className, ...props }: ComponentProps<"tr">) {
+interface RowProps extends React.ComponentPropsWithoutRef<"tr"> {}
+
+function Row({ className, ...props }: RowProps) {
   return <tr className={cn(styles.row, className)} {...props} />;
 }
 
-function Head({ className, ...props }: ComponentProps<"th">) {
-  return <th className={cn(styles.header, className)} {...props} />;
+interface HeadProps extends React.ComponentPropsWithoutRef<"th"> {}
+
+function Head({ className, ...props }: HeadProps) {
+  return <th className={cn(styles.head, className)} {...props} />;
 }
 
-function Cell({ className, ...props }: ComponentProps<"td">) {
+interface CellProps extends React.ComponentPropsWithoutRef<"td"> {}
+
+function Cell({ className, ...props }: CellProps) {
   return <td className={cn(styles.cell, className)} {...props} />;
 }
 
-function Caption({ className, ...props }: ComponentProps<"caption">) {
+interface CaptionProps extends React.ComponentPropsWithoutRef<"caption"> {}
+
+function Caption({ className, ...props }: CaptionProps) {
   return <caption className={cn(styles.caption, className)} {...props} />;
 }
 

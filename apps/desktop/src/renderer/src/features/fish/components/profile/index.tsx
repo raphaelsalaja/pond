@@ -1,4 +1,4 @@
-import { IconClockFill, IconXmark } from "@pond/icons";
+import { IconClock, IconXmark } from "@pond/icons";
 import { Button, Empty, Pane, Tabs } from "@pond/ui";
 import type { FishRoutine, FishSummary } from "@shared/fish-contracts";
 import { useEffect, useRef, useState } from "react";
@@ -112,7 +112,7 @@ export function FishProfile({
           value={target.name}
           variant="borderless"
           appearance="bare"
-          size="lg"
+          size="md"
           maxLength={40}
           commit={async (value) => {
             const name = value.trim();
@@ -194,7 +194,7 @@ function Activity({ fish }: { fish: FishSummary }) {
     return (
       <Empty.Root>
         <Empty.Media>
-          <IconClockFill size={32} />
+          <IconClock size={32} />
         </Empty.Media>
         <Empty.Title>No runs yet</Empty.Title>
         <Empty.Description>

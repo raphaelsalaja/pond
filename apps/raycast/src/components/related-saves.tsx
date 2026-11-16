@@ -40,7 +40,7 @@ export function RelatedSaves({ save }: { save: ApiSave }) {
       navigationTitle={`Related to ${saveTitle(save)}`}
       isLoading={related.isLoading}
       isShowingDetail={showingDetail && data.length > 0}
-      searchBarPlaceholder="Filter related saves…"
+      searchBarPlaceholder="Search…"
       onSelectionChange={setSelectedId}
     >
       {failed ? (

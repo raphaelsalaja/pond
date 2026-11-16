@@ -1,7 +1,7 @@
 .root {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: var(--ds-space-2xl);
   min-width: 0;
 }
 .groups {
@@ -10,32 +10,32 @@
   gap: 28px;
 }
 .header {
-  padding-inline: 12px;
+  padding-inline: var(--ds-space-lg);
 }
 .panel {
-  margin-inline: -2px;
+  margin-inline: calc(var(--ds-space-2xs) * -1);
 }
 .panel > :last-child {
-  margin: 4px 2px 2px;
+  margin: var(--ds-space-xs) var(--ds-space-2xs) var(--ds-space-2xs);
 }
 .connection {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
   justify-content: space-between;
-  padding: 0 14px 8px;
-  font-size: var(--ds-text-sm);
-  color: var(--ds-gray-10);
+  padding: 0 var(--ds-space-xl) var(--ds-space-md);
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-tertiary);
 }
 .count {
-  font-size: var(--ds-text-sm);
+  font-size: var(--ds-text-small);
   font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-9);
+  color: var(--ds-foreground-tertiary);
 }
 .toolbar {
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
 }
 .toolbar > :first-child {
@@ -47,36 +47,36 @@
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-md);
-  font-weight: var(--ds-weight-lg);
+  font-size: var(--ds-text-body);
+  font-weight: var(--ds-weight-medium);
   white-space: nowrap;
   cursor: pointer;
 }
 .provider {
   display: flex;
-  gap: 8px;
+  gap: var(--ds-space-md);
   align-items: center;
   min-width: 0;
   overflow: hidden;
-  font-size: var(--ds-text-md);
-  font-weight: var(--ds-weight-lg);
-  color: var(--ds-gray-12);
+  font-size: var(--ds-text-body);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-foreground-primary);
   white-space: nowrap;
 }
 .metric {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-sm);
+  font-size: var(--ds-text-small);
   font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-10);
+  color: var(--ds-foreground-tertiary);
   white-space: nowrap;
 }
 .empty {
-  padding: 12px 16px;
-  color: var(--ds-gray-10);
+  padding: var(--ds-space-lg) var(--ds-space-xl);
+  color: var(--ds-foreground-tertiary);
 }
 .error {
-  font-size: var(--ds-text-sm);
-  color: var(--ds-red-11);
+  font-size: var(--ds-text-small);
+  color: var(--ds-danger-foreground);
 }

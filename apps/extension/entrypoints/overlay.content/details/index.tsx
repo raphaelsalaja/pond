@@ -1,4 +1,4 @@
-import { IconGlobeFill, IconImageFill } from "@pond/icons";
+import { IconGlobe, IconImage } from "@pond/icons";
 import { Dialog } from "@pond/ui/dialog";
 import { Input } from "@pond/ui/input";
 import { Keyboard } from "@pond/ui/keyboard";
@@ -79,7 +79,7 @@ function Preview({ draft }: { draft: DetailsDraft }) {
         />
       ) : (
         <div className={styles.placeholder}>
-          {media ? <IconImageFill size={32} /> : <IconGlobeFill size={32} />}
+          {media ? <IconImage size={32} /> : <IconGlobe size={32} />}
           <span className={styles.host}>
             {hostOf(draft.originUrl ?? draft.url)}
           </span>

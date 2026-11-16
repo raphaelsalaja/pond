@@ -25,20 +25,20 @@
 }
 
 .viewport {
-  padding: 24px 24px 12px;
+  padding: var(--ds-space-2xl) var(--ds-space-2xl) var(--ds-space-lg);
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: none;
 }
 
 .turn[data-role="user"]:not(:first-child, .time + *) {
-  margin-top: 20px;
+  margin-top: var(--ds-space-xl);
 }
 
 .time {
   display: block;
-  margin-block: 16px 6px;
-  font-size: var(--ds-text-sm);
-  color: var(--ds-gray-9);
+  margin-block: var(--ds-space-xl) var(--ds-space-sm);
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-tertiary);
   text-align: center;
 }
