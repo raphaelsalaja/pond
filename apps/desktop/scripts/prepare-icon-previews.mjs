@@ -18,8 +18,8 @@ const outDir = resolve(
 
 const PREVIEW_SIZE = 128;
 
-async function sourceFor(dir) {
-  const path = join(dir, "default.png");
+async function sourceFor(dir, file) {
+  const path = join(dir, file);
   try {
     return { path, mtime: (await stat(path)).mtimeMs };
   } catch {
@@ -51,16 +51,32 @@ async function main() {
 
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
-    const source = await sourceFor(join(tintsRoot, entry.name));
-    if (!source) continue;
-    const out = join(outDir, `${entry.name}.png`);
-    if (await isFresh(out, source.mtime)) continue;
-    const png = await sharp(await readFile(source.path))
-      .resize(PREVIEW_SIZE, PREVIEW_SIZE)
-      .png({ compressionLevel: 9 })
-      .toBuffer();
-    await writeFile(out, png);
-    written += 1;
+    // `<id>[.NN][.dark].png`: the root (macOS 26) or `macos-NN/` design, Default or Dark style.
+    const tintDir = join(tintsRoot, entry.name);
+    const generations = (await readdir(tintDir)).flatMap((name) => {
+      const match = name.match(/^macos-(\d+)$/);
+      return match ? [match[1]] : [];
+    });
+    const variants = [
+      ["default.png", ""],
+      ["dark.png", ".dark"],
+      ...generations.flatMap((generation) => [
+        [`macos-${generation}/default.png`, `.${generation}`],
+        [`macos-${generation}/dark.png`, `.${generation}.dark`],
+      ]),
+    ];
+    for (const [file, suffix] of variants) {
+      const source = await sourceFor(join(tintsRoot, entry.name), file);
+      if (!source) continue;
+      const out = join(outDir, `${entry.name}${suffix}.png`);
+      if (await isFresh(out, source.mtime)) continue;
+      const png = await sharp(await readFile(source.path))
+        .resize(PREVIEW_SIZE, PREVIEW_SIZE)
+        .png({ compressionLevel: 9 })
+        .toBuffer();
+      await writeFile(out, png);
+      written += 1;
+    }
   }
 
   console.log(

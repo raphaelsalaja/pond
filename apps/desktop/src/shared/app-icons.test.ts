@@ -3,6 +3,7 @@ import {
   appIconLabel,
   appIconTint,
   DEFAULT_APP_ICON,
+  pickIconGeneration,
   preferredAppIcon,
   resolveAppIconId,
   sortAppIconIds,
@@ -53,5 +54,16 @@ describe("app icons", () => {
   it("returns a crayon hex for known tints", () => {
     expect(appIconTint("mocha")).toMatch(/^#[0-9a-f]{6}$/);
     expect(appIconTint("nope")).toBeUndefined();
+  });
+});
+
+describe("pickIconGeneration", () => {
+  it("uses the newest design generation at or below the running macOS", () => {
+    expect(pickIconGeneration([27], 26)).toBeNull();
+    expect(pickIconGeneration([27], 27)).toBe(27);
+    expect(pickIconGeneration([27], 29)).toBe(27);
+    expect(pickIconGeneration([27, 29], 29)).toBe(29);
+    expect(pickIconGeneration([27, 29], 28)).toBe(27);
+    expect(pickIconGeneration([27], null)).toBeNull();
   });
 });

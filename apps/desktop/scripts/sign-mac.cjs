@@ -2,7 +2,7 @@ const { execFileSync } = require("node:child_process");
 const { existsSync } = require("node:fs");
 const { join, resolve } = require("node:path");
 
-const APPEXES = [
+const PLUG_INS = [
   {
     path: "Contents/PlugIns/Pond Extension.appex",
     entitlements: resolve(
@@ -14,6 +14,7 @@ const APPEXES = [
     path: "Contents/PlugIns/Pond Share.appex",
     entitlements: resolve(__dirname, "../share-extension/share.entitlements"),
   },
+  { path: "Contents/PlugIns/PondDockTile.docktileplugin", entitlements: null },
 ];
 
 function defaultSign() {
@@ -25,23 +26,16 @@ function defaultSign() {
   ).sign;
 }
 
-/** electron-builder skips Contents/PlugIns, so each appex is signed with its own entitlements before the app seals it. */
+/** electron-builder skips Contents/PlugIns, so each plug-in is signed with its own entitlements before the app seals it. */
 exports.default = async function signMac(opts) {
-  for (const { path, entitlements } of APPEXES) {
-    const appex = join(opts.app, path);
-    if (!existsSync(appex) || !opts.identity) continue;
-    const args = [
-      "--force",
-      "--sign",
-      opts.identity,
-      "--options",
-      "runtime",
-      "--entitlements",
-      entitlements,
-    ];
+  for (const { path, entitlements } of PLUG_INS) {
+    const plugIn = join(opts.app, path);
+    if (!existsSync(plugIn) || !opts.identity) continue;
+    const args = ["--force", "--sign", opts.identity, "--options", "runtime"];
+    if (entitlements) args.push("--entitlements", entitlements);
     if (opts.identity !== "-") args.push("--timestamp");
     if (opts.keychain) args.push("--keychain", opts.keychain);
-    execFileSync("codesign", [...args, appex], { stdio: "inherit" });
+    execFileSync("codesign", [...args, plugIn], { stdio: "inherit" });
   }
   return defaultSign()(opts);
 };

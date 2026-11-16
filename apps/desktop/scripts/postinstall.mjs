@@ -28,6 +28,11 @@ export const SETUP_STEPS = Object.freeze([
     required: false,
   },
   {
+    name: "Dock icon preparation",
+    script: "prepare-dock-icons.mjs",
+    required: false,
+  },
+  {
     name: "development Electron branding",
     script: "patch-electron-name.mjs",
     required: false,

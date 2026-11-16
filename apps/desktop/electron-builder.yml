@@ -60,10 +60,15 @@ extraResources:
       # App extensions belong in Contents/PlugIns only; see mac.extraFiles.
       - "!SafariExtension{,/**}"
       - "!ShareExtension{,/**}"
+      - "!DockTile{,/**}"
   - from: ../../packages/icons/brand/tints
     to: app-icons
+    # Each tint's own image only; the macos-NN exports ship as Dock-ready copies in dock-icons.
     filter:
-      - "**/default.png"
+      - "*/default.png"
+  # Written by scripts/prepare-dock-icons.mjs from packages/icons/brand/tints.
+  - from: build/dock-icons
+    to: dock-icons
 
 extraMetadata:
   main: ./out/main/index.js
@@ -87,8 +92,8 @@ publish:
 
 mac:
   category: public.app-category.productivity
-  # Prefer `icon.icon` (Icon Composer) when actool 26+ is available; until then
-  # the Default-export icns ships the same mark for Dock / DMG / older macOS.
+  # The Default-export icns ships the mark for the DMG and macOS before 26. On 26+,
+  # CFBundleIconName below selects the Icon Composer catalog instead.
   icon: icon.icns
   artifactName: ${productName}-${version}-${arch}.${ext}
   target:
@@ -126,6 +131,9 @@ mac:
     # before an unsandboxed app may create the Safari socket in it.
     - from: resources/SafariExtension/app-group.node
       to: app-group.node
+    # Compiled from the Aqua tint's icon.icon by prepare-app-icon when actool 26+ is available.
+    - from: build/Assets.car
+      to: Assets.car
   # App extensions: the Safari App Extension (scripts/build-safari-extension.mjs) and
   # the Share extension (scripts/build-share-extension.mjs). Safari cannot launch an
   # external native-messaging host, so its handler ships inside the app bundle; macOS
@@ -135,7 +143,13 @@ mac:
       to: PlugIns/Pond Extension.appex
     - from: resources/ShareExtension/Pond Share.appex
       to: PlugIns/Pond Share.appex
+    # Built by scripts/build-dock-tile.mjs; the Dock draws Pond's tile with it while Pond is not running.
+    - from: resources/DockTile/PondDockTile.docktileplugin
+      to: PlugIns/PondDockTile.docktileplugin
   extendInfo:
+    # Names the app icon in Assets.car; macOS before 26 falls back to icon.icns.
+    CFBundleIconName: icon
+    NSDockTilePlugIn: PondDockTile.docktileplugin
     CFBundleDocumentTypes:
       # Lets the Dock icon accept any file or folder as an import. Alternate
       # rank keeps Pond from becoming the default app for those files.

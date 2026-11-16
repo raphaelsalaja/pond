@@ -421,7 +421,7 @@ function MarkGlyph({ mark }: { mark: LibraryMark }) {
     return (
       <img
         className={styles.image}
-        src={logo?.preview ?? defaultAppIcon}
+        src={logo?.base.light ?? defaultAppIcon}
         alt=""
       />
     );
@@ -527,7 +527,7 @@ function pickerOptions(picker: Picker, mark: LibraryMark): PickerOption[] {
     return POND_LOGOS.map((entry) => ({
       key: entry.id,
       label: entry.label,
-      content: <img className={styles.logo} src={entry.preview} alt="" />,
+      content: <img className={styles.logo} src={entry.base.light} alt="" />,
       selected:
         mark.kind === "pond"
           ? mark.tint === entry.id

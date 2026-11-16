@@ -273,6 +273,7 @@ export const queryOperationAccess = {
   "settings.getOnboarded": "read",
   "settings.getPrefs": "read",
   "settings.globalShortcutStatus": "read",
+  "settings.appIconAppearance": "hidden",
   "settings.ingestToken": "hidden",
   "settings.rotateIngestToken": "hidden",
   "settings.setImageDownload": "review",
