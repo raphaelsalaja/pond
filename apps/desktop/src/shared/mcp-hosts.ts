@@ -21,9 +21,13 @@ export interface McpClientStatus {
   connected: boolean;
 }
 
-export const MCP_DEEPLINK_HOSTS = ["cursor", "vscode"] as const;
+export const MCP_INSTALL_HOSTS = [
+  "cursor",
+  "vscode",
+  "claude-desktop",
+] as const;
 
-export type McpDeeplinkHost = (typeof MCP_DEEPLINK_HOSTS)[number];
+export type McpInstallHost = (typeof MCP_INSTALL_HOSTS)[number];
 
 export interface McpHostDefinition {
   id: McpHostId;
@@ -75,7 +79,7 @@ export const MCP_HOST_CATALOG: readonly McpHostDefinition[] = [
     configPath:
       "~/Library/Application Support/Claude/claude_desktop_config.json",
     windowsConfigPath: "%APPDATA%\\Claude\\claude_desktop_config.json",
-    hint: "Claude Desktop MCP shows Pond when connected.",
+    hint: "Claude Desktop opens an install window. Settings, Extensions lists Pond once it's installed.",
     addLabel: "Add to Claude Desktop",
   },
   {
@@ -156,6 +160,6 @@ export function hostSetupCommands(
   return [];
 }
 
-export function isMcpDeeplinkHost(id: McpHostId): id is McpDeeplinkHost {
-  return MCP_DEEPLINK_HOSTS.some((host) => host === id);
+export function isMcpInstallHost(id: McpHostId): id is McpInstallHost {
+  return MCP_INSTALL_HOSTS.some((host) => host === id);
 }

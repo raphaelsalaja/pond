@@ -4,6 +4,7 @@ import { z } from "zod";
 import { assistantProvider, assistantSend } from "../../../shared/assistant";
 import { conversationMarkdown } from "../../../shared/conversation-markdown";
 import { FishIdSchema } from "../../../shared/fish-contracts";
+import { MCP_INSTALL_HOSTS } from "../../../shared/mcp-hosts";
 import type { QueryResult } from "../../../shared/query-contracts";
 import { type QueryHandlerMap, query } from "./params";
 
@@ -190,8 +191,21 @@ export const agentQueries = {
   }),
 
   "agent.openMcpInstall": query(
-    z.object({ id: z.enum(["cursor", "vscode"]) }),
+    z.object({ id: z.enum(MCP_INSTALL_HOSTS) }),
     async ({ id }): Promise<QueryResult<"agent.openMcpInstall">> => {
+      if (id === "claude-desktop") {
+        const { writePondMcpBundle } = await import(
+          "../../core/agent/mcp-bundle"
+        );
+        const failure = await shell.openPath(await writePondMcpBundle());
+        return failure
+          ? {
+              ok: false,
+              error:
+                "Claude Desktop didn't open the Pond extension. Copy the config instead.",
+            }
+          : { ok: true };
+      }
       const { mcpDeeplinkUrl } = await import("../../core/agent/mcp-hosts");
       const url = mcpDeeplinkUrl(id);
       if (!url) {
