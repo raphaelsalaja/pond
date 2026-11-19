@@ -124,7 +124,13 @@ function IconChoices({
           onValueChange={setQuery}
           onKeyDown={(event) => {
             const first = results[0];
-            if (event.key !== "Enter" || !query || !first) return;
+            if (
+              event.key !== "Enter" ||
+              event.nativeEvent.isComposing ||
+              !query ||
+              !first
+            )
+              return;
             event.preventDefault();
             onIconChange(first.id);
           }}

@@ -112,6 +112,49 @@ it("cancels a draft with Escape without writing", async () => {
   expect(commit).not.toHaveBeenCalled();
 });
 
+it("keeps a single-line field open on Enter while text is composing", async () => {
+  const commit = vi.fn(async (_value: string) => {});
+  await act(async () =>
+    root.render(
+      <InspectorTextField
+        drafts={drafts}
+        cacheKey="title"
+        label="Title"
+        value="Trip"
+        commit={commit}
+      />,
+    ),
+  );
+  const input = host.querySelector("input");
+  if (!input) throw new Error("Missing title field");
+  const press = (isComposing: boolean) =>
+    act(async () => {
+      input.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "Enter",
+          bubbles: true,
+          isComposing,
+        }),
+      );
+    });
+  await act(async () => {
+    input.focus();
+    Object.getOwnPropertyDescriptor(
+      HTMLInputElement.prototype,
+      "value",
+    )?.set?.call(input, "旅行");
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+
+  await press(true);
+  expect(document.activeElement).toBe(input);
+  expect(commit).not.toHaveBeenCalled();
+
+  await press(false);
+  expect(document.activeElement).not.toBe(input);
+  expect(commit).toHaveBeenCalledExactlyOnceWith("旅行");
+});
+
 it("clamps long text behind Read More until expanded", async () => {
   const scroll = vi
     .spyOn(HTMLTextAreaElement.prototype, "scrollHeight", "get")

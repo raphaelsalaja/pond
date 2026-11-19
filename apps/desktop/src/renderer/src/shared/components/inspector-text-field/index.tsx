@@ -131,7 +131,11 @@ export function InspectorTextField({
         drafts.delete(cacheKey);
         refresh();
         event.currentTarget.blur();
-      } else if (event.key === "Enter" && !multiline)
+      } else if (
+        event.key === "Enter" &&
+        !multiline &&
+        !event.nativeEvent.isComposing
+      )
         event.currentTarget.blur();
     },
   };

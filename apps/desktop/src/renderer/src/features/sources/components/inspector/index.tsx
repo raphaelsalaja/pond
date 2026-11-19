@@ -1009,7 +1009,8 @@ function NicknameItem({
             onChange={() => setStatus("idle")}
             onBlur={(event) => void save(event.currentTarget.value)}
             onKeyDown={(event) => {
-              if (event.key === "Enter") event.currentTarget.blur();
+              if (event.key === "Enter" && !event.nativeEvent.isComposing)
+                event.currentTarget.blur();
             }}
           />
         </Input.Root>
