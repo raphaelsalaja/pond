@@ -1,20 +1,13 @@
-import type { Folder } from "@pond/schema/db";
 import {
   type FolderTemplate,
   orderFolderTemplateNodes,
 } from "@pond/schema/folder-templates";
 import { BUILT_IN_FOLDER_TEMPLATES } from "@shared/folder-templates";
-import { describe, expect, it, vi } from "vitest";
-
-vi.mock("./executor", () => ({}));
-vi.mock("./folders", () => ({}));
-vi.mock("./prefs", () => ({}));
-vi.mock("./tags", () => ({}));
-vi.mock("./undo", () => ({}));
-
-const { buildFolderTemplate, planFolderTemplate } = await import(
-  "./folder-templates"
-);
+import { describe, expect, it } from "vitest";
+import {
+  buildFolderTemplate,
+  planFolderTemplate,
+} from "./folder-template-plan";
 
 function ids() {
   let next = 0;
@@ -44,15 +37,9 @@ function folder(
   parentId: string | null,
   sortOrder: number,
   name = id,
-): Folder {
-  return {
-    id,
-    parentId,
-    name,
-    color: null,
-    sortOrder,
-    createdAt: new Date(0),
-  } as Folder;
+) {
+  const color: string | null = null;
+  return { id, parentId, name, color, sortOrder };
 }
 
 describe("orderFolderTemplateNodes", () => {
@@ -204,6 +191,7 @@ describe("buildFolderTemplate", () => {
       folders,
       views: {},
       rules: {},
+      createId: () => "2",
     });
     expect(built.nodes).toHaveLength(1);
   });
