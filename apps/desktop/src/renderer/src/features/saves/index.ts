@@ -31,7 +31,7 @@ export {
   notifyFolderMembershipChange,
   notifyUndoableFolderChange,
 } from "./lib/folder-actions";
-export { canImportDrop } from "./lib/import-feedback";
+export { canImportDrop, showImportedAction } from "./lib/import-feedback";
 export { markProcessed, trashWithUndo } from "./lib/inbox-actions";
 export {
   collectionOwnsKeyboard,
@@ -70,6 +70,7 @@ export {
   createSelectionReconciler,
   isLibraryBackgroundTarget,
   selectOnlySave,
+  selectSaves,
 } from "./lib/select";
 export { selectResults } from "./lib/select-results";
 export { exportSelectionCsv, exportSelectionFiles } from "./lib/selection";

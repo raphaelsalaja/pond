@@ -33,6 +33,7 @@ export interface SaveLibraryBridge {
   openDuplicateReview(saveId: string): void;
   findSimilarColor(color: string): void;
   showMatching(predicate: Predicate): void;
+  showSaves(ids: readonly string[], folderId?: string): void;
   setVisualProbe(input: { id: string; label: string }): void;
   foldersForSave(id: string): readonly SaveFolderReference[];
   foldersSnapshot(): readonly SaveFolderReference[];
@@ -66,6 +67,7 @@ let current: SaveLibraryBridge = {
   openDuplicateReview: unavailable,
   findSimilarColor: unavailable,
   showMatching: unavailable,
+  showSaves: unavailable,
   setVisualProbe: unavailable,
   foldersForSave: unavailable,
   foldersSnapshot: unavailable,
@@ -97,6 +99,7 @@ export const saveLibraryBridge: SaveLibraryBridge = {
   openDuplicateReview: (saveId) => current.openDuplicateReview(saveId),
   findSimilarColor: (color) => current.findSimilarColor(color),
   showMatching: (predicate) => current.showMatching(predicate),
+  showSaves: (ids, folderId) => current.showSaves(ids, folderId),
   setVisualProbe: (input) => current.setVisualProbe(input),
   foldersForSave: (id) => current.foldersForSave(id),
   foldersSnapshot: () => current.foldersSnapshot(),

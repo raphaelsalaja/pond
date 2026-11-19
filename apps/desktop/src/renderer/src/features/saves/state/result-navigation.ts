@@ -83,6 +83,14 @@ export const resultNavigation = {
     if (pendingReveal && source.ids.includes(pendingReveal))
       reveal?.(pendingReveal);
   },
+  /** Calls `listener` once, when the view next publishes its results. */
+  onNextSource(listener: () => void): () => void {
+    const stop = subscribe(() => {
+      stop();
+      listener();
+    });
+    return stop;
+  },
   async ids(): Promise<readonly string[]> {
     return (await source.allIds?.()) ?? source.ids;
   },

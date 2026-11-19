@@ -4,6 +4,7 @@ import {
   lastUsedFolderId,
   rememberFolderDestinations,
 } from "@/features/library/lib/recent-folders";
+import { showSavesInLibrary } from "@/features/library/lib/show-saves";
 import { openConversionDialog } from "@/features/library/state/conversion-dialog";
 import { openDuplicateReview } from "@/features/library/state/duplicate-review";
 import { openFolderPicker } from "@/features/library/state/folder-picker";
@@ -42,6 +43,7 @@ registerSaveLibraryBridge({
     setQuery({ combinator: "and", rules: [predicate] });
     closeSave();
   },
+  showSaves: showSavesInLibrary,
   setVisualProbe: ({ id, label }) =>
     setVisualProbe({ kind: "saveId", id, label }),
   foldersForSave: (id) => folders.forSave(id),
