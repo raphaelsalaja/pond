@@ -32,12 +32,14 @@ import {
 } from "@/features/saves/tag-picker";
 import type { Save } from "@/features/saves/types";
 import { keywordScopesFromPrefs, useRetrievalOverlay } from "@/features/search";
+import { useStableStrings } from "@/shared/hooks/use-stable-array";
 import { inboxScope } from "@/shared/lib/library-nav";
 import { usePrefs } from "@/shared/state/prefs";
 import { useRetainedTagPickerSaves } from "./retain-tag-picker-saves";
 
 /** Long enough to span a pause between keystrokes, so results swap once typing stops. */
 const KEYWORD_DEBOUNCE_MS = 250;
+const NO_PINS: ReadonlyArray<string> = [];
 
 export function useNarrowedSaves(mode: SaveListMode, sourceFilter: string) {
   const saves = useSaves();
@@ -186,6 +188,17 @@ export function useNarrowedSaves(mode: SaveListMode, sourceFilter: string) {
       void session.load();
     previousOrder.current = manualOrder;
   }, [manualOrder, sortKey, session]);
+  const pinScope = request.orderFolderId;
+  const pinnedIds = useStableStrings(
+    (pinScope ? folderViews[pinScope]?.pinnedIds : undefined) ?? NO_PINS,
+  );
+  const previousPins = useRef({ scope: pinScope, ids: pinnedIds });
+  useEffect(() => {
+    const previous = previousPins.current;
+    if (previous.scope === pinScope && previous.ids !== pinnedIds)
+      void session.load();
+    previousPins.current = { scope: pinScope, ids: pinnedIds };
+  }, [pinScope, pinnedIds, session]);
   const { page, loading, error } = state;
   const filtered = useMemo(() => {
     const rows: Save[] = [];
@@ -238,6 +251,7 @@ export function useNarrowedSaves(mode: SaveListMode, sourceFilter: string) {
         ? (page?.total ?? 0) + retained.departedIds.length
         : retained.rows.length,
     hasMore: ranked === filtered && !!page?.nextCursor,
+    pinnedIds,
     loadMore,
     allIds,
     retry: () => session.load(),

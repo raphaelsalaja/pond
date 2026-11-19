@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { type ReactNode, useMemo } from "react";
 import { ListHeader } from "@/features/library/components/layouts/list-header";
 import { SavePackedGrid } from "@/features/library/components/layouts/packed-grid";
 import { packList } from "@/features/library/components/layouts/packing";
@@ -10,29 +10,38 @@ const PREVIEW = 48;
 
 interface ListViewProps {
   saves: ReadonlyArray<Save>;
+  lead?: ReadonlyArray<Save>;
+  divider?: ReactNode;
   onEndReached?: () => void;
 }
 
-export function ListView({ saves, onEndReached }: ListViewProps) {
+export function ListView({
+  saves,
+  lead,
+  divider,
+  onEndReached,
+}: ListViewProps) {
   const width = useDeferredGridWidth();
-  const { items, totalHeight } = useMemo(
-    () =>
+  const packs = useMemo(() => {
+    const pack = (list: ReadonlyArray<Save>) =>
       packList(
-        saves.map((save) => save.id),
+        list.map((save) => save.id),
         width,
         ROW,
         PREVIEW,
-      ),
-    [saves, width],
-  );
+      );
+    return { rest: pack(saves), lead: lead?.length ? pack(lead) : undefined };
+  }, [saves, lead, width]);
 
   return (
     <>
       <ListHeader />
       <SavePackedGrid
         layout="list"
-        items={items}
-        totalHeight={totalHeight}
+        items={packs.rest.items}
+        totalHeight={packs.rest.totalHeight}
+        lead={packs.lead}
+        divider={divider}
         onEndReached={onEndReached}
       />
     </>
