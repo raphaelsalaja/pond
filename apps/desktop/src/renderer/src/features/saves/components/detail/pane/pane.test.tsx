@@ -469,6 +469,21 @@ it("toggles Favorite from the inspector without touching the rating", async () =
   );
 });
 
+it("leaves focus where it was when Favorite is pressed", async () => {
+  await act(async () => root.render(<SaveInspector saveId="a" />));
+  const favorite = host.querySelector<HTMLButtonElement>(
+    '[aria-label="Favorite"]',
+  );
+  if (!favorite) throw new Error("Missing Favorite toggle");
+  const press = new MouseEvent("mousedown", {
+    bubbles: true,
+    cancelable: true,
+  });
+  favorite.dispatchEvent(press);
+
+  expect(press.defaultPrevented).toBe(true);
+});
+
 it("clears a sensitive flag from the warning", async () => {
   const current = pool.get("a");
   if (!current) throw new Error("Missing Save fixture");
