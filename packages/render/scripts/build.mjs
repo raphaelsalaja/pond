@@ -26,11 +26,15 @@ const OUT = join(REPO, "apps/desktop/resources/render");
 const TARGET = "wasm32-unknown-unknown";
 const profile = process.argv.includes("--fast") ? "fast" : "release";
 
+/** Without the WebAssembly the desktop app draws posts with the React card, so a missing fork skips unless `POND_RENDER_REQUIRED` is set. */
 if (!existsSync(join(XEET, "crates/xeet-core"))) {
-  console.error(
-    `No xeet checkout at ${XEET}. Clone the fork there or set POND_XEET_DIR.`,
-  );
-  process.exit(1);
+  const message = `No xeet checkout at ${XEET}. Clone the fork there or set POND_XEET_DIR.`;
+  if (process.env.POND_RENDER_REQUIRED) {
+    console.error(message);
+    process.exit(1);
+  }
+  console.warn(`${message} Skipping the post renderer.`);
+  process.exit(0);
 }
 
 execFileSync(

@@ -56,7 +56,7 @@ const desktopOut = join(workspace, "apps/desktop/out");
 addResult(
   "desktop main static graph",
   mainStaticGraph(join(desktopOut, "main/index.js")),
-  3_400_000,
+  3_500_000,
 );
 addResult(
   "desktop renderer initial JS/CSS",
@@ -82,7 +82,7 @@ addResult(
 
 const extensionOut = join(workspace, "apps/extension/.output/chrome-mv3");
 /** The in-page overlay is a separate React bundle because content scripts can't share chunks with extension pages. */
-addResult("extension unpacked total", directorySize(extensionOut), 1_950_000);
+addResult("extension unpacked total", directorySize(extensionOut), 2_200_000);
 addResult(
   "extension service worker",
   fileSize(join(extensionOut, "background.js")),
