@@ -78,6 +78,17 @@ function splitPostOrder(): SQLWrapper {
   return sql`printf('%06d %013d', coalesce(json_extract(${saves.rawSlim}, '$.split.media[0]'), 999999), 9999999999999 - ${saves.savedAt})`;
 }
 
+/**
+ * Eagle exports every item's preview as a standalone item named
+ * `<parent>_thumbnail`. Older Pond imports stored those as Saves, flooding
+ * the library with low-quality duplicates of previews their parents already
+ * carry. Keep them out of library views; they stay reachable by id and in
+ * the Trash so cleanup or restore remains possible.
+ */
+export function hideImportedThumbnailDuplicateSaves() {
+  return sql`not (${saves.importedFrom} = 'eagle' and ${saves.mediaType} = 'image' and lower(coalesce(${saves.title}, '')) glob '*_thumbnail')`;
+}
+
 export function libraryQueryWhere(
   request: LibraryQueryRequest,
   hiddenFolderIds: readonly string[] = [],
@@ -85,6 +96,7 @@ export function libraryQueryWhere(
   const scope = request.scope ?? {};
   return and(
     scope.deletedOnly ? isNotNull(saves.deletedAt) : isNull(saves.deletedAt),
+    scope.deletedOnly ? undefined : hideImportedThumbnailDuplicateSaves(),
     scope.deletedOnly ? undefined : sql`${saves.status} = 'complete'`,
     buildWhere(request.query),
     request.keywords?.trim()

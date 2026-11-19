@@ -128,6 +128,41 @@ describe("partitionEagleItemFiles", () => {
     });
     expect(partitionEagleItemFiles(files).mediaFiles).toEqual(["Studio.url"]);
   });
+
+  it("recognizes the WebP sidecar Eagle also writes beside items", () => {
+    expect(
+      partitionEagleItemFiles([
+        "metadata.json",
+        "ICON PICKER.png",
+        "ICON PICKER_thumbnail.webp",
+      ]),
+    ).toEqual({
+      mediaFiles: ["ICON PICKER.png"],
+      thumbnail: "ICON PICKER_thumbnail.webp",
+    });
+  });
+
+  it("prefers the PNG sidecar and keeps both suffixes out of media", () => {
+    expect(
+      partitionEagleItemFiles([
+        "Poster.jpg",
+        "Poster_thumbnail.webp",
+        "Poster_thumbnail.png",
+      ]),
+    ).toEqual({
+      mediaFiles: ["Poster.jpg"],
+      thumbnail: "Poster_thumbnail.png",
+    });
+  });
+
+  it("leaves a standalone thumbnail item with no media so the import skips it", () => {
+    expect(
+      partitionEagleItemFiles(["metadata.json", "ICON PICKER_thumbnail.webp"]),
+    ).toEqual({
+      mediaFiles: [],
+      thumbnail: "ICON PICKER_thumbnail.webp",
+    });
+  });
 });
 
 describe("isEagleBookmark", () => {

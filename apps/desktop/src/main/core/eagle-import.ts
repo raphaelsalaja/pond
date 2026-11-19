@@ -122,6 +122,18 @@ export function isEagleBookmark(meta: { ext?: string; url?: string }) {
   return meta.ext?.toLowerCase() === "url" && Boolean(meta.url?.trim());
 }
 
+export function isThumbnailSidecar(name: string): boolean {
+  const lower = name.toLowerCase();
+  return lower.endsWith("_thumbnail.png") || lower.endsWith("_thumbnail.webp");
+}
+
+/**
+ * Eagle writes an item's preview beside it as `<name>_thumbnail.png`, and
+ * exports that same preview again as a standalone item whose only file is
+ * `<name>_thumbnail.webp`. Classifying both suffixes as the thumbnail keeps
+ * the sidecar out of `mediaFiles`; a standalone thumbnail item then has no
+ * media of its own and is skipped instead of imported as a duplicate Save.
+ */
 export function partitionEagleItemFiles(
   files: readonly string[],
   bookmark = false,
@@ -131,11 +143,12 @@ export function partitionEagleItemFiles(
   );
   const thumbnail =
     visible.find((name) => name.toLowerCase().endsWith("_thumbnail.png")) ??
+    visible.find((name) => name.toLowerCase().endsWith("_thumbnail.webp")) ??
     null;
   return {
     mediaFiles: visible.filter(
       (name) =>
-        name !== thumbnail &&
+        !isThumbnailSidecar(name) &&
         !(bookmark && name.toLowerCase().endsWith(".url")),
     ),
     thumbnail,
