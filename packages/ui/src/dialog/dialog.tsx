@@ -152,13 +152,28 @@ function Backdrop({ className, ...props }: Base.Backdrop.Props) {
 }
 
 type PopupProps = Base.Popup.Props &
-  ({ pageId: string; depth: number } | { pageId?: never; depth?: never });
+  (
+    | { pageId: string; depth: number; variant?: never }
+    | { pageId?: never; depth?: never; variant?: "card" | "media" }
+  );
 
 function Popup(props: PopupProps) {
   if (props.pageId !== undefined)
     return <PagedPopup {...props} pageId={props.pageId} depth={props.depth} />;
-  const { pageId: _pageId, depth: _depth, className, ...rest } = props;
-  return <Base.Popup className={cn(styles.popup, className)} {...rest} />;
+  const {
+    pageId: _pageId,
+    depth: _depth,
+    variant = "card",
+    className,
+    ...rest
+  } = props;
+  return (
+    <Base.Popup
+      className={cn(styles.popup, className)}
+      data-variant={variant}
+      {...rest}
+    />
+  );
 }
 
 function PagedPopup({

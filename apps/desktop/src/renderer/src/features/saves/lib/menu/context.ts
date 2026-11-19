@@ -2,7 +2,10 @@ import { isAuxiliaryKind } from "@shared/save-file-names";
 import { isWebPageSave } from "@shared/web-page-save";
 import { resolveFileIndex } from "@/features/saves/lib/actions";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
-import { deriveTypeKind } from "@/features/saves/lib/media/units";
+import {
+  cardThumbnailUrl,
+  deriveTypeKind,
+} from "@/features/saves/lib/media/units";
 import {
   hasVideoFile,
   needsVideoDownload,
@@ -113,6 +116,7 @@ export function createSaveMenuContext(
         (item) => Boolean(item.url) && isWebPageSave(item) && !item.deletedAt,
       ),
     canResetThumbnail,
+    canViewThumbnail: !batch && cardThumbnailUrl(save) !== null,
     canRename: !batch && save.source === "local",
     canSplit: saves.some(saveCanSplit),
     fontActivated,

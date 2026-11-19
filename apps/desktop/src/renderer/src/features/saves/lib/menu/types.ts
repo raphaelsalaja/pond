@@ -42,6 +42,7 @@ export interface SaveMenuContext {
   copyLabel: string;
   archivable: boolean;
   canResetThumbnail: boolean;
+  canViewThumbnail: boolean;
   canRename: boolean;
   canSplit: boolean;
   fontActivated: boolean;

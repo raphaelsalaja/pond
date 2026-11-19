@@ -1,0 +1,7 @@
+.image {
+  display: block;
+  user-select: none;
+  object-fit: contain;
+  border-radius: var(--ds-radius-lg);
+  box-shadow: var(--ds-shadow-dialog);
+}

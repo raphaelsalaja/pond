@@ -62,6 +62,27 @@ function ConnectSource() {
   );
 }
 
+const THUMBNAIL = `data:image/svg+xml,${encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="320" height="200"><rect width="320" height="200" fill="#8a8f98"/></svg>',
+)}`;
+
+function ViewThumbnail() {
+  return (
+    <Dialog.Root>
+      <Dialog.Trigger render={<Button variant="secondary" />}>
+        View Thumbnail
+      </Dialog.Trigger>
+      <Dialog.Portal>
+        <Dialog.Backdrop data-testid="backdrop" />
+        <Dialog.Popup variant="media" aria-label="Thumbnail">
+          <img src={THUMBNAIL} alt="Gray placeholder" />
+          <Dialog.Close />
+        </Dialog.Popup>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+
 const button = (name: string) =>
   page.getByRole("button", { name, exact: true });
 
@@ -128,6 +149,43 @@ describe("Dialog keyboard", () => {
 
     await userEvent.keyboard("{Escape}");
     await expect.element(dialog).not.toBeInTheDocument();
+  });
+});
+
+describe("Dialog media", () => {
+  it("stays open on its content and closes from the space around it", async () => {
+    const screen = await render(<ViewThumbnail />);
+    const trigger = screen.getByRole("button", { name: "View Thumbnail" });
+
+    await userEvent.click(trigger);
+    const dialog = page.getByRole("dialog", { name: "Thumbnail" });
+    await expect.element(dialog).toBeVisible();
+    await expect.element(button("Close")).toHaveFocus();
+    await expectAccessible();
+
+    await userEvent.click(page.getByRole("img", { name: "Gray placeholder" }));
+    await expect.element(dialog).toBeVisible();
+
+    await userEvent.click(page.getByTestId("backdrop"), {
+      position: { x: 8, y: 300 },
+    });
+    await expect.element(dialog).not.toBeInTheDocument();
+    await expect.element(trigger).toHaveFocus();
+  });
+
+  it("closes with Escape and returns focus to the trigger", async () => {
+    const screen = await render(<ViewThumbnail />);
+    const trigger = screen.getByRole("button", { name: "View Thumbnail" });
+
+    await userEvent.tab();
+    await userEvent.keyboard("{Enter}");
+    await expect
+      .element(page.getByRole("dialog", { name: "Thumbnail" }))
+      .toBeVisible();
+
+    await userEvent.keyboard("{Escape}");
+    await expect.element(page.getByRole("dialog")).not.toBeInTheDocument();
+    await expect.element(trigger).toHaveFocus();
   });
 });
 

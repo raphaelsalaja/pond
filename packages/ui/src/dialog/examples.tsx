@@ -59,6 +59,26 @@ function DeleteFolder() {
   );
 }
 
+const THUMBNAIL = `data:image/svg+xml,${encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="960" height="640"><rect width="960" height="640" fill="#8a8f98"/></svg>',
+)}`;
+
+function ViewThumbnail() {
+  return (
+    <Dialog.Root>
+      <Dialog.Trigger render={<Button variant="secondary" />}>
+        View Thumbnail
+      </Dialog.Trigger>
+      <Dialog.Portal>
+        <Dialog.Backdrop />
+        <Dialog.Popup variant="media" aria-label="Thumbnail">
+          <img src={THUMBNAIL} alt="Gray placeholder" />
+        </Dialog.Popup>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+
 function EmptyTrash() {
   return (
     <>
@@ -103,7 +123,7 @@ export const docs: ComponentDocs = {
     {
       name: "Dialog.Popup",
       description:
-        "The modal window. Pass `pageId` and `depth` for stepped flows.",
+        'The modal window. Pass `pageId` and `depth` for stepped flows. `variant="media"` drops the window and fits its content, like an image, to the screen.',
     },
     {
       name: "Dialog.Header",
@@ -168,10 +188,12 @@ export const docs: ComponentDocs = {
     "In a stepped dialog, only the current page's description is linked, so each page reads its own.",
     "Alert dialogs should focus the safe action first: pass `initialFocus` the cancel button.",
     "Focus returns to the trigger when the dialog closes.",
+    'A `variant="media"` popup has no visible title, so name it with `aria-label`. Pressing anywhere outside its content closes it.',
   ],
   examples: [
     { name: "Dialog", render: () => <RenameFolder /> },
     { name: "Alert", render: () => <DeleteFolder /> },
     { name: "Command", render: () => <EmptyTrash /> },
+    { name: "Media", render: () => <ViewThumbnail /> },
   ],
 };

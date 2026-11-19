@@ -1,6 +1,8 @@
+/* Its layers are absolute, so without flex: none a long Details pane shrinks it to nothing. */
 .list {
   position: relative;
   display: flex;
+  flex: none;
   justify-content: center;
   height: 190px;
   margin: 0;
@@ -36,6 +38,20 @@
   object-fit: contain;
   border: 1px solid var(--ds-border-subtle);
   border-radius: var(--ds-radius-md);
+}
+
+.open {
+  max-width: 100%;
+  max-height: 100%;
+  cursor: zoom-in;
+
+  & img {
+    transition: border-color var(--ds-duration-medium) var(--ds-easing-standard);
+  }
+
+  &:hover img {
+    border-color: var(--ds-border-strong);
+  }
 }
 
 /* Sized from the expected aspect so the frame holds its shape before the image decodes. */

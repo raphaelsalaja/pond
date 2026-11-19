@@ -20,6 +20,7 @@ import { savedViews } from "@/features/library/state/saved-views";
 import { DuplicateImportReviewHost } from "@/features/saves/components/duplicate-import-review";
 import { SnoozeDialogHost } from "@/features/saves/components/snooze-dialog";
 import { SaveTagPickerHost } from "@/features/saves/components/tag-picker-host";
+import { ThumbnailViewerHost } from "@/features/saves/components/thumbnail-viewer";
 import { SaveHotkeys } from "@/features/saves/effects/save-hotkeys";
 import { ViewerPreload } from "@/features/saves/effects/viewer-preload";
 import { isSaveCollectionPath } from "@/features/saves/lib/list-path";
@@ -133,6 +134,7 @@ export function RootShell() {
       <DuplicateImportReviewHost />
       <SaveTagPickerHost />
       <SnoozeDialogHost />
+      <ThumbnailViewerHost />
       <AppShell.Root
         header={<Toolbar />}
         right={
