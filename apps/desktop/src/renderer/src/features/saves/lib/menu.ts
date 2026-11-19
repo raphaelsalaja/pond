@@ -174,10 +174,9 @@ export function buildSaveDetailMenu(
 
   const openItems = buildOpenItems(context);
   const copyItems = buildCopyItems(context);
-  const replaceFile = itemWithLabel(
-    buildDetailItems(context).file,
-    "Replace File",
-  );
+  const detailItems = buildDetailItems(context);
+  const viewThumbnail = itemWithLabel(detailItems.thumbnail, "View Thumbnail");
+  const replaceFile = itemWithLabel(detailItems.file, "Replace File");
   const defaultAppPath =
     context.openWithApps.find((app) => app.isDefault)?.path ?? null;
   const copyPrimary = copyItems.find(
@@ -186,6 +185,7 @@ export function buildSaveDetailMenu(
 
   return [
     ...detailOpenItems(openItems, defaultAppPath),
+    viewThumbnail,
     { type: "separator" },
     replaceFile,
     {

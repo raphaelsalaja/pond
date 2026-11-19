@@ -1,3 +1,4 @@
+import { Button } from "@pond/ui";
 import { typeLabelForPath } from "@shared/file-format";
 import {
   type CSSProperties,
@@ -17,12 +18,14 @@ import {
   useReportMediaReady,
 } from "@/features/saves/hooks/use-media-ready";
 import {
+  cardThumbnailUrl,
   deriveTypeLabel,
   detailsPreviewUrl,
   pickCardUnit,
   pickPrimaryFile,
 } from "@/features/saves/lib/media/units";
 import { aspectFor } from "@/features/saves/state/aspect";
+import { openThumbnailViewer } from "@/features/saves/state/thumbnail-viewer";
 import type { Save } from "@/features/saves/types";
 import styles from "./styles.module.css";
 
@@ -48,7 +51,15 @@ interface PreviewStyle extends CSSProperties {
   "--preview-aspect": number;
 }
 
-function Preview({ save, url }: { save: Save; url: string | null }) {
+function Preview({
+  save,
+  url,
+  viewable = false,
+}: {
+  save: Save;
+  url: string | null;
+  viewable?: boolean;
+}) {
   const [failed, setFailed] = useState<string | null>(null);
   const [measured, setMeasured] = useState<{
     url: string;
@@ -61,25 +72,39 @@ function Preview({ save, url }: { save: Save; url: string | null }) {
     "--preview-aspect":
       measured && measured.url === url ? measured.aspect : aspectFor(save),
   };
+  const img =
+    url && failed !== url ? (
+      <img
+        ref={image}
+        src={url}
+        alt={save.title || "Save preview"}
+        draggable={false}
+        style={style}
+        onLoad={(event) => {
+          const { naturalWidth, naturalHeight } = event.currentTarget;
+          if (naturalWidth > 0 && naturalHeight > 0) {
+            setMeasured({ url, aspect: naturalWidth / naturalHeight });
+          }
+        }}
+        onError={() => setFailed(url)}
+      />
+    ) : null;
   return (
     <figure className={styles.preview}>
-      {url && failed !== url ? (
-        <img
-          ref={image}
-          src={url}
-          alt={save.title || "Save preview"}
-          draggable={false}
-          style={style}
-          onLoad={(event) => {
-            const { naturalWidth, naturalHeight } = event.currentTarget;
-            if (naturalWidth > 0 && naturalHeight > 0) {
-              setMeasured({ url, aspect: naturalWidth / naturalHeight });
-            }
-          }}
-          onError={() => setFailed(url)}
-        />
-      ) : (
+      {!img ? (
         <span className={styles.placeholder}>{save.title || "No preview"}</span>
+      ) : viewable && cardThumbnailUrl(save) !== null ? (
+        <Button
+          variant="bare"
+          rounding="rounded"
+          className={styles.open}
+          aria-label="View Thumbnail"
+          onClick={() => openThumbnailViewer(save.id)}
+        >
+          {img}
+        </Button>
+      ) : (
+        img
       )}
       <figcaption>{inspectorFormat(save)}</figcaption>
     </figure>
@@ -111,7 +136,7 @@ function Layer({
       inert={held}
     >
       <MediaReadyContext value={report}>
-        <Preview save={value.save} url={value.url} />
+        <Preview save={value.save} url={value.url} viewable />
       </MediaReadyContext>
     </div>
   );

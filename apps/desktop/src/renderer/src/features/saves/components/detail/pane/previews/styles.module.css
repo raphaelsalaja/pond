@@ -40,6 +40,20 @@
   border-radius: var(--ds-radius-md);
 }
 
+.open {
+  max-width: 100%;
+  max-height: 100%;
+  cursor: zoom-in;
+
+  & img {
+    transition: border-color var(--ds-duration-medium) var(--ds-easing-standard);
+  }
+
+  &:hover img {
+    border-color: var(--ds-border-strong);
+  }
+}
+
 /* Sized from the expected aspect so the frame holds its shape before the image decodes. */
 .layer .preview img {
   width: min(100cqw, 100cqh * var(--preview-aspect));

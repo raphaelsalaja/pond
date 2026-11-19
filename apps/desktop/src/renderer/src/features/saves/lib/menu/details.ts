@@ -1,6 +1,7 @@
 import {
   IconArchive,
   IconArrowRotateClockwise,
+  IconArrowsExpandDiagonal,
   IconClipboardArrowIn,
   IconContrast,
   IconCopy,
@@ -30,6 +31,7 @@ import {
 import { splitIntoSaves } from "@/features/saves/lib/split-save";
 import { viewerMemory } from "@/features/saves/lib/viewer-memory";
 import { inspect } from "@/features/saves/state/inspect";
+import { openThumbnailViewer } from "@/features/saves/state/thumbnail-viewer";
 import { shortcutGlyphs } from "@/shared/lib/shortcuts";
 import { notify } from "@/shared/lib/toast";
 import { getPrefsSnapshot, savePrefsSection } from "@/shared/state/prefs";
@@ -135,6 +137,7 @@ export function buildDetailItems({
   fileIndex,
   hasFiles,
   canResetThumbnail,
+  canViewThumbnail,
   hasUrl,
   archivable,
   canSplit,
@@ -337,6 +340,13 @@ export function buildDetailItems({
       },
     ],
     thumbnail: [
+      {
+        label: "View Thumbnail",
+        icon: glyph(IconArrowsExpandDiagonal),
+        hidden: !canViewThumbnail,
+        onClick: () => openThumbnailViewer(save.id),
+      },
+      { type: "separator" },
       {
         label: "Set Thumbnail from File",
         icon: glyph(IconImagePlus),
