@@ -112,7 +112,7 @@ export function SplitPostsPage() {
           value={q}
           onChange={(event) => setQ(event.target.value)}
           spellCheck={false}
-          placeholder="Search split posts…"
+          placeholder="Search…"
           aria-label="Search Split Posts"
         />
       </SearchChrome.Root>
