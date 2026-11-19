@@ -14,6 +14,10 @@ const PLUG_INS = [
     path: "Contents/PlugIns/Pond Share.appex",
     entitlements: resolve(__dirname, "../share-extension/share.entitlements"),
   },
+  {
+    path: "Contents/PlugIns/Pond Finder Action.appex",
+    entitlements: resolve(__dirname, "../finder-action/action.entitlements"),
+  },
   { path: "Contents/PlugIns/PondDockTile.docktileplugin", entitlements: null },
 ];
 
