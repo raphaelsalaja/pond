@@ -46,7 +46,7 @@ export interface NewActionServices {
   openSavedViewEditor: (kind: "smart_folder" | "group") => void;
   openSource: (kind: "connect" | "watch", source: Source) => void;
   selectSave: (id: string) => void;
-  showSaves: (ids: readonly string[]) => void;
+  showSaves: (ids: readonly string[], folderId?: string) => void;
   currentFolderId: () => string | null;
   onEagleImportProgress: (
     callback: (progress: EagleImportProgress) => void,
@@ -66,14 +66,17 @@ export function createNewActions({
   currentFolderId,
   onEagleImportProgress,
 }: NewActionServices) {
-  function reportSaved(ids: string[]): void {
+  function reportSaved(ids: string[], folderId?: string): void {
     notify({
       id: "new-import",
       title:
         ids.length === 1
           ? "Saved to Pond"
           : `Saved ${formatNumber(ids.length)} items to Pond`,
-      ...showImportedAction(ids, showSaves),
+      ...showImportedAction(
+        ids,
+        folderId ? (shown) => showSaves(shown, folderId) : showSaves,
+      ),
     });
   }
 
@@ -146,7 +149,7 @@ export function createNewActions({
         "No files were imported. Choose readable, non-empty files.",
       );
     }
-    reportSaved(result.ids);
+    reportSaved(result.ids, folderId);
   }
 
   async function importLegacyLibrary(
@@ -623,7 +626,7 @@ export const {
   openSavedViewEditor: (kind) => savedViews.openEditor({ kind }),
   openSource: (kind, source) => openSources({ type: kind, source }),
   selectSave: selectOnlySave,
-  showSaves: (ids) => showSavesInLibrary(ids),
+  showSaves: (ids, folderId) => showSavesInLibrary(ids, folderId),
   currentFolderId: () => {
     const nav = libraryChrome.getState().nav;
     return nav.kind === "folder" ? nav.id : null;

@@ -144,6 +144,8 @@ describe("new menu actions", () => {
     expect(notify).toHaveBeenCalledWith(
       expect.objectContaining({ title: "Saved to Pond" }),
     );
+    clickShowInLibrary();
+    expect(showSaves).toHaveBeenCalledExactlyOnceWith(["one"], "posters");
   });
 
   it("reports unsupported file selections without claiming success", async () => {
