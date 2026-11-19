@@ -21,6 +21,7 @@ import {
 } from "@/features/library/lib/smart-folders";
 import { savedViews } from "@/features/library/state/saved-views";
 import { SIDEBAR_SORTABLE_KEYBOARD_CODES } from "@/shared/lib/dnd-kit";
+import { createDragHaptics } from "@/shared/lib/haptics";
 import { runAction } from "./menu-items";
 import {
   keyboardSiblingReorderKind,
@@ -89,6 +90,7 @@ export function useSmartFolderDrag({
   onReveal,
 }: UseSmartFolderDragInput) {
   const [drop, setDrop] = useState<SmartFolderDrop | null>(null);
+  const [haptics] = useState(createDragHaptics);
   const pointerStartY = useRef<number | null>(null);
   const pointerY = useRef<number | null>(null);
   const keyboard = useRef(false);
@@ -116,6 +118,7 @@ export function useSmartFolderDrag({
 
   function reset(): void {
     setDrop(null);
+    haptics.cancel();
     pointerStartY.current = null;
     pointerY.current = null;
     keyboard.current = false;
@@ -123,6 +126,7 @@ export function useSmartFolderDrag({
 
   function start({ activatorEvent }: DragStartEvent): void {
     keyboard.current = activatorEvent.type.startsWith("key");
+    haptics.start(keyboard.current);
     pointerStartY.current =
       "clientY" in activatorEvent ? Number(activatorEvent.clientY) : null;
     pointerY.current = pointerStartY.current;
@@ -133,25 +137,30 @@ export function useSmartFolderDrag({
       pointerStartY.current == null ? null : pointerStartY.current + delta.y;
   }
 
+  function show(next: SmartFolderDrop | null): void {
+    setDrop(next);
+    haptics.target(next);
+  }
+
   function preview({ active, over }: DragOverEvent): void {
     if (!over) {
-      setDrop(null);
+      show(null);
       return;
     }
     const target = views.find((view) => view.id === over.id);
     if (!target) {
-      setDrop(null);
+      show(null);
       return;
     }
     const draggedId = String(active.id);
     if (keyboard.current) {
       const kind = keyboardSiblingReorderKind(draggedId, target.id, rows);
-      setDrop(kind ? { id: target.id, kind } : null);
+      show(kind ? { id: target.id, kind } : null);
       return;
     }
     const geometric = dndFolderDropKind(active, over, pointerY.current);
     if (geometric === "into") {
-      setDrop(
+      show(
         groupDropAllowed(draggedId, target)
           ? { id: target.id, kind: "into" }
           : null,
@@ -164,7 +173,7 @@ export function useSmartFolderDrag({
       geometric,
       rows,
     );
-    setDrop(ordered ? { id: target.id, kind: geometric } : null);
+    show(ordered ? { id: target.id, kind: geometric } : null);
   }
 
   async function finish({ active, over }: DragEndEvent): Promise<void> {
@@ -172,7 +181,10 @@ export function useSmartFolderDrag({
     const pointer = pointerY.current;
     setDrop(null);
     pointerStartY.current = null;
-    if (!over) return;
+    if (!over) {
+      haptics.cancel();
+      return;
+    }
     const target = views.find((view) => view.id === over.id);
     if (!target) return;
     const draggedId = String(active.id);
@@ -181,6 +193,7 @@ export function useSmartFolderDrag({
       if (!groupDropAllowed(draggedId, target)) return;
       const ids = selectedIds.includes(draggedId) ? selectedIds : [draggedId];
       const roots = selectedViewRoots(ids, views);
+      haptics.drop(true);
       onReveal(target.id);
       await runAction(async () => {
         for (const entry of roots) await savedViews.move(entry.id, target.id);
@@ -193,6 +206,7 @@ export function useSmartFolderDrag({
     if (kind === "into" || !kind) return;
     const ordered = planSmartFolderReorder(draggedId, target.id, kind, rows);
     if (!ordered) return;
+    haptics.drop(true);
     await runAction(() => savedViews.reorder(ordered));
   }
 
