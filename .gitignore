@@ -85,9 +85,10 @@ apps/desktop/resources/DockTile/
 apps/desktop/resources/SafariExtension/
 apps/desktop/.safari-build/
 
-# Share extension compiled by apps/desktop/scripts/build-share-extension.mjs
+# Share extension and Finder Quick Action compiled by apps/desktop/scripts/lib/build-appex.mjs
 apps/desktop/resources/ShareExtension/
-apps/desktop/.share-build/
+apps/desktop/resources/FinderAction/
+apps/desktop/.appex-build/
 
 # Alfred workflow staging from apps/alfred/scripts/pack.mjs
 apps/alfred/.pack/
