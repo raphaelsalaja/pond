@@ -7,7 +7,11 @@ export const QUICK_CAPTURE_IPC = {
   pick: "pond:quick-capture-pick",
   submit: "pond:quick-capture-submit",
   dismiss: "pond:quick-capture-dismiss",
+  drag: "pond:quick-capture-drag",
 } as const;
+
+export const QuickCaptureDragSchema = z.enum(["enter", "leave", "drop"]);
+export type QuickCaptureDrag = z.infer<typeof QuickCaptureDragSchema>;
 
 export interface QuickCaptureFolder {
   id: string;

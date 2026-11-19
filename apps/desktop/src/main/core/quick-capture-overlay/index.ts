@@ -14,6 +14,25 @@ const HEIGHT = 420;
 let overlay: BrowserWindow | null = null;
 let snapshot: QuickCaptureSnapshot | null = null;
 let picking = false;
+let draggingIn = false;
+let blurClose: ReturnType<typeof setTimeout> | null = null;
+
+/** Starting a drag in Finder blurs the window first, so a blur waits this long for the drag to arrive before closing. */
+const BLUR_GRACE_MS = 1500;
+
+function cancelBlurClose(): void {
+  if (blurClose) clearTimeout(blurClose);
+  blurClose = null;
+}
+
+function scheduleBlurClose(win: BrowserWindow): void {
+  cancelBlurClose();
+  blurClose = setTimeout(() => {
+    blurClose = null;
+    if (overlay === win && !picking && !draggingIn && !win.isFocused())
+      closeQuickCapture();
+  }, BLUR_GRACE_MS);
+}
 
 export function quickCaptureOwnsSender(id: number): boolean {
   return Boolean(
@@ -38,7 +57,21 @@ export function setQuickCapturePicking(next: boolean): void {
   picking = next;
 }
 
+/** A drag from another app keeps the window open until it drops or leaves. */
+export function setQuickCaptureDrag(phase: "enter" | "leave" | "drop"): void {
+  const win = overlay;
+  if (!win || win.isDestroyed()) return;
+  draggingIn = phase === "enter";
+  if (phase === "enter") cancelBlurClose();
+  else if (phase === "drop") {
+    cancelBlurClose();
+    win.focus();
+  } else if (!win.isFocused()) scheduleBlurClose(win);
+}
+
 export function closeQuickCapture(): void {
+  cancelBlurClose();
+  draggingIn = false;
   const win = overlay;
   overlay = null;
   snapshot = null;
@@ -108,8 +141,9 @@ export async function openQuickCapture(
       skipTransformProcessType: true,
     });
   win.on("blur", () => {
-    if (overlay === win && !picking) closeQuickCapture();
+    if (overlay === win && !picking) scheduleBlurClose(win);
   });
+  win.on("focus", cancelBlurClose);
   win.once("closed", () => {
     if (overlay !== win) return;
     overlay = null;

@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { clipboard, dialog } from "electron";
 import {
   QUICK_CAPTURE_IPC,
+  QuickCaptureDragSchema,
   type QuickCaptureResult,
   QuickCaptureSubmitSchema,
 } from "../../shared/quick-capture-contracts";
@@ -16,6 +17,7 @@ import {
   quickCaptureOwnsSender,
   quickCaptureSnapshot,
   quickCaptureWindow,
+  setQuickCaptureDrag,
   setQuickCapturePicking,
 } from "../core/quick-capture-overlay";
 import { quickCaptureDraft } from "../core/quick-capture-overlay/draft";
@@ -91,6 +93,10 @@ export function registerQuickCaptureIpc(): void {
       return { count: draft.items.length };
     },
   );
+  safeHandle(QUICK_CAPTURE_IPC.drag, (event, raw) => {
+    assertOwner(event.sender.id);
+    setQuickCaptureDrag(QuickCaptureDragSchema.parse(raw));
+  });
   safeHandle(QUICK_CAPTURE_IPC.dismiss, (event) => {
     assertOwner(event.sender.id);
     closeQuickCapture();

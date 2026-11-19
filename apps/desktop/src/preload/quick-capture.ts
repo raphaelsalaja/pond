@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer, webUtils } from "electron";
 import type {
+  QuickCaptureDrag,
   QuickCaptureResult,
   QuickCaptureSnapshot,
   QuickCaptureSubmit,
@@ -12,6 +13,7 @@ const QUICK_CAPTURE_IPC = {
   pick: "pond:quick-capture-pick",
   submit: "pond:quick-capture-submit",
   dismiss: "pond:quick-capture-dismiss",
+  drag: "pond:quick-capture-drag",
 } as const;
 
 const captureApi = {
@@ -29,6 +31,9 @@ const captureApi = {
   },
   dismiss(): Promise<void> {
     return ipcRenderer.invoke(QUICK_CAPTURE_IPC.dismiss);
+  },
+  drag(phase: QuickCaptureDrag): Promise<void> {
+    return ipcRenderer.invoke(QUICK_CAPTURE_IPC.drag, phase);
   },
   pathForFile(file: File): string {
     return webUtils.getPathForFile(file);

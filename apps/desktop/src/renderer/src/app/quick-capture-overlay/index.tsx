@@ -103,12 +103,19 @@ export function QuickCaptureOverlay() {
         event.preventDefault();
         setDragging(true);
       }}
-      onDragLeave={() => setDragging(false)}
+      onDragEnter={() => void window.pondCapture?.drag("enter")}
+      onDragLeave={(event) => {
+        const next = event.relatedTarget;
+        if (next instanceof Node && event.currentTarget.contains(next)) return;
+        setDragging(false);
+        void window.pondCapture?.drag("leave");
+      }}
       onDrop={(event) => {
         event.preventDefault();
         setDragging(false);
         const api = window.pondCapture;
         if (!api) return;
+        void api.drag("drop");
         addPaths([...event.dataTransfer.files].map(api.pathForFile));
       }}
     >
