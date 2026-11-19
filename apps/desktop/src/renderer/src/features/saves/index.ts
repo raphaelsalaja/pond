@@ -65,6 +65,7 @@ export {
 } from "./lib/paste-import";
 export { type PreviewStepBinding, previewStepRuns } from "./lib/preview-step";
 export { normalise } from "./lib/reconcile";
+export { openSave } from "./lib/save-nav";
 export {
   clearSaveSelection,
   createSelectionReconciler,

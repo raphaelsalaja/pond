@@ -288,6 +288,8 @@ export const queryOperationAccess = {
   "storage.applyGuardPrefs": "review",
   "storage.guardState": "read",
   "storage.snapshot": "read",
+  "storage.clearCache": "review",
+  "storage.largestSaves": "read",
   "sync.history": "read",
   "sync.recent": "read",
   "sync.runs": "read",

@@ -46,6 +46,15 @@ const snapshotCache = createMemoCache<StorageSnapshot>(computeSnapshot, {
   ttlMs: CACHE_TTL_MS,
 });
 
+/** Clearing a cache changes the totals at once, so the next snapshot must not reuse the last one. */
+export function invalidateStorageSnapshot(): void {
+  snapshotCache.invalidate();
+}
+
+export function measureDirectory(dir: string): Promise<number> {
+  return sumDirSizes(dir);
+}
+
 export async function getStorageSnapshot(): Promise<StorageSnapshot> {
   return snapshotCache.get();
 }
