@@ -98,6 +98,7 @@
     "@lexical/table": "0.50.0",
     "@lexical/utils": "0.50.0",
     "@modelcontextprotocol/sdk": "^1.30.0",
+    "@modelcontextprotocol/server": "^2.4.0",
     "@pond/icons": "workspace:*",
     "@pond/render": "workspace:*",
     "@pond/schema": "workspace:*",

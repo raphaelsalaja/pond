@@ -15,7 +15,7 @@ export interface McpHostWatchInput {
 
 const PARENT_POLL_MS = 5_000;
 
-/** The MCP SDK stdio transport ignores stdin EOF, so a host that quits would leave this process running forever. */
+/** Electron keeps running after the stdio transport closes, so a host that quits would leave this process running forever. */
 export function watchMcpHost({
   stdin,
   parentPid,

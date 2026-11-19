@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   hostSetupCommands,
+  isMcpInstallHost,
   MCP_HOST_CATALOG,
   mcpHostConfigPath,
   pondLaunchLine,
@@ -69,5 +70,11 @@ describe("mcp hosts", () => {
       configListsPond(JSON.stringify({ mcpServers: { linear: {} } })),
     ).toBe(false);
     expect(configListsPond("")).toBe(false);
+  });
+
+  it("installs Claude Desktop in one click", () => {
+    expect(isMcpInstallHost("claude-desktop")).toBe(true);
+    expect(isMcpInstallHost("cursor")).toBe(true);
+    expect(isMcpInstallHost("codex")).toBe(false);
   });
 });

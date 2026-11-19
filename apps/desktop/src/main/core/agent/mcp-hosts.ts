@@ -1,12 +1,11 @@
-import { readFile, stat } from "node:fs/promises";
+import { readdir, readFile, stat } from "node:fs/promises";
 import { homedir } from "node:os";
-import { dirname } from "node:path";
+import { dirname, join } from "node:path";
 import { z } from "zod";
 import {
   MCP_DETECTED_CLIENTS,
   MCP_HOST_CATALOG,
   type McpClientStatus,
-  type McpDeeplinkHost,
   type McpHostId,
 } from "../../../shared/mcp-hosts";
 
@@ -42,7 +41,7 @@ export function mcpInstallUrl(
   return null;
 }
 
-export function mcpDeeplinkUrl(id: McpDeeplinkHost): string | null {
+export function mcpDeeplinkUrl(id: "cursor" | "vscode"): string | null {
   return mcpInstallUrl(id, process.execPath, ["--mcp"]);
 }
 
@@ -70,6 +69,14 @@ async function exists(path: string): Promise<boolean> {
   }
 }
 
+/** Claude Desktop unpacks each installed `.mcpb` into a folder named after its id, which carries the bundle name. */
+async function claudeExtensionListsPond(configDir: string): Promise<boolean> {
+  const names = await readdir(join(configDir, "Claude Extensions")).catch(
+    () => [],
+  );
+  return names.some((name) => name.toLowerCase().includes("pond"));
+}
+
 /** A client's config folder exists once it has run, even before any MCP server is added. */
 export async function mcpClientStatus(): Promise<McpClientStatus[]> {
   return Promise.all(
@@ -87,7 +94,11 @@ export async function mcpClientStatus(): Promise<McpClientStatus[]> {
         return { id, installed: false, connected: false };
       }
       const text = await readFile(path, "utf8").catch(() => "");
-      return { id, installed: true, connected: configListsPond(text) };
+      const connected =
+        configListsPond(text) ||
+        (id === "claude-desktop" &&
+          (await claudeExtensionListsPond(dirname(path))));
+      return { id, installed: true, connected };
     }),
   );
 }

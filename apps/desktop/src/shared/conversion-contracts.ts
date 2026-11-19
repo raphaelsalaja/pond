@@ -80,22 +80,23 @@ export type ImageCompressionRequest = z.infer<
   typeof ImageCompressionRequestSchema
 >;
 
-export interface ConversionJob {
-  id: string;
-  kind: "export" | "compression";
-  status: "running" | "complete" | "cancelled" | "failed";
-  completed: number;
-  total: number;
-  progress: number;
-  currentId: string | null;
-  directory: string;
-  outputs: string[];
-  changed: number;
-  skipped: number;
-  bytesBefore: number;
-  bytesAfter: number;
-  error: string | null;
-}
+export const ConversionJobSchema = z.object({
+  id: z.string(),
+  kind: z.enum(["export", "compression"]),
+  status: z.enum(["running", "complete", "cancelled", "failed"]),
+  completed: z.number(),
+  total: z.number(),
+  progress: z.number(),
+  currentId: z.string().nullable(),
+  directory: z.string(),
+  outputs: z.array(z.string()),
+  changed: z.number(),
+  skipped: z.number(),
+  bytesBefore: z.number(),
+  bytesAfter: z.number(),
+  error: z.string().nullable(),
+});
+export type ConversionJob = z.infer<typeof ConversionJobSchema>;
 export interface ConversionQueryInputs {
   "conversion.capabilities": Record<string, never>;
   "conversion.presets": Record<string, never>;
