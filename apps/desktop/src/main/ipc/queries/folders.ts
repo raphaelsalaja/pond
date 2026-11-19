@@ -17,6 +17,37 @@ export const foldersQueries = {
       return createFoldersBatch(params);
     },
   ),
+  "folders.templates.list": async () => {
+    const { listFolderTemplates } = await import("../../core/folder-templates");
+    return listFolderTemplates();
+  },
+  "folders.templates.apply": query(
+    z.object({
+      templateId: StringParam,
+      parentId: NullableStringParam,
+      name: StringParam.optional(),
+    }),
+    async (params) => {
+      const { applyFolderTemplate } = await import(
+        "../../core/folder-templates"
+      );
+      return applyFolderTemplate(params);
+    },
+  ),
+  "folders.templates.saveFrom": query(
+    z.object({
+      folderId: StringParam,
+      includeSubfolders: z.boolean(),
+      name: StringParam,
+      description: z.string().optional(),
+    }),
+    async (params) => {
+      const { saveFolderAsTemplate } = await import(
+        "../../core/folder-templates"
+      );
+      return saveFolderAsTemplate(params);
+    },
+  ),
   "folders.createWithSaves": query(
     z.object({
       name: StringParam,
