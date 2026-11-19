@@ -144,6 +144,7 @@ export const FolderPresentationSchema = z.object({
   randomSeed: z.string().catch("pond"),
   manualOrder: z.array(z.string()).catch([]),
   pinnedIds: z.array(z.string()).catch([]),
+  pinnedCollapsed: z.boolean().optional(),
   coverSaveId: z.string().nullable().catch(null),
   quickAccess: z.boolean().optional(),
   quickAccessOrder: z.number().int().nonnegative().optional(),

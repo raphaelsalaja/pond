@@ -1,3 +1,4 @@
+import { IconChevronRight } from "@pond/icons";
 import type { Folder } from "@pond/schema/db";
 import { Button, Menu } from "@pond/ui";
 import type { FolderSummary } from "@shared/folder-contracts";
@@ -228,12 +229,15 @@ export function FolderBrowser({
   parentId,
   contentCount,
   downloading = 0,
-  children: content,
+  pinned,
+  children: renderContent,
 }: {
   parentId: string;
   contentCount: number;
   downloading?: number;
-  children?: ReactNode;
+  pinned?: { count: number; collapsed: boolean; onToggle: () => void };
+  /** Receives the Contents header when it sits inside the grid, between pinned Saves and the rest. */
+  children?: (divider: ReactNode) => ReactNode;
 }) {
   const folders = useFolders();
   const [folderViews] = usePrefs("folderViews");
@@ -290,6 +294,24 @@ export function FolderBrowser({
 
   const summaryById = new Map(
     summaries.map((summary) => [summary.id, summary]),
+  );
+  const showContents = contentCount > 0 || downloading > 0 || !pinned;
+  const divided = pinned !== undefined && !pinned.collapsed && showContents;
+  const contentsHeader = (
+    <div className={styles.header}>
+      <h2 id="contents-title">Contents ({contentCount.toLocaleString()})</h2>
+      {downloading > 0 ? (
+        <span className={styles.downloading} role="status">
+          {`Downloading ${formatPlural(downloading, SAVES)}`}
+          <ButtonLink to="/downloads" size="xs" variant="text">
+            Open Downloads
+          </ButtonLink>
+        </span>
+      ) : null}
+    </div>
+  );
+  const content = renderContent?.(
+    divided ? <div className={styles.divider}>{contentsHeader}</div> : null,
   );
 
   return (
@@ -363,21 +385,30 @@ export function FolderBrowser({
           </div>
         </section>
       ) : null}
-      {content || downloading > 0 ? (
-        <section className={styles.section} aria-labelledby="contents-title">
-          <div className={styles.header}>
-            <h2 id="contents-title">
-              Contents ({contentCount.toLocaleString()})
-            </h2>
-            {downloading > 0 ? (
-              <span className={styles.downloading} role="status">
-                {`Downloading ${formatPlural(downloading, SAVES)}`}
-                <ButtonLink to="/downloads" size="xs" variant="text">
-                  Open Downloads
-                </ButtonLink>
-              </span>
-            ) : null}
-          </div>
+      {content || downloading > 0 || pinned ? (
+        <section
+          className={styles.section}
+          aria-labelledby={
+            pinned ? "pinned-title contents-title" : "contents-title"
+          }
+        >
+          {pinned ? (
+            <div className={styles.header}>
+              <h2 id="pinned-title">
+                <Button
+                  variant="bare"
+                  size="xs"
+                  className={styles.toggle}
+                  aria-expanded={!pinned.collapsed}
+                  onClick={pinned.onToggle}
+                >
+                  <IconChevronRight size={12} strokeWidth={2} />
+                  Pinned ({pinned.count.toLocaleString()})
+                </Button>
+              </h2>
+            </div>
+          ) : null}
+          {showContents && !divided ? contentsHeader : null}
           {content}
         </section>
       ) : null}

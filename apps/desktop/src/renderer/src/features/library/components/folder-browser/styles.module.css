@@ -33,6 +33,24 @@
   & [role="alert"] {
     color: var(--ds-danger-foreground);
   }
+
+  & + .header {
+    margin-top: calc(var(--ds-space-2xl) - var(--ds-space-lg));
+  }
+}
+
+.toggle {
+  & svg {
+    transition: transform var(--ds-duration-bounce) var(--ds-easing-bounce);
+  }
+
+  &[aria-expanded="true"] svg {
+    transform: rotate(90deg);
+  }
+}
+
+.divider {
+  padding-block: var(--ds-space-2xl) var(--ds-space-lg);
 }
 
 .downloading {

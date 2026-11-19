@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { type ReactNode, useMemo } from "react";
 import { SavePackedGrid } from "@/features/library/components/layouts/packed-grid";
 import { packWaterfall } from "@/features/library/components/layouts/packing";
 import { useLibrarySaveGap } from "@/features/library/components/layouts/save-gap";
@@ -15,10 +15,17 @@ import type { Save } from "@/features/saves/types";
 
 interface WaterfallViewProps {
   saves: ReadonlyArray<Save>;
+  lead?: ReadonlyArray<Save>;
+  divider?: ReactNode;
   onEndReached?: () => void;
 }
 
-export function WaterfallView({ saves, onEndReached }: WaterfallViewProps) {
+export function WaterfallView({
+  saves,
+  lead,
+  divider,
+  onEndReached,
+}: WaterfallViewProps) {
   const width = useDeferredGridWidth();
   const colMin = useGridMin();
   const gap = useLibrarySaveGap();
@@ -28,25 +35,29 @@ export function WaterfallView({ saves, onEndReached }: WaterfallViewProps) {
   const aspectVersion = useAspectVersion();
   const pickOpts = useMediaPickOptions();
 
-  const { items, totalHeight } = useMemo(() => {
+  const packs = useMemo(() => {
     void aspectVersion;
-    return packWaterfall(
-      saves.map((save) => ({
-        id: save.id,
-        aspect: layoutAspectFor(save, pickOpts),
-      })),
-      width,
-      colMin,
-      gap,
-      chromeHeight,
-    );
-  }, [saves, width, colMin, gap, chromeHeight, aspectVersion, pickOpts]);
+    const pack = (list: ReadonlyArray<Save>) =>
+      packWaterfall(
+        list.map((save) => ({
+          id: save.id,
+          aspect: layoutAspectFor(save, pickOpts),
+        })),
+        width,
+        colMin,
+        gap,
+        chromeHeight,
+      );
+    return { rest: pack(saves), lead: lead?.length ? pack(lead) : undefined };
+  }, [saves, lead, width, colMin, gap, chromeHeight, aspectVersion, pickOpts]);
 
   return (
     <SavePackedGrid
       layout="waterfall"
-      items={items}
-      totalHeight={totalHeight}
+      items={packs.rest.items}
+      totalHeight={packs.rest.totalHeight}
+      lead={packs.lead}
+      divider={divider}
       onEndReached={onEndReached}
     />
   );

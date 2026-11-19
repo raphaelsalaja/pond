@@ -79,7 +79,7 @@ describe("folder browser", () => {
     await act(async () => {
       root.render(
         <FolderBrowser parentId="root" contentCount={3}>
-          <div>Save grid</div>
+          {() => <div>Save grid</div>}
         </FolderBrowser>,
       );
     });
@@ -282,13 +282,77 @@ describe("folder browser", () => {
     await act(async () => {
       root.render(
         <FolderBrowser parentId="root" contentCount={3}>
-          <div>Save grid</div>
+          {() => <div>Save grid</div>}
         </FolderBrowser>,
       );
     });
     await vi.waitFor(() => expect(host.textContent).toContain("Contents (3)"));
     expect(host.querySelector('[role="status"]')).toBeNull();
     expect(host.textContent).not.toContain("Downloading");
+  });
+
+  it("hands the Contents header to the grid below expanded pinned Saves", async () => {
+    await act(async () => {
+      root.render(
+        <FolderBrowser
+          parentId="root"
+          contentCount={3}
+          pinned={{ count: 2, collapsed: false, onToggle: () => {} }}
+        >
+          {(header) => <div data-grid="">{header}</div>}
+        </FolderBrowser>,
+      );
+    });
+    const toggle = host.querySelector<HTMLButtonElement>(
+      "#pinned-title button",
+    );
+    expect(toggle?.textContent).toBe("Pinned (2)");
+    expect(toggle?.getAttribute("aria-expanded")).toBe("true");
+    expect(host.querySelectorAll("#contents-title")).toHaveLength(1);
+    expect(host.querySelector("[data-grid] #contents-title")?.textContent).toBe(
+      "Contents (3)",
+    );
+  });
+
+  it("keeps the Contents header above the grid while pinned Saves are collapsed", async () => {
+    const onToggle = vi.fn();
+    await act(async () => {
+      root.render(
+        <FolderBrowser
+          parentId="root"
+          contentCount={3}
+          pinned={{ count: 2, collapsed: true, onToggle }}
+        >
+          {(header) => <div data-grid="">{header}</div>}
+        </FolderBrowser>,
+      );
+    });
+    const toggle = host.querySelector<HTMLButtonElement>(
+      "#pinned-title button",
+    );
+    expect(toggle?.getAttribute("aria-expanded")).toBe("false");
+    expect(host.querySelector("[data-grid]")?.childElementCount).toBe(0);
+    expect(host.querySelector("#contents-title")?.textContent).toBe(
+      "Contents (3)",
+    );
+    await act(async () => toggle?.click());
+    expect(onToggle).toHaveBeenCalledOnce();
+  });
+
+  it("drops the Contents header when every Save is pinned", async () => {
+    await act(async () => {
+      root.render(
+        <FolderBrowser
+          parentId="root"
+          contentCount={0}
+          pinned={{ count: 4, collapsed: false, onToggle: () => {} }}
+        >
+          {(header) => <div data-grid="">{header}</div>}
+        </FolderBrowser>,
+      );
+    });
+    expect(host.textContent).toContain("Pinned (4)");
+    expect(host.querySelector("#contents-title")).toBeNull();
   });
 
   it("opens a child folder with the keyboard-accessible card button", async () => {

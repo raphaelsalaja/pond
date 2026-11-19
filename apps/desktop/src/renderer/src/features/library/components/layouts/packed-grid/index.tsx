@@ -13,7 +13,11 @@ import {
   type GridLayout,
   LibraryGrid,
 } from "@/features/library/components/layouts/grid";
-import type { CardLayoutItem } from "@/features/library/components/layouts/packing";
+import {
+  type CardLayoutItem,
+  type CardLayoutResult,
+  stackSections,
+} from "@/features/library/components/layouts/packing";
 import { useLibraryLayoutTransition } from "@/features/library/hooks/use-library-layout-transition";
 import { SaveCard, useMultiSelectActive } from "@/features/saves";
 import {
@@ -440,14 +444,40 @@ interface SavePackedGridProps {
   items: PackedItem[];
   totalHeight: number;
   onEndReached?: () => void;
+  lead?: CardLayoutResult;
+  divider?: ReactNode;
 }
 
 export function SavePackedGrid({
   layout,
-  items,
-  totalHeight,
+  items: restItems,
+  totalHeight: restHeight,
   onEndReached,
+  lead,
+  divider,
 }: SavePackedGridProps) {
+  const dividerRef = useRef<HTMLDivElement>(null);
+  const [dividerHeight, setDividerHeight] = useState(0);
+  const hasDivider = divider != null;
+  useLayoutEffect(() => {
+    const node = dividerRef.current;
+    if (!hasDivider || !node) return;
+    const measure = () => setDividerHeight(node.offsetHeight);
+    measure();
+    const observer =
+      "ResizeObserver" in globalThis ? new ResizeObserver(measure) : null;
+    observer?.observe(node);
+    return () => observer?.disconnect();
+  }, [hasDivider]);
+  const { items, totalHeight, dividerTop } = useMemo(
+    () =>
+      stackSections(
+        lead,
+        { items: restItems, totalHeight: restHeight },
+        hasDivider ? dividerHeight : 0,
+      ),
+    [lead, restItems, restHeight, hasDivider, dividerHeight],
+  );
   const total = useResultTotal();
   const positions = useMemo(
     () => new Map(items.map((item, index) => [item.id, index + 1])),
@@ -474,12 +504,19 @@ export function SavePackedGrid({
     [layout, positions, setSize],
   );
   return (
-    <PackedGrid
-      layout={layout}
-      items={items}
-      totalHeight={totalHeight}
-      onEndReached={onEndReached}
-      renderItem={renderItem}
-    />
+    <LibraryGrid.Sections>
+      <PackedGrid
+        layout={layout}
+        items={items}
+        totalHeight={totalHeight}
+        onEndReached={onEndReached}
+        renderItem={renderItem}
+      />
+      {hasDivider ? (
+        <LibraryGrid.Divider ref={dividerRef} style={{ top: dividerTop }}>
+          {divider}
+        </LibraryGrid.Divider>
+      ) : null}
+    </LibraryGrid.Sections>
   );
 }

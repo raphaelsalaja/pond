@@ -1,5 +1,5 @@
 import { Button } from "@pond/ui";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   FolderEmpty,
   InboxEmpty,
@@ -19,6 +19,8 @@ import { useFolderDownloading } from "@/features/library/hooks/use-folder-downlo
 import { useGridHotkeys } from "@/features/library/hooks/use-grid-hotkeys";
 import { useLibraryState } from "@/features/library/hooks/use-library-state";
 import { useRectangleSelection } from "@/features/library/hooks/use-rectangle-selection";
+import { splitPinned } from "@/features/library/lib/pinned-sections";
+import { saveFolderPresentation } from "@/features/library/state/folder-presentation";
 import { useFolders } from "@/features/library/state/folders";
 import { useLibraryNav } from "@/features/library/state/library-chrome";
 import { resetFilters } from "@/features/library/state/view-store";
@@ -32,9 +34,13 @@ import {
 } from "@/features/saves";
 import { resultNavigation } from "@/features/saves/navigation";
 import { useSavePaging } from "@/features/saves/pool";
+import type { Save } from "@/features/saves/types";
 import { MatchesEmpty } from "@/shared/components/matches-empty";
+import { usePrefs } from "@/shared/state/prefs";
 import { buildEmptyGalleryMenu } from "./empty-gallery-menu";
 import { importFolderFor } from "./import-folder";
+
+const NO_SAVES: ReadonlyArray<Save> = [];
 
 function LibraryEmptyState({
   mode,
@@ -78,13 +84,44 @@ export function LibraryView() {
   const nav = useLibraryNav();
   const folders = useFolders();
   const paging = useSavePaging();
+  const [folderViews] = usePrefs("folderViews");
+  const folderId = nav.kind === "folder" ? nav.id : null;
+  const pinnedIds = data.paging.pinnedIds;
+  const sections = useMemo(
+    () => splitPinned(data.filtered, pinnedIds),
+    [data.filtered, pinnedIds],
+  );
+  const pinnedCount = sections.pinned.length;
+  const collapsed =
+    pinnedCount > 0 &&
+    folderId !== null &&
+    (folderViews[folderId]?.pinnedCollapsed ?? false);
+  const lead = collapsed ? NO_SAVES : sections.pinned;
+  /** Navigation, ranges and the result count follow display order and skip collapsed pinned Saves. */
+  const visibleIds = useMemo(
+    () =>
+      pinnedCount === 0
+        ? data.filteredIds
+        : [...lead, ...sections.contents].map((save) => save.id),
+    [data.filteredIds, lead, pinnedCount, sections.contents],
+  );
+  const allIds = useMemo(() => {
+    if (!collapsed) return data.paging.allIds;
+    const hidden = new Set(pinnedIds);
+    return async () =>
+      (await data.paging.allIds())?.filter((id) => !hidden.has(id)) ?? null;
+  }, [collapsed, data.paging.allIds, pinnedIds]);
+  const togglePinned = useCallback(() => {
+    if (folderId)
+      void saveFolderPresentation(folderId, { pinnedCollapsed: !collapsed });
+  }, [collapsed, folderId]);
   const actions = useCardActions(
-    data.filteredIds,
+    visibleIds,
     data.mode,
     data.sourceFilter,
     importFolderFor({ mode: data.mode, nav, folders }),
   );
-  useGridHotkeys(data.filteredIds);
+  useGridHotkeys(visibleIds);
 
   const canLoadAnotherPage = data.paging.hasMore && !data.paging.loading;
   const hasChildFolders =
@@ -114,10 +151,10 @@ export function LibraryView() {
     libraryViewContext.set(data.filteredIds, data.mode);
     resultNavigation.setSource({
       key,
-      total: data.paging.total,
+      total: data.paging.total - (collapsed ? pinnedCount : 0),
       loadedIds: data.paging.loadedIds,
-      ids: data.filteredIds,
-      allIds: data.paging.allIds,
+      ids: visibleIds,
+      allIds,
       loadMore: data.paging.loadMore,
     });
     /** After setSource, so an open preview has already followed a departed Save to its neighbor. */
@@ -127,16 +164,19 @@ export function LibraryView() {
       settled: !data.paging.loading,
     });
   }, [
+    allIds,
+    collapsed,
     data.filteredIds,
     data.mode,
-    data.paging.allIds,
     data.paging.loadMore,
     data.paging.loading,
     data.paging.queryKey,
     data.paging.settledEmpty,
     data.paging.total,
     data.paging.loadedIds,
+    pinnedCount,
     reconcileSelection,
+    visibleIds,
   ]);
 
   return (
@@ -189,21 +229,30 @@ export function LibraryView() {
         ) : nav.kind === "folder" ? (
           <FolderBrowser
             parentId={nav.id}
-            contentCount={data.paging.total}
+            contentCount={Math.max(0, data.paging.total - pinnedCount)}
             downloading={filtering ? 0 : downloading}
+            pinned={
+              pinnedCount > 0
+                ? { count: pinnedCount, collapsed, onToggle: togglePinned }
+                : undefined
+            }
           >
-            {data.filtered.length > 0 ? (
-              <LayoutSwitcher
-                viewMode={data.viewMode}
-                saves={data.filtered}
-                multiSelectActive={actions.multiSelectActive}
-                onClick={actions.handleCardClick}
-                onPick={actions.handleCardPick}
-                onAuxClick={actions.handleCardAuxClick}
-                onDoubleClick={actions.focus}
-                onEndReached={canLoadAnotherPage ? onEndReached : undefined}
-              />
-            ) : null}
+            {(divider) =>
+              data.filtered.length > 0 ? (
+                <LayoutSwitcher
+                  viewMode={data.viewMode}
+                  saves={sections.contents}
+                  lead={lead}
+                  divider={divider}
+                  multiSelectActive={actions.multiSelectActive}
+                  onClick={actions.handleCardClick}
+                  onPick={actions.handleCardPick}
+                  onAuxClick={actions.handleCardAuxClick}
+                  onDoubleClick={actions.focus}
+                  onEndReached={canLoadAnotherPage ? onEndReached : undefined}
+                />
+              ) : null
+            }
           </FolderBrowser>
         ) : (
           <LayoutSwitcher

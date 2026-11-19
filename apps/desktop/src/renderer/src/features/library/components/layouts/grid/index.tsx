@@ -38,9 +38,23 @@ function Grid({
   );
 }
 
+interface SectionsProps extends React.ComponentPropsWithoutRef<"div"> {}
+
+function Sections({ className, ...props }: SectionsProps) {
+  return <div className={cn(styles.sections, className)} {...props} />;
+}
+
+interface DividerProps extends React.ComponentPropsWithRef<"div"> {}
+
+function Divider({ className, ...props }: DividerProps) {
+  return <div className={cn(styles.divider, className)} {...props} />;
+}
+
 export const LibraryGrid = {
   Root,
   Grid,
+  Sections,
+  Divider,
 };
 
 export type { GridLayout };
