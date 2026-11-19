@@ -15,7 +15,12 @@ export { Combobox } from "./combobox";
 export { ContentRow } from "./content-row";
 export { ContextMenu } from "./context-menu";
 export { cssVars } from "./css-vars";
-export { DatePicker, type DatePickerProps } from "./date-picker";
+export {
+  DatePicker,
+  type DatePickerProps,
+  DatePopover,
+  type DatePopoverProps,
+} from "./date-picker";
 export { Dialog } from "./dialog";
 export { Empty } from "./empty";
 export { Field } from "./field";
