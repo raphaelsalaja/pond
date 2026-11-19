@@ -129,8 +129,11 @@ function dateSummary(rule: Predicate, exact: string | undefined): string {
   const name = FIELD_META[rule.field].label.replace(/^Date\s+/i, "");
   if (exact) return `${name} ${exact}`;
   const { operator, value } = rule;
-  if (operator === "between" && Array.isArray(value))
-    return `${name} ${dateText(value[0])}–${dateText(value[1])}`;
+  if (operator === "between" && Array.isArray(value)) {
+    const from = dateText(value[0]);
+    const to = dateText(value[1]);
+    return from === to ? `${name} On ${from}` : `${name} ${from}–${to}`;
+  }
   if (operator === "gte" && /^-P/i.test(String(value)))
     return `${name} ${dateText(value)}`;
   const word = DATE_COMPARATOR_WORDS.get(operator);

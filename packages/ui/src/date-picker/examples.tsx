@@ -22,6 +22,11 @@ export const docs: ComponentDocs = {
       name: "aria-label",
       description: "Names the trigger; the chosen day is appended.",
     },
+    {
+      name: "DatePopover",
+      description:
+        "Opens the same calendar beside an `anchor` element with no trigger, for menu actions.",
+    },
   ],
   keyboard: [
     {
