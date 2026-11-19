@@ -22,7 +22,7 @@ const ImportReplySchema = z
   })
   .catch({ ok: false });
 
-interface PasteImportTarget {
+export interface PasteImportTarget {
   id: string;
   name: string;
 }

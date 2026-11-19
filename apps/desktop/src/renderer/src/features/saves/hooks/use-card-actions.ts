@@ -3,6 +3,7 @@ import { canImportDrop } from "@/features/saves/lib/import-feedback";
 import type { SaveListMode } from "@/features/saves/lib/list";
 import {
   notifyUnsupportedDrop,
+  type PasteImportTarget,
   pasteImportOf,
   runPasteImport,
 } from "@/features/saves/lib/paste-import";
@@ -34,6 +35,7 @@ export function useCardActions(
   filteredIds: ReadonlyArray<string>,
   mode: SaveListMode,
   sourceFilter: string,
+  importFolder?: PasteImportTarget,
 ): CardActions {
   const [viewer] = usePrefs("viewer");
   const selectionSize = useSelectionSize();
@@ -95,12 +97,12 @@ export function useCardActions(
       const plan = pasteImportOf(data);
       if (!plan) return;
       e.preventDefault();
-      void runPasteImport(plan);
+      void runPasteImport(plan, importFolder);
     };
 
     document.addEventListener("paste", onPaste);
     return () => document.removeEventListener("paste", onPaste);
-  }, []);
+  }, [importFolder]);
 
   const onDragOver = useCallback((e: React.DragEvent) => {
     if (!e.dataTransfer || isLibrarySaveDrag(e.dataTransfer)) return;
@@ -110,15 +112,19 @@ export function useCardActions(
     }
   }, []);
 
-  const onDrop = useCallback(async (e: React.DragEvent) => {
-    e.preventDefault();
-    const dt = e.dataTransfer;
-    if (!dt || isLibrarySaveDrag(dt)) return;
+  const onDrop = useCallback(
+    async (e: React.DragEvent) => {
+      e.preventDefault();
+      const dt = e.dataTransfer;
+      if (!dt || isLibrarySaveDrag(dt)) return;
 
-    const plan = pasteImportOf(dt);
-    if (plan && plan.kind !== "clipboard") await runPasteImport(plan);
-    else notifyUnsupportedDrop();
-  }, []);
+      const plan = pasteImportOf(dt);
+      if (plan && plan.kind !== "clipboard")
+        await runPasteImport(plan, importFolder);
+      else notifyUnsupportedDrop();
+    },
+    [importFolder],
+  );
 
   return {
     selectionSize,
