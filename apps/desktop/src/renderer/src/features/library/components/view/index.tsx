@@ -39,6 +39,7 @@ import { importFolderFor } from "./import-folder";
 function LibraryEmptyState({
   mode,
   navKind,
+  folderId,
   hasActiveSearch,
   hasActiveFilter,
   libraryTotal,
@@ -46,6 +47,7 @@ function LibraryEmptyState({
 }: {
   mode: ReturnType<typeof useLibraryState>["mode"];
   navKind: ReturnType<typeof useLibraryNav>["kind"];
+  folderId: string | undefined;
   hasActiveSearch: boolean;
   hasActiveFilter: boolean;
   libraryTotal: number;
@@ -59,7 +61,8 @@ function LibraryEmptyState({
     libraryTotal,
   });
   if (kind === "trash") return <TrashEmpty />;
-  if (kind === "folder") return <FolderEmpty downloading={downloading} />;
+  if (kind === "folder")
+    return <FolderEmpty folderId={folderId} downloading={downloading} />;
   if (kind === "library") return <LibraryEmpty />;
   if (kind === "uncategorized") return <UncategorizedEmpty />;
   if (kind === "inbox") return <InboxEmpty />;
@@ -177,6 +180,7 @@ export function LibraryView() {
           <LibraryEmptyState
             mode={data.mode}
             navKind={nav.kind}
+            folderId={nav.kind === "folder" ? nav.id : undefined}
             hasActiveSearch={data.hasActiveSearch}
             hasActiveFilter={data.hasActiveFilter}
             libraryTotal={paging.total}

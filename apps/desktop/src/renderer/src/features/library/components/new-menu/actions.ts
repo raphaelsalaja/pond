@@ -114,17 +114,25 @@ export function createNewActions({
     openSource(kind, source);
   }
 
-  async function importPaths(kind: "files" | "folders"): Promise<void> {
+  async function importPaths(
+    kind: "files" | "folders",
+    folderId?: string,
+  ): Promise<void> {
     const picked = await window.pond.query("saves.pickImportPaths", {
       kind,
     });
     if (picked.paths.length === 0) return;
-    await importFilePaths(picked.paths);
+    await importFilePaths(picked.paths, folderId);
   }
 
-  async function importFilePaths(paths: string[]): Promise<void> {
+  async function importFilePaths(
+    paths: string[],
+    folderId?: string,
+  ): Promise<void> {
     const result = SaveResultSchema.parse(
-      await importFilesWithDuplicateReview({ paths }),
+      await importFilesWithDuplicateReview(
+        folderId ? { paths, folderIds: [folderId] } : { paths },
+      ),
     );
     if (result.reason === "cancelled") return;
     if (!result.ok || !result.ids?.length) {

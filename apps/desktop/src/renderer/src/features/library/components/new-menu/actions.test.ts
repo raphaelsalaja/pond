@@ -110,6 +110,21 @@ describe("new menu actions", () => {
     );
   });
 
+  it("files picked for a folder land in that folder", async () => {
+    query
+      .mockResolvedValueOnce({ paths: ["/tmp/poster.png"] })
+      .mockResolvedValueOnce({ candidates: [] })
+      .mockResolvedValueOnce({ ok: true, ids: ["one"] });
+    await importPaths("files", "posters");
+    expect(query).toHaveBeenLastCalledWith("saves.importFiles", {
+      paths: ["/tmp/poster.png"],
+      folderIds: ["posters"],
+    });
+    expect(notify).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "Saved to Pond" }),
+    );
+  });
+
   it("reports unsupported file selections without claiming success", async () => {
     query
       .mockResolvedValueOnce({ paths: ["/tmp/unsupported"] })
