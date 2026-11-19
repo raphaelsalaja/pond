@@ -56,6 +56,7 @@ export const queryOperationAccess = {
   "conversion.cancel": "review",
   "conversion.capabilities": "read",
   "conversion.compress": "review",
+  "conversion.compressVideos": "review",
   "conversion.deletePreset": "review",
   "conversion.presets": "read",
   "conversion.savePreset": "review",

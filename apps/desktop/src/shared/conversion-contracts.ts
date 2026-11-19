@@ -80,6 +80,22 @@ export type ImageCompressionRequest = z.infer<
   typeof ImageCompressionRequestSchema
 >;
 
+export const VideoCompressionQualitySchema = z.enum([
+  "high",
+  "balanced",
+  "small",
+]);
+export type VideoCompressionQuality = z.infer<
+  typeof VideoCompressionQualitySchema
+>;
+export const VideoCompressionRequestSchema = z.object({
+  ids: z.array(z.string().min(1)).min(1).max(10_000),
+  quality: VideoCompressionQualitySchema.default("balanced"),
+});
+export type VideoCompressionRequest = z.infer<
+  typeof VideoCompressionRequestSchema
+>;
+
 export interface ConversionJob {
   id: string;
   kind: "export" | "compression";
@@ -92,6 +108,8 @@ export interface ConversionJob {
   outputs: string[];
   changed: number;
   skipped: number;
+  /** Saves left unchanged because their videos could not be compressed. */
+  failed: number;
   bytesBefore: number;
   bytesAfter: number;
   error: string | null;
@@ -103,6 +121,7 @@ export interface ConversionQueryInputs {
   "conversion.deletePreset": { id: string };
   "conversion.start": z.infer<typeof ConversionRequestSchema>;
   "conversion.compress": z.infer<typeof ImageCompressionRequestSchema>;
+  "conversion.compressVideos": z.infer<typeof VideoCompressionRequestSchema>;
   "conversion.status": { id: string };
   "conversion.cancel": { id: string };
 }
@@ -113,6 +132,7 @@ export interface ConversionQueryResults {
   "conversion.deletePreset": { ok: true };
   "conversion.start": ConversionJob | null;
   "conversion.compress": ConversionJob;
+  "conversion.compressVideos": ConversionJob;
   "conversion.status": ConversionJob | null;
   "conversion.cancel": ConversionJob | null;
 }
