@@ -223,7 +223,8 @@ function NumericProperty({
           onChange={(event) => setDraft(event.target.value)}
           onBlur={commitDraft}
           onKeyDown={(event) => {
-            if (event.key === "Enter") event.currentTarget.blur();
+            if (event.key === "Enter" && !event.nativeEvent.isComposing)
+              event.currentTarget.blur();
             if (event.key === "Escape" && draft !== String(value)) {
               event.stopPropagation();
               setDraft(String(value));

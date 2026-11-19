@@ -92,7 +92,7 @@ export function KoiQuestion({
                   setChoice(FREEFORM);
                 }}
                 onKeyDown={(event) => {
-                  if (event.key === "Enter") {
+                  if (event.key === "Enter" && !event.nativeEvent.isComposing) {
                     event.preventDefault();
                     void submit();
                   }
