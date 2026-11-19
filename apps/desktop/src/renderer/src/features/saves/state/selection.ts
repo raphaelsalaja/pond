@@ -57,6 +57,17 @@ function toggleSelection(id: string): void {
   });
 }
 
+function removeFromSelection(gone: ReadonlySet<string>): void {
+  selectionStore.setState((s) => {
+    const anchor = s.anchor !== null && gone.has(s.anchor) ? null : s.anchor;
+    const cursor = s.cursor !== null && gone.has(s.cursor) ? null : s.cursor;
+    const kept = new Set([...s.ids].filter((id) => !gone.has(id)));
+    if (kept.size === s.ids.size && anchor === s.anchor && cursor === s.cursor)
+      return s;
+    return { ...withIds(s, kept, anchor), cursor };
+  });
+}
+
 function clearSelection(): void {
   selectionStore.setState((s) => {
     if (
@@ -119,6 +130,9 @@ export const selection = {
   },
   toggle(id: string): void {
     toggleSelection(id);
+  },
+  remove(ids: ReadonlySet<string>): void {
+    removeFromSelection(ids);
   },
   clear(): void {
     clearSelection();

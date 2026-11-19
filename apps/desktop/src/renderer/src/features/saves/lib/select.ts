@@ -18,6 +18,41 @@ export function clearSaveSelection(): void {
   primarySelection.set(null);
 }
 
+function dropDepartedSaves(gone: ReadonlySet<string>): void {
+  selection.remove(gone);
+  const primary = primarySelection.get();
+  if (primary === null || !gone.has(primary)) return;
+  const anchor = selection.getAnchor();
+  primarySelection.set(
+    (anchor && selection.has(anchor) ? anchor : null) ??
+      selection.snapshot()[0] ??
+      null,
+  );
+}
+
+interface CollectionResults {
+  key: string;
+  ids: readonly string[];
+  settled: boolean;
+}
+
+/** Deselects Saves that leave the results, so the inspector never shows a Save the grid no longer has. */
+export function createSelectionReconciler(): (
+  results: CollectionResults,
+) => void {
+  let last: Omit<CollectionResults, "settled"> | null = null;
+  return ({ key, ids, settled }) => {
+    /** A refetch, or a new query still showing the previous page, must not read as Saves leaving. */
+    if (!settled) return;
+    const previous = last;
+    last = { key, ids };
+    if (previous?.key !== key) return;
+    const remaining = new Set(ids);
+    const gone = new Set(previous.ids.filter((id) => !remaining.has(id)));
+    if (gone.size > 0) dropDepartedSaves(gone);
+  };
+}
+
 export function clickSave(
   id: string,
   keys: { meta: boolean; shift: boolean },
