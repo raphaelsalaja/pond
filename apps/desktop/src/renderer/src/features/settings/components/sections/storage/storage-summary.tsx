@@ -1,6 +1,7 @@
 import { Button, Settings } from "@pond/ui";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatBytes } from "@/shared/lib/format";
+import { LARGEST_SAVES_KEY } from "./largest-saves";
 import { storageSegments } from "./storage-segments";
 import styles from "./styles.module.css";
 
@@ -16,6 +17,7 @@ export function useStorageSnapshot() {
 
 export function StorageSummary() {
   const query = useStorageSnapshot();
+  const client = useQueryClient();
   const data = query.data;
   const segments = data ? storageSegments(data.breakdown) : [];
   return (
@@ -36,7 +38,10 @@ export function StorageSummary() {
             size="sm"
             variant="secondary"
             loading={query.isFetching}
-            onClick={() => void query.refetch()}
+            onClick={() => {
+              void query.refetch();
+              void client.invalidateQueries({ queryKey: LARGEST_SAVES_KEY });
+            }}
           >
             Refresh
           </Button>
@@ -46,14 +51,16 @@ export function StorageSummary() {
         <Settings.Item>
           <div className={styles.breakdown}>
             <div className={styles.bar} aria-hidden>
-              {segments.map((segment) => (
-                <span
-                  key={segment.key}
-                  className={styles.segment}
-                  data-category={segment.key}
-                  style={{ flexGrow: segment.percent }}
-                />
-              ))}
+              {segments
+                .filter((segment) => segment.bytes > 0)
+                .map((segment) => (
+                  <span
+                    key={segment.key}
+                    className={styles.segment}
+                    data-category={segment.key}
+                    style={{ flexGrow: segment.percent }}
+                  />
+                ))}
             </div>
             <ul
               className={styles.legend}
@@ -65,7 +72,10 @@ export function StorageSummary() {
                   <span>{segment.label}</span>
                   <span className={styles.size}>
                     {formatBytes(segment.bytes)} ·{" "}
-                    {segment.percent < 1 ? "<1" : Math.round(segment.percent)}%
+                    {segment.percent > 0 && segment.percent < 1
+                      ? "<1"
+                      : Math.round(segment.percent)}
+                    %
                   </span>
                 </li>
               ))}

@@ -9,6 +9,8 @@ import styles from "./styles.module.css";
 
 const LIMIT = 50;
 
+export const LARGEST_SAVES_KEY = ["storage-largest-saves"] as const;
+
 function labelForSource(source: string): string {
   const known = SOURCES.find((entry) => entry === source);
   return known ? sourceLabel(known) : source;
@@ -23,7 +25,7 @@ export function LargestSaves() {
   const [mediaType, setMediaType] = useState<MediaType | "">("");
   const [source, setSource] = useState("");
   const query = useQuery({
-    queryKey: ["storage-largest-saves", search, mediaType, source],
+    queryKey: [...LARGEST_SAVES_KEY, search, mediaType, source],
     queryFn: () =>
       window.pond.query("storage.largestSaves", {
         limit: LIMIT,

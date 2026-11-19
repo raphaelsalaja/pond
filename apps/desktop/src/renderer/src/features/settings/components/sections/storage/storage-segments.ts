@@ -18,11 +18,11 @@ const LABELS: ReadonlyArray<[keyof Breakdown, string]> = [
   ["other", "Other"],
 ];
 
-/** Each category's share of the Library on disk; empty categories are left out. */
+/** Each category's share of the Library on disk, including empty ones so the legend always lists all six. */
 export function storageSegments(breakdown: Breakdown): StorageSegment[] {
   const total = LABELS.reduce((sum, [key]) => sum + breakdown[key], 0);
   if (total <= 0) return [];
-  return LABELS.filter(([key]) => breakdown[key] > 0).map(([key, label]) => ({
+  return LABELS.map(([key, label]) => ({
     key,
     label,
     bytes: breakdown[key],

@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { formatBytes } from "@/shared/lib/format";
 import { notify } from "@/shared/lib/toast";
+import { LARGEST_SAVES_KEY } from "./largest-saves";
 import { STORAGE_SNAPSHOT_KEY, useStorageSnapshot } from "./storage-summary";
 
 type Cache = "videoCache" | "thumbnails";
@@ -55,6 +56,7 @@ export function StorageCaches() {
         description: `Freed ${formatBytes(freedBytes)}.`,
       });
       await client.invalidateQueries({ queryKey: STORAGE_SNAPSHOT_KEY });
+      await client.invalidateQueries({ queryKey: LARGEST_SAVES_KEY });
     } catch {
       notify({ id: "storage-cache", title: `Couldn't clear ${title}` });
     } finally {
