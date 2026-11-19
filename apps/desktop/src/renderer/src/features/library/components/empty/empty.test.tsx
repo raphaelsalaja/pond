@@ -46,15 +46,43 @@ describe("FolderEmpty", () => {
     return router;
   }
 
-  it("invites dropping files instead of clearing a search", async () => {
-    await act(async () => root.render(<FolderEmpty />));
+  it("invites adding files instead of clearing a search", async () => {
+    await act(async () => root.render(<FolderEmpty folderId="posters" />));
     const text = host.textContent ?? "";
     expect(text).toContain("This folder is empty");
-    expect(text).toContain("Drag and drop onto this window to add.");
+    expect(text).toContain("Paste or drop files, images, and links here.");
     expect(text).not.toContain("Import Folders");
-    expect(text).not.toContain("Import Files");
     expect(text).not.toContain("No results found");
     expect(text).not.toContain("Clear Search and Filters");
+    const buttons = [...host.querySelectorAll("button")];
+    expect(buttons.map((button) => button.textContent)).toEqual(["Add Files"]);
+  });
+
+  it("picks files into the open folder", async () => {
+    const query = vi.fn(async (name: string) => {
+      if (name === "saves.pickImportPaths") return { paths: ["/tmp/a.png"] };
+      if (name === "saves.reviewImportDuplicates") return { candidates: [] };
+      return { ok: true, ids: ["a"] };
+    });
+    vi.stubGlobal("pond", { query });
+    await act(async () => root.render(<FolderEmpty folderId="posters" />));
+    const add = host.querySelector("button");
+    await act(async () => add?.click());
+
+    await vi.waitFor(() =>
+      expect(query).toHaveBeenCalledWith("saves.importFiles", {
+        paths: ["/tmp/a.png"],
+        folderIds: ["posters"],
+      }),
+    );
+    expect(query).toHaveBeenCalledWith("saves.pickImportPaths", {
+      kind: "files",
+    });
+  });
+
+  it("has no action without a folder to add to", async () => {
+    await act(async () => root.render(<FolderEmpty />));
+    expect(host.querySelector("button")).toBeNull();
   });
 
   it("says saves are downloading when the folder is waiting on them", async () => {
