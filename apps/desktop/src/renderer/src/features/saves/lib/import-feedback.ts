@@ -12,6 +12,14 @@ export interface ImportToast {
   description?: string;
 }
 
+interface ImportShowAction {
+  action?: { label: string; onClick: () => void };
+  timeout?: number;
+}
+
+/** Long enough to reach Show in Library before the toast leaves. */
+const SHOW_ACTION_TIMEOUT_MS = 5000;
+
 /** The only types a drag from another app exposes before drop; its data stays unreadable until then. */
 const IMPORTABLE_TYPES = ["Files", "text/uri-list", "text/plain"];
 
@@ -53,6 +61,17 @@ export function importToast(outcome: ImportOutcome): ImportToast | null {
       outcome.kind === "urls"
         ? "Check that the link opens in a browser, then try again."
         : "Check that the files still exist, then try again.",
+  };
+}
+
+export function showImportedAction(
+  ids: readonly string[],
+  show: (ids: readonly string[]) => void,
+): ImportShowAction {
+  if (ids.length === 0) return {};
+  return {
+    action: { label: "Show in Library", onClick: () => show(ids) },
+    timeout: SHOW_ACTION_TIMEOUT_MS,
   };
 }
 

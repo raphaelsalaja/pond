@@ -25,6 +25,7 @@ const openTagCreation = vi.fn<NewActionServices["openTagCreation"]>();
 const openSavedViewEditor = vi.fn<NewActionServices["openSavedViewEditor"]>();
 const openSource = vi.fn<NewActionServices["openSource"]>();
 const selectSave = vi.fn<NewActionServices["selectSave"]>();
+const showSaves = vi.fn<NewActionServices["showSaves"]>();
 const currentFolderId = vi.fn<NewActionServices["currentFolderId"]>(() => null);
 let eagleImportProgress: ((progress: EagleImportProgress) => void) | null =
   null;
@@ -64,9 +65,16 @@ const {
   openSavedViewEditor,
   openSource,
   selectSave,
+  showSaves,
   currentFolderId,
   onEagleImportProgress,
 });
+
+function clickShowInLibrary(): void {
+  const options = notify.mock.lastCall?.[0];
+  expect(options?.action?.label).toBe("Show in Library");
+  options?.action?.onClick();
+}
 
 const query = vi.fn();
 
@@ -108,6 +116,19 @@ describe("new menu actions", () => {
     expect(notify).toHaveBeenCalledWith(
       expect.objectContaining({ title: "Saved 2 items to Pond" }),
     );
+    expect(showSaves).not.toHaveBeenCalled();
+    clickShowInLibrary();
+    expect(showSaves).toHaveBeenCalledExactlyOnceWith(["one", "two"]);
+  });
+
+  it("shows the Saves a clipboard import returned", async () => {
+    query.mockResolvedValue({ ok: true, ids: ["pasted"] });
+    await importClipboard();
+    expect(notify).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "Saved to Pond" }),
+    );
+    clickShowInLibrary();
+    expect(showSaves).toHaveBeenCalledExactlyOnceWith(["pasted"]);
   });
 
   it("files picked for a folder land in that folder", async () => {
@@ -123,6 +144,8 @@ describe("new menu actions", () => {
     expect(notify).toHaveBeenCalledWith(
       expect.objectContaining({ title: "Saved to Pond" }),
     );
+    clickShowInLibrary();
+    expect(showSaves).toHaveBeenCalledExactlyOnceWith(["one"], "posters");
   });
 
   it("reports unsupported file selections without claiming success", async () => {
@@ -173,6 +196,14 @@ describe("new menu actions", () => {
     expect(notify).toHaveBeenCalledWith(
       expect.objectContaining({ title: "Downloading" }),
     );
+    clickShowInLibrary();
+    expect(showSaves).toHaveBeenCalledExactlyOnceWith(["one"]);
+  });
+
+  it("stays quiet when every link failed", async () => {
+    query.mockResolvedValueOnce({ ok: false, error: "unsupported_url" });
+    await importLinks("https://one.test");
+    expect(notify).not.toHaveBeenCalled();
   });
 
   it("leaves added links in the library without selecting them", async () => {
@@ -375,6 +406,7 @@ describe("new menu actions", () => {
         description: "2 skipped",
       }),
     );
+    expect(notify.mock.lastCall?.[0].action).toBeUndefined();
   });
 
   it("refreshes folders after importing an Eagle package", async () => {

@@ -3,6 +3,7 @@ import { sourceLabel } from "@pond/schema/sources";
 import type { BlankDocumentKind } from "@shared/blank-documents";
 import type { EagleImportProgress } from "@shared/saves-import-contracts";
 import { z } from "zod";
+import { showSavesInLibrary } from "@/features/library/lib/show-saves";
 import { openDuplicateReview } from "@/features/library/state/duplicate-review";
 import { folders } from "@/features/library/state/folders";
 import { libraryChrome } from "@/features/library/state/library-chrome";
@@ -13,6 +14,7 @@ import {
   importFilesWithDuplicateReview,
   libraryViewContext,
   selectOnlySave,
+  showImportedAction,
 } from "@/features/saves";
 import { selection } from "@/features/saves/navigation";
 import { openSources } from "@/features/sources";
@@ -44,6 +46,7 @@ export interface NewActionServices {
   openSavedViewEditor: (kind: "smart_folder" | "group") => void;
   openSource: (kind: "connect" | "watch", source: Source) => void;
   selectSave: (id: string) => void;
+  showSaves: (ids: readonly string[], folderId?: string) => void;
   currentFolderId: () => string | null;
   onEagleImportProgress: (
     callback: (progress: EagleImportProgress) => void,
@@ -59,26 +62,32 @@ export function createNewActions({
   openSavedViewEditor,
   openSource,
   selectSave,
+  showSaves,
   currentFolderId,
   onEagleImportProgress,
 }: NewActionServices) {
-  function reportSaved(count: number): void {
+  function reportSaved(ids: string[], folderId?: string): void {
     notify({
       id: "new-import",
       title:
-        count === 1
+        ids.length === 1
           ? "Saved to Pond"
-          : `Saved ${formatNumber(count)} items to Pond`,
+          : `Saved ${formatNumber(ids.length)} items to Pond`,
+      ...showImportedAction(
+        ids,
+        folderId ? (shown) => showSaves(shown, folderId) : showSaves,
+      ),
     });
   }
 
-  function reportDownloading(count: number): void {
+  function reportDownloading(ids: string[]): void {
     notify({
       id: "new-import",
       title:
-        count === 1
+        ids.length === 1
           ? "Downloading"
-          : `Downloading ${formatNumber(count)} links`,
+          : `Downloading ${formatNumber(ids.length)} links`,
+      ...showImportedAction(ids, showSaves),
     });
   }
 
@@ -140,7 +149,7 @@ export function createNewActions({
         "No files were imported. Choose readable, non-empty files.",
       );
     }
-    reportSaved(result.ids.length);
+    reportSaved(result.ids, folderId);
   }
 
   async function importLegacyLibrary(
@@ -159,7 +168,7 @@ export function createNewActions({
         `No files were imported from the ${source} export. Choose its exported media folder.`,
       );
     }
-    reportSaved(result.ids.length);
+    reportSaved(result.ids);
   }
 
   async function importClipboard(): Promise<void> {
@@ -171,7 +180,7 @@ export function createNewActions({
         "Copy an image or files first. Use Import from Links for URLs.",
       );
     }
-    reportSaved(result.ids.length);
+    reportSaved(result.ids);
   }
 
   async function importBookmarks(): Promise<void> {
@@ -534,19 +543,19 @@ export function createNewActions({
   async function importLinks(text: string): Promise<string[]> {
     const urls = parseImportLinks(text);
     const failed: string[] = [];
-    let added = 0;
+    const added: string[] = [];
     for (const url of urls) {
       try {
         const result = SaveResultSchema.parse(
           await window.pond.query("saves.quickAdd", { url }),
         );
         if (!result.ok) failed.push(url);
-        else added += 1;
+        else if (result.id) added.push(result.id);
       } catch {
         failed.push(url);
       }
     }
-    if (added > 0) reportDownloading(added);
+    if (added.length > 0) reportDownloading(added);
     return failed;
   }
 
@@ -617,6 +626,7 @@ export const {
   openSavedViewEditor: (kind) => savedViews.openEditor({ kind }),
   openSource: (kind, source) => openSources({ type: kind, source }),
   selectSave: selectOnlySave,
+  showSaves: (ids, folderId) => showSavesInLibrary(ids, folderId),
   currentFolderId: () => {
     const nav = libraryChrome.getState().nav;
     return nav.kind === "folder" ? nav.id : null;

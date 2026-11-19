@@ -1,5 +1,10 @@
-import { describe, expect, it } from "vitest";
-import { canImportDrop, importToast } from "./import-feedback";
+import { describe, expect, it, vi } from "vitest";
+import { TOAST_TIMEOUT_MS } from "@/shared/lib/toast";
+import {
+  canImportDrop,
+  importToast,
+  showImportedAction,
+} from "./import-feedback";
 
 describe("canImportDrop", () => {
   it("accepts files, links and text from another app", () => {
@@ -57,5 +62,22 @@ describe("importToast", () => {
 
   it("stays quiet when an import was cancelled", () => {
     expect(importToast({ kind: "files", imported: 0, failed: 0 })).toBeNull();
+  });
+});
+
+describe("showImportedAction", () => {
+  it("shows exactly the Saves the import returned", () => {
+    const show = vi.fn();
+    const { action, timeout } = showImportedAction(["a", "b"], show);
+    expect(action?.label).toBe("Show in Library");
+    expect(timeout).toBeGreaterThan(TOAST_TIMEOUT_MS);
+    action?.onClick();
+    expect(show).toHaveBeenCalledExactlyOnceWith(["a", "b"]);
+  });
+
+  it("offers nothing when the import returned no Saves", () => {
+    const show = vi.fn();
+    expect(showImportedAction([], show)).toEqual({});
+    expect(show).not.toHaveBeenCalled();
   });
 });

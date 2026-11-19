@@ -1,3 +1,4 @@
+import { resultNavigation } from "@/features/saves/state/result-navigation";
 import { primarySelection, selection } from "@/features/saves/state/selection";
 
 export function selectOnlySave(id: string): void {
@@ -6,6 +7,18 @@ export function selectOnlySave(id: string): void {
   selection.set([id]);
   selection.setAnchor(id);
   primarySelection.set(id);
+}
+
+/** Selects exactly `ids`, puts the cursor on the first, and scrolls the grid to it. */
+export function selectSaves(ids: readonly string[]): void {
+  const [first] = ids;
+  if (!first) return;
+  selection.setPicking(false);
+  selection.setCursor(first);
+  selection.set(ids);
+  selection.setAnchor(first);
+  primarySelection.set(first);
+  void resultNavigation.reveal(first);
 }
 
 function rememberSave(id: string): void {
