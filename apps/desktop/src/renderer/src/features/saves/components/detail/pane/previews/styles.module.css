@@ -1,6 +1,8 @@
+/* Its layers are absolute, so without flex: none a long Details pane shrinks it to nothing. */
 .list {
   position: relative;
   display: flex;
+  flex: none;
   justify-content: center;
   height: 190px;
   margin: 0;
