@@ -29,6 +29,7 @@ export const docs: ComponentDocs = {
     'A `role="radiogroup"` named Rating, with one radio per star.',
     'A mixed value is named "Rating, multiple values" and checks no star.',
     "Clicking the chosen star again clears the rating.",
+    "Clicking a star leaves focus where it was. Tab reaches the stars for keyboard rating.",
   ],
   examples: [
     {

@@ -64,6 +64,29 @@ describe("Rating keyboard", () => {
     }
   });
 
+  it("picks a clicked star without taking focus from the control that had it", async () => {
+    const screen = await render(
+      <>
+        <button type="button">Before</button>
+        <Harness initial={0} />
+      </>,
+    );
+    const before = screen.getByRole("button", { name: "Before" });
+
+    await userEvent.click(before);
+    await userEvent.click(screen.getByRole("radio", { name: "3 Stars" }));
+    await expect
+      .element(screen.getByRole("radio", { name: "3 Stars" }))
+      .toHaveAttribute("aria-checked", "true");
+    await expect.element(before).toHaveFocus();
+
+    await userEvent.click(screen.getByRole("radio", { name: "3 Stars" }));
+    await expect
+      .element(screen.getByRole("radio", { name: "3 Stars" }))
+      .toHaveAttribute("aria-checked", "false");
+    await expect.element(before).toHaveFocus();
+  });
+
   it("names a mixed value until a star is picked", async () => {
     const screen = await render(<Harness initial={null} />);
 
