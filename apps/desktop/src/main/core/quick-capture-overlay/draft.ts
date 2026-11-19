@@ -26,24 +26,20 @@ export function quickCaptureDraft(
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
-  const urls = lines.map(webUrl);
-  if (lines.length && urls.every((url) => url !== null))
-    for (const url of urls) items.push({ kind: "url", url: url as string });
+  const urls = lines.map(webUrl).filter((url) => url !== null);
+  if (lines.length && urls.length === lines.length)
+    for (const url of urls) items.push({ kind: "url", url });
   else if (input.text.trim()) items.push({ kind: "note", text: input.text });
   for (const path of input.paths) items.push({ kind: "file", path });
   if (!items.length) throw new Error("Add a link, some text, or a file.");
   const title = input.title?.trim();
   const first = items[0];
   if (title && items.length === 1 && first) first.title = title;
-  const notes = input.notes?.trim();
-  return {
-    id,
-    trigger: "quick-capture",
-    items,
-    metadata: {
-      tags: [],
-      folderIds: input.folderId ? [input.folderId] : [],
-      ...(notes ? { notes } : {}),
-    },
+  const metadata: CaptureDraft["metadata"] = {
+    tags: [],
+    folderIds: input.folderId ? [input.folderId] : [],
   };
+  const notes = input.notes?.trim();
+  if (notes) metadata.notes = notes;
+  return { id, trigger: "quick-capture", items, metadata };
 }
