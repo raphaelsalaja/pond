@@ -1,12 +1,10 @@
-export const HAPTIC_PATTERNS = [
+import { z } from "zod";
+
+/** Mirrors AppKit's `NSHapticFeedbackManager.FeedbackPattern`. */
+export const HapticPatternSchema = z.enum([
   "generic",
   "alignment",
   "level-change",
-] as const;
+]);
 
-/** Mirrors AppKit's `NSHapticFeedbackManager.FeedbackPattern`. */
-export type HapticPattern = (typeof HAPTIC_PATTERNS)[number];
-
-export function isHapticPattern(value: unknown): value is HapticPattern {
-  return (HAPTIC_PATTERNS as readonly unknown[]).includes(value);
-}
+export type HapticPattern = z.infer<typeof HapticPatternSchema>;
