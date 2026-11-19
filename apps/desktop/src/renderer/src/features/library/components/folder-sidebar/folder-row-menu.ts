@@ -32,6 +32,7 @@ import {
 } from "@/features/library/lib/folder-appearance-menu";
 import { buildMoveFolderItems } from "@/features/library/lib/move-folders-menu";
 import { saveFolderPresentation } from "@/features/library/state/folder-presentation";
+import { openFolderTemplateDialog } from "@/features/library/state/folder-template-dialog";
 import { folders } from "@/features/library/state/folders";
 import type { LibraryNav } from "@/features/library/state/library-chrome";
 import { openOrganizationRenameDialog } from "@/features/library/state/organization-rename-dialog";
@@ -126,6 +127,8 @@ export function buildFolderRowMenuItems(input: FolderRowMenuInput) {
     creating: input.creating,
     onNewFolder: () => input.onCreateFolder(folder.parentId ?? undefined),
     onNewSubfolder: () => input.onCreateFolder(folder.id),
+    onNewSubfolderFromTemplate: () =>
+      openFolderTemplateDialog({ mode: "apply", parentId: folder.id }),
     moveItems: buildMoveFolderItems([folder.id]),
     onRename: () => input.onStartEditing(folder.id),
     onBatchRename: () => openOrganizationRenameDialog("folders", folder.id),
@@ -151,6 +154,12 @@ export function buildFolderRowMenuItems(input: FolderRowMenuInput) {
           }),
         );
     },
+    onSaveAsTemplate: () =>
+      openFolderTemplateDialog({
+        mode: "save",
+        folderId: folder.id,
+        folderName: folder.name,
+      }),
     onExportFiles: () => void exportFolderFiles(input.exportIds),
     onExportCsv: () => void exportFolderCsv(input.exportIds),
     onExportEaglePackage: () => void exportFolderEaglePackage(input.exportIds),

@@ -17,6 +17,7 @@ import {
   IconFolderTree,
   IconFolderXmark,
   IconGridPlus,
+  IconLayers,
   IconLink2,
   IconRename,
   IconTableDownload,
@@ -43,6 +44,7 @@ export interface FolderMenuActions {
   creating: boolean;
   onNewFolder: () => void;
   onNewSubfolder: () => void;
+  onNewSubfolderFromTemplate: () => void;
   moveItems: MenuItemSpec[];
   onRename: () => void;
   onBatchRename?: () => void;
@@ -51,6 +53,7 @@ export interface FolderMenuActions {
   onToggleSameLevel: () => void;
   onToggleAll: () => void;
   onDuplicate: () => void;
+  onSaveAsTemplate: () => void;
   onExportFiles: () => void;
   onExportCsv: () => void;
   onExportEaglePackage: () => void;
@@ -78,6 +81,12 @@ export function buildFolderMenuItems(a: FolderMenuActions): MenuItemSpec[] {
       icon: <IconFolder />,
       disabled: a.creating,
       onClick: a.onNewSubfolder,
+    },
+    {
+      label: "New Subfolder from Template",
+      icon: <IconFolderTree />,
+      disabled: a.creating,
+      onClick: a.onNewSubfolderFromTemplate,
     },
     {
       type: "submenu",
@@ -125,6 +134,11 @@ export function buildFolderMenuItems(a: FolderMenuActions): MenuItemSpec[] {
       icon: <IconCopy />,
       disabled: a.creating,
       onClick: a.onDuplicate,
+    },
+    {
+      label: "Save as Template",
+      icon: <IconLayers />,
+      onClick: a.onSaveAsTemplate,
     },
     { type: "separator" },
     {

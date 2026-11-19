@@ -58,6 +58,7 @@ const APP_PREF_KEYS = [
   "search",
   "extension",
   "folderAppearance",
+  "folderTemplates",
 ] as const satisfies readonly AppPrefKey[];
 
 const _DEFAULT_APP_PREFS: AppPrefs = pickPrefs(DEFAULT_PREFS, APP_PREF_KEYS);
@@ -111,6 +112,7 @@ function mergeAll(base: Prefs, patch: DeepPartial<Prefs>): Prefs {
     viewer: { ...base.viewer, ...patch.viewer },
     folderViews: { ...base.folderViews, ...patch.folderViews },
     folderAppearance: { ...base.folderAppearance, ...patch.folderAppearance },
+    folderTemplates: { ...base.folderTemplates, ...patch.folderTemplates },
     fileRing: { ...base.fileRing, ...patch.fileRing },
     savedViewViews: { ...base.savedViewViews, ...patch.savedViewViews },
     folderRules: { ...base.folderRules, ...patch.folderRules },
