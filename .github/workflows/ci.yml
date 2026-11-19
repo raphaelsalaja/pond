@@ -46,6 +46,14 @@ jobs:
       - name: Verify workspace
         run: pnpm check
 
+      - name: Upload UI screenshot diffs
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ui-screenshot-diffs
+          path: packages/ui/.vitest/attachments
+          if-no-files-found: ignore
+
       - name: Native database tests
         run: ELECTRON_RUN_AS_NODE=1 pnpm --filter @pond/desktop exec electron node_modules/vitest/vitest.mjs run src/main/db.test.ts src/main/core/vec-index.test.ts src/main/core/pipeline/task-recovery.test.ts src/main/core/pipeline/enqueue-scheduling.test.ts src/main/core/refresh/archive-backfill.test.ts src/main/core/session-downloads.test.ts src/main/core/inbox/inbox.test.ts
 

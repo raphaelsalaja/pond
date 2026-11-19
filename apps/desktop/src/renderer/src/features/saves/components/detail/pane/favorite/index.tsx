@@ -5,6 +5,11 @@ import type { Save } from "@/features/saves/types";
 import { PropertyList } from "@/shared/components/property-list";
 import { ShortcutKeys } from "@/shared/components/shortcut-keys";
 
+/** A click toggles without taking focus, so the list or grid that had it keeps its arrow keys. */
+function keepFocus(event: React.MouseEvent) {
+  event.preventDefault();
+}
+
 export function FavoriteRow({ saves }: { saves: readonly Save[] }) {
   const favorited =
     saves.length > 0 && saves.every((save) => save.favorite === true);
@@ -18,6 +23,7 @@ export function FavoriteRow({ saves }: { saves: readonly Save[] }) {
             size="sm"
             aria-label={label}
             pressed={favorited}
+            onMouseDown={keepFocus}
             onPressedChange={() =>
               void toggleFavorite(saves.map((save) => save.id))
             }

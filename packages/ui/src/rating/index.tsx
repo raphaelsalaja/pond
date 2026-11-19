@@ -2,7 +2,7 @@ import { Radio } from "@base-ui/react/radio";
 import { RadioGroup } from "@base-ui/react/radio-group";
 import { IconStar } from "@pond/icons";
 import { clsx as cn } from "clsx";
-import type { KeyboardEvent } from "react";
+import type { KeyboardEvent, MouseEvent } from "react";
 import styles from "./styles.module.css";
 
 const STARS = [1, 2, 3, 4, 5] as const;
@@ -34,9 +34,15 @@ export function Rating({
   size = "md",
   className,
   onKeyDown,
+  onMouseDown,
   ...props
 }: RatingProps) {
   const current = value ?? 0;
+  /** A click picks a star without taking focus, so the list or grid that had it keeps its arrow keys. */
+  const press = (event: MouseEvent<HTMLDivElement>) => {
+    onMouseDown?.(event);
+    event.preventDefault();
+  };
   const jump = (event: KeyboardEvent<HTMLDivElement>) => {
     onKeyDown?.(event);
     const next = nextRating(event.key);
@@ -58,6 +64,7 @@ export function Rating({
       value={current > 0 ? current : null}
       onValueChange={(next: number | null) => onValueChange(next ?? 0)}
       onKeyDown={jump}
+      onMouseDown={press}
       {...props}
     >
       {STARS.map((star) => (

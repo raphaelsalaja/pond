@@ -1,5 +1,5 @@
 import { Button } from "@pond/ui";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   FolderEmpty,
   InboxEmpty,
@@ -24,6 +24,7 @@ import { useLibraryNav } from "@/features/library/state/library-chrome";
 import { resetFilters } from "@/features/library/state/view-store";
 import {
   clearSaveSelection,
+  createSelectionReconciler,
   isLibraryBackgroundTarget,
   libraryViewContext,
   SaveCollectionContextMenu,
@@ -96,6 +97,7 @@ export function LibraryView() {
   // A new scope clears its page before the first answer arrives. Publishing
   // that empty list under the new key makes an open preview treat the Save as gone.
   const publishedKey = useRef<string | null>(null);
+  const [reconcileSelection] = useState(createSelectionReconciler);
 
   useEffect(() => {
     const key = data.paging.queryKey;
@@ -115,6 +117,12 @@ export function LibraryView() {
       allIds: data.paging.allIds,
       loadMore: data.paging.loadMore,
     });
+    /** After setSource, so an open preview has already followed a departed Save to its neighbor. */
+    reconcileSelection({
+      key,
+      ids: data.filteredIds,
+      settled: !data.paging.loading,
+    });
   }, [
     data.filteredIds,
     data.mode,
@@ -125,6 +133,7 @@ export function LibraryView() {
     data.paging.settledEmpty,
     data.paging.total,
     data.paging.loadedIds,
+    reconcileSelection,
   ]);
 
   return (
