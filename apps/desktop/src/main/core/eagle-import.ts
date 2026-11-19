@@ -127,13 +127,7 @@ export function isThumbnailSidecar(name: string): boolean {
   return lower.endsWith("_thumbnail.png") || lower.endsWith("_thumbnail.webp");
 }
 
-/**
- * Eagle writes an item's preview beside it as `<name>_thumbnail.png`, and
- * exports that same preview again as a standalone item whose only file is
- * `<name>_thumbnail.webp`. Classifying both suffixes as the thumbnail keeps
- * the sidecar out of `mediaFiles`; a standalone thumbnail item then has no
- * media of its own and is skipped instead of imported as a duplicate Save.
- */
+/** Eagle also exports each preview as its own item whose only file is `<name>_thumbnail.webp`, so that item ends up with no media and is skipped. */
 export function partitionEagleItemFiles(
   files: readonly string[],
   bookmark = false,

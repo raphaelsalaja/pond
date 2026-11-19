@@ -700,9 +700,7 @@ async function parsePackage(
     const media = siblings.filter((file) => !sidecars.includes(file));
     if (media.length === 0 && !metadata.url?.trim() && !thumbnail)
       throw new Error(`The Eagle package item ${metadata.id} has no content.`);
-    // Eagle exports each preview a second time as a standalone item named
-    // "<parent>_thumbnail" whose only file is the sidecar webp. It carries no
-    // unique content, so skip it rather than import a duplicate Save.
+    /** Eagle exports each preview again as an item named `<parent>_thumbnail` with nothing of its own. */
     if (
       media.length === 0 &&
       thumbnail &&

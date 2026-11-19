@@ -102,6 +102,7 @@ describe("new menu spec", () => {
       "Repair Physical File Names",
       "Repair Invalid Content",
       "Repair Save Metadata",
+      "Remove Duplicate Eagle Previews",
       "Export Debug Report",
     ]);
     expect(labels.join(" ")).toContain("ArtStation");
@@ -154,6 +155,7 @@ describe("new menu spec", () => {
     expect(rows(filterMenuItems(buildNewMenuItems([]), "eagle"))).toEqual([
       "Import › Import Eagle Package",
       "Import › Import Eagle Library",
+      "Library › Repair Library › Remove Duplicate Eagle Previews",
     ]);
   });
 });

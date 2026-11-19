@@ -672,36 +672,4 @@ describe.skipIf(!nativeAvailable())("authoritative library query", () => {
     });
     expect(page.ids).toEqual(["0002"]);
   });
-
-  it("hides Eagle thumbnail duplicate Saves from every library view", async () => {
-    const { db, sqlite } = setup();
-    sqlite.exec(`
-      insert into saves(id,source,source_id,url,title,saved_at,created_at,status,media_type,imported_from) values
-        ('e-parent','local','eagle:1','pond:test','ICON PICKER',900,900,'complete','image','eagle'),
-        ('e-dup','local','eagle:2','pond:test','ICON PICKER_thumbnail',901,901,'complete','image','eagle'),
-        ('e-mixed','local','eagle:3','pond:test','Marlin Soft RegularItalic_Thumbnail',902,902,'complete','image','eagle'),
-        ('e-font','local','eagle:4','pond:test','Marlin Soft Thumbnail_dup',903,903,'complete','font','eagle'),
-        ('p-named','local','mymind:1','pond:test','Poster_thumbnail',904,904,'complete','image','mymind');
-    `);
-    const { ids } = await queryLibraryIds(db, "library", {
-      query: EMPTY_QUERY,
-    });
-    expect(ids).toContain("e-parent");
-    expect(ids).not.toContain("e-dup");
-    expect(ids).not.toContain("e-mixed");
-    expect(ids).toContain("e-font");
-    expect(ids).toContain("p-named");
-    const page = await queryLibraryPage(db, "library", { query: EMPTY_QUERY });
-    expect(page.ids).not.toContain("e-dup");
-    expect(page.total).toBe(1203);
-    const counts = querySidebarCounts(db);
-    expect(counts.library).toBe(1203);
-    // Trash keeps its contents whole so restores stay possible.
-    sqlite.prepare("update saves set deleted_at=1 where id=?").run("e-dup");
-    const trash = await queryLibraryIds(db, "library", {
-      query: EMPTY_QUERY,
-      scope: { deletedOnly: true },
-    });
-    expect(trash.ids).toContain("e-dup");
-  });
 });

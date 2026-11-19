@@ -22,10 +22,7 @@ import {
   queryActiveLibraryPage,
 } from "../../core/active-library-query";
 import { compileKeywordWhere } from "../../core/keyword-query";
-import {
-  hideImportedThumbnailDuplicateSaves,
-  librarySortColumn,
-} from "../../core/library-query";
+import { librarySortColumn } from "../../core/library-query";
 import { libraryRetrievalInput } from "../../core/library-retrieval";
 import { getPrefs } from "../../core/prefs";
 import { querySidebarCounts } from "../../core/sidebar-counts";
@@ -129,7 +126,6 @@ export const savesReadQueries = {
       .where(
         and(
           isNull(saves.deletedAt),
-          hideImportedThumbnailDuplicateSaves(),
           params.query ? buildWhere(params.query) : undefined,
         ),
       );
@@ -197,7 +193,7 @@ export const savesReadQueries = {
       const rows = await db
         .select(SAVE_LIST_COLUMNS)
         .from(saves)
-        .where(and(hideImportedThumbnailDuplicateSaves(), after))
+        .where(after)
         .orderBy(desc(saves.savedAt), desc(saves.id))
         .limit(limit + 1);
       const pageRows = rows.slice(0, limit);
@@ -207,12 +203,7 @@ export const savesReadQueries = {
       );
       const totalRow = cursor
         ? null
-        : (
-            await db
-              .select({ value: count() })
-              .from(saves)
-              .where(hideImportedThumbnailDuplicateSaves())
-          )[0];
+        : (await db.select({ value: count() }).from(saves))[0];
       const listRows = pageRows.map(({ rawSlim, ...rest }) => ({
         ...rest,
         rawJson: rawSlim,
@@ -258,10 +249,7 @@ export const savesReadQueries = {
           and(
             params.deletedOnly
               ? isNotNull(saves.deletedAt)
-              : and(
-                  isNull(saves.deletedAt),
-                  hideImportedThumbnailDuplicateSaves(),
-                ),
+              : isNull(saves.deletedAt),
             compileKeywordWhere(q, params.mode),
           ),
         )
@@ -338,11 +326,7 @@ export const savesReadQueries = {
       const trash: SQL = params.deletedOnly
         ? isNotNull(saves.deletedAt)
         : isNull(saves.deletedAt);
-      const where = and(
-        trash,
-        compiled,
-        params.deletedOnly ? undefined : hideImportedThumbnailDuplicateSaves(),
-      );
+      const where = compiled ? and(trash, compiled) : trash;
       const orderCol = librarySortColumn(params.sortKey);
       const order = params.sortDir === "asc" ? asc(orderCol) : desc(orderCol);
       const limit =
