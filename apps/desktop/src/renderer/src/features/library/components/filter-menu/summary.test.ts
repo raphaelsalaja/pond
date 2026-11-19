@@ -1,4 +1,8 @@
 import { expect, it } from "vitest";
+import {
+  addLocalDays,
+  localDayPredicate,
+} from "@/features/library/lib/local-day";
 import { choiceOptions, presetOptions } from "./options";
 import { filterSummary } from "./summary";
 
@@ -84,6 +88,20 @@ it("prefixes dates with the field they filter", () => {
   expect(
     summary({ field: "modifiedAt", operator: "gte", value: "2026-01-01" }),
   ).toBe("Modified Since Jan 1, 2026");
+});
+
+it("names a single-day range by its day", () => {
+  const summary = (rule: Parameters<typeof filterSummary>[0][number]) =>
+    filterSummary([rule], presetOptions(rule.field));
+  const day = new Date(2026, 10, 14);
+  const now = new Date(2026, 10, 19, 15);
+  expect(summary(localDayPredicate("savedAt", day, now))).toBe(
+    "Saved On Nov 14, 2026",
+  );
+  expect(
+    summary(localDayPredicate("savedAt", addLocalDays(new Date(), -1))),
+  ).toBe("Saved Yesterday");
+  expect(summary(localDayPredicate("savedAt", new Date()))).toBe("Saved Today");
 });
 
 it("quotes text matches and names colors", () => {

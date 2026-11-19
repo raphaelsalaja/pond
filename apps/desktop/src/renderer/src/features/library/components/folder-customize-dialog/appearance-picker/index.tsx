@@ -117,7 +117,7 @@ function IconChoices({
         </Input.Icon>
         <Input.Field
           aria-label="Search Icons"
-          placeholder="Search icons…"
+          placeholder="Search…"
           spellCheck={false}
           autoComplete="off"
           value={query}

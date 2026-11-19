@@ -5,7 +5,7 @@ import type {
   ManualSaveResult,
   SavesImportFilesResult,
 } from "@shared/saves-import-contracts";
-import { createFolder, setSaveFolders } from "./folders";
+import { createFolder, folderIdsForSave, setSaveFolders } from "./folders";
 import { runLibraryTransfer } from "./library-transfers";
 import { createManualSave } from "./manual-import";
 
@@ -19,12 +19,14 @@ interface FileImportRuntime {
     tags: string[];
     importedFrom: ImportOrigin;
   }): Promise<ManualSaveResult>;
+  folderIdsForSave(id: string): Promise<string[]>;
   assignFolders(id: string, folderIds: string[]): Promise<{ ok: boolean }>;
 }
 
 const runtime: FileImportRuntime = {
   createFolder,
   importFile: createManualSave,
+  folderIdsForSave,
   assignFolders: setSaveFolders,
 };
 
@@ -67,10 +69,10 @@ async function importPaths(
         const existingId = input.useExisting?.[absolute];
         if (existingId) {
           if (assigned.length > 0) {
-            const result = await dependencies.assignFolders(
-              existingId,
-              assigned,
-            );
+            const current = await dependencies.folderIdsForSave(existingId);
+            const result = await dependencies.assignFolders(existingId, [
+              ...new Set([...current, ...assigned]),
+            ]);
             if (!result.ok)
               throw new Error("Existing file folders could not be assigned.");
           }

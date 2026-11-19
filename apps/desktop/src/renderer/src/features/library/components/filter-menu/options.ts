@@ -21,6 +21,12 @@ import { FIELD_IDS, FIELD_META } from "@pond/schema/filters/meta";
 import type { FieldId, Predicate } from "@pond/schema/filters/types";
 import { createElement, type ReactNode } from "react";
 import { z } from "zod";
+import {
+  addLocalDays,
+  endOfLocalDay,
+  localDayPredicate,
+  startOfLocalDay,
+} from "@/features/library/lib/local-day";
 import { DATE_PRESETS } from "@/features/search/query";
 
 export interface FilterOption {
@@ -206,49 +212,13 @@ export function choiceOptions(
   }));
 }
 
-function startOfLocalDay(date: Date): string {
-  return new Date(
-    date.getFullYear(),
-    date.getMonth(),
-    date.getDate(),
-  ).toISOString();
-}
-
-function endOfLocalDay(date: Date): string {
-  return new Date(
-    date.getFullYear(),
-    date.getMonth(),
-    date.getDate() + 1,
-    0,
-    0,
-    0,
-    -1,
-  ).toISOString();
-}
-
 function calendarDateOptions(field: FieldId): FilterOption[] {
   const now = new Date();
-  const yesterday = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate() - 1,
-  );
   const options: FilterOption[] = [
-    {
-      label: "Today",
-      predicate: {
-        field,
-        operator: "gte",
-        value: startOfLocalDay(now),
-      },
-    },
+    { label: "Today", predicate: localDayPredicate(field, now, now) },
     {
       label: "Yesterday",
-      predicate: {
-        field,
-        operator: "between",
-        value: [startOfLocalDay(yesterday), endOfLocalDay(yesterday)],
-      },
+      predicate: localDayPredicate(field, addLocalDays(now, -1), now),
     },
     ...DATE_PRESETS.map(({ label, iso }) => ({
       label:

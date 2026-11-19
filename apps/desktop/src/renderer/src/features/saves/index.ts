@@ -67,6 +67,7 @@ export { type PreviewStepBinding, previewStepRuns } from "./lib/preview-step";
 export { normalise } from "./lib/reconcile";
 export {
   clearSaveSelection,
+  createSelectionReconciler,
   isLibraryBackgroundTarget,
   selectOnlySave,
 } from "./lib/select";

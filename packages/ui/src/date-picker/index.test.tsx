@@ -1,9 +1,9 @@
 /** @vitest-environment jsdom */
 
-import { act } from "react";
+import { act, useRef } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { DatePicker } from ".";
+import { DatePicker, DatePopover } from ".";
 
 /** The popover takes seconds to open on loaded macOS CI runners. */
 const OPEN_TIMEOUT = 15_000;
@@ -102,4 +102,42 @@ it("won't pick a day after the latest allowed", async () => {
     document.querySelector<HTMLButtonElement>('[aria-label="Next Month"]')
       ?.disabled,
   ).toBe(true);
+});
+
+it("opens beside its anchor and picks a day inside its range", async () => {
+  const onValueChange = vi.fn();
+  const onOpenChange = vi.fn();
+  function Anchored() {
+    const anchor = useRef<HTMLButtonElement>(null);
+    return (
+      <>
+        <button ref={anchor} type="button">
+          Recently Added
+        </button>
+        <DatePopover
+          open
+          anchor={anchor}
+          min="2026-10-10"
+          max="2026-10-17"
+          locale="en-GB"
+          onOpenChange={onOpenChange}
+          onValueChange={onValueChange}
+        />
+      </>
+    );
+  }
+  await act(async () => root.render(<Anchored />));
+  await vi.waitFor(
+    () => {
+      if (!document.querySelector('[aria-label="Choose Date"] table'))
+        throw new Error("Calendar did not open");
+    },
+    { timeout: OPEN_TIMEOUT },
+  );
+  expect(day("2026-10-09").getAttribute("aria-disabled")).toBe("true");
+  expect(day("2026-10-18").getAttribute("aria-disabled")).toBe("true");
+  expect(day("2026-10-14").getAttribute("aria-disabled")).toBeNull();
+  await act(async () => day("2026-10-14").click());
+  expect(onValueChange).toHaveBeenCalledWith("2026-10-14");
+  expect(onOpenChange).toHaveBeenCalledWith(false);
 });

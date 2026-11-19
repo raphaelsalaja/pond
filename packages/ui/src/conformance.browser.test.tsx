@@ -44,8 +44,11 @@ describe.each(COMPONENT_DOCS)("$name", (docs) => {
       await expectAccessible();
 
       if (VISUAL) {
+        const frame = screen.getByTestId("example");
+        /** The pointer stays wherever an earlier test file left it, which can paint a hover state into the shot. */
+        await frame.hover({ position: { x: 0, y: 0 } });
         await expect
-          .element(screen.getByTestId("example"))
+          .element(frame)
           .toMatchScreenshot(screenshotName(docs.slug, example.name, theme));
       }
     });
