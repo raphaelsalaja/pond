@@ -2,6 +2,7 @@ import type { ApiTokenScope } from "@pond/schema/api";
 import type {
   Folder,
   ImageDownloadSettings,
+  MediaType,
   Op,
   Prefs,
   SavedView,
@@ -345,6 +346,13 @@ export interface QueryInputs
   "reset.clearThumbnails": EmptyInput;
   "reset.factory": EmptyInput;
   "storage.snapshot": EmptyInput;
+  "storage.largestSaves": {
+    limit: number;
+    search?: string;
+    mediaType?: MediaType;
+    source?: string;
+  };
+  "storage.clearCache": { cache: "videoCache" | "thumbnails" };
   "storage.applyGuardPrefs": EmptyInput;
   "storage.guardState": EmptyInput;
   "api.restart": EmptyInput;

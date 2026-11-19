@@ -1,5 +1,6 @@
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { MEDIA_TYPES } from "@pond/schema/db";
 import { dialog, session, shell } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
@@ -12,6 +13,11 @@ import {
 import { purgeDirectory, verifyLibraryIntegrity } from "../../core/library-ops";
 import { getPrefs, invalidatePrefs, setPrefs } from "../../core/prefs";
 import { reconcileLibrary } from "../../core/scan";
+import { largestSaves } from "../../core/storage-insights";
+import {
+  invalidateStorageSnapshot,
+  measureDirectory,
+} from "../../core/storage-stats";
 import { VIDEO_CACHE_DIR } from "../../core/video-preview-proxy";
 import { closeDb } from "../../db";
 import { showDock } from "../../dock";
@@ -123,6 +129,29 @@ export const libraryMaintenanceQueries = {
     return { ok: true as const };
   },
 
+  "storage.largestSaves": query(
+    z.object({
+      limit: z.number().int().min(1).max(500),
+      search: z.string().max(500).optional(),
+      mediaType: z.enum(MEDIA_TYPES).optional(),
+      source: z.string().min(1).max(100).optional(),
+    }),
+    (params) => largestSaves(params),
+  ),
+  "storage.clearCache": query(
+    z.object({ cache: z.enum(["videoCache", "thumbnails"]) }),
+    async ({ cache }) => {
+      const dir =
+        cache === "videoCache"
+          ? join(libraryRoot(), VIDEO_CACHE_DIR)
+          : thumbnailCacheRoot();
+      const before = await measureDirectory(dir);
+      await purgeDirectory(dir);
+      const after = await measureDirectory(dir);
+      invalidateStorageSnapshot();
+      return { freedBytes: Math.max(0, before - after) };
+    },
+  ),
   async "storage.snapshot"(): Promise<QueryResult<"storage.snapshot">> {
     const { getStorageSnapshot } = await import("../../core/storage-stats");
     return await getStorageSnapshot();

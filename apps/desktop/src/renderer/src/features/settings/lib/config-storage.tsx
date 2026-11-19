@@ -1,4 +1,6 @@
 import { ArenaLinkConversion } from "@/features/settings/components/sections/storage/arena-links";
+import { StorageCaches } from "@/features/settings/components/sections/storage/caches";
+import { LargestSaves } from "@/features/settings/components/sections/storage/largest-saves";
 import { StorageLocationSettings } from "@/features/settings/components/sections/storage/location";
 import { StorageSummary } from "@/features/settings/components/sections/storage/storage-summary";
 import {
@@ -14,6 +16,12 @@ export const storageSection = defineSection("storage", {
   description: "Manage disk usage, location, and size limits.",
   groups: [
     { title: "Overview", render: () => <StorageSummary /> },
+    {
+      title: "Largest Saves",
+      fullWidth: true,
+      render: () => <LargestSaves />,
+    },
+    { title: "Caches", render: () => <StorageCaches /> },
     {
       title: "Location",
       fullWidth: true,
