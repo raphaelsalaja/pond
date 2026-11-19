@@ -11,10 +11,7 @@ import { setQuery } from "@/features/library/state/view-store";
 import { selectLibraryNav } from "./navigation";
 
 /** First and last local days that overlap Recently Added's rolling window. */
-export function recentlyAddedDays(now = new Date()): {
-  min: string;
-  max: string;
-} {
+export function recentlyAddedDays(now = new Date()) {
   return {
     min: formatLocalDay(new Date(recentlyAddedSince(now.getTime()))),
     max: formatLocalDay(now),
