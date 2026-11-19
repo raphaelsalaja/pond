@@ -32,6 +32,7 @@ import {
 } from "./sync-baseline";
 import { emit, listGapNote } from "./sync-status";
 import { harvestConfiguredTwitterLikes } from "./twitter-likes";
+import { repairTweetLinks } from "./twitter-link-repair";
 import { buildTwitterBookmarkSeed } from "./twitter-seed";
 
 export async function syncTwitter(
@@ -46,6 +47,8 @@ export async function syncTwitter(
   const db = await getDb();
   const baseline = await loadSyncBaseline(account, forceFull);
   const knownIds = baseline.knownIds;
+  const repairLinks = !account.sync.tweetLinksRepairedAt;
+  const readAll = baseline.full || repairLinks;
   await patchAccountSync(accountId, { knownCount: baseline.total });
   const failedRows = await db
     .select({ sourceId: saves.sourceId })
@@ -71,12 +74,15 @@ export async function syncTwitter(
     account.sync,
     baseline.full,
   );
-  /** Reading picked folders to the end reaches saves older than the recent window, which must count as known. */
-  if (checkCollections && plan.collections && !baseline.full) {
+  /** Reading a list to its end reaches saves older than the recent window, which must count as known. */
+  if (
+    !baseline.full &&
+    (repairLinks || (checkCollections && plan.collections))
+  ) {
     for (const id of await loadAllKnownIds(account)) knownIds.add(id);
   }
   const bookmarkArgs = {
-    knownIds: baseline.full ? [] : Array.from(knownIds),
+    knownIds: readAll ? [] : Array.from(knownIds),
   };
   const folderArgs = {
     knownIds: checkCollections ? [] : bookmarkArgs.knownIds,
@@ -149,7 +155,7 @@ export async function syncTwitter(
     latest ?? account,
     {
       aborted: signal.aborted,
-      knownIds: baseline.full ? [] : Array.from(knownIds),
+      knownIds: readAll ? [] : Array.from(knownIds),
       partition: partitionForAccount(accountId),
     },
     { harvestTwitterLikes },
@@ -199,6 +205,14 @@ export async function syncTwitter(
     })),
   );
   for (const id of relisted) knownIds.delete(id);
+
+  if (repairLinks) {
+    const repaired = await repairTweetLinks(entries);
+    log.info(`[pond sync:twitter] restored links in ${repaired} posts`);
+    await patchAccountSync(accountId, {
+      tweetLinksRepairedAt: new Date().toISOString(),
+    });
+  }
 
   const allFresh = entries.filter((e) => !knownIds.has(e.tweetId));
   const recovery = entries.filter((e) => failedSourceIds.has(e.tweetId));
