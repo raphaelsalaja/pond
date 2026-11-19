@@ -11,6 +11,7 @@ import { AppShell } from "@/features/library/components/workspace-shell";
 import type { PreviewStepBinding, ViewerNav } from "@/features/saves";
 import {
   activeVideoShown,
+  controlKeepsKey,
   isTextOnlySave,
   loadOpenWithApps,
   type OpenWithApp,
@@ -129,12 +130,7 @@ export function SaveDetailPage() {
       hotkey,
       callback: (event: KeyboardEvent) => {
         if (!saveOwnsKeyboard(event)) return;
-        if (
-          event.key !== "Escape" &&
-          event.target instanceof HTMLElement &&
-          event.target.closest("button, input, [role='slider']")
-        )
-          return;
+        if (event.key !== "Escape" && controlKeepsKey(event)) return;
         if (when && !when(event)) return;
         event.preventDefault();
         run();
