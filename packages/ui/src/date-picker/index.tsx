@@ -1,6 +1,12 @@
 import { IconCalendar, IconChevronLeft, IconChevronRight } from "@pond/icons";
 import { clsx as cn } from "clsx";
-import { type KeyboardEvent, useEffect, useRef, useState } from "react";
+import {
+  type KeyboardEvent,
+  type RefObject,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { Button, type ButtonProps } from "../button";
 import { cssVars } from "../css-vars";
 import { Popover } from "../popover";
@@ -16,6 +22,8 @@ import {
   startOfDay,
 } from "./calendar";
 import styles from "./styles.module.css";
+
+type PositionerProps = React.ComponentProps<typeof Popover.Positioner>;
 
 export interface DatePickerProps {
   /** Local `YYYY-MM-DD`; empty shows the placeholder. */
@@ -44,7 +52,6 @@ export function DatePicker({
   "aria-label": ariaLabel,
 }: DatePickerProps) {
   const [open, setOpen] = useState(false);
-  const popup = useRef<HTMLDivElement>(null);
   const selected = parseDay(value);
   const label = selected
     ? new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(selected)
@@ -65,33 +72,112 @@ export function DatePicker({
         <IconCalendar size={12} className={styles.icon} />
         <span data-placeholder={selected ? undefined : ""}>{label}</span>
       </Popover.Trigger>
-      <Popover.Portal>
-        <Popover.Positioner align="end">
-          <Popover.Popup
-            ref={popup}
-            aria-label="Choose Date"
-            className={styles.popup}
-            style={cssVars({ "--ds-popup-width": "max-content" })}
-            initialFocus={() =>
-              popup.current?.querySelector<HTMLElement>(
-                '[role="gridcell"][tabindex="0"]',
-              ) ?? true
-            }
-          >
-            <Calendar
-              selected={selected}
-              min={parseDay(min)}
-              max={parseDay(max)}
-              locale={locale}
-              onSelect={(day) => {
-                onValueChange(formatDay(day));
-                setOpen(false);
-              }}
-            />
-          </Popover.Popup>
-        </Popover.Positioner>
-      </Popover.Portal>
+      <CalendarPopup
+        value={value}
+        min={min}
+        max={max}
+        locale={locale}
+        align="end"
+        onSelect={(day) => {
+          onValueChange(day);
+          setOpen(false);
+        }}
+      />
     </Popover.Root>
+  );
+}
+
+export interface DatePopoverProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  /** The calendar opens beside this element and returns focus to it on close. */
+  anchor: RefObject<HTMLElement | null>;
+  /** Local `YYYY-MM-DD`; empty starts on today. */
+  value?: string;
+  onValueChange: (value: string) => void;
+  min?: string;
+  max?: string;
+  side?: PositionerProps["side"];
+  align?: PositionerProps["align"];
+  locale?: string;
+}
+
+export function DatePopover({
+  open,
+  onOpenChange,
+  anchor,
+  value = "",
+  onValueChange,
+  min,
+  max,
+  side = "bottom",
+  align = "start",
+  locale = navigator.language,
+}: DatePopoverProps) {
+  return (
+    <Popover.Root open={open} onOpenChange={onOpenChange}>
+      <CalendarPopup
+        value={value}
+        min={min}
+        max={max}
+        locale={locale}
+        anchor={anchor}
+        side={side}
+        align={align}
+        onSelect={(day) => {
+          onValueChange(day);
+          onOpenChange(false);
+        }}
+      />
+    </Popover.Root>
+  );
+}
+
+function CalendarPopup({
+  value,
+  min,
+  max,
+  locale,
+  anchor,
+  side,
+  align,
+  onSelect,
+}: {
+  value: string;
+  min?: string;
+  max?: string;
+  locale: string;
+  anchor?: RefObject<HTMLElement | null>;
+  side?: PositionerProps["side"];
+  align?: PositionerProps["align"];
+  onSelect: (day: string) => void;
+}) {
+  const popup = useRef<HTMLDivElement>(null);
+  return (
+    <Popover.Portal>
+      <Popover.Positioner anchor={anchor} side={side} align={align}>
+        <Popover.Popup
+          ref={popup}
+          aria-label="Choose Date"
+          className={styles.popup}
+          style={cssVars({ "--ds-popup-width": "max-content" })}
+          initialFocus={() =>
+            popup.current?.querySelector<HTMLElement>(
+              '[role="gridcell"][tabindex="0"]',
+            ) ?? true
+          }
+          finalFocus={anchor}
+        >
+          <Calendar
+            selected={parseDay(value)}
+            min={parseDay(min)}
+            max={parseDay(max)}
+            locale={locale}
+            onSelect={(day) => onSelect(formatDay(day))}
+          />
+        </Popover.Popup>
+      </Popover.Positioner>
+    </Popover.Portal>
   );
 }
 

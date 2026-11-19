@@ -34,6 +34,7 @@ import { resultNavigation } from "@/features/saves/navigation";
 import { useSavePaging } from "@/features/saves/pool";
 import { MatchesEmpty } from "@/shared/components/matches-empty";
 import { buildEmptyGalleryMenu } from "./empty-gallery-menu";
+import { importFolderFor } from "./import-folder";
 
 function LibraryEmptyState({
   mode,
@@ -81,6 +82,7 @@ export function LibraryView() {
     data.filteredIds,
     data.mode,
     data.sourceFilter,
+    importFolderFor({ mode: data.mode, nav, folders }),
   );
   useGridHotkeys(data.filteredIds);
 

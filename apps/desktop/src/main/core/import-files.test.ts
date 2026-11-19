@@ -38,6 +38,9 @@ async function fixture() {
       files.push(file);
       return { ok: true, id: file.id };
     },
+    async folderIdsForSave(id) {
+      return files.find((value) => value.id === id)?.folderIds ?? [];
+    },
     async assignFolders(id, folderIds) {
       const file = files.find((value) => value.id === id);
       if (!file) return { ok: false };
@@ -113,6 +116,26 @@ describe("hierarchy-preserving file import", () => {
     expect(result).toMatchObject({ ok: true, ids: ["existing-save"] });
     expect(files).toHaveLength(1);
     expect(files[0]?.folderIds).toEqual(["destination"]);
+  });
+
+  it("adds the destination to a reviewed duplicate without removing its folders", async () => {
+    const { tree, files, runtime } = await fixture();
+    const path = join(tree, "reference.png");
+    files.push({
+      id: "existing-save",
+      filePaths: [],
+      tags: [],
+      folderIds: ["elsewhere"],
+    });
+    await importFiles(
+      {
+        paths: [path],
+        folderIds: ["destination"],
+        useExisting: { [path]: "existing-save" },
+      },
+      runtime,
+    );
+    expect(files[0]?.folderIds).toEqual(["elsewhere", "destination"]);
   });
 
   it("continues readable files and reports failed paths without false success counts", async () => {
