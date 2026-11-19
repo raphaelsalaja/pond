@@ -8,6 +8,7 @@ import {
   ConversionPresetSchema,
   type ConversionQueryResults,
   ImageCompressionRequestSchema,
+  VideoCompressionRequestSchema,
 } from "../../../shared/conversion-contracts";
 import {
   type LibraryQueryPage,
@@ -215,6 +216,17 @@ export async function startPondMcp(): Promise<void> {
     },
     withAccess("export", async (request) =>
       textResult(conversionJobs.startCompression(request)),
+    ),
+  );
+  server.registerTool(
+    "compress_videos",
+    {
+      description:
+        "Re-encode the videos of selected Saves as HEVC in place to reclaim disk space. Verifies each output against its original before replacing it and leaves videos that would not shrink by at least 10%. Cannot be undone.",
+      inputSchema: VideoCompressionRequestSchema,
+    },
+    withAccess("export", async (request) =>
+      textResult(conversionJobs.startVideoCompression(request)),
     ),
   );
   server.registerTool(

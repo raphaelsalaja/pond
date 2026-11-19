@@ -12,6 +12,7 @@ import {
   IconImageUpscale,
   IconShieldCheck,
   IconTableDownload,
+  IconVideo,
 } from "@pond/icons";
 import type { MenuItemSpec } from "@pond/ui";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
@@ -19,7 +20,7 @@ import {
   exportSelectionCsv,
   exportSelectionFiles,
 } from "@/features/saves/lib/selection";
-import { formatPlural } from "@/shared/lib/format";
+import { formatBytes, formatPlural } from "@/shared/lib/format";
 import { shortcutGlyphs } from "@/shared/lib/shortcuts";
 import { notify } from "@/shared/lib/toast";
 import { glyph } from "./shared";
@@ -31,6 +32,54 @@ function compressibleImageCount(context: SaveMenuContext): number {
       /\.(gif|jpe?g|jfif|png|svg|webp)$/i.test(file.path),
     ),
   ).length;
+}
+
+function compressibleVideoCount(context: SaveMenuContext): number {
+  return context.saves.filter((save) =>
+    save.files.some((file) => /\.(mp4|m4v|mov)$/i.test(file.path)),
+  ).length;
+}
+
+function compressVideos(ids: string[]): void {
+  void window.pond
+    .query("conversion.compressVideos", { ids, quality: "balanced" })
+    .then((job) => {
+      notify({
+        id: `video-compression-${job.id}`,
+        title: "Compressing Videos",
+      });
+      void pollVideoCompression(job.id);
+    })
+    .catch(() => {
+      notify({
+        id: "video-compression",
+        title: "Couldn't compress these videos.",
+      });
+    });
+}
+
+async function pollVideoCompression(id: string): Promise<void> {
+  const job = await window.pond.query("conversion.status", { id });
+  if (!job) return;
+  if (job.status === "running") {
+    notify({
+      id: `video-compression-${id}`,
+      title: `Compressing Videos ${job.completed} of ${job.total}`,
+    });
+    setTimeout(() => void pollVideoCompression(id), 1000);
+    return;
+  }
+  const count = formatPlural(job.changed, { one: "Save", other: "Saves" });
+  const saved = formatBytes(Math.max(0, job.bytesBefore - job.bytesAfter));
+  notify({
+    id: `video-compression-${id}`,
+    title:
+      job.status === "complete"
+        ? `Compressed ${count}, saved ${saved}${job.skipped > 0 ? `. Skipped ${job.skipped}.` : ""}${job.failed > 0 ? ` Couldn't compress ${job.failed}.` : ""}`
+        : job.status === "cancelled"
+          ? "Video Compression Canceled"
+          : job.error || "Couldn't compress these videos.",
+  });
 }
 
 function startWebpConvert(
@@ -192,6 +241,12 @@ export function buildExportItems(context: SaveMenuContext): MenuItemSpec[] {
           onClick: () => compressImages(ids, fileIndex ?? 0, "quality"),
         },
       ],
+    },
+    {
+      label: "Compress Videos",
+      icon: glyph(IconVideo),
+      hidden: compressibleVideoCount(context) === 0,
+      onClick: () => compressVideos(ids),
     },
     {
       type: "submenu",
