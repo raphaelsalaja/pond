@@ -6,7 +6,6 @@ import { reviewImportDuplicates } from "../../core/duplicate-import";
 import { importEaglePackage } from "../../core/eagle-package";
 import { importFiles } from "../../core/import-files";
 import { importPondPackage } from "../../core/pond-package";
-import { restoreSave } from "../../core/restore-save";
 import { rememberSaveDrag } from "../../core/save-drag-session";
 import { runTransferJob } from "../../core/transfer-jobs";
 import { copySaveSelectionToLibrary } from "../../core/transfer-operations";
@@ -173,14 +172,19 @@ export const savesImportTransferQueries = {
             : [];
         }),
       );
-      for (const candidate of candidates)
-        if (candidate.inTrash && useExisting[candidate.path])
-          await restoreSave(candidate.existingId, "user:import-restore");
+      const restore = new Set(
+        candidates
+          .filter(
+            (candidate) => candidate.inTrash && useExisting[candidate.path],
+          )
+          .map((candidate) => candidate.path),
+      );
       return importFiles({
         paths,
         tags: params.tags,
         folderIds: params.folderIds,
         useExisting,
+        restore,
         origin: params.origin,
       });
     },
