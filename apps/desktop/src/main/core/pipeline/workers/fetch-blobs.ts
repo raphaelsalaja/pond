@@ -26,6 +26,7 @@ import {
 } from "../worker-contract";
 import { runQueueWorkerJob } from "../worker-host";
 import { readSave, type WriteFileArgs } from "./apply";
+import { fileSizeAfterMediaWrite } from "./media-file-size";
 import { fetchSourceIcon } from "./source-icon";
 
 interface FetchBlobsContext extends TransferOptions {
@@ -214,7 +215,13 @@ async function fetchMissingMedia(
   ctx.reportActivity?.({ phase: "saving" });
   await persistSave(
     saveId,
-    { fileSize: newFiles[0]?.bytes.byteLength ?? null },
+    {
+      fileSize: fileSizeAfterMediaWrite(
+        existingFiles,
+        newFiles,
+        replaceStale ? replaceKinds : [],
+      ),
+    },
     {
       actorReason: "pipeline:fetch-blobs",
       newFiles,
