@@ -242,7 +242,12 @@ async function importManualSave(
           requestedFileCount,
         ))
       )
-        return { ok: true, id: existing.id, skipped: true };
+        return {
+          ok: true,
+          id: existing.id,
+          skipped: true,
+          trashed: existing.deletedAt != null,
+        };
       id = existing.id;
       recovering = true;
     }
