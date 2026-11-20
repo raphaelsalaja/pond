@@ -31,6 +31,8 @@ export interface DuplicateImportCandidate {
   filename: string;
   existingId: string;
   existingTitle: string | null;
+  /** The match is in Trash, so using it restores it. */
+  inTrash: boolean;
 }
 
 export type DuplicateImportChoice = "use-existing" | "keep-both";
@@ -61,6 +63,7 @@ export interface SavesImportQueryInputs {
     folderIds?: string[];
     duplicatePolicy?: DuplicateImportChoice;
     duplicateDecisions?: Record<string, DuplicateImportChoice>;
+    origin?: "files" | "clipboard";
   };
   "saves.reviewImportDuplicates": { paths: string[] };
   "saves.createManual": {
@@ -92,6 +95,7 @@ export interface SavesImportQueryInputs {
   };
   "saves.pickEagleLibrary": EmptyInput;
   "saves.importClipboard": { folderId?: string | null };
+  "saves.stageClipboard": EmptyInput;
   "saves.importBookmarks": EmptyInput;
   "saves.importMymind": EmptyInput;
   "saves.importDataExport": EmptyInput;
@@ -162,6 +166,9 @@ export interface SavesImportQueryResults {
   };
   "saves.pickEagleLibrary": ReasonResult<"cancelled", { path: string }>;
   "saves.importClipboard": SavesImportFilesResult;
+  "saves.stageClipboard":
+    | { ok: true; paths: string[] }
+    | { ok: false; error: string };
   "saves.importBookmarks": CancellableResult<SavesImportCounts>;
   "saves.importMymind": CancellableResult<SavesImportCounts>;
   "saves.importDataExport": CancellableResult<DataExportImportCounts>;

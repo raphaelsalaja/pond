@@ -361,6 +361,34 @@ export async function memberships(): Promise<
     .from(saveFoldersTable);
 }
 
+/** Takes a Save out of Trash and files it into folders as one Undo step. */
+export async function restoreSaveIntoFolders(
+  saveId: string,
+  folderIds: string[] | null,
+  actorReason: string,
+): Promise<{ ok: boolean }> {
+  return withMutationScope(async () => {
+    const restore: Transaction[] = [
+      {
+        kind: "untrash",
+        model: "save",
+        id: saveId,
+        meta: { actor: "user", actorReason },
+      },
+    ];
+    await executeBatch(restore);
+    const assign = folderIds
+      ? await folderAssignmentTransactions([{ saveId, folderIds }])
+      : [];
+    if (assign.length) await executeBatch(assign);
+    recordBatchForUndo([
+      ...restore,
+      ...assign.filter((tx) => tx.model !== "tag"),
+    ]);
+    return { ok: true };
+  });
+}
+
 export async function assignSaveFolders(
   assignments: Array<{ saveId: string; folderIds: string[] }>,
   undo = true,

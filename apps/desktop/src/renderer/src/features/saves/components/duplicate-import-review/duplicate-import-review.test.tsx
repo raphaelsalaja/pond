@@ -22,6 +22,7 @@ const query = vi.fn(async (name: string, _args?: WireJson) => {
         filename: path.split("/").pop(),
         existingId: "save-sunset",
         existingTitle: "Sunset",
+        inTrash: path === second,
       })),
     };
   if (name === "saves.getMany")
@@ -113,6 +114,17 @@ it("compares the existing save with the new file", async () => {
   expect(text).toContain("Existing");
   expect(text).toContain("a.png");
   expect(text).toContain("Downloads");
+});
+
+it("offers to restore a match that is in Trash", async () => {
+  await startImport();
+  expect(dialog().textContent).toContain("already in your Library");
+  await act(async () => button("Next").click());
+  await vi.waitFor(() => expect(dialog().textContent).toContain("2 of 2"));
+  const text = dialog().textContent;
+  expect(text).toContain("This file is in Trash.");
+  expect(text).toContain("In Trash");
+  expect(button("Restore")).toBeTruthy();
 });
 
 it("records each choice and applies one to the rest", async () => {

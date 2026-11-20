@@ -150,11 +150,13 @@ function DuplicateImportReview({
           </Dialog.Header>
           <Dialog.Content className={styles.content}>
             <Dialog.Description>
-              This file is already in your Library.
+              {candidate.inTrash
+                ? "This file is in Trash."
+                : "This file is already in your Library."}
             </Dialog.Description>
             <div className={styles.compare}>
               <Side
-                label="Existing"
+                label={candidate.inTrash ? "In Trash" : "Existing"}
                 tone="existing"
                 save={save}
                 name={existingName}
@@ -196,7 +198,7 @@ function DuplicateImportReview({
                   }}
                 >
                   <Toggle type="button" size="sm" value="use-existing">
-                    Use Existing
+                    {candidate.inTrash ? "Restore" : "Use Existing"}
                   </Toggle>
                   <Toggle type="button" size="sm" value="keep-both">
                     Keep Both

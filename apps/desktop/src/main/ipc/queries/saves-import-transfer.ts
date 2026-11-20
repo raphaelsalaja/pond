@@ -153,6 +153,7 @@ export const savesImportTransferQueries = {
         .record(z.string(), z.enum(["use-existing", "keep-both"]))
         .optional()
         .default({}),
+      origin: z.enum(["files", "clipboard"]).optional(),
     }),
     async (params) => {
       const paths = params.paths.filter(Boolean);
@@ -171,11 +172,20 @@ export const savesImportTransferQueries = {
             : [];
         }),
       );
+      const restore = new Set(
+        candidates
+          .filter(
+            (candidate) => candidate.inTrash && useExisting[candidate.path],
+          )
+          .map((candidate) => candidate.path),
+      );
       return importFiles({
         paths,
         tags: params.tags,
         folderIds: params.folderIds,
         useExisting,
+        restore,
+        origin: params.origin,
       });
     },
   ),
