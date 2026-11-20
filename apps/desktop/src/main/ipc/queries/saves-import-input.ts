@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import { MEDIA_TYPES } from "@pond/schema/db";
 import { z } from "zod";
 import type { ManualSaveInput } from "../../core/manual-import";
+import { keepNote } from "../../core/manual-import";
 import {
   NullableStringParam,
   OptionalNumberParam,
@@ -65,7 +66,7 @@ export function normalizeQuickAddInput(
 ): QuickAddRequest {
   return {
     url: params.url.trim(),
-    note: params.note?.trim() || null,
+    note: keepNote(params.note),
     tags: params.tags,
     folderId: params.folderId?.trim() || null,
   };
