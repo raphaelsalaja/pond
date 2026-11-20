@@ -6,6 +6,7 @@ import { reviewImportDuplicates } from "../../core/duplicate-import";
 import { importEaglePackage } from "../../core/eagle-package";
 import { importFiles } from "../../core/import-files";
 import { importPondPackage } from "../../core/pond-package";
+import { restoreSave } from "../../core/restore-save";
 import { rememberSaveDrag } from "../../core/save-drag-session";
 import { runTransferJob } from "../../core/transfer-jobs";
 import { copySaveSelectionToLibrary } from "../../core/transfer-operations";
@@ -153,6 +154,7 @@ export const savesImportTransferQueries = {
         .record(z.string(), z.enum(["use-existing", "keep-both"]))
         .optional()
         .default({}),
+      origin: z.enum(["files", "clipboard"]).optional(),
     }),
     async (params) => {
       const paths = params.paths.filter(Boolean);
@@ -171,11 +173,15 @@ export const savesImportTransferQueries = {
             : [];
         }),
       );
+      for (const candidate of candidates)
+        if (candidate.inTrash && useExisting[candidate.path])
+          await restoreSave(candidate.existingId, "user:import-restore");
       return importFiles({
         paths,
         tags: params.tags,
         folderIds: params.folderIds,
         useExisting,
+        origin: params.origin,
       });
     },
   ),

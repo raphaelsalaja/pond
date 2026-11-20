@@ -47,6 +47,7 @@ export async function importFilesWithDuplicateReview(input: {
   paths: string[];
   tags?: string[];
   folderIds?: string[];
+  origin?: "files" | "clipboard";
 }) {
   const review = await window.pond.query("saves.reviewImportDuplicates", {
     paths: input.paths,

@@ -47,6 +47,25 @@ export async function readClipboardImage() {
   return nativeImage.createEmpty();
 }
 
+/** The pasted files, or the pasted image written to a temporary PNG, so they can go through duplicate review before import. */
+async function stageClipboard(): Promise<
+  { ok: true; paths: string[] } | { ok: false; error: string }
+> {
+  const filePaths = await clipboardFilePaths();
+  if (filePaths.length > 0) return { ok: true, paths: filePaths };
+  const image = await readClipboardImage();
+  if (image.isEmpty()) return { ok: false, error: "empty_clipboard" };
+  try {
+    const directory = await mkdtemp(join(tmpdir(), "pond-clip-"));
+    const path = join(directory, "clipboard.png");
+    await writeFile(path, image.toPNG());
+    return { ok: true, paths: [path] };
+  } catch (error) {
+    log.warn("[pond ipc] stageClipboard failed", error);
+    return { ok: false, error: "clipboard_write_failed" };
+  }
+}
+
 export const savesImportClipboardQueries = {
   "saves.importClipboard": query(
     z.object({ folderId: NullableStringParam }),
@@ -83,4 +102,5 @@ export const savesImportClipboardQueries = {
       }
     },
   ),
+  "saves.stageClipboard": query(z.object({}), () => stageClipboard()),
 } satisfies QueryHandlerMap;

@@ -119,10 +119,15 @@ async function importPlan(
       return result;
     }
     case "clipboard": {
+      const staged = await window.pond.query("saves.stageClipboard", {});
+      if (!staged.ok) return { ids: [], failed: 1 };
       const reply = ImportReplySchema.parse(
-        await window.pond.query("saves.importClipboard", into),
+        await importFilesWithDuplicateReview({
+          ...filesInput(staged.paths, folderId),
+          origin: "clipboard",
+        }),
       );
-      return replyResult(reply, 1);
+      return replyResult(reply, staged.paths.length);
     }
   }
 }
