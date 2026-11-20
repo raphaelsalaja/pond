@@ -15,6 +15,8 @@ let overlay: BrowserWindow | null = null;
 let snapshot: QuickCaptureSnapshot | null = null;
 let picking = false;
 let draggingIn = false;
+/** macOS can focus the window mid-drag, so a drag that arrived after a blur is remembered rather than read from focus. */
+let dragAfterBlur = false;
 let blurClose: ReturnType<typeof setTimeout> | null = null;
 
 /** Starting a drag in Finder blurs the window first, so a blur waits this long for the drag to arrive before closing. */
@@ -25,11 +27,16 @@ function cancelBlurClose(): void {
   blurClose = null;
 }
 
-function scheduleBlurClose(win: BrowserWindow): void {
+function scheduleBlurClose(win: BrowserWindow, ignoreFocus = false): void {
   cancelBlurClose();
   blurClose = setTimeout(() => {
     blurClose = null;
-    if (overlay === win && !picking && !draggingIn && !win.isFocused())
+    if (
+      overlay === win &&
+      !picking &&
+      !draggingIn &&
+      (ignoreFocus || !win.isFocused())
+    )
       closeQuickCapture();
   }, BLUR_GRACE_MS);
 }
@@ -61,17 +68,25 @@ export function setQuickCapturePicking(next: boolean): void {
 export function setQuickCaptureDrag(phase: "enter" | "leave" | "drop"): void {
   const win = overlay;
   if (!win || win.isDestroyed()) return;
-  draggingIn = phase === "enter";
-  if (phase === "enter") cancelBlurClose();
-  else if (phase === "drop") {
+  if (phase === "enter") {
+    if (!draggingIn) dragAfterBlur = blurClose !== null || !win.isFocused();
+    draggingIn = true;
+    cancelBlurClose();
+    return;
+  }
+  draggingIn = false;
+  const abandoned = dragAfterBlur;
+  dragAfterBlur = false;
+  if (phase === "drop") {
     cancelBlurClose();
     win.focus();
-  } else if (!win.isFocused()) scheduleBlurClose(win);
+  } else if (abandoned || !win.isFocused()) scheduleBlurClose(win, abandoned);
 }
 
 export function closeQuickCapture(): void {
   cancelBlurClose();
   draggingIn = false;
+  dragAfterBlur = false;
   const win = overlay;
   overlay = null;
   snapshot = null;
