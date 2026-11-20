@@ -68,6 +68,10 @@ import {
   toggleFileRing,
 } from "./ipc/file-ring-overlay";
 import { waitForLibraryLocationChanges } from "./ipc/queries/library-locations";
+import {
+  registerQuickCaptureIpc,
+  toggleQuickCapture,
+} from "./ipc/quick-capture-overlay";
 import { ensureIngestToken } from "./keychain";
 import { broadcast } from "./lib/broadcast";
 import { rotateBundleBackups } from "./lib/library-config";
@@ -314,6 +318,7 @@ app.whenReady().then(async () => {
   subscribePrefs((prefs) => broadcast(IPC.prefsChanged, prefs));
   registerCombineImagesWindowIpc();
   registerFileRingOverlayIpc();
+  registerQuickCaptureIpc();
   const menuPrefs = await getPrefs();
   installAppMenu({
     shortcuts: menuPrefs.shortcuts,
@@ -587,6 +592,7 @@ async function registerSummonHotkey() {
         await summonMainWindow();
       }),
       "app.file-ring": run(toggleFileRing),
+      "app.quick-capture": run(toggleQuickCapture),
     },
     (await getPrefs()).shortcuts.overrides,
   );
