@@ -193,6 +193,11 @@ export const refreshSessionCookies = createSessionRefresh({
       await resumeSessionDownloads(account, cookies);
     }
   },
+  patchHandle: async (account, handle) => {
+    await patchAccount(account.id, { handle }).catch((err) =>
+      log.warn("[pond session-refresh] handle patch failed", err),
+    );
+  },
   signedBackIn: (account) => {
     log.info(
       `[pond session-import] ${account.source} → @${account.handle ?? "?"} (${account.id}): signed back in from a rotated browser session`,
