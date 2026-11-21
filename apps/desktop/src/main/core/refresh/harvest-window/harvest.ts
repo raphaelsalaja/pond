@@ -48,7 +48,8 @@ export interface HarvestResult {
 export async function harvestUrl(args: HarvestArgs): Promise<HarvestResult> {
   const partition = await partitionForIngest(args.source, args.accountId);
   const harv = harvesterFor(args.source);
-  const sourceId = args.sourceId ?? harv.sourceIdFromUrl(args.url) ?? "";
+  const navUrl = harv.urlForHarvest?.(args.url) ?? args.url;
+  const sourceId = args.sourceId ?? harv.sourceIdFromUrl(navUrl) ?? "";
 
   if (args.source === "reddit" && sourceId) {
     const { fetchRedditPostCapture } = await import("../harvest/reddit/api");
@@ -65,10 +66,12 @@ export async function harvestUrl(args: HarvestArgs): Promise<HarvestResult> {
   args.reportActivity?.({ phase: "harvesting" });
 
   try {
-    const navUrl = harv.urlForHarvest?.(args.url) ?? args.url;
     const navOk = await navigateWithTimeout(lease.win, navUrl, NAV_TIMEOUT_MS);
     if (!navOk) {
-      log.warn("[pond refresh:window] navigate failed", navUrl);
+      log.warn("[pond refresh:window] navigate failed", {
+        originalUrl: args.url,
+        navUrl,
+      });
       return { ok: false, reason: "navigate_failed", sourceId };
     }
     if (!(await waitPastInterstitial(lease.win, 20_000))) {
@@ -89,7 +92,10 @@ export async function harvestUrl(args: HarvestArgs): Promise<HarvestResult> {
       sleep(HARVEST_TIMEOUT_MS).then(() => "__pond_harvest_timeout__"),
     ]);
     if (raw === "__pond_harvest_timeout__") {
-      log.warn("[pond refresh:window] harvest timed out", args.url);
+      log.warn("[pond refresh:window] harvest timed out", {
+        originalUrl: args.url,
+        navUrl,
+      });
       return { ok: false, reason: "timeout", sourceId };
     }
 
