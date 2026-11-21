@@ -65,13 +65,10 @@ export async function harvestUrl(args: HarvestArgs): Promise<HarvestResult> {
   args.reportActivity?.({ phase: "harvesting" });
 
   try {
-    const navOk = await navigateWithTimeout(
-      lease.win,
-      args.url,
-      NAV_TIMEOUT_MS,
-    );
+    const navUrl = harv.urlForHarvest?.(args.url) ?? args.url;
+    const navOk = await navigateWithTimeout(lease.win, navUrl, NAV_TIMEOUT_MS);
     if (!navOk) {
-      log.warn("[pond refresh:window] navigate failed", args.url);
+      log.warn("[pond refresh:window] navigate failed", navUrl);
       return { ok: false, reason: "navigate_failed", sourceId };
     }
     if (!(await waitPastInterstitial(lease.win, 20_000))) {

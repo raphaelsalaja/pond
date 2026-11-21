@@ -1,9 +1,16 @@
 /// <reference lib="dom" />
 
 import type { JsonValue } from "@pond/schema/json";
+import { sourceIdFromUrl } from "@pond/schema/sources";
 import { captureFromPageDom, type HarvestAdaptCtx } from "../from-page";
 import { buildItemExpression } from "../lib/expression";
 import { inPageYoutubeNormalize, type YoutubeWatchPage } from "./normalize";
+
+/** The scraper only reads the watch UI; /shorts/ and other saved forms render a different page, so navigate to the canonical watch URL. */
+export function urlForHarvest(url: string): string {
+  const videoId = sourceIdFromUrl("youtube", url);
+  return videoId ? `https://www.youtube.com/watch?v=${videoId}` : url;
+}
 
 export function buildExpression(videoId: string): string {
   return buildItemExpression(

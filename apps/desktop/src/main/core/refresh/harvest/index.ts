@@ -27,6 +27,8 @@ interface Harvester {
   buildExpression: (sourceId: string) => string;
   adapt: (raw: JsonValue, ctx: HarvestAdaptCtx) => Capture | null;
   sourceIdFromUrl: (url: string) => string | null;
+  /** Rewrites a Save's URL into the page the scraper can read, when the saved form renders a different UI. */
+  urlForHarvest?: (url: string) => string;
 }
 
 const REGISTRY = {
@@ -44,6 +46,7 @@ const REGISTRY = {
     buildExpression: youtube.buildExpression,
     adapt: youtube.adapt,
     sourceIdFromUrl: (url) => sourceIdFromUrl("youtube", url),
+    urlForHarvest: youtube.urlForHarvest,
   },
   pinterest: {
     buildExpression: pinterest.buildExpression,
