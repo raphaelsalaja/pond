@@ -1,7 +1,7 @@
 import { MEDIA_TYPES, type MediaType, saves } from "@pond/schema/db";
-import { and, desc, eq, gt, isNull, type SQL, sql } from "drizzle-orm";
+import { and, desc, eq, gt, isNull, or, type SQL, sql } from "drizzle-orm";
 import type { LargestSave } from "../../shared/storage-insights";
-import { getDb } from "../db";
+import type { Db } from "../db";
 
 export interface LargestSavesInput {
   limit: number;
@@ -15,18 +15,23 @@ function isMediaType(value: string | null): value is MediaType {
 }
 
 /** Ranks Saves by their recorded file size, which can differ from bytes on disk; Trash is left out. */
-export async function largestSaves(input: LargestSavesInput): Promise<{
+export function largestSaves(
+  db: Db,
+  input: LargestSavesInput,
+): {
   saves: LargestSave[];
   sources: string[];
   mediaTypes: MediaType[];
-}> {
-  const db = await getDb();
+} {
   const sized = [isNull(saves.deletedAt), gt(saves.fileSize, 0)];
-  const filters: SQL[] = [...sized];
+  const filters: (SQL | undefined)[] = [...sized];
   const search = input.search?.trim().toLowerCase();
   if (search)
     filters.push(
-      sql`instr(lower(coalesce(${saves.title}, ${saves.url})), ${search}) > 0`,
+      or(
+        sql`instr(lower(coalesce(${saves.title}, '')), ${search}) > 0`,
+        sql`instr(lower(${saves.url}), ${search}) > 0`,
+      ),
     );
   if (input.mediaType) filters.push(eq(saves.mediaType, input.mediaType));
   if (input.source) filters.push(sql`${saves.source} = ${input.source}`);

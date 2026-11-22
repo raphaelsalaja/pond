@@ -19,7 +19,7 @@ import {
   measureDirectory,
 } from "../../core/storage-stats";
 import { VIDEO_CACHE_DIR } from "../../core/video-preview-proxy";
-import { closeDb } from "../../db";
+import { closeDb, getDb } from "../../db";
 import { showDock } from "../../dock";
 import { libraryRoot, thumbnailCacheRoot } from "../../paths";
 import { runtimeControls } from "../../runtime";
@@ -136,7 +136,7 @@ export const libraryMaintenanceQueries = {
       mediaType: z.enum(MEDIA_TYPES).optional(),
       source: z.string().min(1).max(100).optional(),
     }),
-    (params) => largestSaves(params),
+    async (params) => largestSaves(await getDb(), params),
   ),
   "storage.clearCache": query(
     z.object({ cache: z.enum(["videoCache", "thumbnails"]) }),
