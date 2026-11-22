@@ -82,10 +82,14 @@ function dialog() {
   return element;
 }
 
-function button(name: string) {
-  const match = [...dialog().querySelectorAll("button")].find(
+function buttons(name: string) {
+  return [...dialog().querySelectorAll("button")].filter(
     (element) => element.textContent?.trim() === name,
   );
+}
+
+function button(name: string) {
+  const match = buttons(name).at(-1);
   if (!match) throw new Error(`Missing button ${name}`);
   return match;
 }
@@ -124,7 +128,23 @@ it("offers to restore a match that is in Trash", async () => {
   const text = dialog().textContent;
   expect(text).toContain("This file is in Trash.");
   expect(text).toContain("In Trash");
-  expect(button("Restore")).toBeTruthy();
+  expect(buttons("Restore")).toHaveLength(2);
+});
+
+it("names the confirm button after the chosen action", async () => {
+  const { pending } = await startImport();
+  expect(buttons("Import")).toHaveLength(0);
+  await act(async () => button("Next").click());
+  await vi.waitFor(() => expect(dialog().textContent).toContain("2 of 2"));
+  await act(async () => button("Keep Both").click());
+  expect(buttons("Restore")).toHaveLength(1);
+  expect(buttons("Import")).toHaveLength(1);
+  await act(async () => buttons("Restore")[0]?.click());
+  await act(async () => button("Restore").click());
+  await pending;
+  expect(importArgs()).toMatchObject({
+    duplicateDecisions: { [first]: "use-existing", [second]: "restore" },
+  });
 });
 
 it("records each choice and applies one to the rest", async () => {

@@ -118,10 +118,14 @@ function DuplicateImportReview({
   );
   const source = parentFolder(candidate.path);
   const meta = describe(save);
+  const applied = applyToAll ? candidates.slice(index) : [candidate];
+  const restoring =
+    choice === "use-existing" && applied.every((item) => item.inTrash);
+  const confirmLabel = !last ? "Next" : restoring ? "Restore" : "Import";
 
   const submit = () => {
     const next = { ...decisions };
-    for (const item of applyToAll ? candidates.slice(index) : [candidate])
+    for (const item of applied)
       next[item.path] =
         choice === "use-existing" && item.inTrash ? "restore" : choice;
     if (last) {
@@ -225,7 +229,7 @@ function DuplicateImportReview({
           >
             <Dialog.Cancel />
             <Button ref={confirmRef} onClick={submit}>
-              {last ? "Import" : "Next"}
+              {confirmLabel}
             </Button>
           </Dialog.Footer>
         </Dialog.Popup>
