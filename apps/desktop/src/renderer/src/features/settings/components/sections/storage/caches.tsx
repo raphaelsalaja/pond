@@ -18,13 +18,13 @@ const CACHES: ReadonlyArray<{
     cache: "videoCache",
     bucket: "videoCache",
     title: "Video Cache",
-    description: "Preview copies of videos. Rebuilt when you play them again.",
+    description: "Preview copies of videos, rebuilt when you play them again.",
   },
   {
     cache: "thumbnails",
     bucket: "thumbs",
     title: "Thumbnails",
-    description: "Grid previews. Rebuilt as you browse the Library.",
+    description: "Grid previews, rebuilt as you browse the Library.",
   },
 ];
 
