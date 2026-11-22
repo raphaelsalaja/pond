@@ -1,4 +1,5 @@
-import { Button, Input } from "@pond/ui";
+import { IconXmark } from "@pond/icons";
+import { Button, Input, Select } from "@pond/ui";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { errorCopy } from "@/shared/lib/error-copy";
 import { chordGlyphs, SHORTCUT_PLATFORM } from "@/shared/lib/shortcuts";
@@ -25,6 +26,9 @@ const CAPTURE_KEYS = chordGlyphs("Mod+Enter").join(
 
 const CAPTURE_FAILED = "Pond couldn't add this to your Library. Try again.";
 
+/** Folder ids are never empty, so the empty value stands for no folder. */
+const INBOX = "";
+
 const EMPTY: QuickCaptureFields = {
   text: "",
   title: "",
@@ -48,10 +52,25 @@ export function QuickCaptureOverlay() {
   const [error, setError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const textRef = useRef<HTMLTextAreaElement>(null);
-  const options = useMemo(
-    () => folderOptions(snapshot?.folders ?? []),
-    [snapshot],
-  );
+  const folders = useMemo(() => {
+    const options = folderOptions(snapshot?.folders ?? []);
+    return {
+      items: [
+        { value: INBOX, label: "Inbox" },
+        ...options.map(({ folder }) => ({
+          value: folder.id,
+          label: folder.name,
+        })),
+      ],
+      rows: [
+        { value: INBOX, label: "Inbox" },
+        ...options.map(({ folder, depth }) => ({
+          value: folder.id,
+          label: `${"\u00a0\u00a0".repeat(depth)}${folder.name}`,
+        })),
+      ],
+    };
+  }, [snapshot]);
   const { text, title, paths, folderId } = fields;
   const locked = busy || Boolean(done);
 
@@ -112,6 +131,8 @@ export function QuickCaptureOverlay() {
     <div
       className={styles.root}
       onKeyDown={(event) => {
+        /** Escape in the portaled folder list closes the list, not the window. */
+        if (!event.currentTarget.contains(event.target as Node)) return;
         if (event.key === "Escape") {
           event.preventDefault();
           dismiss();
@@ -143,7 +164,7 @@ export function QuickCaptureOverlay() {
     >
       <form
         className={styles.panel}
-        data-dragging={dragging}
+        data-dragging={dragging || undefined}
         aria-label="Quick Capture"
         onSubmit={(event) => {
           event.preventDefault();
@@ -165,17 +186,18 @@ export function QuickCaptureOverlay() {
             {paths.map((path) => (
               <li key={path} className={styles.file} title={path}>
                 <span className={styles.name}>{fileName(path)}</span>
-                <button
-                  type="button"
-                  className={styles.remove}
+                <Button
+                  icon
+                  size="xs"
+                  variant="ghost"
                   aria-label={`Remove ${fileName(path)}`}
                   disabled={locked}
                   onClick={() =>
                     edit({ paths: paths.filter((entry) => entry !== path) })
                   }
                 >
-                  ×
-                </button>
+                  <IconXmark size={12} />
+                </Button>
               </li>
             ))}
           </ul>
@@ -190,22 +212,30 @@ export function QuickCaptureOverlay() {
           />
         </Input.Root>
         <div className={styles.row}>
-          <select
-            className={styles.select}
-            aria-label="Folder"
-            value={folderId ?? ""}
-            onChange={(event) =>
-              edit({ folderId: event.currentTarget.value || null })
-            }
+          <Select.Root
+            items={folders.items}
+            value={folderId ?? INBOX}
+            onValueChange={(next) => {
+              if (next !== null)
+                edit({ folderId: next === INBOX ? null : next });
+            }}
             disabled={locked}
           >
-            <option value="">Inbox</option>
-            {options.map(({ folder, depth }) => (
-              <option key={folder.id} value={folder.id}>
-                {`${"\u00a0\u00a0".repeat(depth)}${folder.name}`}
-              </option>
-            ))}
-          </select>
+            <Select.Trigger
+              size="sm"
+              aria-label="Folder"
+              className={styles.folder}
+            >
+              <Select.Value />
+            </Select.Trigger>
+            <Select.Portal>
+              <Select.Positioner>
+                <Select.Popup>
+                  <Select.Items items={folders.rows} />
+                </Select.Popup>
+              </Select.Positioner>
+            </Select.Portal>
+          </Select.Root>
           <Button
             type="button"
             variant="secondary"
