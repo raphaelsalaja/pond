@@ -33,7 +33,6 @@ export const QuickCaptureSubmitSchema = z.object({
   text: z.string().max(100_000),
   paths: z.array(z.string().min(1)).max(500),
   title: z.string().max(1000).optional(),
-  notes: z.string().max(100_000).optional(),
   folderId: z.string().min(1).nullable(),
 });
 

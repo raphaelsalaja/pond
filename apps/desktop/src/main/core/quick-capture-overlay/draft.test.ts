@@ -31,27 +31,36 @@ describe("quickCaptureDraft", () => {
 
   it("adds a Save per file and files them in the chosen folder", () => {
     const draft = quickCaptureDraft(
-      { ...base, paths: ["/a.png", "/b.pdf"], folderId: "f", notes: " hi " },
+      { ...base, paths: ["/a.png", "/b.pdf"], folderId: "f" },
       "id",
     );
     expect(draft.items).toEqual([
       { kind: "file", path: "/a.png" },
       { kind: "file", path: "/b.pdf" },
     ]);
-    expect(draft.metadata).toEqual({ tags: [], folderIds: ["f"], notes: "hi" });
+    expect(draft.metadata).toEqual({ tags: [], folderIds: ["f"] });
+  });
+
+  it("locks a typed title on a single link so the import keeps it", () => {
+    const draft = quickCaptureDraft(
+      { ...base, text: "https://a.com", title: " Read Later " },
+      "id",
+    );
+    expect(draft.items).toEqual([{ kind: "url", url: "https://a.com/" }]);
+    expect(draft.metadata.title).toBe("Read Later");
   });
 
   it("titles a single item only", () => {
     expect(
       quickCaptureDraft({ ...base, text: "idea", title: " Idea " }, "id")
-        .items[0],
-    ).toEqual({ kind: "note", text: "idea", title: "Idea" });
-    expect(
-      quickCaptureDraft(
-        { ...base, text: "idea", paths: ["/a"], title: "T" },
-        "id",
-      ).items.every((item) => item.title === undefined),
-    ).toBe(true);
+        .metadata.title,
+    ).toBe("Idea");
+    const draft = quickCaptureDraft(
+      { ...base, text: "idea", paths: ["/a"], title: "T" },
+      "id",
+    );
+    expect(draft.metadata.title).toBeUndefined();
+    expect(draft.items.every((item) => item.title === undefined)).toBe(true);
   });
 
   it("rejects an empty capture", () => {

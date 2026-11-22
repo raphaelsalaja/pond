@@ -32,14 +32,12 @@ export function quickCaptureDraft(
   else if (input.text.trim()) items.push({ kind: "note", text: input.text });
   for (const path of input.paths) items.push({ kind: "file", path });
   if (!items.length) throw new Error("Add a link, some text, or a file.");
-  const title = input.title?.trim();
-  const first = items[0];
-  if (title && items.length === 1 && first) first.title = title;
   const metadata: CaptureDraft["metadata"] = {
     tags: [],
     folderIds: input.folderId ? [input.folderId] : [],
   };
-  const notes = input.notes?.trim();
-  if (notes) metadata.notes = notes;
+  const title = input.title?.trim();
+  /** Metadata titles are locked, so a link's fetched title can't replace the typed one. */
+  if (title && items.length === 1) metadata.title = title;
   return { id, trigger: "quick-capture", items, metadata };
 }
