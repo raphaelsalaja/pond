@@ -59,7 +59,7 @@ const descriptions = new Map<string, string>(
     "conversion.compress":
       "Compress selected existing image files in one recoverable batch. Replaces originals, regenerates derived data, and records the operation for Undo.",
     "conversion.compressVideos":
-      "Re-encode the videos of selected Saves as HEVC in place to reclaim disk space. Each output is verified against its original before replacing it, and videos that would not shrink by at least 10% are left alone. This cannot be undone.",
+      "Re-encode the videos of selected Saves as HEVC to reclaim disk space. Replaces the original files without Undo. Each output is verified against its original first, and videos that would not shrink by at least 10% are left alone.",
     "library.switchTo":
       "Switch the active Library to a selected path. This ends work in the current Library.",
     "library.createAt":
