@@ -26,6 +26,7 @@ import { folderIdsForSave } from "./folder-memberships";
 import { planFolderBatchMove, planFolderMove } from "./folder-move";
 import { inheritedFolderTags, planFolderAssignment } from "./folder-tags";
 import { getPrefs, setPrefs } from "./prefs";
+import { untrashSaveTransaction } from "./restore-save";
 import { normalizeTagList, prepareTagRegistryUpdates } from "./tags";
 import { recordBatchForUndo } from "./undo";
 
@@ -361,30 +362,42 @@ export async function memberships(): Promise<
     .from(saveFoldersTable);
 }
 
+export interface RestoreSaveIntoFoldersRuntime {
+  run<T>(operation: () => Promise<T>): Promise<T>;
+  planAssignments(
+    assignments: Array<{ saveId: string; folderIds: string[] }>,
+    restoring: ReadonlySet<string>,
+  ): Promise<Transaction[]>;
+  execute: typeof executeBatch;
+  recordUndo(transactions: Transaction[]): string | null;
+}
+
+const defaultRestoreSaveIntoFoldersRuntime: RestoreSaveIntoFoldersRuntime = {
+  run: withMutationScope,
+  planAssignments: (assignments, restoring) =>
+    folderAssignmentTransactions(assignments, undefined, restoring),
+  execute: executeBatch,
+  recordUndo: recordBatchForUndo,
+};
+
 /** Takes a Save out of Trash and files it into folders as one Undo step. */
 export async function restoreSaveIntoFolders(
   saveId: string,
   folderIds: string[] | null,
   actorReason: string,
+  runtime: RestoreSaveIntoFoldersRuntime = defaultRestoreSaveIntoFoldersRuntime,
 ): Promise<{ ok: boolean }> {
-  return withMutationScope(async () => {
-    const restore: Transaction[] = [
-      {
-        kind: "untrash",
-        model: "save",
-        id: saveId,
-        meta: { actor: "user", actorReason },
-      },
-    ];
-    await executeBatch(restore);
+  return runtime.run(async () => {
+    /** Planned before anything runs, so a failed plan leaves the Save in Trash. */
     const assign = folderIds
-      ? await folderAssignmentTransactions([{ saveId, folderIds }])
+      ? await runtime.planAssignments(
+          [{ saveId, folderIds }],
+          new Set([saveId]),
+        )
       : [];
-    if (assign.length) await executeBatch(assign);
-    recordBatchForUndo([
-      ...restore,
-      ...assign.filter((tx) => tx.model !== "tag"),
-    ]);
+    const restore = untrashSaveTransaction(saveId, actorReason);
+    await runtime.execute([restore, ...assign]);
+    runtime.recordUndo([restore, ...assign.filter((tx) => tx.model !== "tag")]);
     return { ok: true };
   });
 }
@@ -407,6 +420,7 @@ export async function assignSaveFolders(
 async function folderAssignmentTransactions(
   assignments: Array<{ saveId: string; folderIds: string[] }>,
   rows?: Folder[],
+  restoring: ReadonlySet<string> = new Set(),
 ): Promise<Transaction[]> {
   const db = await getDb();
   const all = rows ?? (await listFolders());
@@ -440,7 +454,8 @@ async function folderAssignmentTransactions(
         inherited.get(key) ?? inheritedFolderTags(folderIds, all, rules);
       inherited.set(key, automaticTags);
       const save = savedById.get(saveId);
-      if (!save || save.deletedAt) throw new Error("A Save no longer exists.");
+      if (!save || (save.deletedAt && !restoring.has(saveId)))
+        throw new Error("A Save no longer exists.");
       txs.push(
         ...planFolderAssignment(
           save,
