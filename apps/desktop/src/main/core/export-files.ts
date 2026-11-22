@@ -56,7 +56,7 @@ type ExportSave = Pick<
       | "createdAt"
     >
   >;
-type ExportFolder = Pick<Folder, "id" | "name" | "parentId"> &
+export type ExportFolder = Pick<Folder, "id" | "name" | "parentId"> &
   Partial<Pick<Folder, "color" | "sortOrder">>;
 
 export interface ExportItem {

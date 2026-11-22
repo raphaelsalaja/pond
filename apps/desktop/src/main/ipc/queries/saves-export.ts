@@ -164,7 +164,10 @@ export const savesExportQueries = {
   ),
 
   "saves.exportFiles": query(
-    IdListParams.extend({ zip: z.boolean().optional() }),
+    IdListParams.extend({
+      zip: z.boolean().optional(),
+      fromFolders: z.boolean().optional(),
+    }),
     async (params): Promise<QueryResult<"saves.exportFiles">> => {
       const ids = params.ids.filter(Boolean);
       if (ids.length === 0)
@@ -182,7 +185,7 @@ export const savesExportQueries = {
       const dir = picked.filePaths[0];
       const path = await availableExportPath(
         dir,
-        await exportFilesName(ids),
+        await exportFilesName(ids, { fromFolders: params.fromFolders }),
         params.zip ? ".zip" : "",
       );
 

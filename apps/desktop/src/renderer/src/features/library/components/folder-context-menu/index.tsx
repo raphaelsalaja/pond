@@ -276,7 +276,10 @@ export async function exportFolderFiles(
   options: { zip?: boolean } = {},
 ): Promise<void> {
   await withFolderSaves(folderIds, async (ids) => {
-    const result = await exportSelectionFiles(ids, options);
+    const result = await exportSelectionFiles(ids, {
+      ...options,
+      fromFolders: true,
+    });
     if (!result.ok) notify({ id: "folder-export", title: result.message });
   });
 }
