@@ -6,8 +6,8 @@ const MAX_LAUNCHES = 3;
 
 export interface HelperProcess {
   readonly stdin: Writable | null;
-  on(event: "error", listener: (err: Error) => void): unknown;
-  on(event: "exit", listener: () => void): unknown;
+  on(event: "error", listener: (err: Error) => void): void;
+  on(event: "exit", listener: () => void): void;
 }
 
 export interface HapticPlayer {
