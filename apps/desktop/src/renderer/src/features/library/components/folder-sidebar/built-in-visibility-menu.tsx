@@ -1,6 +1,6 @@
 import {
   IconBadgeCheck,
-  IconEye2,
+  IconEyeSlash,
   IconHistory,
   IconSidebarEdit,
 } from "@pond/icons";
@@ -56,7 +56,7 @@ export function BuiltInVisibilityMenu({
       {
         type: "submenu",
         label: "Visibility",
-        icon: <IconEye2 />,
+        icon: <IconEyeSlash />,
         items: [
           {
             type: "checkbox",

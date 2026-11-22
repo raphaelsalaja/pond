@@ -27,6 +27,7 @@ import {
   type MachinePaceWire,
   MachinePaceWireSchema,
 } from "../shared/machine-pace";
+import type { NotificationEvent } from "../shared/notification-contracts";
 import type {
   PreviewNeighborRequest,
   PreviewWindowConfigure,
@@ -493,6 +494,13 @@ const api = {
 
   onFishOpen(cb: (open: FishOpen) => void): () => void {
     return fishOpen.subscribe(cb);
+  },
+
+  onNotifications(cb: (event: NotificationEvent) => void): () => void {
+    const listener = (_: IpcRendererEvent, event: NotificationEvent) =>
+      cb(event);
+    ipcRenderer.on(IPC.notifications, listener);
+    return () => ipcRenderer.off(IPC.notifications, listener);
   },
 
   agentStream(

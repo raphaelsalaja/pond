@@ -12,7 +12,6 @@ interface EpubViewerProps {
   onUnavailable: () => void;
   toolbarStart?: ReactNode;
   toolbarActions?: ReactNode;
-  toolbarNavigation?: ReactNode;
 }
 
 function flattenNavigation(
@@ -30,7 +29,6 @@ export function EpubViewer({
   onUnavailable,
   toolbarStart,
   toolbarActions,
-  toolbarNavigation,
 }: EpubViewerProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const renditionRef = useRef<Rendition | null>(null);
@@ -156,7 +154,6 @@ export function EpubViewer({
               }
             />
           }
-          end={toolbarNavigation}
         />
       </ChromePortal>
       {chapters.length > 0 ? (

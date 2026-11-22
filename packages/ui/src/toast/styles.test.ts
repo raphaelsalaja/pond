@@ -15,12 +15,20 @@ function declarations(selector: string) {
 }
 
 describe("toast alignment", () => {
-  it("keeps the message and controls in one centered row", () => {
+  it("tops the icon and close against the title of a described toast", () => {
     const content = declarations(".content");
-    expect(content).toContain("align-items: center;");
+    expect(content).toContain("align-items: flex-start;");
     expect(content).toContain(
-      "padding: var(--ds-space-md) var(--ds-space-md) var(--ds-space-md) var(--ds-space-lg);",
+      "padding: var(--ds-space-lg) var(--ds-space-md) var(--ds-space-lg) var(--ds-space-lg);",
     );
+  });
+
+  it("centers a title-only toast in one row", () => {
+    const oneLine = declarations(
+      "&:not(:has(.description, .progress, .meta))",
+    );
+    expect(oneLine).toContain("align-items: center;");
+    expect(oneLine).toContain("padding-block: var(--ds-space-md);");
   });
 
   it("keeps the close button in normal flow", () => {
@@ -32,14 +40,22 @@ describe("toast alignment", () => {
 });
 
 describe("toast stacking", () => {
-  it("keeps active toasts in separate rows", () => {
-    const viewport = declarations(".viewport");
+  it("tucks older toasts behind the newest at its height", () => {
     const root = declarations(".root");
 
-    expect(viewport).toContain("display: flex;");
-    expect(viewport).toContain("flex-direction: column-reverse;");
-    expect(viewport).toContain("gap: var(--toast-gap);");
-    expect(root).toContain("position: relative;");
-    expect(root).not.toContain("--toast-offset-y");
+    expect(root).toContain("position: absolute;");
+    expect(root).toContain(
+      "--y: calc(var(--toast-index) * var(--toast-peek) * -1);",
+    );
+    expect(root).toContain(
+      "height: var(--toast-frontmost-height, var(--toast-height));",
+    );
+  });
+
+  it("fans toasts out at their own heights when you hover or focus the stack", () => {
+    const expanded = declarations("&[data-expanded]");
+
+    expect(expanded).toContain("var(--toast-offset-y) * -1");
+    expect(expanded).toContain("height: var(--toast-height);");
   });
 });

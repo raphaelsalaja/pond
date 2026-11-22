@@ -1,7 +1,15 @@
 import { loadAppInfo } from "@/shared/lib/app-info";
-import { type PromptId, readImportedFrom } from "@/shared/state/prompts";
-import { firstSeenAt } from "../support-dialog/eligibility";
-import type { PromptSignals } from "./eligibility";
+import {
+  type PromptChoice,
+  type PromptId,
+  readImportedFrom,
+} from "@/shared/state/prompts";
+import {
+  firstSeenAt,
+  hasAskedForSupport,
+  markAskedForSupport,
+} from "../support-dialog/eligibility";
+import { type PromptSignals, promptsSettledBy } from "./eligibility";
 
 const FIRST_VERSION_KEY = "pond:firstVersion";
 const EXTENSION_SEEN_KEY = "pond:extensionSeen";
@@ -27,6 +35,18 @@ export function hasAsked(id: PromptId): boolean {
 
 export function markAsked(id: PromptId): void {
   write(`${ASKED_PREFIX}${id}`, String(Date.now()));
+}
+
+export function hasAskedFor(choice: PromptChoice): boolean {
+  return choice === "support" ? hasAskedForSupport() : hasAsked(choice);
+}
+
+export function settlePrompt(choice: PromptChoice): void {
+  if (choice === "support") {
+    markAskedForSupport();
+    return;
+  }
+  for (const id of promptsSettledBy(choice)) markAsked(id);
 }
 
 /** The extension only reports in while it runs, so remember any launch that heard from it. */

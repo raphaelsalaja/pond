@@ -41,6 +41,7 @@ export const SIDEBAR_DESTINATION_GROUPS = [
     heading: false,
     destinations: [
       "all",
+      "inbox",
       "uncategorized",
       "untagged",
       "recentlyAdded",
@@ -64,6 +65,7 @@ export const SIDEBAR_DESTINATION_GROUPS = [
 
 export const SIDEBAR_DESTINATION_LABELS = {
   all: "All",
+  inbox: "Inbox",
   uncategorized: "Uncategorized",
   untagged: "Untagged",
   recentlyAdded: "Recently Added",

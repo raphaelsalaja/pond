@@ -5,20 +5,27 @@
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   padding: 0;
   vertical-align: middle;
   color: var(--ds-accent-contrast);
   cursor: var(--ds-cursor-interactive, pointer);
-  background: transparent;
-  border: 1px solid var(--ds-border-strong);
+  background: var(--ds-background-primary);
+  border: 0;
   border-radius: var(--ds-radius-xs);
+  box-shadow: 0 0 0 var(--ds-border-width) var(--ds-border-strong);
   transition:
-    background-color var(--ds-duration-snap) var(--ds-easing-standard),
-    border-color var(--ds-duration-snap) var(--ds-easing-standard),
-    opacity var(--ds-duration-snap) var(--ds-easing-standard),
-    scale var(--ds-duration-bounce) var(--ds-easing-bounce);
+    background-color var(--ds-duration-fast) var(--ds-easing-decelerate),
+    box-shadow var(--ds-duration-fast) var(--ds-easing-decelerate),
+    opacity var(--ds-duration-fast) var(--ds-easing-decelerate),
+    outline-color var(--ds-duration-snap) var(--ds-easing-snap),
+    outline-offset var(--ds-duration-snap) var(--ds-easing-snap);
+
+  &:not(:focus-visible, [data-demo-state="focus"]) {
+    outline: var(--ds-focus-width) solid transparent;
+    outline-offset: 0;
+  }
 
   &::before {
     position: absolute;
@@ -26,13 +33,12 @@
     content: "";
   }
 
-  &:active:not([data-disabled]) {
-    scale: 0.82;
-    transition:
-      background-color var(--ds-duration-snap) var(--ds-easing-standard),
-      border-color var(--ds-duration-snap) var(--ds-easing-standard),
-      opacity var(--ds-duration-snap) var(--ds-easing-standard),
-      scale var(--ds-duration-fast) var(--ds-easing-decelerate);
+  &:is(:hover, [data-demo-state="hover"]):not(
+      [data-checked],
+      [data-indeterminate],
+      [data-disabled]
+    ) {
+    background: var(--ds-background-secondary);
   }
 
   &[data-size="sm"] {
@@ -44,12 +50,7 @@
   &[data-checked],
   &[data-indeterminate] {
     background: var(--ds-accent);
-    border-color: var(--ds-accent);
-  }
-
-  &:hover,
-  &[data-demo-state="hover"] {
-    border-color: var(--ds-border-strong);
+    box-shadow: none;
   }
 
   &[data-checked]:hover,
@@ -99,8 +100,8 @@
 
   > svg {
     flex-shrink: 0;
-    width: 12px;
-    height: 12px;
+    width: 10px;
+    height: 10px;
   }
 }
 
@@ -126,9 +127,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .root,
-  .root:active:not([data-disabled]) {
-    scale: none;
+  .root {
     transition: none;
   }
 

@@ -13,7 +13,6 @@ import {
   ViewerChrome,
 } from "@/features/saves/components/viewers/media-viewer/chrome";
 import { ViewerSaveNav } from "@/features/saves/components/viewers/viewer-save-nav";
-import { ViewerNavigationControls } from "@/features/saves/components/viewers/viewer-toolbar-groups";
 import { ensureTextCover } from "@/features/saves/lib/ensure-text-cover";
 import { mutateSave } from "@/features/saves/lib/mutate";
 import {
@@ -67,7 +66,6 @@ function TextViewerSession({ save }: { save: Save }) {
         <ViewerHud.Bar
           label="Text"
           start={<ViewerSaveNav saveId={save.id} />}
-          end={<ViewerNavigationControls />}
         />
       </ChromePortal>
       <LexicalExtensionComposer

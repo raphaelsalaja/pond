@@ -8,7 +8,12 @@
 
 .popup {
   --ds-popup-width: var(--anchor-width);
+  --popup-padding-block: var(--ds-space-2xs);
+  --popup-padding-inline: var(--ds-space-2xs);
+  --popup-gap: var(--ds-space-2xs);
   composes: popup from "../shared/styles/popup/styles.module.css";
+  border-radius: var(--ds-radius-xl);
+  box-shadow: var(--ds-shadow-overlay);
 }
 
 .arrow {

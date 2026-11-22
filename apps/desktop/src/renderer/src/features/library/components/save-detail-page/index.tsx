@@ -36,7 +36,9 @@ import {
   SaveArchiveViewer,
   SaveViewer,
   setSaveViewerFileIndex,
+  setSaveViewerNavigation,
   TextViewer,
+  type ViewerNavigation,
   viewerEscape,
 } from "@/features/saves/viewers";
 import { tagClipboard } from "@/features/tags";
@@ -176,9 +178,21 @@ function SaveDetailSession({
     [saveId],
   );
 
+  const onNavigationChange = useCallback(
+    (navigation: ViewerNavigation | undefined) => {
+      setSaveViewerNavigation(
+        navigation && saveId ? { ...navigation, saveId } : null,
+      );
+    },
+    [saveId],
+  );
+
   useEffect(() => {
     if (!saveId) return;
-    return () => setSaveViewerFileIndex(null);
+    return () => {
+      setSaveViewerFileIndex(null);
+      setSaveViewerNavigation(null);
+    };
   }, [saveId]);
 
   const menuVideo = useRef<HTMLVideoElement | null>(null);
@@ -245,6 +259,7 @@ function SaveDetailSession({
               <SaveViewer
                 save={save}
                 onActiveFileIndexChange={onActiveFileIndexChange}
+                onNavigationChange={onNavigationChange}
                 navRef={viewerNav}
               />
             )}

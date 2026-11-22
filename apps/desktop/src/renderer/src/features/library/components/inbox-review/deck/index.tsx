@@ -264,11 +264,17 @@ function ReviewCard({ id, depth, pull, arrive, review }: ReviewCardProps) {
 interface ReviewDeckProps {
   queue: ReviewQueue;
   onExit: () => void;
+  onStep: (by: 1 | -1) => void;
   finished: ReactNode;
 }
 
-export function ReviewDeck({ queue, onExit, finished }: ReviewDeckProps) {
-  const review = useReview(queue, onExit);
+export function ReviewDeck({
+  queue,
+  onExit,
+  onStep,
+  finished,
+}: ReviewDeckProps) {
+  const review = useReview(queue, onExit, onStep);
   const instructionsId = useId();
   const pull = useMotionValue(0);
   const shown = useRef(false);
@@ -293,8 +299,8 @@ export function ReviewDeck({ queue, onExit, finished }: ReviewDeckProps) {
       <span id={instructionsId} className={styles.instructions}>
         Drag the save right to keep it, left to move it to the Trash, up to
         choose a folder, or down to skip it. The arrow keys do the same, 1 to 4
-        file it, Z goes back, Space opens the preview, and Escape closes the
-        Inbox.
+        file it, Z goes back, J and K move through the list, Space opens the
+        preview, and Escape closes the Inbox.
       </span>
       {review.id ? (
         <>

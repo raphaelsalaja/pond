@@ -2,7 +2,7 @@
   position: relative;
   overflow: hidden;
   font-family: var(--ds-ui-font-family);
-  font-feature-settings: "cv11", "ss01";
+  font-feature-settings: "ss01", "ss03";
   -webkit-font-smoothing: antialiased;
   color: var(--ds-foreground-primary);
   background: #fff;
@@ -11,7 +11,7 @@
 /* The UI reset pins every element to the 14px optical size, which loosens large stage type. */
 :where(.frame) * {
   font-variation-settings: normal;
-  font-feature-settings: "cv11", "ss01";
+  font-feature-settings: "ss01", "ss03";
   font-variant-numeric: normal;
 }
 

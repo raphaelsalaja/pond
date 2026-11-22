@@ -191,6 +191,32 @@ describe("isCaptureTweetStale", () => {
       }),
     ).toBe(true);
   });
+
+  it("renders only Threads cards again for the threads.com layout", () => {
+    const { replyTo: _, ...post } = replyRaw().capture;
+    const threads = { ...post, source: "threads" as const };
+    expect(
+      isCaptureTweetStale({
+        ...replyRaw(),
+        capture: threads,
+        captureTweetVersion: 15,
+      }),
+    ).toBe(true);
+    expect(
+      isCaptureTweetStale({
+        ...replyRaw(),
+        capture: threads,
+        captureTweetVersion: 16,
+      }),
+    ).toBe(false);
+    expect(
+      isCaptureTweetStale({
+        ...replyRaw(),
+        capture: post,
+        captureTweetVersion: 13,
+      }),
+    ).toBe(false);
+  });
 });
 
 describe("runCaptureTweet reply parent enrichment", () => {

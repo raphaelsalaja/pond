@@ -1,7 +1,3 @@
-.empty {
-  padding-block: 48px;
-}
-
 .control {
   gap: var(--ds-space-md);
 }

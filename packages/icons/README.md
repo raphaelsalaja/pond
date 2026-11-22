@@ -11,58 +11,55 @@ import { IconFolder, IconStar } from "@pond/icons";
 <IconStar size={24} />
 ```
 
-There is one drawing per glyph, and nearly every glyph is an open stroke
-drawing. Only media transport controls, the disclosure caret, and the X and
-Threads post controls are solid. Props:
+<!-- counts -->
+371 icons: 355 outline and 16 solid, plus 145 open states. 90 are folder picker objects. 18 registered parts.
+<!-- /counts -->
+
+There is one drawing per glyph, and nearly every glyph is a line drawing.
+Only the disclosure caret, status toasts, and the X and Threads post controls
+are solid.
+
+Props:
 
 - `size` sets width and height. Default `18`.
-- `strokeWidth` applies to stroke glyphs. It is the on-screen stroke in pixels at
-  `size`. Default `1.7` at 18px. Below 18px the default thins by the square
-  root of the scale, never under 1px: about 1.6 at 16px, 1.5 at 14px, and
-  1.39 at 12px. An explicit `strokeWidth` is exact at any size up to 18px.
-  Above 18px the stroke grows with the glyph. When CSS resizes the icon instead
-  of `size`, the stroke scales with it, so a 14px button icon thins to match.
+- `strokeWidth` applies to outline glyphs. It is the on-screen stroke in pixels.
+  Default `1.25` at every size up to 18px, matched to Linear's line weight.
+  Up to 18px the stroke is non-scaling, so it stays exact when CSS resizes the
+  icon instead of `size`. Above 18px the stroke grows with the glyph.
+- The glyph renders at `GLYPH_SCALE` (1) of the box, set in
+  `create-icon.ts`. Change it there to resize every glyph at once. Stroke
+  widths stay in on-screen pixels.
 - `title` labels the icon for assistive tech. Without it the icon is
   `aria-hidden`.
 
 ## Drawing a glyph
 
-1. Draw on an 18×18 artboard: 1.7 stroke, round caps and joins, live area
-   1.75 to 16.25. Circles use r7.25. Badges sit at the bottom-right around
-   (13.875, 13.875), and the base shape stops short of them by a 1.25 gap.
-   - Round every corner. Boxes 12 or wider use r4, boxes 7 to 11 use r3,
-     and parts under 5 use r1 to r1.5. Polygons such as stars, shields and
-     triangles get arc or curve corners, never a bare point.
-   - Prefer circles, arcs and curves to straight runs when the object allows.
-   - Draw the object people already know: a bell with a clapper, a trash can
-     with a lid handle, a plane with swept wings. Moving things (rocket,
-     plane, paperclip) tilt 45° and a book leans like a cover in hand.
-   - Keep 3.4 between stroke centers, both between details and from a detail
-     to its frame. At 12px the stroke grows to about 2.1 units, and anything
-     closer fills in. Make small marks at least 1.5 long or a stroked r0.25 dot.
-   - Check every glyph at 12px. If it fills in, drop details before shrinking
-     gaps: two lines instead of three, a solid dot instead of a small ring.
-   - Variants (`folder-plus`, `trash-xmark`) reuse their base glyph's exact
-     shape.
-   - Draw one object. A plural uses the single glyph (`IconTag` for tags),
-     never a stack with back outlines peeking out.
-   - Draw every object as a 1.7 outline, masses included: bags, people,
-     tools, clocks, and cameras. Keep the counter open, and leave a contour
-     broken where a gap still reads as the object, like a slashed bookmark.
-   - Solid ink is for small accents, like a dot, a lens or a keyhole, and for
-     a half that carries the meaning, like `contrast` and `fill`.
-   - A filled state belongs to the component, not the drawing. Set
-     `fill: currentColor` on the svg, as the rating does for a set star.
-   - Make a glyph solid only for media transport (play, pause, skip) and the
-     disclosure caret.
-2. Save it as `svg/<kebab-name>.svg`. Use only `<path>`, `<circle>`, and
-   `<rect>`. A solid glyph sets `fill="currentColor"` on the root and is a
-   flattened shape, not strokes. A stroke glyph has no root fill.
-3. Run `pnpm --filter @pond/icons generate` to rebuild `index.ts`. CI runs the
-   same script with `--check`.
+The measured spec lives in [`icon-spec.md`](icon-spec.md) and the voice in
+[`style.md`](style.md). Every glyph is a script in `src/`, drawn with the
+helpers in `helpers.mjs` from the measurements in `style.json`.
 
-The generator lists glyphs nothing imports, so unused drawings are easy to
-spot.
+1. Write `src/<kebab-name>.mjs`. It exports `default (h, s) => parts`, plus
+   `open` when the glyph has an expanded state. A part is path data, which is
+   stroked, or `{ d, solid: true }` for a solid dot or a solid glyph.
+   - Lines are 1.25 with round caps and joins, on multiples of 0.125.
+   - Ink stays 1.75 from the frame. Size each glyph to its keyline in
+     `style.json`: square, circle, wide, tall, or glyph for arrows, chevrons,
+     checks and plus.
+   - Reuse the shared parts in `src/parts/`: the folder, the file, the ring,
+     the dot, the slash, the plus and the badges. A badge sits bottom right
+     and its host stops at the hole around it (`badge.mjs`).
+   - Check every glyph at 18px and 12px.
+2. Add it to `svg/manifest.json`: one concept nobody else answers, the words
+   someone would search for, and any `base` and `parts`.
+3. Run `pnpm --filter @pond/icons generate`. It draws every script into
+   `svg/<kebab-name>/` (with `-open` beside it), redraws the registered
+   `parts/`, checks the manifest against the drawings, then rebuilds
+   `index.ts`, `concepts.md`, and the counts above. When a check fails it
+   writes `REPORT.md` and stops. CI runs the check with `--check`.
+
+Browse the set in `lab/index.html`, opened straight from disk in any
+browser: search by tag, the concepts table, parts boards, and the stroke
+test. `generate` writes the page's `lab/data.js`, so run it once first.
 
 ## Brand marks
 

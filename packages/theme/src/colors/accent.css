@@ -1,0 +1,14 @@
+/* A scope that sets --accent-hue and its -tint, -border and -contrast to a palette color retints every accent control inside it. */
+[data-accent] {
+  --ds-accent: var(--accent-hue);
+  --ds-accent-hover: oklch(from var(--accent-hue) calc(l - 0.05) c h);
+  /* Light hues darken on light pages and dark hues lift on dark ones, so accent text stays readable. */
+  --ds-accent-foreground: light-dark(
+    oklch(from var(--accent-hue) min(l, 0.55) c h),
+    oklch(from var(--accent-hue) max(l, 0.75) c h)
+  );
+  --ds-accent-tint: var(--accent-hue-tint);
+  --ds-accent-border: var(--accent-hue-border);
+  --ds-accent-contrast: var(--accent-hue-contrast);
+  --ds-focus-outline: var(--ds-accent);
+}

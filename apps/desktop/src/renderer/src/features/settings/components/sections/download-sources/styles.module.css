@@ -5,12 +5,3 @@
   align-items: center;
   min-width: 0;
 }
-
-.icon {
-  display: block;
-  flex-shrink: 0;
-  overflow: hidden;
-  border-radius: var(--ds-radius-source);
-  corner-shape: var(--ds-corner-icon);
-  box-shadow: var(--ds-shadow-border);
-}

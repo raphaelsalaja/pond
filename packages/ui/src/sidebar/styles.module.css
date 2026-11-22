@@ -137,8 +137,9 @@ button.label:hover {
 
 .heading {
   display: flex;
+  gap: var(--ds-space-2xs);
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   width: 100%;
   height: var(--sidebar-height-md);
 
@@ -146,6 +147,7 @@ button.label:hover {
     flex: none;
     width: auto;
     max-width: calc(100% - var(--sidebar-height-md));
+    margin-right: auto;
   }
 
   /* Header actions rest at the label's tone and take the ghost hover color. */
@@ -187,7 +189,7 @@ button.label:hover {
   align-items: center;
   width: 100%;
   height: var(--sidebar-height-md);
-  padding: 0 var(--ds-space-sm);
+  padding: 0 var(--ds-space-md);
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: var(--sidebar-text);
@@ -201,7 +203,7 @@ button.label:hover {
 
   &:hover {
     color: var(--ds-foreground-secondary);
-    background: var(--ds-surface-secondary);
+    background: var(--ds-surface-primary);
   }
 
   &[data-pressed],
@@ -209,7 +211,7 @@ button.label:hover {
   &[data-popup-open],
   &[aria-selected="true"] {
     color: var(--ds-foreground-primary);
-    background: var(--ds-surface-tertiary);
+    background: var(--ds-surface-secondary);
   }
 
   &[data-empty] {
@@ -228,19 +230,25 @@ button.label:hover {
     flex: none;
     align-items: center;
     justify-content: center;
-    width: 16px;
-    height: 16px;
-    margin-right: var(--ds-space-md);
+    width: 14px;
+    height: 14px;
+    margin-right: var(--ds-space-sm);
     overflow: hidden;
 
     &[data-source] {
       width: 16px;
       height: 16px;
       padding: 0;
-      margin-right: var(--ds-space-md);
+      margin-right: var(--ds-space-sm);
       border-radius: var(--ds-radius-xs);
       box-shadow: var(--ds-shadow-border);
     }
+  }
+
+  /* Linear's sidebar glyphs sit in a 14px slot, 8px in from the row edge. */
+  &:not([data-size="lg"]) .icon:not([data-source]) svg {
+    width: 14px;
+    height: 14px;
   }
 
   &[data-size="lg"] {
@@ -263,6 +271,69 @@ button.label:hover {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: var(--sidebar-text);
+  font-weight: 500;
+}
+
+.stack {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--ds-space-xs);
+  width: 100%;
+  padding-bottom: var(--ds-space-md);
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-sm);
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 1;
+  min-width: 0;
+  padding: var(--ds-space-xs);
+  font-size: var(--sidebar-text);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-foreground-secondary);
+  border-radius: var(--ds-radius-lg);
+  transition:
+    color var(--ds-duration-medium) var(--ds-easing-standard),
+    background var(--ds-duration-medium) var(--ds-easing-standard);
+
+  &:hover {
+    color: var(--ds-foreground-primary);
+    background: var(--ds-surface-secondary);
+  }
+
+  &[data-status="active"],
+  &[data-popup-open] {
+    color: var(--ds-foreground-primary);
+    background: var(--ds-surface-tertiary);
+  }
+
+  .icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+  }
+
+  .text {
+    flex: none;
+    width: 100%;
+    text-align: center;
+  }
 }
 
 .detail {
@@ -271,7 +342,7 @@ button.label:hover {
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: var(--ds-text-small);
-  font-weight: var(--ds-weight-regular);
+  font-weight: var(--ds-weight-medium);
   color: var(--ds-foreground-tertiary);
   white-space: nowrap;
 }
@@ -280,7 +351,7 @@ button.label:hover {
   flex: none;
   margin-right: var(--ds-space-xs);
   margin-left: auto;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-micro);
   font-weight: var(--ds-weight-medium);
   font-variant-numeric: tabular-nums;
   color: var(--ds-foreground-tertiary);
@@ -311,7 +382,7 @@ button.label:hover {
   &[data-selected],
   &[data-current] {
     color: var(--ds-foreground-primary);
-    background: var(--ds-surface-tertiary);
+    background: var(--ds-surface-secondary);
   }
 
   &[data-disabled] {

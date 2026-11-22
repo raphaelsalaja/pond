@@ -10,7 +10,8 @@ export const docs: ComponentDocs = {
   parts: [
     {
       name: "Slider.Root",
-      description: "Holds the value, `min`, `max`, `step` and `largeStep`.",
+      description:
+        'Holds the value, `min`, `max`, `step` and `largeStep`. `layout="stacked"` puts the label above the track.',
     },
     {
       name: "Slider.Label",
@@ -21,9 +22,14 @@ export const docs: ComponentDocs = {
     { name: "Slider.Indicator", description: "The filled part of the rail." },
     {
       name: "Slider.Thumb",
-      description: "The handle, backed by a native range input.",
+      description:
+        "The handle, backed by a native range input. `badge` shows its value underneath.",
     },
     { name: "Slider.Value", description: "Shows the formatted value." },
+    {
+      name: "Slider.Bounds",
+      description: "Labels the `min` and `max` ends under a stacked slider.",
+    },
   ],
   keyboard: [
     { keys: "ArrowRight / ArrowUp", action: "Increases by one step" },
@@ -49,6 +55,25 @@ export const docs: ComponentDocs = {
             </Slider.Track>
           </Slider.Control>
           <Slider.Value />
+        </Slider.Root>
+      ),
+    },
+    {
+      name: "Stacked",
+      render: () => (
+        <Slider.Root
+          defaultValue={40}
+          layout="stacked"
+          format={{ style: "unit", unit: "percent" }}
+        >
+          <Slider.Label>Zoom</Slider.Label>
+          <Slider.Control>
+            <Slider.Track>
+              <Slider.Indicator />
+              <Slider.Thumb badge />
+            </Slider.Track>
+          </Slider.Control>
+          <Slider.Bounds min="0%" max="100%" />
         </Slider.Root>
       ),
     },

@@ -1,4 +1,3 @@
-import { sourceLabel } from "@pond/schema/sources";
 import { Tooltip } from "@pond/ui";
 import type { RenderRowArgs, TableColumn } from "@pond/ui/data-table";
 import type { DownloadActivity } from "@shared/download-activity";
@@ -107,19 +106,10 @@ function NameCell({ row }: { row: DownloadViewRow }) {
   const title = row.name.trim() || row.url.trim() || "Untitled save";
   return (
     <span className={styles.lead}>
+      <BrandTile source={downloadBrandSource(row.source, row.url)} size={18} />
       <span className={styles.name} title={title}>
         {title}
       </span>
-    </span>
-  );
-}
-
-function SourceCell({ row }: { row: DownloadViewRow }) {
-  const source = downloadBrandSource(row.source, row.url);
-  return (
-    <span className={styles.source}>
-      <BrandTile source={source} size={18} />
-      <span className={styles.label}>{sourceLabel(source)}</span>
     </span>
   );
 }
@@ -351,15 +341,6 @@ export const downloadsColumns: TableColumn<DownloadViewRow>[] = [
     width: "minmax(160px, 1.6fr)",
     reorderable: true,
     cell: (row) => <NameCell row={row} />,
-  },
-  {
-    id: "source",
-    header: "Source",
-    sortLabel: "Source",
-    accessor: (row) => sourceLabel(downloadBrandSource(row.source, row.url)),
-    width: "140px",
-    reorderable: true,
-    cell: (row) => <SourceCell row={row} />,
   },
   {
     id: "stage",

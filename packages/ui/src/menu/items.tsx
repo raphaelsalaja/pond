@@ -308,7 +308,7 @@ function renderSpec(
             side="inline-end"
             align="start"
             sideOffset={-2}
-            alignOffset={-4}
+            alignOffset={-6}
           >
             <parts.Popup>
               {pruneSpecs(spec.items).map((child, i) =>

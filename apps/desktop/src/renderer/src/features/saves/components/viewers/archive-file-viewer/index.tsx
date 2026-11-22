@@ -15,7 +15,6 @@ interface ArchiveFileViewerProps {
   onUnavailable: () => void;
   toolbarStart?: ReactNode;
   toolbarActions?: ReactNode;
-  toolbarNavigation?: ReactNode;
 }
 
 interface ArchiveEntry {
@@ -40,7 +39,6 @@ export function ArchiveFileViewer({
   onUnavailable,
   toolbarStart,
   toolbarActions,
-  toolbarNavigation,
 }: ArchiveFileViewerProps) {
   const [entries, setEntries] = useState<ArchiveEntry[] | null>(null);
   const [query, setQuery] = useState("");
@@ -145,7 +143,6 @@ export function ArchiveFileViewer({
               actions={toolbarActions}
             />
           }
-          end={toolbarNavigation}
         />
       </ChromePortal>
       {error ? <div className={styles.status}>{error}</div> : null}

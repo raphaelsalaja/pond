@@ -1,4 +1,4 @@
-import { IconCode, IconEye } from "@pond/icons";
+import { IconCode, IconGlobe } from "@pond/icons";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
 import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome";
@@ -14,7 +14,6 @@ interface SafeWebViewerProps {
   onUnavailable: () => void;
   toolbarStart?: ReactNode;
   toolbarActions?: ReactNode;
-  toolbarNavigation?: ReactNode;
 }
 
 const MAX_HTML_BYTES = 10 * 1024 ** 2;
@@ -26,7 +25,6 @@ export function SafeWebViewer({
   onUnavailable,
   toolbarStart,
   toolbarActions,
-  toolbarNavigation,
 }: SafeWebViewerProps) {
   const [source, setSource] = useState<string | null>(null);
   const [pages, setPages] = useState<MhtmlPage[]>([]);
@@ -96,7 +94,7 @@ export function SafeWebViewer({
                     pressed={mode === "rendered"}
                     onClick={() => setMode("rendered")}
                   >
-                    <IconEye />
+                    <IconGlobe />
                   </ViewerHud.Tool>
                   <ViewerHud.Tool
                     label="Source"
@@ -127,7 +125,6 @@ export function SafeWebViewer({
                     </ViewerHud.Tool>
                   ))
                 : null}
-              {toolbarNavigation}
             </>
           }
         />

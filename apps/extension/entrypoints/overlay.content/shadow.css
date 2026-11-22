@@ -4,15 +4,15 @@
 /* The host gets `all: initial`, so type is set inside the shadow tree to match the app's `:root`. */
 html {
   font-family:
-    pond-intern, pond-inter, ui-sans-serif, system-ui, -apple-system,
+    pond-allo, pond-inter, ui-sans-serif, system-ui, -apple-system,
     "SF Pro Text", "Segoe UI", sans-serif;
   font-size: var(--ds-text-small);
   font-weight: var(--ds-weight-regular);
   font-feature-settings:
     "liga" 1,
     "calt" 1,
-    "cv11" 1,
-    "ss01" 1;
+    "ss01" 1,
+    "ss03" 1;
   color: var(--ds-foreground-primary);
   color-scheme: light dark;
 }

@@ -225,4 +225,27 @@ describe("Library integrity repair previews", () => {
       renames: [{ from: "bad:name.txt", to: "bad-name.txt" }],
     });
   });
+
+  it.each([
+    ["cover.", "cover"],
+    ["photo.jpg ", "photo.jpg"],
+    ["con.tar.gz", "file-con.tar.gz"],
+  ])("plans a name for %j that passes its own check", async (from, to) => {
+    const root = await fixtureRoot();
+    const directory = join(root, "items", "save-1.info");
+    const payload = Buffer.from("payload");
+    await writeFile(join(directory, from), payload);
+    const row = fixtureSave([file("other", from, payload)]);
+
+    const issue = await inspectSaveIntegrity({
+      kind: "physical-file-names",
+      row,
+      runtime: runtime(root),
+    });
+
+    expect(issue?.action).toEqual({
+      kind: "physical-file-names",
+      renames: [{ from, to }],
+    });
+  });
 });

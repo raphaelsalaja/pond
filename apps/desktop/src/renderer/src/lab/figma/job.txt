@@ -1,1 +1,1 @@
-{"id":"reload-after-sidebar-2","reload":true}
+{"id":"open-folder-disclosure-1","path":"/lab/folder-disclosure"}

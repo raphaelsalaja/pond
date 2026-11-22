@@ -1,0 +1,6998 @@
+{
+  "album-2": {
+    "concept": "Album",
+    "tags": [
+      "album",
+      "photos",
+      "collection",
+      "gallery",
+      "all saves"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "album-2/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "album-2/outline-18-open.svg"
+      }
+    ]
+  },
+  "align-2-bottom": {
+    "concept": "Align Bottom",
+    "tags": [
+      "align",
+      "bottom",
+      "arrange"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "align-2-bottom/outline-18.svg"
+      }
+    ]
+  },
+  "align-2-horizontal": {
+    "concept": "Align Horizontal Centers",
+    "tags": [
+      "align",
+      "center",
+      "horizontal",
+      "arrange"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "align-2-horizontal/outline-18.svg"
+      }
+    ]
+  },
+  "align-2-left": {
+    "concept": "Align Left",
+    "tags": [
+      "align",
+      "left",
+      "arrange"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "align-2-left/outline-18.svg"
+      }
+    ]
+  },
+  "align-2-right": {
+    "concept": "Align Right",
+    "tags": [
+      "align",
+      "right",
+      "arrange"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "align-2-right/outline-18.svg"
+      }
+    ]
+  },
+  "align-2-top": {
+    "concept": "Align Top",
+    "tags": [
+      "align",
+      "top",
+      "arrange"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "align-2-top/outline-18.svg"
+      }
+    ]
+  },
+  "align-2-vertical": {
+    "concept": "Align Vertical Centers",
+    "tags": [
+      "align",
+      "middle",
+      "vertical",
+      "arrange"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "align-2-vertical/outline-18.svg"
+      }
+    ]
+  },
+  "animation-frames": {
+    "concept": "Frames",
+    "tags": [
+      "frames",
+      "animation",
+      "filmstrip",
+      "step"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "animation-frames/outline-18.svg"
+      }
+    ]
+  },
+  "animation-repeat": {
+    "concept": "Loop",
+    "tags": [
+      "loop",
+      "repeat",
+      "replay"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "animation-repeat/outline-18.svg"
+      }
+    ]
+  },
+  "aperture": {
+    "concept": "Aperture",
+    "tags": [
+      "aperture",
+      "f-stop",
+      "exposure",
+      "frame rate"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "aperture/outline-18.svg"
+      }
+    ],
+    "parts": [
+      "ring"
+    ]
+  },
+  "apple": {
+    "concept": "Apple",
+    "tags": [
+      "apple",
+      "fruit",
+      "food",
+      "healthy"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "apple/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "apple/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "applications": {
+    "concept": "Open With",
+    "tags": [
+      "apps",
+      "applications",
+      "open with"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "applications/outline-18.svg"
+      }
+    ]
+  },
+  "archive-download": {
+    "concept": "Import Package",
+    "tags": [
+      "import",
+      "package",
+      "unarchive",
+      "bookmarks"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "archive-download/outline-18.svg"
+      }
+    ],
+    "base": "archive"
+  },
+  "archive-export": {
+    "concept": "Export Package",
+    "tags": [
+      "export",
+      "package",
+      "pack"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "archive-export/outline-18.svg"
+      }
+    ],
+    "base": "archive"
+  },
+  "archive": {
+    "concept": "Archive",
+    "tags": [
+      "archive",
+      "box",
+      "older saves",
+      "package"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "archive/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "archive/outline-18-open.svg"
+      }
+    ]
+  },
+  "arrow-anticlockwise-text": {
+    "concept": "Convert Text",
+    "tags": [
+      "convert",
+      "encoding",
+      "text",
+      "transform"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "arrow-anticlockwise-text/outline-18.svg"
+      }
+    ]
+  },
+  "arrow-back-to-bottom-left": {
+    "concept": "Pop In",
+    "tags": [
+      "picture in picture",
+      "dock",
+      "return",
+      "minimize"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "arrow-back-to-bottom-left/outline-18.svg"
+      }
+    ]
+  },
+  "arrow-diagonal-in": {
+    "concept": "Fit",
+    "tags": [
+      "fit",
+      "shrink",
+      "collapse"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "arrow-diagonal-in/outline-18.svg"
+      }
+    ]
+  },
+  "arrow-down-to-line": {
+    "concept": "Jump to Latest",
+    "tags": [
+      "bottom",
+      "latest",
+      "scroll down"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "arrow-down-to-line/outline-18.svg"
+      }
+    ]
+  },
+  "arrow-down": {
+    "concept": "Down",
+    "tags": [
+      "down",
+      "next",
+      "move down"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "arrow-down/outline-18.svg"
+      }
+    ]
+  },
+  "arrow-left": {
+    "concept": "Back",
+    "tags": [
+      "back",
+      "previous",
+      "left"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "arrow-left/outline-18.svg"
+      }
+    ]
+  },
+  "arrow-right": {
+    "concept": "Forward",
+    "tags": [
+      "forward",
+      "next",
+      "right"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "arrow-right/outline-18.svg"
+      }
+    ]
+  },
+  "arrow-rotate-anticlockwise": {
+    "concept": "Reset",
+    "tags": [
+      "reset",
+      "defaults",
+      "revert"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "arrow-rotate-anticlockwise/outline-18.svg"
+      }
+    ]
+  },
+  "arrow-rotate-clockwise": {
+    "concept": "Retry",
+    "tags": [
+      "retry",
+      "reload",
+      "again",
+      "regenerate"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "arrow-rotate-clockwise/outline-18.svg"
+      }
+    ]
+  },
+  "arrow-up-right": {
+    "concept": "Open",
+    "tags": [
+      "open",
+      "open save",
+      "link",
+      "go",
+      "release"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "arrow-up-right/outline-18.svg"
+      }
+    ]
+  },
+  "arrow-up": {
+    "concept": "Up",
+    "tags": [
+      "up",
+      "send",
+      "move up",
+      "previous"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "arrow-up/outline-18.svg"
+      }
+    ]
+  },
+  "arrows-expand-diagonal": {
+    "concept": "Enlarge",
+    "tags": [
+      "enlarge",
+      "expand",
+      "zoom"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "arrows-expand-diagonal/outline-18.svg"
+      }
+    ]
+  },
+  "arrows-expand-x": {
+    "concept": "Fill Width",
+    "tags": [
+      "width",
+      "stretch",
+      "horizontal"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "arrows-expand-x/outline-18.svg"
+      }
+    ]
+  },
+  "arrows-expand-y": {
+    "concept": "Fill Height",
+    "tags": [
+      "height",
+      "stretch",
+      "full page",
+      "vertical"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "arrows-expand-y/outline-18.svg"
+      }
+    ]
+  },
+  "arrows-expand": {
+    "concept": "Fill",
+    "tags": [
+      "fill",
+      "fit page",
+      "stretch"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "arrows-expand/outline-18.svg"
+      }
+    ]
+  },
+  "ascending-sorting": {
+    "concept": "Ascending",
+    "tags": [
+      "ascending",
+      "sort",
+      "a to z",
+      "oldest"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "ascending-sorting/outline-18.svg"
+      }
+    ]
+  },
+  "atom": {
+    "concept": "Atom",
+    "tags": [
+      "atom",
+      "science",
+      "physics"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "atom/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "atom/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "backpack": {
+    "concept": "Backpack",
+    "tags": [
+      "backpack",
+      "school",
+      "bag",
+      "travel"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "backpack/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "backpack/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "badge-check": {
+    "concept": "Badge",
+    "tags": [
+      "badge",
+      "verified",
+      "approved",
+      "award"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "badge-check/outline-18.svg"
+      }
+    ]
+  },
+  "bag-shopping": {
+    "concept": "Shopping",
+    "tags": [
+      "shopping",
+      "product",
+      "store",
+      "buy"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "bag-shopping/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "bag-shopping/outline-18-open.svg"
+      }
+    ]
+  },
+  "ban": {
+    "concept": "Skip",
+    "tags": [
+      "skip",
+      "skipped",
+      "block",
+      "ignore"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "ban/outline-18.svg"
+      }
+    ],
+    "parts": [
+      "ring"
+    ]
+  },
+  "bars-filter": {
+    "concept": "Filter",
+    "tags": [
+      "filter",
+      "refine",
+      "narrow",
+      "filters"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "bars-filter/outline-18.svg"
+      }
+    ]
+  },
+  "battery": {
+    "concept": "Battery",
+    "tags": [
+      "battery",
+      "power",
+      "energy",
+      "charge"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "battery/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "battery/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "bell": {
+    "concept": "Notifications",
+    "tags": [
+      "notifications",
+      "alerts",
+      "bell"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "bell/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "bell/outline-18-open.svg"
+      }
+    ]
+  },
+  "binary": {
+    "concept": "Base64",
+    "tags": [
+      "base64",
+      "binary",
+      "encode",
+      "copy as"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "binary/outline-18.svg"
+      }
+    ]
+  },
+  "bird": {
+    "concept": "Bird",
+    "tags": [
+      "bird",
+      "animal",
+      "nature",
+      "wildlife"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "bird/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "bird/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "birdcage": {
+    "concept": "Birdcage",
+    "tags": [
+      "birdcage",
+      "cage",
+      "decor",
+      "vintage"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "birdcage/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "birdcage/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "blockquote": {
+    "concept": "Blockquote",
+    "tags": [
+      "quote",
+      "blockquote",
+      "citation"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "blockquote/outline-18.svg"
+      }
+    ]
+  },
+  "book": {
+    "concept": "Book",
+    "tags": [
+      "book",
+      "reading",
+      "library",
+      "novel"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "book/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "book/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "bookmark": {
+    "concept": "Save",
+    "tags": [
+      "save",
+      "bookmark",
+      "save page",
+      "save view"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "bookmark/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "bookmark/outline-18-open.svg"
+      }
+    ]
+  },
+  "border": {
+    "concept": "Border",
+    "tags": [
+      "border",
+      "outline",
+      "stroke"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "border/outline-18.svg"
+      }
+    ]
+  },
+  "bottle": {
+    "concept": "Bottle",
+    "tags": [
+      "bottle",
+      "drink",
+      "water",
+      "wine"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "bottle/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "bottle/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "brackets-curly": {
+    "concept": "JSON",
+    "tags": [
+      "json",
+      "object",
+      "data",
+      "braces"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "brackets-curly/outline-18.svg"
+      }
+    ]
+  },
+  "briefcase": {
+    "concept": "Briefcase",
+    "tags": [
+      "briefcase",
+      "work",
+      "job",
+      "business"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "briefcase/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "briefcase/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "broom": {
+    "concept": "Clear",
+    "tags": [
+      "clear",
+      "tidy",
+      "clean",
+      "sweep"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "broom/outline-18.svg"
+      }
+    ]
+  },
+  "bug": {
+    "concept": "Report Issue",
+    "tags": [
+      "bug",
+      "issue",
+      "report",
+      "problem"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "bug/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "bug/outline-18-open.svg"
+      }
+    ]
+  },
+  "building": {
+    "concept": "Office",
+    "tags": [
+      "office",
+      "building",
+      "work",
+      "company"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "building/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "building/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "bullet-list": {
+    "concept": "Bulleted List",
+    "tags": [
+      "list",
+      "bullets",
+      "playlist"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "bullet-list/outline-18.svg"
+      }
+    ]
+  },
+  "butterfly": {
+    "concept": "Butterfly",
+    "tags": [
+      "butterfly",
+      "insect",
+      "nature",
+      "spring"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "butterfly/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "butterfly/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "calculator": {
+    "concept": "Calculator",
+    "tags": [
+      "calculator",
+      "math",
+      "numbers",
+      "finance"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "calculator/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "calculator/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "calendar-check": {
+    "concept": "Date Completed",
+    "tags": [
+      "completed",
+      "done date",
+      "calendar"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "calendar-check/outline-18.svg"
+      }
+    ],
+    "base": "calendar",
+    "parts": [
+      "badge-check"
+    ]
+  },
+  "calendar-date": {
+    "concept": "Date Taken",
+    "tags": [
+      "date taken",
+      "captured",
+      "calendar"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "calendar-date/outline-18.svg"
+      }
+    ]
+  },
+  "calendar-pen": {
+    "concept": "Date Modified",
+    "tags": [
+      "modified",
+      "edited",
+      "updated",
+      "calendar"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "calendar-pen/outline-18.svg"
+      }
+    ],
+    "base": "calendar",
+    "parts": [
+      "badge-pen"
+    ]
+  },
+  "calendar-plus": {
+    "concept": "Date Added",
+    "tags": [
+      "added",
+      "created",
+      "imported",
+      "calendar"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "calendar-plus/outline-18.svg"
+      }
+    ],
+    "base": "calendar",
+    "parts": [
+      "badge-plus"
+    ]
+  },
+  "calendar": {
+    "concept": "Date",
+    "tags": [
+      "date",
+      "calendar",
+      "schedule",
+      "routines"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "calendar/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "calendar/outline-18-open.svg"
+      }
+    ]
+  },
+  "camera-sparkle": {
+    "concept": "Camera Settings",
+    "tags": [
+      "exposure",
+      "iso",
+      "lens",
+      "camera"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "camera-sparkle/outline-18.svg"
+      }
+    ],
+    "base": "camera"
+  },
+  "camera": {
+    "concept": "Camera",
+    "tags": [
+      "camera",
+      "photo",
+      "capture",
+      "make",
+      "model"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "camera/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "camera/outline-18-open.svg"
+      }
+    ]
+  },
+  "can": {
+    "concept": "Can",
+    "tags": [
+      "can",
+      "soda",
+      "drink",
+      "beverage"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "can/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "can/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "candle": {
+    "concept": "Candle",
+    "tags": [
+      "candle",
+      "calm",
+      "cozy",
+      "decor"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "candle/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "candle/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "canvas": {
+    "concept": "Canvas",
+    "tags": [
+      "canvas",
+      "board",
+      "whiteboard"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "canvas/outline-18.svg"
+      }
+    ]
+  },
+  "car": {
+    "concept": "Car",
+    "tags": [
+      "car",
+      "drive",
+      "vehicle",
+      "auto"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "car/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "car/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "caret-minimize": {
+    "concept": "Collapsible",
+    "tags": [
+      "collapsible",
+      "toggle",
+      "details",
+      "inline code"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "caret-minimize/outline-18.svg"
+      }
+    ]
+  },
+  "caret-right": {
+    "concept": "Disclosure",
+    "tags": [
+      "disclosure",
+      "expand",
+      "toggle",
+      "caret"
+    ],
+    "variants": [
+      {
+        "style": "fill",
+        "size": 18,
+        "file": "caret-right/fill-18.svg"
+      }
+    ]
+  },
+  "cart": {
+    "concept": "Cart",
+    "tags": [
+      "cart",
+      "shopping",
+      "store",
+      "buy"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "cart/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "cart/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "cat": {
+    "concept": "Cat",
+    "tags": [
+      "cat",
+      "pets",
+      "animal",
+      "kitten"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "cat/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "cat/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "chart-bar": {
+    "concept": "Chart",
+    "tags": [
+      "chart",
+      "graph",
+      "stats",
+      "analytics"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "chart-bar/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "chart-bar/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "chat-bubble": {
+    "concept": "Chat",
+    "tags": [
+      "chat",
+      "fish",
+      "message",
+      "conversation",
+      "caption"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "chat-bubble/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "chat-bubble/outline-18-open.svg"
+      }
+    ]
+  },
+  "check-list": {
+    "concept": "Checklist",
+    "tags": [
+      "checklist",
+      "tasks",
+      "todo"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "check-list/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "check-list/outline-18-open.svg"
+      }
+    ]
+  },
+  "check": {
+    "concept": "Check",
+    "tags": [
+      "check",
+      "checked",
+      "done",
+      "confirm"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "check/outline-18.svg"
+      }
+    ]
+  },
+  "checkbox-checked": {
+    "concept": "Selection",
+    "tags": [
+      "select",
+      "selected",
+      "invert selection"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "checkbox-checked/outline-18.svg"
+      }
+    ]
+  },
+  "chest": {
+    "concept": "Chest",
+    "tags": [
+      "chest",
+      "treasure",
+      "collection",
+      "valuables"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "chest/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "chest/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "chevron-down": {
+    "concept": "Expand",
+    "tags": [
+      "expand",
+      "dropdown",
+      "open",
+      "more"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "chevron-down/outline-18.svg"
+      }
+    ]
+  },
+  "chevron-left": {
+    "concept": "Previous",
+    "tags": [
+      "previous",
+      "back",
+      "left"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "chevron-left/outline-18.svg"
+      }
+    ]
+  },
+  "chevron-right": {
+    "concept": "Next",
+    "tags": [
+      "next",
+      "drill in",
+      "right",
+      "submenu"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "chevron-right/outline-18.svg"
+      }
+    ]
+  },
+  "chevron": {
+    "concept": "Chevron Shape",
+    "tags": [
+      "chevron",
+      "arrow shape",
+      "shape"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "chevron/outline-18.svg"
+      }
+    ]
+  },
+  "chip": {
+    "concept": "Chip",
+    "tags": [
+      "chip",
+      "hardware",
+      "processor",
+      "electronics"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "chip/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "chip/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "circle-arrow-up": {
+    "concept": "Important",
+    "tags": [
+      "important",
+      "priority",
+      "raise"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "circle-arrow-up/outline-18.svg"
+      }
+    ],
+    "parts": [
+      "ring"
+    ]
+  },
+  "circle-check-fill": {
+    "concept": "Complete",
+    "tags": [
+      "complete",
+      "success",
+      "toast"
+    ],
+    "variants": [
+      {
+        "style": "fill",
+        "size": 18,
+        "file": "circle-check-fill/fill-18.svg"
+      }
+    ],
+    "base": "circle-check"
+  },
+  "circle-check": {
+    "concept": "Complete",
+    "tags": [
+      "complete",
+      "connected",
+      "success",
+      "done"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "circle-check/outline-18.svg"
+      }
+    ],
+    "parts": [
+      "ring"
+    ]
+  },
+  "circle-dashed-clock": {
+    "concept": "Pending",
+    "tags": [
+      "pending",
+      "queued",
+      "waiting",
+      "scheduled"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "circle-dashed-clock/outline-18.svg"
+      }
+    ]
+  },
+  "circle-info": {
+    "concept": "Info",
+    "tags": [
+      "info",
+      "about",
+      "details"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "circle-info/outline-18.svg"
+      }
+    ],
+    "parts": [
+      "ring"
+    ]
+  },
+  "circle-question": {
+    "concept": "Help",
+    "tags": [
+      "help",
+      "question",
+      "ask",
+      "faq"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "circle-question/outline-18.svg"
+      }
+    ],
+    "parts": [
+      "ring"
+    ]
+  },
+  "circle-user": {
+    "concept": "Account",
+    "tags": [
+      "account",
+      "profile",
+      "author"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "circle-user/outline-18.svg"
+      }
+    ],
+    "parts": [
+      "ring"
+    ]
+  },
+  "circle-warning": {
+    "concept": "Failed",
+    "tags": [
+      "error",
+      "failed",
+      "problem",
+      "alert"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "circle-warning/outline-18.svg"
+      }
+    ],
+    "parts": [
+      "ring"
+    ]
+  },
+  "circle-xmark-fill": {
+    "concept": "Cancelled",
+    "tags": [
+      "cancelled",
+      "error",
+      "toast"
+    ],
+    "variants": [
+      {
+        "style": "fill",
+        "size": 18,
+        "file": "circle-xmark-fill/fill-18.svg"
+      }
+    ],
+    "base": "circle-xmark"
+  },
+  "circle-xmark": {
+    "concept": "Cancelled",
+    "tags": [
+      "cancelled",
+      "clear",
+      "remove",
+      "stop"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "circle-xmark/outline-18.svg"
+      }
+    ],
+    "parts": [
+      "ring"
+    ]
+  },
+  "circle": {
+    "concept": "Ellipse",
+    "tags": [
+      "circle",
+      "ellipse",
+      "oval",
+      "shape"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "circle/outline-18.svg"
+      }
+    ],
+    "parts": [
+      "ring"
+    ]
+  },
+  "clipboard-arrow-in": {
+    "concept": "From Clipboard",
+    "tags": [
+      "paste",
+      "import",
+      "clipboard"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "clipboard-arrow-in/outline-18.svg"
+      }
+    ],
+    "base": "clipboard"
+  },
+  "clipboard": {
+    "concept": "Clipboard",
+    "tags": [
+      "clipboard",
+      "paste",
+      "copy to"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "clipboard/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "clipboard/outline-18-open.svg"
+      }
+    ]
+  },
+  "clock-plus": {
+    "concept": "Recently Added",
+    "tags": [
+      "recent",
+      "new",
+      "added",
+      "latest"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "clock-plus/outline-18.svg"
+      }
+    ],
+    "base": "clock",
+    "parts": [
+      "ring",
+      "badge-plus"
+    ]
+  },
+  "clock": {
+    "concept": "Time",
+    "tags": [
+      "time",
+      "duration",
+      "recent",
+      "history"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "clock/outline-18.svg"
+      }
+    ],
+    "parts": [
+      "ring"
+    ]
+  },
+  "code-2": {
+    "concept": "Code Block",
+    "tags": [
+      "code block",
+      "snippet",
+      "language"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "code-2/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "code-2/outline-18-open.svg"
+      }
+    ]
+  },
+  "code": {
+    "concept": "Code",
+    "tags": [
+      "code",
+      "source",
+      "html",
+      "developer"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "code/outline-18.svg"
+      }
+    ]
+  },
+  "coffee": {
+    "concept": "Support",
+    "tags": [
+      "support",
+      "donate",
+      "coffee",
+      "sponsor"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "coffee/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "coffee/outline-18-open.svg"
+      }
+    ]
+  },
+  "coins": {
+    "concept": "Coins",
+    "tags": [
+      "coins",
+      "money",
+      "finance",
+      "savings"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "coins/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "coins/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "compass": {
+    "concept": "Explore",
+    "tags": [
+      "explore",
+      "setup",
+      "navigate",
+      "discover"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "compass/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "compass/outline-18-open.svg"
+      }
+    ],
+    "parts": [
+      "ring"
+    ]
+  },
+  "computer": {
+    "concept": "Computer",
+    "tags": [
+      "computer",
+      "desktop",
+      "mac",
+      "laptop",
+      "screen"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "computer/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "computer/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "contrast": {
+    "concept": "Theme",
+    "tags": [
+      "theme",
+      "contrast",
+      "appearance",
+      "dark mode",
+      "grayscale"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "contrast/outline-18.svg"
+      }
+    ],
+    "parts": [
+      "ring"
+    ]
+  },
+  "conversion": {
+    "concept": "Convert",
+    "tags": [
+      "convert",
+      "transcode",
+      "format"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "conversion/outline-18.svg"
+      }
+    ]
+  },
+  "copy-id": {
+    "concept": "Copy ID",
+    "tags": [
+      "copy id",
+      "identifier"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "copy-id/outline-18.svg"
+      }
+    ]
+  },
+  "copy": {
+    "concept": "Copy",
+    "tags": [
+      "copy",
+      "clipboard"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "copy/outline-18.svg"
+      }
+    ]
+  },
+  "credit-card": {
+    "concept": "Credit Card",
+    "tags": [
+      "credit card",
+      "payment",
+      "money",
+      "finance"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "credit-card/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "credit-card/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "crop": {
+    "concept": "Crop",
+    "tags": [
+      "crop",
+      "trim",
+      "region",
+      "capture region"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "crop/outline-18.svg"
+      }
+    ]
+  },
+  "cube": {
+    "concept": "3D",
+    "tags": [
+      "3d",
+      "model",
+      "object",
+      "cube"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "cube/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "cube/outline-18-open.svg"
+      }
+    ]
+  },
+  "cursor": {
+    "concept": "Pointer",
+    "tags": [
+      "pointer",
+      "select",
+      "cursor",
+      "arrow"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "cursor/outline-18.svg"
+      }
+    ]
+  },
+  "curtains": {
+    "concept": "Curtains",
+    "tags": [
+      "curtains",
+      "theater",
+      "stage",
+      "culture"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "curtains/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "curtains/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "cylinder": {
+    "concept": "Database",
+    "tags": [
+      "database",
+      "cylinder",
+      "storage",
+      "shape"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "cylinder/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "cylinder/outline-18-open.svg"
+      }
+    ]
+  },
+  "descending-sorting": {
+    "concept": "Descending",
+    "tags": [
+      "descending",
+      "sort",
+      "z to a",
+      "newest"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "descending-sorting/outline-18.svg"
+      }
+    ]
+  },
+  "diamond": {
+    "concept": "Diamond",
+    "tags": [
+      "diamond",
+      "rhombus",
+      "decision",
+      "shape"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "diamond/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "diamond/outline-18-open.svg"
+      }
+    ]
+  },
+  "dice": {
+    "concept": "Random",
+    "tags": [
+      "random",
+      "shuffle",
+      "dice",
+      "surprise"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "dice/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "dice/outline-18-open.svg"
+      }
+    ]
+  },
+  "document": {
+    "concept": "Document",
+    "tags": [
+      "document",
+      "page",
+      "doc",
+      "pdf"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "document/outline-18.svg"
+      }
+    ]
+  },
+  "door": {
+    "concept": "Door",
+    "tags": [
+      "door",
+      "entrance",
+      "home",
+      "room"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "door/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "door/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "dots": {
+    "concept": "More",
+    "tags": [
+      "more",
+      "actions",
+      "overflow",
+      "menu"
+    ],
+    "variants": [
+      {
+        "style": "fill",
+        "size": 18,
+        "file": "dots/fill-18.svg"
+      }
+    ]
+  },
+  "download": {
+    "concept": "Download",
+    "tags": [
+      "download",
+      "import",
+      "save to disk"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "download/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "download/outline-18-open.svg"
+      }
+    ]
+  },
+  "dumbbell": {
+    "concept": "Dumbbell",
+    "tags": [
+      "dumbbell",
+      "fitness",
+      "gym",
+      "workout"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "dumbbell/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "dumbbell/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "duplicate": {
+    "concept": "Duplicate",
+    "tags": [
+      "duplicate",
+      "clone",
+      "duplicates"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "duplicate/outline-18.svg"
+      }
+    ]
+  },
+  "egg": {
+    "concept": "Egg",
+    "tags": [
+      "egg",
+      "breakfast",
+      "easter",
+      "new"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "egg/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "egg/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "envelope": {
+    "concept": "Email",
+    "tags": [
+      "email",
+      "mail",
+      "message"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "envelope/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "envelope/outline-18-open.svg"
+      }
+    ]
+  },
+  "eraser": {
+    "concept": "Eraser",
+    "tags": [
+      "eraser",
+      "erase",
+      "rub out"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "eraser/outline-18.svg"
+      }
+    ]
+  },
+  "export": {
+    "concept": "Export",
+    "tags": [
+      "export",
+      "share out",
+      "send"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "export/outline-18.svg"
+      }
+    ]
+  },
+  "external-link": {
+    "concept": "Open in Browser",
+    "tags": [
+      "open",
+      "browser",
+      "url",
+      "link",
+      "external"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "external-link/outline-18.svg"
+      }
+    ]
+  },
+  "eye-lens": {
+    "concept": "Lens",
+    "tags": [
+      "lens",
+      "focal",
+      "optics"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "eye-lens/outline-18.svg"
+      }
+    ],
+    "parts": [
+      "ring"
+    ]
+  },
+  "eye-slash": {
+    "concept": "Hide",
+    "tags": [
+      "hide",
+      "hidden",
+      "visibility",
+      "conceal",
+      "reveal"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "eye-slash/outline-18.svg"
+      }
+    ],
+    "base": "eye",
+    "parts": [
+      "slash"
+    ]
+  },
+  "eye": {
+    "concept": "Watch",
+    "tags": [
+      "watch",
+      "monitor",
+      "follow",
+      "view"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "eye/outline-18.svg"
+      }
+    ]
+  },
+  "face-smile": {
+    "concept": "Icon",
+    "tags": [
+      "icon",
+      "emoji",
+      "customize",
+      "face"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "face-smile/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "face-smile/outline-18-open.svg"
+      }
+    ],
+    "parts": [
+      "ring"
+    ]
+  },
+  "fan": {
+    "concept": "Fan",
+    "tags": [
+      "fan",
+      "hand",
+      "culture",
+      "summer"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "fan/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "fan/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "figures": {
+    "concept": "Shapes",
+    "tags": [
+      "shapes",
+      "figures",
+      "draw"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "figures/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "figures/outline-18-open.svg"
+      }
+    ]
+  },
+  "file-alert": {
+    "concept": "Invalid File",
+    "tags": [
+      "invalid",
+      "broken",
+      "repair",
+      "corrupt"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "file-alert/outline-18.svg"
+      }
+    ],
+    "base": "file",
+    "parts": [
+      "file"
+    ]
+  },
+  "file-export": {
+    "concept": "Export Files",
+    "tags": [
+      "export",
+      "save to",
+      "files"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "file-export/outline-18.svg"
+      }
+    ],
+    "base": "file",
+    "parts": [
+      "file",
+      "badge-arrow-right"
+    ]
+  },
+  "file-settings": {
+    "concept": "File Metadata",
+    "tags": [
+      "metadata",
+      "repair",
+      "properties"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "file-settings/outline-18.svg"
+      }
+    ],
+    "base": "file",
+    "parts": [
+      "file"
+    ]
+  },
+  "file-zip": {
+    "concept": "Compress",
+    "tags": [
+      "compress",
+      "zip",
+      "compression",
+      "smaller"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "file-zip/outline-18.svg"
+      }
+    ],
+    "base": "file",
+    "parts": [
+      "file"
+    ]
+  },
+  "file": {
+    "concept": "File",
+    "tags": [
+      "file",
+      "attachment",
+      "files",
+      "count"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "file/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "file/outline-18-open.svg"
+      }
+    ],
+    "parts": [
+      "file"
+    ]
+  },
+  "filing-cabinet": {
+    "concept": "Filing Cabinet",
+    "tags": [
+      "filing cabinet",
+      "files",
+      "office",
+      "records"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "filing-cabinet/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "filing-cabinet/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "fill": {
+    "concept": "Fill Color",
+    "tags": [
+      "fill",
+      "paint",
+      "background color"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "fill/outline-18.svg"
+      }
+    ]
+  },
+  "filter-off": {
+    "concept": "Clear Filters",
+    "tags": [
+      "clear filters",
+      "reset",
+      "remove filter"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "filter-off/outline-18.svg"
+      }
+    ],
+    "parts": [
+      "badge-xmark"
+    ]
+  },
+  "filter-plus": {
+    "concept": "Customize Filters",
+    "tags": [
+      "add filter",
+      "customize",
+      "new filter"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "filter-plus/outline-18.svg"
+      }
+    ],
+    "parts": [
+      "badge-plus"
+    ]
+  },
+  "flag": {
+    "concept": "Flag",
+    "tags": [
+      "flag",
+      "milestone",
+      "goal",
+      "report"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "flag/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "flag/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "flame": {
+    "concept": "Trending",
+    "tags": [
+      "trending",
+      "hot",
+      "popular",
+      "flame"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "flame/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "flame/outline-18-open.svg"
+      }
+    ]
+  },
+  "flashlight": {
+    "concept": "Flashlight",
+    "tags": [
+      "flashlight",
+      "torch",
+      "light",
+      "explore"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "flashlight/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "flashlight/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "flask": {
+    "concept": "Flask",
+    "tags": [
+      "flask",
+      "science",
+      "lab",
+      "experiment",
+      "chemistry"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "flask/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "flask/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "flip-horizontal-2": {
+    "concept": "Flip Horizontal",
+    "tags": [
+      "flip",
+      "mirror",
+      "horizontal"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "flip-horizontal-2/outline-18.svg"
+      }
+    ]
+  },
+  "flip-vertical-2": {
+    "concept": "Flip Vertical",
+    "tags": [
+      "flip",
+      "mirror",
+      "vertical"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "flip-vertical-2/outline-18.svg"
+      }
+    ]
+  },
+  "floppy-disk": {
+    "concept": "Save to Disk",
+    "tags": [
+      "save",
+      "floppy",
+      "current frame",
+      "write"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "floppy-disk/outline-18.svg"
+      }
+    ]
+  },
+  "flower": {
+    "concept": "Flower",
+    "tags": [
+      "flower",
+      "plant",
+      "garden",
+      "bloom"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "flower/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "flower/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "focus": {
+    "concept": "Focus",
+    "tags": [
+      "focus",
+      "focal length",
+      "navigator",
+      "center"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "focus/outline-18.svg"
+      }
+    ]
+  },
+  "folder-ban": {
+    "concept": "Uncategorized",
+    "tags": [
+      "uncategorized",
+      "no folder",
+      "unfiled"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "folder-ban/outline-18.svg"
+      }
+    ],
+    "base": "folder",
+    "parts": [
+      "folder",
+      "badge-ban"
+    ]
+  },
+  "folder-bolt": {
+    "concept": "Auto-Tag",
+    "tags": [
+      "auto tag",
+      "automation",
+      "rules"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "folder-bolt/outline-18.svg"
+      }
+    ],
+    "base": "folder",
+    "parts": [
+      "folder",
+      "badge-bolt"
+    ]
+  },
+  "folder-dots": {
+    "concept": "Same Level Folders",
+    "tags": [
+      "siblings",
+      "same level",
+      "collapsed folder"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "folder-dots/outline-18.svg"
+      }
+    ],
+    "base": "folder",
+    "parts": [
+      "folder"
+    ]
+  },
+  "folder-import": {
+    "concept": "Import Folder",
+    "tags": [
+      "import",
+      "migrate",
+      "data export",
+      "mymind"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "folder-import/outline-18.svg"
+      }
+    ],
+    "base": "folder",
+    "parts": [
+      "folder",
+      "badge-arrow-down"
+    ]
+  },
+  "folder-pen": {
+    "concept": "Change Folder",
+    "tags": [
+      "rename folder",
+      "change folder",
+      "edit folder"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "folder-pen/outline-18.svg"
+      }
+    ],
+    "base": "folder",
+    "parts": [
+      "folder",
+      "badge-pen"
+    ]
+  },
+  "folder-plus": {
+    "concept": "New Folder",
+    "tags": [
+      "new folder",
+      "add folder",
+      "create"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "folder-plus/outline-18.svg"
+      }
+    ],
+    "base": "folder",
+    "parts": [
+      "folder"
+    ]
+  },
+  "folder-refresh": {
+    "concept": "Watched Folder",
+    "tags": [
+      "watched folder",
+      "sync folder",
+      "monitor"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "folder-refresh/outline-18.svg"
+      }
+    ],
+    "base": "folder",
+    "parts": [
+      "folder",
+      "badge-refresh"
+    ]
+  },
+  "folder-search": {
+    "concept": "Smart Folder",
+    "tags": [
+      "smart folder",
+      "saved search",
+      "review organization"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "folder-search/outline-18.svg"
+      }
+    ],
+    "base": "folder",
+    "parts": [
+      "folder",
+      "badge-search"
+    ]
+  },
+  "folder-send": {
+    "concept": "Move To",
+    "tags": [
+      "move",
+      "send",
+      "transfer",
+      "other library"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "folder-send/outline-18.svg"
+      }
+    ],
+    "base": "folder",
+    "parts": [
+      "folder",
+      "badge-arrow-right"
+    ]
+  },
+  "folder-tree": {
+    "concept": "Subfolders",
+    "tags": [
+      "subfolders",
+      "tree",
+      "hierarchy",
+      "expand all"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "folder-tree/outline-18.svg"
+      }
+    ]
+  },
+  "folder-xmark": {
+    "concept": "Remove Folder",
+    "tags": [
+      "remove folder",
+      "stop watching",
+      "unlink"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "folder-xmark/outline-18.svg"
+      }
+    ],
+    "base": "folder",
+    "parts": [
+      "folder",
+      "badge-xmark"
+    ]
+  },
+  "folder": {
+    "concept": "Folder",
+    "tags": [
+      "folder",
+      "directory",
+      "new folder"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "folder/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "folder/outline-18-open.svg"
+      }
+    ],
+    "parts": [
+      "folder"
+    ]
+  },
+  "fork-knife": {
+    "concept": "Food",
+    "tags": [
+      "food",
+      "recipes",
+      "cooking",
+      "restaurant",
+      "fork",
+      "knife"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "fork-knife/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "fork-knife/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "fridge": {
+    "concept": "Fridge",
+    "tags": [
+      "fridge",
+      "kitchen",
+      "food",
+      "groceries"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "fridge/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "fridge/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "full-screen": {
+    "concept": "Full Screen",
+    "tags": [
+      "full screen",
+      "maximize"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "full-screen/outline-18.svg"
+      }
+    ]
+  },
+  "gamepad": {
+    "concept": "Gamepad",
+    "tags": [
+      "gamepad",
+      "games",
+      "gaming",
+      "controller",
+      "play"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "gamepad/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "gamepad/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "gauge": {
+    "concept": "Quality",
+    "tags": [
+      "quality",
+      "gauge",
+      "overview",
+      "performance"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "gauge/outline-18.svg"
+      }
+    ]
+  },
+  "gear-3": {
+    "concept": "Settings",
+    "tags": [
+      "settings",
+      "preferences",
+      "options"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "gear-3/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "gear-3/outline-18-open.svg"
+      }
+    ]
+  },
+  "gif": {
+    "concept": "GIF",
+    "tags": [
+      "gif",
+      "animated",
+      "insert"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "gif/outline-18.svg"
+      }
+    ]
+  },
+  "gift": {
+    "concept": "Gift",
+    "tags": [
+      "gift",
+      "present",
+      "birthday",
+      "wishlist"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "gift/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "gift/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "glasses": {
+    "concept": "Glasses",
+    "tags": [
+      "glasses",
+      "accessories",
+      "eyewear",
+      "vision"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "glasses/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "glasses/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "globe": {
+    "concept": "Web",
+    "tags": [
+      "web",
+      "website",
+      "globe",
+      "language",
+      "from",
+      "rendered"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "globe/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "globe/outline-18-open.svg"
+      }
+    ],
+    "parts": [
+      "ring"
+    ]
+  },
+  "graduation-cap": {
+    "concept": "Graduation Cap",
+    "tags": [
+      "graduation cap",
+      "school",
+      "education",
+      "study",
+      "university"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "graduation-cap/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "graduation-cap/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "grid-layout-cols": {
+    "concept": "Waterfall",
+    "tags": [
+      "waterfall",
+      "masonry",
+      "columns",
+      "horizontal"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "grid-layout-cols/outline-18.svg"
+      }
+    ]
+  },
+  "grid-layout-rows": {
+    "concept": "Justified",
+    "tags": [
+      "justified",
+      "rows",
+      "vertical"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "grid-layout-rows/outline-18.svg"
+      }
+    ]
+  },
+  "grid-plus": {
+    "concept": "Add to Canvas",
+    "tags": [
+      "add to canvas",
+      "place",
+      "insert"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "grid-plus/outline-18.svg"
+      }
+    ],
+    "base": "grid",
+    "parts": [
+      "badge-plus"
+    ]
+  },
+  "grid": {
+    "concept": "Grid",
+    "tags": [
+      "grid",
+      "gallery",
+      "items",
+      "channel"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "grid/outline-18.svg"
+      }
+    ]
+  },
+  "grip-dots-vertical": {
+    "concept": "Drag Handle",
+    "tags": [
+      "drag",
+      "reorder",
+      "grip",
+      "handle"
+    ],
+    "variants": [
+      {
+        "style": "fill",
+        "size": 18,
+        "file": "grip-dots-vertical/fill-18.svg"
+      }
+    ]
+  },
+  "ground-plane-detection": {
+    "concept": "Ground Plane",
+    "tags": [
+      "ground",
+      "floor",
+      "plane",
+      "ar"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "ground-plane-detection/outline-18.svg"
+      }
+    ]
+  },
+  "group": {
+    "concept": "Group",
+    "tags": [
+      "group",
+      "combine",
+      "post"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "group/outline-18.svg"
+      }
+    ]
+  },
+  "hand": {
+    "concept": "Pan",
+    "tags": [
+      "pan",
+      "hand",
+      "move",
+      "grab"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "hand/outline-18.svg"
+      }
+    ]
+  },
+  "handbag": {
+    "concept": "Handbag",
+    "tags": [
+      "handbag",
+      "bags",
+      "purse",
+      "fashion"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "handbag/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "handbag/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "hashtag": {
+    "concept": "Tag",
+    "tags": [
+      "tag",
+      "hashtag",
+      "label",
+      "topic"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "hashtag/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "hashtag/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "heading-1": {
+    "concept": "Heading 1",
+    "tags": [
+      "heading",
+      "title",
+      "h1"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "heading-1/outline-18.svg"
+      }
+    ]
+  },
+  "heading-2": {
+    "concept": "Heading 2",
+    "tags": [
+      "heading",
+      "subtitle",
+      "h2"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "heading-2/outline-18.svg"
+      }
+    ]
+  },
+  "heading-3": {
+    "concept": "Heading 3",
+    "tags": [
+      "heading",
+      "h3"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "heading-3/outline-18.svg"
+      }
+    ]
+  },
+  "heading-4": {
+    "concept": "Heading 4",
+    "tags": [
+      "heading",
+      "h4"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "heading-4/outline-18.svg"
+      }
+    ]
+  },
+  "headphones": {
+    "concept": "Headphones",
+    "tags": [
+      "headphones",
+      "audio",
+      "music",
+      "podcast"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "headphones/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "headphones/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "heart": {
+    "concept": "Favorite",
+    "tags": [
+      "favorite",
+      "like",
+      "love"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "heart/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "heart/outline-18-open.svg"
+      }
+    ]
+  },
+  "hexagon": {
+    "concept": "Hexagon",
+    "tags": [
+      "hexagon",
+      "polygon",
+      "shape"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "hexagon/outline-18.svg"
+      }
+    ]
+  },
+  "highlighter": {
+    "concept": "Highlighter",
+    "tags": [
+      "highlight",
+      "marker",
+      "emphasize"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "highlighter/outline-18.svg"
+      }
+    ]
+  },
+  "history": {
+    "concept": "History",
+    "tags": [
+      "history",
+      "recently used",
+      "recent",
+      "activity"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "history/outline-18.svg"
+      }
+    ]
+  },
+  "house": {
+    "concept": "Home",
+    "tags": [
+      "home",
+      "house",
+      "start"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "house/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "house/outline-18-open.svg"
+      }
+    ]
+  },
+  "image-binary": {
+    "concept": "Convert Image",
+    "tags": [
+      "convert",
+      "png",
+      "format"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "image-binary/outline-18.svg"
+      }
+    ],
+    "base": "image",
+    "parts": [
+      "badge-refresh"
+    ]
+  },
+  "image-minus": {
+    "concept": "Remove Image",
+    "tags": [
+      "remove background",
+      "reset thumbnail"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "image-minus/outline-18.svg"
+      }
+    ],
+    "base": "image",
+    "parts": [
+      "badge-minus"
+    ]
+  },
+  "image-plus": {
+    "concept": "Set Thumbnail",
+    "tags": [
+      "thumbnail",
+      "cover",
+      "set image",
+      "current frame"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "image-plus/outline-18.svg"
+      }
+    ],
+    "base": "image",
+    "parts": [
+      "badge-plus"
+    ]
+  },
+  "image-sparkle": {
+    "concept": "Visual Match",
+    "tags": [
+      "visual match",
+      "similar",
+      "find images"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "image-sparkle/outline-18.svg"
+      }
+    ],
+    "base": "image"
+  },
+  "image-upscale": {
+    "concept": "Upscale",
+    "tags": [
+      "upscale",
+      "enlarge",
+      "resolution",
+      "2x"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "image-upscale/outline-18.svg"
+      }
+    ],
+    "base": "image",
+    "parts": [
+      "badge-arrow-up-right"
+    ]
+  },
+  "image": {
+    "concept": "Image",
+    "tags": [
+      "image",
+      "picture",
+      "photo",
+      "thumbnail"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "image/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "image/outline-18-open.svg"
+      }
+    ]
+  },
+  "inbox-minus": {
+    "concept": "Remove from Inbox",
+    "tags": [
+      "remove",
+      "archive",
+      "done",
+      "inbox"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "inbox-minus/outline-18.svg"
+      }
+    ],
+    "base": "inbox",
+    "parts": [
+      "badge-minus"
+    ]
+  },
+  "inbox": {
+    "concept": "Inbox",
+    "tags": [
+      "inbox",
+      "incoming",
+      "new"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "inbox/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "inbox/outline-18-open.svg"
+      }
+    ]
+  },
+  "input-password-edit": {
+    "concept": "API Key",
+    "tags": [
+      "key",
+      "password",
+      "secret",
+      "token"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "input-password-edit/outline-18.svg"
+      }
+    ]
+  },
+  "jacket": {
+    "concept": "Jacket",
+    "tags": [
+      "jacket",
+      "clothes",
+      "outfits",
+      "fashion",
+      "coat"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "jacket/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "jacket/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "jar": {
+    "concept": "Jar",
+    "tags": [
+      "jar",
+      "pantry",
+      "jam",
+      "storage"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "jar/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "jar/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "key": {
+    "concept": "Key",
+    "tags": [
+      "key",
+      "password",
+      "access",
+      "unlock"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "key/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "key/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "keyboard": {
+    "concept": "Keyboard",
+    "tags": [
+      "keyboard",
+      "shortcuts",
+      "keys"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "keyboard/outline-18.svg"
+      }
+    ]
+  },
+  "lamp": {
+    "concept": "Lamp",
+    "tags": [
+      "lamp",
+      "interiors",
+      "light",
+      "decor"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "lamp/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "lamp/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "laptop": {
+    "concept": "Laptop",
+    "tags": [
+      "laptop",
+      "computer",
+      "work",
+      "device"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "laptop/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "laptop/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "layers": {
+    "concept": "Saved View",
+    "tags": [
+      "saved view",
+      "layers",
+      "stack",
+      "apply view"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "layers/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "layers/outline-18-open.svg"
+      }
+    ]
+  },
+  "leaf": {
+    "concept": "Leaf",
+    "tags": [
+      "leaf",
+      "nature",
+      "plant",
+      "garden",
+      "green"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "leaf/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "leaf/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "library": {
+    "concept": "Library",
+    "tags": [
+      "library",
+      "home",
+      "all saves"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "library/outline-18.svg"
+      }
+    ]
+  },
+  "lightbulb": {
+    "concept": "Tip",
+    "tags": [
+      "tip",
+      "idea",
+      "hint",
+      "suggestion"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "lightbulb/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "lightbulb/outline-18-open.svg"
+      }
+    ]
+  },
+  "line-curved": {
+    "concept": "Curved Line",
+    "tags": [
+      "curved",
+      "connector",
+      "line"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "line-curved/outline-18.svg"
+      }
+    ]
+  },
+  "line-elbow": {
+    "concept": "Elbow Line",
+    "tags": [
+      "elbow",
+      "connector",
+      "angled",
+      "line"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "line-elbow/outline-18.svg"
+      }
+    ]
+  },
+  "line-straight": {
+    "concept": "Straight Line",
+    "tags": [
+      "straight",
+      "connector",
+      "line"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "line-straight/outline-18.svg"
+      }
+    ]
+  },
+  "line-weight": {
+    "concept": "Stroke",
+    "tags": [
+      "stroke",
+      "line weight",
+      "thickness"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "line-weight/outline-18.svg"
+      }
+    ]
+  },
+  "link-2": {
+    "concept": "Link",
+    "tags": [
+      "link",
+      "url",
+      "copy link"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "link-2/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "link-2/outline-18-open.svg"
+      }
+    ]
+  },
+  "lipstick": {
+    "concept": "Lipstick",
+    "tags": [
+      "lipstick",
+      "makeup",
+      "beauty",
+      "cosmetics"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "lipstick/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "lipstick/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "list-favs": {
+    "concept": "Rating",
+    "tags": [
+      "rating",
+      "stars",
+      "list",
+      "score"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "list-favs/outline-18.svg"
+      }
+    ]
+  },
+  "location": {
+    "concept": "Pin",
+    "tags": [
+      "pin",
+      "location",
+      "place",
+      "map",
+      "marker"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "location/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "location/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "lock": {
+    "concept": "Lock",
+    "tags": [
+      "lock",
+      "locked",
+      "secure"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "lock/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "lock/outline-18-open.svg"
+      }
+    ]
+  },
+  "magic-wand": {
+    "concept": "Re-analyze",
+    "tags": [
+      "magic",
+      "reanalyze",
+      "auto",
+      "enhance"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "magic-wand/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "magic-wand/outline-18-open.svg"
+      }
+    ]
+  },
+  "magnifier": {
+    "concept": "Search",
+    "tags": [
+      "search",
+      "find",
+      "look up"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "magnifier/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "magnifier/outline-18-open.svg"
+      }
+    ]
+  },
+  "mailbox": {
+    "concept": "Mailbox",
+    "tags": [
+      "mailbox",
+      "letters",
+      "post",
+      "delivery"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "mailbox/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "mailbox/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "map": {
+    "concept": "Map",
+    "tags": [
+      "map",
+      "travel",
+      "directions",
+      "atlas"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "map/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "map/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "media-fast-backwards": {
+    "concept": "Go to Start",
+    "tags": [
+      "start",
+      "rewind",
+      "loop start",
+      "beginning"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "media-fast-backwards/outline-18.svg"
+      }
+    ]
+  },
+  "media-fast-forward": {
+    "concept": "Go to End",
+    "tags": [
+      "end",
+      "skip",
+      "loop end",
+      "forward"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "media-fast-forward/outline-18.svg"
+      }
+    ]
+  },
+  "media-library": {
+    "concept": "Media",
+    "tags": [
+      "media",
+      "kinds",
+      "shapes",
+      "icon"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "media-library/outline-18.svg"
+      }
+    ]
+  },
+  "media-pause": {
+    "concept": "Pause",
+    "tags": [
+      "pause",
+      "hold",
+      "stop playback"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "media-pause/outline-18.svg"
+      }
+    ]
+  },
+  "media-play": {
+    "concept": "Play",
+    "tags": [
+      "play",
+      "start",
+      "resume"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "media-play/outline-18.svg"
+      }
+    ]
+  },
+  "merge": {
+    "concept": "Merge",
+    "tags": [
+      "merge",
+      "combine",
+      "merge duplicates"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "merge/outline-18.svg"
+      }
+    ]
+  },
+  "microphone": {
+    "concept": "Audio",
+    "tags": [
+      "audio",
+      "microphone",
+      "recording",
+      "voice"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "microphone/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "microphone/outline-18-open.svg"
+      }
+    ]
+  },
+  "mind-map": {
+    "concept": "Mind Map",
+    "tags": [
+      "mind map",
+      "diagram",
+      "tree"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "mind-map/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "mind-map/outline-18-open.svg"
+      }
+    ]
+  },
+  "minus": {
+    "concept": "Decrease",
+    "tags": [
+      "minus",
+      "decrease",
+      "zoom out",
+      "indeterminate"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "minus/outline-18.svg"
+      }
+    ]
+  },
+  "moon": {
+    "concept": "Moon",
+    "tags": [
+      "moon",
+      "night",
+      "dark",
+      "sleep"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "moon/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "moon/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "mountain": {
+    "concept": "Mountain",
+    "tags": [
+      "mountain",
+      "hike",
+      "outdoors",
+      "landscape",
+      "nature"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "mountain/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "mountain/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "move-obj-down": {
+    "concept": "Move Down",
+    "tags": [
+      "move down",
+      "reorder",
+      "lower"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "move-obj-down/outline-18.svg"
+      }
+    ]
+  },
+  "move-obj-up": {
+    "concept": "Move Up",
+    "tags": [
+      "move up",
+      "reorder",
+      "raise"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "move-obj-up/outline-18.svg"
+      }
+    ]
+  },
+  "movie": {
+    "concept": "Audio and Video",
+    "tags": [
+      "movie",
+      "film",
+      "audio",
+      "video"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "movie/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "movie/outline-18-open.svg"
+      }
+    ]
+  },
+  "music-note": {
+    "concept": "Music",
+    "tags": [
+      "music",
+      "audio",
+      "song",
+      "note"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "music-note/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "music-note/outline-18-open.svg"
+      }
+    ]
+  },
+  "newspaper": {
+    "concept": "Newspaper",
+    "tags": [
+      "newspaper",
+      "news",
+      "press",
+      "articles"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "newspaper/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "newspaper/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "nodes-3": {
+    "concept": "Sources",
+    "tags": [
+      "sources",
+      "connections",
+      "network",
+      "accounts"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "nodes-3/outline-18.svg"
+      }
+    ]
+  },
+  "note-edit": {
+    "concept": "Annotate",
+    "tags": [
+      "annotate",
+      "note",
+      "edit text"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "note-edit/outline-18.svg"
+      }
+    ],
+    "base": "note",
+    "parts": [
+      "badge-pen"
+    ]
+  },
+  "note": {
+    "concept": "Note",
+    "tags": [
+      "note",
+      "notes",
+      "writing",
+      "memo"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "note/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "note/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "notebook": {
+    "concept": "Notebook",
+    "tags": [
+      "notebook",
+      "journal",
+      "diary",
+      "notes"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "notebook/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "notebook/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "notepad": {
+    "concept": "Note",
+    "tags": [
+      "note",
+      "notes",
+      "memo",
+      "text"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "notepad/outline-18.svg"
+      }
+    ]
+  },
+  "open-in-new-window": {
+    "concept": "Open in New Window",
+    "tags": [
+      "window",
+      "new window"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "open-in-new-window/outline-18.svg"
+      }
+    ],
+    "parts": [
+      "badge-plus"
+    ]
+  },
+  "ordered-list": {
+    "concept": "Numbered List",
+    "tags": [
+      "numbered",
+      "ordered",
+      "list"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "ordered-list/outline-18.svg"
+      }
+    ]
+  },
+  "package": {
+    "concept": "Package",
+    "tags": [
+      "package",
+      "bundle",
+      "box",
+      "delivery"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "package/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "package/outline-18-open.svg"
+      }
+    ]
+  },
+  "paintbrush": {
+    "concept": "Brush",
+    "tags": [
+      "brush",
+      "paint",
+      "art",
+      "drawing",
+      "illustration"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "paintbrush/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "paintbrush/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "palette": {
+    "concept": "Color",
+    "tags": [
+      "color",
+      "palette",
+      "primary color"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "palette/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "palette/outline-18-open.svg"
+      }
+    ]
+  },
+  "paperclip": {
+    "concept": "Attach",
+    "tags": [
+      "attach",
+      "attachment",
+      "add files"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "paperclip/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "paperclip/outline-18-open.svg"
+      }
+    ]
+  },
+  "parallelogram": {
+    "concept": "Parallelogram",
+    "tags": [
+      "parallelogram",
+      "slant",
+      "shape"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "parallelogram/outline-18.svg"
+      }
+    ]
+  },
+  "party-popper": {
+    "concept": "Party Popper",
+    "tags": [
+      "party popper",
+      "celebrate",
+      "party",
+      "birthday"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "party-popper/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "party-popper/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "passport": {
+    "concept": "Passport",
+    "tags": [
+      "passport",
+      "travel",
+      "id",
+      "document"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "passport/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "passport/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "path": {
+    "concept": "File Path",
+    "tags": [
+      "path",
+      "copy path",
+      "location"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "path/outline-18.svg"
+      }
+    ]
+  },
+  "paw": {
+    "concept": "Paw",
+    "tags": [
+      "paw",
+      "pets",
+      "animal",
+      "dog",
+      "cat"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "paw/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "paw/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "pencil": {
+    "concept": "Edit",
+    "tags": [
+      "edit",
+      "rename",
+      "pencil",
+      "marker"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "pencil/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "pencil/outline-18-open.svg"
+      }
+    ]
+  },
+  "perfume": {
+    "concept": "Perfume",
+    "tags": [
+      "perfume",
+      "fragrance",
+      "beauty",
+      "scent"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "perfume/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "perfume/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "phone": {
+    "concept": "Phone",
+    "tags": [
+      "phone",
+      "mobile",
+      "iphone",
+      "call"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "phone/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "phone/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "pin-tack": {
+    "concept": "Pin",
+    "tags": [
+      "pin",
+      "keep",
+      "quick access"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "pin-tack/outline-18.svg"
+      }
+    ]
+  },
+  "plane": {
+    "concept": "Plane",
+    "tags": [
+      "plane",
+      "travel",
+      "flight",
+      "trip",
+      "airport"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "plane/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "plane/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "plus": {
+    "concept": "Add",
+    "tags": [
+      "add",
+      "new",
+      "create",
+      "zoom in"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "plus/outline-18.svg"
+      }
+    ]
+  },
+  "pocket-watch": {
+    "concept": "Pocket Watch",
+    "tags": [
+      "pocket watch",
+      "time",
+      "vintage",
+      "accessories"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "pocket-watch/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "pocket-watch/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "polaroid": {
+    "concept": "Instant Camera",
+    "tags": [
+      "instant camera",
+      "polaroid",
+      "snapshot",
+      "film"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "polaroid/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "polaroid/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "power-off": {
+    "concept": "Turn Off",
+    "tags": [
+      "off",
+      "disable",
+      "power",
+      "stop"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "power-off/outline-18.svg"
+      }
+    ]
+  },
+  "print": {
+    "concept": "Print",
+    "tags": [
+      "print",
+      "printer"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "print/outline-18.svg"
+      }
+    ]
+  },
+  "puzzle": {
+    "concept": "Extension",
+    "tags": [
+      "extension",
+      "plugin",
+      "add-on",
+      "puzzle",
+      "pieces",
+      "games"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "puzzle/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "puzzle/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "quick-access": {
+    "concept": "Quick Access",
+    "tags": [
+      "quick access",
+      "shortcuts",
+      "pinned"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "quick-access/outline-18.svg"
+      }
+    ]
+  },
+  "receipt": {
+    "concept": "Receipt",
+    "tags": [
+      "receipt",
+      "invoice",
+      "expense",
+      "bill"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "receipt/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "receipt/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "refresh": {
+    "concept": "Sync",
+    "tags": [
+      "sync",
+      "fetch",
+      "refresh",
+      "rescan",
+      "update",
+      "check"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "refresh/outline-18.svg"
+      }
+    ]
+  },
+  "rename": {
+    "concept": "Batch Rename",
+    "tags": [
+      "batch rename",
+      "rename many",
+      "file names"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "rename/outline-18.svg"
+      }
+    ]
+  },
+  "report-file": {
+    "concept": "Debug Report",
+    "tags": [
+      "debug",
+      "report",
+      "diagnostics",
+      "logs"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "report-file/outline-18.svg"
+      }
+    ],
+    "parts": [
+      "file"
+    ]
+  },
+  "resize-x": {
+    "concept": "Fit Page",
+    "tags": [
+      "fit page",
+      "width",
+      "resize"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "resize-x/outline-18.svg"
+      }
+    ]
+  },
+  "ring-box": {
+    "concept": "Ring Box",
+    "tags": [
+      "ring box",
+      "jewelry",
+      "accessories",
+      "wedding"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "ring-box/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "ring-box/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "rocket": {
+    "concept": "Rocket",
+    "tags": [
+      "rocket",
+      "launch",
+      "startup",
+      "space"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "rocket/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "rocket/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "rotate-image-clockwise": {
+    "concept": "Rotate",
+    "tags": [
+      "rotate",
+      "turn",
+      "orientation"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "rotate-image-clockwise/outline-18.svg"
+      }
+    ]
+  },
+  "safe": {
+    "concept": "Safe",
+    "tags": [
+      "safe",
+      "vault",
+      "secure",
+      "money"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "safe/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "safe/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "sailboat": {
+    "concept": "Sailboat",
+    "tags": [
+      "sailboat",
+      "boat",
+      "sea",
+      "travel"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "sailboat/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "sailboat/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "scan-image": {
+    "concept": "Text in Image",
+    "tags": [
+      "text in images",
+      "recognize",
+      "scan"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "scan-image/outline-18.svg"
+      }
+    ]
+  },
+  "scan": {
+    "concept": "Scan",
+    "tags": [
+      "scan",
+      "scan all",
+      "detect"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "scan/outline-18.svg"
+      }
+    ]
+  },
+  "scissors": {
+    "concept": "Scissors",
+    "tags": [
+      "scissors",
+      "cut",
+      "craft",
+      "diy"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "scissors/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "scissors/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "scroll": {
+    "concept": "Scroll",
+    "tags": [
+      "scroll",
+      "history",
+      "document",
+      "story"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "scroll/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "scroll/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "section": {
+    "concept": "Section",
+    "tags": [
+      "section",
+      "frame",
+      "wrap",
+      "group"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "section/outline-18.svg"
+      }
+    ]
+  },
+  "seedling": {
+    "concept": "Seedling",
+    "tags": [
+      "seedling",
+      "plant",
+      "grow",
+      "garden"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "seedling/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "seedling/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "server": {
+    "concept": "Server",
+    "tags": [
+      "server",
+      "host",
+      "local",
+      "mcp"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "server/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "server/outline-18-open.svg"
+      }
+    ]
+  },
+  "settings-wrench": {
+    "concept": "Repair",
+    "tags": [
+      "repair",
+      "tools",
+      "fix",
+      "maintenance"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "settings-wrench/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "settings-wrench/outline-18-open.svg"
+      }
+    ]
+  },
+  "share": {
+    "concept": "Share",
+    "tags": [
+      "share",
+      "share sheet",
+      "send to"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "share/outline-18.svg"
+      }
+    ]
+  },
+  "shell": {
+    "concept": "Shell",
+    "tags": [
+      "shell",
+      "beach",
+      "ocean",
+      "summer"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "shell/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "shell/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "shield-check": {
+    "concept": "Verify",
+    "tags": [
+      "verify",
+      "integrity",
+      "health",
+      "lossless",
+      "review"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "shield-check/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "shield-check/outline-18-open.svg"
+      }
+    ]
+  },
+  "shuffle": {
+    "concept": "Shuffle",
+    "tags": [
+      "shuffle",
+      "random",
+      "mix"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "shuffle/outline-18.svg"
+      }
+    ]
+  },
+  "sidebar-edit": {
+    "concept": "Customize Sidebar",
+    "tags": [
+      "customize",
+      "sidebar",
+      "edit sidebar"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "sidebar-edit/outline-18.svg"
+      }
+    ],
+    "parts": [
+      "badge-pen"
+    ]
+  },
+  "sidebar-left": {
+    "concept": "Sidebar",
+    "tags": [
+      "sidebar",
+      "panel",
+      "toggle sidebar"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "sidebar-left/outline-18.svg"
+      }
+    ]
+  },
+  "size-lg": {
+    "concept": "Fit to Window",
+    "tags": [
+      "fit",
+      "window",
+      "actual size"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "size-lg/outline-18.svg"
+      }
+    ]
+  },
+  "sliders": {
+    "concept": "Adjust",
+    "tags": [
+      "adjust",
+      "options",
+      "controls",
+      "tools"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "sliders/outline-18.svg"
+      }
+    ]
+  },
+  "sneaker": {
+    "concept": "Sneaker",
+    "tags": [
+      "sneaker",
+      "shoes",
+      "footwear",
+      "fashion"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "sneaker/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "sneaker/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "sort-alpha-ascending": {
+    "concept": "Sort by Name",
+    "tags": [
+      "sort",
+      "alphabetical",
+      "name",
+      "a to z"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "sort-alpha-ascending/outline-18.svg"
+      }
+    ]
+  },
+  "sort-arrows": {
+    "concept": "Sort",
+    "tags": [
+      "sort",
+      "order",
+      "sort by"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "sort-arrows/outline-18.svg"
+      }
+    ]
+  },
+  "sparkle": {
+    "concept": "Enrichment",
+    "tags": [
+      "ai",
+      "enrich",
+      "model",
+      "suggest",
+      "sparkle"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "sparkle/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "sparkle/outline-18-open.svg"
+      }
+    ],
+    "parts": [
+      "sparkle"
+    ]
+  },
+  "speaker": {
+    "concept": "Speaker",
+    "tags": [
+      "speaker",
+      "audio",
+      "sound",
+      "music"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "speaker/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "speaker/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "spell-check": {
+    "concept": "Font Activated",
+    "tags": [
+      "activated",
+      "installed",
+      "font",
+      "check"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "spell-check/outline-18.svg"
+      }
+    ]
+  },
+  "square-code": {
+    "concept": "Diagram",
+    "tags": [
+      "diagram",
+      "embed",
+      "code block",
+      "mermaid"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "square-code/outline-18.svg"
+      }
+    ],
+    "base": "square"
+  },
+  "square-rounded": {
+    "concept": "Rounded Rectangle",
+    "tags": [
+      "rounded",
+      "rectangle",
+      "shape"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "square-rounded/outline-18.svg"
+      }
+    ]
+  },
+  "square": {
+    "concept": "Rectangle",
+    "tags": [
+      "rectangle",
+      "square",
+      "shape"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "square/outline-18.svg"
+      }
+    ]
+  },
+  "star-minus": {
+    "concept": "Remove from Starred",
+    "tags": [
+      "unstar",
+      "remove",
+      "starred"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "star-minus/outline-18.svg"
+      }
+    ],
+    "base": "star",
+    "parts": [
+      "badge-minus"
+    ]
+  },
+  "star-plus": {
+    "concept": "Add to Starred",
+    "tags": [
+      "star",
+      "add",
+      "starred"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "star-plus/outline-18.svg"
+      }
+    ],
+    "base": "star",
+    "parts": [
+      "badge-plus"
+    ]
+  },
+  "star": {
+    "concept": "Starred",
+    "tags": [
+      "star",
+      "starred",
+      "favorite",
+      "rating"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "star/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "star/outline-18-open.svg"
+      }
+    ]
+  },
+  "stopwatch": {
+    "concept": "Duration",
+    "tags": [
+      "duration",
+      "length",
+      "timer",
+      "stopwatch"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "stopwatch/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "stopwatch/outline-18-open.svg"
+      }
+    ]
+  },
+  "suitcase": {
+    "concept": "Suitcase",
+    "tags": [
+      "suitcase",
+      "travel",
+      "luggage",
+      "trip"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "suitcase/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "suitcase/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "sun": {
+    "concept": "Sun",
+    "tags": [
+      "sun",
+      "day",
+      "summer",
+      "weather",
+      "light"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "sun/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "sun/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "table-download": {
+    "concept": "Export Table",
+    "tags": [
+      "csv",
+      "export",
+      "fetch",
+      "table"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "table-download/outline-18.svg"
+      }
+    ],
+    "base": "table",
+    "parts": [
+      "badge-arrow-down"
+    ]
+  },
+  "table": {
+    "concept": "Table",
+    "tags": [
+      "table",
+      "csv",
+      "grid",
+      "rows"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "table/outline-18.svg"
+      }
+    ]
+  },
+  "tag-plus": {
+    "concept": "Add Tags",
+    "tags": [
+      "add tags",
+      "tag",
+      "label"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "tag-plus/outline-18.svg"
+      }
+    ],
+    "base": "tag",
+    "parts": [
+      "tag",
+      "badge-plus"
+    ]
+  },
+  "tag-slash": {
+    "concept": "Untagged",
+    "tags": [
+      "untagged",
+      "no tags",
+      "unlabeled"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "tag-slash/outline-18.svg"
+      }
+    ],
+    "parts": [
+      "slash"
+    ]
+  },
+  "tag": {
+    "concept": "Tag",
+    "tags": [
+      "tag",
+      "tags",
+      "label",
+      "new tag"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "tag/outline-18.svg"
+      }
+    ],
+    "parts": [
+      "tag"
+    ]
+  },
+  "takeout": {
+    "concept": "Takeout",
+    "tags": [
+      "takeout",
+      "food",
+      "delivery",
+      "restaurant"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "takeout/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "takeout/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "tent": {
+    "concept": "Tent",
+    "tags": [
+      "tent",
+      "camping",
+      "outdoors",
+      "trip"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "tent/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "tent/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "terminal": {
+    "concept": "Terminal",
+    "tags": [
+      "terminal",
+      "command",
+      "line",
+      "shell",
+      "code"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "terminal/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "terminal/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "text-a": {
+    "concept": "Characters",
+    "tags": [
+      "characters",
+      "glyphs",
+      "letters"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "text-a/outline-18.svg"
+      }
+    ]
+  },
+  "text-align-bottom": {
+    "concept": "Align Text Bottom",
+    "tags": [
+      "text",
+      "align",
+      "bottom"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "text-align-bottom/outline-18.svg"
+      }
+    ]
+  },
+  "text-align-center": {
+    "concept": "Align Text Center",
+    "tags": [
+      "text",
+      "align",
+      "center"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "text-align-center/outline-18.svg"
+      }
+    ]
+  },
+  "text-align-left": {
+    "concept": "Align Text Left",
+    "tags": [
+      "text",
+      "align",
+      "left"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "text-align-left/outline-18.svg"
+      }
+    ]
+  },
+  "text-align-middle": {
+    "concept": "Align Text Middle",
+    "tags": [
+      "text",
+      "align",
+      "middle"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "text-align-middle/outline-18.svg"
+      }
+    ]
+  },
+  "text-align-right": {
+    "concept": "Align Text Right",
+    "tags": [
+      "text",
+      "align",
+      "right"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "text-align-right/outline-18.svg"
+      }
+    ]
+  },
+  "text-align-top": {
+    "concept": "Align Text Top",
+    "tags": [
+      "text",
+      "align",
+      "top"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "text-align-top/outline-18.svg"
+      }
+    ]
+  },
+  "text-bold": {
+    "concept": "Bold",
+    "tags": [
+      "bold",
+      "strong",
+      "weight"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "text-bold/outline-18.svg"
+      }
+    ]
+  },
+  "text-italic": {
+    "concept": "Italic",
+    "tags": [
+      "italic",
+      "emphasis",
+      "slant"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "text-italic/outline-18.svg"
+      }
+    ]
+  },
+  "text-strikethrough": {
+    "concept": "Strikethrough",
+    "tags": [
+      "strikethrough",
+      "strike",
+      "delete text"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "text-strikethrough/outline-18.svg"
+      }
+    ]
+  },
+  "text-to-image": {
+    "concept": "Search by Description",
+    "tags": [
+      "describe",
+      "text to image",
+      "natural language"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "text-to-image/outline-18.svg"
+      }
+    ]
+  },
+  "text-underline": {
+    "concept": "Underline",
+    "tags": [
+      "underline",
+      "emphasis"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "text-underline/outline-18.svg"
+      }
+    ]
+  },
+  "text": {
+    "concept": "Text",
+    "tags": [
+      "text",
+      "title",
+      "type tool"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "text/outline-18.svg"
+      }
+    ]
+  },
+  "threads-like": {
+    "concept": "Threads Like",
+    "tags": [
+      "threads",
+      "like",
+      "heart"
+    ],
+    "variants": [
+      {
+        "style": "fill",
+        "size": 18,
+        "file": "threads-like/fill-18.svg"
+      }
+    ]
+  },
+  "threads-logo": {
+    "concept": "Threads",
+    "tags": [
+      "threads",
+      "meta",
+      "logo"
+    ],
+    "variants": [
+      {
+        "style": "fill",
+        "size": 18,
+        "file": "threads-logo/fill-18.svg"
+      }
+    ]
+  },
+  "threads-reply": {
+    "concept": "Threads Reply",
+    "tags": [
+      "threads",
+      "reply",
+      "comment"
+    ],
+    "variants": [
+      {
+        "style": "fill",
+        "size": 18,
+        "file": "threads-reply/fill-18.svg"
+      }
+    ]
+  },
+  "threads-repost": {
+    "concept": "Threads Repost",
+    "tags": [
+      "threads",
+      "repost",
+      "share"
+    ],
+    "variants": [
+      {
+        "style": "fill",
+        "size": 18,
+        "file": "threads-repost/fill-18.svg"
+      }
+    ]
+  },
+  "threads-share": {
+    "concept": "Threads Share",
+    "tags": [
+      "threads",
+      "share",
+      "send"
+    ],
+    "variants": [
+      {
+        "style": "fill",
+        "size": 18,
+        "file": "threads-share/fill-18.svg"
+      }
+    ]
+  },
+  "ticket": {
+    "concept": "Ticket",
+    "tags": [
+      "ticket",
+      "event",
+      "concert",
+      "pass"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "ticket/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "ticket/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "toolbox": {
+    "concept": "Toolbox",
+    "tags": [
+      "toolbox",
+      "tools",
+      "diy",
+      "repair"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "toolbox/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "toolbox/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "trapezoid": {
+    "concept": "Trapezoid",
+    "tags": [
+      "trapezoid",
+      "shape"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "trapezoid/outline-18.svg"
+      }
+    ]
+  },
+  "trash-xmark": {
+    "concept": "Trash",
+    "tags": [
+      "trash",
+      "bin",
+      "deleted saves"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "trash-xmark/outline-18.svg"
+      }
+    ],
+    "base": "trash",
+    "parts": [
+      "badge-xmark"
+    ]
+  },
+  "trash": {
+    "concept": "Delete",
+    "tags": [
+      "delete",
+      "remove",
+      "trash"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "trash/outline-18.svg"
+      }
+    ]
+  },
+  "triangle-warning": {
+    "concept": "Caution",
+    "tags": [
+      "caution",
+      "warning",
+      "sensitive"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "triangle-warning/outline-18.svg"
+      }
+    ]
+  },
+  "triangle": {
+    "concept": "Triangle",
+    "tags": [
+      "triangle",
+      "shape"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "triangle/outline-18.svg"
+      }
+    ]
+  },
+  "trophy": {
+    "concept": "Trophy",
+    "tags": [
+      "trophy",
+      "award",
+      "win",
+      "achievement"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "trophy/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "trophy/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "tv": {
+    "concept": "Channel",
+    "tags": [
+      "channel",
+      "tv",
+      "stream",
+      "account"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "tv/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "tv/outline-18-open.svg"
+      }
+    ]
+  },
+  "tweet-bookmark": {
+    "concept": "X Bookmark",
+    "tags": [
+      "x",
+      "twitter",
+      "bookmark"
+    ],
+    "variants": [
+      {
+        "style": "fill",
+        "size": 18,
+        "file": "tweet-bookmark/fill-18.svg"
+      }
+    ]
+  },
+  "tweet-like": {
+    "concept": "X Like",
+    "tags": [
+      "x",
+      "twitter",
+      "like",
+      "heart"
+    ],
+    "variants": [
+      {
+        "style": "fill",
+        "size": 18,
+        "file": "tweet-like/fill-18.svg"
+      }
+    ]
+  },
+  "tweet-reply": {
+    "concept": "X Reply",
+    "tags": [
+      "x",
+      "twitter",
+      "reply"
+    ],
+    "variants": [
+      {
+        "style": "fill",
+        "size": 18,
+        "file": "tweet-reply/fill-18.svg"
+      }
+    ]
+  },
+  "tweet-repost": {
+    "concept": "X Repost",
+    "tags": [
+      "x",
+      "twitter",
+      "repost",
+      "retweet"
+    ],
+    "variants": [
+      {
+        "style": "fill",
+        "size": 18,
+        "file": "tweet-repost/fill-18.svg"
+      }
+    ]
+  },
+  "tweet-verified": {
+    "concept": "X Verified",
+    "tags": [
+      "x",
+      "twitter",
+      "verified",
+      "badge"
+    ],
+    "variants": [
+      {
+        "style": "fill",
+        "size": 18,
+        "file": "tweet-verified/fill-18.svg"
+      }
+    ]
+  },
+  "tweet-views": {
+    "concept": "X Views",
+    "tags": [
+      "x",
+      "twitter",
+      "views",
+      "impressions"
+    ],
+    "variants": [
+      {
+        "style": "fill",
+        "size": 18,
+        "file": "tweet-views/fill-18.svg"
+      }
+    ]
+  },
+  "type-scale": {
+    "concept": "Font Size",
+    "tags": [
+      "size",
+      "scale",
+      "waterfall"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "type-scale/outline-18.svg"
+      }
+    ]
+  },
+  "typography": {
+    "concept": "Font",
+    "tags": [
+      "font",
+      "typeface",
+      "specimen"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "typography/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "typography/outline-18-open.svg"
+      }
+    ]
+  },
+  "umbrella": {
+    "concept": "Umbrella",
+    "tags": [
+      "umbrella",
+      "rain",
+      "weather",
+      "cover"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "umbrella/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "umbrella/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "undo": {
+    "concept": "Restore",
+    "tags": [
+      "restore",
+      "undo",
+      "put back"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "undo/outline-18.svg"
+      }
+    ]
+  },
+  "ungroup": {
+    "concept": "Ungroup",
+    "tags": [
+      "ungroup",
+      "split",
+      "separate"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "ungroup/outline-18.svg"
+      }
+    ]
+  },
+  "upload": {
+    "concept": "Upload",
+    "tags": [
+      "upload",
+      "export files",
+      "send out"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "upload/outline-18.svg"
+      }
+    ]
+  },
+  "user-plus": {
+    "concept": "New Source",
+    "tags": [
+      "new source",
+      "add account",
+      "follow"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "user-plus/outline-18.svg"
+      }
+    ],
+    "base": "user",
+    "parts": [
+      "badge-plus"
+    ]
+  },
+  "user": {
+    "concept": "Person",
+    "tags": [
+      "person",
+      "people",
+      "user",
+      "accounts"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "user/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "user/outline-18-open.svg"
+      }
+    ]
+  },
+  "vector": {
+    "concept": "Dimensions",
+    "tags": [
+      "dimensions",
+      "width",
+      "height",
+      "size"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "vector/outline-18.svg"
+      }
+    ]
+  },
+  "video": {
+    "concept": "Video",
+    "tags": [
+      "video",
+      "clip",
+      "recording"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "video/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "video/outline-18-open.svg"
+      }
+    ]
+  },
+  "view-plus-sign": {
+    "concept": "New View",
+    "tags": [
+      "new view",
+      "add view",
+      "smart folder"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "view-plus-sign/outline-18.svg"
+      }
+    ],
+    "parts": [
+      "badge-plus"
+    ]
+  },
+  "vinyl": {
+    "concept": "Vinyl",
+    "tags": [
+      "vinyl",
+      "record",
+      "music",
+      "album"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "vinyl/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "vinyl/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "volume-off": {
+    "concept": "Mute",
+    "tags": [
+      "mute",
+      "silent",
+      "sound off"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "volume-off/outline-18.svg"
+      }
+    ],
+    "base": "volume",
+    "parts": [
+      "badge-xmark"
+    ]
+  },
+  "volume": {
+    "concept": "Volume",
+    "tags": [
+      "volume",
+      "sound",
+      "audio on"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "volume/outline-18.svg"
+      }
+    ]
+  },
+  "wallet": {
+    "concept": "Wallet",
+    "tags": [
+      "wallet",
+      "money",
+      "finance",
+      "budget"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "wallet/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "wallet/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "wardrobe": {
+    "concept": "Wardrobe",
+    "tags": [
+      "wardrobe",
+      "closet",
+      "clothes",
+      "fashion"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "wardrobe/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "wardrobe/outline-18-open.svg"
+      }
+    ],
+    "picker": true
+  },
+  "window-download": {
+    "concept": "Downloads",
+    "tags": [
+      "downloads",
+      "status",
+      "queue"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "window-download/outline-18.svg"
+      }
+    ],
+    "base": "window",
+    "parts": [
+      "badge-arrow-down"
+    ]
+  },
+  "window-share": {
+    "concept": "Open in Default App",
+    "tags": [
+      "open with",
+      "default app",
+      "export original"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "window-share/outline-18.svg"
+      }
+    ],
+    "base": "window",
+    "parts": [
+      "badge-arrow-up-right"
+    ]
+  },
+  "window": {
+    "concept": "Tag Group",
+    "tags": [
+      "tag group",
+      "window",
+      "panel"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "window/outline-18.svg"
+      }
+    ]
+  },
+  "xmark": {
+    "concept": "Close",
+    "tags": [
+      "close",
+      "cancel",
+      "dismiss",
+      "stop"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "xmark/outline-18.svg"
+      }
+    ]
+  }
+}

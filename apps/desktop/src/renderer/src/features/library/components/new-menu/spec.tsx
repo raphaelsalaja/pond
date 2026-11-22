@@ -1,15 +1,14 @@
 import {
   IconArchiveDownload,
-  IconArrowRotateClockwise,
   IconBulletList,
   IconCheckboxChecked,
-  IconCopy,
+  IconClipboardArrowIn,
   IconDownload,
+  IconDuplicate,
   IconEye,
   IconFile,
   IconFileAlert,
   IconFileSettings,
-  IconFiles2,
   IconFolder,
   IconFolderImport,
   IconFolderOpen,
@@ -18,8 +17,10 @@ import {
   IconGlobe,
   IconImage,
   IconImageSparkle,
+  IconLibrary,
   IconLink2,
   IconNotepad,
+  IconRefresh,
   IconRename,
   IconReportFile,
   IconScan,
@@ -195,7 +196,7 @@ export function buildNewMenuItems(
         {
           id: "clipboard",
           label: "Import from Clipboard",
-          icon: <IconCopy />,
+          icon: <IconClipboardArrowIn />,
           keywords: "paste image files",
           onClick: () => void runNewAction(importClipboard),
         },
@@ -309,14 +310,14 @@ export function buildNewMenuItems(
       type: "submenu",
       id: "library",
       label: "Library",
-      icon: <IconFiles2 />,
+      icon: <IconLibrary />,
       keywords: "duplicates rescan verify repair diagnostics",
       items: [
         {
           type: "submenu",
           id: "find-duplicates",
           label: "Find Duplicates",
-          icon: <IconFiles2 />,
+          icon: <IconDuplicate />,
           keywords: "scan similar exact",
           items: [
             {
@@ -352,7 +353,7 @@ export function buildNewMenuItems(
             {
               id: "organization-all",
               label: "All Saves",
-              icon: <IconFiles2 />,
+              icon: <IconLibrary />,
               onClick: () => reviewOrganization("all"),
             },
             {
@@ -372,7 +373,7 @@ export function buildNewMenuItems(
         {
           id: "rescan",
           label: "Rescan Library",
-          icon: <IconArrowRotateClockwise />,
+          icon: <IconRefresh />,
           keywords: "reconcile index files disk",
           shortcut: shortcutGlyphs("library.rescan"),
           onClick: () => void runNewAction(rescanLibrary),

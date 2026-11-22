@@ -11,7 +11,6 @@ import type {
   TweetCardMedia,
   TweetCardMetrics,
 } from "@shared/tweet-card";
-import prettyMs from "pretty-ms";
 
 const isDataUrl = (url: string | undefined): url is string =>
   url?.startsWith("data:image/") === true;
@@ -55,21 +54,22 @@ const compact = new Intl.NumberFormat(undefined, {
   compactDisplay: "short",
   maximumFractionDigits: 1,
 });
-const tsTime = new Intl.DateTimeFormat(undefined, {
-  hour: "numeric",
-  minute: "2-digit",
-});
-const tsDate = new Intl.DateTimeFormat(undefined, {
-  month: "short",
-  day: "numeric",
-  year: "numeric",
-});
+const MINUTE = 60_000;
+const HOUR = 60 * MINUTE;
+const DAY = 24 * HOUR;
 
-function timestampLine(value: string | undefined): string {
+/** The post header's age at render time: `42m`, `18h`, `3d`, then `11/18/26` from a week on. */
+function relativeTime(value: string | undefined, now = Date.now()): string {
   if (!value) return "";
-  const d = new Date(value);
-  if (!Number.isFinite(d.getTime())) return "";
-  return `${tsTime.format(d)} · ${tsDate.format(d)}`;
+  const then = new Date(value);
+  const ms = now - then.getTime();
+  if (!Number.isFinite(ms)) return "";
+  if (ms < MINUTE) return `${Math.max(0, Math.floor(ms / 1000))}s`;
+  if (ms < HOUR) return `${Math.floor(ms / MINUTE)}m`;
+  if (ms < DAY) return `${Math.floor(ms / HOUR)}h`;
+  if (ms < 7 * DAY) return `${Math.floor(ms / DAY)}d`;
+  const two = (n: number) => String(n).padStart(2, "0");
+  return `${two(then.getMonth() + 1)}/${two(then.getDate())}/${two(then.getFullYear() % 100)}`;
 }
 
 function author(a: TweetCardAuthor): ThreadsAuthor {
@@ -91,15 +91,7 @@ function media(list: TweetCardMedia[] | undefined): ThreadsMedia[] {
       out.width = m.width;
       out.height = m.height;
     }
-    if (m.type === "video") {
-      out.video = true;
-      if (m.durationSec !== undefined) {
-        out.duration = prettyMs(Math.max(0, Math.floor(m.durationSec)) * 1000, {
-          colonNotation: true,
-          secondsDecimalDigits: 0,
-        });
-      }
-    }
+    if (m.type === "video") out.video = true;
     return out;
   });
 }
@@ -130,12 +122,13 @@ export function cardDataToThreadsPost(data: TweetCardData): ThreadsPost | null {
 
   const post: ThreadsPost = {
     ...nested(data, false),
-    timestamp: timestampLine(data.publishedAt),
-    metrics: [],
+    time: relativeTime(data.publishedAt),
+    metrics: METRICS.map(({ key, icon }) => {
+      const value = data.metrics?.[key];
+      return { icon, value: value ? compact.format(value) : "" };
+    }),
   };
   if (data.replyTo) post.parent = nested(data.replyTo, false);
-  if (data.isReply && data.replyingTo && !data.replyTo)
-    post.replyingTo = data.replyingTo;
   if (data.quoted) post.quoted = nested(data.quoted, true);
   if (data.card) {
     const c = data.card;
@@ -146,14 +139,6 @@ export function cardDataToThreadsPost(data: TweetCardData): ThreadsPost | null {
       large: c.large === true,
     };
     if (isDataUrl(c.imageUrl)) post.card.image = c.imageUrl;
-  }
-  const m = data.metrics;
-  if (m) {
-    for (const { key, icon } of METRICS) {
-      const value = m[key];
-      if (value !== undefined)
-        post.metrics.push({ icon, value: compact.format(value) });
-    }
   }
   return post;
 }

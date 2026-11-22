@@ -1,35 +1,58 @@
-/* Room for the card edge inside Reveal, which clips overflow. */
-.reveal {
-  padding: 1px;
-  margin: -1px;
-}
-
 .root {
+  position: relative;
   overflow: clip;
+  font-size: var(--ds-text-body);
+  line-height: var(--ds-leading-body);
   background: var(--ds-background-primary);
-  border-radius: var(--ds-radius-xl);
-  box-shadow: var(--ds-shadow-border);
+  border-radius: var(--ds-radius-2xl);
+
+  /* Drawn over the children so no fill covers the edge; Reveal clips anything outside. */
+  &::after {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    content: "";
+    border-radius: inherit;
+    box-shadow: inset 0 0 0 var(--ds-border-width) var(--ds-border-subtle);
+  }
+
+  &[data-tone="destructive"]::after {
+    box-shadow: inset 0 0 0 var(--ds-border-width) var(--ds-danger-border);
+  }
 }
 
 .body {
   display: flex;
   flex-direction: column;
-  padding: var(--ds-space-lg) var(--ds-space-lg) 0;
+  padding: var(--ds-space-lg) var(--ds-space-xl) var(--ds-space-md);
 }
 
 .title {
-  margin: 0 0 var(--ds-space-md);
+  margin: 0;
+  font-size: var(--ds-text-heading);
   font-weight: var(--ds-weight-strong);
-  line-height: 20px;
+  line-height: var(--ds-leading-heading);
   color: var(--ds-foreground-primary);
   text-wrap: balance;
 }
 
 .description {
-  margin: calc(var(--ds-space-sm) * -1) 0 var(--ds-space-md);
-  line-height: 18px;
+  margin: 0;
+  font-size: var(--ds-text-small);
+  line-height: var(--ds-leading-small);
   color: var(--ds-foreground-tertiary);
   text-wrap: pretty;
+}
+
+.title + .description {
+  margin-top: var(--ds-space-2xs);
+}
+
+.title + .choices,
+.description + .choices,
+.description + ul,
+.title + ul {
+  margin-top: var(--ds-space-xl);
 }
 
 .choices {
@@ -46,8 +69,8 @@
   display: flex;
   gap: var(--ds-space-md);
   align-items: center;
-  min-height: 32px;
-  padding: var(--ds-space-sm);
+  min-height: 34px;
+  padding: var(--ds-space-sm) var(--ds-space-sm);
   font: inherit;
   color: var(--ds-foreground-secondary);
   text-align: left;
@@ -58,16 +81,16 @@
   transition: background var(--ds-duration-fast) var(--ds-easing-standard);
 
   &:hover {
-    background: var(--ds-surface-primary);
+    background: var(--ds-surface-secondary);
   }
 
   &:active {
-    background: var(--ds-surface-secondary);
+    background: var(--ds-surface-tertiary);
   }
 
   &[data-selected] {
     color: var(--ds-foreground-primary);
-    background: var(--ds-surface-primary);
+    background: var(--ds-surface-secondary);
   }
 
   &:focus-visible,
@@ -97,18 +120,20 @@
   width: 20px;
   height: 20px;
   font-size: var(--ds-text-small);
-  font-weight: var(--ds-weight-strong);
+  font-weight: var(--ds-weight-medium);
   font-variant-numeric: tabular-nums;
   color: var(--ds-foreground-tertiary);
-  background: var(--ds-surface-secondary);
-  border-radius: var(--ds-radius-xs);
+  background: var(--ds-background-primary);
+  border-radius: var(--ds-radius-sm);
+  box-shadow: inset 0 0 0 var(--ds-border-width) var(--ds-border-subtle);
   transition:
     color var(--ds-duration-fast) var(--ds-easing-standard),
     background var(--ds-duration-fast) var(--ds-easing-standard);
 
   .choice[data-selected] & {
-    color: var(--ds-accent-foreground);
-    background: var(--ds-accent-tint);
+    color: var(--ds-accent-contrast);
+    background: var(--ds-accent);
+    box-shadow: none;
   }
 }
 
@@ -117,6 +142,11 @@
   min-width: 0;
   line-height: 18px;
   overflow-wrap: anywhere;
+}
+
+.hint {
+  display: inline-flex;
+  flex: none;
 }
 
 .input {
@@ -140,15 +170,15 @@
   gap: var(--ds-space-sm);
   align-items: center;
   justify-content: flex-end;
-  min-height: 48px;
-  padding: var(--ds-space-lg);
+  padding: var(--ds-space-md) var(--ds-space-xl) var(--ds-space-lg);
 }
 
 .answers {
   display: flex;
   flex-direction: column;
   gap: var(--ds-space-lg);
-  padding: var(--ds-space-lg);
+  padding: var(--ds-space-md) var(--ds-space-xl) var(--ds-space-lg);
+  border-top: var(--ds-border-width) solid var(--ds-border-subtle);
 }
 
 .answer {
@@ -157,11 +187,6 @@
   row-gap: var(--ds-space-2xs);
   column-gap: var(--ds-space-md);
   align-items: center;
-
-  &:not(:first-child) {
-    padding-top: var(--ds-space-lg);
-    border-top: var(--ds-border-width) solid var(--ds-border-subtle);
-  }
 }
 
 .question {
@@ -187,4 +212,87 @@
   .answer[data-tone="muted"] & {
     color: var(--ds-foreground-tertiary);
   }
+}
+
+.receipt {
+  display: flex;
+  gap: var(--ds-space-xs);
+  align-items: center;
+  min-height: 44px;
+  padding: var(--ds-space-xs);
+
+  & .text {
+    display: flex;
+    gap: var(--ds-space-sm);
+    align-items: baseline;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+}
+
+.main {
+  display: flex;
+  flex: 1;
+  gap: var(--ds-space-md);
+  align-items: center;
+  min-width: 0;
+  height: 36px;
+  padding: 0 var(--ds-space-md);
+  font-size: var(--ds-text-body);
+  text-align: start;
+  /* Concentric with the root: its 2xl radius minus the receipt's xs padding. */
+  border-radius: var(--ds-radius-xl);
+
+  &:where(button):hover {
+    background: var(--ds-surface-primary);
+  }
+}
+
+.icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--ds-foreground-primary);
+
+  .receipt[data-tone="muted"] & {
+    color: var(--ds-foreground-tertiary);
+  }
+}
+
+.label {
+  flex-shrink: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-foreground-primary);
+
+  .receipt[data-tone="muted"] & {
+    color: var(--ds-foreground-secondary);
+  }
+}
+
+.detail {
+  min-width: 0;
+  overflow: hidden;
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-tertiary);
+  text-overflow: ellipsis;
+}
+
+.chevron {
+  flex-shrink: 0;
+  margin-inline-start: auto;
+  color: var(--ds-foreground-tertiary);
+  transition: transform var(--ds-duration-medium) var(--ds-easing-standard);
+
+  .receipt[data-open] & {
+    transform: rotate(180deg);
+  }
+}
+
+.action {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: var(--ds-space-2xs);
+  padding-inline-end: var(--ds-space-xs);
 }

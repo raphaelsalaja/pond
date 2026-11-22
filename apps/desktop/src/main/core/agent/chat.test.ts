@@ -155,6 +155,7 @@ const libraryContextFake = (): ReturnType<
   sources: () => [],
   changes: () => [],
   question: () => mock.question,
+  suggestions: () => undefined,
   results: () => [{ title: "References", saveIds: ["film"] }],
   steps: () => [
     {

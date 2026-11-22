@@ -33,6 +33,8 @@ function quoteScreenshotKind(depth: number, scheme: "light" | "dark"): string {
 const CAPTURE_TWEET_VERSION = 13;
 /** A reply image is the reply itself, so a crop that leads with the parent post is stale. */
 const REPLY_CAPTURE_TWEET_VERSION = 14;
+/** 16: Threads cards follow threads.com's post page and shrink to their content. */
+const THREADS_CAPTURE_TWEET_VERSION = 16;
 
 export interface CaptureTweetResult {
   captured: number;
@@ -88,6 +90,9 @@ function readCaptureTweetVersion(rawJson: RawJson | null): number {
 }
 
 function targetCaptureTweetVersion(rawJson: RawJson | null): number {
+  if (rawJson?.capture?.source === "threads") {
+    return THREADS_CAPTURE_TWEET_VERSION;
+  }
   return rawJson?.capture?.replyTo
     ? REPLY_CAPTURE_TWEET_VERSION
     : CAPTURE_TWEET_VERSION;

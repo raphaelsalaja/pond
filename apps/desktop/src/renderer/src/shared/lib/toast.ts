@@ -20,8 +20,12 @@ export interface ToastProgress {
   max?: number;
 }
 
+export type ToastStatus = "loading" | "success" | "error";
+
 export interface ToastData {
   progress?: ToastProgress;
+  /** A spinner while work runs; updating to a result morphs it into a check or warning. */
+  status?: ToastStatus;
   action?: {
     label: string;
     onClick: () => void;
@@ -30,7 +34,6 @@ export interface ToastData {
   icon?: ReactNode;
   tone?: ToastTone;
   note?: string;
-  variant?: "default" | "spotlight";
   ask?: ToastAsk;
 }
 
@@ -43,6 +46,7 @@ export interface NotifyOptions {
   title: string;
   description?: string;
   progress?: ToastProgress;
+  status?: ToastStatus;
   action?: ToastData["action"];
   timeout?: number;
   onClose?: () => void;
@@ -54,6 +58,7 @@ function toastOptions(
   const toast: Parameters<typeof toastManager.add>[0] = {
     data: {
       progress: options.progress,
+      status: options.status,
       action: options.action,
     },
     id: options.id,
@@ -94,7 +99,6 @@ export interface AskOptions extends ToastAsk {
   icon?: ReactNode;
   tone?: ToastTone;
   note?: string;
-  variant?: ToastData["variant"];
   onClose: () => void;
 }
 
@@ -118,7 +122,6 @@ function askToast(
       icon: data.icon,
       tone: data.tone,
       note: data.note,
-      variant: data.variant,
       ask: {
         cancel: data.cancel,
         confirm: data.confirm,

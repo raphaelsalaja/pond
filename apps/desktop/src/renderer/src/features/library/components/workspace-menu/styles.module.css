@@ -1,8 +1,3 @@
-.trigger {
-  display: inline-flex;
-  align-items: center;
-}
-
 .switcher {
   --ds-popup-min-width: min(var(--menu-width), calc(100vw - 32px));
   --ds-popup-width: min(var(--menu-width), calc(100vw - 32px));
@@ -27,13 +22,6 @@
   width: 20px;
   height: 20px;
   border-radius: var(--ds-radius-sm);
-}
-
-.chevron {
-  flex: 0 0 auto;
-  width: 8px;
-  margin-left: var(--ds-space-xs);
-  color: var(--ds-foreground-tertiary);
 }
 
 .identity {

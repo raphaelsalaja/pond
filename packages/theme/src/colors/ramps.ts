@@ -9,13 +9,13 @@ import {
 /** Mirrors DEFAULT_LIGHT_THEME and DEFAULT_DARK_THEME in @pond/schema so the first paint matches the app defaults. */
 export const DEFAULT_THEMES = {
   light: {
-    accent: "#008FFF",
+    accent: "#5E6AD2",
     background: "#ffffff",
     foreground: "#1B1B1B",
     contrast: 50,
   },
   dark: {
-    accent: "#008FFF",
+    accent: "#5E6AD2",
     background: "#0A0A0A",
     foreground: "#EEEEEE",
     contrast: 50,
@@ -38,7 +38,7 @@ const FIXED = {
   "--ds-media-border": "oklch(1 0 0 / 0.435)",
   "--ds-media-edge": "oklch(0 0 0 / 0.36)",
   "--ds-media-background": "oklch(0 0 0 / 0.68)",
-  "--ds-scrim": "light-dark(oklch(0 0 0 / 0.205), oklch(0 0 0 / 0.36))",
+  "--ds-scrim": "light-dark(oklch(0 0 0 / 0.25), oklch(0 0 0 / 0.4))",
   "--ds-sheen": "linear-gradient(oklch(1 0 0 / 0.07), oklch(1 0 0 / 0.03))",
 } as const;
 

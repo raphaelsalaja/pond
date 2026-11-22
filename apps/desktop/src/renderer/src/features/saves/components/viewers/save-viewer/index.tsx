@@ -48,6 +48,7 @@ interface SaveViewerProps {
   save: Save;
   onNavigate?: (id: string) => void;
   onActiveFileIndexChange?: (fileIndex: number | null) => void;
+  onNavigationChange?: (navigation: ViewerNavigation | undefined) => void;
   navRef?: RefObject<ViewerNav | null>;
   showControls?: boolean;
 }
@@ -62,7 +63,6 @@ interface ViewerItemContentProps {
   save: Save;
   item: ViewerItem;
   active: boolean;
-  navigation?: ViewerNavigation;
   onNavigate?: (id: string) => void;
   chapters?: ChapterCue[];
 }
@@ -95,7 +95,6 @@ function ViewerItemContent({
   save,
   item,
   active,
-  navigation,
   onNavigate,
   chapters,
 }: ViewerItemContentProps) {
@@ -117,7 +116,6 @@ function ViewerItemContent({
         title={save.title}
         artist={save.author}
         chapters={chapters}
-        slideNavigation={navigation}
       />
     );
   }
@@ -130,7 +128,6 @@ function ViewerItemContent({
         fileIndex={item.fileIndex}
         url={item.url}
         active={active}
-        navigation={navigation}
         viewerKind={item.capability.kind}
       />
     </Suspense>
@@ -141,6 +138,7 @@ export function SaveViewer({
   save,
   onNavigate = openSave,
   onActiveFileIndexChange,
+  onNavigationChange,
   navRef,
   showControls = true,
 }: SaveViewerProps) {
@@ -235,6 +233,10 @@ export function SaveViewer({
   }, [activeItem?.fileIndex, onActiveFileIndexChange]);
 
   useEffect(() => {
+    onNavigationChange?.(navigation);
+  }, [navigation, onNavigationChange]);
+
+  useEffect(() => {
     if (!navRef) return;
     navRef.current = { step };
     return () => {
@@ -278,7 +280,6 @@ export function SaveViewer({
             entry={entry}
             held={role === "held"}
             pending={role === "pending"}
-            navigation={navigation}
             onNavigate={onNavigate}
             onReady={stage.ready}
           />
@@ -293,14 +294,12 @@ function StageLayer({
   entry,
   held,
   pending,
-  navigation,
   onNavigate,
   onReady,
 }: {
   entry: StageEntry<StageItem>;
   held: boolean;
   pending: boolean;
-  navigation?: ViewerNavigation;
   onNavigate?: (id: string) => void;
   onReady: (key: string) => void;
 }) {
@@ -319,7 +318,6 @@ function StageLayer({
           save={value.save}
           item={value.item}
           active={!held}
-          navigation={held ? undefined : navigation}
           onNavigate={onNavigate}
           chapters={value.chapters}
         />

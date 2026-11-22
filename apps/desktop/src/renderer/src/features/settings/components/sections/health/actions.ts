@@ -5,6 +5,7 @@ import { getAppRouter } from "@/shared/lib/app-router";
 import { openSettings } from "@/shared/lib/open-settings";
 import type { HealthCategoryId, HealthEntry } from "./categories";
 import {
+  inBackground,
   recheckSaves,
   repairSaves,
   retryDownloads,
@@ -71,7 +72,7 @@ export function healthActions(
               "repair",
               "Repair",
               repairable,
-              () => repairSaves(qc, kind, ids(repairable)),
+              () => repairSaves(qc, category, kind, ids(repairable)),
               { primary: true },
             )
           : []),
@@ -85,7 +86,7 @@ export function healthActions(
         "rescan",
         "Rescan Library",
         entries.filter((entry) => entry.resolution === "repair"),
-        () => runNewAction(rescanLibrary),
+        () => inBackground("index", () => runNewAction(rescanLibrary)),
         { primary: true, bulkOnly: true },
       );
     case "posters": {

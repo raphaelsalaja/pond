@@ -44,7 +44,7 @@ export function NewMenu() {
           if (next) reset();
         }}
       >
-        <Tooltip label="New" side="bottom">
+        <Tooltip label="New">
           <Menu.Trigger icon size="sm" variant="ghost" aria-label="New">
             <IconPlus />
           </Menu.Trigger>

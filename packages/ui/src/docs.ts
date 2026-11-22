@@ -2,6 +2,7 @@ import { docs as accordion } from "./accordion/examples";
 import { docs as badge } from "./badge/examples";
 import { docs as brandTile } from "./brand-tile/examples";
 import { docs as button } from "./button/examples";
+import { docs as callout } from "./callout/examples";
 import { docs as changelog } from "./changelog/examples";
 import { docs as checkbox } from "./checkbox/examples";
 import { docs as chip } from "./chip/examples";
@@ -15,6 +16,7 @@ import { docs as dialog } from "./dialog/examples";
 import { docs as empty } from "./empty/examples";
 import { docs as field } from "./field/examples";
 import { docs as fileIcon } from "./file-icon/examples";
+import { docs as iconMorph } from "./icon-morph/examples";
 import { docs as input } from "./input/examples";
 import { docs as keyboard } from "./keyboard/examples";
 import { docs as loader } from "./loader/examples";
@@ -24,6 +26,7 @@ import { docs as message } from "./message/examples";
 import { docs as paneHeader } from "./pane-header/examples";
 import { docs as pickerPanel } from "./picker-panel/examples";
 import { docs as popover } from "./popover/examples";
+import { docs as progressiveBlur } from "./progressive-blur/examples";
 import { docs as prompt } from "./prompt/examples";
 import { docs as rating } from "./rating/examples";
 import { docs as reveal } from "./reveal/examples";
@@ -34,6 +37,7 @@ import { docs as shell } from "./shell/examples";
 import { docs as shimmer } from "./shimmer/examples";
 import { docs as sidebar } from "./sidebar/examples";
 import { docs as slider } from "./slider/examples";
+import { docs as splitButton } from "./split-button/examples";
 import { docs as stepper } from "./stepper/examples";
 import { docs as swap } from "./swap/examples";
 import { docs as switchDocs } from "./switch/examples";
@@ -65,6 +69,7 @@ export const COMPONENT_DOCS: readonly ComponentDocs[] = [
   badge,
   brandTile,
   button,
+  callout,
   changelog,
   checkbox,
   chip,
@@ -78,6 +83,7 @@ export const COMPONENT_DOCS: readonly ComponentDocs[] = [
   empty,
   field,
   fileIcon,
+  iconMorph,
   input,
   keyboard,
   loader,
@@ -87,6 +93,7 @@ export const COMPONENT_DOCS: readonly ComponentDocs[] = [
   paneHeader,
   pickerPanel,
   popover,
+  progressiveBlur,
   prompt,
   rating,
   reveal,
@@ -96,6 +103,7 @@ export const COMPONENT_DOCS: readonly ComponentDocs[] = [
   shimmer,
   sidebar,
   slider,
+  splitButton,
   stepper,
   swap,
   switchDocs,

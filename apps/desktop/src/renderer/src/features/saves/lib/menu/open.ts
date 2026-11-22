@@ -1,10 +1,10 @@
 import {
   IconApplications,
   IconArrowUpRight,
+  IconExternalLink,
   IconFolder,
   IconFolderOpen,
   IconGrid,
-  IconLink2,
   IconOpenInNewWindow,
   IconWindowShare,
 } from "@pond/icons";
@@ -79,7 +79,7 @@ export function buildOpenItems({
   return [
     {
       label: "Open Save",
-      icon: glyph(IconWindowShare),
+      icon: glyph(IconArrowUpRight),
       hidden: batch || opened,
       shortcut: shortcutGlyphs("grid.open"),
       onClick: () => openSave(save.id),
@@ -95,7 +95,7 @@ export function buildOpenItems({
     },
     {
       label: "Open with Default App",
-      icon: glyph(IconArrowUpRight),
+      icon: glyph(IconWindowShare),
       hidden: !hasFiles,
       shortcut: shortcutGlyphs("save.open"),
       onClick: () => {
@@ -132,7 +132,7 @@ export function buildOpenItems({
     batch
       ? {
           label: "Open Original in Browser",
-          icon: glyph(IconLink2),
+          icon: glyph(IconExternalLink),
           hidden: !hasHttpUrl,
           shortcut: shortcutGlyphs("save.open-url"),
           onClick: () => void openInBrowserForSelection(ids),
@@ -140,7 +140,7 @@ export function buildOpenItems({
       : {
           type: "link",
           label: "Open Original in Browser",
-          icon: glyph(IconLink2),
+          icon: glyph(IconExternalLink),
           hidden: !hasHttpUrl,
           shortcut: shortcutGlyphs("save.open-url"),
           href: save.url ?? "",

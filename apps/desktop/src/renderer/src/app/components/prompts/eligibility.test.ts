@@ -7,14 +7,13 @@ import {
 } from "./eligibility";
 
 const DAY = 24 * 60 * 60 * 1000;
-const duringVoting = Date.UTC(2026, 9, 26);
-const afterVoting = Date.UTC(2026, 11, 1);
+const NOW = Date.UTC(2026, 11, 1);
 
 function signals(overrides: Partial<PromptSignals> = {}): PromptSignals {
   return {
-    now: afterVoting,
+    now: NOW,
     saves: 0,
-    firstSeenAt: afterVoting,
+    firstSeenAt: NOW,
     updated: false,
     importedFrom: null,
     xSynced: false,
@@ -32,15 +31,8 @@ describe("pickPrompt", () => {
     expect(pickPrompt(signals(), none)).toBeNull();
   });
 
-  it("asks for Cosign votes only while voting is open", () => {
-    expect(pickPrompt(signals({ now: duringVoting, saves: 25 }), none)).toBe(
-      "cosign",
-    );
-    expect(pickPrompt(signals({ saves: 25 }), none)).toBeNull();
-  });
-
   it("celebrates the highest milestone after a week of use", () => {
-    const week = { firstSeenAt: afterVoting - 7 * DAY };
+    const week = { firstSeenAt: NOW - 7 * DAY };
     expect(pickPrompt(signals({ ...week, saves: 12_000 }), none)).toBe(
       "milestone-10000",
     );
@@ -61,7 +53,7 @@ describe("pickPrompt", () => {
   });
 
   it("offers the extension only to people with no Sources and no extension", () => {
-    const later = { firstSeenAt: afterVoting - 3 * DAY };
+    const later = { firstSeenAt: NOW - 3 * DAY };
     expect(
       pickPrompt(
         signals({ ...later, hasAccounts: false, extensionSeen: false }),
@@ -77,7 +69,7 @@ describe("pickPrompt", () => {
   });
 
   it("offers MCP setup only for installed clients without Pond", () => {
-    const later = { firstSeenAt: afterVoting - 3 * DAY };
+    const later = { firstSeenAt: NOW - 3 * DAY };
     expect(
       pickPrompt(
         signals({
@@ -94,7 +86,7 @@ describe("pickPrompt", () => {
 
   it("asks for feedback after two weeks", () => {
     expect(
-      pickPrompt(signals({ firstSeenAt: afterVoting - 14 * DAY }), none),
+      pickPrompt(signals({ firstSeenAt: NOW - 14 * DAY }), none),
     ).toBe("feedback");
   });
 });

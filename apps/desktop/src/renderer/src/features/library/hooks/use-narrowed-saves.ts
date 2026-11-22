@@ -10,7 +10,9 @@ import {
 } from "@/features/library/state/folders";
 import { useLibraryNav } from "@/features/library/state/library-chrome";
 import {
+  cachedQueryPage,
   createQuerySession,
+  type QuerySessionRuntime,
   type QuerySessionState,
 } from "@/features/library/state/query-session";
 import {
@@ -38,6 +40,12 @@ import { useRetainedTagPickerSaves } from "./retain-tag-picker-saves";
 
 /** Long enough to span a pause between keystrokes, so results swap once typing stops. */
 const KEYWORD_DEBOUNCE_MS = 250;
+
+const runtime: QuerySessionRuntime = {
+  page: (request) => window.pond.query("saves.queryPage", request),
+  ids: (request) => window.pond.query("saves.queryIds", request),
+  refresh: reloadSaves,
+};
 
 export function useNarrowedSaves(mode: SaveListMode, sourceFilter: string) {
   const saves = useSaves();
@@ -137,21 +145,12 @@ export function useNarrowedSaves(mode: SaveListMode, sourceFilter: string) {
       addedSince,
     ],
   );
-  const [state, setState] = useState<QuerySessionState>({
-    page: null,
+  const [state, setState] = useState<QuerySessionState>(() => ({
+    page: cachedQueryPage(runtime, request),
     loading: true,
     error: null,
-  });
-  const [session] = useState(() =>
-    createQuerySession(
-      {
-        page: (request) => window.pond.query("saves.queryPage", request),
-        ids: (request) => window.pond.query("saves.queryIds", request),
-        refresh: reloadSaves,
-      },
-      setState,
-    ),
-  );
+  }));
+  const [session] = useState(() => createQuerySession(runtime, setState));
   useEffect(() => {
     const retyped = session.setRequest(request);
     const timer = setTimeout(

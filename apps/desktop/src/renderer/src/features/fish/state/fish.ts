@@ -2,6 +2,8 @@ import {
   DEFAULT_FISH_ID,
   type Fish,
   type FishPatch,
+  type FishPlacement,
+  type FishSection,
   type FishSummary,
 } from "@shared/fish-contracts";
 import { useSelector } from "@tanstack/react-store";
@@ -16,12 +18,14 @@ interface OpenRoutine {
 
 interface FishState {
   school: FishSummary[];
+  sections: FishSection[];
   editingId: string | null;
   routine: OpenRoutine | null;
 }
 
 const store = new Store<FishState>({
   school: [],
+  sections: [],
   editingId: null,
   routine: null,
 });
@@ -56,6 +60,15 @@ function replace(next: Fish): void {
   }));
 }
 
+async function rollbackOnFailure(write: Promise<unknown>): Promise<void> {
+  try {
+    await write;
+  } catch (error) {
+    await fish.refresh().catch(() => undefined);
+    throw error;
+  }
+}
+
 export const fish = {
   snapshot(): FishSummary[] {
     return store.state.school;
@@ -63,9 +76,39 @@ export const fish = {
   find(id: string): FishSummary | undefined {
     return store.state.school.find((entry) => entry.id === id);
   },
+  sections(): FishSection[] {
+    return store.state.sections;
+  },
   async refresh(): Promise<void> {
-    const school = await window.pond.query("fish.list", {});
-    store.setState((state) => ({ ...state, school }));
+    const [school, sections] = await Promise.all([
+      window.pond.query("fish.list", {}),
+      window.pond.query("fish.sections", {}),
+    ]);
+    store.setState((state) => ({ ...state, school, sections }));
+  },
+  /** Applies the new order before main confirms it, so a dropped fish never snaps back. */
+  async arrange(placements: FishPlacement[]): Promise<void> {
+    store.setState((state) => {
+      const byId = new Map(state.school.map((entry) => [entry.id, entry]));
+      const placed = placements.flatMap((placement) => {
+        const entry = byId.get(placement.id);
+        if (!entry) return [];
+        byId.delete(placement.id);
+        return [
+          {
+            ...entry,
+            pinned: placement.pinned,
+            section: placement.section ?? undefined,
+          },
+        ];
+      });
+      return { ...state, school: [...placed, ...byId.values()] };
+    });
+    await rollbackOnFailure(window.pond.query("fish.arrange", { placements }));
+  },
+  async setSections(sections: FishSection[]): Promise<void> {
+    store.setState((state) => ({ ...state, sections }));
+    await rollbackOnFailure(window.pond.query("fish.setSections", { sections }));
   },
   open(id: string): void {
     getAppRouter()?.history.push(fishPath(id));
@@ -117,8 +160,17 @@ export const fish = {
   },
   async markSeen(id: string): Promise<void> {
     const current = fish.find(id);
-    if (!current?.lastRun || current.lastRun.seen) return;
-    replace({ ...current, lastRun: { ...current.lastRun, seen: true } });
+    if (
+      !current ||
+      (current.lastRun?.seen !== false &&
+        !current.runs?.some((run) => !run.seen))
+    )
+      return;
+    replace({
+      ...current,
+      lastRun: current.lastRun && { ...current.lastRun, seen: true },
+      runs: current.runs?.map((run) => ({ ...run, seen: true })),
+    });
     await window.pond.query("fish.markSeen", { id });
   },
   /** Opens the fish's page with its details pane focused on the name. */
@@ -135,6 +187,10 @@ export const fish = {
 
 export function useFishList(): FishSummary[] {
   return useSelector(store, (state) => state.school);
+}
+
+export function useFishSections(): FishSection[] {
+  return useSelector(store, (state) => state.sections);
 }
 
 export function useFish(id: string | null): FishSummary | undefined {

@@ -3,7 +3,7 @@ import {
   IconInputPasswordEdit as Edit,
   IconExternalLink as ExternalLink,
   IconEye as Eye,
-  IconEye2 as EyeOff,
+  IconEyeSlash as EyeOff,
   IconTrash as Trash,
 } from "@pond/icons";
 import { Button, Field, Input, Settings, Switch } from "@pond/ui";

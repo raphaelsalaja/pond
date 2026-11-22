@@ -1,4 +1,9 @@
-import { IconChatBubble, IconCheck, IconCopy } from "@pond/icons";
+import {
+  IconArrowRotateClockwise,
+  IconChatBubble,
+  IconCheck,
+  IconCopy,
+} from "@pond/icons";
 import { useEffect, useState } from "react";
 import { Button } from "../button";
 import { ActionHint } from "../shared/action-hint";
@@ -9,13 +14,16 @@ export function ActionBar({
   text,
   onCopy,
   onQuote,
+  onRetry,
 }: {
   text?: string;
   /** Writes the text through the host app; without it the browser clipboard is used. */
   onCopy?: (text: string) => Promise<void>;
   onQuote?: () => void;
+  onRetry?: () => void;
 } = {}) {
   const [copied, setCopied] = useState(false);
+  const [spinning, setSpinning] = useState(false);
   useEffect(() => {
     if (!copied) return;
     const timer = setTimeout(() => setCopied(false), 1500);
@@ -54,6 +62,25 @@ export function ActionBar({
               onClick={onQuote}
             >
               <IconChatBubble />
+            </Button>
+          </ActionHint>
+        ) : null}
+        {onRetry ? (
+          <ActionHint label="Retry">
+            <Button
+              icon
+              variant="text"
+              size="xs"
+              aria-label="Retry"
+              className={styles.retry}
+              data-spinning={spinning || undefined}
+              onAnimationEnd={() => setSpinning(false)}
+              onClick={() => {
+                setSpinning(true);
+                onRetry();
+              }}
+            >
+              <IconArrowRotateClockwise />
             </Button>
           </ActionHint>
         ) : null}

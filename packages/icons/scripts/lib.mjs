@@ -31,10 +31,11 @@ function format(path, source) {
   );
 }
 
+/** Outputs marked `raw` skip Biome, which does not format Markdown. */
 export function emit(outputs, { check, command }) {
   const stale = [];
-  for (const [path, source] of outputs) {
-    const formatted = format(path, source);
+  for (const [path, source, raw] of outputs) {
+    const formatted = raw ? source : format(path, source);
     const current = existsSync(path) ? readFileSync(path, "utf8") : null;
     if (current === formatted) continue;
     if (check) stale.push(relative(repoRoot, path));

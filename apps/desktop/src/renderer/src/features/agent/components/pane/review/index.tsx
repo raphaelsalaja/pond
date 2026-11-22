@@ -1,3 +1,4 @@
+import { IconCircleCheck, IconCircleXmark, IconTrash } from "@pond/icons";
 import { Button, Reveal, Swap } from "@pond/ui";
 import { Prompt } from "@pond/ui/prompt";
 import type { AssistantChange } from "@shared/assistant";
@@ -6,7 +7,9 @@ import {
   review,
   useReview,
 } from "@/features/agent/state/review";
+import { useState } from "react";
 import { useFolders } from "@/features/library";
+import { cardKeys } from "../card-keys";
 import { useSourceCovers } from "../save-preview";
 import {
   isPurgeTrash,
@@ -42,9 +45,7 @@ export function ChangeReview({
   useChangeCovers(changes);
   const busy = disabled || working.length > 0;
   const purges = changes.filter(isPurgeTrash);
-  const rest = changes.filter(
-    (change) => !isPurgeTrash(change) || change.status !== "pending",
-  );
+  const rest = changes.filter((change) => !isPurgeTrash(change));
   return (
     <div className={styles.review}>
       {purges.map((change) => (
@@ -88,54 +89,97 @@ function LibraryReview({
   const { working } = useReview();
   const pending = changes.filter((change) => change.status === "pending");
   const [first] = pending;
-  const title = first
-    ? reviewQuestion(pending.length)
-    : reviewOutcome(changes).text;
+  const outcome = reviewOutcome(changes);
+  const title = first ? reviewQuestion(pending.length) : outcome.text;
   const summary = reviewSummary(first ? pending : changes);
   const all = pending.length > 1;
+  const [open, setOpen] = useState(false);
+  const undoable = changes.filter(
+    (change) => change.status === "applied" && change.undoable !== false,
+  );
+  const rows = (
+    <ul className={styles.rows}>
+      {changes.map((change) => (
+        <ChangeRow
+          key={change.id}
+          change={change}
+          busy={busy}
+          working={working.includes(change.id)}
+          folderName={folderName}
+          onAction={(action) =>
+            void review.run(messageId, [change], action, perform)
+          }
+          actions={all}
+        />
+      ))}
+    </ul>
+  );
+  const act = (action: "apply" | "dismiss") =>
+    void review.run(messageId, pending, action, perform);
+  const onKeyDown = cardKeys(
+    first && !busy
+      ? { submit: () => act("apply"), cancel: () => act("dismiss") }
+      : {},
+  );
   return (
-    <Prompt.Root aria-label={title}>
-      <Prompt.Body>
-        <Prompt.Title>
-          <Swap value={title}>{title}</Swap>
-        </Prompt.Title>
-        <Prompt.Description>
-          <Swap value={summary}>{summary}</Swap>
-        </Prompt.Description>
-        <ul className={styles.rows} data-closed={first ? undefined : true}>
-          {changes.map((change) => (
-            <ChangeRow
-              key={change.id}
-              change={change}
-              busy={busy}
-              working={working.includes(change.id)}
-              folderName={folderName}
-              onAction={(action) =>
-                void review.run(messageId, [change], action, perform)
-              }
-              actions={all}
-            />
-          ))}
-        </ul>
-      </Prompt.Body>
+    <Prompt.Root aria-label={title} onKeyDown={onKeyDown}>
+      <Reveal visible={!first} initial={false}>
+        <Prompt.Receipt
+          icon={
+            outcome.tone === "muted" ? (
+              <IconCircleXmark size={16} />
+            ) : (
+              <IconCircleCheck size={16} />
+            )
+          }
+          tone={outcome.tone}
+          label={outcome.text}
+          detail={summary}
+          open={open}
+          onOpenChange={setOpen}
+          action={
+            undoable.length ? (
+              <Button
+                size="xs"
+                variant="secondary"
+                disabled={busy}
+                onClick={() =>
+                  void review.run(messageId, undoable, "undo", perform)
+                }
+              >
+                Undo
+              </Button>
+            ) : null
+          }
+        />
+        <Reveal visible={open} initial={false}>
+          <div className={styles.unfolded}>{rows}</div>
+        </Reveal>
+      </Reveal>
       <Reveal visible={Boolean(first)} initial={false}>
+        <Prompt.Body>
+          <Prompt.Title>
+            <Swap value={title}>{title}</Swap>
+          </Prompt.Title>
+          <Prompt.Description>
+            <Swap value={summary}>{summary}</Swap>
+          </Prompt.Description>
+          {rows}
+        </Prompt.Body>
         <Prompt.Footer>
           <Button
             size="sm"
-            variant="ghost"
+            variant="secondary"
             disabled={busy}
-            onClick={() =>
-              void review.run(messageId, pending, "dismiss", perform)
-            }
+            onClick={() => act("dismiss")}
           >
             {all ? "Dismiss All" : "Dismiss"}
           </Button>
           <Button
             size="sm"
+            variant="accent"
             disabled={busy}
-            onClick={() =>
-              void review.run(messageId, pending, "apply", perform)
-            }
+            onClick={() => act("apply")}
           >
             {all ? "Apply All" : "Apply"}
           </Button>
@@ -156,38 +200,56 @@ function TrashPrompt({
   busy: boolean;
   perform?: ReviewPerform;
 }) {
+  const pending = change.status === "pending";
+  const emptied = change.status === "applied";
+  const act = (action: "apply" | "dismiss") =>
+    void review.run(messageId, [change], action, perform);
+  const onKeyDown = cardKeys(
+    pending && !busy
+      ? { submit: () => act("apply"), cancel: () => act("dismiss") }
+      : {},
+  );
   return (
     <Prompt.Root
-      tone="destructive"
-      aria-label="Empty Trash?"
-      visible={change.status === "pending"}
+      tone={pending ? "destructive" : undefined}
+      aria-label={pending ? "Empty Trash?" : undefined}
+      onKeyDown={onKeyDown}
     >
-      <Prompt.Body>
-        <Prompt.Title>Empty Trash?</Prompt.Title>
-        <Prompt.Description>
-          Every Save in Trash is deleted for good. You can't undo this.
-        </Prompt.Description>
-      </Prompt.Body>
-      <Prompt.Footer>
-        <Button
-          size="sm"
-          variant="ghost"
-          disabled={busy}
-          onClick={() =>
-            void review.run(messageId, [change], "dismiss", perform)
+      <Reveal visible={!pending} initial={false}>
+        <Prompt.Receipt
+          icon={
+            emptied ? <IconTrash size={16} /> : <IconCircleXmark size={16} />
           }
-        >
-          Keep Trash
-        </Button>
-        <Button
-          size="sm"
-          variant="destructive"
-          disabled={busy}
-          onClick={() => void review.run(messageId, [change], "apply", perform)}
-        >
-          Empty Trash
-        </Button>
-      </Prompt.Footer>
+          tone={emptied ? "default" : "muted"}
+          label={emptied ? "Emptied Trash" : "Kept Trash"}
+        />
+      </Reveal>
+      <Reveal visible={pending} initial={false}>
+        <Prompt.Body>
+          <Prompt.Title>Empty Trash?</Prompt.Title>
+          <Prompt.Description>
+            Every Save in Trash is deleted for good. You can't undo this.
+          </Prompt.Description>
+        </Prompt.Body>
+        <Prompt.Footer>
+          <Button
+            size="sm"
+            variant="secondary"
+            disabled={busy}
+            onClick={() => act("dismiss")}
+          >
+            Keep Trash
+          </Button>
+          <Button
+            size="sm"
+            variant="destructive"
+            disabled={busy}
+            onClick={() => act("apply")}
+          >
+            Empty Trash
+          </Button>
+        </Prompt.Footer>
+      </Reveal>
     </Prompt.Root>
   );
 }

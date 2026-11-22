@@ -50,6 +50,21 @@ export const SHORTCUTS = {
     label: "Go to Library",
     group: "Navigate",
   },
+  "nav.inbox": {
+    sequence: ["G", "I"],
+    label: "Go to Inbox",
+    group: "Navigate",
+  },
+  "nav.fish": {
+    sequence: ["G", "F"],
+    label: "Go to Fish",
+    group: "Navigate",
+  },
+  "nav.canvases": {
+    sequence: ["G", "C"],
+    label: "Go to Canvases",
+    group: "Navigate",
+  },
   "nav.sources": {
     sequence: ["G", "S"],
     label: "Go to Sources",

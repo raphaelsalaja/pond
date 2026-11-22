@@ -85,9 +85,9 @@ export function Preview({
       data-dropping={dropping || undefined}
     >
       {images.length === 0 ? (
-        <Empty.Root className={styles.empty}>
+        <Empty.Root size="card" className={styles.empty}>
           <Empty.Media>
-            <IconImage size={32} />
+            <IconImage size={14} />
           </Empty.Media>
           <Empty.Title>No images selected</Empty.Title>
           <Empty.Description>

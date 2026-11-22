@@ -158,7 +158,7 @@ export function TagsSection() {
             ) : total === 0 ? (
               <Empty.Root>
                 <Empty.Media>
-                  <IconTag size={32} />
+                  <IconTag size={14} />
                 </Empty.Media>
                 <Empty.Title>No tags yet</Empty.Title>
                 <Empty.Description>
@@ -175,11 +175,7 @@ export function TagsSection() {
                 </Empty.Action>
               </Empty.Root>
             ) : (
-              <MatchesEmpty
-                actionLabel="Clear Search"
-                description="Try a different tag name."
-                onReset={() => setQ("")}
-              />
+              <MatchesEmpty query={q} onReset={() => setQ("")} />
             )}
           </TagsTableContext>
         </div>

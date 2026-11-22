@@ -102,12 +102,9 @@ describe("workspace menu", () => {
         </QueryClientProvider>,
       );
     });
-    await vi.waitFor(() =>
-      expect(host.querySelector('button[aria-label="Memes"]')).not.toBeNull(),
-    );
     const trigger = host.querySelector("button");
     if (!trigger) throw new Error("Missing workspace menu trigger");
-    expect(trigger.textContent).not.toContain("Memes");
+    await vi.waitFor(() => expect(trigger.textContent).toContain("Memes"));
     await act(async () => trigger.click());
   }
 

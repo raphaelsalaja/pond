@@ -1,5 +1,5 @@
 import { Tooltip as Base } from "@base-ui/react/tooltip";
-import { IconInfo } from "@pond/icons";
+import { IconCircleInfo } from "@pond/icons";
 import { clsx } from "clsx";
 import {
   type ComponentPropsWithoutRef,
@@ -87,6 +87,9 @@ interface GroupPayload {
 
 const GroupContext = createContext<Base.Handle<GroupPayload> | null>(null);
 
+/** Bridges the gap between neighbouring triggers so the popup travels instead of closing and reopening. */
+const GROUP_CLOSE_DELAY = 100;
+
 function TooltipWrapper({
   label,
   shortcut,
@@ -105,6 +108,7 @@ function TooltipWrapper({
         handle={group}
         payload={{ label, shortcut, side, align, sideOffset }}
         delay={delay}
+        closeDelay={GROUP_CLOSE_DELAY}
         render={children}
       />
     );
@@ -181,7 +185,7 @@ function Info({
           />
         }
       >
-        <IconInfo size={12} strokeWidth={1.75} />
+        <IconCircleInfo size={12} strokeWidth={1.75} />
       </Trigger>
       <Portal>
         <Positioner side={side}>

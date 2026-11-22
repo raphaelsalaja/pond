@@ -32,9 +32,12 @@ import styles from "./styles.module.css";
 export function ComposerEditing({
   running,
   onSend,
+  onQueue,
 }: {
   running: boolean;
   onSend: (markdown: string) => void;
+  /** Enter while a reply runs; without it, Enter waits for the reply. */
+  onQueue?: (markdown: string) => void;
 }) {
   const [editor] = useLexicalComposerContext();
   const savedSelection = useRef<RangeSelection | null>(null);
@@ -71,6 +74,7 @@ export function ComposerEditing({
             if (editor.getRootElement()?.hasAttribute("aria-controls"))
               return true;
             if (!running) onSend($convertToMarkdownString());
+            else onQueue?.($convertToMarkdownString());
             return true;
           },
           COMMAND_PRIORITY_LOW,
@@ -157,7 +161,7 @@ export function ComposerEditing({
           COMMAND_PRIORITY_LOW,
         ),
       ),
-    [editor, running, onSend],
+    [editor, running, onSend, onQueue],
   );
   if (link === null) return null;
   return (

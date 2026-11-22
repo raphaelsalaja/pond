@@ -1,29 +1,69 @@
 .root {
   --folder-indent: 21px;
 
-  padding-right: var(--ds-space-lg);
+  flex-direction: row;
   overflow: hidden;
 }
 
-.workspace {
-  gap: var(--ds-space-xs);
-  height: var(--window-header-height, 44px);
-  padding: var(--ds-space-xs) 0 var(--ds-space-xs) var(--ds-space-xl);
-}
-
-.actions {
+.panel {
   display: flex;
-  flex: 0 0 auto;
-  gap: var(--ds-space-2xs);
-  align-items: center;
-  margin-left: auto;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--ds-background-primary);
+  border-top: var(--ds-border-width) solid var(--ds-border-subtle);
+  border-left: var(--ds-border-width) solid var(--ds-border-subtle);
+  /* The window's column divider sits under this surface, so the panel draws its own. */
+  border-right: var(--ds-border-width) solid var(--ds-border-subtle);
+  border-top-left-radius: var(--ds-radius-xl);
 }
 
 .scroll {
-  padding-top: var(--ds-space-md);
-  padding-left: var(--ds-space-xl);
+  /* Rows scroll under an opaque header bar, so the top edge needs no fade. */
+  --scroll-fade-start-size: 0px;
 
-  > :first-child {
+  min-width: 0;
+  padding-inline: var(--ds-space-md);
+
+  > :first-child,
+  > [data-slot="group-header"]:first-child + * {
     padding-top: 0;
+  }
+
+  /* Unboxes the first group so its header sticks for the whole panel, not just that group. */
+  > :first-child:has(> [data-slot="group-header"]:first-child) {
+    display: contents;
+  }
+
+  > [data-slot="group-header"]:first-child,
+  > :first-child > [data-slot="group-header"]:first-child {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    flex: none;
+    box-sizing: border-box;
+    width: calc(100% + var(--ds-space-md) * 2);
+    /* Same height as the toolbar and the Sources table header, so pane borders run as one line. */
+    height: 44px;
+    padding-inline: var(--ds-space-md);
+    margin-inline: calc(var(--ds-space-md) * -1);
+    margin-bottom: var(--ds-space-md);
+    background: var(--ds-background-primary);
+    border-bottom: var(--ds-border-width) solid var(--ds-border-subtle);
+    border-top-left-radius: var(--ds-radius-xl);
+
+    > :first-child {
+      font-size: var(--ds-text-body);
+      color: var(--ds-foreground-primary);
+    }
+  }
+}
+
+.footer {
+  flex: none;
+  padding: 0 var(--ds-space-md) var(--ds-space-md);
+
+  &:empty {
+    display: none;
   }
 }

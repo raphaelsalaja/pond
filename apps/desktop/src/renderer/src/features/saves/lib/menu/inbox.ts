@@ -13,7 +13,7 @@ import {
   removeFromInbox,
   snoozeSaves,
 } from "@/features/saves/lib/inbox-actions";
-import { snoozeOptions } from "@/features/saves/lib/snooze";
+import { snoozeOptions } from "@/shared/lib/snooze";
 import { openSnoozeDialog } from "@/features/saves/state/snooze-dialog";
 import { shortcutGlyphs } from "@/shared/lib/shortcuts";
 import { glyph } from "./shared";

@@ -4,7 +4,7 @@ import { useLayoutEffect, useRef } from "react";
 import styles from "./styles.module.css";
 
 export interface ToggleGroupProps extends Base.Props {
-  variant?: "raised" | "outline" | "tiles";
+  variant?: "raised" | "outline" | "tiles" | "rail";
 }
 
 function pressedToggle(root: HTMLElement): HTMLElement | null {
@@ -40,7 +40,7 @@ export function ToggleGroup({
   ...props
 }: ToggleGroupProps) {
   const indicatorRef = useRef<HTMLSpanElement>(null);
-  const indicated = !multiple && variant === "raised";
+  const indicated = !multiple && (variant === "raised" || variant === "rail");
 
   useLayoutEffect(() => {
     if (!indicated) return;

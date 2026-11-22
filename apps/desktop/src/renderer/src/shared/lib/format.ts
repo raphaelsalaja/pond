@@ -48,6 +48,14 @@ export function formatDuration(sec: number): string {
   });
 }
 
+export function formatElapsed(ms: number): string {
+  const total = Math.max(0, Math.round(ms));
+  return prettyMs(total, {
+    secondsDecimalDigits: total < 10_000 ? 1 : 0,
+    millisecondsDecimalDigits: 0,
+  });
+}
+
 const tsTime = new Intl.DateTimeFormat(undefined, {
   hour: "numeric",
   minute: "2-digit",

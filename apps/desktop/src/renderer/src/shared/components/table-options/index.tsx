@@ -29,6 +29,9 @@ export function TableOptionsMenu<Id extends string>({
   const [open, setOpen] = useState(false);
   const hidden = new Set(layout.hidden);
   const hideable = columns.some((column) => column.id !== lockedId);
+  const sortItems = columns
+    .filter((column) => column.sortable !== false)
+    .map((column) => ({ value: column.id, label: column.label }));
   const sortLabel =
     columns.find((column) => column.id === layout.sort?.id)?.label ?? "None";
 
@@ -49,10 +52,7 @@ export function TableOptionsMenu<Id extends string>({
         <Popover.Positioner side="bottom" align="end" sideOffset={8}>
           <Popover.Popup className={styles.popup} aria-label="Options">
             <Select.Root
-              items={columns.map((column) => ({
-                value: column.id,
-                label: column.label,
-              }))}
+              items={sortItems}
               value={layout.sort?.id ?? null}
               onValueChange={(value) => {
                 const column = columns.find((item) => item.id === value);
@@ -94,12 +94,7 @@ export function TableOptionsMenu<Id extends string>({
               <Select.Portal>
                 <Select.Positioner align="end" sideOffset={6}>
                   <Select.Popup>
-                    <Select.Items
-                      items={columns.map((column) => ({
-                        value: column.id,
-                        label: column.label,
-                      }))}
-                    />
+                    <Select.Items items={sortItems} />
                   </Select.Popup>
                 </Select.Positioner>
               </Select.Portal>

@@ -51,7 +51,7 @@ export function HeroAvatar({
           data-large={largeBadge || undefined}
         >
           {Icon ? (
-            <Icon width={badgeSize} height={badgeSize} />
+            <BrandTile source={source} size={badgeSize} />
           ) : logo ? (
             <img src={logo} alt="" />
           ) : null}

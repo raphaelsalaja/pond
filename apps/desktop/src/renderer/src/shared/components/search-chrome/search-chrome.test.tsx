@@ -17,12 +17,27 @@ function declarations(selector: string) {
   return css.slice(start, css.indexOf("}", start)).replace(/\s+/g, " ");
 }
 
-describe("SearchChrome.Input", () => {
-  it("uses the shared chrome's layout inset instead of input padding", () => {
+describe("SearchChrome.Field", () => {
+  it("renders the Library search pill in place without a window toolbar", () => {
     const markup = renderToStaticMarkup(
-      <SearchChrome.Root>
-        <SearchChrome.Input aria-label="Search" />
+      <SearchChrome.Root actions={<button type="button">Act</button>}>
+        <SearchChrome.Field aria-label="Search" />
       </SearchChrome.Root>,
+    );
+
+    expect(markup).toContain(styles.bar);
+    expect(markup).toContain(styles.shell);
+    expect(markup).toContain(styles.actions);
+    expect(markup).toContain('data-variant="borderless"');
+    expect(markup).toContain('placeholder="Search…"');
+    expect(markup).toContain("<svg");
+  });
+});
+
+describe("SearchChrome.Input", () => {
+  it("renders a bare field with no lens", () => {
+    const markup = renderToStaticMarkup(
+      <SearchChrome.Input aria-label="Search" />,
     );
 
     expect(markup).toContain(styles.input);
@@ -30,13 +45,6 @@ describe("SearchChrome.Input", () => {
     expect(markup).toContain('data-variant="borderless"');
     expect(markup).toContain('data-appearance="bare"');
     expect(markup).not.toContain("<svg");
-    expect(declarations(".root")).toContain(
-      "--search-chrome-inline-start: 20px;",
-    );
-    expect(declarations(".bar")).toContain("padding: var(--ds-space-md);");
-    expect(declarations(".search")).toContain(
-      "padding-left: var(--ds-space-md);",
-    );
   });
 
   it("uses the primary field for Harvester", () => {

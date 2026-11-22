@@ -11,12 +11,15 @@
   display: grid;
   align-items: center;
   width: 100%;
-  height: var(--data-table-header-height, 40px);
+  height: var(--data-table-header-height, 36px);
   padding-inline: calc(
     var(--data-table-inset, 0px) +
     var(--data-table-gutter, 8px)
   );
-  border-bottom: var(--data-table-header-border, none);
+  border-bottom: var(
+    --data-table-header-border,
+    var(--ds-border-width) solid var(--ds-border-subtle)
+  );
 }
 
 .cell {
@@ -25,7 +28,7 @@
   display: flex;
   align-items: center;
   min-width: 0;
-  height: var(--data-table-header-height, 40px);
+  height: 100%;
   padding: 0 var(--data-table-cell-padding, 8px);
   background: var(--data-table-header-bg, var(--ds-background-primary));
 
@@ -97,8 +100,8 @@
 
 .static {
   font-size: var(--ds-text-small);
-  font-weight: var(--data-table-header-weight, var(--ds-weight-regular));
-  color: var(--ds-foreground-secondary);
+  font-weight: var(--data-table-header-weight, var(--ds-weight-medium));
+  color: var(--ds-foreground-tertiary);
 }
 
 .sort-button {
@@ -107,8 +110,8 @@
   align-items: center;
   padding: 0;
   font-size: var(--ds-text-small);
-  font-weight: var(--data-table-header-weight, var(--ds-weight-regular));
-  color: var(--ds-foreground-secondary);
+  font-weight: var(--data-table-header-weight, var(--ds-weight-medium));
+  color: var(--ds-foreground-tertiary);
   text-align: left;
   cursor: var(--ds-cursor-interactive, pointer);
   background: transparent;
@@ -118,12 +121,16 @@
 
 .sort-button:hover,
 .sort-button[data-active] {
-  color: var(--ds-foreground-primary);
+  color: var(--ds-foreground-secondary);
 }
 
 .sort-caret {
-  color: var(--ds-foreground-tertiary);
+  color: color-mix(in srgb, var(--ds-foreground-tertiary) 60%, transparent);
   transform: rotate(180deg);
+}
+
+.sort-button:is(:hover, [data-active]) .sort-caret {
+  color: currentColor;
 }
 
 .sort-caret[data-desc] {

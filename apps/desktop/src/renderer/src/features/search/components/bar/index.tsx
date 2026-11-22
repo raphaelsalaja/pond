@@ -5,11 +5,9 @@ import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { PlainTextPlugin } from "@lexical/react/LexicalPlainTextPlugin";
-import { IconCircleXmark } from "@pond/icons";
-import { Button, Loader, Tooltip } from "@pond/ui";
+import { Button, Loader } from "@pond/ui";
 import {
   $createTextNode,
-  $getRoot,
   COMMAND_PRIORITY_LOW,
   INSERT_LINE_BREAK_COMMAND,
   INSERT_PARAGRAPH_COMMAND,
@@ -33,23 +31,15 @@ import {
   useSearchNonce,
   useSearchText,
 } from "@/features/library";
-import {
-  useNlCompiler,
-  useNlFacets,
-} from "@/features/search/hooks/use-nl-query";
+import { useNlCompiler } from "@/features/search/hooks/use-nl-query";
 import {
   dedupePredicates,
   flattenPredicates,
 } from "@/features/search/lib/nl-query";
-import { parseSearchInput } from "@/features/search/lib/syntax";
-import { useTags } from "@/features/tags";
 import { SpecContextMenu } from "@/shared/components/spec-context-menu";
 import { stopAppHotkeysFromEditable } from "@/shared/lib/editable-target";
 import { usePrefs } from "@/shared/state/prefs";
 import { $readSearchString, $writeSearchString } from "./lib/editor-state";
-import { FilterTokenNode } from "./lib/token-node";
-import { FilterTokenPlugin } from "./lib/token-plugin";
-import { FilterTypeahead } from "./lib/typeahead";
 import { buildSearchScopeItems } from "./search-scope-menu";
 import styles from "./styles.module.css";
 
@@ -67,7 +57,6 @@ export function SearchComposer({
   const initialConfig = useMemo(
     () => ({
       namespace: "search-composer",
-      nodes: [FilterTokenNode],
       theme: { paragraph: styles.paragraph },
       onError: (error: Error) => {
         console.error("[pond search]", error);
@@ -92,24 +81,16 @@ function SearchField({
   placeholder: string;
 }) {
   const [editor] = useLexicalComposerContext();
-  const tags = useTags();
-  const facets = useNlFacets();
   const defaultCompile = useNlCompiler();
   const compile = compileOverride ?? defaultCompile;
   const searchNonce = useSearchNonce();
-  const hostRef = useRef<HTMLDivElement>(null);
-  const [typeaheadOpen, setTypeaheadOpen] = useState(false);
   const [status, setStatus] = useState<"idle" | "thinking" | "error">("idle");
   const compileRef = useRef(compile);
   compileRef.current = compile;
   const statusRef = useRef(status);
   statusRef.current = status;
-  const typeaheadOpenRef = useRef(typeaheadOpen);
-  typeaheadOpenRef.current = typeaheadOpen;
   const runRef = useRef(0);
   const [searchPrefs, patchSearchPrefs] = usePrefs("search");
-
-  const tagNames = useMemo(() => tags.map((t) => t.name), [tags]);
 
   const seedInput = useSearchInput();
   const seedQuery = useFilterQuery();
@@ -138,15 +119,10 @@ function SearchField({
         if (tags.has("search-store-sync")) return;
         editorState.read(() => {
           const raw = $readSearchString();
-          const commitFilters =
-            /\s$/.test($getRoot().getTextContent()) &&
-            (raw.match(/"/g)?.length ?? 0) % 2 === 0 &&
-            parseSearchInput(raw).predicates.length > 0;
-          if (raw === prevEditorState.read($readSearchString) && !commitFilters)
-            return;
+          if (raw === prevEditorState.read($readSearchString)) return;
           runRef.current += 1;
           setStatus("idle");
-          setSearchDraft(raw, commitFilters);
+          setSearchDraft(raw);
         });
       },
     );
@@ -169,21 +145,15 @@ function SearchField({
       raw = $readSearchString();
     });
     if (!raw) return;
-    const parsed = parseSearchInput(raw);
-    if (!parsed.text.trim()) {
-      setSearchDraft(raw, true);
-      return;
-    }
     runRef.current += 1;
     const nonce = runRef.current;
     setStatus("thinking");
     try {
-      const compiled = await compileRef.current(parsed.text);
+      const compiled = await compileRef.current(raw);
       if (runRef.current !== nonce) return;
       const residual = compiled.residual.trim();
       const predicates = dedupePredicates([
         ...flattenPredicates(seedQuery),
-        ...parsed.predicates,
         ...flattenPredicates(compiled.plan.filter),
       ]);
       setSearchInput(predicates, residual, residual);
@@ -208,7 +178,6 @@ function SearchField({
           cancelAi();
           return true;
         }
-        if (typeaheadOpenRef.current) return true;
         editor.getRootElement()?.blur();
         return true;
       },
@@ -244,18 +213,8 @@ function SearchField({
     };
   }, [editor]);
 
-  const hasText = seedInput.trim().length > 0;
-
-  const clearField = () => {
-    cancelAi();
-    setSearchDraft("");
-    editor.update(() => {
-      $writeSearchString("");
-    });
-  };
-
   return (
-    <div ref={hostRef} className={styles.wrap}>
+    <div className={styles.wrap}>
       <SpecContextMenu
         buildItems={() =>
           buildSearchScopeItems({
@@ -284,35 +243,12 @@ function SearchField({
             />
             <HistoryPlugin />
             {searchNonce > 0 ? <AutoFocusPlugin /> : null}
-            <FilterTokenPlugin />
-            <FilterTypeahead
-              hostRef={hostRef}
-              onOpenChange={setTypeaheadOpen}
-              tags={tagNames}
-              sources={facets.sources}
-              creators={facets.creators}
-            />
           </div>
           {status === "thinking" ? (
             <Loader.Root className={styles.thinking}>
               <Loader.Dots />
               Finding filters
             </Loader.Root>
-          ) : null}
-          {hasText ? (
-            <Tooltip label="Clear Search" side="bottom">
-              <Button
-                icon
-                size="xs"
-                variant="text"
-                className={styles.clear}
-                aria-label="Clear Search"
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={clearField}
-              >
-                <IconCircleXmark />
-              </Button>
-            </Tooltip>
           ) : null}
         </div>
       </SpecContextMenu>

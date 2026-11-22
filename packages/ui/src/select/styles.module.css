@@ -1,11 +1,18 @@
 .trigger {
+  --ds-focus-offset: 0px;
+
   display: flex;
   align-items: center;
   justify-content: space-between;
+  font-weight: var(--ds-weight-medium);
+
+  &[data-popup-open]:where([data-variant="secondary"]) {
+    background-color: var(--ds-background-secondary);
+  }
 }
 
 .value {
-  color: var(--ds-foreground-primary);
+  color: var(--ds-foreground-secondary);
 
   &[data-placeholder] {
     color: var(--ds-foreground-tertiary);
@@ -16,8 +23,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-left: var(--ds-space-sm);
-  color: var(--ds-foreground-secondary);
+  margin-left: var(--ds-space-2xs);
+  color: var(--ds-foreground-tertiary);
 }
 
 .label {
@@ -29,6 +36,9 @@
 .list {
   position: relative;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2xs);
   min-width: max-content;
   max-height: min(320px, var(--available-height, 320px));
   overflow-x: hidden;
@@ -53,7 +63,17 @@
   --ds-popup-width: max-content;
   --ds-popup-min-width: var(--anchor-width);
   --ds-popup-max-width: var(--available-width);
+  --popup-padding-block: var(--ds-space-2xs);
+  --popup-padding-inline: var(--ds-space-2xs);
+  --popup-gap: var(--ds-space-2xs);
+  --popup-item-height: 0px;
+  --popup-item-inset: 0px;
+  --popup-item-radius: var(--ds-radius-xs);
+  --popup-separator-space: 0px;
   composes: popup from "../shared/styles/popup/styles.module.css";
+  border-radius: var(--ds-radius-md);
+  box-shadow:
+    var(--ds-shadow-overlay), 0 15px 35px -5px var(--ds-shadow-color);
 }
 
 .arrow {
@@ -62,6 +82,9 @@
 
 .item {
   composes: item from "../shared/styles/popup/styles.module.css";
+  padding: var(--ds-space-sm) var(--ds-space-xl);
+  font-weight: var(--ds-weight-regular);
+  color: var(--ds-foreground-primary);
 }
 
 .text {
@@ -70,6 +93,8 @@
 
 .indicator {
   composes: indicator from "../shared/styles/popup/styles.module.css";
+  display: flex;
+  color: var(--ds-foreground-primary);
 }
 
 .heading {
@@ -77,7 +102,8 @@
   position: sticky;
   top: 0;
   z-index: 1;
-  background: var(--ds-background-secondary);
+  padding-inline: var(--ds-space-xl);
+  background: var(--ds-background-elevated);
 }
 
 .separator {

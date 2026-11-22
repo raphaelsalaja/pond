@@ -105,7 +105,7 @@ export function DataTableProvider<T extends RowData>({
   expandedIds,
   onToggleExpand,
   height,
-  rowHeight = 48,
+  rowHeight = 44,
   overscan = 10,
   renderRow,
   onRowClick,

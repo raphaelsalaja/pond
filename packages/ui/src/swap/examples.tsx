@@ -1,3 +1,4 @@
+import { IconFolderDots } from "@pond/icons";
 import { Button } from "../button";
 import type { ComponentDocs } from "../shared/docs";
 import { Swap } from ".";
@@ -12,7 +13,7 @@ export const docs: ComponentDocs = {
     {
       name: "Swap",
       description:
-        "Keys its children by `value`. A new `value` fades the old content up and out and the new content in.",
+        "Keys its children by `value`. A new `value` fades the old content up and out and the new content in. `variant=\"icon\"` scales and blurs glyphs through each other instead.",
     },
   ],
   keyboard: [],
@@ -27,6 +28,14 @@ export const docs: ComponentDocs = {
         <Button variant="secondary">
           <Swap value="copy">Copy Link</Swap>
         </Button>
+      ),
+    },
+    {
+      name: "Icon",
+      render: () => (
+        <Swap value="closed" variant="icon">
+          <IconFolderDots />
+        </Swap>
       ),
     },
     {

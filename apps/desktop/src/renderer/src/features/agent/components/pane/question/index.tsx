@@ -1,23 +1,23 @@
-import { Button, Reveal } from "@pond/ui";
+import { IconCircleCheck, IconCircleQuestion } from "@pond/icons";
+import { Badge, Button, Reveal } from "@pond/ui";
 import { Prompt } from "@pond/ui/prompt";
 import { useState } from "react";
+import { cardKeys } from "../card-keys";
 import styles from "./styles.module.css";
 
 const FREEFORM = Symbol("freeform");
 
-function letter(index: number): string {
-  return String.fromCharCode(65 + (index % 26));
-}
-
 export function KoiQuestion({
   question,
   options,
+  recommended,
   answered,
   disabled = false,
   onAnswer,
 }: {
   question: string;
   options: readonly string[];
+  recommended?: number;
   answered?: string;
   disabled?: boolean;
   onAnswer: (answer: string) => Promise<void>;
@@ -26,8 +26,11 @@ export function KoiQuestion({
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [later, setLater] = useState(false);
+  const [open, setOpen] = useState(false);
   const answer = choice === FREEFORM ? text.trim() : choice;
   const locked = busy || disabled;
+  const folded = Boolean(answered) || later;
 
   async function submit(value = answer) {
     if (!value || locked) return;
@@ -46,29 +49,83 @@ export function KoiQuestion({
     }
   }
 
+  const onKeyDown = cardKeys({
+    submit: () => void submit(),
+    cancel: answered || disabled ? undefined : () => setLater(true),
+    pick: (index, card) => {
+      if (locked || answered || later) return false;
+      const option = options[index];
+      if (option !== undefined) {
+        setChoice(option);
+        void submit(option);
+        return true;
+      }
+      if (index !== options.length) return false;
+      card.querySelector("input")?.focus();
+      return true;
+    },
+  });
+
   return (
-    <Prompt.Root aria-label={question} aria-busy={busy}>
-      <Reveal visible={Boolean(answered)} initial={false}>
-        <Prompt.Answers>
-          <Prompt.Answer>
-            <Prompt.AnswerQuestion>{question}</Prompt.AnswerQuestion>
-            <Prompt.AnswerText>{answered}</Prompt.AnswerText>
-          </Prompt.Answer>
-        </Prompt.Answers>
+    <Prompt.Root aria-label={question} aria-busy={busy} onKeyDown={onKeyDown}>
+      <Reveal visible={folded} initial={false}>
+        {answered ? (
+          <>
+            <Prompt.Receipt
+              icon={<IconCircleCheck size={16} />}
+              label={answered}
+              detail={question}
+              open={open}
+              onOpenChange={setOpen}
+            />
+            <Reveal visible={open} initial={false}>
+              <Prompt.Answers>
+                <Prompt.Answer>
+                  <Prompt.AnswerQuestion>{question}</Prompt.AnswerQuestion>
+                  <Prompt.AnswerText>{answered}</Prompt.AnswerText>
+                </Prompt.Answer>
+              </Prompt.Answers>
+            </Reveal>
+          </>
+        ) : (
+          <Prompt.Receipt
+            icon={<IconCircleQuestion size={16} />}
+            label="Question waiting"
+            detail={question}
+            action={
+              <Button
+                size="xs"
+                variant="secondary"
+                onClick={() => setLater(false)}
+              >
+                Answer
+              </Button>
+            }
+          />
+        )}
       </Reveal>
-      <Reveal visible={!answered} initial={false}>
+      <Reveal visible={!folded} initial={false}>
         <Prompt.Body>
           <Prompt.Title>{question}</Prompt.Title>
           <Prompt.Choices>
             {options.map((option, index) => (
               <Prompt.Choice
                 key={option}
-                letter={letter(index)}
+                marker={index + 1}
                 selected={choice === option}
                 disabled={locked}
+                hint={
+                  index === recommended ? (
+                    <Badge.Root>Recommended</Badge.Root>
+                  ) : null
+                }
                 onClick={() => setChoice(option)}
                 onKeyDown={(event) => {
-                  if (event.key === "Enter") {
+                  if (
+                    event.key === "Enter" &&
+                    !event.metaKey &&
+                    !event.ctrlKey
+                  ) {
                     event.preventDefault();
                     setChoice(option);
                     void submit(option);
@@ -80,7 +137,7 @@ export function KoiQuestion({
             ))}
             {disabled ? null : (
               <Prompt.Freeform
-                letter={letter(options.length)}
+                marker={options.length + 1}
                 selected={choice === FREEFORM}
                 disabled={busy}
                 aria-label="Your answer"
@@ -109,7 +166,15 @@ export function KoiQuestion({
         <Prompt.Footer>
           <Button
             size="sm"
-            variant={answer ? "primary" : "tertiary"}
+            variant="secondary"
+            disabled={locked}
+            onClick={() => setLater(true)}
+          >
+            Later
+          </Button>
+          <Button
+            size="sm"
+            variant="accent"
             disabled={!answer || locked}
             loading={busy}
             onClick={() => void submit()}

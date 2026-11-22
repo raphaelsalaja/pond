@@ -44,18 +44,18 @@
   position: absolute;
   inset-block: 0;
   z-index: 1;
-  width: 1px;
+  width: var(--ds-border-width);
   pointer-events: none;
   content: "";
   background: var(--ds-border-subtle);
 }
 
 .root[data-left-open]::before {
-  left: calc(var(--window-left-width) - 1px);
+  left: calc(var(--window-left-width) - var(--ds-border-width));
 }
 
 .root[data-right-open]::after {
-  right: calc(var(--window-right-width) - 1px);
+  right: calc(var(--window-right-width) - var(--ds-border-width));
 }
 
 .top {
@@ -191,12 +191,13 @@
       background var(--ds-duration-fast) var(--ds-easing-standard);
   }
 
+  /* The divider sits inside the pane edge, so center on its midline. */
   &[data-edge="left"] {
-    right: calc(var(--handle-hit) / -2);
+    right: calc(var(--handle-hit) / -2 + var(--ds-border-width) / 2);
   }
 
   &[data-edge="right"] {
-    left: calc(var(--handle-hit) / -2);
+    left: calc(var(--handle-hit) / -2 + var(--ds-border-width) / 2);
   }
 
   &:is(:hover, :focus-visible)::after,

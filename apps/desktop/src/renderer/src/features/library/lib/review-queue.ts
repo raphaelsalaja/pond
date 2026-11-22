@@ -14,6 +14,7 @@ type ReviewKey =
   | { kind: "folder"; slot: number }
   | { kind: "choose-folder" }
   | { kind: "preview" }
+  | { kind: "step"; by: 1 | -1 }
   | { kind: "exit" };
 
 export const REVIEW_FOLDER_SLOTS = 4;
@@ -91,6 +92,10 @@ export function reviewKey(
       return { kind: "skip" };
     case "z":
       return { kind: "back" };
+    case "j":
+      return { kind: "step", by: 1 };
+    case "k":
+      return { kind: "step", by: -1 };
     case " ":
       return options.fromButton ? null : { kind: "preview" };
     case "Escape":

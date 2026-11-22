@@ -1,7 +1,7 @@
 import { IconChevronLeft, IconTrash, IconXmark } from "@pond/icons";
 import { Button, Pane, Tooltip } from "@pond/ui";
 import type { FishRoutine, FishSummary } from "@shared/fish-contracts";
-import { describeWhen } from "@shared/fish-routine";
+import { describeWhen, nextRun } from "@shared/fish-routine";
 import { Section } from "@/shared/components/inspector-section";
 import { PropertyList } from "@/shared/components/property-list";
 import {
@@ -10,6 +10,7 @@ import {
   setRoutinePaused,
 } from "../../../lib/menu";
 import { rowTime } from "../../../lib/row";
+import { nextRunValue } from "../../../lib/runs";
 import styles from "./styles.module.css";
 
 interface RoutineViewProps {
@@ -30,6 +31,10 @@ export function RoutineView({
 }: RoutineViewProps) {
   const run = routine.lastRun;
   const working = Boolean(fish.activity);
+  const now = new Date();
+  const nextAt = routine.paused
+    ? null
+    : nextRun(routine.when, run?.at ?? routine.createdAt, now.getTime());
   return (
     <>
       <Pane.Header
@@ -61,6 +66,16 @@ export function RoutineView({
           <p className={styles.text}>{describeWhen(routine.when)}</p>
           {routine.paused ? (
             <p className={styles.muted}>Paused. It runs only when you ask.</p>
+          ) : null}
+          {nextAt !== null ? (
+            <PropertyList.Root>
+              <PropertyList.Row>
+                <PropertyList.Label>Next Run</PropertyList.Label>
+                <PropertyList.Value>
+                  {nextRunValue(nextAt, now)}
+                </PropertyList.Value>
+              </PropertyList.Row>
+            </PropertyList.Root>
           ) : null}
         </Section>
         {run ? (

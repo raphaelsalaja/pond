@@ -1,24 +1,36 @@
-import { IconPaperPlane } from "@pond/icons";
+import { IconArrowUp } from "@pond/icons";
 import { Button, Tooltip } from "@pond/ui";
 import { clsx as cn } from "clsx";
-import { AnimatePresence, motion, useReducedMotionConfig } from "motion/react";
+import {
+  AnimatePresence,
+  motion,
+  type Transition,
+  useReducedMotionConfig,
+} from "motion/react";
 import {
   type ComponentProps,
   type ComponentPropsWithoutRef,
   forwardRef,
   type ReactNode,
+  useEffect,
+  useRef,
+  useState,
 } from "react";
 import styles from "./styles.module.css";
 
 const GLYPH_EASE = { duration: 0.3, ease: [0.22, 1, 0.36, 1] } as const;
+const LAYOUT_EASE: Transition = { type: "spring", duration: 0.3, bounce: 0 };
 
-interface RootProps extends ComponentPropsWithoutRef<"form"> {
+/** Taller than one 24px line plus the editor's top padding, so only a second line expands the composer. */
+const ONE_LINE_MAX_HEIGHT = 36;
+
+interface RootProps extends ComponentPropsWithoutRef<typeof motion.form> {
   onSend?: () => void;
 }
 
 function Root({ className, onSend, onSubmit, ...props }: RootProps) {
   return (
-    <form
+    <motion.form
       className={cn(styles.root, className)}
       onSubmit={(event) => {
         event.preventDefault();
@@ -53,14 +65,31 @@ function Send({ children, ...props }: ActionProps) {
     <Button
       type="submit"
       icon
-      variant="secondary"
-      size="md"
+      variant="accent"
+      size="sm"
       rounding="full"
       {...props}
     >
       {children}
     </Button>
   );
+}
+
+/** Measures the field so a second line, not a resize, is what expands the composer. */
+function useGrown(empty: boolean) {
+  const field = useRef<HTMLDivElement>(null);
+  const [grown, setGrown] = useState(false);
+  if (empty && grown) setGrown(false);
+  useEffect(() => {
+    const node = field.current;
+    if (!node) return;
+    const observer = new ResizeObserver(() => {
+      if (node.offsetHeight > ONE_LINE_MAX_HEIGHT) setGrown(true);
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+  return { field, grown };
 }
 
 export function ComposerView({
@@ -71,6 +100,8 @@ export function ComposerView({
   inputProps,
   editor,
   running,
+  empty = false,
+  attached = false,
   onSend,
   onStop,
   ...props
@@ -81,14 +112,39 @@ export function ComposerView({
   placeholder?: string;
   inputProps?: ComponentProps<typeof Input>;
   running?: boolean;
+  /** Nothing typed or attached: Send is disabled and the composer returns to one line. */
+  empty?: boolean;
+  /** Files sit above the field, so the composer stays expanded while any are attached. */
+  attached?: boolean;
   onStop?: () => void;
 }) {
   const reduced = useReducedMotionConfig();
+  const { field, grown } = useGrown(empty);
+  const expanded = grown || attached;
+  const layout = reduced ? false : "position";
   return (
     <Tooltip.Provider>
-      <Root {...props} onSend={running ? undefined : onSend}>
-        <div className={styles.extra}>{children}</div>
-        <div className={styles.field}>
+      <Root
+        {...props}
+        data-expanded={expanded || undefined}
+        layout={!reduced}
+        layoutDependency={expanded}
+        transition={LAYOUT_EASE}
+        onSend={running || empty ? undefined : onSend}
+      >
+        <motion.div
+          className={styles.extra}
+          layout={layout}
+          layoutDependency={expanded}
+        >
+          {children}
+        </motion.div>
+        <motion.div
+          ref={field}
+          className={styles.field}
+          layout={layout}
+          layoutDependency={expanded}
+        >
           {editor ?? (
             <Input
               aria-label="Message"
@@ -96,15 +152,28 @@ export function ComposerView({
               {...inputProps}
             />
           )}
-        </div>
-        {leading ? <div className={styles.leading}>{leading}</div> : null}
-        <div className={styles.trailing}>
+        </motion.div>
+        {leading ? (
+          <motion.div
+            className={styles.leading}
+            layout={layout}
+            layoutDependency={expanded}
+          >
+            {leading}
+          </motion.div>
+        ) : null}
+        <motion.div
+          className={styles.trailing}
+          layout={layout}
+          layoutDependency={expanded}
+        >
           {toolbar}
           <Tooltip label={running ? "Stop response" : "Send message"}>
             <Send
               type={running ? "button" : "submit"}
               aria-label={running ? "Stop" : "Send"}
               className={styles.send}
+              disabled={!running && empty}
               onClick={running ? onStop : undefined}
             >
               <AnimatePresence initial={false}>
@@ -123,36 +192,18 @@ export function ComposerView({
                   <motion.span
                     key="send"
                     className={styles.glyph}
-                    initial={{
-                      opacity: 0,
-                      x: -4,
-                      y: 4,
-                      scale: 0.8,
-                      filter: "blur(2px)",
-                    }}
-                    animate={{
-                      opacity: 1,
-                      x: 0,
-                      y: 0,
-                      scale: 1,
-                      filter: "blur(0px)",
-                    }}
-                    exit={{
-                      opacity: 0,
-                      x: 8,
-                      y: -8,
-                      scale: 0.8,
-                      filter: "blur(2px)",
-                    }}
+                    initial={{ opacity: 0, y: 6, scale: 0.8, filter: "blur(2px)" }}
+                    animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+                    exit={{ opacity: 0, y: -6, scale: 0.8, filter: "blur(2px)" }}
                     transition={reduced ? { duration: 0 } : GLYPH_EASE}
                   >
-                    <IconPaperPlane size={16} />
+                    <IconArrowUp size={16} strokeWidth={2} />
                   </motion.span>
                 )}
               </AnimatePresence>
             </Send>
           </Tooltip>
-        </div>
+        </motion.div>
       </Root>
     </Tooltip.Provider>
   );

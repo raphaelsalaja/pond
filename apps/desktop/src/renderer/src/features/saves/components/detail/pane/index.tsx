@@ -1,4 +1,9 @@
-import { IconTag, IconTriangleWarning, IconXmark } from "@pond/icons";
+import {
+  IconCursor,
+  IconScanImage,
+  IconTag,
+  IconTriangleWarning,
+} from "@pond/icons";
 import { sensitiveContentBand } from "@pond/schema/content-safety";
 import { Button, Empty, Pane, Rating, Tabs } from "@pond/ui";
 import { mediaEmbeddingVersion } from "@shared/embeddings";
@@ -19,7 +24,7 @@ import { sensitiveContentMenuItem } from "@/features/saves/lib/menu/sensitive";
 import { bulkMutation } from "@/features/saves/lib/mutate";
 import { pool } from "@/features/saves/state/pool";
 import { useSaveViewerFileIndex } from "@/features/saves/state/save-viewer";
-import { useTagGroups, useTags } from "@/features/tags";
+import { tagDot, useTagGroups, useTags } from "@/features/tags";
 import { Section } from "@/shared/components/inspector-section";
 import {
   type InspectorDrafts,
@@ -37,6 +42,7 @@ import { AssignmentChip } from "./chip";
 import { EnrichedText } from "./enriched-text";
 import { ratingMenu, SaveFacts } from "./facts";
 import { FavoriteRow } from "./favorite";
+import { FileSwitcher } from "./file-switcher";
 import { SaveIdentity } from "./identity";
 import { InboxSection } from "./inbox";
 import { SaveNote } from "./note";
@@ -83,25 +89,13 @@ function folderOptions(folders: readonly InspectorFolder[]): FolderOption[] {
   return folders.map((folder) => ({ ...folder, path: path(folder) }));
 }
 
-function CloseDetails() {
-  return (
-    <Button
-      type="button"
-      icon
-      size="sm"
-      variant="ghost"
-      aria-label="Close Details"
-      onClick={saveLibraryBridge.closeDetails}
-    >
-      <IconXmark />
-    </Button>
-  );
-}
-
 export function EmptySaveInspector() {
   return (
     <section className={styles.root} aria-label="Details">
-      <Empty.Root role="status">
+      <Empty.Root size="card" role="status">
+        <Empty.Media>
+          <IconCursor size={14} />
+        </Empty.Media>
         <Empty.Title>Nothing selected</Empty.Title>
         <Empty.Description>Select a save to see its details.</Empty.Description>
       </Empty.Root>
@@ -334,7 +328,8 @@ export function SaveInspector({
       ) : null}
       {complete ? (
         <>
-          <SavePreviews saves={saves} />
+          <SavePreviews saves={saves} fileIndex={fileIndex} />
+          {single ? <FileSwitcher saveId={single.id} /> : null}
           {single?.dominantColors?.length ? (
             <div className={styles.colors}>
               {single.dominantColors.slice(0, 8).map((color) => (
@@ -426,6 +421,8 @@ export function SaveInspector({
               {[...tagCounts].map(([key, tag]) => (
                 <AssignmentChip.Item
                   key={key}
+                  variant="outline"
+                  dot={tagDot(tag.name)}
                   label={tag.name}
                   crumb={tagGroupOf.get(key)}
                   count={tag.count}
@@ -569,6 +566,16 @@ export function SaveInspector({
     </>
   );
 
+  const tabs = (
+    <Tabs.List variant="secondary" aria-label="Details Views">
+      <Tabs.Tab value="details">Details</Tabs.Tab>
+      <Tabs.Tab value="related">Related</Tabs.Tab>
+    </Tabs.List>
+  );
+  const kebab = single ? (
+    <KebabMenu save={single} fileIndex={fileIndex} />
+  ) : null;
+
   return (
     <Tabs.Root
       render={
@@ -581,35 +588,33 @@ export function SaveInspector({
       value={activeTab}
       onValueChange={(value: InspectorTab) => setTab(value)}
     >
-      <Pane.Header
-        className={styles.header}
-        title={
-          single ? (
-            <Tabs.List aria-label="Details Views">
-              <Tabs.Tab value="details">Details</Tabs.Tab>
-              <Tabs.Tab value="related">Related</Tabs.Tab>
-            </Tabs.List>
-          ) : (
-            "Details"
-          )
-        }
-      >
-        {single ? <KebabMenu save={single} fileIndex={fileIndex} /> : null}
-        <CloseDetails />
+      <Pane.Header className={styles.header} title={single ? tabs : "Details"}>
+        {kebab}
       </Pane.Header>
       {single ? (
         <>
           <Tabs.Panel value="details" className={styles.panel}>
-            <Pane.Body className={styles.scroll} data-scroll-fade="vertical">
+            <Pane.Body
+              density="compact"
+              className={styles.scroll}
+              data-scroll-fade="vertical"
+            >
               {details}
             </Pane.Body>
           </Tabs.Panel>
           <Tabs.Panel value="related" className={styles.panel}>
-            <Pane.Body className={styles.scroll} data-scroll-fade="vertical">
+            <Pane.Body
+              density="compact"
+              className={styles.scroll}
+              data-scroll-fade="vertical"
+            >
               {indexed ? (
                 <RelatedSaves saveId={single.id} />
               ) : (
-                <Empty.Root role="status">
+                <Empty.Root size="card" role="status">
+                  <Empty.Media>
+                    <IconScanImage size={14} />
+                  </Empty.Media>
                   <Empty.Title>Not indexed yet</Empty.Title>
                   <Empty.Description>
                     {TASK_ENABLED.clip(getPrefsSnapshot())
@@ -622,7 +627,11 @@ export function SaveInspector({
           </Tabs.Panel>
         </>
       ) : (
-        <Pane.Body className={styles.scroll} data-scroll-fade="vertical">
+        <Pane.Body
+          density="compact"
+          className={styles.scroll}
+          data-scroll-fade="vertical"
+        >
           {details}
         </Pane.Body>
       )}

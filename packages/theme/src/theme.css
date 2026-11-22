@@ -15,10 +15,10 @@
 
   --ds-border-width: 0.5px;
 
-  --ds-focus-width: 2px;
+  --ds-focus-width: 1px;
   --ds-focus-offset: 2px;
   /* Rows in a scroller, segments in a track, and cells would clip an outside ring. */
-  --ds-focus-inset: -2px;
+  --ds-focus-inset: -1px;
   --ds-focus-outline: var(--ds-accent);
 
   --ds-opacity-disabled: 0.5;

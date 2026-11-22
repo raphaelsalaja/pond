@@ -34,8 +34,7 @@
   color: var(--ds-foreground-primary);
 }
 
-.icon img,
-.icon svg {
+.icon img {
   display: block;
   border-radius: var(--ds-radius-source);
   corner-shape: var(--ds-corner-icon);

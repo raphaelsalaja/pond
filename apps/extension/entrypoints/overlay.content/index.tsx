@@ -21,7 +21,7 @@ export default defineContentScript({
 
     /** Shadow roots ignore `@font-face`, so the faces go on the page's font set under names pages won't use. */
     const faces = [
-      ["pond-intern", "/fonts/intern/variable.woff2"],
+      ["pond-allo", "/fonts/allo/variable.woff2"],
       ["pond-inter", "/fonts/inter/variable.woff2"],
     ] as const;
     for (const [family, path] of faces) {

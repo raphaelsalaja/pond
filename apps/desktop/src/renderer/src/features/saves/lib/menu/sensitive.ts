@@ -1,4 +1,4 @@
-import { IconEye } from "@pond/icons";
+import { IconTriangleWarning } from "@pond/icons";
 import type { MenuItemSpec } from "@pond/ui";
 import {
   saveHasSensitiveResult,
@@ -17,7 +17,7 @@ export function sensitiveContentMenuItem(input: {
   return {
     type: "checkbox",
     label: "Sensitive Content",
-    icon: glyph(IconEye),
+    icon: glyph(IconTriangleWarning),
     indicator: "check",
     keywords: "sensitive nsfw safety not sensitive override clear",
     hidden: !visible,

@@ -1,6 +1,8 @@
 import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
 import { promisify } from "node:util";
+import { saves } from "@pond/schema/db";
+import { inArray } from "drizzle-orm";
 import {
   app,
   BrowserWindow,
@@ -13,6 +15,8 @@ import { z } from "zod";
 import { librarySaveLink } from "../../../shared/library-links";
 import type { QueryResult } from "../../../shared/query-contracts";
 import { runLibraryTransfer } from "../../core/library-transfers";
+import { savesPrompt } from "../../core/save-prompt";
+import { getDb } from "../../db";
 import {
   type OpenWithAppInfo,
   openWithListingKey,
@@ -20,7 +24,7 @@ import {
   rankOpenWithApps,
 } from "../../lib/open-with-apps";
 import { libraryId as activeLibraryId } from "../../paths";
-import { resolveSaveFilePath } from "../helpers";
+import { resolveOriginalFilePaths, resolveSaveFilePath } from "../helpers";
 import { type QueryHandlerMap, query } from "./params";
 
 const run = promisify(execFile);
@@ -168,6 +172,33 @@ export const openWithQueries = {
           .join("\n"),
       );
       return { ok: true };
+    },
+  ),
+  "saves.copyPrompt": query(
+    z.object({ ids: z.array(z.string().min(1)).min(1) }),
+    async ({ ids }) => {
+      const unique = [...new Set(ids)];
+      const db = await getDb();
+      const rows = await db
+        .select()
+        .from(saves)
+        .where(inArray(saves.id, unique));
+      const byId = new Map(rows.map((row) => [row.id, row]));
+      const libraryId = activeLibraryId();
+      const entries = unique.flatMap((id) => {
+        const row = byId.get(id);
+        if (!row) return [];
+        return [
+          {
+            save: row,
+            link: librarySaveLink(libraryId, id),
+            files: resolveOriginalFilePaths(id, row.files),
+          },
+        ];
+      });
+      if (!entries.length) return { ok: false as const, error: "not_found" };
+      clipboard.writeText(savesPrompt(entries));
+      return { ok: true as const };
     },
   ),
   "saves.listOpenWith": query(

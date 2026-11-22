@@ -1,0 +1,9 @@
+.item {
+  position: relative;
+}
+
+.dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}

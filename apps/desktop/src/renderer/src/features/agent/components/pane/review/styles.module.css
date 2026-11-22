@@ -11,11 +11,11 @@
   padding: 0;
   margin: 0 calc(var(--ds-space-sm) * -1);
   list-style: none;
-  transition: margin-bottom var(--ds-duration-medium) var(--ds-easing-standard);
+}
 
-  &[data-closed] {
-    margin-bottom: var(--ds-space-sm);
-  }
+.unfolded {
+  padding: var(--ds-space-sm) var(--ds-space-lg);
+  border-top: var(--ds-border-width) solid var(--ds-border-subtle);
 }
 
 .error {

@@ -13,7 +13,7 @@ import {
   queuedVideosTitle,
   sourceSectionId,
 } from "@/features/settings/lib/download-sources";
-import { getSourceIcon } from "@/features/sources";
+import { BrandTile } from "@/features/sources";
 import { openSettings } from "@/shared/lib/open-settings";
 import { notify } from "@/shared/lib/toast";
 import styles from "./styles.module.css";
@@ -24,18 +24,10 @@ export function DownloadSources() {
     <Settings.List>
       {EXTERNAL_SOURCE_IDS.map((source) => {
         const label = sourceLabel(source);
-        const Icon = getSourceIcon(source);
         return (
           <Settings.Item key={source}>
             <div className={styles.identity}>
-              {Icon ? (
-                <Icon
-                  aria-hidden
-                  width={20}
-                  height={20}
-                  className={styles.icon}
-                />
-              ) : null}
+              <BrandTile source={source} size={20} />
               <Settings.ItemDetails>
                 <Settings.ItemTitle>{label}</Settings.ItemTitle>
                 {data && hasSourceOverrides(data, source) ? (

@@ -72,7 +72,6 @@
 }
 
 .empty {
-  padding-block: 24px;
   background: var(--ds-background-secondary);
   border-radius: var(--ds-radius-lg);
 }

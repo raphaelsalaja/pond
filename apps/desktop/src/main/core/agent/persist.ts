@@ -4,7 +4,7 @@ import {
   agentChats,
   agentMessages,
 } from "@pond/schema/db";
-import { asc, desc, eq, isNull, or, sql } from "drizzle-orm";
+import { asc, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { ulid } from "ulid";
 import { z } from "zod";
 import {
@@ -165,6 +165,41 @@ export async function listMessages(chatId: string) {
     .from(agentMessages)
     .where(eq(agentMessages.chatId, chatId))
     .orderBy(asc(agentMessages.createdAt), asc(agentMessages.id));
+}
+
+export type RewoundTurn =
+  | { ok: true; content: string; metadata: AssistantMetadata }
+  | { ok: false; error: string };
+
+/** Drops the latest exchange so its request can run again; the transcript follows the stored rows. */
+export async function rewindLastTurn(chatId: string): Promise<RewoundTurn> {
+  const rows = await listMessages(chatId);
+  const start = rows.findLastIndex((row) => row.role === "user");
+  const request = rows[start];
+  if (!request || start === rows.length - 1)
+    return { ok: false, error: "There's no reply to run again." };
+  const metadata = assistantMetadata.parse(request.metadata ?? {});
+  if (metadata.routine)
+    return { ok: false, error: "Run the routine again from its page." };
+  const replies = rows.slice(start + 1);
+  const applied = replies.some((row) =>
+    assistantMetadata
+      .parse(row.metadata ?? {})
+      .changes?.some((change) => change.status === "applied"),
+  );
+  if (applied)
+    return {
+      ok: false,
+      error: "This reply has applied changes. Undo them before running it again.",
+    };
+  const db = await getDb();
+  await db.delete(agentMessages).where(
+    inArray(
+      agentMessages.id,
+      rows.slice(start).map((row) => row.id),
+    ),
+  );
+  return { ok: true, content: request.content, metadata };
 }
 
 export async function appendMessage(input: {

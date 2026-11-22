@@ -4,8 +4,8 @@ import {
   IconArrowUpRight,
   IconCrop,
   IconPencil,
+  IconShare,
   IconTrash,
-  IconWindowShare,
 } from "@pond/icons";
 import type { ComponentDocs } from "../shared/docs";
 import { Tray } from ".";
@@ -73,7 +73,7 @@ export const docs: ComponentDocs = {
             <IconArrowUpRight />
           </Tray.Item>
           <Tray.Item aria-label="Share">
-            <IconWindowShare />
+            <IconShare />
           </Tray.Item>
         </Tray.Pill>
       ),
@@ -111,7 +111,7 @@ export const docs: ComponentDocs = {
       render: () => (
         <Tray.Pill aria-label="Save Actions">
           <Tray.Item aria-label="Share">
-            <IconWindowShare />
+            <IconShare />
           </Tray.Item>
           <Tray.Item aria-label="Move to Trash" disabled>
             <IconTrash />

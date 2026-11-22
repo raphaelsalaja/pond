@@ -1,10 +1,13 @@
 import { join } from "node:path";
 import { saves } from "@pond/schema/db";
 import { and, eq, isNull } from "drizzle-orm";
+import log from "electron-log/main.js";
 import { getDb } from "../../db";
 import { appDataRoot } from "../../paths";
 import { libraryIntegrityRuntime } from "../library-integrity";
+import { notificationLog } from "../notifications";
 import { currentLibraryId } from "../prefs-scope";
+import { healthNotifications } from "./notifications";
 import { createLibraryHealthService } from "./service";
 import { createLibraryHealthStore } from "./store";
 
@@ -53,7 +56,17 @@ export const libraryHealthService = createLibraryHealthService({
     return verifyLibraryIntegrity();
   },
   readCheck: store.read,
-  writeCheck: store.write,
+  async writeCheck(libraryId, check) {
+    await store.write(libraryId, check);
+    if (libraryId !== currentLibraryId()) return;
+    const { posts, resolved } = healthNotifications(check);
+    try {
+      for (const post of posts) await notificationLog.post(post);
+      await notificationLog.resolve(resolved);
+    } catch (error) {
+      log.warn("[pond health] couldn't update notifications", error);
+    }
+  },
   async media() {
     const { mediaWarmSnapshot } = await import("../media-warm/service");
     return mediaWarmSnapshot();

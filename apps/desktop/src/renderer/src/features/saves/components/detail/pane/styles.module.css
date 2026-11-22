@@ -8,16 +8,19 @@
   overflow: hidden;
 }
 
+/* Same height as the sidebar header bar, so both bottom borders run as one line. */
 .header {
-  height: var(--window-header-height, 56px);
-  min-height: 0;
-  padding: var(--ds-space-xs) var(--ds-space-2xl);
-  border-bottom: none;
+  height: 44px;
+  min-height: 44px;
+  padding-block: 0;
 
+  /* The tab pills draw their ring as a box-shadow outside the box. */
   & [data-slot="pane-header-title"] {
     padding-left: 0;
+    overflow: visible;
   }
 }
+
 .scroll {
   --scroll-fade-size: 32px;
 
@@ -26,7 +29,7 @@
   flex-direction: column;
   gap: var(--ds-space-lg);
   min-height: 0;
-  padding-block: var(--ds-space-xs) var(--ds-space-2xl);
+  padding-block: var(--ds-space-xl) var(--ds-space-2xl);
   overflow-y: auto;
 }
 

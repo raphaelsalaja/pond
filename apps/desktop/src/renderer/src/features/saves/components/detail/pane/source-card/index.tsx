@@ -1,5 +1,5 @@
 import { IconChevronDown, IconExternalLink } from "@pond/icons";
-import { Button } from "@pond/ui";
+import { BrandTile, Button } from "@pond/ui";
 import { useLayoutEffect, useRef, useState } from "react";
 import { useSaveDetail } from "@/features/saves/hooks/use-save-detail";
 import { pickAuthorColor } from "@/features/saves/lib/presentation";
@@ -50,9 +50,9 @@ export function SourceCard({ save }: { save: Save }) {
               height={14}
             />
           ) : SourceIcon ? (
-            <span className={styles.logo} aria-hidden>
-              <SourceIcon width={14} height={14} />
-            </span>
+            <BrandTile size={14}>
+              <SourceIcon />
+            </BrandTile>
           ) : null}
           <span>{getSourceLabel(save.source)}</span>
           {date ? (

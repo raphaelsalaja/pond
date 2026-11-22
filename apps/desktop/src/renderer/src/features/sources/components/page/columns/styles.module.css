@@ -1,15 +1,20 @@
-.source {
-  display: flex;
-  gap: var(--ds-space-md);
-  align-items: center;
-  min-width: 0;
-}
-
-.status {
+.identity {
   display: flex;
   gap: var(--ds-space-sm);
   align-items: center;
   min-width: 0;
+
+  & > :first-child {
+    flex: none;
+    margin-right: var(--ds-space-xs);
+  }
+}
+
+.platform {
+  flex: none;
+  font-size: var(--ds-text-body);
+  color: var(--ds-foreground-tertiary);
+  white-space: nowrap;
 }
 
 .name {
@@ -19,6 +24,13 @@
   font-weight: 500;
   color: var(--ds-foreground-primary);
   white-space: nowrap;
+}
+
+.status {
+  display: flex;
+  gap: var(--ds-space-sm);
+  align-items: center;
+  min-width: 0;
 }
 
 .mark {
@@ -41,6 +53,13 @@
 
 .glyph {
   display: block;
+}
+
+.source {
+  display: flex;
+  gap: var(--ds-space-md);
+  align-items: center;
+  min-width: 0;
 }
 
 .label,

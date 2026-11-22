@@ -80,14 +80,7 @@ export function AudioViewer(props: ViewerProps & { url: string }) {
   }, [props.save.id, props.url]);
 
   if (failed) {
-    return (
-      <ViewerFallback
-        {...props}
-        reason="decode"
-        active={props.active}
-        slideNavigation={props.navigation}
-      />
-    );
+    return <ViewerFallback {...props} reason="decode" active={props.active} />;
   }
 
   return (

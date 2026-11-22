@@ -85,7 +85,6 @@
   overflow: hidden;
   background: var(--ds-background-tertiary);
   border: 0;
-  box-shadow: var(--ds-shadow-border);
 }
 
 .row .media img {

@@ -11,6 +11,11 @@
   &[data-orientation="vertical"] {
     flex-direction: column;
   }
+
+  &[data-variant="plain"] {
+    background: none;
+    box-shadow: none;
+  }
 }
 
 .item {

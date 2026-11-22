@@ -31,6 +31,7 @@ import { libraryHealthQueries } from "./library-health";
 import { libraryRepairQueries } from "./library-repairs";
 import { mediaProcessingQueries } from "./media-processing";
 import { mediaUnderstandingQueries } from "./media-understanding";
+import { notificationQueries } from "./notifications";
 import { openWithQueries } from "./open-with";
 import type { QueryHandlerMap, QueryParams } from "./params";
 import { queueQueries } from "./queue";
@@ -72,6 +73,7 @@ const queryRegistry = {
   ...libraryQueries,
   ...libraryRepairQueries,
   ...libraryHealthQueries,
+  ...notificationQueries,
   ...mediaUnderstandingQueries,
   ...mediaProcessingQueries,
   ...inspectQueries,

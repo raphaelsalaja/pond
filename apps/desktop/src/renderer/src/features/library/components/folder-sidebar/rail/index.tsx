@@ -1,0 +1,182 @@
+import {
+  IconCanvas,
+  IconInbox,
+  IconLibrary,
+  IconNodes3,
+  IconTag,
+  IconTrashXmark,
+  IconWindowDownload,
+} from "@pond/icons";
+import { ToggleGroup, Tooltip } from "@pond/ui";
+import { FISH_COLORS, FISH_SPECIES } from "@shared/fish-contracts";
+import { QueueSummarySchema } from "@shared/queue-contracts";
+import { useQuery } from "@tanstack/react-query";
+import { type ReactNode, useEffect } from "react";
+import { FishMark } from "@/features/fish";
+import { useFishList } from "@/features/fish/state/fish";
+import { WorkspaceMenu } from "@/features/library/components/workspace-menu";
+import { useSidebarCounts } from "@/features/library/hooks/use-sidebar-counts";
+import { useInboxSignal } from "@/features/notifications";
+import { SpecContextMenu } from "@/shared/components/spec-context-menu";
+import { preloadWhenIdle } from "@/shared/lib/lazy-with-preload";
+import type { ShortcutId } from "@/shared/lib/shortcuts";
+import { usePrefs } from "@/shared/state/prefs";
+import { preloadLibraryNav, selectLibraryNav } from "../navigation";
+import { buildTrashMenuItems } from "../trash-menu";
+import { HelpMenu } from "./help-menu";
+import { Item } from "./item";
+import { SettingsButton } from "./settings-button";
+import styles from "./styles.module.css";
+
+export type RailSection = "library" | "fish" | "canvases";
+export type RailPage = "inbox" | "tags" | "sources" | "downloads" | "trash";
+export type RailItem = RailSection | RailPage;
+
+const SECTIONS: RailSection[] = ["fish", "library", "canvases"];
+const PAGES: RailPage[] = ["inbox", "tags", "sources", "downloads", "trash"];
+
+const LABELS: Record<RailItem, string> = {
+  library: "Library",
+  fish: "Fish",
+  canvases: "Canvases",
+  inbox: "Inbox",
+  tags: "Tags",
+  sources: "Sources",
+  downloads: "Downloads",
+  trash: "Trash",
+};
+
+const SHORTCUTS: Partial<Record<RailItem, ShortcutId>> = {
+  library: "nav.library",
+  fish: "nav.fish",
+  canvases: "nav.canvases",
+  inbox: "nav.inbox",
+  sources: "nav.sources",
+  downloads: "nav.downloads",
+  trash: "nav.trash",
+};
+
+export function isRailPage(kind: string): kind is RailPage {
+  return PAGES.some((page) => page === kind);
+}
+
+interface RailProps {
+  value: RailItem | null;
+  sections: readonly RailSection[];
+  onSectionChange: (section: RailSection) => void;
+}
+
+function LeadFish() {
+  const lead = useFishList()[0];
+  return (
+    <FishMark
+      color={lead?.color ?? FISH_COLORS[0]}
+      species={lead?.species ?? FISH_SPECIES[0]}
+    />
+  );
+}
+
+function icon(item: RailItem): ReactNode {
+  switch (item) {
+    case "library":
+      return <IconLibrary />;
+    case "fish":
+      return <LeadFish />;
+    case "canvases":
+      return <IconCanvas />;
+    case "inbox":
+      return <IconInbox />;
+    case "tags":
+      return <IconTag />;
+    case "sources":
+      return <IconNodes3 />;
+    case "downloads":
+      return <IconWindowDownload />;
+    case "trash":
+      return <IconTrashXmark />;
+  }
+}
+
+export function Rail({ value, sections, onSectionChange }: RailProps) {
+  const [sidebar] = usePrefs("sidebar");
+  const counts = useSidebarCounts();
+  const inbox = useInboxSignal();
+  const queueSummary = useQuery({
+    queryKey: ["queue.summary"],
+    queryFn: async () =>
+      QueueSummarySchema.parse(await window.pond.query("queue.summary", {})),
+    refetchInterval: 2_000,
+    enabled: sidebar.destinations.downloads,
+  });
+  const badges: Partial<Record<RailPage, number | undefined>> = {
+    inbox: counts.inbox + inbox.priority,
+    downloads: queueSummary.data?.actionable,
+  };
+  const dots: Partial<Record<RailPage, "live" | "negative" | undefined>> = {
+    inbox: inbox.attention ? "negative" : inbox.working ? "live" : undefined,
+  };
+  useEffect(
+    () =>
+      preloadWhenIdle(
+        ...PAGES.map((kind) => () => preloadLibraryNav({ kind })),
+      ),
+    [],
+  );
+
+  function page(kind: RailPage) {
+    return (
+      <Item
+        key={kind}
+        value={kind}
+        label={LABELS[kind]}
+        icon={icon(kind)}
+        shortcut={SHORTCUTS[kind]}
+        count={badges[kind]}
+        dot={dots[kind]}
+        current={value === kind}
+        onSelect={() => selectLibraryNav({ kind })}
+      />
+    );
+  }
+
+  return (
+    <nav className={styles.rail} aria-label="Sidebar Sections">
+      <Tooltip.Group>
+        <WorkspaceMenu />
+        <ToggleGroup
+          className={styles.items}
+          variant="rail"
+          orientation="vertical"
+          aria-label="Section"
+          value={value ? [value] : []}
+        >
+          {SECTIONS.filter((section) => sections.includes(section)).map(
+            (section) => (
+              <Item
+                key={section}
+                value={section}
+                label={LABELS[section]}
+                icon={icon(section)}
+                shortcut={SHORTCUTS[section]}
+                onSelect={() => onSectionChange(section)}
+              />
+            ),
+          )}
+          {PAGES.filter(
+            (kind) => kind !== "trash" && sidebar.destinations[kind],
+          ).map(page)}
+          <span className={styles.spacer} aria-hidden />
+          {sidebar.destinations.trash ? (
+            <SpecContextMenu
+              buildItems={() => buildTrashMenuItems(counts.trash > 0)}
+            >
+              <span className={styles.menu}>{page("trash")}</span>
+            </SpecContextMenu>
+          ) : null}
+        </ToggleGroup>
+        <HelpMenu />
+        <SettingsButton />
+      </Tooltip.Group>
+    </nav>
+  );
+}

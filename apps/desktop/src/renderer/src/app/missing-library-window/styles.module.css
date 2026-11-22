@@ -17,6 +17,7 @@
 .empty {
   --empty-max-width: 620px;
   --empty-title-size: var(--ds-text-display);
+  --empty-title-leading: var(--ds-leading-display);
   --empty-description-max-width: 56ch;
 }
 

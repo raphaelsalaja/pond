@@ -1,0 +1,91 @@
+import type { FishRun } from "@shared/fish-contracts";
+import { describe, expect, it } from "vitest";
+import {
+  fishRuns,
+  lastRunText,
+  nextRunText,
+  nextRunValue,
+  runSentence,
+  runsByDay,
+} from "./runs";
+
+const now = new Date(2026, 10, 16, 12, 0);
+const hoursAgo = (hours: number) => now.getTime() - hours * 3_600_000;
+
+function run(patch: Partial<FishRun> = {}): FishRun {
+  return {
+    chatId: "chat",
+    at: hoursAgo(1),
+    status: "done",
+    changes: 0,
+    seen: false,
+    ...patch,
+  };
+}
+
+describe("runSentence", () => {
+  it("names the routine and what it left for you", () => {
+    const routineName = "Tag Inbox";
+    expect(runSentence(run({ routineName }))).toBe("Ran Tag Inbox");
+    expect(runSentence(run({ routineName, changes: 3 }))).toBe(
+      "Ran Tag Inbox, 3 changes",
+    );
+    expect(runSentence(run({ routineName, status: "failed" }))).toBe(
+      "Tag Inbox failed",
+    );
+    expect(runSentence(run())).toBe("Ran a routine");
+  });
+});
+
+describe("fishRuns", () => {
+  it("falls back to the last run on fish without history", () => {
+    const last = run();
+    expect(fishRuns({ lastRun: last })).toEqual([last]);
+    expect(fishRuns({})).toEqual([]);
+  });
+});
+
+describe("runsByDay", () => {
+  it("groups runs under Today, Yesterday, and the weekday", () => {
+    const groups = runsByDay(
+      [1, 2, 24, 72].map((hours) => run({ at: hoursAgo(hours) })),
+      now,
+    );
+    expect(groups.map((group) => [group.day, group.runs.length])).toEqual([
+      ["Today", 2],
+      ["Yesterday", 1],
+      [
+        new Date(hoursAgo(72)).toLocaleDateString(undefined, {
+          weekday: "long",
+        }),
+        1,
+      ],
+    ]);
+  });
+});
+
+describe("next and last run copy", () => {
+  const time = (at: number) =>
+    new Date(at).toLocaleTimeString(undefined, {
+      hour: "numeric",
+      minute: "2-digit",
+    });
+
+  it("reads the next run as a moment, or soon once it's due", () => {
+    const later = now.getTime() + 3 * 3_600_000;
+    expect(nextRunText(later, now)).toBe(`Next today at ${time(later)}`);
+    expect(nextRunValue(later, now)).toBe(`Today at ${time(later)}`);
+    expect(nextRunText(hoursAgo(1), now)).toBe("Next run soon");
+    expect(nextRunText(null, now)).toBeNull();
+  });
+
+  it("reads the last run with its outcome", () => {
+    const at = hoursAgo(24);
+    expect(lastRunText(run({ at, changes: 1 }), now)).toBe(
+      `Ran yesterday at ${time(at)}, 1 change`,
+    );
+    expect(lastRunText(run({ at, status: "failed" }), now)).toBe(
+      `Failed yesterday at ${time(at)}`,
+    );
+  });
+});

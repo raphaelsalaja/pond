@@ -16,6 +16,10 @@
   overflow: visible;
 }
 
+.preview[data-tone="alert"] {
+  color: var(--ds-danger);
+}
+
 .time {
   flex: none;
   margin-left: var(--ds-space-md);

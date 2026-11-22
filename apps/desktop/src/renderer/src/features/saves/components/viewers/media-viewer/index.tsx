@@ -300,12 +300,6 @@ function Carousel({
             chapters={chapters}
             ratio={ratios.get(s.src)}
             onRatio={reportRatio}
-            slideNavigation={{
-              index: active,
-              count: slides.length,
-              onPrevious: goPrev,
-              onNext: goNext,
-            }}
           />
         ))}
       </div>

@@ -34,7 +34,11 @@ export interface Departure {
 
 const STILL: Fling = { x: 0, y: 0 };
 
-export function useReview(queue: ReviewQueue, onExit: () => void) {
+export function useReview(
+  queue: ReviewQueue,
+  onExit: () => void,
+  onStep: (by: 1 | -1) => void,
+) {
   const ref = useRef<HTMLDivElement>(null);
   const id = currentReviewId(queue);
   const save = useSave(id);
@@ -117,6 +121,7 @@ export function useReview(queue: ReviewQueue, onExit: () => void) {
     event.preventDefault();
     if (key.kind === "exit") onExit();
     else if (key.kind === "back") actions.back();
+    else if (key.kind === "step") onStep(key.by);
     else if (!id) return;
     else if (key.kind === "trash") actions.trash();
     else if (key.kind === "keep") actions.keep();

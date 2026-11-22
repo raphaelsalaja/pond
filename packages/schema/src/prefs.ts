@@ -60,6 +60,7 @@ const preferences = z.object({
 
 export const SIDEBAR_DESTINATIONS = [
   "all",
+  "inbox",
   "uncategorized",
   "untagged",
   "recentlyAdded",
@@ -153,6 +154,7 @@ const sidebar = z.object({
   destinations: z
     .object({
       all: z.boolean().catch(true),
+      inbox: z.boolean().catch(true),
       uncategorized: z.boolean().catch(true),
       untagged: z.boolean().catch(true),
       recentlyAdded: z.boolean().catch(true),
@@ -166,6 +168,7 @@ const sidebar = z.object({
     })
     .catch({
       all: true,
+      inbox: true,
       uncategorized: true,
       untagged: true,
       recentlyAdded: true,
@@ -228,6 +231,18 @@ const inbox = z.object({
       imports: z.boolean().catch(DEFAULT_INBOX_CHANNELS.imports),
     })
     .catch({ ...DEFAULT_INBOX_CHANNELS }),
+});
+
+export const INBOX_ORDERINGS = ["newest", "priority"] as const;
+export const INBOX_GROUPINGS = ["none", "type", "date"] as const;
+
+const inboxDisplay = z.object({
+  /** Off drops the Priority and Other tabs and lists everything together. */
+  priorityInbox: z.boolean().catch(true),
+  ordering: z.enum(INBOX_ORDERINGS).catch("newest"),
+  groupBy: z.enum(INBOX_GROUPINGS).catch("none"),
+  unreadFirst: z.boolean().catch(false),
+  unreadOnly: z.boolean().catch(false),
 });
 
 const windowSlice = z.object({
@@ -502,6 +517,7 @@ const PrefsObject = z.object({
   feedback: feedback.catch(feedback.parse({})),
   trash: trash.catch(trash.parse({})),
   inbox: inbox.catch(inbox.parse({})),
+  inboxDisplay: inboxDisplay.catch(inboxDisplay.parse({})),
   window: windowSlice.catch(windowSlice.parse({})),
   system: system.catch(system.parse({})),
   quickCapture: quickCapture.catch(quickCapture.parse({})),

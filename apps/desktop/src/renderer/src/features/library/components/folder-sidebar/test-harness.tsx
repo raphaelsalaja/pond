@@ -102,6 +102,8 @@ export const pondQuery = vi.fn(async (name: string, patch?: WirePrefsPatch) => {
   if (name === "library.info")
     return { path: "/tmp/My Pond.pond", name: "My Pond" };
   if (name === "library.recent") return [];
+  if (name === "libraryHealth.overview")
+    return { check: null, job: null, media: { failures: [] } };
   if (name === "settings.getPrefs") return storedPrefs;
   if (name === "settings.setPrefs") {
     const updates = new Map(Object.entries(patch ?? {}));
@@ -201,6 +203,7 @@ export function createFolderSidebarHarness() {
     async setup(): Promise<void> {
       storedPrefs = PrefsSchema.parse({});
       libraryChrome.setNav({ kind: "all" });
+      libraryChrome.setSidebarPanel("library");
       resetFilters();
       savedViewList.current = [];
       folderList.current = [];

@@ -1,4 +1,4 @@
-import { IconTriangleWarning } from "@pond/icons";
+import { IconCircleWarning } from "@pond/icons";
 import { Button, Reveal } from "@pond/ui";
 import { clsx as cn } from "clsx";
 import type { ReactNode } from "react";
@@ -20,7 +20,7 @@ export function ErrorNotice({
   return (
     <Reveal>
       <div className={cn(styles.notice, className)} role="alert">
-        <IconTriangleWarning size={16} className={styles.icon} />
+        <IconCircleWarning size={16} className={styles.icon} />
         <div className={styles.content}>
           <span className={styles.title}>{title}</span>
           {children ? (

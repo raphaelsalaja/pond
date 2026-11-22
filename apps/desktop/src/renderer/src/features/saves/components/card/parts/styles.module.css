@@ -146,8 +146,7 @@
   box-shadow: var(--ds-shadow-border);
 }
 
-.source img,
-.source svg {
+.source > img {
   display: block;
   width: 100%;
   height: 100%;

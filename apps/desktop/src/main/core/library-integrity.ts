@@ -523,18 +523,24 @@ function metadataMatches(row: IntegritySave, info: RepairInfo): boolean {
   );
 }
 
+const RESERVED_NAME = /^(?:CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$/iu;
+
+function reservedName(stem: string): boolean {
+  return RESERVED_NAME.test(stem.split(".")[0] ?? "");
+}
+
 function validPhysicalName(name: string): boolean {
   const stem = name.replace(/[. ]+$/u, "");
   if (!stem || [...name].some(invalidPhysicalCharacter) || stem !== name)
     return false;
-  const base = stem.split(".")[0]?.toUpperCase() ?? "";
-  return !/^(?:CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$/u.test(base);
+  return !reservedName(stem);
 }
 
 function availablePhysicalName(name: string, occupied: Set<string>): string {
   const extension = [...extname(name)]
     .filter((character) => !invalidPhysicalCharacter(character))
-    .join("");
+    .join("")
+    .replace(/[. ]+$/u, "");
   const rawStem = name.slice(0, name.length - extname(name).length);
   let stem = rawStem
     .normalize("NFKC")
@@ -544,8 +550,8 @@ function availablePhysicalName(name: string, occupied: Set<string>): string {
     .replace(/-+/gu, "-")
     .replace(/[. ]+$/gu, "")
     .slice(0, 180);
-  if (!stem || /^(?:CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$/iu.test(stem))
-    stem = "file";
+  if (!stem) stem = "file";
+  if (reservedName(stem)) stem = `file-${stem}`;
   let candidate = `${stem}${extension}`;
   let suffix = 2;
   while (occupied.has(candidate.toLowerCase())) {

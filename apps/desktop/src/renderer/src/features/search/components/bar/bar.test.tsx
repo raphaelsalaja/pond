@@ -201,9 +201,7 @@ describe("search editor synchronization", () => {
       ),
     );
     await act(async () =>
-      host
-        .querySelector<HTMLButtonElement>('[aria-label="Clear Search"]')
-        ?.click(),
+      harness.editor?.update(() => $writeSearchString("")),
     );
     await act(async () =>
       pending.resolve({
@@ -215,21 +213,25 @@ describe("search editor synchronization", () => {
     expect(input?.getAttribute("aria-busy")).toBe("false");
   });
 
-  it("preserves explicit filters when interpreting the remaining words", async () => {
+  it("keeps toolbar filters when interpreting the typed words", async () => {
+    const rule = {
+      field: "source" as const,
+      operator: "eq" as const,
+      value: "youtube.com",
+    };
     harness.compile.mockResolvedValue({
       plan: { filter: { combinator: "and", rules: [] } },
       residual: "cats",
     });
-    setSearchInput(
-      [{ field: "source", operator: "eq", value: "youtube.com" }],
-      "cats",
-      "source:youtube.com cats",
-    );
+    setSearchInput([rule], "cats", "cats");
     await act(async () =>
       root.render(
-        <SearchComposer compile={harness.compile}>
-          <CaptureEditor />
-        </SearchComposer>,
+        <>
+          <SearchComposer compile={harness.compile}>
+            <CaptureEditor />
+          </SearchComposer>
+          <SearchState />
+        </>,
       ),
     );
     const input = host.querySelector<HTMLElement>("[data-library-search]");
@@ -240,29 +242,10 @@ describe("search editor synchronization", () => {
     );
     expect(harness.compile).toHaveBeenCalledWith("cats");
     expect(input?.textContent?.trim()).toBe("cats");
-  });
-
-  it("does not reinterpret a query that contains only explicit filters", async () => {
-    setSearchInput(
-      [{ field: "source", operator: "eq", value: "youtube.com" }],
-      "",
-      "source:youtube.com",
-    );
-    await act(async () =>
-      root.render(
-        <SearchComposer compile={harness.compile}>
-          <CaptureEditor />
-        </SearchComposer>,
-      ),
-    );
-    const input = host.querySelector<HTMLElement>("[data-library-search]");
-    await act(async () =>
-      input?.dispatchEvent(
-        new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
-      ),
-    );
-    expect(harness.compile).not.toHaveBeenCalled();
-    expect(input?.textContent?.trim()).toBe("");
+    expect(
+      JSON.parse(host.querySelector("[data-filter-state]")?.textContent ?? "{}")
+        .rules,
+    ).toEqual([rule]);
   });
 
   it("keeps toolbar filters while typing and clearing keyword search", async () => {
@@ -293,9 +276,7 @@ describe("search editor synchronization", () => {
         .rules,
     ).toEqual([rule]);
     await act(async () =>
-      host
-        .querySelector<HTMLButtonElement>('[aria-label="Clear Search"]')
-        ?.click(),
+      harness.editor?.update(() => $writeSearchString("")),
     );
     expect(input?.textContent?.trim()).toBe("");
     expect(
@@ -304,13 +285,7 @@ describe("search editor synchronization", () => {
     ).toEqual([rule]);
   });
 
-  it("moves completed filter syntax into the toolbar without dropping other filters", async () => {
-    const rule = {
-      field: "source" as const,
-      operator: "eq" as const,
-      value: "youtube.com",
-    };
-    setSearchInput([rule], "", "");
+  it("treats field:value text as keywords, not filters", async () => {
     await act(async () =>
       root.render(
         <>
@@ -326,46 +301,11 @@ describe("search editor synchronization", () => {
     );
     expect(
       host.querySelector("[data-library-search]")?.textContent?.trim(),
-    ).toBe("");
+    ).toBe("type:video");
+    expect(host.querySelector("output")?.textContent).toBe("type:video");
     expect(
       JSON.parse(host.querySelector("[data-filter-state]")?.textContent ?? "{}")
         .rules,
-    ).toEqual([rule, { field: "type", operator: "eq", value: "video" }]);
-    await act(async () =>
-      harness.editor?.update(() => $writeSearchString("cats")),
-    );
-    expect(
-      JSON.parse(host.querySelector("[data-filter-state]")?.textContent ?? "{}")
-        .rules,
-    ).toHaveLength(2);
-  });
-
-  it("waits for a quoted filter value to finish before moving it into the toolbar", async () => {
-    await act(async () =>
-      root.render(
-        <>
-          <SearchComposer compile={harness.compile}>
-            <CaptureEditor />
-          </SearchComposer>
-          <SearchState />
-        </>,
-      ),
-    );
-    await act(async () =>
-      harness.editor?.update(() => $writeSearchString('creator:"Jane ')),
-    );
-    expect(
-      host.querySelector("[data-library-search]")?.textContent?.trim(),
-    ).toBe('creator:"Jane');
-    await act(async () =>
-      harness.editor?.update(() => $writeSearchString('creator:"Jane Doe"')),
-    );
-    expect(
-      host.querySelector("[data-library-search]")?.textContent?.trim(),
-    ).toBe("");
-    expect(
-      JSON.parse(host.querySelector("[data-filter-state]")?.textContent ?? "{}")
-        .rules,
-    ).toEqual([{ field: "creator", operator: "eq", value: "jane doe" }]);
+    ).toEqual([]);
   });
 });

@@ -1,9 +1,9 @@
 import {
   IconAlbum2,
   IconChatBubble,
+  IconClipboardArrowIn,
   IconCoffee,
   IconCompass,
-  IconCopy,
   IconDownload,
   IconEye,
   IconFile,
@@ -263,7 +263,7 @@ export const COMMANDS: Command[] = [
   {
     group: "Import",
     label: "Import from Clipboard",
-    icon: IconCopy,
+    icon: IconClipboardArrowIn,
     keywords: "paste image files",
   },
   {

@@ -41,43 +41,20 @@
   }
 }
 
+/* An invisible hit area over the row's icon; the icon itself shows open or closed. */
 .disclosure {
-  --ds-focus-offset: -16px;
+  --ds-focus-offset: 0px;
   position: absolute;
   inset-inline-start: calc(
     var(--folder-depth, 0) *
-    var(--folder-indent) -
-    15px
+    var(--folder-indent) +
+    var(--ds-space-sm)
   );
   top: 6px;
   z-index: 2;
   width: 16px;
   min-width: 16px;
   height: 16px;
-  color: var(--ds-foreground-tertiary);
-
-  &:hover {
-    color: var(--ds-foreground-secondary);
-  }
-}
-
-.disclosure svg {
-  width: 8px;
-  transition: transform var(--ds-duration-bounce) var(--ds-easing-bounce);
-}
-
-.disclosure[aria-expanded="true"] svg {
-  transform: rotate(90deg);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .disclosure svg {
-    transition: none;
-  }
-}
-
-:global([data-reduce-motion]) .disclosure svg {
-  transition: none;
 }
 
 [data-folder-drag] .disclosure {

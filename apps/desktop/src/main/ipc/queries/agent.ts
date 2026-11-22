@@ -140,6 +140,22 @@ export const agentQueries = {
     },
   ),
 
+  "agent.regenerate": query(
+    z.object({ chatId: z.string().min(1) }),
+    async ({ chatId }): Promise<QueryResult<"agent.regenerate">> => {
+      const { rewindLastTurn } = await import("../../core/agent/persist");
+      const turn = await rewindLastTurn(chatId);
+      if (!turn.ok) return turn;
+      return {
+        ok: true,
+        content: turn.content,
+        attachments: turn.metadata.attachments ?? [],
+        files: turn.metadata.files ?? [],
+        replyToQuestion: turn.metadata.replyToQuestion,
+      };
+    },
+  ),
+
   "agent.send": query(Params, async (params) => {
     const { sendMessage } = await import("../../core/agent/chat");
     return await sendMessage(assistantSend.parse(params));

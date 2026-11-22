@@ -13,23 +13,46 @@
 }
 
 @font-face {
-  font-family: intern-variable;
+  font-family: allo-variable;
   font-style: normal;
   font-weight: 100 900;
   font-display: swap;
-  src: url("./assets/fonts/intern/variable.woff2") format("woff2");
+  src: url("./assets/fonts/allo/variable.woff2") format("woff2");
 }
 
-/* Intern has no italic, so its family borrows Inter's instead of a synthesized oblique. */
 @font-face {
-  font-family: intern-variable;
+  font-family: allo-variable;
   font-style: italic;
-  font-weight: 100 900;
+  font-weight: 400;
   font-display: swap;
-  src: url("./assets/fonts/inter/variable-italic.woff2") format("woff2");
+  src: url("./assets/fonts/allo/oblique-400.woff2") format("woff2");
 }
 
-/* Same metrics as Intern; covers the symbols, Greek and Cyrillic Intern lacks. */
+@font-face {
+  font-family: allo-variable;
+  font-style: italic;
+  font-weight: 500;
+  font-display: swap;
+  src: url("./assets/fonts/allo/oblique-500.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: allo-variable;
+  font-style: italic;
+  font-weight: 600;
+  font-display: swap;
+  src: url("./assets/fonts/allo/oblique-600.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: allo-variable;
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+  src: url("./assets/fonts/allo/oblique-700.woff2") format("woff2");
+}
+
+/* Same metrics as Allo; covers the symbols, Greek and Cyrillic Allo lacks. */
 @font-face {
   font-family: inter-variable;
   font-style: normal;
@@ -75,7 +98,7 @@
 
 :root {
   --ds-ui-font-family:
-    intern-variable, inter-variable, ui-sans-serif, system-ui, -apple-system,
+    allo-variable, inter-variable, ui-sans-serif, system-ui, -apple-system,
     "SF Pro Text", "Segoe UI", sans-serif;
   --ds-code-font-family:
     jetbrains-mono, ui-monospace, "SF Mono", "Menlo", "Consolas", monospace;
@@ -89,8 +112,8 @@
   font-feature-settings:
     "liga" 1,
     "calt" 1,
-    "cv11" 1,
-    "ss01" 1;
+    "ss01" 1,
+    "ss03" 1;
   color-scheme: light dark;
 }
 

@@ -9,11 +9,7 @@ import { ViewerHud } from "@/features/saves/components/viewers/hud";
 import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome";
 import { OriginalFileActions } from "@/features/saves/components/viewers/original-file-actions";
 import { ViewerSaveNav } from "@/features/saves/components/viewers/viewer-save-nav";
-import {
-  type ViewerNavigation,
-  ViewerNavigationControls,
-  ViewerToolbarGroups,
-} from "@/features/saves/components/viewers/viewer-toolbar-groups";
+import { ViewerToolbarGroups } from "@/features/saves/components/viewers/viewer-toolbar-groups";
 import type { Save, SaveFile } from "@/features/saves/types";
 import { notify } from "@/shared/lib/toast";
 import styles from "./styles.module.css";
@@ -23,14 +19,12 @@ export function TextFileViewer({
   file,
   fileIndex,
   url,
-  navigation,
 }: {
   save: Save;
   file: SaveFile;
   fileIndex: number;
   url: string;
   active?: boolean;
-  navigation?: ViewerNavigation;
 }) {
   const [text, setText] = useState("");
   const [encoding, setEncoding] = useState<TextEncoding>("utf-8");
@@ -134,7 +128,6 @@ export function TextFileViewer({
               }
             />
           }
-          end={<ViewerNavigationControls navigation={navigation} />}
         />
       </ChromePortal>
       <div className={styles.scroll} data-scroll-fade="vertical">

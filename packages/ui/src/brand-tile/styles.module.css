@@ -18,4 +18,15 @@
     width: 100%;
     height: 100%;
   }
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    corner-shape: inherit;
+    background: var(--ds-brand-tile-gloss);
+    box-shadow: var(--ds-brand-tile-rim);
+    pointer-events: none;
+  }
 }

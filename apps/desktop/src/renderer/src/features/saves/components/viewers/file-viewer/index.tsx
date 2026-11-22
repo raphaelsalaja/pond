@@ -3,14 +3,13 @@ import { GeneratedRasterViewer } from "@/features/saves/components/viewers/gener
 import { ViewerChrome } from "@/features/saves/components/viewers/media-viewer/chrome";
 import { ViewerFallback } from "@/features/saves/components/viewers/viewer-fallback";
 import { ViewerSaveNav } from "@/features/saves/components/viewers/viewer-save-nav";
-import type { ViewerNavigation } from "@/features/saves/components/viewers/viewer-toolbar-groups";
 import {
   type StoredFileViewerKind,
   storedFileViewerKind,
 } from "@/features/saves/lib/media/file-viewer";
 import { buildPondUrl } from "@/features/saves/lib/media/url";
 import type { Save, SaveFile } from "@/features/saves/types";
-import { FileActions, FileBar, navigationControls } from "./file-bar";
+import { FileActions, FileBar } from "./file-bar";
 import { GenericFileCard } from "./file-card";
 import styles from "./styles.module.css";
 import type { ViewerProps } from "./types";
@@ -99,7 +98,6 @@ interface StoredFileContentProps {
   fileIndex: number;
   url?: string;
   active?: boolean;
-  navigation?: ViewerNavigation;
   viewerKind?: StoredFileViewerKind;
 }
 
@@ -109,11 +107,10 @@ export function StoredFileContent({
   fileIndex,
   url = buildPondUrl(save.id, file),
   active = true,
-  navigation,
   viewerKind,
 }: StoredFileContentProps) {
   const kind = viewerKind ?? storedFileViewerKind(file);
-  const props = { save, file, fileIndex, active, navigation };
+  const props = { save, file, fileIndex, active };
 
   if (kind === "pdf") return <PdfViewer {...props} url={url} />;
   if (kind === "audio") return <AudioViewer {...props} url={url} />;
@@ -147,14 +144,7 @@ function NativePreviewViewer(props: ViewerProps & { url: string }) {
   const [failed, setFailed] = useState(false);
 
   if (failed) {
-    return (
-      <ViewerFallback
-        {...props}
-        reason="preview"
-        active={props.active}
-        slideNavigation={props.navigation}
-      />
-    );
+    return <ViewerFallback {...props} reason="preview" active={props.active} />;
   }
 
   return (
@@ -164,7 +154,6 @@ function NativePreviewViewer(props: ViewerProps & { url: string }) {
         fileIndex={props.fileIndex}
         url={props.url}
         active={props.active ?? true}
-        slideNavigation={props.navigation}
         onError={() => setFailed(true)}
       />
     </div>
@@ -183,7 +172,6 @@ function ModelFileViewer(props: ViewerProps & { url: string }) {
         onUnavailable={onUnavailable}
         toolbarStart={<ViewerSaveNav saveId={props.save.id} />}
         toolbarActions={<FileActions {...props} />}
-        toolbarNavigation={navigationControls(props.navigation)}
       />
     </div>
   );
@@ -200,7 +188,6 @@ function EpubFileViewer(props: ViewerProps & { url: string }) {
         onUnavailable={onUnavailable}
         toolbarStart={<ViewerSaveNav saveId={props.save.id} />}
         toolbarActions={<FileActions {...props} />}
-        toolbarNavigation={navigationControls(props.navigation)}
       />
     </div>
   );
@@ -219,7 +206,6 @@ function ArchiveViewer(props: ViewerProps & { url: string }) {
         onUnavailable={onUnavailable}
         toolbarStart={<ViewerSaveNav saveId={props.save.id} />}
         toolbarActions={<FileActions {...props} />}
-        toolbarNavigation={navigationControls(props.navigation)}
       />
     </div>
   );
@@ -236,7 +222,6 @@ function LivePhotoFileViewer(props: ViewerProps & { url: string }) {
         onUnavailable={onUnavailable}
         toolbarStart={<ViewerSaveNav saveId={props.save.id} />}
         toolbarActions={<FileActions {...props} />}
-        toolbarNavigation={navigationControls(props.navigation)}
       />
     </div>
   );
@@ -255,7 +240,6 @@ function SafeWebFileViewer(props: ViewerProps & { url: string }) {
         onUnavailable={onUnavailable}
         toolbarStart={<ViewerSaveNav saveId={props.save.id} />}
         toolbarActions={<FileActions {...props} />}
-        toolbarNavigation={navigationControls(props.navigation)}
       />
     </div>
   );
@@ -265,14 +249,7 @@ function ArticleFileViewer(props: ViewerProps & { url: string }) {
   const [unavailable, setUnavailable] = useState(false);
   const onUnavailable = useCallback(() => setUnavailable(true), []);
   if (unavailable) {
-    return (
-      <ViewerFallback
-        {...props}
-        reason="preview"
-        active={props.active}
-        slideNavigation={props.navigation}
-      />
-    );
+    return <ViewerFallback {...props} reason="preview" active={props.active} />;
   }
   return (
     <div className={styles.preview}>
@@ -283,7 +260,6 @@ function ArticleFileViewer(props: ViewerProps & { url: string }) {
         onUnavailable={onUnavailable}
         toolbarStart={<ViewerSaveNav saveId={props.save.id} />}
         toolbarActions={<FileActions {...props} />}
-        toolbarNavigation={navigationControls(props.navigation)}
       />
     </div>
   );

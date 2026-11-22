@@ -1,0 +1,33 @@
+.strip {
+  display: flex;
+  gap: var(--ds-space-xs);
+  width: 100%;
+  min-width: 0;
+  height: 32px;
+  overflow: hidden;
+}
+
+.thumb {
+  position: relative;
+  display: block;
+  flex: none;
+  height: 100%;
+  aspect-ratio: var(--ratio);
+  overflow: hidden;
+  background: var(--ds-surface-secondary);
+  border-radius: var(--ds-radius-xs);
+
+  &::after {
+    position: absolute;
+    inset: 0;
+    content: "";
+    border-radius: inherit;
+    box-shadow: inset 0 0 0 1px var(--ds-border-subtle);
+  }
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}

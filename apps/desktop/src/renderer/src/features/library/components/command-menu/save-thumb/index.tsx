@@ -1,5 +1,6 @@
 import { IconFile, IconImage, IconLink2 } from "@pond/icons";
 import { type CSSProperties, useMemo, useState } from "react";
+import { BlurHash } from "@/features/saves";
 import {
   aspectFor,
   clampRatio,
@@ -11,11 +12,13 @@ import type { Save } from "@/features/saves/types";
 import { usePrefs } from "@/shared/state/prefs";
 import styles from "./styles.module.css";
 
-const THUMB_SIZE = 32;
-
 interface ThumbStyle extends CSSProperties {
   "--thumb-width": number;
   "--thumb-height": number;
+}
+
+interface SlotStyle extends CSSProperties {
+  "--thumb-size": string;
 }
 
 function SaveIcon({ save }: { save: Save }) {
@@ -24,15 +27,16 @@ function SaveIcon({ save }: { save: Save }) {
   return <IconFile size={12} aria-hidden />;
 }
 
-export function SaveThumb({ save }: { save: Save }) {
+export function SaveThumb({ save, size = 32 }: { save: Save; size?: number }) {
   const [ai] = usePrefs("ai");
   const src = useMemo(() => {
     const unit = pickCardUnit(save);
     const candidate = unit?.isVideo ? unit.posterUrl : unit?.url;
     return candidate?.startsWith("pond://")
-      ? thumbUrlFor(candidate, THUMB_SIZE * 2)
+      ? thumbUrlFor(candidate, size * 2)
       : undefined;
-  }, [save]);
+  }, [save, size]);
+  const slotStyle: SlotStyle = { "--thumb-size": `${size}px` };
   const [broken, setBroken] = useState<string | null>(null);
   const [measured, setMeasured] = useState<{
     src: string;
@@ -54,13 +58,13 @@ export function SaveThumb({ save }: { save: Save }) {
   };
 
   return (
-    <span className={styles.slot} aria-hidden>
-      <span
-        className={styles.thumb}
-        data-blur={blur || undefined}
-        style={style}
-      >
-        {showImage ? (
+    <span className={styles.slot} style={slotStyle} aria-hidden>
+      <span className={styles.thumb} style={style}>
+        {blur ? (
+          save.blurhash ? (
+            <BlurHash hash={save.blurhash} />
+          ) : null
+        ) : showImage ? (
           <img
             src={src}
             alt=""

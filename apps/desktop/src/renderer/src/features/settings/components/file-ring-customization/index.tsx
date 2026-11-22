@@ -18,6 +18,7 @@ import { CSS } from "@dnd-kit/utilities";
 import {
   IconArrowDown,
   IconArrowUp,
+  IconFolder,
   IconGripDotsVertical,
   IconXmark,
 } from "@pond/icons";
@@ -328,7 +329,10 @@ function FileRingDialog({
                 </SortableContext>
               </DndContext>
             ) : (
-              <Empty.Root className={styles.empty} role="status">
+              <Empty.Root size="card" className={styles.empty} role="status">
+                <Empty.Media>
+                  <IconFolder size={14} />
+                </Empty.Media>
                 <Empty.Title>No ring items</Empty.Title>
                 <Empty.Description>
                   Add a folder or action to file into while you drag.

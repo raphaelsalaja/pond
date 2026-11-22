@@ -37,6 +37,26 @@
     padding-inline: var(--ds-space-md);
   }
 
+  &[data-tone="tag"] {
+    --chip-height: var(--ds-size-xs);
+    --chip-inset: var(--ds-space-xs);
+    padding-inline: var(--ds-space-md);
+    font-size: var(--ds-text-body);
+    font-weight: var(--ds-weight-strong);
+    line-height: 1;
+    color: var(--ds-foreground-secondary);
+    box-shadow: inset 0 0 0 1px var(--ds-border-strong);
+
+    & > .clear {
+      margin-left: calc(-1 * var(--ds-space-2xs));
+      color: var(--ds-foreground-tertiary);
+
+      &:hover {
+        color: var(--ds-foreground-primary);
+      }
+    }
+  }
+
   &[data-tone="suggested"],
   &[data-tone="added"] {
     color: var(--ds-foreground-secondary);

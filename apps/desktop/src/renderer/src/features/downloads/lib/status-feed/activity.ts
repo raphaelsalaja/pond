@@ -1,72 +1,78 @@
+import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
-
-type ActivityState = "running" | "done" | "error";
+import {
+  activityNotificationId,
+  postNotification,
+} from "@/shared/lib/notification-log";
 
 export interface ActivityEntry {
   readonly id: number;
   readonly label: string;
-  readonly state: ActivityState;
-  readonly message?: string;
   readonly startedAt: number;
-  readonly endedAt?: number;
 }
-
-const MAX_ENTRIES = 30;
 
 const store = new Store<{ entries: readonly ActivityEntry[] }>({
   entries: [],
 });
 let nextId = 1;
 
-function insert(entry: ActivityEntry): void {
-  store.setState((s) => ({
-    entries: [entry, ...s.entries].slice(0, MAX_ENTRIES),
-  }));
+function settle(id: number): ActivityEntry | null {
+  const entry = store.state.entries.find((item) => item.id === id) ?? null;
+  if (entry)
+    store.setState((s) => ({
+      entries: s.entries.filter((item) => item.id !== id),
+    }));
+  return entry;
 }
 
-function patch(id: number, changes: Partial<ActivityEntry>): void {
-  store.setState((s) => ({
-    entries: s.entries.map((e) => (e.id === id ? { ...e, ...changes } : e)),
-  }));
+function finished(label: string, message?: string): void {
+  postNotification({
+    id: activityNotificationId(),
+    kind: "activity",
+    priority: false,
+    title: label,
+    body: message,
+  });
 }
 
+function failed(label: string, message: string): void {
+  postNotification({
+    id: activityNotificationId(),
+    kind: "attention",
+    priority: true,
+    title: label,
+    body: message,
+  });
+}
+
+/** Running jobs stay in this window as pinned Inbox rows; settled ones land in the notification log. */
 export const statusFeed = {
   start(label: string): number {
     const id = nextId++;
-    insert({ id, label, state: "running", startedAt: Date.now() });
+    store.setState((s) => ({
+      entries: [{ id, label, startedAt: Date.now() }, ...s.entries],
+    }));
     return id;
   },
   done(id: number, message?: string): void {
-    patch(id, { state: "done", message, endedAt: Date.now() });
+    const entry = settle(id);
+    if (entry) finished(entry.label, message);
   },
   fail(id: number, message: string): void {
-    patch(id, { state: "error", message, endedAt: Date.now() });
+    const entry = settle(id);
+    if (entry) failed(entry.label, message);
   },
   dismiss(id: number): void {
-    store.setState((s) => ({
-      entries: s.entries.filter((e) => e.id !== id),
-    }));
+    settle(id);
   },
   error(label: string, message: string): void {
-    const now = Date.now();
-    insert({
-      id: nextId++,
-      label,
-      state: "error",
-      message,
-      startedAt: now,
-      endedAt: now,
-    });
+    failed(label, message);
   },
   note(label: string, message?: string): void {
-    const now = Date.now();
-    insert({
-      id: nextId++,
-      label,
-      state: "done",
-      message,
-      startedAt: now,
-      endedAt: now,
-    });
+    finished(label, message);
   },
 };
+
+export function useStatusFeed(): readonly ActivityEntry[] {
+  return useSelector(store, (s) => s.entries);
+}

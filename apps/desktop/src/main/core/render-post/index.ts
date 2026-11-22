@@ -17,6 +17,8 @@ import { captureToXPost } from "./x-post";
 
 /** Matches the React card, so thumbnails keep their size whichever renderer drew them. */
 const POST_WIDTH = 550;
+/** threads.com's post column, so media sizes and the carousel's cut-off tile match the site. */
+const THREADS_WIDTH = 640;
 const DPR = 2;
 const IDLE_DISPOSE_MS = 60_000;
 
@@ -158,7 +160,7 @@ export async function renderThreadsPostPng(
   return withRenderer("Threads", (engine) =>
     engine.render("threads", post, {
       theme: scheme,
-      width: POST_WIDTH,
+      width: THREADS_WIDTH,
       dpr: DPR,
     }),
   );

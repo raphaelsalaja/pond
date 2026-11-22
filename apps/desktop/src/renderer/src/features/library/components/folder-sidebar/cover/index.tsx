@@ -2,15 +2,17 @@ import { useEffect, useMemo, useState } from "react";
 import { folderCoverUrl } from "@/features/library/lib/folder-cover";
 import { normalise } from "@/features/saves";
 import type { Save } from "@/features/saves/types";
-import { FolderIcon } from "@/shared/lib/folder-icons";
+import { FolderIcon, type FolderIconState } from "@/shared/lib/folder-icons";
 import styles from "./styles.module.css";
 
 export function FolderCover({
   icon,
   coverSaveId,
+  state,
 }: {
   icon?: string;
   coverSaveId?: string | null;
+  state?: FolderIconState;
 }) {
   const [save, setSave] = useState<Save | null>(null);
   useEffect(() => {
@@ -30,5 +32,5 @@ export function FolderCover({
   if (src) {
     return <img className={styles.cover} src={src} alt="" />;
   }
-  return <FolderIcon name={icon} />;
+  return <FolderIcon name={icon} state={state} />;
 }

@@ -1,8 +1,10 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterAll, afterEach, beforeEach, expect, it, vi } from "vitest";
+import type { AssistantChange } from "@shared/assistant";
 import type { AssistantState } from "@/features/agent/state/assistant";
 import { toUIMessage } from "@/features/agent/state/pond-messages";
+import { review } from "@/features/agent/state/review";
 import { AgentMessage } from "./index";
 import { ResponseContent } from "./response-content";
 
@@ -17,6 +19,48 @@ let root = createRoot(host);
 afterEach(async () => {
   await act(async () => root.unmount());
   root = createRoot(host);
+  vi.restoreAllMocks();
+});
+
+/** Card buttons carry a decorative shortcut hint; read the words only. */
+function buttonLabel(button: Element) {
+  const copy = button.cloneNode(true) as Element;
+  for (const hidden of copy.querySelectorAll("[aria-hidden]")) hidden.remove();
+  return copy.textContent;
+}
+
+async function renderReview(changes: AssistantChange[]) {
+  await act(async () =>
+    root.render(
+      <ResponseContent
+        message={{
+          id: "reply",
+          chatId: "chat",
+          role: "assistant",
+          content: "Proposed tags.",
+          metadata: { changes },
+        }}
+        questionDisabled
+        provider="openai"
+        attachedIds={[]}
+        busy={false}
+        attach={vi.fn()}
+      />,
+    ),
+  );
+}
+
+const purge = (status: AssistantChange["status"]): AssistantChange => ({
+  id: "purge",
+  saveId: "",
+  title: "Trash",
+  reason: "",
+  status,
+  field: "action",
+  action: "purgeTrash",
+  before: null,
+  after: "Empty Trash",
+  undoable: false,
 });
 
 it("renders a citation-only lookup as visual Saves instead of numbered prose", async () => {
@@ -159,7 +203,7 @@ it("captions resolved rows with their status and leaves a lone pending change to
       ...host.querySelectorAll(
         '[aria-label="Apply 1 change to your library?"] button',
       ),
-    ].map((button) => button.textContent),
+    ].map(buttonLabel),
   ).toContain("Apply");
   expect(tile("Clock 2")?.textContent).toContain("Applied");
   expect(tile("Clock 2")?.textContent).not.toContain("+Clock");
@@ -168,47 +212,109 @@ it("captions resolved rows with their status and leaves a lone pending change to
   expect(labels("Clock 3")).toEqual([]);
 });
 
-it("shows a decided review as the same rows with an outcome title and no footer", async () => {
-  await act(async () =>
-    root.render(
-      <ResponseContent
-        message={{
-          id: "reply",
-          chatId: "chat",
-          role: "assistant",
-          content: "Proposed tags.",
-          metadata: {
-            changes: (["applied", "dismissed"] as const).map((status, i) => ({
-              id: `save-${i}:tags`,
-              saveId: `save-${i}`,
-              title: `Clock ${i}`,
-              reason: "",
-              status,
-              field: "tags" as const,
-              before: [],
-              after: ["Clock"],
-            })),
-          },
-        }}
-        questionDisabled
-        provider="openai"
-        attachedIds={[]}
-        busy={false}
-        attach={vi.fn()}
-      />,
-    ),
+it("folds a decided review into a receipt that unfolds to its rows", async () => {
+  await renderReview(
+    (["applied", "dismissed"] as const).map((status, i) => ({
+      id: `save-${i}:tags`,
+      saveId: `save-${i}`,
+      title: `Clock ${i}`,
+      reason: "",
+      status,
+      field: "tags" as const,
+      before: [],
+      after: ["Clock"],
+    })),
   );
   const card = host.querySelector('[aria-label="Applied 1, dismissed 1"]');
+  expect(card?.textContent).toContain("Applied 1, dismissed 1");
+  expect(card?.textContent).not.toContain("Clock 0Applied");
+  expect(card?.querySelector('[aria-label^="Apply"]')).toBeNull();
+
+  const toggle = card?.querySelector<HTMLButtonElement>(
+    "button[aria-expanded]",
+  );
+  await act(async () => toggle?.click());
+  expect(toggle?.getAttribute("aria-expanded")).toBe("true");
   expect(card?.textContent).toContain("Clock 0Applied");
   expect(card?.textContent).toContain("Clock 1Dismissed");
   expect(
-    [...(card?.querySelectorAll("button") ?? [])]
-      .map((button) => button.getAttribute("aria-label") ?? button.textContent)
-      .filter((label) => !label?.startsWith("Open")),
-  ).toEqual(["Undo change to Clock 0"]);
+    card?.querySelector('[aria-label="Undo change to Clock 0"]'),
+  ).not.toBeNull();
+});
+
+it("undoes every applied change from the receipt", async () => {
+  const run = vi.spyOn(review, "run").mockResolvedValue();
+  const changes = (["applied", "applied", "dismissed"] as const).map(
+    (status, i) => ({
+      id: `save-${i}:tags`,
+      saveId: `save-${i}`,
+      title: `Clock ${i}`,
+      reason: "",
+      status,
+      field: "tags" as const,
+      before: [],
+      after: ["Clock"],
+    }),
+  );
+  await renderReview([
+    ...changes,
+    { ...changes[0], id: "save-9:tags", title: "Fixed", undoable: false },
+  ]);
+  const undo = [...host.querySelectorAll("button")].find(
+    (button) => button.textContent === "Undo",
+  );
+  await act(async () => undo?.click());
+  expect(run).toHaveBeenCalledWith(
+    "reply",
+    [changes[0], changes[1]],
+    "undo",
+    undefined,
+  );
 });
 
 it("asks for Empty Trash in its own destructive card", async () => {
+  await renderReview([purge("pending")]);
+  const card = host.querySelector('[aria-label="Empty Trash?"]');
+  expect(card).not.toBeNull();
+  expect([...(card?.querySelectorAll("button") ?? [])].map(buttonLabel)).toEqual(
+    ["Keep Trash", "Empty Trash"],
+  );
+  expect(host.querySelector('[aria-label^="Apply"]')).toBeNull();
+});
+
+it("settles the Trash card into a receipt of what happened", async () => {
+  await renderReview([purge("applied")]);
+  expect(host.querySelector('[aria-label="Empty Trash?"]')).toBeNull();
+  expect(host.textContent).toContain("Emptied Trash");
+  await renderReview([purge("dismissed")]);
+  expect(host.textContent).toContain("Kept Trash");
+});
+
+it("applies and dismisses a pending review from the keyboard", async () => {
+  const run = vi.spyOn(review, "run").mockResolvedValue();
+  const change: AssistantChange = {
+    id: "save-1:tags",
+    saveId: "save-1",
+    title: "Clock 1",
+    reason: "",
+    status: "pending",
+    field: "tags",
+    before: [],
+    after: ["Clock"],
+  };
+  await renderReview([change]);
+  const card = host.querySelector('[aria-label="Apply 1 change to your library?"]');
+  const press = (init: KeyboardEventInit) =>
+    act(async () =>
+      card?.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, ...init })),
+    );
+  await press({ key: "Enter", metaKey: true });
+  expect(run).toHaveBeenLastCalledWith("reply", [change], "apply", undefined);
+  await press({ key: "Escape" });
+  expect(run).toHaveBeenLastCalledWith("reply", [change], "dismiss", undefined);
+});
+
+it("keeps the tools a finished reply used out of the chat", async () => {
   await act(async () =>
     root.render(
       <ResponseContent
@@ -216,20 +322,15 @@ it("asks for Empty Trash in its own destructive card", async () => {
           id: "reply",
           chatId: "chat",
           role: "assistant",
-          content: "Empty it.",
+          content: "Found it.",
           metadata: {
-            changes: [
+            steps: [
               {
-                id: "purge",
-                saveId: "",
-                title: "Trash",
-                reason: "",
-                status: "pending",
-                field: "action",
-                action: "purgeTrash",
-                before: null,
-                after: "Empty Trash",
-                undoable: false,
+                id: "a",
+                label: "Search library",
+                detail: "clocks",
+                status: "complete",
+                elapsedMs: 1200,
               },
             ],
           },
@@ -242,12 +343,9 @@ it("asks for Empty Trash in its own destructive card", async () => {
       />,
     ),
   );
-  const card = host.querySelector('[aria-label="Empty Trash?"]');
-  expect(card).not.toBeNull();
-  expect(
-    [...(card?.querySelectorAll("button") ?? [])].map((b) => b.textContent),
-  ).toEqual(["Keep Trash", "Empty Trash"]);
-  expect(host.querySelector('[aria-label^="Apply"]')).toBeNull();
+  expect(host.textContent).toContain("Found it.");
+  expect(host.textContent).not.toContain("Ran 1 tool");
+  expect(host.textContent).not.toContain("Search");
 });
 
 it("leaves a finished reply without a work summary", async () => {
@@ -269,6 +367,7 @@ it("leaves a finished reply without a work summary", async () => {
     steps: [],
     error: null,
     failed: null,
+    queued: null,
     focusRequest: 0,
   };
   await act(async () =>
@@ -314,6 +413,7 @@ const idle: AssistantState = {
   steps: [],
   error: null,
   failed: null,
+  queued: null,
   focusRequest: 0,
 };
 
@@ -361,7 +461,7 @@ it("keeps a numbered single reply in one bubble", async () => {
   expect(host.querySelectorAll("li")).toHaveLength(3);
 });
 
-it("copies the whole reply through Pond from below the last bubble", async () => {
+it("copies the whole reply through Pond from beside the last bubble", async () => {
   const query = vi.fn(async () => ({ ok: true }));
   vi.stubGlobal("pond", { query });
   const messages = ["Hey!", "Here's the second."];

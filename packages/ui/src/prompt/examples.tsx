@@ -17,7 +17,7 @@ export const docs: ComponentDocs = {
   name: "Prompt",
   tier: "composite",
   summary:
-    "A card in the Fish column that asks a question, offers lettered choices and shows the answer once given.",
+    "A card in the Fish column that asks a question, offers numbered choices and shows the answer once given.",
   parts: [
     {
       name: "Prompt.Root",
@@ -40,12 +40,12 @@ export const docs: ComponentDocs = {
     },
     {
       name: "Prompt.Choice",
-      description: "A lettered choice button. `selected` sets `aria-pressed`.",
+      description: "A numbered choice button. `selected` sets `aria-pressed`.",
     },
     {
       name: "Prompt.Freeform",
       description:
-        "A lettered text field for an answer not in the list. Named Your Answer by default.",
+        "A numbered text field for an answer not in the list. Named Your Answer by default.",
     },
     { name: "Prompt.Footer", description: "The row of actions." },
     {
@@ -74,7 +74,7 @@ export const docs: ComponentDocs = {
   ],
   accessibility: [
     "`Prompt.Choices` is a fieldset labelled by `Prompt.Title` through `aria-labelledby`.",
-    "Each choice is a native button with `aria-pressed`. The letter badge is hidden from screen readers.",
+    "Each choice is a native button with `aria-pressed`. The number badge is hidden from screen readers.",
     "`Prompt.Freeform` defaults to the name Your Answer. Pass `aria-label` to change it.",
     "Submitting with Enter from a choice or the text field is up to the caller.",
     "The reveal skips its animation under reduced motion.",
@@ -88,15 +88,15 @@ export const docs: ComponentDocs = {
             <Prompt.Body>
               <Prompt.Title>Which folder should these go in?</Prompt.Title>
               <Prompt.Choices>
-                <Prompt.Choice letter="A" selected>
+                <Prompt.Choice marker="1" selected>
                   Cabin
                 </Prompt.Choice>
-                <Prompt.Choice letter="B">Furniture</Prompt.Choice>
-                <Prompt.Freeform letter="C" placeholder="Other" />
+                <Prompt.Choice marker="2">Furniture</Prompt.Choice>
+                <Prompt.Freeform marker="3" placeholder="Other" />
               </Prompt.Choices>
             </Prompt.Body>
             <Prompt.Footer>
-              <Button size="sm">Continue</Button>
+              <Button size="md">Continue</Button>
             </Prompt.Footer>
           </Prompt.Root>
         </Frame>
@@ -114,10 +114,10 @@ export const docs: ComponentDocs = {
               </Prompt.Description>
             </Prompt.Body>
             <Prompt.Footer>
-              <Button size="sm" variant="ghost">
+              <Button size="md" variant="tertiary">
                 Keep Trash
               </Button>
-              <Button size="sm" variant="destructive">
+              <Button size="md" variant="destructive">
                 Empty Trash
               </Button>
             </Prompt.Footer>

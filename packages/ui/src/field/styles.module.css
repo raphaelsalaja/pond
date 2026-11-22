@@ -1,13 +1,21 @@
 .root {
   display: flex;
   flex-direction: column;
-  gap: var(--ds-space-md);
+  gap: var(--ds-space-xs);
+  min-width: 0;
 }
 
 .label {
-  font-size: var(--ds-text-small);
-  font-weight: var(--ds-weight-medium);
-  color: var(--ds-foreground-secondary);
+  margin-block-end: var(--ds-space-xs);
+  font-size: var(--ds-text-body);
+  font-weight: var(--ds-weight-strong);
+  line-height: var(--ds-leading-body);
+  color: var(--ds-foreground-primary);
+  user-select: none;
+
+  &[data-invalid] {
+    color: var(--ds-danger-foreground);
+  }
 }
 
 .root:has(:required) .label::after {
@@ -17,12 +25,20 @@
 
 .description {
   font-size: var(--ds-text-small);
-  font-weight: var(--ds-weight-regular);
+  font-weight: var(--ds-weight-medium);
+  line-height: var(--ds-leading-small);
   color: var(--ds-foreground-tertiary);
 }
 
 .error {
   font-size: var(--ds-text-small);
-  font-weight: var(--ds-weight-medium);
+  font-weight: var(--ds-weight-regular);
+  line-height: var(--ds-leading-small);
   color: var(--ds-danger-foreground);
+  transition: opacity var(--ds-duration-spring) var(--ds-easing-spring);
+
+  &[data-starting-style],
+  &[data-ending-style] {
+    opacity: 0;
+  }
 }

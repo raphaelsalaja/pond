@@ -5,6 +5,7 @@ export type {
   StatusFilter,
 } from "./downloads";
 export {
+  defaultDownloadFilters,
   downloadFiltersActive,
   downloadRowSource,
   HistoryPageSchema,

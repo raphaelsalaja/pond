@@ -8,6 +8,10 @@ import {
   newTag,
   runNewAction,
 } from "@/features/library/components/new-menu/actions";
+import {
+  selectLibraryNav,
+  showSidebarPanel,
+} from "@/features/library/components/folder-sidebar/navigation";
 import type { LayoutValue } from "@/features/library/lib/view-prefs";
 import { ZOOM_DEFAULT } from "@/features/library/lib/zoom";
 import { commandMenu } from "@/features/library/state/command-menu";
@@ -100,15 +104,39 @@ export function AppHotkeys() {
     [
       {
         sequence: [...bindingSequence(shortcuts, "nav.library")],
-        callback: () => go("/"),
+        callback: () => {
+          libraryChrome.setSidebarPanel("library");
+          go("/");
+        },
+      },
+      {
+        sequence: [...bindingSequence(shortcuts, "nav.inbox")],
+        callback: () => {
+          libraryChrome.setSidebarPanel("inbox");
+          selectLibraryNav({ kind: "inbox" });
+        },
+      },
+      {
+        sequence: [...bindingSequence(shortcuts, "nav.fish")],
+        callback: () => showSidebarPanel("fish"),
+      },
+      {
+        sequence: [...bindingSequence(shortcuts, "nav.canvases")],
+        callback: () => showSidebarPanel("canvases"),
       },
       {
         sequence: [...bindingSequence(shortcuts, "nav.sources")],
-        callback: () => go("/sources"),
+        callback: () => {
+          libraryChrome.setSidebarPanel("sources");
+          go("/sources");
+        },
       },
       {
         sequence: [...bindingSequence(shortcuts, "nav.downloads")],
-        callback: () => go("/downloads"),
+        callback: () => {
+          libraryChrome.setSidebarPanel("downloads");
+          go("/downloads");
+        },
       },
       {
         sequence: [...bindingSequence(shortcuts, "nav.trash")],

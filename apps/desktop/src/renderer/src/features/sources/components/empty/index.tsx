@@ -9,7 +9,7 @@ export function SourcesEmpty() {
   return (
     <Empty.Root>
       <Empty.Media>
-        <IconNodes3 size={32} />
+        <IconNodes3 size={14} />
       </Empty.Media>
       <Empty.Title>No sources yet</Empty.Title>
       <Empty.Description>
@@ -17,11 +17,7 @@ export function SourcesEmpty() {
         Connecting an account needs the Pond browser extension.
       </Empty.Description>
       <Empty.Action>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => setExtensionOpen(true)}
-        >
+        <Button variant="text" size="sm" onClick={() => setExtensionOpen(true)}>
           Get Extension
         </Button>
         <Button

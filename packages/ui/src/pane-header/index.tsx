@@ -28,17 +28,23 @@ function Header({ title, children, className, ...props }: HeaderProps) {
   );
 }
 
-const Body = forwardRef<HTMLDivElement, ComponentPropsWithoutRef<"div">>(
-  function Body({ className, ...props }, ref) {
-    return (
-      <div
-        {...props}
-        ref={ref}
-        className={cn(styles.body, className)}
-        data-slot="pane-body"
-      />
-    );
-  },
-);
+interface BodyProps extends ComponentPropsWithoutRef<"div"> {
+  density?: "default" | "compact";
+}
+
+const Body = forwardRef<HTMLDivElement, BodyProps>(function Body(
+  { density = "default", className, ...props },
+  ref,
+) {
+  return (
+    <div
+      {...props}
+      ref={ref}
+      className={cn(styles.body, className)}
+      data-slot="pane-body"
+      data-density={density === "compact" ? density : undefined}
+    />
+  );
+});
 
 export const Pane = { Header, Body };

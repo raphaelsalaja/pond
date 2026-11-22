@@ -1,4 +1,4 @@
-import { IconArrowDown, IconArrowUp, IconWindowShare } from "@pond/icons";
+import { IconArrowDown, IconArrowUp, IconShare } from "@pond/icons";
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
@@ -16,7 +16,7 @@ async function renderTray(orientation: "horizontal" | "vertical") {
         </Tray.Item>
         <Tray.Separator />
         <Tray.Item aria-label="Share" disabled>
-          <IconWindowShare />
+          <IconShare />
         </Tray.Item>
       </Tray.Pill>
       <button type="button">After</button>

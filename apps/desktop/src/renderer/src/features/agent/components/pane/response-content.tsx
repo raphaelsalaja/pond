@@ -6,10 +6,11 @@ import type {
 import { assistant } from "@/features/agent/state/assistant";
 import { openSave } from "@/features/saves/navigation";
 import { AssistantResponse } from "./assistant-response";
-import { ConsultedSaves } from "./consulted-saves";
 import { KoiQuestion } from "./question";
 import { ResponseError } from "./response-error";
 import { ChangeReview } from "./review";
+import { SaveCards } from "./save-cards";
+import { Suggestions } from "./suggestions";
 
 export function inferredLookupResult(
   content: string,
@@ -49,6 +50,7 @@ export function ResponseExtras({
   busy,
   attach,
   onAnswer,
+  onSuggest,
 }: {
   message: AssistantMessage;
   questionAnswer?: string;
@@ -58,7 +60,9 @@ export function ResponseExtras({
   busy: boolean;
   attach: (sources: AssistantSource[]) => void;
   onAnswer?: (answer: string) => Promise<void>;
+  onSuggest?: (suggestion: string) => void;
 }) {
+  const suggestions = message.metadata?.suggestions;
   const sources = message.metadata?.sources ?? [];
   const inferredResult = inferredLookupResult(message.content, sources);
   const results = message.metadata?.results?.length
@@ -73,7 +77,7 @@ export function ResponseExtras({
   return (
     <>
       {results.map((result) => (
-        <ConsultedSaves
+        <SaveCards
           key={result.title}
           sources={sources}
           saveIds={unchanged(result.saveIds)}
@@ -86,6 +90,7 @@ export function ResponseExtras({
         <KoiQuestion
           question={message.metadata.question.question}
           options={message.metadata.question.options}
+          recommended={message.metadata.question.recommended}
           answered={questionAnswer}
           disabled={questionDisabled}
           onAnswer={async (answer) => {
@@ -108,12 +113,21 @@ export function ResponseExtras({
         <ResponseError error={message.metadata.error} />
       ) : null}
       {sources.length && !results.length ? (
-        <ConsultedSaves
+        <SaveCards
           sources={sources}
           saveIds={unchanged(sources.map((source) => source.id))}
           attachedIds={attachedIds}
           onOpenSave={openSave}
           onAttach={attach}
+        />
+      ) : null}
+      {suggestions?.length && !questionDisabled ? (
+        <Suggestions
+          suggestions={suggestions}
+          onPick={(suggestion) => {
+            if (onSuggest) onSuggest(suggestion);
+            else void assistant.suggest(suggestion, provider);
+          }}
         />
       ) : null}
     </>

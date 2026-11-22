@@ -125,7 +125,7 @@ it("says when no icon matches", async () => {
   await type(field("Search Icons"), "zzzz");
   const statuses = [...document.querySelectorAll('[role="status"]')];
   expect(statuses.map((status) => status.textContent).join(" ")).toContain(
-    "No results found",
+    "No results for “zzzz”",
   );
   expect(section("Icons")).toBeNull();
 });

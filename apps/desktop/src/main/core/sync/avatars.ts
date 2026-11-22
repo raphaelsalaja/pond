@@ -6,7 +6,12 @@ import type {
 } from "@pond/schema/db";
 import log from "electron-log/main.js";
 import { z } from "zod";
-import { listAccounts, partitionForAccount, patchAccount } from "./accounts";
+import {
+  getAccount,
+  listAccounts,
+  partitionForAccount,
+  patchAccount,
+} from "./accounts";
 import { listWatches, patchWatch } from "./watches";
 
 /** Signed CDN URLs (Instagram, TikTok) expire, so found avatars refresh weekly; misses retry sooner. */
@@ -22,7 +27,8 @@ const SubstackProfileSchema = z.object({
 });
 
 const FETCH_TIMEOUT_MS = 10_000;
-const HTML_SCAN_BYTES = 300_000;
+/** YouTube channel pages put og:image about 900 KB in, after their inline player config. */
+const HTML_SCAN_BYTES = 2_000_000;
 
 const BROWSER_UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
@@ -49,6 +55,38 @@ function needsCheck(row: AvatarSubject): boolean {
   const checked = row.avatarCheckedAt ? Date.parse(row.avatarCheckedAt) : 0;
   const ttl = row.avatarUrl ? FOUND_TTL_MS : MISS_TTL_MS;
   return !Number.isFinite(checked) || Date.now() - checked > ttl;
+}
+
+/** Instagram and Threads CDN links carry their expiry as a hex Unix time in `oe`. */
+function signedLinkExpired(url: string): boolean {
+  const oe = /[?&]oe=([0-9a-f]+)/i.exec(url)?.[1];
+  return oe ? Number.parseInt(oe, 16) * 1000 <= Date.now() : false;
+}
+
+const PROBE_TTL_MS = 60 * 60 * 1000;
+const probedAt = new Map<string, number>();
+
+/** Avatar links 404 once the person changes their picture, so found links get a HEAD probe at most hourly. */
+async function linkBroken(url: string): Promise<boolean> {
+  if (Date.now() - (probedAt.get(url) ?? 0) < PROBE_TTL_MS) return false;
+  probedAt.set(url, Date.now());
+  try {
+    const res = await fetch(url, {
+      method: "HEAD",
+      redirect: "follow",
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      headers: { "user-agent": BROWSER_UA },
+    });
+    return res.status === 403 || res.status === 404 || res.status === 410;
+  } catch {
+    return false;
+  }
+}
+
+async function needsRefresh(row: AvatarSubject): Promise<boolean> {
+  if (needsCheck(row)) return true;
+  if (!row.handle || !row.avatarUrl) return false;
+  return signedLinkExpired(row.avatarUrl) || (await linkBroken(row.avatarUrl));
 }
 
 function profilePageUrl(
@@ -264,6 +302,10 @@ export function fillMissingAvatars(): void {
   void (async () => {
     try {
       for (const account of await listAccounts()) {
+        if (!account.handle) {
+          await probeHandle(account);
+          continue;
+        }
         if (
           account.source === "reddit" &&
           account.handle &&
@@ -272,11 +314,11 @@ export function fillMissingAvatars(): void {
           await checkAccount(account);
           continue;
         }
-        if (!needsCheck(account)) continue;
+        if (!(await needsRefresh(account))) continue;
         await checkAccount(account);
       }
       for (const watch of await listWatches()) {
-        if (!needsCheck(watch)) continue;
+        if (!(await needsRefresh(watch))) continue;
         await checkWatch(watch);
       }
     } catch (err) {
@@ -285,6 +327,24 @@ export function fillMissingAvatars(): void {
       sweeping = false;
     }
   })();
+}
+
+/** Handles are otherwise learned on the first fetch, so an account still waiting on its first import would never get an avatar. */
+async function probeHandle(account: ConnectedAccount): Promise<void> {
+  const checked = account.avatarCheckedAt
+    ? Date.parse(account.avatarCheckedAt)
+    : 0;
+  if (Number.isFinite(checked) && Date.now() - checked < MISS_TTL_MS) return;
+  const { ensureAccountHandle } = await import("./account-key");
+  await ensureAccountHandle(account);
+  const probed = await getAccount(account.id);
+  if (probed?.handle) {
+    await checkAccount(probed);
+    return;
+  }
+  await patchAccount(account.id, {
+    avatarCheckedAt: new Date().toISOString(),
+  });
 }
 
 async function checkAccount(account: ConnectedAccount): Promise<void> {

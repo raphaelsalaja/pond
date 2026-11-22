@@ -30,6 +30,7 @@ const WEIGHTS = [
   { name: "regular", use: "Body text, menu items and field values." },
   { name: "medium", use: "Buttons, badges, labels and table cells." },
   { name: "strong", use: "Headings, dialog titles and keycaps." },
+  { name: "semibold", use: "Emphasis that needs more weight than strong." },
   { name: "bold", use: "The wordmark and file icon labels." },
 ] as const;
 
@@ -121,8 +122,8 @@ export function Typography() {
             </span>
           }
           title="Sans"
-          description="Every interface string, in rounded Inter. Its optical size follows the font size, and Inter fills in symbols, Greek and Cyrillic."
-          value="Intern"
+          description="Every interface string. Its optical size follows the font size, and Inter fills in symbols, Greek and Cyrillic."
+          value="Allo"
         />
         <TokenList.Item
           visual={

@@ -186,6 +186,7 @@ describe("folder sidebar tree", () => {
       ),
     ).toEqual([
       "all",
+      "inbox",
       "uncategorized",
       "untagged",
       "recentlyAdded",
@@ -269,10 +270,11 @@ describe("folder sidebar tree", () => {
         row.getAttribute("data-sidebar-sortable"),
       ),
     ).toEqual([
+      "inbox",
       "uncategorized",
       "untagged",
-      "recentlyAdded",
       "all",
+      "recentlyAdded",
       "recentlyUsed",
       "tags",
       "random",

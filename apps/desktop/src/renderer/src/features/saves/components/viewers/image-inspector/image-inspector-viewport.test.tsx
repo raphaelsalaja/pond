@@ -35,7 +35,7 @@ it("shows persisted transforms and keeps a cancelled crop draft out of storage",
       .button("Zoom In")
       .closest("[data-slot]")
       ?.getAttribute("data-slot"),
-  ).toBe("bottom");
+  ).toBe("top");
   await act(async () => inspector.button("Zoom In").click());
   expect(inspector.host.textContent).toContain("125%");
   await act(async () => inspector.button("Fit to Window").click());

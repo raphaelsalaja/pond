@@ -1,5 +1,6 @@
 import {
   IconAnimationFrames,
+  IconArrowRotateAnticlockwise,
   IconArrowsExpandDiagonal,
   IconCheck,
   IconCrop,
@@ -9,7 +10,6 @@ import {
   IconMediaFastForward,
   IconMediaPause,
   IconMediaPlay,
-  IconRefresh,
   IconRotateImageClockwise,
   IconSizeLg,
   IconXmark,
@@ -20,11 +20,7 @@ import { type ReactNode, useState } from "react";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
 import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome";
 import { ViewerSaveNav } from "@/features/saves/components/viewers/viewer-save-nav";
-import {
-  type ViewerNavigation,
-  ViewerNavigationControls,
-  ViewerToolbarGroups,
-} from "@/features/saves/components/viewers/viewer-toolbar-groups";
+import { ViewerToolbarGroups } from "@/features/saves/components/viewers/viewer-toolbar-groups";
 import type { useGifPlayer } from "@/features/saves/hooks/use-gif-player";
 import { clampGifFrame } from "@/features/saves/lib/gif-loop";
 import { ShortcutKeys } from "@/shared/components/shortcut-keys";
@@ -46,7 +42,6 @@ interface HudProps {
   mode: InspectorMode;
   edits?: "full" | "none";
   endActions?: ReactNode;
-  slideNavigation?: ViewerNavigation;
   onSetImageThumbnail?: () => void;
   onActualSize: () => void;
   onApplyCrop: () => void;
@@ -73,7 +68,6 @@ function Hud({
   mode,
   edits = "full",
   endActions,
-  slideNavigation,
   onSetImageThumbnail,
   onActualSize,
   onApplyCrop,
@@ -145,97 +139,92 @@ function Hud({
     );
 
   return (
-    <>
-      <ChromePortal slot="bottom">
-        <ViewerHud.Pill className={styles.zoom}>
+    <ChromePortal slot="top">
+      <ViewerHud.Bar
+        key="view"
+        className={styles["mode-bar"]}
+        data-mode="view"
+        data-switched={switched || undefined}
+        label="Image"
+        start={<ViewerSaveNav saveId={saveId} />}
+        middle={
           <ZoomPill
             actual={actual}
             onOut={onZoomOut}
             onIn={onZoomIn}
             onRatio={onZoomRatio}
           />
-        </ViewerHud.Pill>
-      </ChromePortal>
-      <ChromePortal slot="top">
-        <ViewerHud.Bar
-          key="view"
-          className={styles["mode-bar"]}
-          data-mode="view"
-          data-switched={switched || undefined}
-          label="Image"
-          start={<ViewerSaveNav saveId={saveId} />}
-          center={
-            <ViewerToolbarGroups
-              actions={
-                <>
-                  {onSetImageThumbnail ? (
-                    <ViewerHud.Tool
-                      label="Set Current Image as Thumbnail"
-                      disabled={busy}
-                      onClick={onSetImageThumbnail}
-                    >
-                      <IconImagePlus />
-                    </ViewerHud.Tool>
-                  ) : null}
-                  {endActions}
-                </>
-              }
-              edits={
-                edits === "full" ? (
-                  <>
-                    <ViewerHud.Tool
-                      label="Flip"
-                      disabled={busy}
-                      onClick={onFlip}
-                    >
-                      <IconFlipHorizontal2 />
-                    </ViewerHud.Tool>
-                    <ViewerHud.Tool
-                      label="Rotate"
-                      disabled={busy}
-                      onClick={onRotate}
-                    >
-                      <IconRotateImageClockwise />
-                    </ViewerHud.Tool>
-                    <ViewerHud.Tool label="Crop" onClick={onToggleCrop}>
-                      <IconCrop />
-                    </ViewerHud.Tool>
-                  </>
-                ) : null
-              }
-              view={
+        }
+        center={
+          <ViewerToolbarGroups
+            actions={
+              <>
+                {onSetImageThumbnail ? (
+                  <ViewerHud.Tool
+                    label="Set Current Image as Thumbnail"
+                    disabled={busy}
+                    onClick={onSetImageThumbnail}
+                  >
+                    <IconImagePlus />
+                  </ViewerHud.Tool>
+                ) : null}
+                {endActions}
+              </>
+            }
+            edits={
+              edits === "full" ? (
                 <>
                   <ViewerHud.Tool
-                    label="Actual Size"
-                    shortcut={<ShortcutKeys id="viewer.actual-size" />}
-                    onClick={onActualSize}
+                    label="Flip"
+                    disabled={busy}
+                    onClick={onFlip}
                   >
-                    <IconSizeLg />
+                    <IconFlipHorizontal2 />
                   </ViewerHud.Tool>
                   <ViewerHud.Tool
-                    label="Fit to Window"
-                    shortcut={<ShortcutKeys id="viewer.zoom-fit" />}
-                    onClick={onFit}
+                    label="Rotate"
+                    disabled={busy}
+                    onClick={onRotate}
                   >
-                    <IconArrowsExpandDiagonal />
+                    <IconRotateImageClockwise />
                   </ViewerHud.Tool>
-                  {isGif && onToggleGifFrames ? (
-                    <ViewerHud.Tool
-                      label="GIF Frames"
-                      pressed={gifFramesOpen}
-                      onClick={onToggleGifFrames}
-                    >
-                      <IconAnimationFrames />
-                    </ViewerHud.Tool>
-                  ) : null}
+                  <ViewerHud.Tool label="Crop" onClick={onToggleCrop}>
+                    <IconCrop />
+                  </ViewerHud.Tool>
                 </>
-              }
-            />
-          }
-          end={<ViewerNavigationControls navigation={slideNavigation} />}
-        />
-      </ChromePortal>
-    </>
+              ) : null
+            }
+            view={
+              <>
+                <ViewerHud.Tool
+                  label="Actual Size"
+                  shortcut={<ShortcutKeys id="viewer.actual-size" />}
+                  onClick={onActualSize}
+                >
+                  <IconSizeLg />
+                </ViewerHud.Tool>
+                <ViewerHud.Tool
+                  label="Fit to Window"
+                  shortcut={<ShortcutKeys id="viewer.zoom-fit" />}
+                  onClick={onFit}
+                >
+                  <IconArrowsExpandDiagonal />
+                </ViewerHud.Tool>
+                {isGif && onToggleGifFrames ? (
+                  <ViewerHud.Tool
+                    label="GIF Frames"
+                    pressed={gifFramesOpen}
+                    onClick={onToggleGifFrames}
+                  >
+                    <IconAnimationFrames />
+                  </ViewerHud.Tool>
+                ) : null}
+              </>
+            }
+          />
+        }
+      />
+    </ChromePortal>
   );
 }
 
@@ -333,7 +322,7 @@ function Gif({ active, gif, mode }: GifProps) {
           disabled={!gif.loop}
           onClick={gif.resetLoop}
         >
-          <IconRefresh />
+          <IconArrowRotateAnticlockwise />
         </ViewerHud.Tool>
       </ViewerHud.Tools>
     </ChromePortal>

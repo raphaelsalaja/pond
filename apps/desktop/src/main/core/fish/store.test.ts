@@ -2,15 +2,18 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, expect, it } from "vitest";
-import { DEFAULT_FISH_ID } from "../../../shared/fish-contracts";
+import { DEFAULT_FISH_ID, FISH_RUN_CAP } from "../../../shared/fish-contracts";
 import {
+  arrangeFish,
   createFish,
   createRoutine,
   deleteFish,
   deleteRoutine,
   listFish,
+  listFishSections,
   markFishSeen,
   recordFishRun,
+  setFishSections,
   setRoutinePaused,
   updateFish,
   updateRoutine,
@@ -99,6 +102,22 @@ it("records a routine result until it has been seen", async () => {
   );
   markFishSeen(DEFAULT_FISH_ID, root);
   expect(listFish(root)[0]?.lastRun).toMatchObject({ changes: 2, seen: true });
+});
+
+it("keeps a capped run history, newest first, and marks it all seen", async () => {
+  const root = await library();
+  for (let at = 1; at <= FISH_RUN_CAP + 5; at += 1)
+    recordFishRun(
+      DEFAULT_FISH_ID,
+      { chatId: "chat", at, status: "done", changes: 0, seen: false },
+      root,
+    );
+  const runs = listFish(root)[0]?.runs ?? [];
+  expect(runs).toHaveLength(FISH_RUN_CAP);
+  expect(runs[0]?.at).toBe(FISH_RUN_CAP + 5);
+  expect(runs.at(-1)?.at).toBe(6);
+  markFishSeen(DEFAULT_FISH_ID, root);
+  expect(listFish(root)[0]?.runs?.every((run) => run.seen)).toBe(true);
 });
 
 it("keeps many routines per fish and records each one's own run", async () => {
@@ -191,6 +210,51 @@ it("reads fish saved before species existed as koi", async () => {
   for (const fish of stored.data) delete fish.species;
   await writeFile(file, JSON.stringify(stored));
   expect(listFish(root).map((fish) => fish.species)).toEqual(["koi", "koi"]);
+});
+
+it("arranges fish into sections and keeps unplaced fish after them", async () => {
+  const root = await library();
+  const scout = createFish({ name: "Scout" }, root, 1);
+  const clerk = createFish({ name: "Clerk" }, root, 2);
+  expect(listFishSections(root)).toEqual([]);
+  setFishSections([{ id: "staff", name: "Staff" }], root);
+
+  arrangeFish(
+    [
+      { id: clerk.id, pinned: true, section: null },
+      { id: scout.id, pinned: false, section: "staff" },
+      { id: "missing", pinned: false, section: null },
+    ],
+    root,
+  );
+
+  expect(
+    listFish(root).map(({ id, pinned, section }) => ({ id, pinned, section })),
+  ).toEqual([
+    { id: clerk.id, pinned: true, section: undefined },
+    { id: scout.id, pinned: false, section: "staff" },
+    { id: DEFAULT_FISH_ID, pinned: undefined, section: undefined },
+  ]);
+});
+
+it("returns a deleted section's fish to the loose list", async () => {
+  const root = await library();
+  const scout = createFish({ name: "Scout" }, root, 1);
+  setFishSections(
+    [
+      { id: "app", name: "App" },
+      { id: "app", name: "Apps" },
+    ],
+    root,
+  );
+  expect(listFishSections(root)).toEqual([{ id: "app", name: "Apps" }]);
+  arrangeFish([{ id: scout.id, pinned: false, section: "app" }], root);
+
+  setFishSections([], root);
+
+  expect(listFish(root).find((fish) => fish.id === scout.id)?.section).toBe(
+    undefined,
+  );
 });
 
 it("refuses to treat an unreadable fish file as an empty pond", async () => {

@@ -2,9 +2,17 @@
   display: inline-grid;
   grid-template-columns: minmax(0, 1fr);
   min-width: 0;
+
+  &[data-variant="icon"] {
+    place-items: center;
+  }
 }
 
 .item {
   grid-area: 1 / 1;
   min-width: 0;
+}
+
+.root[data-variant="icon"] .item {
+  display: flex;
 }

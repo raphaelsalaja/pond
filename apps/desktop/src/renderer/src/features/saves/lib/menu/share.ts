@@ -1,4 +1,4 @@
-import { IconFolderSend } from "@pond/icons";
+import { IconShare } from "@pond/icons";
 import type { MenuItemSpec } from "@pond/ui";
 import { CAN_SHARE } from "@/shared/lib/platform";
 import { notify } from "@/shared/lib/toast";
@@ -13,7 +13,7 @@ export function buildShareItem({
 }: SaveMenuContext): MenuItemSpec {
   return {
     label: "Share",
-    icon: glyph(IconFolderSend),
+    icon: glyph(IconShare),
     hidden: !CAN_SHARE || !hasFiles || batch,
     onClick: () => {
       void window.pond

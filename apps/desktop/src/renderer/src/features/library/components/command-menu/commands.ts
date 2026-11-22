@@ -1,12 +1,9 @@
 import {
-  IconAlbum2,
-  IconBookmark,
-  IconBookmarkSlash,
   IconChatBubble,
   IconCircleInfo,
+  IconClipboardArrowIn,
   IconCoffee,
   IconCompass,
-  IconCopy,
   IconDownload,
   IconEye,
   IconFile,
@@ -15,9 +12,11 @@ import {
   IconFolderOpen,
   IconGear3,
   IconInbox,
+  IconLibrary,
   IconNodes3,
+  IconTag,
+  IconTagSlash,
   IconTrashXmark,
-  IconTrophy,
   IconWindow,
   IconWindowDownload,
 } from "@pond/icons";
@@ -37,7 +36,6 @@ import { openSources, pickWatchedFolder } from "@/features/sources";
 import { getAppRouter } from "@/shared/lib/app-router";
 import { openSettings } from "@/shared/lib/open-settings";
 import { fishIntroDialog } from "@/shared/state/fish-intro";
-import { isCosignVotingOpen, promptToast } from "@/shared/state/prompts";
 import { setupFlow } from "@/shared/state/setup";
 import { supportDialog } from "@/shared/state/support";
 import type { CommandSpec } from "./types";
@@ -60,7 +58,7 @@ export const COMMANDS: readonly CommandSpec[] = [
     id: "new-tag",
     group: "Create",
     label: "New Tag",
-    icon: IconBookmark,
+    icon: IconTag,
     keywords: "create label organize",
     shortcut: "library.new-tag",
     run: () => newTag("tag"),
@@ -121,7 +119,7 @@ export const COMMANDS: readonly CommandSpec[] = [
     id: "import-clipboard",
     group: "Import",
     label: "Import from Clipboard",
-    icon: IconCopy,
+    icon: IconClipboardArrowIn,
     keywords: "paste image files",
     run: () => void runNewAction(importClipboard),
   },
@@ -138,7 +136,7 @@ export const COMMANDS: readonly CommandSpec[] = [
     group: "Navigate",
     label: "Library",
     detail: "All saves",
-    icon: IconAlbum2,
+    icon: IconLibrary,
     keywords: "home saves archive",
     shortcut: "nav.library",
     run: () => {
@@ -153,6 +151,7 @@ export const COMMANDS: readonly CommandSpec[] = [
     detail: "Saves waiting for review",
     icon: IconInbox,
     keywords: "review process triage snoozed",
+    shortcut: "nav.inbox",
     run: () => selectLibraryNav({ kind: "inbox" }),
   },
   {
@@ -169,7 +168,7 @@ export const COMMANDS: readonly CommandSpec[] = [
     group: "Navigate",
     label: "Untagged",
     detail: "Saves without tags",
-    icon: IconBookmarkSlash,
+    icon: IconTagSlash,
     keywords: "no tags labels",
     run: () => selectLibraryNav({ kind: "untagged" }),
   },
@@ -198,7 +197,7 @@ export const COMMANDS: readonly CommandSpec[] = [
     group: "Navigate",
     label: "Tags",
     detail: "Organize your library",
-    icon: IconBookmark,
+    icon: IconTag,
     keywords: "labels organize",
     run: () => selectLibraryNav({ kind: "tags" }),
   },
@@ -258,17 +257,4 @@ export const COMMANDS: readonly CommandSpec[] = [
     keywords: "donate tip sponsor coffee github star",
     run: () => supportDialog.open(),
   },
-  ...(isCosignVotingOpen(Date.now())
-    ? [
-        {
-          id: "cosign",
-          group: "App",
-          label: "Vote in the Cosign Awards",
-          detail: "Raphael is up for People Design",
-          icon: IconTrophy,
-          keywords: "cosign award nomination vote raphael design",
-          run: () => promptToast.open("cosign"),
-        } satisfies CommandSpec,
-      ]
-    : []),
 ];

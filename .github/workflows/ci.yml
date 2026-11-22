@@ -12,39 +12,98 @@ concurrency:
 
 permissions:
   contents: read
-  id-token: write
 
 jobs:
-  build:
+  lint:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v6
 
-      - uses: pnpm/action-setup@v6
-
-      - uses: actions/setup-node@v6
+      - uses: ./.github/actions/setup
         with:
-          node-version-file: .nvmrc
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Set up Turborepo Remote Cache
-        if: ${{ vars.TURBO_TEAM != '' }}
-        uses: vercel/setup-turborepo-remote-cache-action@v1.1.0
-        with:
-          team: ${{ vars.TURBO_TEAM }}
+          turbo-cache: lint
 
       - name: Generated files are up to date
         run: pnpm generate && git diff --exit-code
 
-      - name: Install browser for UI tests
-        run: pnpm --filter @pond/ui exec playwright install --with-deps chromium
+      - name: Dev runtime guard
+        run: node --test scripts/run-dev-singleton.test.mjs
 
-      - name: Verify workspace
-        run: pnpm check
+      - name: Lint, architecture, and unused code
+        run: pnpm exec turbo run lint:repo oxlint:repo architecture:check:repo knip:repo generate:check
+
+  typecheck:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/setup
+        with:
+          turbo-cache: typecheck
+
+      - name: Typecheck
+        run: pnpm exec turbo run typecheck
+
+  test:
+    name: test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+      # The repository has deep paths that exceed MAX_PATH on Windows runners.
+      - if: runner.os == 'Windows'
+        name: Enable git long paths
+        run: git config --system core.longpaths true
+
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/setup
+        with:
+          turbo-cache: test
+
+      - name: Install browser for UI tests
+        run: pnpm --filter @pond/ui exec playwright install ${{ runner.os == 'Linux' && '--with-deps' || '' }} chromium
+
+      - name: Package tests
+        run: pnpm exec turbo run test --filter=!@pond/desktop
+
+  desktop-test:
+    name: desktop-test (${{ matrix.os }}, ${{ matrix.shard }}/4)
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        shard: [1, 2, 3, 4]
+
+    steps:
+      - if: runner.os == 'Windows'
+        name: Enable git long paths
+        run: git config --system core.longpaths true
+
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/setup
+        with:
+          turbo-cache: desktop-test-${{ matrix.shard }}
+
+      - name: Desktop tests
+        run: pnpm exec turbo run test --filter=@pond/desktop -- --shard=${{ matrix.shard }}/4
+
+  # Build and launch the real app on every platform. These jobs skip the
+  # Turborepo cache because a cached build leaves no output to launch.
+  linux:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/setup
 
       - name: Native database tests
         run: ELECTRON_RUN_AS_NODE=1 pnpm --filter @pond/desktop exec electron node_modules/vitest/vitest.mjs run src/main/db.test.ts src/main/core/vec-index.test.ts src/main/core/pipeline/task-recovery.test.ts src/main/core/pipeline/enqueue-scheduling.test.ts src/main/core/refresh/archive-backfill.test.ts src/main/core/session-downloads.test.ts src/main/core/inbox/inbox.test.ts
@@ -66,37 +125,12 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      # The repository has deep paths that exceed MAX_PATH on Windows runners.
       - name: Enable git long paths
         run: git config --system core.longpaths true
 
       - uses: actions/checkout@v6
 
-      - uses: pnpm/action-setup@v6
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-
-      - uses: actions/setup-python@v6
-        with:
-          python-version: "3.13"
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Set up Turborepo Remote Cache
-        if: ${{ vars.TURBO_TEAM != '' }}
-        uses: vercel/setup-turborepo-remote-cache-action@v1.1.0
-        with:
-          team: ${{ vars.TURBO_TEAM }}
-
-      - name: Install browser for UI tests
-        run: pnpm --filter @pond/ui exec playwright install chromium
-
-      - name: Verify workspace
-        run: pnpm check
+      - uses: ./.github/actions/setup
 
       - name: Native database tests
         env:
@@ -113,30 +147,13 @@ jobs:
       - name: Desktop memory budgets
         run: pnpm --filter @pond/desktop smoke:memory
 
-  # Platform-specific code (native modules, window chrome, the native host)
-  # is what differs on macOS. Lint, types, and generic tests already run on
-  # Ubuntu, so this job only covers what the other jobs cannot.
   macos:
     runs-on: macos-latest
 
     steps:
       - uses: actions/checkout@v6
 
-      - uses: pnpm/action-setup@v6
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Set up Turborepo Remote Cache
-        if: ${{ vars.TURBO_TEAM != '' }}
-        uses: vercel/setup-turborepo-remote-cache-action@v1.1.0
-        with:
-          team: ${{ vars.TURBO_TEAM }}
+      - uses: ./.github/actions/setup
 
       - name: Native database tests
         env:
@@ -152,34 +169,19 @@ jobs:
       - name: Desktop memory budgets
         run: pnpm --filter @pond/desktop smoke:memory
 
-  # Same platform-specific coverage on an arm64 runner: the native dependency
-  # set (better-sqlite3 rebuild, sqlite-vec, sharp, onnxruntime, ffmpeg-static)
-  # resolves to linux-arm64 builds only here, so this is the job that catches
-  # an arm64 break in any of them.
+  # The native dependency set (better-sqlite3 rebuild, sqlite-vec, sharp,
+  # onnxruntime, ffmpeg-static) resolves to linux-arm64 builds only here, so
+  # this is the job that catches an arm64 break in any of them.
   linux-arm64:
     runs-on: ubuntu-24.04-arm
 
     steps:
       - uses: actions/checkout@v6
 
-      - uses: pnpm/action-setup@v6
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-
       - name: Install test tools
         run: sudo apt-get update && sudo apt-get install --yes xvfb
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Set up Turborepo Remote Cache
-        if: ${{ vars.TURBO_TEAM != '' }}
-        uses: vercel/setup-turborepo-remote-cache-action@v1.1.0
-        with:
-          team: ${{ vars.TURBO_TEAM }}
+      - uses: ./.github/actions/setup
 
       - name: Native database tests
         env:

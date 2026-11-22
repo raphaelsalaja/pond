@@ -105,8 +105,13 @@ function Picker({ onCanvas, onAdd }: PickerProps) {
         />
       </Input.Root>
       {ids && ids.length === 0 ? (
-        <Empty.Root className={styles.empty}>
-          <Empty.Title>No results found</Empty.Title>
+        <Empty.Root size="card" className={styles.empty}>
+          <Empty.Media>
+            <IconMagnifier size={14} />
+          </Empty.Media>
+          <Empty.Title>
+            {query.trim() ? `No results for “${query.trim()}”` : "No saves yet"}
+          </Empty.Title>
         </Empty.Root>
       ) : (
         <ul

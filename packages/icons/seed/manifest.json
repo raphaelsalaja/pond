@@ -1,0 +1,9 @@
+{
+  "circle-check": { "parts": ["ring"] },
+  "clock": { "parts": ["ring"] },
+  "file": { "parts": ["file"] },
+  "folder": { "parts": ["folder"] },
+  "folder-plus": { "parts": ["folder", "badge-plus"] },
+  "tag": { "parts": ["tag"] },
+  "tag-slash": { "parts": ["tag", "slash"] }
+}

@@ -13,6 +13,13 @@ import {
 
 export type InboxScope = "review" | "snoozed";
 
+export type InboxView = "priority" | "other";
+
+interface InboxPicker {
+  view: InboxView;
+  selected: string | null;
+}
+
 interface InboxReviewState {
   scope: InboxScope;
   queue: ReviewQueue;
@@ -21,6 +28,8 @@ interface InboxReviewState {
 const QUEUE_LIMIT = 500;
 
 const store = new Store<InboxReviewState | null>(null);
+/** Outlives the review queue, so the Inbox reopens on the tab you left it on. */
+const picker = new Store<InboxPicker>({ view: "priority", selected: null });
 let request = 0;
 
 function update(next: (queue: ReviewQueue) => ReviewQueue): void {
@@ -44,6 +53,7 @@ export const inboxReview = {
   exit(): void {
     request += 1;
     store.setState(() => null);
+    inboxPicker.select(null);
   },
   advance(outcome: ReviewOutcome): void {
     update((queue) => advanceQueue(queue, outcome));
@@ -52,12 +62,36 @@ export const inboxReview = {
     update(stepBack);
   },
   jump(index: number): void {
+    inboxPicker.select(null);
     update((queue) => jumpQueue(queue, index));
   },
   rewind(id: string): void {
     update((queue) => rewindQueue(queue, id));
   },
 };
+
+/** A selected notification replaces the deck card in the Inbox pane until a Save is picked again. */
+export const inboxPicker = {
+  setView(view: InboxView): void {
+    picker.setState((state) => ({ ...state, view }));
+  },
+  select(id: string | null): void {
+    picker.setState((state) =>
+      state.selected === id ? state : { ...state, selected: id },
+    );
+  },
+  selected(): string | null {
+    return picker.state.selected;
+  },
+};
+
+export function useInboxView(): InboxView {
+  return useSelector(picker, (state) => state.view);
+}
+
+export function useInboxSelection(): string | null {
+  return useSelector(picker, (state) => state.selected);
+}
 
 export function useInboxReview(): ReviewQueue | null {
   return useSelector(store, (state) => state?.queue ?? null);

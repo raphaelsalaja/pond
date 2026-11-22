@@ -1,19 +1,22 @@
-import { IconCircleCheck, IconXmark } from "@pond/icons";
-import { Button, Empty, Keyboard, Loader, TitleBar, Tooltip } from "@pond/ui";
+import { IconCircleCheck } from "@pond/icons";
+import { Button, Empty, Loader } from "@pond/ui";
 import { useEffect } from "react";
-import { createPortal } from "react-dom";
 import { ReviewDeck } from "@/features/library/components/inbox-review/deck";
 import { ReviewFinished } from "@/features/library/components/inbox-review/finished";
+import { useInboxNavigation } from "@/features/library/hooks/use-inbox-items";
 import { useSidebarCounts } from "@/features/library/hooks/use-sidebar-counts";
 import type { ReviewQueue } from "@/features/library/lib/review-queue";
 import {
   type InboxScope,
+  inboxPicker,
   inboxReview,
   useInboxReview,
   useInboxReviewScope,
+  useInboxSelection,
 } from "@/features/library/state/inbox-review";
 import { useLibraryNav } from "@/features/library/state/library-chrome";
 import { navigationHistory } from "@/features/library/state/navigation-history";
+import { NotificationDetail, useNotification } from "@/features/notifications";
 import { ensureSaves } from "@/features/saves/pool";
 import {
   restoreLibraryNav,
@@ -48,10 +51,7 @@ export function InboxReview() {
   }, [scope]);
 
   if (!scope) return null;
-  return createPortal(
-    <InboxPage scope={scope} queue={loaded === scope ? queue : null} />,
-    document.body,
-  );
+  return <InboxPage scope={scope} queue={loaded === scope ? queue : null} />;
 }
 
 function InboxPage({
@@ -62,6 +62,9 @@ function InboxPage({
   queue: ReviewQueue | null;
 }) {
   const counts = useSidebarCounts();
+  const navigation = useInboxNavigation();
+  const selectedId = useInboxSelection();
+  const notification = useNotification(selectedId);
   const total = queue?.ids.length ?? 0;
   const position = queue ? Math.min(queue.index + 1, total) : 0;
   const remaining = scope === "snoozed" ? counts.inboxSnoozed : counts.inbox;
@@ -71,34 +74,35 @@ function InboxPage({
     if (ids) void ensureSaves(ids).catch(() => {});
   }, [ids]);
 
+  /** A resolved or deleted notification drops back to the deck instead of a blank pane. */
+  useEffect(() => {
+    if (selectedId && !notification) inboxPicker.select(null);
+  }, [selectedId, notification]);
+
+  /** With no Saves to review, the first notification opens rather than an empty state. */
+  const autoOpen = queue !== null && total === 0 && !navigation.empty;
+  useEffect(() => {
+    if (autoOpen && !inboxPicker.selected()) navigation.step(1);
+  });
+
   return (
     <div className={styles.page}>
-      <TitleBar.Root className={styles.bar}>
-        <TitleBar.Title>
-          <TitleBar.Label>
-            {scope === "snoozed" ? "Snoozed" : "Inbox"}
-          </TitleBar.Label>
-        </TitleBar.Title>
-        <TitleBar.End className={styles.end}>
-          <Tooltip label="Close" shortcut={<Keyboard.Key>Esc</Keyboard.Key>}>
-            <Button
-              icon
-              size="sm"
-              variant="ghost"
-              aria-label="Close Inbox"
-              onClick={leaveInbox}
-            >
-              <IconXmark />
-            </Button>
-          </Tooltip>
-        </TitleBar.End>
-      </TitleBar.Root>
       {total > 0 ? (
         <p className={styles.progress} aria-live="polite">
           {position} / {total}
         </p>
       ) : null}
-      {queue === null ? (
+      {notification ? (
+        <NotificationDetail
+          key={notification.id}
+          notification={notification}
+          onLeave={navigation.leave}
+          onStep={navigation.step}
+          onClose={() =>
+            total > 0 ? inboxPicker.select(null) : leaveInbox()
+          }
+        />
+      ) : queue === null ? (
         <div className={styles.center}>
           <Loader.Spinner />
         </div>
@@ -106,15 +110,17 @@ function InboxPage({
         <div className={styles.center}>
           <Empty.Root role="status">
             <Empty.Media>
-              <IconCircleCheck size={32} />
+              <IconCircleCheck size={14} />
             </Empty.Media>
             <Empty.Title>
-              {scope === "snoozed" ? "Nothing snoozed" : "You're all caught up"}
+              {scope === "snoozed"
+                ? "No snoozed saves"
+                : "You're all caught up"}
             </Empty.Title>
             <Empty.Description>
               {scope === "snoozed"
-                ? "Snoozed saves come back to Needs Review when their time is up."
-                : "New saves land here for review."}
+                ? "Snoozed saves come back to the Inbox when their time is up."
+                : "New saves and library notifications land here."}
             </Empty.Description>
             <Empty.Action>
               <Button variant="secondary" size="sm" onClick={leaveInbox}>
@@ -127,6 +133,7 @@ function InboxPage({
         <ReviewDeck
           queue={queue}
           onExit={leaveInbox}
+          onStep={navigation.step}
           finished={
             <ReviewFinished
               queue={queue}

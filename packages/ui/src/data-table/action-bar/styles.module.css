@@ -8,7 +8,7 @@
   align-items: center;
   padding: var(--ds-space-md) var(--ds-space-md) var(--ds-space-md)
     var(--ds-space-xl);
-  background: var(--ds-background-primary);
+  background: var(--ds-background-elevated);
   border-radius: var(--ds-radius-full);
   box-shadow: var(--ds-shadow-overlay);
   transform: translateX(calc(-50% + var(--data-table-action-bar-offset, 0px)));

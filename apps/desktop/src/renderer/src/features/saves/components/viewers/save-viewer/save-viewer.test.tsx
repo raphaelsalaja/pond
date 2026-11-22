@@ -2,6 +2,7 @@ import { PrefsSchema } from "@pond/schema";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { ViewerNavigation } from "@/features/saves/components/viewers/viewer-toolbar-groups";
 import { pool } from "@/features/saves/state/pool";
 import { resultNavigation } from "@/features/saves/state/result-navigation";
 import type { Save, SaveFile } from "@/features/saves/types";
@@ -31,20 +32,6 @@ function mixedSave(files: SaveFile[]): Save {
   };
 }
 
-function labeledButton(host: HTMLElement, label: string): HTMLButtonElement {
-  const button = host.querySelector<HTMLButtonElement>(
-    `button[aria-label="${label}"]`,
-  );
-  if (!button) throw new Error(`Missing ${label} button`);
-  return button;
-}
-
-function slideControls(host: HTMLElement): (string | null)[] {
-  return [...host.querySelectorAll('[data-viewer-bar-slot="end"] button')].map(
-    (button) => button.getAttribute("aria-label"),
-  );
-}
-
 function buttonByText(
   host: HTMLElement,
   text: string,
@@ -54,10 +41,6 @@ function buttonByText(
       (button) => button.textContent === text,
     ) ?? null
   );
-}
-
-async function click(host: HTMLElement, label: string): Promise<void> {
-  await act(async () => labeledButton(host, label).click());
 }
 
 async function findToolbar(host: HTMLElement, label: string): Promise<void> {
@@ -72,9 +55,24 @@ describe("SaveViewer", () => {
   let root: Root;
   /** jsdom has no image decoding, so tests settle `decode()` explicitly. */
   let decodes: Array<{ src: string; resolve: () => void }> = [];
+  let navigation: ViewerNavigation | undefined;
+
+  const viewer = (save: Save) => (
+    <SaveViewer
+      save={save}
+      onNavigationChange={(next) => {
+        navigation = next;
+      }}
+    />
+  );
+  const next = () =>
+    act(async () => {
+      navigation?.onNext();
+    });
 
   beforeEach(() => {
     decodes = [];
+    navigation = undefined;
     Object.defineProperty(HTMLImageElement.prototype, "decode", {
       configurable: true,
       value(this: HTMLImageElement) {
@@ -135,23 +133,23 @@ describe("SaveViewer", () => {
     pool.upsert(save);
     resultNavigation.setSource({ ids: [save.id], total: 1 });
 
-    await act(async () => root.render(<SaveViewer save={save} />));
+    await act(async () => root.render(viewer(save)));
 
     expect(host.querySelector('img[alt="Mixed viewer"]')).not.toBeNull();
     expect(host.querySelectorAll("[data-viewer-root]")).toHaveLength(1);
-    expect(slideControls(host)).toEqual(["Previous Slide", "Next Slide"]);
-    expect(labeledButton(host, "Previous Slide").disabled).toBe(true);
+    expect(host.querySelector('[aria-label="Next Slide"]')).toBeNull();
+    expect(navigation).toMatchObject({ index: 0, count: 3 });
 
-    await click(host, "Next Slide");
+    await next();
     await findToolbar(host, "PDF");
     expect(host.querySelectorAll("[data-viewer-root]")).toHaveLength(1);
-    expect(slideControls(host)).toEqual(["Previous Slide", "Next Slide"]);
+    expect(navigation?.index).toBe(1);
 
-    await click(host, "Next Slide");
+    await next();
     await findToolbar(host, "Font");
-    expect(labeledButton(host, "Next Slide").disabled).toBe(true);
+    expect(navigation?.index).toBe(2);
     expect(host.querySelectorAll("[data-viewer-root]")).toHaveLength(1);
-    expect(slideControls(host)).toEqual(["Previous Slide", "Next Slide"]);
+    expect(host.querySelector('[aria-label="Next Slide"]')).toBeNull();
   });
 
   it("keeps later image and font originals reachable when PDF is first", async () => {
@@ -163,12 +161,12 @@ describe("SaveViewer", () => {
     pool.upsert(save);
     resultNavigation.setSource({ ids: [save.id], total: 1 });
 
-    await act(async () => root.render(<SaveViewer save={save} />));
+    await act(async () => root.render(viewer(save)));
 
     await findToolbar(host, "PDF");
-    await click(host, "Next Slide");
+    await next();
     expect(host.querySelector('img[alt="Mixed viewer"]')).not.toBeNull();
-    await click(host, "Next Slide");
+    await next();
     await findToolbar(host, "Font");
   });
 
@@ -198,14 +196,13 @@ describe("SaveViewer", () => {
       pool.upsert(save);
       resultNavigation.setSource({ ids: [save.id], total: 1 });
 
-      await act(async () => root.render(<SaveViewer save={save} />));
+      await act(async () => root.render(viewer(save)));
       await decode("first.jpg");
       expect(layers()).toEqual(["current first"]);
 
-      await click(host, "Next Slide");
+      await next();
       expect(layers()).toEqual(["held first", "pending second"]);
-      expect(labeledButton(host, "Previous Slide").disabled).toBe(false);
-      expect(labeledButton(host, "Next Slide").disabled).toBe(true);
+      expect(navigation).toMatchObject({ index: 1, count: 2 });
 
       await decode("second.jpg");
       expect(layers()).toEqual(["current second"]);
@@ -222,10 +219,10 @@ describe("SaveViewer", () => {
       pool.upsert(save);
       resultNavigation.setSource({ ids: [save.id], total: 1 });
 
-      await act(async () => root.render(<SaveViewer save={save} />));
+      await act(async () => root.render(viewer(save)));
       await decode("first.jpg");
-      await click(host, "Next Slide");
-      await click(host, "Next Slide");
+      await next();
+      await next();
       expect(layers()).toEqual(["held first", "pending third"]);
 
       await decode("second.jpg");
@@ -439,10 +436,11 @@ describe("SaveViewer", () => {
 
     const notice = host.querySelector('[aria-label="Video download"]');
     const zoom = host.querySelector('[aria-label="Zoom In"]');
+    const top = host.querySelector('[data-slot="top"]');
     const bottom = host.querySelector('[data-slot="bottom"]');
     expect(notice).not.toBeNull();
     expect(zoom).not.toBeNull();
-    expect(bottom?.contains(zoom)).toBe(true);
+    expect(top?.contains(zoom)).toBe(true);
     expect(bottom?.contains(notice)).toBe(true);
     expect(notice?.closest('[data-anchor="bottom-center"]')).toBeNull();
     expect(zoom?.closest('[data-placement="above-chrome"]')).toBeNull();

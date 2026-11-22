@@ -19,7 +19,7 @@ export const docs: ComponentDocs = {
   name: "Message",
   tier: "composite",
   summary:
-    "One turn in a Fish conversation: your question in a bubble, or a fish's reply as plain text.",
+    "One turn in a Fish conversation. Your bubbles take the fish's color, and its replies sit in gray bubbles that join into one group.",
   parts: [
     {
       name: "Message.Root",
@@ -32,7 +32,11 @@ export const docs: ComponentDocs = {
         "Root with leading, body, footer and actions slots laid out. `animateEntrance` plays the arrival.",
     },
     { name: "Message.Body", description: "The column that holds the content." },
-    { name: "Message.Bubble", description: "One block of reply text." },
+    {
+      name: "Message.Bubble",
+      description:
+        "One block of text. Set `--message-accent` and `--message-accent-foreground` on an ancestor to color your bubbles.",
+    },
     {
       name: "Message.Leading",
       description: "Chips above the body, like attachments.",
@@ -58,7 +62,7 @@ export const docs: ComponentDocs = {
   accessibility: [
     "Each turn is an `<article>`. The sender goes in `from`, so `role` stays free for ARIA.",
     "No live region here. The Fish column announces when a reply finishes, so a region per message would read replies twice.",
-    "Actions fade in on hover and on focus within the turn, so keyboard users see them.",
+    "Actions sit beside the last bubble and fade in on hover and on focus within the turn, so keyboard users see them.",
     "Copy and Quote are icon buttons named Copy and Quote, with tooltips.",
     "The entrance animation is off under reduced motion.",
   ],
@@ -67,7 +71,9 @@ export const docs: ComponentDocs = {
       name: "Conversation",
       render: () => (
         <Thread>
-          <Message.View from="user">{QUESTION}</Message.View>
+          <Message.View from="user">
+            <Message.Bubble>{QUESTION}</Message.Bubble>
+          </Message.View>
           <Message.View from="assistant">
             <Message.Bubble>{ANSWER}</Message.Bubble>
           </Message.View>

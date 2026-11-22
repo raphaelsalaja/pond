@@ -16,6 +16,7 @@ import { useThreadScroll } from "../../thread";
 import { AddMenu } from "../add-menu";
 import { ReferencedSavesPopover } from "../consulted-saves";
 import { FileAttachments } from "../file-attachments";
+import { QueuedMessage } from "../queued-message";
 import { ResponseAnnouncement } from "../response-announcement";
 import styles from "./styles.module.css";
 
@@ -39,6 +40,7 @@ interface ComposeAreaProps {
   focus: () => void;
   attach: (sources: AssistantSource[]) => void;
   submit: (content?: string) => void;
+  queue: (content: string) => void;
 }
 
 export function ComposeArea({
@@ -61,6 +63,7 @@ export function ComposeArea({
   focus,
   attach,
   submit,
+  queue,
 }: ComposeAreaProps) {
   const [dropping, setDropping] = useState(false);
   const composer = useRef<HTMLDivElement>(null);
@@ -79,6 +82,11 @@ export function ComposeArea({
         error={state.error ?? chatError?.message ?? lastError}
       />
       <div className={styles.notices}>
+        <QueuedMessage
+          content={state.queued?.content ?? null}
+          onSendNow={assistant.sendQueuedNow}
+          onRemove={assistant.unqueue}
+        />
         {!provider ? (
           <ErrorNotice
             title="Connect a provider in Settings before you can send."
@@ -159,6 +167,12 @@ export function ComposeArea({
         <ComposerView
           placeholder={`Message ${name}`}
           running={running}
+          empty={
+            !state.draft.trim() &&
+            !state.attachments.length &&
+            !state.files.length
+          }
+          attached={state.files.length > 0}
           data-dragging={dropping || undefined}
           onSend={() => send()}
           onStop={assistant.stop}
@@ -194,6 +208,7 @@ export function ComposeArea({
               anchorRef={composer}
               onChange={(value) => assistant.setDraft(value)}
               onSend={send}
+              onQueue={queue}
               onAttach={attach}
               onRemove={(id) => assistant.removeAttachment(id)}
               onDropIds={(ids) => {

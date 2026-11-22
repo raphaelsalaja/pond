@@ -1,0 +1,20 @@
+.rail {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: var(--ds-space-xs);
+  align-items: center;
+  padding: var(--ds-space-md);
+}
+
+.items {
+  flex: 1;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.menu {
+  display: flex;
+}

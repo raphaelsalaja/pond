@@ -1,4 +1,3 @@
-import { IconSparkle } from "@pond/icons";
 import { Button, Toast } from "@pond/ui";
 import {
   TOAST_TIMEOUT_MS,
@@ -11,13 +10,7 @@ type ToastObject = ReturnType<
   typeof Toast.useToastManager<ToastData>
 >["toasts"][number];
 
-interface AskActionsProps {
-  id: string;
-  ask: ToastAsk;
-  spotlight: boolean;
-}
-
-function AskActions({ id, ask, spotlight }: AskActionsProps) {
+function AskActions({ id, ask }: { id: string; ask: ToastAsk }) {
   const { close } = Toast.useToastManager();
   return (
     <Toast.Actions>
@@ -26,13 +19,12 @@ function AskActions({ id, ask, spotlight }: AskActionsProps) {
       </Button>
       <Button
         size="sm"
-        variant="primary"
+        variant="accent"
         onClick={() => {
           close(id);
           void ask.onConfirm();
         }}
       >
-        {spotlight ? <IconSparkle size={12} /> : null}
         {ask.confirm}
       </Button>
     </Toast.Actions>
@@ -41,13 +33,15 @@ function AskActions({ id, ask, spotlight }: AskActionsProps) {
 
 function ToastItem({ toast }: { toast: ToastObject }) {
   const data = toast.data;
-  const spotlight = data?.variant === "spotlight";
   return (
-    <Toast.Root toast={toast} variant={data?.variant}>
-      {spotlight ? <Toast.Spotlight /> : null}
+    <Toast.Root toast={toast}>
       <Toast.Content>
         {data?.icon ? (
           <Toast.Icon tone={data.tone}>{data.icon}</Toast.Icon>
+        ) : data?.status ? (
+          <Toast.Icon>
+            <Toast.Status status={data.status} />
+          </Toast.Icon>
         ) : null}
         <Toast.Header>
           {toast.title ? <Toast.Title>{toast.title}</Toast.Title> : null}
@@ -66,16 +60,17 @@ function ToastItem({ toast }: { toast: ToastObject }) {
           ) : null}
           {data?.note ? <Toast.Meta>{data.note}</Toast.Meta> : null}
         </Toast.Header>
-        {data?.action ? (
-          <Toast.Action
-            disabled={data.action.disabled}
-            onClick={data.action.onClick}
-          >
-            {data.action.label}
-          </Toast.Action>
-        ) : null}
         {data?.ask ? (
-          <AskActions id={toast.id} ask={data.ask} spotlight={spotlight} />
+          <AskActions id={toast.id} ask={data.ask} />
+        ) : data?.action ? (
+          <Toast.Actions>
+            <Toast.Action
+              disabled={data.action.disabled}
+              onClick={data.action.onClick}
+            >
+              {data.action.label}
+            </Toast.Action>
+          </Toast.Actions>
         ) : (
           <Toast.Close />
         )}

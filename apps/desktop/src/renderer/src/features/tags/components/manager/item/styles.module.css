@@ -18,7 +18,7 @@
 
   &[data-index] {
     min-height: 34px;
-    padding: 0 var(--ds-space-xs);
+    padding: 0 var(--ds-space-xs) 0 var(--ds-space-lg);
     cursor: pointer;
     background: transparent;
     border-radius: var(--ds-radius-md);
@@ -26,7 +26,7 @@
 
   &[data-index]:hover,
   &[data-index]:focus-within {
-    background: var(--ds-surface-primary);
+    background: var(--ds-background-secondary);
   }
 
   &[data-index][data-selected] {

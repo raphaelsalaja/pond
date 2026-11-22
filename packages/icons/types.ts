@@ -8,11 +8,14 @@ export interface IconProps extends SVGProps<SVGSVGElement> {
   title?: string;
 }
 
-export type IconComponent = FunctionComponent<IconProps>;
-
 export type IconStyle = "outline" | "fill";
 
 export type IconNode = readonly (readonly [
   string,
   Readonly<Record<string, string>>,
 ])[];
+
+export type IconComponent = FunctionComponent<IconProps> & {
+  /** The drawing behind a generated glyph, so its shapes can morph into another glyph's. */
+  glyph?: { style: IconStyle; nodes: IconNode };
+};

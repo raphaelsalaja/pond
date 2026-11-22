@@ -1,8 +1,8 @@
 import {
-  IconArrowsExpandDiagonal,
   IconChevronLeft,
   IconChevronRight,
   IconExport,
+  IconFullScreen,
   IconXmark,
 } from "@pond/icons";
 import { Button, TitleBar, Tooltip } from "@pond/ui";
@@ -47,7 +47,7 @@ function Bar({
           </Tool>
           {onFullScreen ? (
             <Tool label="Full Screen" onClick={onFullScreen}>
-              <IconArrowsExpandDiagonal />
+              <IconFullScreen />
             </Tool>
           ) : null}
           {paged ? (

@@ -1,6 +1,6 @@
 import type { BulkEdit } from "@shared/bulk-contracts";
 import { bulkMutation } from "@/features/saves/lib/mutate";
-import { formatSnoozeTime } from "@/features/saves/lib/snooze";
+import { formatSnoozeTime } from "@/shared/lib/snooze";
 import { pool } from "@/features/saves/state/pool";
 import type { Save } from "@/features/saves/types";
 import { errorCopy } from "@/shared/lib/error-copy";

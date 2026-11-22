@@ -206,7 +206,7 @@ export function ModelPicker({
           side="inline-end"
           align="start"
           sideOffset={-2}
-          alignOffset={-4}
+          alignOffset={-6}
         >
           <Menu.Popup className={styles.submenu}>
             {contextChoices.map((choice: AgentContextChoice) => (
@@ -240,7 +240,7 @@ export function ModelPicker({
           side="inline-end"
           align="start"
           sideOffset={-2}
-          alignOffset={-4}
+          alignOffset={-6}
         >
           <Menu.Popup className={styles.submenu}>
             {reasoningChoices.map((reasoning: AgentReasoning) => (
@@ -269,7 +269,7 @@ export function ModelPicker({
           side="inline-end"
           align="start"
           sideOffset={-2}
-          alignOffset={-4}
+          alignOffset={-6}
         >
           <Menu.Popup className={styles.submenu}>
             {catalog.isPending ? (
@@ -336,7 +336,7 @@ export function ModelPicker({
             side="inline-end"
             align="start"
             sideOffset={-2}
-            alignOffset={-4}
+            alignOffset={-6}
           >
             <Menu.Popup className={styles.models}>
               <Menu.Input aria-label="Search models" placeholder="Search…" />

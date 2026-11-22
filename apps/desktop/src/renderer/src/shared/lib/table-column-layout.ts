@@ -22,6 +22,7 @@ export type StoredTableColumnLayout = z.infer<
 export interface TableColumnSpec<Id extends string> {
   id: Id;
   label: string;
+  sortable?: boolean;
 }
 
 export interface TableSort<Id extends string> {

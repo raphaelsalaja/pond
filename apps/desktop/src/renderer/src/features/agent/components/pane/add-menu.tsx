@@ -46,14 +46,14 @@ export function AddMenu({
       <Tooltip label="Add" side="top">
         <Menu.Trigger
           icon
-          size="md"
-          variant="ghost"
+          size="sm"
+          variant="tertiary"
           rounding="full"
           aria-label="Add"
           aria-busy={busy || undefined}
           disabled={disabled || busy}
         >
-          <IconPlus size={16} />
+          <IconPlus size={14} strokeWidth={2} />
         </Menu.Trigger>
       </Tooltip>
       <Menu.Portal>

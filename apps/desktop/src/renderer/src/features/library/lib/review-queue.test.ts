@@ -77,13 +77,15 @@ describe("review keys", () => {
     expect(reviewKey(press("f"), fromStage)).toEqual({ kind: "choose-folder" });
     expect(reviewKey(press(" "), fromStage)).toEqual({ kind: "preview" });
     expect(reviewKey(press("Escape"), fromStage)).toEqual({ kind: "exit" });
+    expect(reviewKey(press("j"), fromStage)).toEqual({ kind: "step", by: 1 });
+    expect(reviewKey(press("k"), fromStage)).toEqual({ kind: "step", by: -1 });
   });
 
   it("leaves modified keys, extra slots, and Space on buttons alone", () => {
     const fromStage = { fromButton: false };
     expect(reviewKey(press("f", { metaKey: true }), fromStage)).toBeNull();
     expect(reviewKey(press("5"), fromStage)).toBeNull();
-    expect(reviewKey(press("k"), fromStage)).toBeNull();
+    expect(reviewKey(press("q"), fromStage)).toBeNull();
     expect(
       reviewKey(press("f", { defaultPrevented: true }), fromStage),
     ).toBeNull();

@@ -19,7 +19,7 @@ describe("pane chrome", () => {
     const root = declarations(".root");
     expect(root).toContain("height: var(--ds-title-bar-height);");
     expect(root).toContain("padding: var(--ds-space-md);");
-    expect(root).toContain("border-bottom: 1px solid var(--ds-border-subtle);");
+    expect(root).toContain("border-bottom: var(--ds-border-width) solid var(--ds-border-subtle);");
 
     expect(declarations(".title")).toContain("font-size: var(--ds-text-body);");
     expect(declarations(".actions")).toContain("gap: var(--ds-space-xs);");

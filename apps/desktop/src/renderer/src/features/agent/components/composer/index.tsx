@@ -45,6 +45,7 @@ export interface ComposerEditorProps {
   ref?: Ref<ComposerEditorHandle>;
   onChange: (markdown: string) => void;
   onSend: (markdown: string) => void;
+  onQueue?: (markdown: string) => void;
   onAttach: (saves: AssistantSource[]) => void;
   onRemove: (id: string) => void;
   onDropIds: (ids: string[]) => void;
@@ -69,7 +70,11 @@ export function ComposerEditor(props: ComposerEditorProps) {
         />
       </div>
       <ComposerDraft {...props} />
-      <ComposerEditing running={props.running} onSend={props.onSend} />
+      <ComposerEditing
+        running={props.running}
+        onSend={props.onSend}
+        onQueue={props.onQueue}
+      />
       <ComposerDrop onDropIds={props.onDropIds} />
       <ComposerMentions
         attachments={props.attachments}

@@ -6,8 +6,19 @@ function Root({ className, ...props }: Base.Root.Props) {
   return <Base.Root className={cn(styles.root, className)} {...props} />;
 }
 
-function List({ className, ...props }: Base.List.Props) {
-  return <Base.List className={cn(styles.list, className)} {...props} />;
+interface ListProps extends Base.List.Props {
+  /** `secondary` raises the active tab like a secondary Button. */
+  variant?: "default" | "secondary";
+}
+
+function List({ className, variant = "default", ...props }: ListProps) {
+  return (
+    <Base.List
+      className={cn(styles.list, className)}
+      data-variant={variant === "default" ? undefined : variant}
+      {...props}
+    />
+  );
 }
 
 interface TabProps extends Base.Tab.Props {

@@ -1,7 +1,7 @@
 import { Button, DatePicker, Dialog, Field, Input } from "@pond/ui";
 import { useState } from "react";
 import { snoozeSaves } from "@/features/saves/lib/inbox-actions";
-import { snoozeOptions, snoozeUntil } from "@/features/saves/lib/snooze";
+import { snoozeOptions, snoozeUntil } from "@/shared/lib/snooze";
 import {
   closeSnoozeDialog,
   useSnoozeDialog,

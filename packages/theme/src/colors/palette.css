@@ -10,7 +10,7 @@
   --ds-media-border: oklch(1 0 0 / 0.435);
   --ds-media-edge: oklch(0 0 0 / 0.36);
   --ds-media-background: oklch(0 0 0 / 0.68);
-  --ds-scrim: light-dark(oklch(0 0 0 / 0.205), oklch(0 0 0 / 0.36));
+  --ds-scrim: light-dark(oklch(0 0 0 / 0.25), oklch(0 0 0 / 0.4));
   --ds-sheen: linear-gradient(oklch(1 0 0 / 0.07), oklch(1 0 0 / 0.03));
 }
 

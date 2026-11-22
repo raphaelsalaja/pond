@@ -1,22 +1,11 @@
-/* Above the app shell's drag strip, below toasts, so Undo stays reachable. */
 .page {
-  position: fixed;
+  position: absolute;
   inset: 0;
-  z-index: 45;
+  z-index: 1;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   color: var(--ds-foreground-primary);
   background: var(--ds-background-primary);
-}
-
-/* The page covers the app shell's drag strip, so it carries its own. */
-.bar {
-  padding-inline: 12px;
-  -webkit-app-region: drag;
-}
-
-.end {
-  -webkit-app-region: no-drag;
 }
 
 .progress {

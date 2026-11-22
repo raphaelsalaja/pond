@@ -1,11 +1,33 @@
 import type { Source } from "@pond/schema/db";
 import type { TableColumn } from "@pond/ui/data-table";
+import { HeroAvatar } from "@/features/sources/components/flow/detail/hero-avatar";
 import { BrandTile } from "@/features/sources/components/sync-monitor-source-tile";
 import { formatNumber } from "@/shared/lib/format";
 import { relativeTime } from "@/shared/lib/relative-time";
 import type { SourceStatusId } from "../lib/filters";
 import type { SourceTableRow } from "../lib/helpers";
+import { RecentCell } from "./recent";
 import styles from "./styles.module.css";
+
+/** Platform as a muted breadcrumb before the name, dropped when the name already is the platform. */
+function NameCell({ row }: { row: SourceTableRow }) {
+  return (
+    <span className={styles.identity}>
+      <HeroAvatar
+        source={row.source ?? "local"}
+        avatarUrl={row.avatarUrl}
+        size={24}
+        badge={false}
+      />
+      {row.name !== row.sourceLabel ? (
+        <span className={styles.platform}>{row.sourceLabel} /</span>
+      ) : null}
+      <span className={styles.name} title={row.name}>
+        {row.name}
+      </span>
+    </span>
+  );
+}
 
 const RING = 100;
 
@@ -104,20 +126,23 @@ export const sourcesColumns: TableColumn<SourceTableRow>[] = [
     header: "Name",
     sortLabel: "Name",
     accessor: (row) => row.name,
-    width: "minmax(200px, 1fr)",
+    width: "minmax(220px, 1fr)",
     reorderable: true,
-    cell: (row) => (
-      <span className={styles.name} title={row.name}>
-        {row.name}
-      </span>
-    ),
+    cell: (row) => <NameCell row={row} />,
+  },
+  {
+    id: "recent",
+    header: "Recent Saves",
+    width: "minmax(240px, 1.2fr)",
+    reorderable: true,
+    cell: (row) => <RecentCell row={row} />,
   },
   {
     id: "items",
-    header: "Items",
-    sortLabel: "Items",
+    header: "Saves",
+    sortLabel: "Saves",
     accessor: (row) => row.items,
-    width: "minmax(72px, 80px)",
+    width: "minmax(88px, 96px)",
     reorderable: true,
     cell: (row) => (
       <span className={styles.metric}>{formatNumber(row.items)}</span>
@@ -125,10 +150,10 @@ export const sourcesColumns: TableColumn<SourceTableRow>[] = [
   },
   {
     id: "lastSynced",
-    header: "Last Synced",
-    sortLabel: "Last Synced",
+    header: "Last Fetch",
+    sortLabel: "Last Fetch",
     accessor: (row) => row.lastSyncedMs,
-    width: "minmax(112px, 120px)",
+    width: "minmax(120px, 136px)",
     reorderable: true,
     cell: (row) => (
       <span className={styles.metric}>

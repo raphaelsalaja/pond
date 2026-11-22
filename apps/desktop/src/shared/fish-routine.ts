@@ -77,3 +77,34 @@ export function isRoutineDue(routine: FishRoutine, now: number): boolean {
   }
   return false;
 }
+
+/** The first scheduled moment strictly after `now`, stepping by calendar day so DST shifts keep the clock time. */
+function nextSlot(
+  when: Extract<FishWhen, { kind: "daily" }>,
+  now: number,
+): number | null {
+  const [hours = 0, minutes = 0] = when.time.split(":").map(Number);
+  for (let ahead = 0; ahead <= 7; ahead += 1) {
+    const slot = new Date(now);
+    slot.setDate(slot.getDate() + ahead);
+    slot.setHours(hours, minutes, 0, 0);
+    if (slot.getTime() > now && when.days.includes(slot.getDay()))
+      return slot.getTime();
+  }
+  return null;
+}
+
+/** When the scheduler next picks the routine up, or `now` if it's due; `since` is its last run or creation. */
+export function nextRun(
+  when: FishWhen,
+  since: number,
+  now: number,
+): number | null {
+  if (when.kind === "every") return Math.max(since + when.hours * HOUR, now);
+  if (when.kind === "daily") {
+    const slot = previousSlot(when, now);
+    if (slot !== null && slot > since) return now;
+    return nextSlot(when, now);
+  }
+  return null;
+}

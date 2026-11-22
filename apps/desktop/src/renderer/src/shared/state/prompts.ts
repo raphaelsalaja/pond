@@ -2,7 +2,6 @@ import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 
 const PROMPT_IDS = [
-  "cosign",
   "milestone-10000",
   "milestone-1000",
   "friend",
@@ -20,29 +19,33 @@ export type ImportedFrom = "eagle" | "mymind";
 
 const IMPORTED_FROM_KEY = "pond:importedFrom";
 
-/** Cosign votes close November 18, 2026: the end of that day in Pacific time. */
-const COSIGN_CLOSES_AT = Date.UTC(2026, 10, 19, 8);
+export type PromptChoice = PromptId | "support";
 
-export function isCosignVotingOpen(now: number): boolean {
-  return now < COSIGN_CLOSES_AT;
+interface PromptState {
+  active: PromptChoice | null;
+  extensionOpen: boolean;
 }
 
-const store = new Store<{ active: PromptId | null }>({ active: null });
+const store = new Store<PromptState>({ active: null, extensionOpen: false });
 
-export const promptToast = {
-  open(id: PromptId): void {
-    store.setState(() => ({ active: id }));
+export const promptCard = {
+  show(id: PromptChoice): void {
+    store.setState((s) => ({ ...s, active: id }));
   },
   close(): void {
-    store.setState((s) => (s.active ? { active: null } : s));
+    store.setState((s) => (s.active ? { ...s, active: null } : s));
   },
-  isOpen(): boolean {
-    return store.state.active !== null;
+  setExtensionOpen(extensionOpen: boolean): void {
+    store.setState((s) => ({ ...s, extensionOpen }));
   },
 };
 
-export function useActivePrompt(): PromptId | null {
+export function useActivePrompt(): PromptChoice | null {
   return useSelector(store, (s) => s.active);
+}
+
+export function useExtensionOpen(): boolean {
+  return useSelector(store, (s) => s.extensionOpen);
 }
 
 export function markImportedFrom(app: ImportedFrom): void {

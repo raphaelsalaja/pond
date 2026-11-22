@@ -14,6 +14,7 @@ import { cssVars } from "../css-vars";
 import { DataTableBody } from "./body";
 import { useDataTable } from "./context";
 import { DataTableHeader } from "./header";
+import { DataTableHover } from "./hover";
 import styles from "./styles.module.css";
 
 function useStickyHeaderOffset(
@@ -65,11 +66,13 @@ export function DataTableRoot<T extends RowData>({
   children,
   className,
   variant = "table",
+  rows = "divided",
   "aria-label": ariaLabel = "Records",
 }: {
   children?: ReactNode;
   className?: string;
   variant?: "table" | "list";
+  rows?: "divided" | "inset";
   "aria-label"?: string;
 }) {
   const { meta, selectionStore, actions } = useDataTable<T>();
@@ -132,6 +135,7 @@ export function DataTableRoot<T extends RowData>({
           : undefined
       }
       data-list={(variant === "list" && hasRows) || undefined}
+      data-rows={rows === "inset" ? rows : undefined}
       data-checkboxes={
         meta.selectionEnabled && meta.selectionCheckboxes
           ? meta.checkboxVisibility
@@ -153,6 +157,7 @@ export function DataTableRoot<T extends RowData>({
         }
       >
         <div className={styles.sheet} style={{ minWidth: meta.gridMinWidth }}>
+          {rows === "inset" && hasRows ? <DataTableHover /> : null}
           {showHeader ? <DataTableHeader<T> /> : null}
           <DataTableBody<T>
             extraRow={extraRow}

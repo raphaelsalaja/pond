@@ -1,6 +1,5 @@
 export const DOWNLOAD_COLUMN_CATALOG = [
   { id: "name", label: "Name" },
-  { id: "source", label: "Source" },
   { id: "stage", label: "Status" },
   { id: "size", label: "Size" },
   { id: "speed", label: "Speed" },
@@ -19,7 +18,6 @@ export type DownloadColumnId = (typeof DOWNLOAD_COLUMN_CATALOG)[number]["id"];
 export const LOCKED_DOWNLOAD_COLUMN: DownloadColumnId = "name";
 
 const DEFAULT_VISIBLE_DOWNLOAD_COLUMNS: readonly DownloadColumnId[] = [
-  "source",
   "stage",
   "progress",
   "added",

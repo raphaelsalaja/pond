@@ -12,27 +12,19 @@ import {
   IconWindowDownload,
 } from "@pond/icons";
 import { Button, Menu } from "@pond/ui";
-import { useRouter, useRouterState } from "@tanstack/react-router";
+import { useRouter } from "@tanstack/react-router";
 import { lazy, Suspense, useState } from "react";
 import { ChromeHistoryNav } from "@/app/components/chrome-toolbar";
 import { canvasIdFromPath, useCanvas } from "@/features/canvas";
 import { fishIdFromPath } from "@/features/fish";
-import { LibrarySearch } from "@/features/library/components/chrome";
-import { FilterToggle } from "@/features/library/components/filter-menu";
 import { FolderCustomizeDialog } from "@/features/library/components/folder-customize-dialog";
+import { NewMenu } from "@/features/library/components/new-menu";
+import { SearchButton } from "@/features/library/components/search-button";
 import { SidebarToggle } from "@/features/library/components/sidebar-toggle";
-import { ViewMenu } from "@/features/library/components/view-menu";
-import { ViewScopeMenu } from "@/features/library/components/view-scope-menu";
-import { useSearchView } from "@/features/library/hooks/use-search-view";
 import {
   folderColorMenuItems,
   folderIconMenuItems,
 } from "@/features/library/lib/folder-appearance-menu";
-import { showsLibraryGrid } from "@/features/library/lib/grid-path";
-import {
-  canSearchAllSaves,
-  searchViewName,
-} from "@/features/library/lib/search-view";
 import { saveFolderPresentation } from "@/features/library/state/folder-presentation";
 import { useFolders } from "@/features/library/state/folders";
 import {
@@ -44,21 +36,15 @@ import {
 import {
   resetFilters,
   useHasActiveSearch,
-  useSearchScope,
 } from "@/features/library/state/view-store";
 import { useSave } from "@/features/saves/hooks/use-saves";
-import {
-  getLastListPath,
-  isSaveCollectionPath,
-} from "@/features/saves/lib/list-path";
+import { getLastListPath } from "@/features/saves/lib/list-path";
 import { saveIdFromPath } from "@/features/saves/lib/save-nav";
-import {
-  useResultIndex,
-  useResultTotal,
-} from "@/features/saves/state/result-navigation";
+import { setViewerToolbarHost } from "@/features/saves/state/viewer-toolbar";
 import { useViewFilteredCount } from "@/features/saves/state/view-context";
 import { useSourceDetailName } from "@/features/sources/state/source-detail";
 import { SpecContextMenu } from "@/shared/components/spec-context-menu";
+import { useRouteLocation } from "@/shared/hooks/use-route-location";
 import { usePrefs } from "@/shared/state/prefs";
 import { type Breadcrumb, buildBreadcrumbs } from "./breadcrumbs";
 import { computeLabel } from "./labels";
@@ -92,14 +78,12 @@ function RootIcon({ path }: { path: string }) {
         : path.startsWith("/canvas/")
           ? IconCanvas
           : IconAlbum2);
-  return <Icon size={16} aria-hidden="true" />;
+  return <Icon size={14} aria-hidden="true" />;
 }
 
 function Breadcrumbs() {
   const router = useRouter();
-  const pathname = useRouterState({
-    select: (state) => state.location.pathname,
-  });
+  const pathname = useRouteLocation((location) => location.pathname);
   const nav = useLibraryNav();
   const folderRows = useFolders();
   const [folderViews] = usePrefs("folderViews");
@@ -108,8 +92,6 @@ function Breadcrumbs() {
   );
   const saveId = saveIdFromPath(pathname);
   const save = useSave(saveId);
-  const resultIndex = useResultIndex(saveId ?? "");
-  const resultTotal = useResultTotal();
   const listPath = getLastListPath();
   const canvas = useCanvas(canvasIdFromPath(saveId ? listPath : pathname));
   const sourceName = useSourceDetailName();
@@ -246,15 +228,11 @@ function Breadcrumbs() {
             >
               {icon}
               <span className={styles.label}>{crumb.label}</span>
-              {saveId && resultIndex >= 0 && resultTotal > 0 ? (
-                <span className={styles.position}>
-                  {resultIndex + 1} / {resultTotal}
-                </span>
-              ) : null}
             </span>
           ) : (
             <Button
               variant="ghost"
+              size="sm"
               density="compact"
               className={styles.crumb}
               title={crumb.label}
@@ -301,53 +279,39 @@ function Breadcrumbs() {
   );
 }
 
-function SearchActions() {
-  const view = useSearchView();
-  const scope = useSearchScope(view);
-  const folders = useFolders();
-  const name = searchViewName(view, folders);
-  return (
-    <>
-      {canSearchAllSaves(view) ? (
-        <ViewScopeMenu view={view} name={name} scope={scope} />
-      ) : null}
-      <FilterToggle />
-      <ViewMenu />
-    </>
-  );
-}
-
 export function Toolbar() {
   const sidebarOpen = useSidebarOpen();
   const detailsOpen = useDetailsOpen();
-  const pathname = useRouterState({
-    select: (state) => state.location.pathname,
-  });
+  const pathname = useRouteLocation((location) => location.pathname);
   const viewingSave = saveIdFromPath(pathname) !== null;
   const viewingFish = fishIdFromPath(pathname) !== null;
-  const viewingLibrary = isSaveCollectionPath(pathname);
-  const searching = !viewingSave && showsLibraryGrid(pathname);
   return (
     <div className={styles.bar}>
       <div className={styles.chrome}>
-        <SidebarToggle open={sidebarOpen} />
-        <ChromeHistoryNav />
-      </div>
-      <div className={styles.main} data-search={searching || undefined}>
-        {viewingFish ? null : <Breadcrumbs />}
-        {searching ? <LibrarySearch /> : null}
-      </div>
-      {viewingSave || viewingFish || viewingLibrary || searching ? (
-        <div className={styles.actions}>
-          {viewingFish ? (
-            <Suspense fallback={null}>
-              <FishChatActions />
-            </Suspense>
-          ) : null}
-          {searching ? <SearchActions /> : null}
-          <SidebarToggle side="right" open={detailsOpen} />
+        <div className={styles.tools}>
+          <SidebarToggle open={sidebarOpen} />
+          <ChromeHistoryNav />
         </div>
-      ) : null}
+        <div className={styles.tools}>
+          <SearchButton />
+          <NewMenu />
+        </div>
+      </div>
+      <div className={styles.main}>
+        {viewingSave ? (
+          <div className={styles.viewer} ref={setViewerToolbarHost} />
+        ) : viewingFish ? null : (
+          <Breadcrumbs />
+        )}
+      </div>
+      <div className={styles.actions}>
+        {viewingFish ? (
+          <Suspense fallback={null}>
+            <FishChatActions />
+          </Suspense>
+        ) : null}
+        <SidebarToggle side="right" open={detailsOpen} />
+      </div>
     </div>
   );
 }

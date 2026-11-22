@@ -3,8 +3,7 @@ import {
   IconArchiveExport,
   IconBulletList,
   IconCanvas,
-  IconCopy,
-  IconEye,
+  IconDuplicate,
   IconFaceSmile,
   IconFileExport,
   IconFolder,
@@ -122,7 +121,7 @@ export function buildFolderMenuItems(a: FolderMenuActions): MenuItemSpec[] {
     { type: "separator" },
     {
       label: "Duplicate",
-      icon: <IconCopy />,
+      icon: <IconDuplicate />,
       disabled: a.creating,
       onClick: a.onDuplicate,
     },
@@ -188,7 +187,7 @@ export function buildFolderMenuItems(a: FolderMenuActions): MenuItemSpec[] {
     {
       type: "checkbox",
       label: "Show Subfolder Content",
-      icon: <IconEye />,
+      icon: <IconFolderTree />,
       indicator: "check",
       checked: a.includeSubfolders,
       onCheckedChange: a.onToggleSubfolders,

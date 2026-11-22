@@ -31,9 +31,7 @@ it("uses the integrated top toolbar for the image controls", () => {
   expect(hudCss).toContain("border-radius: var(--ds-radius-full)");
   expect(hudCss).toContain("box-shadow: var(--ds-shadow-overlay)");
   expect(chromeCss).toContain("container-type: inline-size");
-  expect(hudCss).toContain(
-    "grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr)",
-  );
+  expect(hudCss).toContain("margin-inline-end: auto");
   expect(controlsCss).toContain("@starting-style");
   expect(controlsCss).toContain("prefers-reduced-motion: reduce");
   expect(controlsCss).toContain("opacity var(--ds-duration-snap)");

@@ -72,6 +72,7 @@ export const IPC = {
   agentChunk: "pond:agent-chunk",
   fish: "pond:fish",
   fishOpen: "pond:fish-open",
+  notifications: "pond:notifications",
   agentStream: "pond:agent-stream",
   agentFilter: "pond:agent-filter",
   agentCite: "pond:agent-cite",

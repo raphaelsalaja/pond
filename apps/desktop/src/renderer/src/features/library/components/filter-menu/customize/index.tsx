@@ -1,4 +1,5 @@
 import {
+  IconArrowRotateAnticlockwise,
   IconCalendar,
   IconCircleInfo,
   IconCompass,
@@ -6,7 +7,6 @@ import {
   IconImageSparkle,
   IconLayers,
   IconMediaLibrary,
-  IconRefresh,
   IconTextToImage,
 } from "@pond/icons";
 import type { IconComponent } from "@pond/icons/types";
@@ -124,7 +124,7 @@ export function CustomizeFilters({
             side="inline-end"
             align="start"
             sideOffset={4}
-            alignOffset={-4}
+            alignOffset={-6}
           >
             <FilterPopup>{items}</FilterPopup>
           </Menu.Positioner>
@@ -194,7 +194,7 @@ export function CustomizeFilters({
                 <Menu.Separator />
                 <Menu.Item onClick={() => filterToolbar.restoreDefaults()}>
                   <Menu.ItemIcon>
-                    <IconRefresh />
+                    <IconArrowRotateAnticlockwise />
                   </Menu.ItemIcon>
                   <Menu.ItemLabel>Reset Filters</Menu.ItemLabel>
                 </Menu.Item>

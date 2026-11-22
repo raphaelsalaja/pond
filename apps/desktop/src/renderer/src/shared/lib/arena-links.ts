@@ -11,6 +11,7 @@ export async function convertArenaLinks(): Promise<void> {
     title: "Converting Are.na links",
     description: "Finding Link saves",
     progress: { label: PROGRESS_LABEL },
+    status: "loading",
     timeout: 0,
   });
   const unsubscribe = window.pond.onArenaLinkProgress((progress) => {
@@ -25,6 +26,7 @@ export async function convertArenaLinks(): Promise<void> {
         value: progress.processed,
         max: progress.total,
       },
+      status: "loading",
       timeout: 0,
     });
   });
@@ -50,6 +52,7 @@ export async function convertArenaLinks(): Promise<void> {
         result.failed > 0
           ? `${formatNumber(result.failed)} failed. Refresh them to try again.`
           : undefined,
+      status: result.failed > 0 ? "error" : "success",
       timeout: 5000,
     });
   } catch {
@@ -57,6 +60,7 @@ export async function convertArenaLinks(): Promise<void> {
       id: notificationId,
       title: "Couldn't convert Are.na links",
       description: "Try again from Storage in Settings.",
+      status: "error",
       timeout: 8000,
     });
   } finally {

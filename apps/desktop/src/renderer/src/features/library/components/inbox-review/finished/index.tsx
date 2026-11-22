@@ -36,7 +36,7 @@ export function ReviewFinished({
   return (
     <Empty.Root role="status">
       <Empty.Media>
-        <IconCircleCheck size={32} />
+        <IconCircleCheck size={14} />
       </Empty.Media>
       <Empty.Title>Review complete</Empty.Title>
       <Empty.Description>
@@ -47,7 +47,7 @@ export function ReviewFinished({
       </Empty.Description>
       <Empty.Action>
         {remaining > 0 ? (
-          <Button variant="secondary" size="sm" onClick={onRestart}>
+          <Button variant="text" size="sm" onClick={onRestart}>
             Review Again
           </Button>
         ) : null}

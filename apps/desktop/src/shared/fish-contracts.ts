@@ -72,6 +72,7 @@ export const FishRunSchema = z.object({
 export type FishRun = z.infer<typeof FishRunSchema>;
 
 export const FISH_ROUTINE_CAP = 50;
+export const FISH_RUN_CAP = 20;
 
 /** Days use `Date.getDay()` numbering, so 0 is Sunday. */
 export const FishWhenSchema = z.discriminatedUnion("kind", [
@@ -115,12 +116,18 @@ const FishFieldsSchema = z.object({
   instructions: z.string().max(8000),
   scope: FishScopeSchema,
   model: FishModelSchema.nullable(),
+  /** Pinned fish sit in the grid above the Fish list. */
+  pinned: z.boolean().optional(),
 });
 export const FishSchema = FishFieldsSchema.extend({
   species: FishSpeciesSchema.default("koi"),
   id: FishIdSchema,
   routines: z.array(FishRoutineSchema).max(FISH_ROUTINE_CAP),
   lastRun: FishRunSchema.nullable(),
+  /** Newest first. Fish written before run history have none. */
+  runs: z.array(FishRunSchema).max(FISH_RUN_CAP).optional(),
+  /** Unpinned fish without a section sit above every section. */
+  section: FishIdSchema.optional(),
   createdAt: z.number(),
   updatedAt: z.number(),
 });
@@ -128,6 +135,20 @@ export type Fish = z.infer<typeof FishSchema>;
 
 export const FishPatchSchema = FishFieldsSchema.partial();
 export type FishPatch = z.infer<typeof FishPatchSchema>;
+
+export const FishSectionSchema = z.object({
+  id: FishIdSchema,
+  name: z.string().trim().min(1).max(40),
+});
+export type FishSection = z.infer<typeof FishSectionSchema>;
+
+/** Where one fish sits in the sidebar; the list order is the sidebar order. */
+export const FishPlacementSchema = z.object({
+  id: FishIdSchema,
+  pinned: z.boolean(),
+  section: FishIdSchema.nullable(),
+});
+export type FishPlacement = z.infer<typeof FishPlacementSchema>;
 
 /** What a fish is doing right now; `null` when it is idle. */
 export type FishPresence = AssistantActivity | null;
@@ -162,6 +183,9 @@ export interface FishQueryInputs {
   "fish.run": { id: string; routineId: string };
   "fish.pauseRoutine": { id: string; routineId: string; paused: boolean };
   "fish.deleteRoutine": { id: string; routineId: string };
+  "fish.arrange": { placements: FishPlacement[] };
+  "fish.sections": Record<string, never>;
+  "fish.setSections": { sections: FishSection[] };
 }
 
 export interface FishQueryResults {
@@ -173,4 +197,7 @@ export interface FishQueryResults {
   "fish.run": { ok: true } | { ok: false; error: string };
   "fish.pauseRoutine": Fish;
   "fish.deleteRoutine": Fish;
+  "fish.arrange": { ok: true };
+  "fish.sections": FishSection[];
+  "fish.setSections": FishSection[];
 }

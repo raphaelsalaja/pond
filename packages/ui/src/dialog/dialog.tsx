@@ -1,6 +1,6 @@
 import { AlertDialog as Alert } from "@base-ui/react/alert-dialog";
 import { Dialog as Base } from "@base-ui/react/dialog";
-import { IconAlertQuestion, IconChevronLeft, IconXmark } from "@pond/icons";
+import { IconChevronLeft, IconCircleQuestion, IconXmark } from "@pond/icons";
 import { clsx as cn } from "clsx";
 import {
   AnimatePresence,
@@ -393,7 +393,7 @@ function Back(props: ComponentPropsWithoutRef<"button">) {
 function Help(props: ComponentPropsWithoutRef<"button">) {
   return (
     <Action aria-label="Help" {...props}>
-      <IconAlertQuestion size={12} strokeWidth={2} />
+      <IconCircleQuestion size={12} strokeWidth={2} />
     </Action>
   );
 }

@@ -109,3 +109,7 @@ __pycache__/
 brag-output/
 brag-output-*/
 .gather/
+.icons/
+.iconset/
+packages/icons/REPORT.md
+packages/icons/lab/data.js

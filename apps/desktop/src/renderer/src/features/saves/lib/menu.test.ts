@@ -163,11 +163,13 @@ describe("buildSaveMenu", () => {
     expect(topLevelLabels(detailCopyItems)).toEqual([
       "Copy Name",
       "Copy",
+      "Copy Prompt",
       "Copy File Path",
     ]);
     expect(visibleLabels(detailCopyItems)).toEqual([
       "Copy Name",
       "Copy",
+      "Copy Prompt",
       "Copy File Path",
       "Copy as Base64",
       "Copy Pond Link",
@@ -405,6 +407,7 @@ describe("buildSaveMenu", () => {
       "Merge Duplicates",
       "Copy Name",
       "Copy",
+      "Copy Prompt",
       "Copy File Path",
       "Copy Options",
       "Copy Save ID",

@@ -1,26 +1,49 @@
 .root {
+  --composer-ring: var(--ds-border-strong);
+
   display: grid;
   grid-template-areas:
     "extra extra extra"
-    "field field field"
-    "leading . trailing";
+    "leading field trailing";
   grid-template-columns: auto minmax(0, 1fr) auto;
-  column-gap: var(--ds-space-xs);
+  column-gap: var(--ds-space-sm);
   align-items: center;
-  padding: var(--ds-space-lg);
+  padding: var(--ds-space-md);
   font-size: var(--ds-text-body);
   font-weight: var(--ds-weight-regular);
   line-height: 24px;
   color: var(--ds-foreground-primary);
+  caret-color: var(--ds-accent);
   background: light-dark(
     var(--ds-background-primary),
     var(--ds-background-secondary)
   );
-  border-radius: var(--ds-radius-md);
+  /* Half of one line's height, so the empty composer is a pill. */
+  border-radius: calc(var(--ds-size-sm) / 2 + var(--ds-space-md));
   box-shadow:
-    0 0 0 0.5px var(--ds-border-strong),
-    0 1px 2px var(--ds-border-subtle),
-    0 4px 16px -4px var(--ds-border-subtle);
+    0 0 0 0.5px var(--composer-ring),
+    0 1px 2px color-mix(in oklab, var(--ds-shadow-color) 15%, transparent),
+    0 2px 8px -1px color-mix(in oklab, var(--ds-shadow-color) 25%, transparent);
+  transition:
+    border-radius var(--ds-duration-medium) var(--ds-easing-snap),
+    box-shadow var(--ds-duration-snap) var(--ds-easing-standard);
+
+  &:is(:hover, :focus-within) {
+    --composer-ring: color-mix(
+      in oklab,
+      var(--ds-foreground-tertiary) 40%,
+      transparent
+    );
+  }
+
+  &[data-expanded] {
+    grid-template-areas:
+      "extra extra extra"
+      "field field field"
+      "leading . trailing";
+    row-gap: var(--ds-space-md);
+    border-radius: var(--ds-radius-2xl);
+  }
 }
 
 .extra {
@@ -45,7 +68,6 @@
   gap: var(--ds-space-xs);
   align-items: center;
   min-width: 0;
-  margin-top: var(--ds-space-md);
 }
 
 .leading {
@@ -95,7 +117,7 @@
 }
 
 .root[data-dragging] {
-  outline: 2px solid var(--ds-border-strong);
+  outline: 2px solid var(--ds-accent-border);
   outline-offset: 2px;
 }
 
@@ -149,15 +171,15 @@
 
 .trailing > button:not(.send) {
   --button-icon-size: 14px;
-  height: 32px;
+  height: var(--ds-size-sm);
   font-size: var(--ds-text-body);
   font-weight: var(--ds-weight-regular);
   color: var(--ds-foreground-tertiary);
 }
 
 .trailing > button[data-icon] {
-  width: 32px;
-  min-width: 32px;
+  width: var(--ds-size-sm);
+  min-width: var(--ds-size-sm);
 }
 
 .trailing > button[aria-expanded="true"] {

@@ -1,5 +1,5 @@
 import { IconFolder, IconPlus, IconStar, IconTag } from "@pond/icons";
-import { Button, Empty, Input, Sidebar, Tooltip } from "@pond/ui";
+import { Button, Empty, Input, Tooltip } from "@pond/ui";
 import { DataTable } from "@pond/ui/data-table";
 import { defaultRangeExtractor, useVirtualizer } from "@tanstack/react-virtual";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -17,6 +17,7 @@ import {
   tagCreation,
   useTagCreationRequest,
 } from "@/features/tags/state/creation";
+import { tagsScope, useTagsScope } from "@/features/tags/state/tags-scope";
 import { MatchesEmpty } from "@/shared/components/matches-empty";
 import { SearchChrome } from "@/shared/components/search-chrome";
 import { findScrollParent } from "@/shared/lib/dom";
@@ -24,7 +25,6 @@ import { usePrefs } from "@/shared/state/prefs";
 import { TagSortMenu } from "./sort-menu";
 import styles from "./styles.module.css";
 
-type Scope = "all" | "ungrouped" | "starred" | string;
 type TagData = Extract<TagsRowData, { kind: "tag" }>;
 
 interface AlphabetGroup {
@@ -162,7 +162,7 @@ function VirtualTagIndex({ lines }: { lines: IndexLine[] }) {
   const virtual = useVirtualizer({
     count: lines.length,
     getScrollElement: () => findScrollParent(listRef.current),
-    estimateSize: (index) => (lines[index]?.kind === "header" ? 46 : 34),
+    estimateSize: (index) => (lines[index]?.kind === "header" ? 44 : 34),
     getItemKey: (index) => lines[index]?.key ?? index,
     scrollMargin,
     overscan: 10,
@@ -225,12 +225,11 @@ export function TagsPage() {
     namesFromIds,
     groupOptions,
     groupSummaries,
-    ungroupedTotal,
-    starredTotal,
     total,
   } = useTagsData();
   const [allTags, patchAllTags] = usePrefs("allTags");
-  const [scope, setScope] = useState<Scope>("all");
+  const scope = useTagsScope();
+  const setScope = tagsScope.set;
   const { creating, startCreate, cancelCreate, saveCreate } = useTagCreation();
   const creationRequest = useTagCreationRequest();
   const [creationGroup, setCreationGroup] = useState<string | null>(null);
@@ -399,20 +398,49 @@ export function TagsPage() {
       <div className={styles.page}>
         <SearchChrome.Root
           actions={
-            <TagSortMenu
-              sort={allTags.sort}
-              direction={allTags.sortDirection}
-              onChange={(sort, sortDirection) =>
-                void patchAllTags({ sort, sortDirection })
-              }
-            />
+            <>
+              {activeGroupRow ? (
+                <TagPicker.Root
+                  target={{ kind: "group", group: activeGroupRow.group }}
+                >
+                  <Tooltip label="Add Tags" side="bottom">
+                    <TagPicker.Trigger
+                      icon
+                      variant="ghost"
+                      size="sm"
+                      aria-label={`Add Tags to ${activeGroupRow.group.name}`}
+                    >
+                      <IconPlus />
+                    </TagPicker.Trigger>
+                  </Tooltip>
+                  <TagPicker.Content align="end" />
+                </TagPicker.Root>
+              ) : (
+                <Tooltip label="New Tag" side="bottom">
+                  <Button
+                    icon
+                    variant="ghost"
+                    size="sm"
+                    aria-label="New Tag"
+                    onClick={() => beginCreate("tag")}
+                  >
+                    <IconPlus />
+                  </Button>
+                </Tooltip>
+              )}
+              <TagSortMenu
+                sort={allTags.sort}
+                direction={allTags.sortDirection}
+                onChange={(sort, sortDirection) =>
+                  void patchAllTags({ sort, sortDirection })
+                }
+              />
+            </>
           }
         >
-          <SearchChrome.Input
+          <SearchChrome.Field
             value={q}
             onChange={(event) => setQ(event.target.value)}
-            spellCheck={false}
-            placeholder="Search…"
             aria-label="Search Tags"
             data-tags-search=""
           />
@@ -420,143 +448,12 @@ export function TagsPage() {
 
         <TagsTableContext value={contextValue}>
           <div className={styles.workspace}>
-            <aside className={styles.sidebar} aria-label="Tag Collections">
-              <Sidebar.Root width="full">
-                <Sidebar.Scroll>
-                  <nav>
-                    <Sidebar.Group className={styles["scope-group"]}>
-                      <Sidebar.Item
-                        type="button"
-                        data-status={scope === "all" ? "active" : undefined}
-                        aria-current={scope === "all" ? "page" : undefined}
-                        onClick={() => setScope("all")}
-                      >
-                        <Sidebar.Icon>
-                          <IconTag size={12} aria-hidden="true" />
-                        </Sidebar.Icon>
-                        <Sidebar.ItemLabel>All</Sidebar.ItemLabel>
-                        <Sidebar.Count>{total}</Sidebar.Count>
-                      </Sidebar.Item>
-                      <Sidebar.Item
-                        type="button"
-                        data-status={
-                          scope === "ungrouped" ? "active" : undefined
-                        }
-                        aria-current={
-                          scope === "ungrouped" ? "page" : undefined
-                        }
-                        onClick={() => setScope("ungrouped")}
-                      >
-                        <Sidebar.Icon>
-                          <IconFolder size={12} aria-hidden="true" />
-                        </Sidebar.Icon>
-                        <Sidebar.ItemLabel>Uncategorized</Sidebar.ItemLabel>
-                        <Sidebar.Count>{ungroupedTotal}</Sidebar.Count>
-                      </Sidebar.Item>
-                      <Sidebar.Item
-                        type="button"
-                        data-status={scope === "starred" ? "active" : undefined}
-                        aria-current={scope === "starred" ? "page" : undefined}
-                        onClick={() => setScope("starred")}
-                      >
-                        <Sidebar.Icon>
-                          <IconStar size={12} aria-hidden="true" />
-                        </Sidebar.Icon>
-                        <Sidebar.ItemLabel>Starred</Sidebar.ItemLabel>
-                        {starredTotal > 0 ? (
-                          <Sidebar.Count>{starredTotal}</Sidebar.Count>
-                        ) : null}
-                      </Sidebar.Item>
-                    </Sidebar.Group>
-                  </nav>
-
-                  <Sidebar.Group>
-                    <Sidebar.GroupHeader>
-                      <Sidebar.GroupLabel>
-                        Groups
-                        <Sidebar.Count>{groupSummaries.length}</Sidebar.Count>
-                      </Sidebar.GroupLabel>
-                      <Tooltip label="New Group" side="right">
-                        <Button
-                          icon
-                          variant="ghost"
-                          size="xs"
-                          aria-label="New Group"
-                          onClick={() => beginCreate("group")}
-                        >
-                          <IconPlus size={12} />
-                        </Button>
-                      </Tooltip>
-                    </Sidebar.GroupHeader>
-                    {creating === "group" ? (
-                      <div className={styles["group-draft"]}>
-                        <DraftRow
-                          creating="group"
-                          onSave={saveCreate}
-                          onFinish={cancelCreate}
-                        />
-                      </div>
-                    ) : null}
-                    {groupSummaries.length > 0 ? (
-                      <nav
-                        className={styles.navigation}
-                        aria-label="Tag Groups"
-                      >
-                        {groupSummaries.map((group) => (
-                          <Sidebar.Item
-                            key={group.id}
-                            type="button"
-                            data-status={
-                              scope === group.id ? "active" : undefined
-                            }
-                            aria-current={
-                              scope === group.id ? "page" : undefined
-                            }
-                            onClick={() => setScope(group.id)}
-                          >
-                            <Sidebar.Icon>
-                              <IconFolder size={12} aria-hidden="true" />
-                            </Sidebar.Icon>
-                            <Sidebar.ItemLabel>{group.name}</Sidebar.ItemLabel>
-                            <Sidebar.Count>{group.count}</Sidebar.Count>
-                          </Sidebar.Item>
-                        ))}
-                      </nav>
-                    ) : null}
-                  </Sidebar.Group>
-                </Sidebar.Scroll>
-              </Sidebar.Root>
-            </aside>
-
             <main className={styles.main} data-scroll-fade="vertical">
               {activeGroupRow ? (
                 <section className={styles.detail}>
-                  <div className={styles.title}>
-                    <h1>
-                      {activeGroupRow.group.name}
-                      <span className={styles.count}>
-                        ({visibleRows.length})
-                      </span>
-                    </h1>
-                    <TagPicker.Root
-                      target={{ kind: "group", group: activeGroupRow.group }}
-                    >
-                      <Tooltip label="Add Tags">
-                        <TagPicker.Trigger
-                          icon
-                          variant="ghost"
-                          size="xs"
-                          aria-label={`Add Tags to ${activeGroupRow.group.name}`}
-                        >
-                          <IconPlus size={12} />
-                        </TagPicker.Trigger>
-                      </Tooltip>
-                      <TagPicker.Content align="start" />
-                    </TagPicker.Root>
-                  </div>
                   <Input.Root
                     className={styles.description}
-                    size="xs"
+                    size="sm"
                     variant="borderless"
                   >
                     <Input.Field
@@ -591,46 +488,10 @@ export function TagsPage() {
                 </section>
               ) : null}
 
-              {scope === "all" && total > 0 ? (
-                <section className={styles.detail}>
-                  <div className={styles.title}>
-                    <h1>
-                      All Tags
-                      <span className={styles.count}>({total})</span>
-                    </h1>
-                    <Button
-                      variant="secondary"
-                      size="xs"
-                      onClick={() => beginCreate("tag")}
-                    >
-                      New Tag
-                    </Button>
-                  </div>
-                </section>
-              ) : null}
-
-              {scope === "ungrouped" && ungrouped.length > 0 ? (
-                <section className={styles.detail}>
-                  <div className={styles.title}>
-                    <h1>
-                      Uncategorized
-                      <span className={styles.count}>({ungrouped.length})</span>
-                    </h1>
-                    <Button
-                      variant="secondary"
-                      size="xs"
-                      onClick={() => beginCreate("tag")}
-                    >
-                      New Tag
-                    </Button>
-                  </div>
-                </section>
-              ) : null}
-
-              {creating === "tag" ? (
+              {creating ? (
                 <div className={styles.draft}>
                   <DraftRow
-                    creating="tag"
+                    creating={creating}
                     onSave={commitCreate}
                     onFinish={cancelCreate}
                   />
@@ -647,7 +508,7 @@ export function TagsPage() {
               ) : total === 0 && !q ? (
                 <Empty.Root className={styles.empty}>
                   <Empty.Media>
-                    <IconTag size={32} />
+                    <IconTag size={14} />
                   </Empty.Media>
                   <Empty.Title>No tags yet</Empty.Title>
                   <Empty.Description>
@@ -665,11 +526,7 @@ export function TagsPage() {
                 </Empty.Root>
               ) : q ? (
                 <div className={styles.matches}>
-                  <MatchesEmpty
-                    actionLabel="Clear Search"
-                    description="Try a different tag name."
-                    onReset={() => setQ("")}
-                  />
+                  <MatchesEmpty query={q} onReset={() => setQ("")} />
                 </div>
               ) : (
                 <Empty.Root
@@ -679,11 +536,11 @@ export function TagsPage() {
                 >
                   <Empty.Media>
                     {scope === "starred" ? (
-                      <IconStar size={32} />
+                      <IconStar size={14} />
                     ) : scope === "ungrouped" ? (
-                      <IconTag size={32} />
+                      <IconTag size={14} />
                     ) : (
-                      <IconFolder size={32} />
+                      <IconFolder size={14} />
                     )}
                   </Empty.Media>
                   <Empty.Title>No tags in {scopeLabel}</Empty.Title>

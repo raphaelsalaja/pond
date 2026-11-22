@@ -22,14 +22,11 @@
   }
 
   &[data-icon] {
+    --popup-item-inset: 0px;
     flex: none;
     justify-content: center;
     width: 32px;
     padding: 0;
-
-    &::before {
-      inset: 0 2px;
-    }
 
     > svg:last-child {
       width: 18px;
@@ -119,10 +116,10 @@
   flex: none;
   align-items: center;
   justify-content: center;
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   margin-left: auto;
-  color: var(--ds-foreground-secondary);
+  color: var(--ds-foreground-tertiary);
 
   &[data-unchecked] {
     visibility: hidden;
@@ -143,7 +140,24 @@
 }
 
 .input {
-  composes: input from "../shared/styles/popup/styles.module.css";
+  width: 100%;
+  min-height: calc(var(--ds-size-md) + var(--ds-space-xs));
+  padding-inline: calc(var(--ds-space-md) + var(--popup-item-inset));
+  /* Cancels the popup's top padding so the search row sits flush on the edge. */
+  margin-top: calc(-1 * var(--popup-padding-block));
+  margin-bottom: var(--popup-separator-space);
+  font-size: var(--ds-text-body);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-foreground-secondary);
+  caret-color: var(--ds-accent);
+  appearance: none;
+  outline: none;
+  background: transparent;
+  border-bottom: var(--ds-border-width) solid var(--ds-border-subtle);
+
+  &::placeholder {
+    color: var(--ds-foreground-tertiary);
+  }
 }
 
 .empty {

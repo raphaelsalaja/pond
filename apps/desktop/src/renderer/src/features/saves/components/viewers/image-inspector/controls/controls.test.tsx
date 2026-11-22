@@ -50,27 +50,20 @@ describe("image inspector toolbar", () => {
       .map((button) => button.getAttribute("aria-label"))
       .filter((label): label is string => label !== null);
     expect(labels).toEqual([
+      "Previous Save",
+      "Next Save",
       "Zoom Out",
       "Zoom Ratio",
       "Zoom In",
-      "Previous Save",
-      "Next Save",
       "Flip",
       "Rotate",
       "Crop",
       "Actual Size",
       "Fit to Window",
-      "Previous Slide",
-      "Next Slide",
     ]);
     expect(host.textContent).not.toContain("1 / 493");
     const end = host.querySelector('[data-viewer-bar-slot="end"]');
-    expect(end?.textContent).toBe("");
-    for (const label of ["Previous Slide", "Next Slide"])
-      expect(
-        end?.querySelector<HTMLButtonElement>(`[aria-label="${label}"]`)
-          ?.disabled,
-      ).toBe(true);
+    expect(end?.childElementCount).toBe(0);
     const start = host.querySelector('[data-viewer-bar-slot="start"]');
     expect(start?.textContent).toBe("");
     expect(
@@ -86,64 +79,6 @@ describe("image inspector toolbar", () => {
       expect(button, label).not.toBeNull();
       expect(button?.dataset.size, label).toBe("sm");
     }
-  });
-
-  it("puts slide arrows on the right and image actions in the middle", async () => {
-    const noop = vi.fn();
-    const onNext = vi.fn();
-    const onPrevious = vi.fn();
-    await act(async () =>
-      root.render(
-        <ImageControls.Hud
-          actual={1}
-          active
-          busy={false}
-          canCrop={false}
-          saveId="image"
-          mode="view"
-          slideNavigation={{
-            index: 0,
-            count: 2,
-            onNext,
-            onPrevious,
-          }}
-          onActualSize={noop}
-          onApplyCrop={noop}
-          onCancelCrop={noop}
-          onFit={noop}
-          onFlip={noop}
-          onRotate={noop}
-          onSaveCrop={noop}
-          onToggleCrop={noop}
-          onZoomIn={noop}
-          onZoomOut={noop}
-          onZoomRatio={noop}
-        />,
-      ),
-    );
-
-    const previous = host.querySelector<HTMLButtonElement>(
-      '[aria-label="Previous Slide"]',
-    );
-    const next = host.querySelector<HTMLButtonElement>(
-      '[aria-label="Next Slide"]',
-    );
-    expect(previous?.disabled).toBe(true);
-    expect(next?.disabled).toBe(false);
-    const end = host.querySelector('[data-viewer-bar-slot="end"]');
-    const center = host.querySelector('[data-viewer-bar-slot="center"]');
-    expect(end?.contains(previous ?? null)).toBe(true);
-    expect(end?.textContent).toBe("1 / 2");
-    expect(center?.querySelector('[aria-label="Flip"]')).not.toBeNull();
-    expect(host.querySelectorAll('[role="separator"]')).toHaveLength(0);
-    expect(
-      [...host.querySelectorAll("button")]
-        .map((button) => button.getAttribute("aria-label"))
-        .filter((label): label is string => label !== null)
-        .slice(-3),
-    ).toEqual(["Fit to Window", "Previous Slide", "Next Slide"]);
-    await act(async () => next?.click());
-    expect(onNext).toHaveBeenCalledOnce();
   });
 
   it("adds GIF Frames without adding a separator", async () => {

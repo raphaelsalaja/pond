@@ -15,7 +15,7 @@ import { ViewerSaveNav } from "@/features/saves/components/viewers/viewer-save-n
 import { ViewerToolbarGroups } from "@/features/saves/components/viewers/viewer-toolbar-groups";
 import { InlineNameEditor } from "@/shared/components/inline-name-editor";
 import { formatBytes } from "@/shared/lib/format";
-import { FileActions, navigationControls } from "../file-bar";
+import { FileActions } from "../file-bar";
 import type { ViewerProps } from "../types";
 import styles from "./styles.module.css";
 
@@ -71,14 +71,7 @@ export function FontViewer(props: ViewerProps & { url: string }) {
   }, [family, props.url]);
 
   if (failed) {
-    return (
-      <ViewerFallback
-        {...props}
-        reason="decode"
-        active={props.active}
-        slideNavigation={props.navigation}
-      />
-    );
+    return <ViewerFallback {...props} reason="decode" active={props.active} />;
   }
 
   const style: CSSProperties & {
@@ -165,7 +158,6 @@ export function FontViewer(props: ViewerProps & { url: string }) {
               }
             />
           }
-          end={navigationControls(props.navigation)}
         />
       </ChromePortal>
       <div className={styles.scroll} data-scroll-fade="vertical">

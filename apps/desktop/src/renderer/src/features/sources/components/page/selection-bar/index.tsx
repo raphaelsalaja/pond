@@ -1,4 +1,4 @@
-import { IconArrowRotateClockwise, IconGrid } from "@pond/icons";
+import { IconGrid, IconRefresh } from "@pond/icons";
 import { viewAccountItems } from "@/features/library";
 import { sourcesSelection } from "@/features/sources/state/sources-selection";
 import { SelectionBar } from "@/shared/components/selection-bar";
@@ -36,7 +36,7 @@ export function SourceSelectionBar() {
           for (const row of fetchable) void window.pond.syncRunNow(row.id);
         }}
       >
-        <IconArrowRotateClockwise />
+        <IconRefresh />
       </SelectionBar.Action>
     </SelectionBar.Root>
   );

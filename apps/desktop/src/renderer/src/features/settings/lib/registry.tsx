@@ -1,7 +1,7 @@
 import {
   IconPalette as Appearance,
   IconArchive as Backups,
-  IconGlobe as Extension,
+  IconPuzzle as Extension,
   IconGear3 as General,
   IconShieldCheck as Health,
   IconImage as Images,
@@ -28,11 +28,20 @@ import {
   type SettingsGroup,
   type SettingsSection,
 } from "@pond/schema";
-import { EXTERNAL_SOURCE_IDS } from "@pond/schema/sources";
+import {
+  EXTERNAL_SOURCE_IDS,
+  type ExternalSource,
+} from "@pond/schema/sources";
 import type { SectionConfig } from "@/features/settings/components/engine";
 import { sourceSectionId } from "@/features/settings/lib/download-sources";
 import { SECTION_CONFIGS } from "@/features/settings/lib/sections";
-import { getSourceIcon } from "@/features/sources";
+import { BrandTile } from "@/features/sources";
+
+function sourceTile(source: ExternalSource): IconComponent {
+  return function SourceTile() {
+    return <BrandTile source={source} size={14} />;
+  };
+}
 
 const ICONS = new Map<string, IconComponent>([
   ["general", General],
@@ -57,7 +66,7 @@ const ICONS = new Map<string, IconComponent>([
   ["videos", Videos],
   ...EXTERNAL_SOURCE_IDS.map((source): [string, IconComponent] => [
     sourceSectionId(source),
-    getSourceIcon(source) ?? Sources,
+    sourceTile(source),
   ]),
 ]);
 

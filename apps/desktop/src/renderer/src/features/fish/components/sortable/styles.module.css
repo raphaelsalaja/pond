@@ -1,0 +1,26 @@
+.sortable {
+  position: relative;
+  min-width: 0;
+  touch-action: none;
+
+  &[data-dragging] {
+    z-index: 2;
+    opacity: 0;
+  }
+}
+
+.shelf {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sortable {
+    transition: none;
+  }
+}
+
+:global([data-reduce-motion]) .sortable {
+  transition: none;
+}

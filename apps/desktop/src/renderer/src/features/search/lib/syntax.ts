@@ -35,7 +35,7 @@ interface TokenFieldSpec {
   keys: readonly string[];
 }
 
-export const TOKEN_FIELDS: readonly TokenFieldSpec[] = [
+const TOKEN_FIELDS: readonly TokenFieldSpec[] = [
   { field: "title", keys: ["name", "title"] },
   { field: "tags", keys: ["tag", "tags"] },
   { field: "folder", keys: ["folder", "folders"] },
@@ -78,11 +78,11 @@ for (const spec of TOKEN_FIELDS) {
   for (const key of spec.keys) KEY_TO_FIELD.set(key, spec.field);
 }
 
-export function canonicalKey(field: FieldId): string {
+function canonicalKey(field: FieldId): string {
   return FIELD_TO_KEY.get(field) ?? field;
 }
 
-export function fieldForKey(key: string): FieldId | undefined {
+function fieldForKey(key: string): FieldId | undefined {
   return KEY_TO_FIELD.get(key.toLowerCase());
 }
 

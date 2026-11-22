@@ -1,6 +1,6 @@
 import {
   IconArchive,
-  IconArrowRotateClockwise,
+  IconArrowRotateAnticlockwise,
   IconClipboardArrowIn,
   IconContrast,
   IconCopy,
@@ -189,7 +189,7 @@ export function buildDetailItems({
       },
       {
         label: "Reset Loop Range",
-        icon: glyph(IconArrowRotateClockwise),
+        icon: glyph(IconArrowRotateAnticlockwise),
         hidden: !opened || !isGif,
         onClick: () => {
           const file = save.files[fileIndex ?? 0] ?? save.files[0];
@@ -315,7 +315,7 @@ export function buildDetailItems({
     source: [
       {
         label: "Refresh from Source",
-        icon: glyph(IconArrowRotateClockwise),
+        icon: glyph(IconRefresh),
         hidden: !hasUrl,
         shortcut: shortcutGlyphs("save.refresh"),
         onClick: () => {

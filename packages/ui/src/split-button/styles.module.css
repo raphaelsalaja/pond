@@ -1,0 +1,38 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  isolation: isolate;
+}
+
+.action,
+.trigger {
+  position: relative;
+
+  &:focus-visible {
+    z-index: 1;
+  }
+}
+
+.action:not(:last-child) {
+  border-start-end-radius: 0;
+  border-end-end-radius: 0;
+}
+
+/* Painted after the action, so its left edge covers the action's right edge and the seam stays one hairline. */
+.trigger:not(:first-child) {
+  border-start-start-radius: 0;
+  border-end-start-radius: 0;
+}
+
+.root[data-variant="primary"] > .trigger:not(:first-child) {
+  box-shadow: inset var(--ds-border-width) 0 0
+    color-mix(in srgb, var(--ds-accent-contrast) 24%, transparent);
+}
+
+.root[data-variant="secondary"] > [data-popup-open] {
+  background-color: var(--ds-background-secondary);
+}
+
+.root[data-variant="primary"] > [data-popup-open] {
+  background-color: var(--ds-accent-hover);
+}

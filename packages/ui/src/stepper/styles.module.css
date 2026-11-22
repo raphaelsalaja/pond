@@ -1,21 +1,37 @@
 .root {
+  box-sizing: border-box;
   display: inline-flex;
-  gap: var(--ds-space-xs);
   align-items: center;
   min-inline-size: 0;
-  padding: 0;
+  height: var(--ds-size-md);
+  padding: var(--ds-space-xs);
   margin: 0;
+  background: var(--ds-background-primary);
   border: 0;
+  border-radius: var(--ds-radius-md);
+  box-shadow: var(--ds-shadow-border);
+
+  &:has(> .input:focus-visible) {
+    outline: var(--ds-focus-width) solid var(--ds-focus-outline);
+  }
+}
+
+.root > .step {
+  --button-icon-size: 12px;
+
+  &:not(:hover, [data-demo-state="hover"]) {
+    color: var(--ds-foreground-tertiary);
+  }
 }
 
 .input {
-  --input-min-height: var(--ds-size-sm);
+  --input-min-height: var(--ds-size-xs);
   --input-padding-inline: 0;
   --input-padding-start: 0;
-  --input-font-size: var(--ds-text-small);
-  --input-radius: var(--ds-radius-lg);
-  width: 44px;
-  padding: 0;
+  --input-font-size: var(--ds-text-body);
+  --input-radius: var(--ds-radius-xs);
+  width: 6ch;
+  padding: 0 var(--ds-space-xs);
   font-weight: var(--ds-weight-medium);
   font-variant-numeric: tabular-nums;
   text-align: center;

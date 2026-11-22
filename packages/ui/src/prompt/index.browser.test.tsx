@@ -19,7 +19,7 @@ function Question({ onSubmit }: { onSubmit?: (answer: string) => void }) {
             {["Cabin", "Furniture"].map((option, index) => (
               <Prompt.Choice
                 key={option}
-                letter={String.fromCharCode(65 + index)}
+                marker={index + 1}
                 selected={choice === option}
                 onClick={() => setChoice(option)}
               >
@@ -27,7 +27,7 @@ function Question({ onSubmit }: { onSubmit?: (answer: string) => void }) {
               </Prompt.Choice>
             ))}
             <Prompt.Freeform
-              letter="C"
+              marker="3"
               placeholder="Other"
               selected={choice === OTHER}
               value={text}
@@ -91,7 +91,7 @@ describe("Prompt keyboard", () => {
     const screen = await render(
       <Prompt.Root>
         <Prompt.Choices aria-label="Folder">
-          <Prompt.Freeform letter="A" aria-label="Folder Name" />
+          <Prompt.Freeform marker="1" aria-label="Folder Name" />
         </Prompt.Choices>
       </Prompt.Root>,
     );

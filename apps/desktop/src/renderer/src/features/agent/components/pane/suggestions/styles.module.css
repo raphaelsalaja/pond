@@ -1,0 +1,6 @@
+.suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ds-space-sm);
+  margin-top: var(--ds-space-md);
+}

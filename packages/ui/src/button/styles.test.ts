@@ -8,25 +8,17 @@ const css = readFileSync(
   "utf8",
 );
 
-it("uses the secondary foreground for primary icon buttons without changing primary text buttons", () => {
-  const primaryStart = css.indexOf('&:where([data-variant="primary"]) {');
-  const iconStart = css.indexOf("&:where([data-icon]) {", primaryStart);
-  expect(primaryStart).toBeGreaterThanOrEqual(0);
-  expect(iconStart).toBeGreaterThan(primaryStart);
+it("fills primary buttons with the accent", () => {
+  const start = css.indexOf(
+    '&:where([data-variant="primary"], [data-variant="accent"]) {',
+  );
+  expect(start).toBeGreaterThanOrEqual(0);
 
-  const primaryDefault = css.slice(primaryStart, iconStart);
-  const iconDefault = css.slice(iconStart, css.indexOf("}", iconStart));
-  expect(primaryDefault).toContain("var(--ds-background-inverse)");
-  expect(iconDefault).toContain("var(--ds-foreground-secondary)");
+  const primary = css.slice(start, css.indexOf("}", start));
+  expect(primary).toContain("background-color: var(--ds-accent);");
+  expect(primary).not.toContain("var(--ds-background-inverse)");
 });
 
-it("holds an expanded popup trigger still after the press scale", () => {
-  const active = css.indexOf("&:active {");
-  const expandedStart = css.indexOf('&[aria-expanded="true"] {');
-  expect(active).toBeGreaterThanOrEqual(0);
-  expect(expandedStart).toBeGreaterThan(active);
-
-  const expanded = css.slice(expandedStart, css.indexOf("}", expandedStart));
-  expect(expanded).toContain("scale: none;");
-  expect(expanded).not.toMatch(/transition:[^;]*\bscale\b/);
+it("never scales on press, so popups anchored to a trigger stay put", () => {
+  expect(css).not.toMatch(/\bscale:/);
 });
