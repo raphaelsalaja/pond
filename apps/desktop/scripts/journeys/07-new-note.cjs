@@ -10,7 +10,12 @@ exports.run = async (ctx) => {
     );
     return id && !seeded.has(id) ? id : null;
   });
-  await untilSave(ctx, note, (save) => save.mediaType === "text", "became a note");
+  await untilSave(
+    ctx,
+    note,
+    (save) => save.mediaType === "text",
+    "became a note",
+  );
   await select(ctx, note);
   await ctx.key("Enter");
   await ctx.click('[data-save-details] [aria-label="Note"]');
