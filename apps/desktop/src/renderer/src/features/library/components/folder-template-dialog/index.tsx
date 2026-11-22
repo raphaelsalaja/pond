@@ -1,5 +1,13 @@
 import type { FolderTemplate } from "@pond/schema/folder-templates";
-import { Button, Checkbox, Dialog, Field, Input } from "@pond/ui";
+import {
+  Button,
+  Checkbox,
+  Dialog,
+  Field,
+  Input,
+  Toggle,
+  ToggleGroup,
+} from "@pond/ui";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   closeFolderTemplateDialog,
@@ -182,26 +190,30 @@ function ApplyTemplateDialog({
             <Dialog.Content className={styles.content}>
               <div className={styles.gallery}>
                 <div className={styles.list}>
-                  <p className={styles.heading}>Built-In</p>
-                  {builtIn.map((template) => (
-                    <TemplateOption
-                      key={template.id}
-                      template={template}
-                      selected={template.id === selected?.id}
-                      onSelect={() => select(template.id)}
-                    />
-                  ))}
-                  {custom.length ? (
-                    <p className={styles.heading}>My Templates</p>
-                  ) : null}
-                  {custom.map((template) => (
-                    <TemplateOption
-                      key={template.id}
-                      template={template}
-                      selected={template.id === selected?.id}
-                      onSelect={() => select(template.id)}
-                    />
-                  ))}
+                  <ToggleGroup
+                    variant="list"
+                    aria-label="Templates"
+                    value={selected ? [selected.id] : []}
+                    onValueChange={(next) => {
+                      const [id] = next;
+                      if (id) select(id);
+                    }}
+                  >
+                    <p className={styles.heading}>Built-In</p>
+                    {builtIn.map((template) => (
+                      <Toggle key={template.id} value={template.id}>
+                        {template.name}
+                      </Toggle>
+                    ))}
+                    {custom.length ? (
+                      <p className={styles.heading}>My Templates</p>
+                    ) : null}
+                    {custom.map((template) => (
+                      <Toggle key={template.id} value={template.id}>
+                        {template.name}
+                      </Toggle>
+                    ))}
+                  </ToggleGroup>
                 </div>
                 {selected ? (
                   <div className={styles.detail}>
@@ -264,27 +276,6 @@ function ApplyTemplateDialog({
         </Dialog.Popup>
       </Dialog.Portal>
     </Dialog.Root>
-  );
-}
-
-function TemplateOption({
-  template,
-  selected,
-  onSelect,
-}: {
-  template: FolderTemplate;
-  selected: boolean;
-  onSelect: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      className={styles.option}
-      aria-pressed={selected}
-      onClick={onSelect}
-    >
-      {template.name}
-    </button>
   );
 }
 
