@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clipboardPrefill, type ClipboardReader } from "./clipboard";
+import { type ClipboardReader, clipboardPrefill } from "./clipboard";
 
 function reader(
   text: string,
