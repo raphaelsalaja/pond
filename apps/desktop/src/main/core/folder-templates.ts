@@ -8,10 +8,7 @@ import {
   BUILT_IN_FOLDER_TEMPLATES,
   duplicateTemplateName,
 } from "@shared/folder-templates";
-import type {
-  OkSuccess,
-  UndoableChange,
-} from "@shared/query-contracts-shared";
+import type { OkSuccess, UndoableChange } from "@shared/query-contracts-shared";
 import log from "electron-log/main.js";
 import { ulid } from "ulid";
 import { executeBatch, withMutationScope } from "./executor";
