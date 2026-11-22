@@ -96,11 +96,15 @@ function button(name: string) {
   return match;
 }
 
+type ReviewedImport =
+  | ReturnType<typeof importFilesWithDuplicateReview>
+  | ReturnType<typeof importClipboardWithDuplicateReview>;
+
 async function startImport(
-  start: () => Promise<unknown> = () =>
+  start: () => ReviewedImport = () =>
     importFilesWithDuplicateReview({ paths }),
 ) {
-  let pending: Promise<unknown> | undefined;
+  let pending: ReviewedImport | undefined;
   await act(async () => {
     root.render(<DuplicateImportReviewHost />);
     pending = start();

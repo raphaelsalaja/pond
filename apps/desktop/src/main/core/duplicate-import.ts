@@ -92,12 +92,17 @@ export async function reviewImportDuplicates(
   return candidates;
 }
 
+interface ResolvedDuplicates {
+  useExisting: Record<string, string>;
+  restore: Set<string>;
+}
+
 /** Only the review dialog sends `restore`, so callers that ask for `use-existing` import a file whose match is in Trash as new. */
 export function resolveDuplicateDecisions(
   candidates: readonly DuplicateImportCandidate[],
   decisions: Readonly<Record<string, DuplicateImportDecision>>,
   policy: DuplicateImportChoice,
-): { useExisting: Record<string, string>; restore: Set<string> } {
+): ResolvedDuplicates {
   const useExisting: Record<string, string> = {};
   const restore = new Set<string>();
   for (const candidate of candidates) {
