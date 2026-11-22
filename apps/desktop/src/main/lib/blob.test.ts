@@ -62,7 +62,10 @@ describe("bot challenges", () => {
   });
 
   it("retries a challenged download in the harvest session", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => challenge()));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => challenge()),
+    );
     const image = await png();
     const challengeFetcher = vi.fn(
       async () =>
