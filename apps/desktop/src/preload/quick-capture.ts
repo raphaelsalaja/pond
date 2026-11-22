@@ -14,6 +14,7 @@ const QUICK_CAPTURE_IPC = {
   submit: "pond:quick-capture-submit",
   dismiss: "pond:quick-capture-dismiss",
   drag: "pond:quick-capture-drag",
+  keep: "pond:quick-capture-keep",
 } as const;
 
 const captureApi = {
@@ -34,6 +35,9 @@ const captureApi = {
   },
   drag(phase: QuickCaptureDrag): Promise<void> {
     return ipcRenderer.invoke(QUICK_CAPTURE_IPC.drag, phase);
+  },
+  keep(draft: QuickCaptureSubmit): Promise<void> {
+    return ipcRenderer.invoke(QUICK_CAPTURE_IPC.keep, draft);
   },
   pathForFile(file: File): string {
     return webUtils.getPathForFile(file);

@@ -3,7 +3,10 @@ import {
   type BrowserWindowConstructorOptions,
   screen,
 } from "electron";
-import type { QuickCaptureSnapshot } from "../../../shared/quick-capture-contracts";
+import type {
+  QuickCaptureSnapshot,
+  QuickCaptureSubmit,
+} from "../../../shared/quick-capture-contracts";
 import { lockRendererZoom } from "../../lib/lock-renderer-zoom";
 import { resolveMainOut, resolvePreload } from "../../lib/resolve-preload";
 import { overlayBehavior } from "../file-ring-overlay/placement";
@@ -18,6 +21,8 @@ let draggingIn = false;
 /** macOS can focus the window mid-drag, so a drag that arrived after a blur is remembered rather than read from focus. */
 let dragAfterBlur = false;
 let blurClose: ReturnType<typeof setTimeout> | null = null;
+/** Clicking away hides the window, so the typed draft outlives it until a capture or Escape. */
+let kept: QuickCaptureSubmit | null = null;
 
 /** Starting a drag in Finder blurs the window first, so a blur waits this long for the drag to arrive before closing. */
 const BLUR_GRACE_MS = 1500;
@@ -57,6 +62,14 @@ export function quickCaptureWindow(): BrowserWindow | null {
 
 export function isQuickCaptureOpen(): boolean {
   return overlay !== null;
+}
+
+export function keepQuickCaptureDraft(next: QuickCaptureSubmit | null): void {
+  kept = next;
+}
+
+export function keptQuickCaptureDraft(): QuickCaptureSubmit | null {
+  return kept;
 }
 
 /** The file picker takes focus, so blur must not close the window while it is open. */

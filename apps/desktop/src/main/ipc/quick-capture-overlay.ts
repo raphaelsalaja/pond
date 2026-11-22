@@ -13,6 +13,8 @@ import { getPrefs } from "../core/prefs";
 import {
   closeQuickCapture,
   isQuickCaptureOpen,
+  keepQuickCaptureDraft,
+  keptQuickCaptureDraft,
   openQuickCapture,
   presentQuickCapture,
   quickCaptureOwnsSender,
@@ -22,7 +24,10 @@ import {
   setQuickCapturePicking,
 } from "../core/quick-capture-overlay";
 import { clipboardPrefill } from "../core/quick-capture-overlay/clipboard";
-import { quickCapturePlan } from "../core/quick-capture-overlay/draft";
+import {
+  keepableDraft,
+  quickCapturePlan,
+} from "../core/quick-capture-overlay/draft";
 import { resolveSaveDrop } from "../core/save-drag-session";
 import { resolveShellHint } from "../window";
 import { safeHandle } from "./helpers";
@@ -33,8 +38,10 @@ async function openWithSnapshot(): Promise<void> {
     listFolders(),
     resolveShellHint(),
   ]);
+  const draft = keptQuickCaptureDraft();
   await openQuickCapture({
-    clipboard: clipboardPrefill(clipboard),
+    clipboard: draft ? "" : clipboardPrefill(clipboard),
+    draft,
     folders: folders.map((folder) => ({
       id: folder.id,
       name: folder.name,
@@ -103,6 +110,7 @@ export function registerQuickCaptureIpc(): void {
       if (input.folderId && filed.length)
         await addSavesToFolder(input.folderId, filed);
       if (plan.draft) await captures.accept(plan.draft);
+      keepQuickCaptureDraft(null);
       return { count: (plan.draft?.items.length ?? 0) + filed.length };
     },
   );
@@ -110,8 +118,13 @@ export function registerQuickCaptureIpc(): void {
     assertOwner(event.sender.id);
     setQuickCaptureDrag(QuickCaptureDragSchema.parse(raw));
   });
+  safeHandle(QUICK_CAPTURE_IPC.keep, (event, raw) => {
+    assertOwner(event.sender.id);
+    keepQuickCaptureDraft(keepableDraft(QuickCaptureSubmitSchema.parse(raw)));
+  });
   safeHandle(QUICK_CAPTURE_IPC.dismiss, (event) => {
     assertOwner(event.sender.id);
+    keepQuickCaptureDraft(null);
     closeQuickCapture();
   });
 }

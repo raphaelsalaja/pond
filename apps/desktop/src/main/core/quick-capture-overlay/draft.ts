@@ -21,6 +21,15 @@ function webUrl(line: string): string | null {
   }
 }
 
+/** A draft with nothing typed or added is not worth restoring over a fresh clipboard. */
+export function keepableDraft(
+  input: QuickCaptureSubmit,
+): QuickCaptureSubmit | null {
+  return input.text.trim() || input.title?.trim() || input.paths.length
+    ? input
+    : null;
+}
+
 /**
  * Text that is only links, one per line, becomes link Saves that go through the normal URL import.
  * Anything else is kept exactly as typed in one note Save. Each file becomes its own Save.

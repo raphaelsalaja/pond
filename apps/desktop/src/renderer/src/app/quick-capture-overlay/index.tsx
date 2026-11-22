@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { PondCaptureApi } from "../../../../preload/quick-capture";
 import type { QuickCaptureSnapshot } from "../../../../shared/quick-capture-contracts";
 import { paintShell } from "../boot-shell";
+import { initialFields, type QuickCaptureFields } from "./fields";
 import { folderOptions } from "./folder-options";
 import styles from "./styles.module.css";
 
@@ -15,6 +16,13 @@ declare global {
 /** Long enough to read the confirmation before the window closes. */
 const DONE_MS = 700;
 
+const EMPTY: QuickCaptureFields = {
+  text: "",
+  title: "",
+  paths: [],
+  folderId: null,
+};
+
 function dismiss() {
   void window.pondCapture?.dismiss();
 }
@@ -25,10 +33,7 @@ function fileName(path: string): string {
 
 export function QuickCaptureOverlay() {
   const [snapshot, setSnapshot] = useState<QuickCaptureSnapshot | null>(null);
-  const [text, setText] = useState("");
-  const [title, setTitle] = useState("");
-  const [paths, setPaths] = useState<string[]>([]);
-  const [folderId, setFolderId] = useState<string | null>(null);
+  const [fields, setFields] = useState<QuickCaptureFields>(EMPTY);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -38,13 +43,15 @@ export function QuickCaptureOverlay() {
     () => folderOptions(snapshot?.folders ?? []),
     [snapshot],
   );
+  const { text, title, paths, folderId } = fields;
+  const locked = busy || Boolean(done);
 
   useEffect(() => {
     void window.pondCapture?.ready().then((next) => {
       if (!next) return;
       paintShell(next.shell);
       setSnapshot(next);
-      setText(next.clipboard);
+      setFields(initialFields(next));
       requestAnimationFrame(() => {
         void window.pondCapture?.present();
         textRef.current?.focus();
@@ -53,16 +60,20 @@ export function QuickCaptureOverlay() {
     });
   }, []);
 
-  function addPaths(next: string[]) {
-    setPaths((current) => [
-      ...current,
-      ...next.filter((path) => path && !current.includes(path)),
-    ]);
+  /** Main keeps every edit, so clicking away hides the window without losing the draft. */
+  function edit(patch: Partial<QuickCaptureFields>) {
+    const next = { ...fields, ...patch };
+    setFields(next);
     setError(null);
+    void window.pondCapture?.keep(next);
+  }
+
+  function addPaths(next: string[]) {
+    edit({ paths: [...new Set([...paths, ...next.filter(Boolean)])] });
   }
 
   async function submit() {
-    if (busy || done) return;
+    if (locked) return;
     if (!text.trim() && !paths.length) {
       setError("Add a link, some text, or a file.");
       return;
@@ -116,7 +127,8 @@ export function QuickCaptureOverlay() {
         const api = window.pondCapture;
         if (!api) return;
         void api.drag("drop");
-        addPaths([...event.dataTransfer.files].map(api.pathForFile));
+        if (!locked)
+          addPaths([...event.dataTransfer.files].map(api.pathForFile));
       }}
     >
       <form
@@ -134,8 +146,8 @@ export function QuickCaptureOverlay() {
             aria-label="Link or text"
             placeholder="Paste a link, type a note, or drop files"
             value={text}
-            onChange={(event) => setText(event.currentTarget.value)}
-            disabled={busy}
+            onChange={(event) => edit({ text: event.currentTarget.value })}
+            disabled={locked}
           />
         </Input.Root>
         {paths.length ? (
@@ -147,10 +159,9 @@ export function QuickCaptureOverlay() {
                   type="button"
                   className={styles.remove}
                   aria-label={`Remove ${fileName(path)}`}
+                  disabled={locked}
                   onClick={() =>
-                    setPaths((current) =>
-                      current.filter((entry) => entry !== path),
-                    )
+                    edit({ paths: paths.filter((entry) => entry !== path) })
                   }
                 >
                   ×
@@ -164,8 +175,8 @@ export function QuickCaptureOverlay() {
             aria-label="Title"
             placeholder="Title (Optional)"
             value={title}
-            onChange={(event) => setTitle(event.currentTarget.value)}
-            disabled={busy}
+            onChange={(event) => edit({ title: event.currentTarget.value })}
+            disabled={locked}
           />
         </Input.Root>
         <div className={styles.row}>
@@ -173,8 +184,10 @@ export function QuickCaptureOverlay() {
             className={styles.select}
             aria-label="Folder"
             value={folderId ?? ""}
-            onChange={(event) => setFolderId(event.currentTarget.value || null)}
-            disabled={busy}
+            onChange={(event) =>
+              edit({ folderId: event.currentTarget.value || null })
+            }
+            disabled={locked}
           >
             <option value="">Inbox</option>
             {options.map(({ folder, depth }) => (
@@ -187,7 +200,7 @@ export function QuickCaptureOverlay() {
             type="button"
             variant="secondary"
             size="sm"
-            disabled={busy}
+            disabled={locked}
             onClick={() =>
               void window.pondCapture?.pick().then((picked) => addPaths(picked))
             }
@@ -201,7 +214,7 @@ export function QuickCaptureOverlay() {
               </span>
             ) : (
               <span className={styles.hint} role="status">
-                {done ?? "⌘↵ to capture, Esc to close"}
+                {done ?? "⌘↵ to capture, Esc to cancel"}
               </span>
             )}
           </span>

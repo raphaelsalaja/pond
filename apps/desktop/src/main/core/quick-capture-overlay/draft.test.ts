@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { QuickCaptureSubmit } from "../../../shared/quick-capture-contracts";
-import { quickCapturePlan } from "./draft";
+import { keepableDraft, quickCapturePlan } from "./draft";
 
 const base = { text: "", paths: [], folderId: null };
 
@@ -104,5 +104,20 @@ describe("quickCapturePlan", () => {
     expect(() =>
       quickCapturePlan({ ...base, text: "  " }, "id", noSave),
     ).toThrow();
+  });
+});
+
+describe("keepableDraft", () => {
+  it("keeps anything typed or added", () => {
+    const typed = { ...base, text: "half a thought" };
+    expect(keepableDraft(typed)).toBe(typed);
+    expect(keepableDraft({ ...base, title: "T" })).not.toBeNull();
+    expect(keepableDraft({ ...base, paths: ["/a.png"] })).not.toBeNull();
+  });
+
+  it("drops a draft with nothing in it", () => {
+    expect(
+      keepableDraft({ ...base, text: "  ", title: " ", folderId: "f" }),
+    ).toBeNull();
   });
 });
