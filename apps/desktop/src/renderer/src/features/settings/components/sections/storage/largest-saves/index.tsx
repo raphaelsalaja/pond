@@ -48,8 +48,7 @@ function Filter({
       <Select.Trigger size="sm" aria-label={label}>
         <Select.Value>
           {(current: string) =>
-            options.find((option) => option.value === current)?.label ??
-            current
+            options.find((option) => option.value === current)?.label ?? current
           }
         </Select.Value>
       </Select.Trigger>

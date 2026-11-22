@@ -1,6 +1,6 @@
 import { MEDIA_TYPES, type MediaType, saves } from "@pond/schema/db";
 import { and, desc, eq, gt, isNull, or, type SQL, sql } from "drizzle-orm";
-import type { LargestSave } from "../../shared/storage-insights";
+import type { LargestSavesResult } from "../../shared/storage-insights";
 import type { Db } from "../db";
 
 export interface LargestSavesInput {
@@ -18,11 +18,7 @@ function isMediaType(value: string | null): value is MediaType {
 export function largestSaves(
   db: Db,
   input: LargestSavesInput,
-): {
-  saves: LargestSave[];
-  sources: string[];
-  mediaTypes: MediaType[];
-} {
+): LargestSavesResult {
   const sized = [isNull(saves.deletedAt), gt(saves.fileSize, 0)];
   const filters: (SQL | undefined)[] = [...sized];
   const search = input.search?.trim().toLowerCase();

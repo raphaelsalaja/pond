@@ -28,7 +28,7 @@ import type {
   ReasonFailure,
   ReasonResult,
 } from "./query-contracts-shared";
-import type { LargestSave } from "./storage-insights";
+import type { LargestSavesResult } from "./storage-insights";
 import type { UpdateNotice } from "./update-notice";
 
 export const MediaUnderstandInputSchema = z.strictObject({
@@ -300,11 +300,7 @@ export interface SystemQueryResults {
   "reset.clearVideoCache": OkResult<{ removed: number; freedBytes: number }>;
   "reset.clearThumbnails": OkResult<{ removed: number; freedBytes: number }>;
   "reset.factory": OkResult;
-  "storage.largestSaves": {
-    saves: LargestSave[];
-    sources: string[];
-    mediaTypes: MediaType[];
-  };
+  "storage.largestSaves": LargestSavesResult;
   "storage.snapshot": {
     pondBytes: number;
     breakdown: {

@@ -9,3 +9,9 @@ export interface LargestSave {
   fileCount: number;
   fileSize: number;
 }
+
+export interface LargestSavesResult {
+  saves: LargestSave[];
+  sources: string[];
+  mediaTypes: MediaType[];
+}
