@@ -214,6 +214,7 @@ export const queryOperationAccess = {
   "saves.importDataExport": "review",
   "saves.importClipboard": "review",
   "saves.stageClipboard": "review",
+  "saves.discardStagedClipboard": "review",
   "saves.importEagleLibrary": "review",
   "saves.importEaglePackage": "review",
   "saves.importFiles": "review",

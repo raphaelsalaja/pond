@@ -6,7 +6,10 @@ import {
 } from "@/features/saves/lib/import-feedback";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
 import { asUrlList, filePathsFromText } from "@/features/saves/lib/url-list";
-import { importFilesWithDuplicateReview } from "@/features/saves/state/duplicate-import-review";
+import {
+  importClipboardWithDuplicateReview,
+  importFilesWithDuplicateReview,
+} from "@/features/saves/state/duplicate-import-review";
 import { notify } from "@/shared/lib/toast";
 
 export type PasteImport =
@@ -119,15 +122,12 @@ async function importPlan(
       return result;
     }
     case "clipboard": {
-      const staged = await window.pond.query("saves.stageClipboard", {});
-      if (!staged.ok) return { ids: [], failed: 1 };
       const reply = ImportReplySchema.parse(
-        await importFilesWithDuplicateReview({
-          ...filesInput(staged.paths, folderId),
-          origin: "clipboard",
-        }),
+        await importClipboardWithDuplicateReview(
+          folderId ? { folderIds: [folderId] } : {},
+        ),
       );
-      return replyResult(reply, staged.paths.length);
+      return replyResult(reply, 1);
     }
   }
 }

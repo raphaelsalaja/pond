@@ -39,6 +39,8 @@ export const savesImportQueries = {
     savesImportSourceQueries["saves.importEagleLibrary"],
   "saves.importClipboard": savesImportClipboardQueries["saves.importClipboard"],
   "saves.stageClipboard": savesImportClipboardQueries["saves.stageClipboard"],
+  "saves.discardStagedClipboard":
+    savesImportClipboardQueries["saves.discardStagedClipboard"],
   "saves.startDrag": savesImportTransferQueries["saves.startDrag"],
   "saves.quickAdd": savesImportSourceQueries["saves.quickAdd"],
   "saves.importBookmarks": savesImportSourceQueries["saves.importBookmarks"],

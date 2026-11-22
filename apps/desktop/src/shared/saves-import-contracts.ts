@@ -99,6 +99,7 @@ export interface SavesImportQueryInputs {
   "saves.pickEagleLibrary": EmptyInput;
   "saves.importClipboard": { folderId?: string | null };
   "saves.stageClipboard": EmptyInput;
+  "saves.discardStagedClipboard": { paths: string[] };
   "saves.importBookmarks": EmptyInput;
   "saves.importMymind": EmptyInput;
   "saves.importDataExport": EmptyInput;
@@ -172,6 +173,7 @@ export interface SavesImportQueryResults {
   "saves.stageClipboard":
     | { ok: true; paths: string[] }
     | { ok: false; error: string };
+  "saves.discardStagedClipboard": { ok: true };
   "saves.importBookmarks": CancellableResult<SavesImportCounts>;
   "saves.importMymind": CancellableResult<SavesImportCounts>;
   "saves.importDataExport": CancellableResult<DataExportImportCounts>;

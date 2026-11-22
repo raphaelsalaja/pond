@@ -5,6 +5,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import {
   closeDuplicateImportReview,
+  importClipboardWithDuplicateReview,
   importFilesWithDuplicateReview,
 } from "@/features/saves/state/duplicate-import-review";
 import { DuplicateImportReviewHost } from "./";
@@ -47,6 +48,7 @@ const query = vi.fn(async (name: string, _args?: WireJson) => {
         ],
       },
     ];
+  if (name === "saves.stageClipboard") return { ok: true, paths };
   if (name === "saves.importFiles") return { ok: true, ids: [] };
   return [];
 });
@@ -94,11 +96,14 @@ function button(name: string) {
   return match;
 }
 
-async function startImport() {
-  let pending: ReturnType<typeof importFilesWithDuplicateReview> | undefined;
+async function startImport(
+  start: () => Promise<unknown> = () =>
+    importFilesWithDuplicateReview({ paths }),
+) {
+  let pending: Promise<unknown> | undefined;
   await act(async () => {
     root.render(<DuplicateImportReviewHost />);
-    pending = importFilesWithDuplicateReview({ paths });
+    pending = start();
   });
   await vi.waitFor(() => {
     expect(dialog().textContent).toContain("1600 × 1000");
@@ -106,8 +111,12 @@ async function startImport() {
   return { pending };
 }
 
+function argsFor(operation: string) {
+  return query.mock.calls.find(([name]) => name === operation)?.[1];
+}
+
 function importArgs() {
-  return query.mock.calls.find(([name]) => name === "saves.importFiles")?.[1];
+  return argsFor("saves.importFiles");
 }
 
 it("compares the existing save with the new file", async () => {
@@ -182,4 +191,27 @@ it("sends an explicit restore only for the match in Trash", async () => {
   expect(importArgs()).toMatchObject({
     duplicateDecisions: { [first]: "use-existing", [second]: "restore" },
   });
+});
+
+it("discards the staged clipboard image when the review is cancelled", async () => {
+  const { pending } = await startImport(() =>
+    importClipboardWithDuplicateReview({}),
+  );
+  await act(async () => closeDuplicateImportReview());
+  await pending;
+  expect(importArgs()).toBeUndefined();
+  expect(argsFor("saves.discardStagedClipboard")).toEqual({ paths });
+});
+
+it("discards only the staged clipboard images it didn't import", async () => {
+  const { pending } = await startImport(() =>
+    importClipboardWithDuplicateReview({}),
+  );
+  await act(async () => button("Next").click());
+  await vi.waitFor(() => expect(dialog().textContent).toContain("2 of 2"));
+  await act(async () => button("Keep Both").click());
+  await act(async () => button("Import").click());
+  await pending;
+  expect(importArgs()).toMatchObject({ origin: "clipboard" });
+  expect(argsFor("saves.discardStagedClipboard")).toEqual({ paths: [first] });
 });

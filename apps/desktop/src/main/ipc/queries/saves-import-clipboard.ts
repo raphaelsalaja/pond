@@ -1,11 +1,16 @@
-import { mkdtemp, writeFile } from "node:fs/promises";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { clipboard, nativeImage } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
 import { importFiles } from "../../core/import-files";
-import { NullableStringParam, type QueryHandlerMap, query } from "./params";
+import {
+  NullableStringParam,
+  type QueryHandlerMap,
+  query,
+  StringListParam,
+} from "./params";
 import { normalizeClipboardFilePaths } from "./saves-import-input";
 
 async function clipboardFilePaths(): Promise<string[]> {
@@ -47,6 +52,9 @@ export async function readClipboardImage() {
   return nativeImage.createEmpty();
 }
 
+/** Only these temporary PNGs may be discarded, never files copied from Finder. */
+const stagedImages = new Set<string>();
+
 /** The pasted files, or the pasted image written to a temporary PNG, so they can go through duplicate review before import. */
 async function stageClipboard(): Promise<
   { ok: true; paths: string[] } | { ok: false; error: string }
@@ -59,11 +67,24 @@ async function stageClipboard(): Promise<
     const directory = await mkdtemp(join(tmpdir(), "pond-clip-"));
     const path = join(directory, "clipboard.png");
     await writeFile(path, image.toPNG());
+    stagedImages.add(path);
     return { ok: true, paths: [path] };
   } catch (error) {
     log.warn("[pond ipc] stageClipboard failed", error);
     return { ok: false, error: "clipboard_write_failed" };
   }
+}
+
+async function discardStagedClipboard(paths: readonly string[]) {
+  for (const path of paths) {
+    if (!stagedImages.delete(path)) continue;
+    try {
+      await rm(dirname(path), { recursive: true, force: true });
+    } catch (error) {
+      log.warn("[pond ipc] discardStagedClipboard failed", error);
+    }
+  }
+  return { ok: true as const };
 }
 
 export const savesImportClipboardQueries = {
@@ -103,4 +124,8 @@ export const savesImportClipboardQueries = {
     },
   ),
   "saves.stageClipboard": query(z.object({}), () => stageClipboard()),
+  "saves.discardStagedClipboard": query(
+    z.object({ paths: StringListParam }),
+    ({ paths }) => discardStagedClipboard(paths),
+  ),
 } satisfies QueryHandlerMap;
