@@ -132,7 +132,9 @@ export function QuickCaptureOverlay() {
       className={styles.root}
       onKeyDown={(event) => {
         /** Escape in the portaled folder list closes the list, not the window. */
-        if (!event.currentTarget.contains(event.target as Node)) return;
+        const target = event.target;
+        if (!(target instanceof Node) || !event.currentTarget.contains(target))
+          return;
         if (event.key === "Escape") {
           event.preventDefault();
           dismiss();
