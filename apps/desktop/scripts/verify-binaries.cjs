@@ -23,7 +23,7 @@ async function verify(
   if (platform === "win32") verifySharpWindowsRuntime(resourcesDir, arch);
   if (platform === "win32" || platform === "linux") assertAppIcon(context);
   assertTintIcons(resourcesDir);
-  verifyOnnxRuntime(resourcesDir, platform, arch);
+  const onnxShipped = verifyOnnxRuntime(resourcesDir, platform, arch);
   const ffmpegPath = join(resourcesDir, "bin", ffmpegName(platform));
   const nativeHostPath = join(resourcesDir, "bin", nativeHostName(platform));
 
@@ -40,7 +40,7 @@ async function verify(
       );
     }
   }
-  if (process.platform === platform && arch === process.arch) {
+  if (onnxShipped && process.platform === platform && arch === process.arch) {
     const packageDir = onnxPackageDir(resourcesDir);
     const result = runOnnx(packageDir);
     if (result.error || result.status !== 0) {
@@ -355,8 +355,12 @@ const ONNX_LIBRARY = {
   win32: "onnxruntime.dll",
 };
 
+/** onnxruntime-node 1.30 publishes no Intel Mac binary, so there is nothing to bundle. */
+const UNPUBLISHED_ONNX_TARGETS = new Set(["darwin-x64"]);
+
 function verifyOnnxRuntime(resourcesDir, platform, arch) {
-  if (arch === "universal" || !ONNX_LIBRARY[platform]) return;
+  if (arch === "universal" || !ONNX_LIBRARY[platform]) return false;
+  if (UNPUBLISHED_ONNX_TARGETS.has(`${platform}-${arch}`)) return false;
   const directory = join(
     onnxPackageDir(resourcesDir),
     "bin",
@@ -367,6 +371,7 @@ function verifyOnnxRuntime(resourcesDir, platform, arch) {
   for (const file of ["onnxruntime_binding.node", ONNX_LIBRARY[platform]]) {
     assertPresent(join(directory, file), `onnxruntime ${file}`);
   }
+  return true;
 }
 
 function removeSharpPackages(root, arch) {
