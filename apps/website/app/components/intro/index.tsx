@@ -2,7 +2,12 @@
 
 import { Wordmark } from "@pond/ui/wordmark";
 import { useBrowser, usePlatform } from "@/lib/platform";
-import { extensionUrl, otherDownloads, primaryDownload } from "@/lib/release";
+import {
+  extensionUrl,
+  otherDownloads,
+  primaryDownload,
+  type Release,
+} from "@/lib/release";
 import { Cta } from "../cta";
 import styles from "./styles.module.css";
 
@@ -11,10 +16,14 @@ const TWITTER = "https://x.com/raphaelsalaja";
 const BUY_ME_A_COFFEE = "https://buymeacoffee.com/raphaelsalaja";
 const RESPONSIBLE_USE = `${GITHUB}/blob/main/RESPONSIBLE-USE.md`;
 
-export function Intro() {
+interface IntroProps {
+  release: Release | null;
+}
+
+export function Intro({ release }: IntroProps) {
   const platform = usePlatform();
   const browser = useBrowser();
-  const primary = primaryDownload(platform);
+  const primary = primaryDownload(platform, release);
   return (
     <header className={styles.intro}>
       <h1 className={styles.title}>
@@ -32,7 +41,7 @@ export function Intro() {
           </Cta>
         </div>
         <div className={styles.links}>
-          {otherDownloads(platform).map((download) => (
+          {otherDownloads(platform, release).map((download) => (
             <a
               key={download.label}
               className={styles.link}
