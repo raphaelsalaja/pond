@@ -1,5 +1,5 @@
 import { MANUAL_NOT_SENSITIVE_MODEL } from "@pond/schema/content-safety";
-import type { MenuItemSpec } from "@pond/ui";
+import { Dialog, type MenuItemSpec } from "@pond/ui";
 import { isValidElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import "@/app/effects/save-library-bridge";
@@ -31,6 +31,7 @@ import {
   type OpenWithApp,
   openWithKind,
 } from "./menu";
+import { createSaveMenuContext } from "./menu/context";
 
 function sectionItems(
   items: MenuItemSpec[],
@@ -103,6 +104,21 @@ function fileSave(overrides: Partial<Save> = {}): Save {
     deletedAt: null,
     ...overrides,
   };
+}
+
+function videoSave(): Save {
+  return fileSave({
+    mediaType: "video",
+    files: [
+      {
+        kind: "video",
+        path: "video-1.mp4",
+        mimeType: "video/mp4",
+        sha256: "mp4",
+        size: 100,
+      },
+    ],
+  });
 }
 
 function photoSave(id: string): Save {
@@ -368,6 +384,52 @@ describe("buildSaveMenu", () => {
       "Lossless",
       "Quality 85",
     ]);
+  });
+
+  it("confirms before replacing videos with compressed copies", async () => {
+    const query = vi.fn(async (name: string, _input?: unknown) =>
+      name === "conversion.compressVideos" ? { id: "job-1" } : null,
+    );
+    const confirm = vi.spyOn(Dialog, "confirm").mockImplementation(() => {});
+    const items = buildSaveMenu(videoSave(), { clipboardEmpty: true });
+    const exports = sectionItems(items, "Export") ?? [];
+    const compress = visibleLeafItems(exports).find(
+      (item) => "label" in item && item.label === "Compress Videos",
+    );
+    if (!compress || !("onClick" in compress))
+      throw new Error("Missing Compress Videos");
+    vi.stubGlobal("pond", { query });
+
+    compress.onClick?.();
+
+    expect(query).not.toHaveBeenCalled();
+    const options = confirm.mock.calls[0]?.[0];
+    expect(options?.description).toContain("can't be undone");
+    await options?.onConfirm({ checked: false });
+    expect(query).toHaveBeenCalledWith("conversion.compressVideos", {
+      ids: ["file-save"],
+      quality: "balanced",
+    });
+  });
+
+  it("offers Compress Videos only on macOS", async () => {
+    const context = createSaveMenuContext(videoSave(), {
+      clipboardEmpty: true,
+    });
+    if (!context) throw new Error("Missing menu context");
+    Object.defineProperty(navigator, "platform", {
+      value: "Win32",
+      configurable: true,
+    });
+    try {
+      vi.resetModules();
+      const { buildExportItems } = await import("./menu/export");
+      expect(topLevelLabels(buildExportItems(context))).not.toContain(
+        "Compress Videos",
+      );
+    } finally {
+      Reflect.deleteProperty(navigator, "platform");
+    }
   });
 
   it("shows the whole post from a split Save", () => {

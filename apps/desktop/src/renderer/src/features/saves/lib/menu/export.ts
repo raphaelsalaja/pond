@@ -14,13 +14,14 @@ import {
   IconTableDownload,
   IconVideo,
 } from "@pond/icons";
-import type { MenuItemSpec } from "@pond/ui";
+import { Dialog, type MenuItemSpec } from "@pond/ui";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
 import {
   exportSelectionCsv,
   exportSelectionFiles,
 } from "@/features/saves/lib/selection";
 import { formatBytes, formatPlural } from "@/shared/lib/format";
+import { IS_MAC } from "@/shared/lib/platform";
 import { shortcutGlyphs } from "@/shared/lib/shortcuts";
 import { notify } from "@/shared/lib/toast";
 import { glyph } from "./shared";
@@ -38,6 +39,16 @@ function compressibleVideoCount(context: SaveMenuContext): number {
   return context.saves.filter((save) =>
     save.files.some((file) => /\.(mp4|m4v|mov)$/i.test(file.path)),
   ).length;
+}
+
+function confirmCompressVideos(ids: string[]): void {
+  Dialog.confirm({
+    title: "Compress Videos",
+    description:
+      "Pond replaces the original videos with smaller copies. This can't be undone.",
+    confirmLabel: "Compress",
+    onConfirm: () => compressVideos(ids),
+  });
 }
 
 function compressVideos(ids: string[]): void {
@@ -245,8 +256,9 @@ export function buildExportItems(context: SaveMenuContext): MenuItemSpec[] {
     {
       label: "Compress Videos",
       icon: glyph(IconVideo),
-      hidden: compressibleVideoCount(context) === 0,
-      onClick: () => compressVideos(ids),
+      /** Windows and Linux may lack the HEVC decoder the compressed copies need. */
+      hidden: !IS_MAC || compressibleVideoCount(context) === 0,
+      onClick: () => confirmCompressVideos(ids),
     },
     {
       type: "submenu",
