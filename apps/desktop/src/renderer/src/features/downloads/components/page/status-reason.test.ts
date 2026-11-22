@@ -173,8 +173,8 @@ describe("downloadStatusReason", () => {
   });
 
   it("says what went wrong instead of counting attempts", () => {
-    expect(reason(dead("TerminalError: scrape returned no data"))).toBe(
-      "The page had nothing to save. It may have been deleted or made private.",
+    expect(reason(dead("TransientError: scrape returned no data", 5))).toBe(
+      "Pond couldn't read this page. It may have been deleted, made private, or use a layout Pond doesn't support yet. Gave up after 5 attempts.",
     );
     expect(reason(dead("TerminalError: web fetch 404"))).toBe(
       "The page wasn't found. It may have been deleted.",
