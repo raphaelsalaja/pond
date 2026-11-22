@@ -1,44 +1,43 @@
 import { describe, expect, it } from "vitest";
 import { type ClipboardReader, clipboardPrefill } from "./clipboard";
 
+function raw(type: string): string {
+  return `electron application/osclipboard;format="${type}"`;
+}
+
 function reader(
   text: string,
-  types: string[] = [],
   formats: string[] = ["text/plain"],
 ): ClipboardReader {
   return {
-    has: (format) => types.includes(format),
-    availableFormats: () => formats,
-    readText: () => text,
+    has: async (format) => formats.includes(format),
+    readText: async () => text,
   };
 }
 
 describe("clipboardPrefill", () => {
-  it("prefills plain copied text", () => {
-    expect(clipboardPrefill(reader("https://a.com"))).toBe("https://a.com");
+  it("prefills plain copied text", async () => {
+    const plain = reader("https://a.com");
+    expect(await clipboardPrefill(plain)).toBe("https://a.com");
   });
 
-  it("skips a secret a password manager marked as concealed", () => {
-    expect(
-      clipboardPrefill(reader("hunter2", ["org.nspasteboard.ConcealedType"])),
-    ).toBe("");
+  it("skips a secret a password manager marked as concealed", async () => {
+    const marked = reader("hunter2", [raw("org.nspasteboard.ConcealedType")]);
+    expect(await clipboardPrefill(marked)).toBe("");
   });
 
-  it("skips transient clipboard content", () => {
-    expect(
-      clipboardPrefill(reader("otp", ["org.nspasteboard.TransientType"])),
-    ).toBe("");
+  it("skips transient clipboard content", async () => {
+    const marked = reader("otp", [raw("org.nspasteboard.TransientType")]);
+    expect(await clipboardPrefill(marked)).toBe("");
   });
 
-  it("skips content listed as private in the available formats", () => {
-    expect(
-      clipboardPrefill(
-        reader("secret", [], ["text/plain", "x-kde-passwordManagerHint"]),
-      ),
-    ).toBe("");
+  it("skips content a password manager marked with a MIME hint", async () => {
+    const marked = reader("secret", ["x-kde-passwordManagerHint"]);
+    expect(await clipboardPrefill(marked)).toBe("");
   });
 
-  it("caps long text", () => {
-    expect(clipboardPrefill(reader("a".repeat(100_010)))).toHaveLength(100_000);
+  it("caps long text", async () => {
+    const long = reader("a".repeat(100_010));
+    expect(await clipboardPrefill(long)).toHaveLength(100_000);
   });
 });

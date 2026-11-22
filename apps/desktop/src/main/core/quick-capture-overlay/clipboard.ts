@@ -9,16 +9,24 @@ const PRIVATE_CLIPBOARD_TYPES = [
 const MAX_PREFILL = 100_000;
 
 export interface ClipboardReader {
-  /** Matches raw platform types such as macOS pasteboard UTIs. */
-  has(format: string): boolean;
-  availableFormats(): string[];
-  readText(): string;
+  has(mimetype: string): Promise<boolean>;
+  readText(): Promise<string>;
 }
 
-export function clipboardPrefill(reader: ClipboardReader): string {
-  const formats = new Set(reader.availableFormats());
-  const hidden = PRIVATE_CLIPBOARD_TYPES.some(
-    (type) => formats.has(type) || reader.has(type),
-  );
-  return hidden ? "" : reader.readText().slice(0, MAX_PREFILL);
+/** Electron only reports raw platform types, such as macOS pasteboard UTIs, through this custom format. */
+function rawClipboardFormat(type: string): string {
+  return `electron application/osclipboard;format="${type}"`;
+}
+
+function privateFormats(type: string): string[] {
+  return [type, rawClipboardFormat(type)];
+}
+
+export async function clipboardPrefill(
+  reader: ClipboardReader,
+): Promise<string> {
+  const formats = PRIVATE_CLIPBOARD_TYPES.flatMap(privateFormats);
+  const marked = await Promise.all(formats.map((format) => reader.has(format)));
+  if (marked.includes(true)) return "";
+  return (await reader.readText()).slice(0, MAX_PREFILL);
 }

@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { clipboard, dialog } from "electron";
+import log from "electron-log/main.js";
 import {
   QUICK_CAPTURE_IPC,
   QuickCaptureDragSchema,
@@ -32,6 +33,15 @@ import { resolveSaveDrop } from "../core/save-drag-session";
 import { resolveShellHint } from "../window";
 import { safeHandle } from "./helpers";
 
+async function readPrefill(): Promise<string> {
+  try {
+    return await clipboardPrefill(clipboard);
+  } catch (error) {
+    log.warn("[pond ipc] quick capture clipboard read failed", error);
+    return "";
+  }
+}
+
 async function openWithSnapshot(): Promise<void> {
   const [prefs, folders, shell] = await Promise.all([
     getPrefs(),
@@ -40,7 +50,7 @@ async function openWithSnapshot(): Promise<void> {
   ]);
   const draft = keptQuickCaptureDraft();
   await openQuickCapture({
-    clipboard: draft ? "" : clipboardPrefill(clipboard),
+    clipboard: draft ? "" : await readPrefill(),
     draft,
     folders: folders.map((folder) => ({
       id: folder.id,
