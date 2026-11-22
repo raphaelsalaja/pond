@@ -151,3 +151,15 @@ it("applies the choice to every remaining file", async () => {
     duplicateDecisions: { [first]: "keep-both", [second]: "keep-both" },
   });
 });
+
+it("sends an explicit restore only for the match in Trash", async () => {
+  const { pending } = await startImport();
+  await act(async () =>
+    dialog().querySelector<HTMLElement>('[role="checkbox"]')?.click(),
+  );
+  await act(async () => button("Import").click());
+  await pending;
+  expect(importArgs()).toMatchObject({
+    duplicateDecisions: { [first]: "use-existing", [second]: "restore" },
+  });
+});

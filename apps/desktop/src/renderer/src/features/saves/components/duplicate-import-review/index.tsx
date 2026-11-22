@@ -2,6 +2,7 @@ import { Badge, Button, Checkbox, Dialog, Toggle, ToggleGroup } from "@pond/ui";
 import type {
   DuplicateImportCandidate,
   DuplicateImportChoice,
+  DuplicateImportDecision,
 } from "@shared/saves-import-contracts";
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { CardThumb } from "@/features/saves/components/card/media";
@@ -98,7 +99,7 @@ function DuplicateImportReview({
   const [choice, setChoice] = useState<DuplicateImportChoice>("use-existing");
   const [applyToAll, setApplyToAll] = useState(false);
   const [decisions, setDecisions] = useState<
-    Record<string, DuplicateImportChoice>
+    Record<string, DuplicateImportDecision>
   >({});
   const candidate = candidates[index];
   const existingId = candidate?.existingId;
@@ -121,7 +122,8 @@ function DuplicateImportReview({
   const submit = () => {
     const next = { ...decisions };
     for (const item of applyToAll ? candidates.slice(index) : [candidate])
-      next[item.path] = choice;
+      next[item.path] =
+        choice === "use-existing" && item.inTrash ? "restore" : choice;
     if (last) {
       completeDuplicateImportReview(next);
       return;

@@ -1,6 +1,6 @@
 import type {
   DuplicateImportCandidate,
-  DuplicateImportChoice,
+  DuplicateImportDecision,
 } from "@shared/saves-import-contracts";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
@@ -8,7 +8,7 @@ import { Store } from "@tanstack/store";
 interface DuplicateImportReviewRequest {
   id: string;
   candidates: DuplicateImportCandidate[];
-  resolve: (decisions: Record<string, DuplicateImportChoice> | null) => void;
+  resolve: (decisions: Record<string, DuplicateImportDecision> | null) => void;
 }
 
 const store = new Store<DuplicateImportReviewRequest | null>(null);
@@ -24,7 +24,7 @@ export function closeDuplicateImportReview(): void {
 }
 
 export function completeDuplicateImportReview(
-  decisions: Record<string, DuplicateImportChoice>,
+  decisions: Record<string, DuplicateImportDecision>,
 ): void {
   const request = store.state;
   store.setState(() => null);
@@ -33,7 +33,7 @@ export function completeDuplicateImportReview(
 
 function promptForDuplicateImport(
   candidates: DuplicateImportCandidate[],
-): Promise<Record<string, DuplicateImportChoice> | null> {
+): Promise<Record<string, DuplicateImportDecision> | null> {
   return new Promise((resolve) => {
     store.setState(() => ({
       id: crypto.randomUUID(),

@@ -31,11 +31,14 @@ export interface DuplicateImportCandidate {
   filename: string;
   existingId: string;
   existingTitle: string | null;
-  /** The match is in Trash, so using it restores it. */
+  /** The match is in Trash; only an explicit `restore` decision brings it back. */
   inTrash: boolean;
 }
 
 export type DuplicateImportChoice = "use-existing" | "keep-both";
+
+/** A per-file review decision; `use-existing` never pulls a Save out of Trash, so restoring has its own choice. */
+export type DuplicateImportDecision = DuplicateImportChoice | "restore";
 
 export interface DataExportImportCounts extends SavesImportCounts {
   platforms: string[];
@@ -62,7 +65,7 @@ export interface SavesImportQueryInputs {
     tags?: string[];
     folderIds?: string[];
     duplicatePolicy?: DuplicateImportChoice;
-    duplicateDecisions?: Record<string, DuplicateImportChoice>;
+    duplicateDecisions?: Record<string, DuplicateImportDecision>;
     origin?: "files" | "clipboard";
   };
   "saves.reviewImportDuplicates": { paths: string[] };
