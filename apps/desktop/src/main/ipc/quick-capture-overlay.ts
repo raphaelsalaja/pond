@@ -21,20 +21,20 @@ import {
   setQuickCaptureDrag,
   setQuickCapturePicking,
 } from "../core/quick-capture-overlay";
+import { clipboardPrefill } from "../core/quick-capture-overlay/clipboard";
 import { quickCapturePlan } from "../core/quick-capture-overlay/draft";
 import { resolveSaveDrop } from "../core/save-drag-session";
 import { resolveShellHint } from "../window";
 import { safeHandle } from "./helpers";
 
 async function openWithSnapshot(): Promise<void> {
-  const [prefs, folders, shell, text] = await Promise.all([
+  const [prefs, folders, shell] = await Promise.all([
     getPrefs(),
     listFolders(),
     resolveShellHint(),
-    clipboard.readText(),
   ]);
   await openQuickCapture({
-    clipboard: text.slice(0, 100_000),
+    clipboard: clipboardPrefill(clipboard),
     folders: folders.map((folder) => ({
       id: folder.id,
       name: folder.name,
