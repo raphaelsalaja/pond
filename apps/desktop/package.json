@@ -160,6 +160,7 @@
     "warcio": "^2.4.12",
     "which": "^7.0.0",
     "yauzl": "^3.4.0",
+    "yazl": "^3.3.1",
     "zod": "catalog:"
   },
   "devDependencies": {
@@ -175,6 +176,7 @@
     "@types/three": "^0.186.0",
     "@types/which": "^3.0.4",
     "@types/yauzl": "^2.10.3",
+    "@types/yazl": "^3.3.1",
     "@vitejs/plugin-react": "^6.1.1",
     "drizzle-kit": "^0.31.10",
     "electron": "^44.4.0",

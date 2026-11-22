@@ -1,3 +1,5 @@
+import { mkdir, mkdtemp, rm, stat } from "node:fs/promises";
+import { basename, dirname, join } from "node:path";
 import {
   folders,
   savedViews,
@@ -12,7 +14,8 @@ import { inArray } from "drizzle-orm";
 import { getDb } from "../db";
 import { saveDir } from "../paths";
 import { exportEaglePackage } from "./eagle-package";
-import { exportFiles } from "./export-files";
+import { exportFiles, safeName, sharedFolderPath } from "./export-files";
+import { zipDirectory } from "./export-zip";
 import { runLibraryTransfer } from "./library-transfers";
 import { getPrefs } from "./prefs";
 
@@ -178,6 +181,74 @@ export function exportSavesToDirectory(
   options: { includeDerived?: boolean } = {},
 ) {
   return runLibraryTransfer(() => exportSaves(ids, directory, options));
+}
+
+function localDate(date: Date) {
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+/** Names an export after the folder or Save it holds, e.g. "Geoid (Pond Export 2026-11-22)". */
+export async function exportFilesName(
+  ids: readonly string[],
+  now = new Date(),
+) {
+  const selection = await exportSelection(ids);
+  const folder = sharedFolderPath(selection.items, selection.folders).at(-1);
+  const only = selection.items.length === 1 ? selection.items[0]?.save : null;
+  const subject = folder ?? (only ? safeName(only.title || only.id) : null);
+  return subject
+    ? `${subject} (Pond Export ${localDate(now)})`
+    : `Pond Export ${localDate(now)}`;
+}
+
+/** The first of `name`, `name 2`, `name 3`… that doesn't exist in `parent`. */
+export async function availableExportPath(
+  parent: string,
+  name: string,
+  extension = "",
+) {
+  for (let count = 1; ; count += 1) {
+    const path = join(
+      parent,
+      `${count === 1 ? name : `${name} ${count}`}${extension}`,
+    );
+    if (!(await stat(path).catch(() => null))) return path;
+  }
+}
+
+export function exportSavesToFolder(
+  ids: readonly string[],
+  destination: string,
+) {
+  return runLibraryTransfer(async () => {
+    await mkdir(destination, { recursive: true });
+    const result = await exportFiles({
+      directory: destination,
+      startAtSharedFolder: true,
+      ...(await exportSelection(ids)),
+    });
+    return { ...result, path: destination };
+  });
+}
+
+export function exportSavesToZip(ids: readonly string[], destination: string) {
+  return runLibraryTransfer(async () => {
+    const staging = await mkdtemp(join(dirname(destination), ".pond-export-"));
+    try {
+      const folder = join(staging, basename(destination, ".zip"));
+      await mkdir(folder);
+      const result = await exportFiles({
+        directory: folder,
+        startAtSharedFolder: true,
+        ...(await exportSelection(ids)),
+      });
+      await zipDirectory(folder, destination);
+      return { exported: result.exported, path: destination };
+    } finally {
+      await rm(staging, { recursive: true, force: true });
+    }
+  });
 }
 
 export function exportSavesToEaglePackage(

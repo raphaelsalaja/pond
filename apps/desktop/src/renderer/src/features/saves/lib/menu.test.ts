@@ -340,6 +340,7 @@ describe("buildSaveMenu", () => {
       ),
     ).toEqual([
       "Export Files",
+      "Export Files as ZIP",
       "Export Converted Files",
       "Export Eagle Package",
       "Export to CSV",
@@ -487,6 +488,7 @@ describe("buildSaveMenu", () => {
     ).toBe(true);
     expect(visibleLabels(sectionItems(items, "Export") ?? [])).toEqual([
       "Export Files",
+      "Export Files as ZIP",
       "Export Converted Files",
       "Export as WebP",
       "Export Eagle Package",

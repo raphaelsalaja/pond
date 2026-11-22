@@ -14,7 +14,7 @@ export interface SavesExportQueryInputs {
   "saves.exportPackage": SavesIdsInput;
   "saves.exportFile": SavesFileInput;
   "saves.share": { id: string; fileIndex?: number };
-  "saves.exportFiles": SavesIdsInput;
+  "saves.exportFiles": SavesIdsInput & { zip?: boolean };
   "saves.exportWebp": SavesIdsInput;
   "saves.exportCsv": SavesIdsInput;
 }
@@ -33,7 +33,11 @@ export interface SavesExportQueryResults {
     { path: string }
   >;
   "saves.share": OkResult;
-  "saves.exportFiles": CancellableResult<{ exported: number; dir: string }>;
+  "saves.exportFiles": CancellableResult<{
+    exported: number;
+    dir: string;
+    path: string;
+  }>;
   "saves.exportWebp": CancellableResult<{ exported: number; dir: string }>;
   "saves.exportCsv": CancellableResult<{ count: number; path: string }>;
 }

@@ -7,8 +7,9 @@ import type { TransferRequest } from "../../shared/transfer-contracts";
 import { libraryRoot } from "../paths";
 import { importEaglePackage } from "./eagle-package";
 import {
-  exportSavesToDirectory,
   exportSavesToEaglePackage,
+  exportSavesToFolder,
+  exportSavesToZip,
 } from "./export-saves";
 import { copyPackageToLibrary, packageLibrary } from "./library-transfer-files";
 import { runLibraryTransfer } from "./library-transfers";
@@ -52,7 +53,9 @@ async function executeRequest(request: TransferRequest) {
     case "export_eagle_package":
       return exportSavesToEaglePackage(request.ids ?? [], request.destination);
     case "export_files":
-      return exportSavesToDirectory(request.ids ?? [], request.destination);
+      return request.destination.endsWith(".zip")
+        ? exportSavesToZip(request.ids ?? [], request.destination)
+        : exportSavesToFolder(request.ids ?? [], request.destination);
     case "export_package":
       return exportPondPackage(request.ids ?? [], request.destination);
     case "copy_library":

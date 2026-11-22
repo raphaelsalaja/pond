@@ -41,8 +41,9 @@ const ExportReplySchema = z
     exported: z.number().catch(0),
     count: z.number().catch(0),
     reason: z.string().nullish().catch(null),
+    path: z.string().nullish().catch(null),
   })
-  .catch({ ok: false, exported: 0, count: 0, reason: null });
+  .catch({ ok: false, exported: 0, count: 0, reason: null, path: null });
 
 const PublicUrlReplySchema = z
   .object({
@@ -222,11 +223,15 @@ export async function copyFilePathsForSelection(
 
 export async function exportSelectionFiles(
   ids: readonly string[],
+  options: { zip?: boolean } = {},
 ): Promise<SelectionActionResult> {
   if (ids.length === 0) return { ok: false, message: "Nothing selected" };
   const job = statusFeed.start("Exporting files");
   const result = ExportReplySchema.parse(
-    await window.pond.query("saves.exportFiles", { ids: [...ids] }),
+    await window.pond.query("saves.exportFiles", {
+      ids: [...ids],
+      zip: options.zip,
+    }),
   );
   if (!result.ok) {
     if (result.reason === "cancelled") {
@@ -238,6 +243,18 @@ export async function exportSelectionFiles(
   }
   const message = `Exported ${formatPlural(result.exported, { one: "file", other: "files" })}`;
   statusFeed.done(job, message);
+  const { path } = result;
+  notify({
+    id: "export-files",
+    title: message,
+    action: path
+      ? {
+          label: "Show in Finder",
+          onClick: () =>
+            void window.pond.query("transferJobs.reveal", { path }),
+        }
+      : undefined,
+  });
   return { ok: true, message };
 }
 

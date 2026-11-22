@@ -152,6 +152,8 @@ export function buildFolderRowMenuItems(input: FolderRowMenuInput) {
         );
     },
     onExportFiles: () => void exportFolderFiles(input.exportIds),
+    onExportFilesZip: () =>
+      void exportFolderFiles(input.exportIds, { zip: true }),
     onExportCsv: () => void exportFolderCsv(input.exportIds),
     onExportEaglePackage: () => void exportFolderEaglePackage(input.exportIds),
     onExportPackage: () => void exportFolderPackage(input.exportIds),
