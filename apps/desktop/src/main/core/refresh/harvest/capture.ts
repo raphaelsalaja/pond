@@ -187,7 +187,7 @@ function hasMedia(capture: Capture): boolean {
 function harvestFailure(
   source: Source,
   reason: HarvestResult["reason"],
-): AuthRequiredError | TransientError | TerminalError {
+): AuthRequiredError | TransientError {
   switch (reason) {
     case "auth_required":
       return new AuthRequiredError(
@@ -198,7 +198,8 @@ function harvestFailure(
       return new TransientError("navigate failed");
     case "timeout":
       return new TransientError("scrape timeout");
-    /* An empty scrape means Pond found nothing it could read, not that the page is gone — a layout change, a slow render, or a bot wall inside the harvest window all land here. Retrying matches how the Pinterest path already treats an empty harvest. */
+    // An empty scrape means Pond found nothing it could read, not that the page is gone — a layout change, a slow render, or a bot wall inside the harvest window all land here.
+    // Retrying matches how the Pinterest path already treats an empty harvest.
     default:
       return new TransientError("scrape returned no data");
   }
