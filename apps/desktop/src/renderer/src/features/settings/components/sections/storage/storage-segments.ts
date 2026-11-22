@@ -10,7 +10,7 @@ export interface StorageSegment {
 }
 
 const LABELS: ReadonlyArray<[keyof Breakdown, string]> = [
-  ["items", "Items"],
+  ["items", "Saves"],
   ["videoCache", "Video Cache"],
   ["thumbs", "Thumbnails"],
   ["meta", "Metadata"],
