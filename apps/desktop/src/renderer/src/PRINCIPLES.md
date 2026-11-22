@@ -36,19 +36,19 @@ goal is to make Pond feel human and considered, and to reward your investment.
 
 ## iOS to desktop translation
 
-| Family (iOS) | Pond (desktop) |
-| --- | --- |
-| Dynamic tray system | Base UI `Menu` / `Popover` / `Drawer` / `Dialog` overlays |
-| Tray emerges from a button, preserving context | Popovers/menus anchored to their trigger; detail opens as an overlay, not a route swap |
-| Tray title + back/close icon | Overlay header (title + close), submenu back navigation |
-| Each tray = one action or one piece of content | One focused job per overlay/section |
-| Tray theme adapts to context (dark flow -> dark tray) | Overlays inherit the active theme tokens |
-| Directional tab motion (tap left -> slides left) | Directional route/media transitions in the same direction as the action |
-| Continue -> Confirm text morph (shared letters) | Morphing labels/counts (`AppliedBadge`, position counter) rather than hard swaps |
-| Wallet cards travel between screens | `save-card` -> detail modal continuity; persistent header/footer/side panel across saves |
-| Confetti after wallet backup | One-time celebratory flourish on rare success (completed backfill) |
-| Skeuomorphic trash | Cards tumble toward the trash action on delete |
-| Animated arrow in empty browser state | Guiding affordance in the library empty state |
+| Family (iOS)                                          | Pond (desktop)                                                                           |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Dynamic tray system                                   | Base UI `Menu` / `Popover` / `Drawer` / `Dialog` overlays                                |
+| Tray emerges from a button, preserving context        | Popovers/menus anchored to their trigger; detail opens as an overlay, not a route swap   |
+| Tray title + back/close icon                          | Overlay header (title + close), submenu back navigation                                  |
+| Each tray = one action or one piece of content        | One focused job per overlay/section                                                      |
+| Tray theme adapts to context (dark flow -> dark tray) | Overlays inherit the active theme tokens                                                 |
+| Directional tab motion (tap left -> slides left)      | Directional route/media transitions in the same direction as the action                  |
+| Continue -> Confirm text morph (shared letters)       | Morphing labels/counts (`AppliedBadge`, position counter) rather than hard swaps         |
+| Wallet cards travel between screens                   | `save-card` -> detail modal continuity; persistent header/footer/side panel across saves |
+| Confetti after wallet backup                          | One-time celebratory flourish on rare success (completed backfill)                       |
+| Skeuomorphic trash                                    | Cards tumble toward the trash action on delete                                           |
+| Animated arrow in empty browser state                 | Guiding affordance in the library empty state                                            |
 
 ## The Delight-Impact Curve
 

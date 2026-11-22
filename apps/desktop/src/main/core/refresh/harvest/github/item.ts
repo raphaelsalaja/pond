@@ -79,6 +79,7 @@ async function inPageGithubHarvest(): Promise<GithubRepoPage | null> {
   const text = [
     about,
     topics.length > 0 ? `Topics: ${topics.join(", ")}` : "",
+    // biome-ignore lint/performance/useDomNodeTextContent: the saved text needs rendered line breaks between README blocks.
     body?.innerText?.trim() ?? "",
   ]
     .filter(Boolean)

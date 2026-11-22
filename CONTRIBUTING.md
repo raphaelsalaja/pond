@@ -87,7 +87,6 @@ This builds the desktop app and extension, compiles the native host, and writes 
 
 Pond keeps per-user files in the XDG directories: configuration in `$XDG_CONFIG_HOME/pond`, the native-host socket in `$XDG_RUNTIME_DIR/pond` when the session sets it (otherwise `$XDG_CONFIG_HOME/pond`), the copied native host in `$XDG_DATA_HOME/Pond/bin`, logs in Electron's logs directory, and the autostart entry at `$XDG_CONFIG_HOME/autostart/pond.desktop`.
 
-
 ## Add a source
 
 A source is a site Pond can capture saves from. Add its shared descriptor and
@@ -177,13 +176,13 @@ error.
 Because several registries are total `Record<Source, …>`, the compiler will
 list exactly what's missing after you add the source. Fill each:
 
-| File | What to add |
-| --- | --- |
-| `apps/desktop/src/renderer/src/features/sources/lib/registry.ts` | `SOURCE_LOGOS` — a brand icon (add the SVG to `@pond/icons` first) |
-| `apps/desktop/src/main/core/pipeline/specs.ts` | `CAPTURE_EXPECTATIONS` — required/recommended capture fields |
-| `apps/desktop/src/main/core/refresh/harvest/index.ts` | `REGISTRY` — a `Harvester` (copy the throwing `local` entry if the source has no list sync) |
-| `apps/desktop/src/main/core/refresh/harvest-window/pool.ts` | `PER_SOURCE_CAP` — concurrent harvest-window cap |
-| `apps/desktop/src/main/core/sync/index.ts` | `SYNC_WATCHDOG_MS` — per-source sync watchdog timeout |
+| File                                                             | What to add                                                                                 |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `apps/desktop/src/renderer/src/features/sources/lib/registry.ts` | `SOURCE_LOGOS` — a brand icon (add the SVG to `@pond/icons` first)                          |
+| `apps/desktop/src/main/core/pipeline/specs.ts`                   | `CAPTURE_EXPECTATIONS` — required/recommended capture fields                                |
+| `apps/desktop/src/main/core/refresh/harvest/index.ts`            | `REGISTRY` — a `Harvester` (copy the throwing `local` entry if the source has no list sync) |
+| `apps/desktop/src/main/core/refresh/harvest-window/pool.ts`      | `PER_SOURCE_CAP` — concurrent harvest-window cap                                            |
+| `apps/desktop/src/main/core/sync/index.ts`                       | `SYNC_WATCHDOG_MS` — per-source sync watchdog timeout                                       |
 
 ### 5. Tests
 

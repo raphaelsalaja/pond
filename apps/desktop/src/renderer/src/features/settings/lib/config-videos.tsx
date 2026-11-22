@@ -12,6 +12,7 @@ const subtitlesEnabled = (v: SettingsValues) => v.subtitles !== "off";
 const followsGlobal = (v: SettingsValues) => v.followsGlobal === true;
 
 export function videoDownloadGroups(source?: ExternalSource): GroupConfig[] {
+  // biome-ignore lint/correctness/noComponentHookFactories: settings configs are built once at module load, so the hook identity is stable.
   const useBinding = () => useVideoDownloadBinding(source);
   /** Source pages mix image and video groups, so their titles name the kind. */
   const title = (name: string) => (source ? `Video ${name}` : name);

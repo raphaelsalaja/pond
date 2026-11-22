@@ -30,11 +30,11 @@ After more than 10 failed attempts from one address within five minutes, Pond an
 
 Each scoped token has one or more of these. A request outside them gets `forbidden`.
 
-| Access | Routes |
-| --- | --- |
-| Search Saves | `GET /library/info`, `/library/tags`, `/library/folders`, `/library/views`, `/library/sources`. `POST /library/query`, `/library/search`. `/saves/get`, `GET /saves/info`, `/saves/text`, `/saves/status`, `/saves/thumb`, `/saves/file`, `/saves/related`. |
-| Export Files | Every `/library/conversion` route. |
-| Add and Edit Saves | `POST /enqueue`, `/saves/tags`, `/saves/folders`, `/saves/trash`, `/saves/restore`, `/saves/note`, `/saves/rating`, `/saves/favorite`. |
+| Access             | Routes                                                                                                                                                                                                                                                      |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Search Saves       | `GET /library/info`, `/library/tags`, `/library/folders`, `/library/views`, `/library/sources`. `POST /library/query`, `/library/search`. `/saves/get`, `GET /saves/info`, `/saves/text`, `/saves/status`, `/saves/thumb`, `/saves/file`, `/saves/related`. |
+| Export Files       | Every `/library/conversion` route.                                                                                                                                                                                                                          |
+| Add and Edit Saves | `POST /enqueue`, `/saves/tags`, `/saves/folders`, `/saves/trash`, `/saves/restore`, `/saves/note`, `/saves/rating`, `/saves/favorite`.                                                                                                                      |
 
 These routes are private. Only the Local API Token reaches them, and they may change between minor versions:
 
@@ -61,25 +61,25 @@ Failure carries a stable `code` and a message you can show to a person:
 
 Branch on `code`, never on `message`. Messages may change between releases.
 
-| Code | Status | Meaning |
-| --- | --- | --- |
-| `invalid_json` | 400 | The body isn't valid JSON. |
-| `unauthorized` | 401 | The token is missing, wrong, or revoked. |
-| `forbidden` | 403 | The token doesn't have access to that route. |
-| `not_found` | 404 | The route or file doesn't exist. |
-| `save_not_found` | 404 | A Save id doesn't exist in the active library. |
-| `no_thumbnail` | 404 | The Save has no image to show. |
-| `folder_not_found` | 404 | A folder id doesn't exist. |
-| `operation_not_found` | 404 | The operation name isn't in `/operations`. |
-| `stale_cursor` | 409 | The sort or filter changed since the cursor was issued. Start from page one. |
-| `library_mismatch` | 409 | The request named a `libraryId` that isn't the active library. |
-| `stale_preview` | 409 | An operation preview token expired or belongs to other arguments. |
-| `library_unavailable` | 409 | The library to switch to can't be opened. |
-| `invalid_request` | 422 | The body or query failed validation. The message names the field. |
-| `operation_failed` | 422 | An operation ran and refused the input. |
-| `unsupported_url` | 422 | `/enqueue` can't save that URL. |
-| `rate_limited` | 429 | Too many requests from this address used a wrong token in the last 5 minutes. Valid tokens still work. |
-| `internal` | 500 | Pond hit an unexpected error. |
+| Code                  | Status | Meaning                                                                                                |
+| --------------------- | ------ | ------------------------------------------------------------------------------------------------------ |
+| `invalid_json`        | 400    | The body isn't valid JSON.                                                                             |
+| `unauthorized`        | 401    | The token is missing, wrong, or revoked.                                                               |
+| `forbidden`           | 403    | The token doesn't have access to that route.                                                           |
+| `not_found`           | 404    | The route or file doesn't exist.                                                                       |
+| `save_not_found`      | 404    | A Save id doesn't exist in the active library.                                                         |
+| `no_thumbnail`        | 404    | The Save has no image to show.                                                                         |
+| `folder_not_found`    | 404    | A folder id doesn't exist.                                                                             |
+| `operation_not_found` | 404    | The operation name isn't in `/operations`.                                                             |
+| `stale_cursor`        | 409    | The sort or filter changed since the cursor was issued. Start from page one.                           |
+| `library_mismatch`    | 409    | The request named a `libraryId` that isn't the active library.                                         |
+| `stale_preview`       | 409    | An operation preview token expired or belongs to other arguments.                                      |
+| `library_unavailable` | 409    | The library to switch to can't be opened.                                                              |
+| `invalid_request`     | 422    | The body or query failed validation. The message names the field.                                      |
+| `operation_failed`    | 422    | An operation ran and refused the input.                                                                |
+| `unsupported_url`     | 422    | `/enqueue` can't save that URL.                                                                        |
+| `rate_limited`        | 429    | Too many requests from this address used a wrong token in the last 5 minutes. Valid tokens still work. |
+| `internal`            | 500    | Pond hit an unexpected error.                                                                          |
 
 New codes may appear in minor versions. Treat an unknown code by its HTTP status.
 
@@ -99,15 +99,15 @@ Ignore response fields you don't recognize. Pond builds before 2.1 don't send `a
 
 You can keep several libraries, but only one is active at a time. Every list and query response includes the active `libraryId`. Pass it back as `libraryId` on later requests to pin them: if you switched libraries in between, Pond answers `library_mismatch` instead of editing the wrong library.
 
-| Method | Path | Returns |
-| --- | --- | --- |
-| `GET` | `/library/info` | `libraryId`, `path`, `name`, counts of active, trashed, ingesting, and failed Saves, and the capture queue. |
-| `GET` | `/library/recent` | Recent libraries, with which one is active. |
-| `POST` | `/library/switch` | Switches to `{ "path" }`. Pond relaunches into it. |
-| `GET` | `/library/tags` | `{ name, count, starred }`, most used first. |
-| `GET` | `/library/folders` | `{ id, name, parentId, color, count }`. `count` excludes subfolders. |
-| `GET` | `/library/views` | Saved views and smart folders, with their filter `query` and sort. |
-| `GET` | `/library/sources` | `{ source, count }` for each source with live Saves. |
+| Method | Path               | Returns                                                                                                     |
+| ------ | ------------------ | ----------------------------------------------------------------------------------------------------------- |
+| `GET`  | `/library/info`    | `libraryId`, `path`, `name`, counts of active, trashed, ingesting, and failed Saves, and the capture queue. |
+| `GET`  | `/library/recent`  | Recent libraries, with which one is active.                                                                 |
+| `POST` | `/library/switch`  | Switches to `{ "path" }`. Pond relaunches into it.                                                          |
+| `GET`  | `/library/tags`    | `{ name, count, starred }`, most used first.                                                                |
+| `GET`  | `/library/folders` | `{ id, name, parentId, color, count }`. `count` excludes subfolders.                                        |
+| `GET`  | `/library/views`   | Saved views and smart folders, with their filter `query` and sort.                                          |
+| `GET`  | `/library/sources` | `{ source, count }` for each source with live Saves.                                                        |
 
 Counts leave out trashed and skipped Saves.
 
@@ -153,14 +153,14 @@ Optional `source`, `folderId`, and `kinds` narrow it. The response is `{ library
 
 ## Reading Saves
 
-| Method | Path | Returns |
-| --- | --- | --- |
-| `GET`, `POST` | `/saves/get` | Saves by `ids`, `source`, or page (`limit` up to 1000, `offset`). Add `includeDeleted` for Trash. |
-| `GET` | `/saves/info?id=` | One Save, including trashed ones. |
-| `GET` | `/saves/text?id=` | The title, description, note, caption, text in images, and transcript. |
-| `GET` | `/saves/status?ids=a,b` | Capture state for up to 1000 Saves. |
-| `GET` | `/saves/thumb?id=&size=` | Image bytes. |
-| `GET` | `/saves/file?id=&index=0` | The original file, streamed. |
+| Method        | Path                      | Returns                                                                                           |
+| ------------- | ------------------------- | ------------------------------------------------------------------------------------------------- |
+| `GET`, `POST` | `/saves/get`              | Saves by `ids`, `source`, or page (`limit` up to 1000, `offset`). Add `includeDeleted` for Trash. |
+| `GET`         | `/saves/info?id=`         | One Save, including trashed ones.                                                                 |
+| `GET`         | `/saves/text?id=`         | The title, description, note, caption, text in images, and transcript.                            |
+| `GET`         | `/saves/status?ids=a,b`   | Capture state for up to 1000 Saves.                                                               |
+| `GET`         | `/saves/thumb?id=&size=`  | Image bytes.                                                                                      |
+| `GET`         | `/saves/file?id=&index=0` | The original file, streamed.                                                                      |
 
 ### The Save shape
 
@@ -184,7 +184,13 @@ Optional `source`, `folderId`, and `kinds` narrow it. The response is `{ library
   "savedAt": 1761091200000,
   "publishedAt": null,
   "deletedAt": null,
-  "media": { "files": 1, "width": 1200, "height": 1600, "duration": null, "bytes": 482113 },
+  "media": {
+    "files": 1,
+    "width": 1200,
+    "height": 1600,
+    "duration": null,
+    "bytes": 482113
+  },
   "thumbnail": true,
   "text": { "caption": false, "ocr": true, "transcript": false }
 }
@@ -230,14 +236,14 @@ The response is `{ id, created, status }`. `created` is `false` when the URL was
 
 Each write takes up to 1000 Save ids and an optional `libraryId`. Pond checks every id first and changes nothing if one is missing. Edits run through the same path as edits you make in Pond, so open windows update right away. Tag, Trash, note, rating, and favorite edits can be undone in the app.
 
-| Path | Body |
-| --- | --- |
-| `/saves/tags` | `{ "ids", "add": [], "remove": [] }` |
-| `/saves/folders` | `{ "ids", "add": [], "remove": [] }` with folder ids |
-| `/saves/trash` | `{ "ids" }` |
-| `/saves/restore` | `{ "ids" }` |
-| `/saves/note` | `{ "id", "note" }`. `null` clears the note. |
-| `/saves/rating` | `{ "ids", "rating" }`, 0 to 5. 0 clears the rating. |
+| Path              | Body                                                   |
+| ----------------- | ------------------------------------------------------ |
+| `/saves/tags`     | `{ "ids", "add": [], "remove": [] }`                   |
+| `/saves/folders`  | `{ "ids", "add": [], "remove": [] }` with folder ids   |
+| `/saves/trash`    | `{ "ids" }`                                            |
+| `/saves/restore`  | `{ "ids" }`                                            |
+| `/saves/note`     | `{ "id", "note" }`. `null` clears the note.            |
+| `/saves/rating`   | `{ "ids", "rating" }`, 0 to 5. 0 clears the rating.    |
 | `/saves/favorite` | `{ "ids", "favorite" }`. `false` removes the favorite. |
 
 All of them use `POST` and return `{ "changed": n }`, the number of Saves that actually changed.
@@ -246,24 +252,24 @@ All of them use `POST` and return `{ "changed": n }`, the number of Saves that a
 
 Operations are the same actions Fish and the MCP server use, like creating folders or copying a file. They're private: only the Local API Token reaches them, and names follow the app's internals, so they can change in any release.
 
-| Method | Path | Purpose |
-| --- | --- | --- |
-| `GET` | `/operations` | Each operation's name, description, access, and JSON Schema input. |
-| `POST` | `/operations/preview` | `{ "operation", "arguments" }`. Returns a short-lived `token`. |
-| `POST` | `/operations/run` | `{ "operation", "arguments", "token" }`. |
+| Method | Path                  | Purpose                                                            |
+| ------ | --------------------- | ------------------------------------------------------------------ |
+| `GET`  | `/operations`         | Each operation's name, description, access, and JSON Schema input. |
+| `POST` | `/operations/preview` | `{ "operation", "arguments" }`. Returns a short-lived `token`.     |
+| `POST` | `/operations/run`     | `{ "operation", "arguments", "token" }`.                           |
 
 `read` operations run without a preview. `review` operations need the token from a preview with the same arguments, or Pond answers `stale_preview`.
 
 ## Conversion
 
-| Method | Path | Purpose |
-| --- | --- | --- |
-| `GET` | `/library/conversion/capabilities` | Formats this Mac can convert between. |
-| `GET`, `POST` | `/library/conversion/presets` | Read or save presets. |
-| `POST` | `/library/conversion/start` | Convert Saves. Returns a job. |
-| `POST` | `/library/conversion/compress` | Compress images. Returns a job. |
-| `GET` | `/library/conversion/:id` | Job progress. |
-| `POST` | `/library/conversion/:id/cancel` | Cancel a job. |
+| Method        | Path                               | Purpose                               |
+| ------------- | ---------------------------------- | ------------------------------------- |
+| `GET`         | `/library/conversion/capabilities` | Formats this Mac can convert between. |
+| `GET`, `POST` | `/library/conversion/presets`      | Read or save presets.                 |
+| `POST`        | `/library/conversion/start`        | Convert Saves. Returns a job.         |
+| `POST`        | `/library/conversion/compress`     | Compress images. Returns a job.       |
+| `GET`         | `/library/conversion/:id`          | Job progress.                         |
+| `POST`        | `/library/conversion/:id/cancel`   | Cancel a job.                         |
 
 ## App
 
@@ -273,10 +279,10 @@ Operations are the same actions Fish and the MCP server use, like creating folde
 
 Pond also runs as a Model Context Protocol server over stdio, for agents like Cursor and Claude. Copy the command from **Settings → Model Context Protocol**, or read it from `/app/info`. It needs no token: the switches under **Access** on that page decide which tools answer.
 
-| Access | Tools |
-| --- | --- |
-| Search Saves | `query_library`, `search_library`, `read_save`, `grep_library`, `list_folders` |
-| Open in Pond | `open_save`, `apply_filter` |
+| Access       | Tools                                                                                                                                                                |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Search Saves | `query_library`, `search_library`, `read_save`, `grep_library`, `list_folders`                                                                                       |
+| Open in Pond | `open_save`, `apply_filter`                                                                                                                                          |
 | Export Files | `list_conversion_capabilities`, `list_conversion_presets`, `save_conversion_preset`, `start_conversion`, `compress_images`, `conversion_status`, `cancel_conversion` |
 
 - `query_library` takes the same body as `POST /library/query` and returns ids with a cursor.

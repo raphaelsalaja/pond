@@ -4,14 +4,14 @@ Every PR body uses the same sections in the same order, so a reviewer always fin
 
 ## Body
 
-| Section | Required | Contents |
-| --- | --- | --- |
+| Section    | Required     | Contents                                                                         |
+| ---------- | ------------ | -------------------------------------------------------------------------------- |
 | Stack note | When stacked | One blockquote line at the top: `> Stacked on #533 and #541. Merge those first.` |
-| Summary | Yes | Up to three sentences: what changes for the reader, then why. `Closes #123`. |
-| Proof | Yes | Screenshots, clips, or measurements. See [Proof](#proof). |
-| Changes | Yes | One bullet per change, bold lead-in for the area (`**Card:**`). |
-| Notes | No | `Not in this PR`, platform limits, follow-ups. |
-| Test plan | Yes | Checks you ran and manual steps, as the template lists them. |
+| Summary    | Yes          | Up to three sentences: what changes for the reader, then why. `Closes #123`.     |
+| Proof      | Yes          | Screenshots, clips, or measurements. See [Proof](#proof).                        |
+| Changes    | Yes          | One bullet per change, bold lead-in for the area (`**Card:**`).                  |
+| Notes      | No           | `Not in this PR`, platform limits, follow-ups.                                   |
+| Test plan  | Yes          | Checks you ran and manual steps, as the template lists them.                     |
 
 Keep explanations out of the Proof section and images out of every other section.
 
@@ -31,10 +31,10 @@ Show each image once. Don't repeat a table cell as a full-width image above it.
 
 Columns depend on the change:
 
-| Change | Columns |
-| --- | --- |
-| New or changed UI | `State`, `Light`, `Dark` |
-| Bug fix | `State`, `Before`, `After` |
+| Change               | Columns                                                                               |
+| -------------------- | ------------------------------------------------------------------------------------- |
+| New or changed UI    | `State`, `Light`, `Dark`                                                              |
+| Bug fix              | `State`, `Before`, `After`                                                            |
 | Performance or no UI | A measurements table with `Before` and `After`, plus one sentence on how you measured |
 
 Markdown images scale to the cell only with an explicit width, so images inside tables use `<img>` with `width="400"`. This Proof section has two states in both themes, a clip, and a collapsed extra state:
@@ -42,9 +42,9 @@ Markdown images scale to the cell only with an explicit width, so images inside 
 ```markdown
 ## Proof
 
-| State | Light | Dark |
-| --- | --- | --- |
-| Open | <img src="https://github.com/user-attachments/assets/…" width="400" alt="Inbox open, light"> | <img src="https://github.com/user-attachments/assets/…" width="400" alt="Inbox open, dark"> |
+| State           | Light                                                                                             | Dark                                                                                             |
+| --------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Open            | <img src="https://github.com/user-attachments/assets/…" width="400" alt="Inbox open, light">      | <img src="https://github.com/user-attachments/assets/…" width="400" alt="Inbox open, dark">      |
 | Drag over Trash | <img src="https://github.com/user-attachments/assets/…" width="400" alt="Card over Trash, light"> | <img src="https://github.com/user-attachments/assets/…" width="400" alt="Card over Trash, dark"> |
 
 **Drag a card onto Trash**
@@ -54,8 +54,8 @@ https://github.com/user-attachments/assets/…
 <details>
 <summary>More states</summary>
 
-| State | Light | Dark |
-| --- | --- | --- |
+| State | Light                                                                                         | Dark                                                                                         |
+| ----- | --------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | Empty | <img src="https://github.com/user-attachments/assets/…" width="400" alt="Empty Inbox, light"> | <img src="https://github.com/user-attachments/assets/…" width="400" alt="Empty Inbox, dark"> |
 
 </details>

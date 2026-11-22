@@ -18,29 +18,29 @@
   }
 
   * {
-    margin: 0;
-    padding: 0;
-    border: 0;
     position: relative;
-    color: inherit;
+    padding: 0;
+    margin: 0;
+    -ms-overflow-style: none;
+    scroll-behavior: smooth;
     font-family: inherit;
     font-size: inherit;
     font-weight: inherit;
-    line-height: inherit;
-    text-decoration: none;
-    text-transform: none;
-    text-wrap: pretty;
-    vertical-align: baseline;
     font-optical-sizing: auto;
     font-feature-settings:
       "calt", "ccmp", "locl", "kern", "tnum", "zero", "cv11", "ss01";
     font-variant-numeric: tabular-nums;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    text-rendering: optimizeLegibility;
-    scroll-behavior: smooth;
+    line-height: inherit;
+    vertical-align: baseline;
+    color: inherit;
+    text-transform: none;
+    text-wrap: pretty;
+    text-decoration: none;
     scrollbar-width: none;
-    -ms-overflow-style: none;
+    border: 0;
+    text-rendering: optimizeLegibility;
   }
 
   *::-webkit-scrollbar {
@@ -71,14 +71,14 @@
 
   /* Chromium matches :focus-visible on pointer clicks in Electron. */
   html[data-focus-source="pointer"]
-  :focus-visible:not(
-    :is(
-      input,
-      textarea,
-      select,
-      [contenteditable]:not([contenteditable="false"])
-    )
-  ) {
+    :focus-visible:not(
+      :is(
+        input,
+        textarea,
+        select,
+        [contenteditable]:not([contenteditable="false"])
+      )
+    ) {
     outline-width: 0;
   }
 

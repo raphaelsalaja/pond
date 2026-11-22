@@ -53,6 +53,32 @@ async function openPicker(props: {
   );
 }
 
+function Anchored({
+  onOpenChange,
+  onValueChange,
+}: {
+  onOpenChange: (open: boolean) => void;
+  onValueChange: (value: string) => void;
+}) {
+  const anchor = useRef<HTMLButtonElement>(null);
+  return (
+    <>
+      <button ref={anchor} type="button">
+        Recently Added
+      </button>
+      <DatePopover
+        open
+        anchor={anchor}
+        min="2026-10-10"
+        max="2026-10-17"
+        locale="en-GB"
+        onOpenChange={onOpenChange}
+        onValueChange={onValueChange}
+      />
+    </>
+  );
+}
+
 function day(value: string): HTMLElement {
   const found = document.querySelector<HTMLElement>(`[data-day="${value}"]`);
   if (!found) throw new Error(`Missing day ${value}`);
@@ -107,26 +133,11 @@ it("won't pick a day after the latest allowed", async () => {
 it("opens beside its anchor and picks a day inside its range", async () => {
   const onValueChange = vi.fn();
   const onOpenChange = vi.fn();
-  function Anchored() {
-    const anchor = useRef<HTMLButtonElement>(null);
-    return (
-      <>
-        <button ref={anchor} type="button">
-          Recently Added
-        </button>
-        <DatePopover
-          open
-          anchor={anchor}
-          min="2026-10-10"
-          max="2026-10-17"
-          locale="en-GB"
-          onOpenChange={onOpenChange}
-          onValueChange={onValueChange}
-        />
-      </>
-    );
-  }
-  await act(async () => root.render(<Anchored />));
+  await act(async () =>
+    root.render(
+      <Anchored onOpenChange={onOpenChange} onValueChange={onValueChange} />,
+    ),
+  );
   await vi.waitFor(
     () => {
       if (!document.querySelector('[aria-label="Choose Date"] table'))

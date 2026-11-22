@@ -21,10 +21,12 @@ Every page executes an exact count and computes a pin-rank expression, even when
 ## Current state
 
 `apps/desktop/src/main/core/library-query.ts:122` constructs:
+
 ```ts
 pinRank: sql`coalesce((select cast(key as integer) from json_each(${pinKey}) where value = ${saves.id} limit 1), ${UNPINNED_RANK})`,
 ```
 `queryLibraryPage` counts in a transaction, then orders the page:
+
 ```ts
 const total =
   db.select({ count: count() }).from(saves).where(where).get()?.count ?? 0;
@@ -39,6 +41,7 @@ const total =
 `queryLibraryIds` uses the same general ordering. Cursor tie breaking always uses descending ID. Pin rank is optional in returned cursors when unpinned.
 
 `packages/schema/src/db.ts:239` already defines:
+
 ```ts
 savedAtIdIdx: index("saves_saved_at_id_idx").on(
   sql`${t.savedAt} DESC`,
@@ -52,6 +55,7 @@ savedAtIdIdx: index("saves_saved_at_id_idx").on(
 ## Scope
 
 Only modify/create:
+
 - `apps/desktop/src/main/core/library-query.ts`
 - `apps/desktop/src/main/core/library-query.test.ts`
 - `apps/desktop/src/main/core/library-performance-benchmark.test.ts` (from 001)
@@ -70,6 +74,7 @@ Extend the opt-in benchmark to capture the SQL and parameters emitted by the act
 Capture first/next page and all-IDs query shapes for recency ascending/descending, empty/nonempty pins, broad/selective filters, and title ordering. Measure count and row-query stages separately as well as overall latency. Report use of temp sorting and indexes without asserting brittle full planner output.
 
 **Verify:**
+
 ```sh
 POND_BENCH_LIBRARY=1 ELECTRON_RUN_AS_NODE=1 pnpm --filter @pond/desktop exec electron node_modules/vitest/vitest.mjs run src/main/core/library-performance-benchmark.test.ts
 ```
@@ -80,6 +85,7 @@ POND_BENCH_LIBRARY=1 ELECTRON_RUN_AS_NODE=1 pnpm --filter @pond/desktop exec ele
 Expand native query tests with repeated timestamps, both sort directions, pinned IDs outside the scope, deleted/incomplete Saves, empty results, multiple pages, and intervening writes. Compare concatenated paged IDs with `queryLibraryIds`; ensure no duplicates/omissions and exact totals on each observed snapshot. Retain null-sort coverage for nullable fields.
 
 **Verify:**
+
 ```sh
 ELECTRON_RUN_AS_NODE=1 pnpm --filter @pond/desktop exec electron node_modules/vitest/vitest.mjs run src/main/core/library-query.test.ts
 ```
@@ -130,12 +136,12 @@ Long-running runtimes are shared and user-owned. Never launch `pnpm dev`, watch 
 
 Run commands from the repository root unless stated otherwise.
 
-| Purpose | Command | Expected result |
-| --- | --- | --- |
-| Required checks | `pnpm check` | Exit 0: lint, architecture, generated-file checks, types, offline tests |
-| Production bundles and size budgets | `pnpm build` | Exit 0; performance-size budgets pass |
-| Native SQLite baseline | `ELECTRON_RUN_AS_NODE=1 pnpm --filter @pond/desktop exec electron node_modules/vitest/vitest.mjs run src/main/db.test.ts src/main/core/vec-index.test.ts` | Exit 0; native cases execute, not skip |
-| Scope review | `git diff --stat; git status --short` | Only authorized files changed, allowing pre-existing user changes |
+| Purpose                             | Command                                                                                                                                                   | Expected result                                                         |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Required checks                     | `pnpm check`                                                                                                                                              | Exit 0: lint, architecture, generated-file checks, types, offline tests |
+| Production bundles and size budgets | `pnpm build`                                                                                                                                              | Exit 0; performance-size budgets pass                                   |
+| Native SQLite baseline              | `ELECTRON_RUN_AS_NODE=1 pnpm --filter @pond/desktop exec electron node_modules/vitest/vitest.mjs run src/main/db.test.ts src/main/core/vec-index.test.ts` | Exit 0; native cases execute, not skip                                  |
+| Scope review                        | `git diff --stat; git status --short`                                                                                                                     | Only authorized files changed, allowing pre-existing user changes       |
 
 On PowerShell set `$env:ELECTRON_RUN_AS_NODE="1"` before the native command instead of using the POSIX prefix. Do not rebuild native modules in the shared checkout while the runtime is using them. Stop and coordinate if the native ABI is unavailable.
 

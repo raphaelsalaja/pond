@@ -246,42 +246,44 @@ it("selects all rows and typeaheads to unmounted rows from the data list", async
   ).toEqual([]);
 });
 
+function TrackingFixture({
+  trackCursor,
+}: {
+  trackCursor: (cursor: string | null) => void;
+}) {
+  const tree = useOrganizationTree(
+    entries,
+    () => {},
+    undefined,
+    entries.map((entry) => entry.id),
+  );
+  trackCursor(tree.cursor);
+  const mounted =
+    tree.cursor && tree.cursor !== "a" && tree.cursor !== "b"
+      ? ["a", "b", tree.cursor]
+      : ["a", "b"];
+  return (
+    <div ref={tree.root} role="tree" aria-label="Folders" aria-multiselectable>
+      {entries
+        .filter((entry) => mounted.includes(entry.id))
+        .map((entry) => (
+          <button
+            type="button"
+            key={entry.id}
+            {...tree.rowProps(entry.id, entry.parentId ? 1 : 0)}
+          >
+            {entry.name}
+          </button>
+        ))}
+    </div>
+  );
+}
+
 it("keeps focus on the row the consumer mounts for the data-driven cursor", async () => {
   const trackCursor = vi.fn();
-  function TrackingFixture() {
-    const tree = useOrganizationTree(
-      entries,
-      () => {},
-      undefined,
-      entries.map((entry) => entry.id),
-    );
-    trackCursor(tree.cursor);
-    const mounted =
-      tree.cursor && tree.cursor !== "a" && tree.cursor !== "b"
-        ? ["a", "b", tree.cursor]
-        : ["a", "b"];
-    return (
-      <div
-        ref={tree.root}
-        role="tree"
-        aria-label="Folders"
-        aria-multiselectable
-      >
-        {entries
-          .filter((entry) => mounted.includes(entry.id))
-          .map((entry) => (
-            <button
-              type="button"
-              key={entry.id}
-              {...tree.rowProps(entry.id, entry.parentId ? 1 : 0)}
-            >
-              {entry.name}
-            </button>
-          ))}
-      </div>
-    );
-  }
-  await act(async () => root.render(<TrackingFixture />));
+  await act(async () =>
+    root.render(<TrackingFixture trackCursor={trackCursor} />),
+  );
   await act(async () => row("a").focus());
   await key("a", "End");
   expect(trackCursor).toHaveBeenLastCalledWith("d");
@@ -295,29 +297,31 @@ const FrozenRow = memo(
   () => true,
 );
 
+function FrozenFixture({
+  onSelection,
+}: {
+  onSelection: (ids: string[]) => void;
+}) {
+  const tree = useOrganizationTree(entries, onSelection);
+  return (
+    <div ref={tree.root} role="tree" aria-label="Folders" aria-multiselectable>
+      {entries.map((entry) => (
+        <FrozenRow
+          key={entry.id}
+          {...tree.rowProps(entry.id, entry.parentId ? 1 : 0)}
+        >
+          {entry.name}
+        </FrozenRow>
+      ))}
+    </div>
+  );
+}
+
 it("Cmd-click adds to the current selection from a row that never re-rendered", async () => {
   const onSelection = vi.fn();
-  function FrozenFixture() {
-    const tree = useOrganizationTree(entries, onSelection);
-    return (
-      <div
-        ref={tree.root}
-        role="tree"
-        aria-label="Folders"
-        aria-multiselectable
-      >
-        {entries.map((entry) => (
-          <FrozenRow
-            key={entry.id}
-            {...tree.rowProps(entry.id, entry.parentId ? 1 : 0)}
-          >
-            {entry.name}
-          </FrozenRow>
-        ))}
-      </div>
-    );
-  }
-  await act(async () => root.render(<FrozenFixture />));
+  await act(async () =>
+    root.render(<FrozenFixture onSelection={onSelection} />),
+  );
   await click("c");
   await click("a", { metaKey: true });
   expect(onSelection).toHaveBeenLastCalledWith(["c", "a"]);

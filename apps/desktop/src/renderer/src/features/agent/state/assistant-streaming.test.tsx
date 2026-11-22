@@ -14,14 +14,29 @@ import {
 import { pondChatSession } from "./pond-chat";
 import { messageText } from "./pond-messages";
 
+interface RenderSnapshot {
+  busy: boolean;
+  status: string;
+  text: string;
+}
+
+function Probe({ snapshots }: { snapshots: RenderSnapshot[] }) {
+  const state = useAssistant();
+  const chat = pondChatSession(state.chatId ?? "draft");
+  const { messages, status } = useChat({ chat });
+  const last = messages.at(-1);
+  snapshots.push({
+    busy: state.busy,
+    status,
+    text: last?.role === "assistant" ? messageText(last) : "",
+  });
+  return null;
+}
+
 it("renders a multi-chunk reply progressively", async () => {
   const chatId = "multi-chunk-render";
   const nextChunk = Promise.withResolvers<void>();
-  const snapshots: Array<{
-    busy: boolean;
-    status: string;
-    text: string;
-  }> = [];
+  const snapshots: RenderSnapshot[] = [];
   vi.stubGlobal("pond", {
     query: vi.fn(() => Promise.resolve([])),
     agentStream: agentStreamBridge(() => ({
@@ -33,21 +48,9 @@ it("renders a multi-chunk reply progressively", async () => {
   assistant.newChat();
   const host = document.createElement("div");
   const root = createRoot(host);
-  function Probe() {
-    const state = useAssistant();
-    const chat = pondChatSession(state.chatId ?? "draft");
-    const { messages, status } = useChat({ chat });
-    const last = messages.at(-1);
-    snapshots.push({
-      busy: state.busy,
-      status,
-      text: last?.role === "assistant" ? messageText(last) : "",
-    });
-    return null;
-  }
   let pending: Promise<void> = Promise.resolve();
   try {
-    await act(async () => root.render(<Probe />));
+    await act(async () => root.render(<Probe snapshots={snapshots} />));
     await act(async () => {
       await assistant.openChat(chatId);
       assistant.setDraft("Use the fixed reply");

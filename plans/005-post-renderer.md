@@ -13,14 +13,14 @@
 - Planned at: `e6c63000e`, 2026-11-16
 - Status: IN PROGRESS
 
-| Phase | Scope | Status |
-| --- | --- | --- |
-| 0 | Fork checkout, font stacks, host fonts | DONE |
-| 1 | X thumbnails through xeet, React card as fallback | DONE, needs in-app review before the version bump |
-| 2 | Bluesky layout and comparison harness | DONE, Bluesky saves get the post card through `capture_tweet` |
-| 3 | Threads layout, checked against the React card | DONE, wired into the Threads card path |
-| 4 | Reddit layout, avatar harvest | TODO |
-| 5 | Tumblr, Mastodon | DEFERRED |
+| Phase | Scope                                             | Status                                                        |
+| ----- | ------------------------------------------------- | ------------------------------------------------------------- |
+| 0     | Fork checkout, font stacks, host fonts            | DONE                                                          |
+| 1     | X thumbnails through xeet, React card as fallback | DONE, needs in-app review before the version bump             |
+| 2     | Bluesky layout and comparison harness             | DONE, Bluesky saves get the post card through `capture_tweet` |
+| 3     | Threads layout, checked against the React card    | DONE, wired into the Threads card path                        |
+| 4     | Reddit layout, avatar harvest                     | TODO                                                          |
+| 5     | Tumblr, Mastodon                                  | DEFERRED                                                      |
 
 ## Why this matters
 

@@ -27,6 +27,7 @@ export function createIcon(
   style: IconStyle,
   nodes: IconNode,
 ): IconComponent {
+  // biome-ignore lint/correctness/noComponentHookFactories: each generated icon module calls createIcon once at load.
   function Icon({
     size = GRID,
     strokeWidth,

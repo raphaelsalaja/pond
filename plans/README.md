@@ -6,12 +6,12 @@ These are handoff plans, not implemented fixes. The audit was source-level; no r
 
 ## Execution order and status
 
-| Plan | Workstream | Priority | Effort | Depends on | Status |
-| --- | --- | --- | --- | --- | --- |
-| [001](001-performance-baseline.md) | Establish repeatable local baselines | P1 | M | — | BLOCKED: UI captures deferred; microbenchmark targets approved 2026-10-30; [two native baseline runs](performance-baseline.md), [capture runbook](../docs/contributing/performance.md) |
-| [002](002-batch-bulk-updates.md) | Batch optimistic bulk Save updates | P1 | M | 001 bulk evidence/target | DONE: approved tie-order fix, batched application/rollback, publication bounds and timing targets passed; [results](performance-baseline.md#plan-002-completed--2026-10-30) |
-| [003](003-library-pagination.md) | Verify and optimize common pagination | P2 | M | 001 query evidence/target | DONE: unpinned recency fast path, native correctness and two measured target passes; [query plans/results](performance-baseline.md#plan-003-completed--2026-10-30) |
-| [004](004-scoped-vector-retrieval.md) | Validate scope-safe vector retrieval | P2 | L | 001 measurement protocol/targets | REJECTED: user approved retaining exact scan; prototype slower in all 16 comparable workloads; gates passed, 4 timing phases explicitly bounded; [decision/evidence](vector-retrieval-decision.md) |
+| Plan                                  | Workstream                            | Priority | Effort | Depends on                       | Status                                                                                                                                                                                             |
+| ------------------------------------- | ------------------------------------- | -------- | ------ | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [001](001-performance-baseline.md)    | Establish repeatable local baselines  | P1       | M      | —                                | BLOCKED: UI captures deferred; microbenchmark targets approved 2026-10-30; [two native baseline runs](performance-baseline.md), [capture runbook](../docs/contributing/performance.md)             |
+| [002](002-batch-bulk-updates.md)      | Batch optimistic bulk Save updates    | P1       | M      | 001 bulk evidence/target         | DONE: approved tie-order fix, batched application/rollback, publication bounds and timing targets passed; [results](performance-baseline.md#plan-002-completed--2026-10-30)                        |
+| [003](003-library-pagination.md)      | Verify and optimize common pagination | P2       | M      | 001 query evidence/target        | DONE: unpinned recency fast path, native correctness and two measured target passes; [query plans/results](performance-baseline.md#plan-003-completed--2026-10-30)                                 |
+| [004](004-scoped-vector-retrieval.md) | Validate scope-safe vector retrieval  | P2       | L      | 001 measurement protocol/targets | REJECTED: user approved retaining exact scan; prototype slower in all 16 comparable workloads; gates passed, 4 timing phases explicitly bounded; [decision/evidence](vector-retrieval-decision.md) |
 
 Status values: TODO, IN PROGRESS, DONE, BLOCKED (reason), REJECTED (evidence).
 Add execution results and links to measured evidence when updating a row.

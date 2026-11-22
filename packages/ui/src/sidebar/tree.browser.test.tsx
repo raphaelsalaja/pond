@@ -46,6 +46,28 @@ function Folders(props: Partial<TreeProps>) {
   );
 }
 
+function Controlled() {
+  const [expanded, setExpanded] = useState<string[]>([]);
+  const [value, setValue] = useState<string | null>(null);
+  return (
+    <>
+      <button type="button" onClick={() => setExpanded(["design"])}>
+        Open Design
+      </button>
+      <button type="button" onClick={() => setValue("design/typography")}>
+        Select Typography
+      </button>
+      <Folders
+        expanded={expanded}
+        onExpandedChange={setExpanded}
+        value={value}
+        onValueChange={setValue}
+      />
+      <output aria-label="Selection">{value ?? "None"}</output>
+    </>
+  );
+}
+
 async function mount(ui: React.ReactNode) {
   const screen = await render(ui);
   const item = (name: string) =>
@@ -168,27 +190,6 @@ describe("Sidebar.Tree state", () => {
   });
 
   it("follows controlled expanded and selected state", async () => {
-    function Controlled() {
-      const [expanded, setExpanded] = useState<string[]>([]);
-      const [value, setValue] = useState<string | null>(null);
-      return (
-        <>
-          <button type="button" onClick={() => setExpanded(["design"])}>
-            Open Design
-          </button>
-          <button type="button" onClick={() => setValue("design/typography")}>
-            Select Typography
-          </button>
-          <Folders
-            expanded={expanded}
-            onExpandedChange={setExpanded}
-            value={value}
-            onValueChange={setValue}
-          />
-          <output aria-label="Selection">{value ?? "None"}</output>
-        </>
-      );
-    }
     const { screen, item, has } = await mount(<Controlled />);
     await expect.element(item("Typography")).not.toBeInTheDocument();
 

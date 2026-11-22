@@ -97,14 +97,32 @@ evals:
   - input: "@pond list my recent libraries"
     mocks:
       list-libraries:
-        - { name: Design, path: /Libraries/Design, active: true, available: true, lastOpened: "2026-10-01T00:00:00.000Z" }
+        - {
+            name: Design,
+            path: /Libraries/Design,
+            active: true,
+            available: true,
+            lastOpened: "2026-10-01T00:00:00.000Z",
+          }
     expected:
       - callsTool: list-libraries
   - input: "@pond switch to my Research library"
     mocks:
       list-libraries:
-        - { name: Design, path: /Libraries/Design, active: true, available: true, lastOpened: "2026-10-01T00:00:00.000Z" }
-        - { name: Research, path: /Libraries/Research, active: false, available: true, lastOpened: "2026-09-01T00:00:00.000Z" }
+        - {
+            name: Design,
+            path: /Libraries/Design,
+            active: true,
+            available: true,
+            lastOpened: "2026-10-01T00:00:00.000Z",
+          }
+        - {
+            name: Research,
+            path: /Libraries/Research,
+            active: false,
+            available: true,
+            lastOpened: "2026-09-01T00:00:00.000Z",
+          }
       switch-library: { name: Research, path: /Libraries/Research, alreadyActive: false }
     expected:
       - callsTool: list-libraries

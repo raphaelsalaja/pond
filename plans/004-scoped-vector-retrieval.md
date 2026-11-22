@@ -21,6 +21,7 @@ The dense retrieval caller always passes a condition. Its SQLite adapter therefo
 ## Current state and exemplars
 
 `apps/desktop/src/main/core/library-retrieval.ts:225–249`:
+
 ```ts
 neighbors(kind, vector, limit, condition) {
   if (!condition) {
@@ -38,6 +39,7 @@ neighbors(kind, vector, limit, condition) {
 }
 ```
 `denseChannel` always calls neighbors with:
+
 ```ts
 and(
   ...clauses,
@@ -50,6 +52,7 @@ and(
 It also validates admitted IDs afterward. Preserve these restrictions.
 
 `apps/desktop/src/main/core/vec-index.ts` creates:
+
 ```sql
 CREATE VIRTUAL TABLE IF NOT EXISTS <table> USING vec0(
   save_id TEXT PRIMARY KEY,
@@ -63,6 +66,7 @@ Existing `library-retrieval.test.ts` injects a `RetrievalStore` and tests servic
 ## Scope
 
 Only create/modify:
+
 - `apps/desktop/src/main/core/library-retrieval.ts` (narrow dependency-injected native entry for tests; behavior change only after approval)
 - `apps/desktop/src/main/core/library-retrieval.test.ts`
 - `apps/desktop/src/main/core/library-retrieval-native.test.ts` (new)
@@ -86,6 +90,7 @@ Add real-native tests using in-memory initialized SQLite and deterministic embed
 Cases: text/media channels, selective folders, source/media restrictions, empty attachment scope, deleted Saves, excluded visual Save, mixed model IDs sharing a dimension, absent/mismatched dimensions, missing vector-table entries, and fewer than K eligible results. Compare against an exact scoped reference; use distinct distances for strict ordering and documented tie handling otherwise.
 
 **Verify:**
+
 ```sh
 ELECTRON_RUN_AS_NODE=1 pnpm --filter @pond/desktop exec electron node_modules/vitest/vitest.mjs run src/main/core/library-retrieval.test.ts src/main/core/library-retrieval-native.test.ts src/main/core/vec-index.test.ts
 ```
@@ -100,6 +105,7 @@ Check actual installed sqlite-vec documentation/capabilities before prototyping 
 **Forbidden shortcut:** global top-K followed by scope filtering. It can return fewer eligible results even when enough exist. Fixed oversampling is not a correctness guarantee either. An adaptive strategy needs an explicit completeness proof or exact fallback and must account for missing/stale vector rows and mixed models.
 
 **Verify:**
+
 ```sh
 POND_BENCH_LIBRARY=1 ELECTRON_RUN_AS_NODE=1 pnpm --filter @pond/desktop exec electron node_modules/vitest/vitest.mjs run src/main/core/library-retrieval-benchmark.test.ts
 ```
@@ -108,6 +114,7 @@ POND_BENCH_LIBRARY=1 ELECTRON_RUN_AS_NODE=1 pnpm --filter @pond/desktop exec ele
 ### 3. Write the decision and obtain approval
 
 Create `plans/vector-retrieval-decision.md` with:
+
 - Current JSON-scan time versus candidate time, memory, selectivity, dataset size, dimensions, and environment.
 - Actual extension version and supported filtering mechanism.
 - Scope/model/correctness and index-completeness arguments, including stale/missing entries.
@@ -156,12 +163,12 @@ Long-running runtimes are shared and user-owned. Never launch `pnpm dev`, watch 
 
 Run commands from the repository root unless stated otherwise.
 
-| Purpose | Command | Expected result |
-| --- | --- | --- |
-| Required checks | `pnpm check` | Exit 0: lint, architecture, generated-file checks, types, offline tests |
-| Production bundles and size budgets | `pnpm build` | Exit 0; performance-size budgets pass |
-| Native SQLite baseline | `ELECTRON_RUN_AS_NODE=1 pnpm --filter @pond/desktop exec electron node_modules/vitest/vitest.mjs run src/main/db.test.ts src/main/core/vec-index.test.ts` | Exit 0; native cases execute, not skip |
-| Scope review | `git diff --stat; git status --short` | Only authorized files changed, allowing pre-existing user changes |
+| Purpose                             | Command                                                                                                                                                   | Expected result                                                         |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Required checks                     | `pnpm check`                                                                                                                                              | Exit 0: lint, architecture, generated-file checks, types, offline tests |
+| Production bundles and size budgets | `pnpm build`                                                                                                                                              | Exit 0; performance-size budgets pass                                   |
+| Native SQLite baseline              | `ELECTRON_RUN_AS_NODE=1 pnpm --filter @pond/desktop exec electron node_modules/vitest/vitest.mjs run src/main/db.test.ts src/main/core/vec-index.test.ts` | Exit 0; native cases execute, not skip                                  |
+| Scope review                        | `git diff --stat; git status --short`                                                                                                                     | Only authorized files changed, allowing pre-existing user changes       |
 
 On PowerShell set `$env:ELECTRON_RUN_AS_NODE="1"` before the native command instead of using the POSIX prefix. Do not rebuild native modules in the shared checkout while the runtime is using them. Stop and coordinate if the native ABI is unavailable.
 

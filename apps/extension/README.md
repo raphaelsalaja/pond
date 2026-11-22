@@ -31,15 +31,15 @@ Pond is free, open source, and made by one person. If the extension saves you ti
 
 ## Layout
 
-| Path | What it holds |
-| --- | --- |
-| `entrypoints/background/` | Service worker: captures, screenshots, menus, session connect |
-| `entrypoints/hooks.content.ts` | Isolated-world bridge that validates and relays site saves |
-| `entrypoints/hooks-main.content.ts` | Main-world hooks that watch each site's save and like requests |
-| `entrypoints/gestures.content.ts` | Listens for Alt-right-click and asks the background to save the image or link |
-| `entrypoints/overlay.content/` | On-page toasts, details window, region picker, and image picker, in a shadow root |
-| `entrypoints/popup/` | Toolbar panel: commands, and settings behind the Settings row |
-| `sources/` | One folder per supported site |
+| Path                                | What it holds                                                                     |
+| ----------------------------------- | --------------------------------------------------------------------------------- |
+| `entrypoints/background/`           | Service worker: captures, screenshots, menus, session connect                     |
+| `entrypoints/hooks.content.ts`      | Isolated-world bridge that validates and relays site saves                        |
+| `entrypoints/hooks-main.content.ts` | Main-world hooks that watch each site's save and like requests                    |
+| `entrypoints/gestures.content.ts`   | Listens for Alt-right-click and asks the background to save the image or link     |
+| `entrypoints/overlay.content/`      | On-page toasts, details window, region picker, and image picker, in a shadow root |
+| `entrypoints/popup/`                | Toolbar panel: commands, and settings behind the Settings row                     |
+| `sources/`                          | One folder per supported site                                                     |
 
 ## Develop
 
@@ -52,13 +52,13 @@ Load `apps/extension/.output/chrome-mv3` unpacked from `chrome://extensions`, or
 
 ## Scripts
 
-| Script | What it does |
-| --- | --- |
-| `pnpm dev` | WXT dev server on port 3001 |
-| `pnpm build` | Production builds for Chrome and Firefox in `.output/` |
-| `pnpm zip` | Build and zip both browsers for local testing |
+| Script           | What it does                                                  |
+| ---------------- | ------------------------------------------------------------- |
+| `pnpm dev`       | WXT dev server on port 3001                                   |
+| `pnpm build`     | Production builds for Chrome and Firefox in `.output/`        |
+| `pnpm zip`       | Build and zip both browsers for local testing                 |
 | `pnpm zip:store` | Store zips without the pinned `key`, plus the AMO sources zip |
-| `pnpm test` | Unit tests |
+| `pnpm test`      | Unit tests                                                    |
 
 ## Build from source for AMO review
 

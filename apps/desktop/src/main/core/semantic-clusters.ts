@@ -125,8 +125,8 @@ export function previewSemanticClusters(input: {
     const leftRoot = root(leftId);
     const rightRoot = root(rightId);
     if (leftRoot === rightRoot) return;
-    const first = leftRoot < rightRoot ? leftRoot : rightRoot;
-    const second = leftRoot < rightRoot ? rightRoot : leftRoot;
+    const [first, second] =
+      leftRoot < rightRoot ? [leftRoot, rightRoot] : [rightRoot, leftRoot];
     parent.set(second, first);
   }
 

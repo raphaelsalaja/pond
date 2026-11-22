@@ -10,6 +10,19 @@ afterEach(async () => {
   vi.restoreAllMocks();
 });
 
+function Probe({
+  content,
+  animate,
+  finish,
+}: {
+  content: string;
+  animate: boolean;
+  finish: boolean;
+}) {
+  const { text, pending } = useTextReveal(content, animate, finish);
+  return <output data-pending={pending}>{text}</output>;
+}
+
 function createReveal() {
   const frames = new Map<number, FrameRequestCallback>();
   let nextId = 0;
@@ -29,18 +42,6 @@ function createReveal() {
     mounted = false;
   };
   cleanups.push(unmount);
-  function Probe({
-    content,
-    animate,
-    finish,
-  }: {
-    content: string;
-    animate: boolean;
-    finish: boolean;
-  }) {
-    const { text, pending } = useTextReveal(content, animate, finish);
-    return <output data-pending={pending}>{text}</output>;
-  }
   return {
     get text() {
       return host.textContent ?? "";
