@@ -1,4 +1,3 @@
-/* oxlint-disable */
 /*
   Lab. Copy this file into the app and load it once on a development-only route. Then write entries only.
 

@@ -3,7 +3,7 @@
 ## General
 
 - **Node** 24 and **pnpm** 11.27.0 (see `.nvmrc` and `package.json`).
-- **Style**: [Biome](https://biomejs.dev/) handles formatting; `pnpm lint` and `pnpm oxlint` check the repository standards.
+- **Style**: [Biome](https://biomejs.dev/) handles formatting; `pnpm lint` checks the repository standards, including the anti-slop plugin rules in `tools/biome/anti-slop`.
 - **Commits**: [Conventional Commits](https://www.conventionalcommits.org/) enforced by commitlint + husky.
 - **Checks**: run `pnpm check` and `pnpm build` before opening a PR. CI also verifies generated source documentation, and it runs the build, tests, and desktop smoke test on Ubuntu x64 and ARM, Windows, and macOS.
 - **PRs**: Keep scope focused; link issues when relevant. Lay out the body and proof as [pull requests](docs/contributing/pull-requests.md) describes. Generated source documentation must stay in sync: run `pnpm generate` after descriptor changes.
@@ -14,7 +14,7 @@ Read [code standards](docs/contributing/code-standards.md) for naming, interface
 
 Turborepo owns the build, typecheck, test, generation-check, and repository verification graphs. A transit task makes source-first package changes invalidate consuming apps without serializing unrelated work. Package-level `turbo.json` files define framework inputs and reusable outputs.
 
-`pnpm check` runs Biome, Oxlint, Knip, architecture checks, non-mutating generated-file checks, type checks, and offline tests in one cacheable graph. `pnpm architecture:check` runs the focused architecture task. `pnpm build` verifies production bundles and performance budgets. `pnpm lint:fix` applies safe fixes explicitly; `pnpm format` formats files. Pre-commit checks never rewrite your working tree.
+`pnpm check` runs Biome, Knip, architecture checks, non-mutating generated-file checks, type checks, and offline tests in one cacheable graph. `pnpm architecture:check` runs the focused architecture task. `pnpm build` verifies production bundles and performance budgets. `pnpm lint:fix` applies safe fixes explicitly; `pnpm format` formats files. Pre-commit checks never rewrite your working tree.
 
 Run `pnpm generate` only when you intend to update tracked generated files. Run `pnpm generate:check` to verify them without writing. CI runs both the non-mutating checks and a generated diff gate.
 

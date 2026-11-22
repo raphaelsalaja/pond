@@ -1,6 +1,6 @@
 # Code standards
 
-These standards apply to hand-written repository code. Generated output follows its generator; fix the generator when output violates a rule. Check in the corresponding output when the required generation tools are available. Biome owns formatting. Oxlint owns the additional type and test rules. Both are required checks.
+These standards apply to hand-written repository code. Generated output follows its generator; fix the generator when output violates a rule. Check in the corresponding output when the required generation tools are available. Biome owns formatting and linting, including the additional type and test rules in its anti-slop plugin. It is a required check.
 
 ## Naming and files
 
