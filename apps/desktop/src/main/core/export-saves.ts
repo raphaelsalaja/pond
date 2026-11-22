@@ -14,7 +14,13 @@ import { inArray } from "drizzle-orm";
 import { getDb } from "../db";
 import { saveDir } from "../paths";
 import { exportEaglePackage } from "./eagle-package";
-import { exportFiles, safeName, sharedFolderPath } from "./export-files";
+import {
+  type ExportFolder,
+  type ExportItem,
+  exportFiles,
+  safeName,
+  sharedFolderPath,
+} from "./export-files";
 import { zipDirectory } from "./export-zip";
 import { runLibraryTransfer } from "./library-transfers";
 import { getPrefs } from "./prefs";
@@ -191,12 +197,24 @@ function localDate(date: Date) {
 /** Names an export after the folder or Save it holds, e.g. "Geoid (Pond Export 2026-11-22)". */
 export async function exportFilesName(
   ids: readonly string[],
+  options: { fromFolders?: boolean } = {},
   now = new Date(),
 ) {
   const selection = await exportSelection(ids);
-  const folder = sharedFolderPath(selection.items, selection.folders).at(-1);
-  const only = selection.items.length === 1 ? selection.items[0]?.save : null;
-  const subject = folder ?? (only ? safeName(only.title || only.id) : null);
+  return exportName(selection.items, selection.folders, options, now);
+}
+
+/** A single Save names its export unless the export came from a folder; otherwise the shared folder does. */
+export function exportName(
+  items: readonly ExportItem[],
+  folders: readonly ExportFolder[],
+  { fromFolders = false }: { fromFolders?: boolean },
+  now: Date,
+) {
+  const folder = sharedFolderPath(items, folders).at(-1);
+  const only = items.length === 1 ? items[0]?.save : null;
+  const title = only ? safeName(only.title || only.id) : undefined;
+  const subject = fromFolders ? (folder ?? title) : (title ?? folder);
   return subject
     ? `${subject} (Pond Export ${localDate(now)})`
     : `Pond Export ${localDate(now)}`;

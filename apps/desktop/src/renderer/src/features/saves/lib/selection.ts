@@ -223,7 +223,7 @@ export async function copyFilePathsForSelection(
 
 export async function exportSelectionFiles(
   ids: readonly string[],
-  options: { zip?: boolean } = {},
+  options: { zip?: boolean; fromFolders?: boolean } = {},
 ): Promise<SelectionActionResult> {
   if (ids.length === 0) return { ok: false, message: "Nothing selected" };
   const job = statusFeed.start("Exporting files");
@@ -231,6 +231,7 @@ export async function exportSelectionFiles(
     await window.pond.query("saves.exportFiles", {
       ids: [...ids],
       zip: options.zip,
+      fromFolders: options.fromFolders,
     }),
   );
   if (!result.ok) {

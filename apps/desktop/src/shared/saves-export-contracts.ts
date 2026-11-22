@@ -14,7 +14,11 @@ export interface SavesExportQueryInputs {
   "saves.exportPackage": SavesIdsInput;
   "saves.exportFile": SavesFileInput;
   "saves.share": { id: string; fileIndex?: number };
-  "saves.exportFiles": SavesIdsInput & { zip?: boolean };
+  "saves.exportFiles": SavesIdsInput & {
+    zip?: boolean;
+    /** Name the export after the shared folder even when it holds one Save. */
+    fromFolders?: boolean;
+  };
   "saves.exportWebp": SavesIdsInput;
   "saves.exportCsv": SavesIdsInput;
 }
