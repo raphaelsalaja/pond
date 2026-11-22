@@ -1,6 +1,7 @@
 import { Button, Input } from "@pond/ui";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { errorCopy } from "@/shared/lib/error-copy";
+import { chordGlyphs, SHORTCUT_PLATFORM } from "@/shared/lib/shortcuts";
 import type { PondCaptureApi } from "../../../../preload/quick-capture";
 import type { QuickCaptureSnapshot } from "../../../../shared/quick-capture-contracts";
 import { paintShell } from "../boot-shell";
@@ -16,6 +17,11 @@ declare global {
 
 /** Long enough to read the confirmation before the window closes. */
 const DONE_MS = 700;
+
+/** macOS reads glyphs fused (⌘↵); other platforms spell keys out (Ctrl+Enter). */
+const CAPTURE_KEYS = chordGlyphs("Mod+Enter").join(
+  SHORTCUT_PLATFORM === "mac" ? "" : "+",
+);
 
 const CAPTURE_FAILED = "Pond couldn't add this to your Library. Try again.";
 
@@ -224,7 +230,7 @@ export function QuickCaptureOverlay() {
               </span>
             ) : (
               <span className={styles.hint} role="status">
-                {done ?? "⌘↵ to capture, Esc to cancel"}
+                {done ?? `${CAPTURE_KEYS} to capture, Esc to cancel`}
               </span>
             )}
           </span>
