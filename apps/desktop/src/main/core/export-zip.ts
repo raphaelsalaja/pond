@@ -1,4 +1,4 @@
-import { createWriteStream } from "node:fs";
+import { createReadStream, createWriteStream, type ReadStream } from "node:fs";
 import { readdir, rename, rm, stat } from "node:fs/promises";
 import { join, relative, sep } from "node:path";
 import { pipeline } from "node:stream/promises";
@@ -30,13 +30,21 @@ export async function zipDirectory(source: string, destination: string) {
   await rm(partial, { force: true });
   const output = createWriteStream(partial, { flags: "wx" });
   const written = pipeline(zip.outputStream, output);
+  const open = new Set<ReadStream>();
   try {
     for (const path of files) {
       checkTransferCancellation();
       const { size } = await stat(path);
-      zip.addFile(path, relative(parent, path).split(sep).join("/"), {
-        compress: path.endsWith(".json"),
-      });
+      zip.addReadStreamLazy(
+        relative(parent, path).split(sep).join("/"),
+        { compress: path.endsWith(".json"), size },
+        (callback) => {
+          const input = createReadStream(path);
+          open.add(input);
+          input.once("close", () => open.delete(input));
+          callback(null, input);
+        },
+      );
       await transferProgress(path, size);
     }
     zip.end();
@@ -44,6 +52,7 @@ export async function zipDirectory(source: string, destination: string) {
     checkTransferCancellation();
     await rename(partial, destination);
   } catch (error) {
+    for (const input of open) input.destroy();
     output.destroy();
     await written.catch(() => {});
     await rm(partial, { force: true });
