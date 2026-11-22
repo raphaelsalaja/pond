@@ -1,12 +1,6 @@
 import { execFile } from "node:child_process";
-import {
-  mkdir,
-  mkdtemp,
-  readFile,
-  rm,
-  stat,
-  writeFile,
-} from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { copyFile, mkdir, mkdtemp, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
@@ -16,13 +10,14 @@ import ffmpegPath from "ffmpeg-static";
 import { afterEach, expect, it } from "vitest";
 import { saveDirIn } from "../paths";
 import { runFfmpeg } from "./convert-media";
-import { parseFfmpegMetadata } from "./media-metadata";
 import {
   compressExistingVideos,
   encodeTimeout,
   hevcArguments,
   isFaithfulEncode,
+  isSafeSource,
   parseDuration,
+  parseVideoProbe,
   type VideoCompressionRuntime,
   type VideoProbe,
 } from "./video-compression";
@@ -61,26 +56,35 @@ interface FakeLibrary {
   failures: string[];
 }
 
+type FakeSaves = Awaited<ReturnType<VideoCompressionRuntime["load"]>>["saves"];
+
 /** An in-memory library whose encoder writes `outputSize` bytes and reports `encoded` on probe. */
 function fakeLibrary(input: {
-  saves: Awaited<ReturnType<VideoCompressionRuntime["load"]>>["saves"];
+  saves: FakeSaves;
   source: VideoProbe;
   encoded: VideoProbe;
   outputSize: number;
   /** Source paths whose encode fails. */
   failing?: readonly string[];
+  /** The Saves as they read once encoding finishes. */
+  current?: FakeSaves;
 }): FakeLibrary {
   const written = new Map<string, number>();
   const commits: Transaction[] = [];
   const encodes: string[] = [];
   const failures: string[] = [];
   let workspaces = 0;
+  let loads = 0;
   return {
     commits,
     encodes,
     failures,
     runtime: {
-      load: async () => ({ root: "/library", saves: input.saves }),
+      load: async () => {
+        loads += 1;
+        const later = input.current ?? input.saves;
+        return { root: "/library", saves: loads > 1 ? later : input.saves };
+      },
       probe: async (path) => (written.has(path) ? input.encoded : input.source),
       encode: async ({ source, output }) => {
         encodes.push(source);
@@ -92,7 +96,7 @@ function fakeLibrary(input: {
         workspaces += 1;
         return { path: `/tmp/work-${workspaces}`, cleanup: async () => {} };
       },
-      read: async (path) => Buffer.alloc(written.get(path) ?? 0),
+      hash: async () => encodedSha,
       size: async (path) => {
         const size = written.get(path);
         if (size === undefined) throw new Error(`No file at ${path}`);
@@ -108,10 +112,15 @@ function fakeLibrary(input: {
   };
 }
 
+const encodedSha = "e".repeat(64);
+
 const h264: VideoProbe = {
   videoCodec: "h264",
   audioCodec: "aac",
   duration: 12,
+  pixelFormat: "yuv420p",
+  videoStreams: 1,
+  hdr: false,
 };
 const hevc: VideoProbe = { ...h264, videoCodec: "hevc" };
 
@@ -158,11 +167,13 @@ it("replaces H.264 videos with smaller HEVC copies and updates the Save", async 
   expect(transaction.patch.files?.[0]).toMatchObject({
     path: "video-1.mp4",
     size: 400,
+    sha256: encodedSha,
     mimeType: "video/mp4",
   });
   expect(transaction.patch.files?.[1]).toEqual(posterFile);
-  expect(transaction.files?.map((file) => file.filename)).toEqual([
-    "video-1.mp4",
+  expect(transaction.files).toBeUndefined();
+  expect(transaction.fileMoves).toEqual([
+    { sourcePath: join("/tmp/work-1", "0.mp4"), filename: "video-1.mp4" },
   ]);
   expect(transaction.fileRenames).toBeUndefined();
 });
@@ -227,10 +238,13 @@ it("renames MOV sources to MP4 after re-encoding them", async () => {
   expect(transaction.fileRenames).toEqual([
     { from: "clip.mov", to: "clip.mp4" },
   ]);
+  expect(transaction.fileMoves?.map((file) => file.filename)).toEqual([
+    "clip.mp4",
+  ]);
   expect(transaction.patch.bitrate).toBeNull();
 });
 
-it("leaves efficient codecs, missing Saves, and small gains untouched", async () => {
+it("leaves unsafe sources, missing Saves, and small gains untouched", async () => {
   const alreadyHevc = fakeLibrary({
     saves: [
       {
@@ -307,6 +321,165 @@ it("refuses to replace a video when the encode lost length or audio", async () =
   expect(isFaithfulEncode(h264, { ...hevc, audioCodec: null })).toBe(false);
   expect(isFaithfulEncode(h264, { ...hevc, duration: 12.3 })).toBe(true);
   expect(isFaithfulEncode(h264, h264)).toBe(false);
+  expect(isFaithfulEncode(h264, { ...hevc, duration: null })).toBe(false);
+});
+
+it("skips sources without a readable duration instead of encoding them", async () => {
+  const library = fakeLibrary({
+    saves: [
+      {
+        id: "save-1",
+        files: [videoFile("video-1.mp4", 1000)],
+        fileSize: 1000,
+        videoCodec: "h264",
+        bitrate: null,
+      },
+    ],
+    source: { ...h264, duration: null },
+    encoded: hevc,
+    outputSize: 300,
+  });
+
+  const result = await compressExistingVideos(
+    {
+      ids: ["save-1"],
+      quality: "balanced",
+      signal: new AbortController().signal,
+    },
+    library.runtime,
+  );
+
+  expect(result).toMatchObject({ changed: 0, skipped: 1, failed: 0 });
+  expect(library.encodes).toEqual([]);
+  expect(library.commits).toEqual([]);
+});
+
+it("only re-encodes single-stream 8-bit SDR sources it knows", () => {
+  expect(isSafeSource(h264)).toBe(true);
+  expect(isSafeSource({ ...h264, videoCodec: "vp9" })).toBe(true);
+  expect(isSafeSource({ ...h264, videoCodec: "prores" })).toBe(false);
+  expect(isSafeSource({ ...h264, videoCodec: null })).toBe(false);
+  expect(isSafeSource(hevc)).toBe(false);
+  expect(isSafeSource({ ...h264, pixelFormat: "yuv420p10le" })).toBe(false);
+  expect(isSafeSource({ ...h264, pixelFormat: "yuva420p" })).toBe(false);
+  expect(isSafeSource({ ...h264, videoStreams: 2 })).toBe(false);
+  expect(isSafeSource({ ...h264, hdr: true })).toBe(false);
+  expect(isSafeSource({ ...h264, duration: 0 })).toBe(false);
+});
+
+it("reads codec, pixel format, streams, and HDR from FFmpeg probe output", () => {
+  const sdr = [
+    "  Duration: 00:00:12.00, start: 0.000000, bitrate: 800 kb/s",
+    "  Stream #0:0[0x1](und): Video: h264 (High) (avc1 / 0x31637661), " +
+      "yuv420p(tv, bt709, progressive), 1920x1080, 30 fps",
+    "  Stream #0:1[0x2](und): Audio: aac (LC) (mp4a / 0x6134706D), 48000 Hz",
+  ].join("\n");
+  const hdr = [
+    "  Duration: 00:00:12.00, start: 0.000000, bitrate: 900 kb/s",
+    "  Stream #0:0[0x1](und): Video: hevc (Main 10) (hvc1 / 0x31637668), " +
+      "yuv420p10le(tv, bt2020nc/bt2020/smpte2084), 3840x2160, 60 fps",
+  ].join("\n");
+  const cover = "  Stream #0:2: Video: mjpeg, yuvj420p(pc), 320x240";
+  const dolbyVision = "    DOVI configuration record";
+
+  expect(parseVideoProbe(sdr)).toEqual({
+    videoCodec: "h264",
+    audioCodec: "aac",
+    duration: 12,
+    pixelFormat: "yuv420p",
+    videoStreams: 1,
+    hdr: false,
+  });
+  expect(parseVideoProbe(hdr)).toMatchObject({
+    videoCodec: "hevc",
+    audioCodec: null,
+    pixelFormat: "yuv420p10le",
+    hdr: true,
+  });
+  expect(parseVideoProbe(`${sdr}\n${cover}`).videoStreams).toBe(2);
+  expect(parseVideoProbe(`${sdr}\n${dolbyVision}`).hdr).toBe(true);
+});
+
+it("commits against the Save as it reads once encoding finishes", async () => {
+  const retitledPoster = { ...posterFile, sha256: "2".repeat(64) };
+  const library = fakeLibrary({
+    saves: [
+      {
+        id: "save-1",
+        files: [videoFile("video-1.mp4", 1000), posterFile],
+        fileSize: 1000,
+        videoCodec: "h264",
+        bitrate: null,
+      },
+    ],
+    current: [
+      {
+        id: "save-1",
+        files: [videoFile("video-1.mp4", 1000), retitledPoster],
+        fileSize: 1000,
+        videoCodec: "h264",
+        bitrate: null,
+      },
+    ],
+    source: h264,
+    encoded: hevc,
+    outputSize: 400,
+  });
+
+  await compressExistingVideos(
+    {
+      ids: ["save-1"],
+      quality: "balanced",
+      signal: new AbortController().signal,
+    },
+    library.runtime,
+  );
+
+  const [transaction] = library.commits;
+  if (transaction?.kind !== "update" || transaction.model !== "save")
+    throw new Error("Expected one Save update.");
+  expect(transaction.before.files?.[1]).toEqual(retitledPoster);
+  expect(transaction.patch.files?.[0]).toMatchObject({ sha256: encodedSha });
+  expect(transaction.patch.files?.[1]).toEqual(retitledPoster);
+});
+
+it("leaves a video alone when it changed while it was encoding", async () => {
+  const replaced = { ...videoFile("video-1.mp4", 1000), sha256: "9" };
+  const library = fakeLibrary({
+    saves: [
+      {
+        id: "save-1",
+        files: [videoFile("video-1.mp4", 1000)],
+        fileSize: 1000,
+        videoCodec: "h264",
+        bitrate: null,
+      },
+    ],
+    current: [
+      {
+        id: "save-1",
+        files: [replaced],
+        fileSize: 1000,
+        videoCodec: "h264",
+        bitrate: null,
+      },
+    ],
+    source: h264,
+    encoded: hevc,
+    outputSize: 400,
+  });
+
+  const result = await compressExistingVideos(
+    {
+      ids: ["save-1"],
+      quality: "balanced",
+      signal: new AbortController().signal,
+    },
+    library.runtime,
+  );
+
+  expect(result).toMatchObject({ changed: 0, skipped: 1, failed: 0 });
+  expect(library.commits).toEqual([]);
 });
 
 it("keeps compressing the rest of a batch after one video fails", async () => {
@@ -430,6 +603,8 @@ it.skipIf(!ffmpegPath)(
       "sine=frequency=440:duration=2",
       "-c:v",
       "libx264",
+      "-pix_fmt",
+      "yuv420p",
       "-crf",
       "10",
       "-c:a",
@@ -442,14 +617,10 @@ it.skipIf(!ffmpegPath)(
         () => "",
         (error: { stderr?: string }) => error.stderr ?? "",
       );
-      const metadata = parseFfmpegMetadata(output);
-      return {
-        videoCodec: metadata.videoCodec?.toLowerCase() ?? null,
-        audioCodec: metadata.audioCodec?.toLowerCase() ?? null,
-        duration: parseDuration(output),
-      };
+      return parseVideoProbe(output);
     };
     const commits: Transaction[] = [];
+    const encodedPath = join(root, "encoded.mp4");
     const before = (await stat(source)).size;
 
     const result = await compressExistingVideos(
@@ -481,10 +652,17 @@ it.skipIf(!ffmpegPath)(
             cleanup: () => rm(path, { recursive: true, force: true }),
           };
         },
-        read: (path) => readFile(path),
+        hash: async (path) => {
+          const bytes = await readFile(path);
+          return createHash("sha256").update(bytes).digest("hex");
+        },
         size: async (path) => (await stat(path)).size,
         commit: async (transaction) => {
           commits.push(transaction);
+          if (transaction.kind !== "update" || transaction.model !== "save")
+            return;
+          const moved = transaction.fileMoves?.[0];
+          if (moved) await copyFile(moved.sourcePath, encodedPath);
         },
         reportFailure: (_id, reason) => {
           throw new Error(reason);
@@ -497,10 +675,9 @@ it.skipIf(!ffmpegPath)(
     const [transaction] = commits;
     if (transaction?.kind !== "update" || transaction.model !== "save")
       throw new Error("Expected one Save update.");
-    const bytes = transaction.files?.[0]?.bytes;
-    if (!bytes) throw new Error("Expected encoded bytes.");
-    const encodedPath = join(root, "encoded.mp4");
-    await writeFile(encodedPath, bytes);
+    expect(transaction.fileMoves?.map((file) => file.filename)).toEqual([
+      "video-1.mp4",
+    ]);
     expect(await probe(encodedPath)).toMatchObject({
       videoCodec: "hevc",
       audioCodec: "aac",

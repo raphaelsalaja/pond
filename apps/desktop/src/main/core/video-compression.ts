@@ -1,6 +1,7 @@
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdtemp, readFile, rm, stat } from "node:fs/promises";
+import { createReadStream } from "node:fs";
+import { mkdtemp, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { extname, join } from "node:path";
 import { type Save, type SaveFile, saves } from "@pond/schema/db";
@@ -15,7 +16,6 @@ import { getDb } from "../db";
 import { resolvePaths, saveDirIn } from "../paths";
 import { runFfmpeg } from "./convert-media";
 import { executeBatch } from "./executor";
-import { extractMediaMetadata } from "./media-metadata";
 import { binariesAvailable } from "./refresh/binaries";
 
 type VideoSave = Pick<
@@ -41,8 +41,13 @@ const MAX_ENCODE_TIMEOUT_MS = 6 * 60 * 60_000;
 /** A rewrite must save at least this share of the original, or the original stays. */
 const MIN_SAVINGS = 0.1;
 
-/** Codecs that already compress at least as well as HEVC at these settings. */
-const EFFICIENT_CODECS = new Set(["hevc", "h265", "av1", "vp9"]);
+/** Every other source codec stays as it is, so an unknown format is never re-encoded by accident. */
+const SAFE_SOURCE_CODECS = new Set(["h264", "mpeg4", "vp8", "vp9"]);
+
+/** Wide-gamut primaries and PQ or HLG transfer mark HDR, which the `yuv420p` encode flattens. */
+const HDR_COLOR = /bt2020|smpte2084|arib-std-b67|smpte428/i;
+
+const VIDEO_STREAM = /^\s*Stream #.*?: Video:/;
 
 /** Audio MP4 carries without re-encoding. */
 const MP4_AUDIO_CODECS = new Set(["aac", "mp3", "alac", "ac3", "eac3"]);
@@ -53,6 +58,9 @@ export interface VideoProbe {
   videoCodec: string | null;
   audioCodec: string | null;
   duration: number | null;
+  pixelFormat: string | null;
+  videoStreams: number;
+  hdr: boolean;
 }
 
 export interface VideoCompressionRuntime {
@@ -66,7 +74,7 @@ export interface VideoCompressionRuntime {
     signal: AbortSignal;
   }): Promise<void>;
   workspace(): Promise<{ path: string; cleanup: () => Promise<void> }>;
-  read(path: string): Promise<Buffer>;
+  hash(path: string): Promise<string>;
   size(path: string): Promise<number>;
   commit(transaction: Transaction): Promise<void>;
   reportFailure(id: string, reason: string): void;
@@ -78,6 +86,15 @@ export interface VideoCompressionResult {
   failed: number;
   bytesBefore: number;
   bytesAfter: number;
+}
+
+interface EncodedVideo {
+  file: SaveFile;
+  output: string;
+  path: string;
+  bytesBefore: number;
+  size: number;
+  sha256: string;
 }
 
 const runtime: VideoCompressionRuntime = {
@@ -92,12 +109,9 @@ const runtime: VideoCompressionRuntime = {
     return { root, saves: rows };
   },
   async probe(path) {
-    const metadata = await extractMediaMetadata(path);
-    return {
-      videoCodec: metadata.videoCodec?.toLowerCase() ?? null,
-      audioCodec: metadata.audioCodec?.toLowerCase() ?? null,
-      duration: await probeDuration(path),
-    };
+    const { ffmpeg } = binariesAvailable();
+    if (!ffmpeg) throw new Error("FFmpeg is required to compress videos.");
+    return parseVideoProbe(await ffmpegInfo(ffmpeg, path));
   },
   async encode(input) {
     const { ffmpeg } = binariesAvailable();
@@ -114,7 +128,11 @@ const runtime: VideoCompressionRuntime = {
     const path = await mkdtemp(join(tmpdir(), "pond-video-compress-"));
     return { path, cleanup: () => rm(path, { recursive: true, force: true }) };
   },
-  read: (path) => readFile(path),
+  async hash(path) {
+    const hash = createHash("sha256");
+    for await (const chunk of createReadStream(path)) hash.update(chunk);
+    return hash.digest("hex");
+  },
   size: async (path) => (await stat(path)).size,
   async commit(transaction) {
     await executeBatch([transaction]);
@@ -125,10 +143,8 @@ const runtime: VideoCompressionRuntime = {
 };
 
 /**
- * Re-encodes the video files of each Save as HEVC in place. Each Save commits
- * on its own so memory stays bounded by one video and finished work survives a
- * cancel. Originals are replaced without Undo: keeping them would defeat the
- * purpose, so every output is verified before it replaces anything.
+ * Re-encodes each Save's videos as HEVC in place, committing one Save at a time.
+ * Originals are replaced without Undo, so every output is verified first.
  */
 export async function compressExistingVideos(
   input: VideoCompressionRequest & {
@@ -202,16 +218,12 @@ async function compressSaveVideos(input: {
   if (videos.length === 0) return null;
   const workspace = await operations.workspace();
   try {
-    const replacements: Array<{
-      file: SaveFile;
-      bytes: Buffer;
-      path: string;
-    }> = [];
+    const encoded: EncodedVideo[] = [];
     for (const [index, file] of videos.entries()) {
       input.signal.throwIfAborted();
       const source = join(input.directory, file.path);
       const probe = await operations.probe(source);
-      if (!probe.videoCodec || EFFICIENT_CODECS.has(probe.videoCodec)) continue;
+      if (!isSafeSource(probe) || probe.duration === null) continue;
       const output = join(workspace.path, `${index}.mp4`);
       await operations.encode({
         source,
@@ -223,37 +235,43 @@ async function compressSaveVideos(input: {
           copyAudio:
             probe.audioCodec !== null && MP4_AUDIO_CODECS.has(probe.audioCodec),
         }),
-        duration: probe.duration ?? 60,
+        duration: probe.duration,
         signal: input.signal,
       });
       const before = file.size ?? (await operations.size(source));
       const after = await operations.size(output);
       if (after > before * (1 - MIN_SAVINGS)) continue;
-      const encoded = await operations.probe(output);
-      if (!isFaithfulEncode(probe, encoded))
+      if (!isFaithfulEncode(probe, await operations.probe(output)))
         throw new Error(
           `The compressed copy of ${file.path} does not match the original.`,
         );
-      replacements.push({
+      encoded.push({
         file,
-        bytes: await operations.read(output),
+        output,
         path: file.path.replace(/\.[^.]+$/, ".mp4"),
+        bytesBefore: before,
+        size: after,
+        sha256: await operations.hash(output),
       });
     }
-    if (replacements.length === 0) return null;
+    if (encoded.length === 0) return null;
     input.signal.throwIfAborted();
     input.assertActive?.();
-    const transaction = videoCompressionTransaction(save, replacements);
-    await operations.commit(transaction);
+    /** Encodes can take hours, so commit against the Save as it is now, not as the batch found it. */
+    const { saves: fresh } = await operations.load([save.id]);
+    const current = fresh.find((row) => row.id === save.id);
+    if (!current) return null;
+    const replacements = encoded.filter((item) =>
+      isStillReplaceable(current, item),
+    );
+    if (replacements.length === 0) return null;
+    await operations.commit(videoCompressionTransaction(current, replacements));
     return {
       bytesBefore: replacements.reduce(
-        (sum, item) => sum + (item.file.size ?? 0),
+        (sum, item) => sum + item.bytesBefore,
         0,
       ),
-      bytesAfter: replacements.reduce(
-        (sum, item) => sum + item.bytes.length,
-        0,
-      ),
+      bytesAfter: replacements.reduce((sum, item) => sum + item.size, 0),
     };
   } finally {
     await workspace.cleanup();
@@ -264,6 +282,34 @@ function isCompressibleVideo(file: SaveFile): boolean {
   if (file.kind !== "video" && !file.mimeType?.startsWith("video/"))
     return false;
   return VIDEO_EXTENSIONS.has(extname(file.path).toLowerCase());
+}
+
+/** The encoded source still sits at its path unchanged, and its MP4 name is free. */
+function isStillReplaceable(save: VideoSave, item: EncodedVideo): boolean {
+  const files = save.files ?? [];
+  const source = files.find((file) => file.path === item.file.path);
+  if (
+    !source ||
+    source.sha256 !== item.file.sha256 ||
+    source.size !== item.file.size
+  )
+    return false;
+  return !files.some(
+    (file) => file.path === item.path && file.path !== item.file.path,
+  );
+}
+
+/** Only one-stream, 8-bit SDR 4:2:0 sources with a known length keep everything through `yuv420p` and `0:v:0`. */
+export function isSafeSource(probe: VideoProbe): boolean {
+  return (
+    probe.videoCodec !== null &&
+    SAFE_SOURCE_CODECS.has(probe.videoCodec) &&
+    probe.pixelFormat === "yuv420p" &&
+    probe.videoStreams === 1 &&
+    !probe.hdr &&
+    probe.duration !== null &&
+    probe.duration > 0
+  );
 }
 
 export function hevcArguments(input: {
@@ -317,15 +363,14 @@ export function isFaithfulEncode(
 ): boolean {
   if (encoded.videoCodec !== "hevc") return false;
   if (source.audioCodec !== null && encoded.audioCodec === null) return false;
-  if (source.duration === null) return true;
-  if (encoded.duration === null) return false;
+  if (source.duration === null || encoded.duration === null) return false;
   const tolerance = Math.max(0.5, source.duration * 0.02);
   return Math.abs(source.duration - encoded.duration) <= tolerance;
 }
 
 function videoCompressionTransaction(
   save: VideoSave,
-  replacements: ReadonlyArray<{ file: SaveFile; bytes: Buffer; path: string }>,
+  replacements: readonly EncodedVideo[],
 ): Transaction {
   const byPath = new Map(replacements.map((item) => [item.file.path, item]));
   const files = (save.files ?? []).map((file): SaveFile => {
@@ -335,8 +380,8 @@ function videoCompressionTransaction(
       ...file,
       path: replacement.path,
       mimeType: "video/mp4",
-      size: replacement.bytes.length,
-      sha256: createHash("sha256").update(replacement.bytes).digest("hex"),
+      size: replacement.size,
+      sha256: replacement.sha256,
     };
   });
   const primary = (save.files ?? []).find(isCompressibleVideo);
@@ -347,9 +392,9 @@ function videoCompressionTransaction(
   if (primary && primaryReplacement && save.fileSize === primary.size) {
     const ratio =
       primary.size && primary.size > 0
-        ? primaryReplacement.bytes.length / primary.size
+        ? primaryReplacement.size / primary.size
         : null;
-    patch.fileSize = primaryReplacement.bytes.length;
+    patch.fileSize = primaryReplacement.size;
     patch.videoCodec = "hevc";
     patch.bitrate =
       save.bitrate !== null && ratio !== null
@@ -368,10 +413,9 @@ function videoCompressionTransaction(
     id: save.id,
     before,
     patch,
-    files: replacements.map((item) => ({
+    fileMoves: replacements.map((item) => ({
+      sourcePath: item.output,
       filename: item.path,
-      bytes: item.bytes,
-      mimeType: "video/mp4",
     })),
     meta: { actor: "user", actorReason: "video:compress" },
   };
@@ -379,10 +423,8 @@ function videoCompressionTransaction(
   return transaction;
 }
 
-async function probeDuration(path: string): Promise<number | null> {
-  const { ffmpeg } = binariesAvailable();
-  if (!ffmpeg) return null;
-  const stderr = await new Promise<string>((resolve) => {
+function ffmpegInfo(ffmpeg: string, path: string): Promise<string> {
+  return new Promise((resolve) => {
     execFile(
       ffmpeg,
       ["-hide_banner", "-i", path],
@@ -390,7 +432,25 @@ async function probeDuration(path: string): Promise<number | null> {
       (_error, _stdout, output) => resolve(String(output)),
     );
   });
-  return parseDuration(stderr);
+}
+
+/** Reads the fields that decide whether a source is safe to re-encode from `ffmpeg -i` output. */
+export function parseVideoProbe(output: string): VideoProbe {
+  const lines = output.split(/\r?\n/);
+  const videoStreams = lines.filter((line) => VIDEO_STREAM.test(line));
+  const video = videoStreams[0] ?? "";
+  return {
+    videoCodec: firstMatch(/Video:\s*([^,\s]+)/, video),
+    audioCodec: firstMatch(/Stream #.*?: Audio:\s*([^,\s]+)/, output),
+    duration: parseDuration(output),
+    pixelFormat: firstMatch(/Video:[^,]*,\s*([a-z0-9_]+)/i, video),
+    videoStreams: videoStreams.length,
+    hdr: HDR_COLOR.test(video) || /DOVI configuration/i.test(output),
+  };
+}
+
+function firstMatch(pattern: RegExp, text: string): string | null {
+  return pattern.exec(text)?.[1]?.toLowerCase() ?? null;
 }
 
 export function encodeTimeout(duration: number): number {
