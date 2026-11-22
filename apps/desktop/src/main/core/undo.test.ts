@@ -153,7 +153,9 @@ it("runs a step's side effects after its transactions in each direction", async 
         order.push(`commit:${transaction.patch.rating}`);
   });
   history.record([ratingChange("a", 5)], {
-    undo: async () => order.push("undo"),
+    undo: async () => {
+      order.push("undo");
+    },
     redo: async () => {
       order.push("redo");
       throw new Error("Prefs unavailable");

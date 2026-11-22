@@ -29,9 +29,9 @@ export interface FolderTemplateRuntime {
   run<T>(operation: () => Promise<T>): Promise<T>;
   listFolders(): Promise<Folder[]>;
   getPrefs(): Promise<Prefs>;
-  setPrefs(patch: DeepPartial<Prefs>): Promise<unknown>;
-  removeFolderPrefs(ids: readonly string[]): Promise<unknown>;
-  execute(transactions: Transaction[]): Promise<unknown>;
+  setPrefs(patch: DeepPartial<Prefs>): Promise<void>;
+  removeFolderPrefs(ids: readonly string[]): Promise<void>;
+  execute(transactions: Transaction[]): Promise<void>;
   recordUndo(transactions: Transaction[], effects?: UndoEffects): string | null;
   createId(): string;
 }
@@ -40,9 +40,15 @@ const defaultRuntime: FolderTemplateRuntime = {
   run: withMutationScope,
   listFolders,
   getPrefs,
-  setPrefs,
-  removeFolderPrefs,
-  execute: executeBatch,
+  setPrefs: async (patch) => {
+    await setPrefs(patch);
+  },
+  removeFolderPrefs: async (ids) => {
+    await removeFolderPrefs(ids);
+  },
+  execute: async (transactions) => {
+    await executeBatch(transactions);
+  },
   recordUndo: recordBatchForUndo,
   createId: ulid,
 };

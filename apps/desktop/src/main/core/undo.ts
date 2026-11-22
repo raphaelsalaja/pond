@@ -8,8 +8,8 @@ const MAX_HISTORY = 200;
 
 /** Work outside the Library database that a step undoes and redoes with its transactions. */
 export interface UndoEffects {
-  undo: () => Promise<unknown>;
-  redo: () => Promise<unknown>;
+  undo: () => Promise<void>;
+  redo: () => Promise<void>;
 }
 
 interface UndoStep {
@@ -20,7 +20,7 @@ interface UndoStep {
 
 /** The transactions already committed, so a failed side effect is logged rather than reported as a failed step. */
 async function runEffect(
-  effect: (() => Promise<unknown>) | undefined,
+  effect: (() => Promise<void>) | undefined,
 ): Promise<void> {
   try {
     await effect?.();
