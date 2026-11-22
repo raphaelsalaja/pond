@@ -331,6 +331,9 @@ jobs:
           cache: pnpm
 
       - name: Install dependencies
+        # Pond only runs CPU sessions, so skip the CUDA and TensorRT download.
+        env:
+          ONNXRUNTIME_NODE_INSTALL: skip
         run: pnpm install --frozen-lockfile
 
       - name: Set up Turborepo Remote Cache
@@ -380,6 +383,9 @@ jobs:
           cache: pnpm
 
       - name: Install dependencies
+        # Pond only runs CPU sessions, so skip the CUDA and TensorRT download.
+        env:
+          ONNXRUNTIME_NODE_INSTALL: skip
         run: pnpm install --frozen-lockfile
 
       - name: Set up Turborepo Remote Cache

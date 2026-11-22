@@ -1,12 +1,13 @@
 import prettyBytes from "pretty-bytes";
 import prettyMs from "pretty-ms";
+import { systemLocale } from "./system-locale";
 
-const numberFormatter = new Intl.NumberFormat(undefined, {
+const numberFormatter = new Intl.NumberFormat(systemLocale, {
   useGrouping: true,
   maximumFractionDigits: 0,
 });
 
-const compactFormatter = new Intl.NumberFormat(undefined, {
+const compactFormatter = new Intl.NumberFormat(systemLocale, {
   notation: "compact",
   compactDisplay: "short",
   maximumFractionDigits: 1,
@@ -48,12 +49,12 @@ export function formatDuration(sec: number): string {
   });
 }
 
-const tsTime = new Intl.DateTimeFormat(undefined, {
+const tsTime = new Intl.DateTimeFormat(systemLocale, {
   hour: "numeric",
   minute: "2-digit",
 });
 
-const tsDate = new Intl.DateTimeFormat(undefined, {
+const tsDate = new Intl.DateTimeFormat(systemLocale, {
   month: "short",
   day: "numeric",
   year: "numeric",
