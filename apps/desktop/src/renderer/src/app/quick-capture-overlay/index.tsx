@@ -1,5 +1,6 @@
 import { Button, Input } from "@pond/ui";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { errorCopy } from "@/shared/lib/error-copy";
 import type { PondCaptureApi } from "../../../../preload/quick-capture";
 import type { QuickCaptureSnapshot } from "../../../../shared/quick-capture-contracts";
 import { paintShell } from "../boot-shell";
@@ -15,6 +16,8 @@ declare global {
 
 /** Long enough to read the confirmation before the window closes. */
 const DONE_MS = 700;
+
+const CAPTURE_FAILED = "Pond couldn't add this to your Library. Try again.";
 
 const EMPTY: QuickCaptureFields = {
   text: "",
@@ -90,8 +93,9 @@ export function QuickCaptureOverlay() {
       const count = result?.count ?? 0;
       setDone(count === 1 ? "Captured" : `Captured ${count} Saves`);
       window.setTimeout(dismiss, DONE_MS);
-    } catch {
-      setError("Couldn't capture this. Try again.");
+    } catch (cause) {
+      console.error("[pond quick-capture] capture failed", cause);
+      setError(errorCopy(cause, CAPTURE_FAILED));
     } finally {
       setBusy(false);
     }
@@ -202,7 +206,13 @@ export function QuickCaptureOverlay() {
             size="sm"
             disabled={locked}
             onClick={() =>
-              void window.pondCapture?.pick().then((picked) => addPaths(picked))
+              void window.pondCapture
+                ?.pick()
+                .then(addPaths)
+                .catch((cause: unknown) => {
+                  console.error("[pond quick-capture] pick failed", cause);
+                  setError("The file picker didn't open. Try again.");
+                })
             }
           >
             Add Files
