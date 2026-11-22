@@ -1,4 +1,4 @@
-/** Backspace moves the selected Save to Trash; selecting it in Trash and Restore from Trash brings it back. */
+/** Backspace moves the selected Save to Trash; in Trash, Backspace on it restores it. */
 const { select, untilSave } = require("../harness/steps.cjs");
 
 exports.run = async (ctx) => {
@@ -13,6 +13,6 @@ exports.run = async (ctx) => {
   );
   await ctx.navigate("/trash");
   await select(ctx, coral);
-  await ctx.click('button[aria-label="Restore from Trash"]');
+  await ctx.key("Backspace");
   await untilSave(ctx, coral, (save) => save.deletedAt == null, "came back");
 };
