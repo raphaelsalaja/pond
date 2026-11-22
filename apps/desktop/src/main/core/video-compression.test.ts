@@ -321,7 +321,7 @@ it("keeps compressing the rest of a batch after one video fails", async () => {
     source: h264,
     encoded: hevc,
     outputSize: 500,
-    failing: ["/library/items/save-2.info/video-1.mp4"],
+    failing: [join(saveDirIn("/library", "save-2"), "video-1.mp4")],
   });
 
   const result = await compressExistingVideos(
