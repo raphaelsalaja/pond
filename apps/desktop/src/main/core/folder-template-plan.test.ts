@@ -1,5 +1,6 @@
 import {
   type FolderTemplate,
+  FolderTemplatePrefsSchema,
   orderFolderTemplateNodes,
 } from "@pond/schema/folder-templates";
 import { BUILT_IN_FOLDER_TEMPLATES } from "@shared/folder-templates";
@@ -72,6 +73,21 @@ describe("orderFolderTemplateNodes", () => {
       expect(orderFolderTemplateNodes(entry.nodes)).toHaveLength(
         entry.nodes.length,
       );
+  });
+});
+
+describe("FolderTemplatePrefsSchema", () => {
+  it("drops only the templates that fail to parse", () => {
+    const parsed = FolderTemplatePrefsSchema.parse({
+      custom: [template, { id: "broken", name: "", nodes: [] }, "junk"],
+    });
+    expect(parsed.custom.map((entry) => entry.id)).toEqual(["t"]);
+  });
+
+  it("falls back to no templates when the list is not an array", () => {
+    expect(FolderTemplatePrefsSchema.parse({ custom: "junk" }).custom).toEqual(
+      [],
+    );
   });
 });
 

@@ -36,9 +36,17 @@ export const FolderTemplateSchema = z.object({
     .max(FOLDER_TEMPLATE_NODE_LIMIT),
 });
 
+/** Drops templates that fail to parse, so one bad entry never erases the rest on the next prefs write. */
+function validTemplates(items: readonly unknown[]): FolderTemplate[] {
+  return items.flatMap((item) => {
+    const parsed = FolderTemplateSchema.safeParse(item);
+    return parsed.success ? [parsed.data] : [];
+  });
+}
+
 export const FolderTemplatePrefsSchema = z.object({
   /** Templates saved on this computer, shared by every Library. */
-  custom: z.array(FolderTemplateSchema).catch([]),
+  custom: z.array(z.unknown()).transform(validTemplates).catch([]),
 });
 
 export type FolderTemplateNode = z.infer<typeof FolderTemplateNodeSchema>;
