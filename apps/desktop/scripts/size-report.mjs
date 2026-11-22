@@ -57,7 +57,9 @@ function largestEntries(root) {
 }
 
 const lines = ["## Package size", "", "| Installer | Size |", "| --- | ---: |"];
-for (const name of readdirSync(dist).filter((n) => INSTALLER.test(n)).sort()) {
+for (const name of readdirSync(dist)
+  .filter((n) => INSTALLER.test(n))
+  .sort()) {
   lines.push(`| ${name} | ${mb(sizeOf(join(dist, name)))} |`);
 }
 for (const root of packagedRoots()) {
