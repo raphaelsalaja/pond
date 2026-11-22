@@ -1,4 +1,4 @@
-import { IconEye2, IconSidebarEdit } from "@pond/icons";
+import { IconEyeSlash, IconSidebarEdit } from "@pond/icons";
 import type { SidebarSection } from "@pond/schema";
 import type { MenuItemSpec } from "@pond/ui";
 import { useState } from "react";
@@ -28,7 +28,7 @@ export function SidebarSectionMenu({
     { type: "separator" },
     {
       label: `Hide ${SIDEBAR_SECTION_LABELS[section]}`,
-      icon: <IconEye2 />,
+      icon: <IconEyeSlash />,
       onClick: () => setSidebarSectionVisible(section, false),
     },
     {

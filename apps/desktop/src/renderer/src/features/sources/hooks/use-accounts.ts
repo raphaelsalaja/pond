@@ -119,15 +119,25 @@ export async function refetchAccounts(): Promise<AccountRow[]> {
   }
 }
 
+let mountFetch: Promise<AccountRow[]> | null = null;
+
+/** Every Sources row mounts this hook, so mounts share one request instead of flooding the main process. */
+function syncAccounts(): Promise<AccountRow[]> {
+  mountFetch ??= refetchAccounts().finally(() => {
+    mountFetch = null;
+  });
+  return mountFetch;
+}
+
 export function useAccounts(): AccountsResult {
   const accounts = useSelector(store, (s) => s.accounts);
   const loaded = useSelector(store, (s) => s.loaded);
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;
-    void refetchAccounts().then((rows) => {
+    void syncAccounts().then((rows) => {
       if (rows.some((row) => row.handle && row.avatarUrl === undefined)) {
-        timer = setTimeout(() => void refetchAccounts(), 4000);
+        timer = setTimeout(() => void syncAccounts(), 4000);
       }
     });
     return () => {

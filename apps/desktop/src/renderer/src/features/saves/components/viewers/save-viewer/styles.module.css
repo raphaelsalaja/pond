@@ -9,6 +9,8 @@
 
 .layer {
   position: relative;
+  display: flex;
+  flex-direction: column;
   grid-area: layer;
   min-width: 0;
   min-height: 0;

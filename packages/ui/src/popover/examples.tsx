@@ -1,4 +1,4 @@
-import { IconInfo } from "@pond/icons";
+import { IconCircleInfo } from "@pond/icons";
 import { Button } from "../button";
 import type { ComponentDocs } from "../shared/docs";
 import { Popover } from ".";
@@ -29,7 +29,7 @@ function AboutTags() {
       <Popover.Trigger
         render={<Button icon variant="ghost" aria-label="About Tags" />}
       >
-        <IconInfo />
+        <IconCircleInfo />
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Positioner side="right">

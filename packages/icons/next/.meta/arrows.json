@@ -1,0 +1,413 @@
+{
+ "arrows-expand-diagonal": {
+  "attempts": [
+   {
+    "note": "one stem, two heads",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3.25 14.75L14.75 3.25M9.25 3.25L14.75 3.25L14.75 8.75M8.75 14.75L3.25 14.75L3.25 9.25\"/></svg>\n",
+    "picked": true
+   },
+   {
+    "note": "two arrows from the centre",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M10.25 7.75L15.25 2.75M9.75 2.75L15.25 2.75L15.25 8.25\"/><path d=\"M7.75 10.25L2.75 15.25M8.25 15.25L2.75 15.25L2.75 9.75\"/></svg>\n",
+    "picked": false
+   }
+  ]
+ },
+ "arrows-expand": {
+  "attempts": [
+   {
+    "note": "four corner arrows",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M6.25 6.25L1.75 1.75M7.25 1.75L1.75 1.75L1.75 7.25\"/><path d=\"M11.75 6.25L16.25 1.75M10.75 1.75L16.25 1.75L16.25 7.25\"/><path d=\"M11.75 11.75L16.25 16.25M10.75 16.25L16.25 16.25L16.25 10.75\"/><path d=\"M6.25 11.75L1.75 16.25M7.25 16.25L1.75 16.25L1.75 10.75\"/></svg>\n",
+    "picked": true
+   },
+   {
+    "note": "two diagonals, four heads",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3.25 14.75L14.75 3.25M9.25 3.25L14.75 3.25L14.75 8.75M8.75 14.75L3.25 14.75L3.25 9.25\"/><path d=\"M14.75 14.75L3.25 3.25M8.75 3.25L3.25 3.25L3.25 8.75M9.25 14.75L14.75 14.75L14.75 9.25\"/></svg>\n",
+    "picked": false
+   }
+  ]
+ },
+ "caret-minimize": {
+  "attempts": [
+   {
+    "note": "two arrows in to the centre",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M15.5 2.5L10.25 7.75M15.75 7.75L10.25 7.75L10.25 2.25\"/><path d=\"M2.5 15.5L7.75 10.25M2.25 10.25L7.75 10.25L7.75 15.75\"/></svg>\n",
+    "picked": true
+   },
+   {
+    "note": "four arrows in",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M15.5 2.5L10.25 7.75M15.75 7.75L10.25 7.75L10.25 2.25\"/><path d=\"M2.5 15.5L7.75 10.25M2.25 10.25L7.75 10.25L7.75 15.75\"/><path d=\"M2.5 2.5L7.75 7.75M2.25 7.75L7.75 7.75L7.75 2.25\"/><path d=\"M15.5 15.5L10.25 10.25M15.75 10.25L10.25 10.25L10.25 15.75\"/></svg>\n",
+    "picked": false
+   }
+  ]
+ },
+ "arrow-diagonal-in": {
+  "attempts": [
+   {
+    "note": "arrow into a corner bracket",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M1.75 10L1.75 14.688A1.562 1.562 0 0 0 3.312 16.25L8 16.25\"/><path d=\"M15.125 2.875L6 12M11.5 12L6 12L6 6.5\"/></svg>\n",
+    "picked": true
+   },
+   {
+    "note": "arrow alone",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M14.625 3.375L5.5 12.5M11 12.5L5.5 12.5L5.5 7\"/></svg>\n",
+    "picked": false
+   },
+   {
+    "note": "arrow onto a dot",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M15.125 2.875L8.5 9.5M14 9.5L8.5 9.5L8.5 4\"/><circle cx=\"4.25\" cy=\"13.75\" r=\"1.375\" fill=\"currentColor\" stroke=\"none\"/></svg>\n",
+    "picked": false
+   }
+  ]
+ },
+ "arrow-down-to-line": {
+  "attempts": [
+   {
+    "note": "arrow onto a floor",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9 2L9 12M5.5 8.5L9 12L12.5 8.5\"/><path d=\"M2.5 15.5L15.5 15.5\"/></svg>\n",
+    "picked": true
+   },
+   {
+    "note": "chevron onto a floor",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3.75 5.5L8.116 9.866A1.25 1.25 0 0 0 9.884 9.866L14.25 5.5\"/><path d=\"M2.5 15.5L15.5 15.5\"/></svg>\n",
+    "picked": false
+   }
+  ]
+ },
+ "move-obj-up": {
+  "attempts": [
+   {
+    "note": "arrow up off a floor",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9 12L9 2.5M12.5 6L9 2.5L5.5 6\"/><path d=\"M2.5 15.5L15.5 15.5\"/></svg>\n",
+    "picked": true
+   },
+   {
+    "note": "arrow up from a box",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9 15.5L9 2.5M12.5 6L9 2.5L5.5 6\"/><path d=\"M3.25 12.5L2.125 12.5A0.375 0.375 0 0 0 1.75 12.875L1.75 15.312A0.938 0.938 0 0 0 2.688 16.25L15.312 16.25A0.938 0.938 0 0 0 16.25 15.312L16.25 12.875A0.375 0.375 0 0 0 15.875 12.5L14.75 12.5\"/></svg>\n",
+    "picked": false
+   }
+  ]
+ },
+ "resize-x": {
+  "attempts": [
+   {
+    "note": "double arrow over a page edge",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M2.875 7.5L15.125 7.5M11.625 11L15.125 7.5L11.625 4M6.375 4L2.875 7.5L6.375 11\"/><path d=\"M2.5 14.5L15.5 14.5\"/></svg>\n",
+    "picked": true
+   },
+   {
+    "note": "double arrow over an open tray",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M2.875 5.5L15.125 5.5M11.625 9L15.125 5.5L11.625 2M6.375 2L2.875 5.5L6.375 9\"/><path d=\"M1.75 9.5L1.75 14.562A1.688 1.688 0 0 0 3.438 16.25L14.562 16.25A1.688 1.688 0 0 0 16.25 14.562L16.25 9.5\"/></svg>\n",
+    "picked": false
+   },
+   {
+    "note": "double arrow under two end ticks",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M1.75 1.75L1.75 5.75M16.25 1.75L16.25 5.75\"/><path d=\"M2.875 12.5L15.125 12.5M11.625 16L15.125 12.5L11.625 9M6.375 9L2.875 12.5L6.375 16\"/></svg>\n",
+    "picked": false
+   }
+  ]
+ },
+ "sort-arrows": {
+  "attempts": [
+   {
+    "note": "up and down side by side",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5.25 16L5.25 2.875M8.75 6.375L5.25 2.875L1.75 6.375\"/><path d=\"M12.75 2L12.75 15.125M9.25 11.625L12.75 15.125L16.25 11.625\"/></svg>\n",
+    "picked": true
+   },
+   {
+    "note": "chevrons stacked",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M14.25 7.125L9.884 2.759A1.25 1.25 0 0 0 8.116 2.759L3.75 7.125\"/><path d=\"M3.75 10.875L8.116 15.241A1.25 1.25 0 0 0 9.884 15.241L14.25 10.875\"/></svg>\n",
+    "picked": false
+   }
+  ]
+ },
+ "ascending-sorting": {
+  "attempts": [
+   {
+    "note": "lines grow down, arrow up",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M1.75 3.75L4.75 3.75M1.75 9L7 9M1.75 14.25L9.25 14.25\"/><path d=\"M12.75 16L12.75 2.875M16.25 6.375L12.75 2.875L9.25 6.375\"/></svg>\n",
+    "picked": true
+   },
+   {
+    "note": "lines grow up, arrow up",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M1.75 3.75L9.25 3.75M1.75 9L7 9M1.75 14.25L4.75 14.25\"/><path d=\"M12.75 16L12.75 2.875M16.25 6.375L12.75 2.875L9.25 6.375\"/></svg>\n",
+    "picked": false
+   }
+  ]
+ },
+ "sort-alpha-ascending": {
+  "attempts": [
+   {
+    "note": "wide A, crossbar on the shoulders",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M1.75 8.625L1.75 5.5L4.616 2.634A1.25 1.25 0 0 1 6.384 2.634L9.25 5.5L9.25 8.625M1.75 5.5L9.25 5.5\"/><path d=\"M12.75 2.5L12.75 15.625M9.25 12.125L12.75 15.625L16.25 12.125\"/></svg>\n",
+    "picked": false
+   },
+   {
+    "note": "A over short-to-long lines",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M1.75 8.5L1.75 5.138A0.938 0.938 0 0 1 2.025 4.475L4 2.5A1.061 1.061 0 0 1 5.5 2.5L7.475 4.475A0.938 0.938 0 0 1 7.75 5.138L7.75 8.5M1.75 6.25L7.75 6.25\"/><path d=\"M1.75 12L5.75 12M1.75 15.5L7.5 15.5\"/><path d=\"M12.75 2.5L12.75 15.625M9.25 12.125L12.75 15.625L16.25 12.125\"/></svg>\n",
+    "picked": false
+   },
+   {
+    "note": "narrow A, lower crossbar",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M1.75 9L1.75 5.189A1.061 1.061 0 0 1 2.061 4.439L4 2.5A1.061 1.061 0 0 1 5.5 2.5L7.439 4.439A1.061 1.061 0 0 1 7.75 5.189L7.75 9M1.75 6.25L7.75 6.25\"/><path d=\"M12.75 2.5L12.75 15.625M9.25 12.125L12.75 15.625L16.25 12.125\"/></svg>\n",
+    "picked": true
+   }
+  ]
+ },
+ "undo": {
+  "attempts": [
+   {
+    "note": "U-turn back to the left",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M6.25 15.5L11.5 15.5A4.75 4.75 0 0 0 11.5 6L2.75 6M6.25 2.5L2.75 6L6.25 9.5\"/></svg>\n",
+    "picked": true
+   },
+   {
+    "note": "anticlockwise turn",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4.654 13.846A6.5 6.5 0 1 0 4.654 4.654L2.058 7.25M7.558 7.25L2.058 7.25L2.058 1.75\"/></svg>\n",
+    "picked": false
+   }
+  ]
+ },
+ "arrow-rotate-anticlockwise": {
+  "attempts": [
+   {
+    "note": "corner head on the 45\u00b0 tangent",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4.654 13.846A6.5 6.5 0 1 0 4.654 4.654L2.058 7.25M7.558 7.25L2.058 7.25L2.058 1.75\"/></svg>\n",
+    "picked": true
+   },
+   {
+    "note": "head on the top tangent",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4.237 8A5.5 5.5 0 1 0 9 5.25M12.5 1.75L9 5.25L12.5 8.75\"/></svg>\n",
+    "picked": false
+   }
+  ]
+ },
+ "refresh": {
+  "attempts": [
+   {
+    "note": "two arcs, corner heads",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 7.25A6.25 6.25 0 0 1 13.419 4.581L16.089 7.25M10.589 7.25L16.089 7.25L16.089 1.75\"/><path d=\"M15 10.75A6.25 6.25 0 0 1 4.581 13.419L1.911 10.75M7.411 10.75L1.911 10.75L1.911 16.25\"/></svg>\n",
+    "picked": true
+   },
+   {
+    "note": "one arc, corner head",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M13.346 13.846A6.5 6.5 0 1 1 13.346 4.654L15.942 7.25M10.442 7.25L15.942 7.25L15.942 1.75\"/></svg>\n",
+    "picked": false
+   }
+  ]
+ },
+ "animation-repeat": {
+  "attempts": [
+   {
+    "note": "quarter arcs r3.75",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M1.75 9A3.75 3.75 0 0 1 5.5 5.25L15.125 5.25M11.625 8.75L15.125 5.25L11.625 1.75\"/><path d=\"M16.25 9A3.75 3.75 0 0 1 12.5 12.75L2.875 12.75M6.375 9.25L2.875 12.75L6.375 16.25\"/></svg>\n",
+    "picked": true
+   },
+   {
+    "note": "r1.5 corners",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M1.75 9L1.75 6.188A0.938 0.938 0 0 1 2.688 5.25L15.125 5.25M11.625 8.75L15.125 5.25L11.625 1.75\"/><path d=\"M16.25 9L16.25 11.812A0.938 0.938 0 0 1 15.312 12.75L2.875 12.75M6.375 9.25L2.875 12.75L6.375 16.25\"/></svg>\n",
+    "picked": false
+   }
+  ]
+ },
+ "conversion": {
+  "attempts": [
+   {
+    "note": "two opposed arrows",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M2 5.5L15.125 5.5M11.625 9L15.125 5.5L11.625 2\"/><path d=\"M16 12.5L2.875 12.5M6.375 9L2.875 12.5L6.375 16\"/></svg>\n",
+    "picked": true
+   },
+   {
+    "note": "two arcs",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 7.25A6.25 6.25 0 0 1 13.419 4.581L16.089 7.25M10.589 7.25L16.089 7.25L16.089 1.75\"/><path d=\"M15 10.75A6.25 6.25 0 0 1 4.581 13.419L1.911 10.75M7.411 10.75L1.911 10.75L1.911 16.25\"/></svg>\n",
+    "picked": false
+   }
+  ]
+ },
+ "arrow-anticlockwise-text": {
+  "attempts": [
+   {
+    "note": "three lines, middle wraps back",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M1.75 2.25L16.25 2.25\"/><path d=\"M1.75 5.75L12.75 5.75A3.5 3.5 0 0 1 12.75 12.75L9.25 12.75M12.75 9.25L9.25 12.75L12.75 16.25\"/><path d=\"M1.75 12.75L5.25 12.75\"/></svg>\n",
+    "picked": true
+   },
+   {
+    "note": "two lines, the second wraps back",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M1.75 2.25L16.25 2.25\"/><path d=\"M1.75 5.75L12.75 5.75A3.5 3.5 0 0 1 12.75 12.75L9.25 12.75M12.75 9.25L9.25 12.75L12.75 16.25\"/></svg>\n",
+    "picked": false
+   }
+  ]
+ },
+ "arrow-back-to-bottom-left": {
+  "attempts": [
+   {
+    "note": "down, round the r4 corner, left",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M15 2L15 8A4 4 0 0 1 11 12L2.75 12M6.25 8.5L2.75 12L6.25 15.5\"/></svg>\n",
+    "picked": true
+   },
+   {
+    "note": "down, sharp corner, left",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M15 2L15 10.75A1.25 1.25 0 0 1 13.75 12L2.75 12M6.25 8.5L2.75 12L6.25 15.5\"/></svg>\n",
+    "picked": false
+   }
+  ]
+ },
+ "merge": {
+  "attempts": [
+   {
+    "note": "two tails meet at 90\u00b0, one arrow out",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M1.75 3.25L3.767 3.25A0.562 0.562 0 0 1 4.165 3.415L9.75 9L4.165 14.585A0.562 0.562 0 0 1 3.767 14.75L1.75 14.75\"/><path d=\"M9.75 9L15.125 9M11.625 12.5L15.125 9L11.625 5.5\"/></svg>\n",
+    "picked": true
+   },
+   {
+    "note": "no tails",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 3.25L9.75 9L4 14.75\"/><path d=\"M9.75 9L15.125 9M11.625 12.5L15.125 9L11.625 5.5\"/></svg>\n",
+    "picked": false
+   }
+  ]
+ },
+ "shuffle": {
+  "attempts": [
+   {
+    "note": "crossing diagonals, one passes under",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M1.75 16.25L16.25 1.75M10.75 1.75L16.25 1.75L16.25 7.25\"/><path d=\"M1.75 1.75L7 7\"/><path d=\"M11 11L16.25 16.25M10.75 16.25L16.25 16.25L16.25 10.75\"/></svg>\n",
+    "picked": true
+   },
+   {
+    "note": "crossing diagonals, unbroken",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M1.75 16.25L16.25 1.75M10.75 1.75L16.25 1.75L16.25 7.25\"/><path d=\"M1.75 1.75L16.25 16.25M10.75 16.25L16.25 16.25L16.25 10.75\"/></svg>\n",
+    "picked": false
+   }
+  ]
+ },
+ "download": {
+  "attempts": [
+   {
+    "note": "arrow down into a tray",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9 2L9 12.25M5.5 8.75L9 12.25L12.5 8.75\"/><path d=\"M1.75 11L1.75 14.938A1.312 1.312 0 0 0 3.062 16.25L14.938 16.25A1.312 1.312 0 0 0 16.25 14.938L16.25 11\"/></svg>\n",
+    "picked": true
+   },
+   {
+    "note": "arrow down onto a floor",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9 2L9 12M5.5 8.5L9 12L12.5 8.5\"/><path d=\"M2.5 15.5L15.5 15.5\"/></svg>\n",
+    "picked": false
+   }
+  ]
+ },
+ "upload": {
+  "attempts": [
+   {
+    "note": "arrow up out of a tray",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9 12.25L9 2.875M12.5 6.375L9 2.875L5.5 6.375\"/><path d=\"M1.75 11L1.75 14.938A1.312 1.312 0 0 0 3.062 16.25L14.938 16.25A1.312 1.312 0 0 0 16.25 14.938L16.25 11\"/></svg>\n",
+    "picked": true
+   },
+   {
+    "note": "arrow up off a floor",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9 12L9 2.5M12.5 6L9 2.5L5.5 6\"/><path d=\"M2.5 15.5L15.5 15.5\"/></svg>\n",
+    "picked": false
+   }
+  ]
+ },
+ "export": {
+  "attempts": [
+   {
+    "note": "arrow up out of an open box",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9 12.75L9 2.25M12.5 5.75L9 2.25L5.5 5.75\"/><path d=\"M5.5 9.25L2.688 9.25A0.938 0.938 0 0 0 1.75 10.188L1.75 14.5A1.75 1.75 0 0 0 3.5 16.25L14.5 16.25A1.75 1.75 0 0 0 16.25 14.5L16.25 10.188A0.938 0.938 0 0 0 15.312 9.25L12.5 9.25\"/></svg>\n",
+    "picked": true
+   },
+   {
+    "note": "arrow up-right out of a box corner",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M7.25 3.25L3.125 3.25A1.375 1.375 0 0 0 1.75 4.625L1.75 13.75A2.5 2.5 0 0 0 4.25 16.25L13.375 16.25A1.375 1.375 0 0 0 14.75 14.875L14.75 10.75\"/><path d=\"M7.125 10.875L16.25 1.75M10.75 1.75L16.25 1.75L16.25 7.25\"/></svg>\n",
+    "picked": false
+   }
+  ]
+ },
+ "external-link": {
+  "attempts": [
+   {
+    "note": "head outside the box corner",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M7.25 3.25L3.125 3.25A1.375 1.375 0 0 0 1.75 4.625L1.75 13.75A2.5 2.5 0 0 0 4.25 16.25L13.375 16.25A1.375 1.375 0 0 0 14.75 14.875L14.75 10.75\"/><path d=\"M7.125 10.875L16.25 1.75M10.75 1.75L16.25 1.75L16.25 7.25\"/></svg>\n",
+    "picked": true
+   },
+   {
+    "note": "arrow inside the full box",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9.5 1.75L3.688 1.75A1.938 1.938 0 0 0 1.75 3.687L1.75 13.75A2.5 2.5 0 0 0 4.25 16.25L14.312 16.25A1.938 1.938 0 0 0 16.25 14.312L16.25 8.5\"/><path d=\"M6.25 11.75L13 5M7.5 5L13 5L13 10.5\"/></svg>\n",
+    "picked": false
+   }
+  ]
+ },
+ "share": {
+  "attempts": [
+   {
+    "note": "three rings r2.25, short links",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M6.5 6.75A2.25 2.25 0 0 1 6.5 11.25A2.25 2.25 0 0 1 6.5 6.75Z\"/><path d=\"M11.5 1.75A2.25 2.25 0 0 1 11.5 6.25A2.25 2.25 0 0 1 11.5 1.75Z\"/><path d=\"M11.5 11.75A2.25 2.25 0 0 1 11.5 16.25A2.25 2.25 0 0 1 11.5 11.75Z\"/><path d=\"M8.091 7.409L9.909 5.591\"/><path d=\"M8.091 10.591L9.909 12.409\"/></svg>\n",
+    "picked": false
+   },
+   {
+    "note": "three rings r2 on 45\u00b0 links",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M6.375 7A2 2 0 0 1 6.375 11A2 2 0 0 1 6.375 7Z\"/><path d=\"M11.625 1.75A2 2 0 0 1 11.625 5.75A2 2 0 0 1 11.625 1.75Z\"/><path d=\"M11.625 12.25A2 2 0 0 1 11.625 16.25A2 2 0 0 1 11.625 12.25Z\"/><path d=\"M7.789 7.586L10.211 5.164\"/><path d=\"M7.789 10.414L10.211 12.836\"/></svg>\n",
+    "picked": true
+   },
+   {
+    "note": "arrow up out of an open box",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9 12.75L9 2.25M12.5 5.75L9 2.25L5.5 5.75\"/><path d=\"M5.5 9.25L2.688 9.25A0.938 0.938 0 0 0 1.75 10.188L1.75 14.5A1.75 1.75 0 0 0 3.5 16.25L14.5 16.25A1.75 1.75 0 0 0 16.25 14.5L16.25 10.188A0.938 0.938 0 0 0 15.312 9.25L12.5 9.25\"/></svg>\n",
+    "picked": false
+   }
+  ]
+ },
+ "open-in-new-window": {
+  "parts": [
+   "badge-plus"
+  ],
+  "attempts": [
+   {
+    "note": "window with a plus badge",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9.875 15.5L3.781 15.5A2.031 2.031 0 0 1 1.75 13.469L1.75 5A2.5 2.5 0 0 1 4.25 2.5L14.406 2.5A1.844 1.844 0 0 1 16.25 4.344L16.25 9.875\"/><path d=\"M1.75 6L16.25 6\"/><path d=\"M13.875 10.875L13.875 16.875M10.875 13.875L16.875 13.875\"/></svg>\n",
+    "picked": true
+   },
+   {
+    "note": "window with an arrow-right badge",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9.875 15.5L3.781 15.5A2.031 2.031 0 0 1 1.75 13.469L1.75 5A2.5 2.5 0 0 1 4.25 2.5L14.406 2.5A1.844 1.844 0 0 1 16.25 4.344L16.25 9.875\"/><path d=\"M1.75 6L16.25 6\"/><path d=\"M10.875 13.875L16 13.875M14.25 12.125L16 13.875L14.25 15.625\"/></svg>\n",
+    "picked": false
+   },
+   {
+    "note": "box with a plus badge, no title bar",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9.875 15.5L3.781 15.5A2.031 2.031 0 0 1 1.75 13.469L1.75 5A2.5 2.5 0 0 1 4.25 2.5L14.406 2.5A1.844 1.844 0 0 1 16.25 4.344L16.25 9.875\"/><path d=\"M13.875 10.875L13.875 16.875M10.875 13.875L16.875 13.875\"/></svg>\n",
+    "picked": false
+   }
+  ]
+ },
+ "full-screen": {
+  "attempts": [
+   {
+    "note": "four corner brackets",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M1.75 6.5L1.75 2.938A1.188 1.188 0 0 1 2.938 1.75L6.5 1.75\"/><path d=\"M11.5 1.75L15.062 1.75A1.188 1.188 0 0 1 16.25 2.938L16.25 6.5\"/><path d=\"M16.25 11.5L16.25 15.062A1.188 1.188 0 0 1 15.062 16.25L11.5 16.25\"/><path d=\"M6.5 16.25L2.938 16.25A1.188 1.188 0 0 1 1.75 15.062L1.75 11.5\"/></svg>\n",
+    "picked": true
+   },
+   {
+    "note": "four arrows to the corners",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M6.25 6.25L1.75 1.75M7.25 1.75L1.75 1.75L1.75 7.25\"/><path d=\"M11.75 6.25L16.25 1.75M10.75 1.75L16.25 1.75L16.25 7.25\"/><path d=\"M11.75 11.75L16.25 16.25M10.75 16.25L16.25 16.25L16.25 10.75\"/><path d=\"M6.25 11.75L1.75 16.25M7.25 16.25L1.75 16.25L1.75 10.75\"/></svg>\n",
+    "picked": false
+   }
+  ]
+ },
+ "size-lg": {
+  "attempts": [
+   {
+    "note": "window with fit marks inside",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M1.75 4.25A2.5 2.5 0 0 1 4.25 1.75L13.75 1.75A2.5 2.5 0 0 1 16.25 4.25L16.25 13.75A2.5 2.5 0 0 1 13.75 16.25L4.25 16.25A2.5 2.5 0 0 1 1.75 13.75L1.75 4.25Z\"/><path d=\"M5.25 7.25L5.25 5.75A0.5 0.5 0 0 1 5.75 5.25L7.25 5.25\"/><path d=\"M10.75 5.25L12.25 5.25A0.5 0.5 0 0 1 12.75 5.75L12.75 7.25\"/><path d=\"M12.75 10.75L12.75 12.25A0.5 0.5 0 0 1 12.25 12.75L10.75 12.75\"/><path d=\"M7.25 12.75L5.75 12.75A0.5 0.5 0 0 1 5.25 12.25L5.25 10.75\"/></svg>\n",
+    "picked": true
+   },
+   {
+    "note": "content box inside corner brackets",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M1.75 6.5L1.75 2.938A1.188 1.188 0 0 1 2.938 1.75L6.5 1.75\"/><path d=\"M11.5 1.75L15.062 1.75A1.188 1.188 0 0 1 16.25 2.938L16.25 6.5\"/><path d=\"M16.25 11.5L16.25 15.062A1.188 1.188 0 0 1 15.062 16.25L11.5 16.25\"/><path d=\"M6.5 16.25L2.938 16.25A1.188 1.188 0 0 1 1.75 15.062L1.75 11.5\"/><path d=\"M5.25 7.125A1.875 1.875 0 0 1 7.125 5.25L10.875 5.25A1.875 1.875 0 0 1 12.75 7.125L12.75 10.875A1.875 1.875 0 0 1 10.875 12.75L7.125 12.75A1.875 1.875 0 0 1 5.25 10.875L5.25 7.125Z\"/></svg>\n",
+    "picked": false
+   },
+   {
+    "note": "window with a content box inside",
+    "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M1.75 4.25A2.5 2.5 0 0 1 4.25 1.75L13.75 1.75A2.5 2.5 0 0 1 16.25 4.25L16.25 13.75A2.5 2.5 0 0 1 13.75 16.25L4.25 16.25A2.5 2.5 0 0 1 1.75 13.75L1.75 4.25Z\"/><path d=\"M5.25 7.125A1.875 1.875 0 0 1 7.125 5.25L10.875 5.25A1.875 1.875 0 0 1 12.75 7.125L12.75 10.875A1.875 1.875 0 0 1 10.875 12.75L7.125 12.75A1.875 1.875 0 0 1 5.25 10.875L5.25 7.125Z\"/></svg>\n",
+    "picked": false
+   }
+  ]
+ }
+}

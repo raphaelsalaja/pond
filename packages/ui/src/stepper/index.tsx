@@ -74,6 +74,7 @@ export function Stepper({
       <Button
         size="xs"
         variant="ghost"
+        className={styles.step}
         aria-label={decrementLabel}
         onClick={() => set(safe - step)}
         disabled={safe <= min}
@@ -100,6 +101,7 @@ export function Stepper({
       <Button
         size="xs"
         variant="ghost"
+        className={styles.step}
         aria-label={incrementLabel}
         onClick={() => set(safe + step)}
         disabled={safe >= max}
@@ -110,6 +112,7 @@ export function Stepper({
         <Button
           size="xs"
           variant="ghost"
+          className={styles.step}
           aria-label={resetLabel}
           onClick={() => onValueChange(fallback)}
           disabled={safe === fallback}

@@ -8,6 +8,18 @@
   --input-icon-size: 16px;
   --input-icon-inset: 8px;
   --input-icon-padding-start: 28px;
+  --input-border: var(--ds-border-strong);
+  --input-border-hover: color-mix(
+    in srgb,
+    var(--ds-foreground-primary) 26%,
+    transparent
+  );
+  --input-edge: 0 0 0 var(--ds-border-width) var(--input-border);
+  --input-edge-hover: 0 0 0 var(--ds-border-width) var(--input-border-hover);
+  --input-edge-invalid: 0 0 0 var(--ds-border-width) var(--ds-danger);
+  --input-edge-focus:
+    0 0 0 var(--ds-border-width) var(--ds-accent),
+    inset 0 0 0 var(--ds-border-width) var(--ds-accent);
 
   position: relative;
   display: inline-flex;
@@ -26,8 +38,8 @@
   &:where([data-size="sm"]) {
     --input-min-height: var(--ds-size-sm);
     --input-font-size: var(--ds-text-small);
-    --input-radius: var(--ds-radius-sm);
-    --input-padding-inline: var(--ds-space-md);
+    --input-radius: var(--ds-radius-md);
+    --input-padding-inline: var(--ds-space-lg);
     --input-icon-size: 14px;
     --input-icon-inset: 6px;
     --input-icon-padding-start: var(--ds-space-2xl);
@@ -41,6 +53,17 @@
     --input-icon-size: 16px;
     --input-icon-inset: 8px;
     --input-icon-padding-start: 28px;
+  }
+
+  /* A pill's end cap is a semicircle, so the icon centers in it and the far side mirrors that inset. */
+  &:where([data-rounding="full"]) {
+    --input-radius: var(--ds-radius-full);
+    --input-icon-inset: calc(
+      (var(--input-min-height) - var(--input-icon-size)) / 2
+    );
+    --input-icon-padding-start: calc(
+      var(--input-icon-inset) * 2 + var(--input-icon-size)
+    );
   }
 
   &:has(> [data-slot="icon"]) {
@@ -80,6 +103,14 @@
   padding-inline: 0;
 }
 
+.root:where([data-rounding="full"]) > [data-slot="prefix"] {
+  padding-inline-start: var(--input-icon-inset);
+}
+
+.root:where([data-rounding="full"]) > [data-slot="suffix"] {
+  padding-inline-end: var(--input-icon-inset);
+}
+
 .icon {
   position: absolute;
   inset-inline-start: var(--input-icon-inset);
@@ -105,7 +136,7 @@
   border-inline-start: var(--ds-border-width) solid var(--ds-border-strong);
 }
 
-/* Typing already shows where focus is, so text fields firm their edge instead of taking the ring. */
+/* Text fields draw focus as an accent edge on the field instead of the offset ring. */
 .field {
   --ds-focus-outline: transparent;
 
@@ -115,12 +146,16 @@
   min-height: var(--input-min-height);
   padding: 0 var(--input-padding-end) 0 var(--input-padding-start);
   font-size: var(--input-font-size);
-  font-weight: var(--ds-weight-medium);
+  font-weight: var(--ds-weight-regular);
   color: var(--ds-foreground-primary);
   border-radius: var(--input-radius);
+  transition:
+    box-shadow var(--ds-duration-snap) var(--ds-easing-standard),
+    background-color var(--ds-duration-snap) var(--ds-easing-standard),
+    border-color var(--ds-duration-snap) var(--ds-easing-standard);
 
   &::placeholder {
-    color: var(--ds-foreground-tertiary);
+    color: color-mix(in srgb, var(--ds-foreground-tertiary) 60%, transparent);
   }
 
   &:disabled {
@@ -128,17 +163,13 @@
     opacity: var(--ds-opacity-disabled);
   }
 
-  &[aria-invalid="true"] {
-    color: var(--ds-danger-foreground);
-  }
-
   &[data-multiline]:not([data-appearance="bare"]) {
     display: block;
     min-width: 0;
     max-width: 100%;
     height: auto;
-    min-height: calc(2lh + 16px);
-    padding-block: var(--ds-space-md);
+    min-height: calc(2lh + 2 * var(--ds-space-sm));
+    padding-block: var(--ds-space-sm);
     line-height: 1.5;
     resize: none;
   }
@@ -157,6 +188,24 @@
   }
 }
 
+.editor {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  min-height: var(--input-min-height);
+  padding: 0 var(--input-padding-end) 0 var(--input-padding-start);
+  font-size: var(--input-font-size);
+  font-weight: var(--ds-weight-regular);
+  color: var(--ds-foreground-primary);
+  border-radius: var(--input-radius);
+  transition:
+    box-shadow var(--ds-duration-snap) var(--ds-easing-standard),
+    background-color var(--ds-duration-snap) var(--ds-easing-standard),
+    border-color var(--ds-duration-snap) var(--ds-easing-standard);
+}
+
 .field:where([data-appearance="bare"]) {
   height: auto;
   min-height: 0;
@@ -170,39 +219,80 @@
   border-radius: 0;
 }
 
-.root:where([data-variant="primary"]) > .field {
-  background: var(--ds-background-primary);
-  box-shadow: var(--ds-shadow-border);
+/* Edges appear instantly and fade out, so hover never lags the pointer. */
+.root > :is(.field, .editor):is(
+    :hover,
+    :focus-visible,
+    :focus-within,
+    [data-demo-state="hover"],
+    [data-demo-state="focus"]
+  ) {
+  transition-duration: 0s;
+}
 
-  &:is(:focus-visible, [data-demo-state="focus"]) {
-    box-shadow: 0 0 0 1px var(--ds-border-strong);
+.root:where([data-variant="primary"]) > :is(.field, .editor) {
+  background: var(--ds-background-primary);
+  box-shadow: var(--input-edge);
+
+  &:is(:hover, [data-demo-state="hover"]):where(:not(:disabled)) {
+    box-shadow: var(--input-edge-hover);
+  }
+
+  &:is([aria-invalid="true"], [data-invalid]) {
+    box-shadow: var(--input-edge-invalid);
+  }
+
+  &:is(:focus-visible, :focus-within, [data-demo-state="focus"]) {
+    box-shadow: var(--input-edge-focus);
   }
 }
 
-.root:where([data-variant="secondary"]) > .field {
+.root:where([data-variant="raised"]) > :is(.field, .editor) {
+  background: var(--ds-background-primary);
+  box-shadow: var(--ds-shadow-raised);
+
+  &:is(:hover, [data-demo-state="hover"]):where(:not(:disabled)) {
+    box-shadow: var(--input-edge-hover), var(--ds-shadow-raised);
+  }
+
+  &:is([aria-invalid="true"], [data-invalid]) {
+    box-shadow: var(--input-edge-invalid), var(--ds-shadow-raised);
+  }
+
+  &:is(:focus-visible, :focus-within, [data-demo-state="focus"]) {
+    box-shadow: var(--input-edge-focus), var(--ds-shadow-raised);
+  }
+}
+
+.root:where([data-variant="secondary"]) > :is(.field, .editor) {
   background: var(--ds-surface-primary);
   border: var(--ds-border-width) solid var(--ds-border-subtle);
 
   &:is(
       :hover,
       :focus-visible,
+      :focus-within,
       [data-demo-state="hover"],
       [data-demo-state="focus"]
     ) {
     background: var(--ds-surface-secondary);
   }
 
-  &:is(:focus-visible, [data-demo-state="focus"]) {
-    border-color: var(--ds-border-strong);
+  &:is([aria-invalid="true"], [data-invalid]) {
+    border-color: var(--ds-danger);
+  }
+
+  &:is(:focus-visible, :focus-within, [data-demo-state="focus"]) {
+    border-color: var(--ds-accent);
+    box-shadow: inset 0 0 0 var(--ds-border-width) var(--ds-accent);
   }
 }
 
-.root:where([data-variant="borderless"]) > .field {
-  font-weight: var(--ds-weight-regular);
+.root:where([data-variant="borderless"]) > :is(.field, .editor) {
   background: transparent;
 }
 
-.root:has(> .affix) > .field {
+.root:has(> .affix) > :is(.field, .editor) {
   min-width: 0;
   outline: none;
   background: transparent;
@@ -211,12 +301,61 @@
   box-shadow: none;
 }
 
+.root:has(> .affix) {
+  transition:
+    box-shadow var(--ds-duration-snap) var(--ds-easing-standard),
+    background-color var(--ds-duration-snap) var(--ds-easing-standard),
+    border-color var(--ds-duration-snap) var(--ds-easing-standard);
+
+  &:is(
+      :hover,
+      :focus-within,
+      [data-demo-state="hover"],
+      [data-demo-state="focus"]
+    ) {
+    transition-duration: 0s;
+  }
+}
+
 .root:where([data-variant="primary"]):has(> .affix) {
   background: var(--ds-background-primary);
-  box-shadow: var(--ds-shadow-border);
+  box-shadow: var(--input-edge);
 
-  &:is(:has(> .field:focus-visible), [data-demo-state="focus"]) {
-    box-shadow: 0 0 0 1px var(--ds-border-strong);
+  &:is(:hover, [data-demo-state="hover"]) {
+    box-shadow: var(--input-edge-hover);
+  }
+
+  &:has(> :is(.field, .editor):is([aria-invalid="true"], [data-invalid])) {
+    box-shadow: var(--input-edge-invalid);
+  }
+
+  &:is(
+      :has(> .field:focus-visible),
+      :has(> .editor:focus-within),
+      [data-demo-state="focus"]
+    ) {
+    box-shadow: var(--input-edge-focus);
+  }
+}
+
+.root:where([data-variant="raised"]):has(> .affix) {
+  background: var(--ds-background-primary);
+  box-shadow: var(--ds-shadow-raised);
+
+  &:is(:hover, [data-demo-state="hover"]) {
+    box-shadow: var(--input-edge-hover), var(--ds-shadow-raised);
+  }
+
+  &:has(> :is(.field, .editor):is([aria-invalid="true"], [data-invalid])) {
+    box-shadow: var(--input-edge-invalid), var(--ds-shadow-raised);
+  }
+
+  &:is(
+      :has(> .field:focus-visible),
+      :has(> .editor:focus-within),
+      [data-demo-state="focus"]
+    ) {
+    box-shadow: var(--input-edge-focus), var(--ds-shadow-raised);
   }
 }
 
@@ -233,14 +372,24 @@
     background: var(--ds-surface-secondary);
   }
 
-  &:is(:has(> .field:focus-visible), [data-demo-state="focus"]) {
-    border-color: var(--ds-border-strong);
+  &:has(> :is(.field, .editor):is([aria-invalid="true"], [data-invalid])) {
+    border-color: var(--ds-danger);
+  }
+
+  &:is(
+      :has(> .field:focus-visible),
+      :has(> .editor:focus-within),
+      [data-demo-state="focus"]
+    ) {
+    border-color: var(--ds-accent);
+    box-shadow: inset 0 0 0 var(--ds-border-width) var(--ds-accent);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .root:has(> .affix),
-  .field {
+  .field,
+  .editor {
     transition: none;
   }
 }

@@ -1,4 +1,4 @@
-import { Button, type ButtonProps, Checkbox } from "@pond/ui";
+import { BrandTile, Button, type ButtonProps, Checkbox } from "@pond/ui";
 import { clsx as cn } from "clsx";
 import React, { memo, type ReactNode } from "react";
 import type { SaveCardOverlayModel } from "@/features/saves/components/card/model";
@@ -158,7 +158,9 @@ const Overlay = memo(function Overlay({
           {model.source.logo ? (
             <img src={model.source.logo} alt="" width={18} height={18} />
           ) : SourceIcon ? (
-            <SourceIcon width={18} height={18} />
+            <BrandTile size={18}>
+              <SourceIcon />
+            </BrandTile>
           ) : (
             model.source.label
           )}

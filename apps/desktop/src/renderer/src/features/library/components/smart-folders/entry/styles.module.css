@@ -34,29 +34,18 @@
   }
 }
 
+/* An invisible hit area over the group's icon, so clicking the icon opens or closes it. */
 .disclosure {
-  --ds-focus-offset: -16px;
+  --ds-focus-offset: 0px;
   position: absolute;
-  inset-inline-start: calc(var(--entry-depth) * var(--folder-indent) - 15px);
+  inset-inline-start: calc(
+    var(--entry-depth) * var(--folder-indent) + var(--ds-space-sm)
+  );
   top: 6px;
   z-index: 2;
   width: 16px;
   min-width: 16px;
   height: 16px;
-  color: var(--ds-foreground-tertiary);
-
-  &:hover {
-    color: var(--ds-foreground-secondary);
-  }
-}
-
-.disclosure svg {
-  width: 8px;
-  transition: transform var(--ds-duration-fast) var(--ds-easing-standard);
-}
-
-.disclosure[aria-expanded="true"] svg {
-  transform: rotate(90deg);
 }
 
 .item {
@@ -143,8 +132,7 @@
   .row {
     animation: none;
   }
-  .more,
-  .disclosure svg {
+  .more {
     transition: none;
   }
 }
@@ -152,7 +140,6 @@
 :global([data-reduce-motion]) .row {
   animation: none;
 }
-:global([data-reduce-motion]) .more,
-:global([data-reduce-motion]) .disclosure svg {
+:global([data-reduce-motion]) .more {
   transition: none;
 }

@@ -12,7 +12,7 @@ export const docs: ComponentDocs = {
     {
       name: "Input.Root",
       description:
-        "The frame. `size` is xs to xl; `variant` is primary, secondary or borderless.",
+        "The frame. `size` is xs to xl; `variant` is primary, raised, secondary or borderless.",
     },
     {
       name: "Input.Field",

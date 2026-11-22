@@ -1,10 +1,8 @@
 import { IconFileExport, IconFolderImport } from "@pond/icons";
-import { sourceLabel } from "@pond/schema/sources";
 import { Tooltip } from "@pond/ui";
 import type { RenderRowArgs, TableColumn } from "@pond/ui/data-table";
 import type { DownloadActivity } from "@shared/download-activity";
 import type { QueueSourceGate } from "@shared/queue-contracts";
-import type { TransferJob } from "@shared/transfer-contracts";
 import { useDownloadClock } from "@/features/downloads/hooks/use-download-activity";
 import type { DownloadRow } from "@/features/downloads/lib/status-feed";
 import { BrandTile } from "@/features/sources";
@@ -111,42 +109,31 @@ function StatusGlyph({ status }: { status: DownloadTableStatus }) {
   );
 }
 
+function LeadIcon({ row }: { row: DownloadViewRow }) {
+  if (!row.transfer) {
+    return (
+      <BrandTile source={downloadBrandSource(row.source, row.url)} size={18} />
+    );
+  }
+  const { kind } = row.transfer.request;
+  return (
+    <span className={styles.kind} title={TRANSFER_LABELS[kind]}>
+      {kind.startsWith("export_") ? <IconFileExport /> : <IconFolderImport />}
+    </span>
+  );
+}
+
 function NameCell({ row }: { row: DownloadViewRow }) {
   const title = row.name.trim() || row.url.trim() || "Untitled save";
   return (
     <span className={styles.lead}>
+      <LeadIcon row={row} />
       <span
         className={styles.name}
         title={row.transfer?.request.destination ?? title}
       >
         {title}
       </span>
-    </span>
-  );
-}
-
-function TransferKindCell({ job }: { job: TransferJob }) {
-  return (
-    <span className={styles.source}>
-      <span className={styles.kind}>
-        {job.request.kind.startsWith("export_") ? (
-          <IconFileExport />
-        ) : (
-          <IconFolderImport />
-        )}
-      </span>
-      <span className={styles.label}>{TRANSFER_LABELS[job.request.kind]}</span>
-    </span>
-  );
-}
-
-function SourceCell({ row }: { row: DownloadViewRow }) {
-  if (row.transfer) return <TransferKindCell job={row.transfer} />;
-  const source = downloadBrandSource(row.source, row.url);
-  return (
-    <span className={styles.source}>
-      <BrandTile source={source} size={18} />
-      <span className={styles.label}>{sourceLabel(source)}</span>
     </span>
   );
 }
@@ -407,18 +394,6 @@ export const downloadsColumns: TableColumn<DownloadViewRow>[] = [
     width: "minmax(160px, 1.6fr)",
     reorderable: true,
     cell: (row) => <NameCell row={row} />,
-  },
-  {
-    id: "source",
-    header: "Source",
-    sortLabel: "Source",
-    accessor: (row) =>
-      row.transfer
-        ? TRANSFER_LABELS[row.transfer.request.kind]
-        : sourceLabel(downloadBrandSource(row.source, row.url)),
-    width: "140px",
-    reorderable: true,
-    cell: (row) => <SourceCell row={row} />,
   },
   {
     id: "stage",

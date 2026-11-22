@@ -6,11 +6,11 @@
   border-radius: var(--ds-radius-md);
 
   &:has(button.main):hover {
-    background: var(--ds-surface-primary);
+    background: var(--ds-surface-secondary);
   }
 
   &:has(.main:active) {
-    background: var(--ds-surface-secondary);
+    background: var(--ds-surface-tertiary);
   }
 }
 
@@ -41,7 +41,7 @@
   width: 40px;
   height: 40px;
   color: var(--ds-foreground-tertiary);
-  background: var(--ds-background-tertiary);
+  background: var(--ds-surface-secondary);
   border-radius: var(--ds-radius-sm);
 }
 
@@ -64,7 +64,7 @@
 .detail {
   font-size: var(--ds-text-small);
   line-height: var(--ds-leading-small);
-  color: var(--ds-foreground-tertiary);
+  color: var(--ds-foreground-secondary);
 
   &[data-tone="error"] {
     color: var(--ds-danger-foreground);

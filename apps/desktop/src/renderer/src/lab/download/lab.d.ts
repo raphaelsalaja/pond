@@ -15,6 +15,7 @@ declare module "react" {
         editor?: string;
       }>;
       "lab-entry": LabElement<{ force?: string }>;
+      "lab-tune": LabElement<object>;
     }
   }
 }

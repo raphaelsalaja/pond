@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { TagsPage } from "@/features/tags/components/page";
 
 export const Route = createFileRoute("/_library/tags")({
-  component: TagsPage,
+  /** `RailPages` in the Library page keeps this page mounted across rail switches. */
+  component: () => null,
 });

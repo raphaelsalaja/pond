@@ -1,25 +1,50 @@
 .root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2xs);
   min-width: 0;
 }
 .header {
   margin: 0;
 }
 .trigger {
+  --ds-focus-offset: 0px;
+
   display: flex;
   gap: var(--ds-space-md);
   align-items: center;
   width: 100%;
-  padding: var(--ds-space-md) 0;
-  font-size: var(--ds-text-small);
+  min-height: var(--ds-size-md);
+  padding: var(--ds-space-sm) var(--ds-space-lg);
+  font-size: var(--ds-text-body);
+  font-weight: var(--ds-weight-strong);
+  line-height: var(--ds-leading-body);
   color: var(--ds-foreground-tertiary);
   text-align: left;
   cursor: var(--ds-cursor-interactive, pointer);
   border-radius: var(--ds-radius-sm);
+  transition:
+    background-color var(--ds-duration-fast) var(--ds-easing-standard),
+    color var(--ds-duration-fast) var(--ds-easing-standard),
+    outline-color var(--ds-duration-snap) var(--ds-easing-snap);
+
+  &:not(:focus-visible, [data-demo-state="focus"]) {
+    outline: var(--ds-focus-width) solid transparent;
+  }
 }
-.trigger:hover {
-  color: var(--ds-foreground-primary);
+.trigger:not([data-variant="bare"]) {
+  @media (hover: hover) {
+    &:hover:not([data-disabled]) {
+      background-color: var(--ds-surface-primary);
+    }
+  }
+
+  &[data-panel-open] {
+    color: var(--ds-foreground-primary);
+  }
 }
 .trigger[data-variant="bare"] {
+  min-height: 0;
   padding: 0;
   font: inherit;
   color: inherit;
@@ -27,18 +52,41 @@
 }
 .trigger > svg:last-child {
   margin-left: auto;
+  transform: rotate(-90deg);
   transition: transform var(--ds-duration-medium) var(--ds-easing-standard);
 }
+.trigger:not([data-variant="bare"]) > svg:last-child {
+  color: color-mix(in srgb, var(--ds-foreground-tertiary) 65%, transparent);
+}
 .trigger[data-panel-open] > svg:last-child {
-  transform: rotate(180deg);
+  transform: none;
 }
 .panel {
   height: var(--accordion-panel-height);
+  padding-inline: var(--ds-space-lg);
   overflow: hidden;
+  font-size: var(--ds-text-body);
+  line-height: var(--ds-leading-body);
+  color: var(--ds-foreground-tertiary);
   opacity: 1;
   transition:
     height var(--ds-duration-medium) var(--ds-easing-snap),
     opacity var(--ds-duration-medium) var(--ds-easing-standard);
+
+  /* Block padding would stay visible at height 0, so vertical spacing lives inside the clipped box. */
+  &::before,
+  &::after {
+    display: block;
+    content: "";
+  }
+
+  &::before {
+    height: var(--ds-space-xs);
+  }
+
+  &::after {
+    height: var(--ds-space-lg);
+  }
 }
 .panel[data-starting-style],
 .panel[data-ending-style] {

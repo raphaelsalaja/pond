@@ -4,6 +4,7 @@ import {
   IconBookmark,
   IconCamera,
   IconChevronRight,
+  IconCircleWarning,
   IconCoffee,
   IconCrop,
   IconGear3,
@@ -303,6 +304,9 @@ function Commands({ result, refresh, returned, onShortcuts }: CommandsProps) {
     return (
       <Shell returned={returned}>
         <Empty.Root className={styles.center}>
+          <Empty.Media>
+            <IconCircleWarning size={14} />
+          </Empty.Media>
           <Empty.Title>{copy.title}</Empty.Title>
           <Empty.Description>{copy.description}</Empty.Description>
           <Empty.Action className={styles.actions}>

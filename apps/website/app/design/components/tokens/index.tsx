@@ -88,7 +88,7 @@ export function Tokens() {
       <Doc.Section id="typography">
         <Doc.Heading>Typography</Doc.Heading>
         <Doc.Summary>
-          Intern in six sizes, each paired with a line height. Most text is 12
+          Allo in six sizes, each paired with a line height. Most text is 12
           or 14, and hierarchy comes from weight and color before size.
         </Doc.Summary>
         <Typography />

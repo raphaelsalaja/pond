@@ -22,6 +22,7 @@ import {
   IconClockPlus,
   IconFolderBan,
   IconHistory,
+  IconInbox,
   IconLayers,
   IconNodes3,
   IconShuffle,
@@ -202,6 +203,8 @@ function DestinationIcon({ destination }: { destination: SidebarDestination }) {
   switch (destination) {
     case "all":
       return <IconAlbum2 />;
+    case "inbox":
+      return <IconInbox />;
     case "uncategorized":
       return <IconFolderBan />;
     case "untagged":
@@ -269,6 +272,8 @@ export function LibraryDestinations({
     switch (id) {
       case "all":
         return destination.kind === "all" && !activeViewId;
+      case "inbox":
+        return destination.kind === "inbox";
       case "recentlyUsed":
         return destination.kind === "recents";
       case "uncategorized":
@@ -298,6 +303,8 @@ export function LibraryDestinations({
     switch (destination) {
       case "all":
         return counts.library;
+      case "inbox":
+        return counts.inbox;
       case "uncategorized":
         return counts.uncategorized;
       case "untagged":
@@ -341,6 +348,20 @@ export function LibraryDestinations({
                 resetFilters();
                 selectLibraryNav({ kind: "all" });
               }}
+            />
+          </BuiltInVisibilityMenu>
+        );
+      case "inbox":
+        return (
+          <BuiltInVisibilityMenu destination={destination} key={destination}>
+            <Row
+              label="Inbox"
+              icon={<IconInbox />}
+              count={counts.inbox}
+              badgeStyle={badgeStyle}
+              active={isDestinationActive(destination)}
+              {...dragProps}
+              onClick={() => selectLibraryNav({ kind: "inbox" })}
             />
           </BuiltInVisibilityMenu>
         );
@@ -494,24 +515,27 @@ export function LibraryDestinations({
     }
   };
 
-  const visibleGroups = SIDEBAR_DESTINATION_GROUPS.map((group) => ({
-    label: group.label,
-    heading: group.heading,
-    allDestinations: group.destinations,
-    destinations: order.filter(
-      (destination) =>
-        destinations[destination] &&
-        group.destinations.some((item) => item === destination),
-    ),
-  })).filter((group) => group.destinations.length > 0);
+  const visibleGroups = SIDEBAR_DESTINATION_GROUPS.filter(
+    (group) => group.label === "Library",
+  )
+    .map((group) => ({
+      label: group.label,
+      allDestinations: group.destinations,
+      destinations: order.filter(
+        (destination) =>
+          destination !== "inbox" &&
+          destination !== "trash" &&
+          destination !== "tags" &&
+          destinations[destination] &&
+          group.destinations.some((item) => item === destination),
+      ),
+    }))
+    .filter((group) => group.destinations.length > 0);
 
   return (
     <>
       {visibleGroups.map((group) => (
         <Sidebar.Group key={group.label}>
-          {group.heading ? (
-            <Sidebar.GroupLabel>{group.label}</Sidebar.GroupLabel>
-          ) : null}
           <DndContext
             accessibility={{
               announcements: createSortableAnnouncements(

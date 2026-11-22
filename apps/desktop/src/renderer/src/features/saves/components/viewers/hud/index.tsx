@@ -20,6 +20,8 @@ export type ViewerHudAnchor =
   | "bottom-right";
 
 const HudTooltipSide = createContext<"top" | "bottom">("top");
+/** `plain` once the bar sits in the window toolbar, where it no longer floats over the media. */
+export const HudBarVariant = createContext<"raised" | "plain">("raised");
 const HudOverlayContext = createContext<{
   enabled: boolean;
   overlay: HTMLElement | null;
@@ -82,6 +84,7 @@ function Scale({ className, ...props }: HTMLAttributes<HTMLSpanElement>) {
 function Bar({
   label,
   start,
+  middle,
   center,
   end,
   className,
@@ -89,9 +92,12 @@ function Bar({
 }: Omit<HTMLAttributes<HTMLDivElement>, "children"> & {
   label: string;
   start?: ReactNode;
+  /** Centered in the bar, apart from the trailing `center` and `end` groups. */
+  middle?: ReactNode;
   center?: ReactNode;
   end?: ReactNode;
 }) {
+  const variant = use(HudBarVariant);
   return (
     <Tools
       tooltipSide="bottom"
@@ -100,13 +106,34 @@ function Bar({
       aria-label={label}
       {...props}
     >
-      <Pill className={styles.start} data-viewer-bar-slot="start">
+      <Pill
+        className={styles.start}
+        variant={variant}
+        data-viewer-bar-slot="start"
+      >
         {start}
       </Pill>
-      <Pill className={styles.center} data-viewer-bar-slot="center">
+      {middle ? (
+        <Pill
+          className={styles.middle}
+          variant={variant}
+          data-viewer-bar-slot="middle"
+        >
+          {middle}
+        </Pill>
+      ) : null}
+      <Pill
+        className={styles.center}
+        variant={variant}
+        data-viewer-bar-slot="center"
+      >
         {center}
       </Pill>
-      <Pill className={styles.end} data-viewer-bar-slot="end">
+      <Pill
+        className={styles.end}
+        variant={variant}
+        data-viewer-bar-slot="end"
+      >
         {end}
       </Pill>
     </Tools>

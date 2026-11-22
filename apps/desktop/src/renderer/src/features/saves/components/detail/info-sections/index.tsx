@@ -1,5 +1,5 @@
 import type { IconComponent } from "@pond/icons/types";
-import { Button } from "@pond/ui";
+import { BrandTile, Button } from "@pond/ui";
 import { type ReactNode, useState } from "react";
 import { ColorSwatch } from "@/features/saves/components/detail/color-swatch";
 import { useSaveDetail } from "@/features/saves/hooks/use-save-detail";
@@ -321,9 +321,9 @@ function PropertyRow({
               <img src={sourceLogo} alt="" width={16} height={16} />
             </span>
           ) : SourceIcon ? (
-            <span className={styles.icon} aria-hidden>
-              <SourceIcon width={16} height={16} />
-            </span>
+            <BrandTile size={16}>
+              <SourceIcon />
+            </BrandTile>
           ) : null}
           <PropertyList.Value>{row.value}</PropertyList.Value>
         </span>

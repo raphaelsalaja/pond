@@ -1,16 +1,18 @@
 .root {
+  --ds-focus-offset: 0px;
+
   box-sizing: border-box;
   display: inline-flex;
   flex-shrink: 0;
-  gap: var(--ds-space-sm);
+  gap: var(--ds-space-xs);
   align-items: center;
   justify-content: center;
   min-width: var(--ds-size-sm);
   height: var(--ds-size-sm);
-  padding: 0 var(--ds-space-md);
-  font-size: var(--ds-text-body);
-  font-weight: var(--ds-weight-regular);
-  color: var(--ds-foreground-secondary);
+  padding: 0 calc(var(--ds-space-md) + var(--ds-space-2xs));
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-strong);
+  color: var(--ds-foreground-tertiary);
   cursor: var(--ds-cursor-interactive, pointer);
   background: none;
   border: 0;
@@ -18,13 +20,17 @@
   transition:
     background var(--ds-duration-snap) var(--ds-easing-standard),
     color var(--ds-duration-snap) var(--ds-easing-standard),
-    box-shadow var(--ds-duration-snap) var(--ds-easing-standard);
+    box-shadow var(--ds-duration-snap) var(--ds-easing-standard),
+    outline-color var(--ds-duration-snap) var(--ds-easing-snap);
+
+  &:not(:focus-visible, [data-demo-state="focus"]) {
+    outline: var(--ds-focus-width) solid transparent;
+  }
 
   &[data-size="sm"] {
     min-width: var(--ds-size-xs);
     height: var(--ds-size-xs);
-    padding: 0 var(--ds-space-sm);
-    font-size: var(--ds-text-small);
+    padding: 0 var(--ds-space-md);
   }
 
   &[data-icon] {
@@ -40,7 +46,8 @@
 
   &[data-pressed] {
     color: var(--ds-foreground-primary);
-    background: var(--ds-surface-tertiary);
+    background: var(--ds-background-primary);
+    box-shadow: var(--ds-shadow-border);
   }
 
   &[data-variant="outline"] {
@@ -71,11 +78,15 @@
 }
 
 [data-pond-toggle-group] > .root {
+  --ds-focus-offset: var(--ds-focus-inset);
+
   z-index: 1;
   flex: 1;
   min-width: max-content;
   white-space: nowrap;
-  transition: color var(--ds-duration-emphasized) var(--ds-easing-snap);
+  transition:
+    color var(--ds-duration-emphasized) var(--ds-easing-snap),
+    outline-color var(--ds-duration-snap) var(--ds-easing-snap);
 
   &:hover,
   &[data-demo-state="hover"] {
@@ -83,15 +94,15 @@
   }
 
   &[data-pressed] {
-    font-weight: var(--ds-weight-medium);
     color: var(--ds-foreground-primary);
     background: none;
+    box-shadow: none;
   }
 }
 
 [data-pond-toggle-group][data-multiple] > .root[data-pressed] {
   background: var(--ds-background-primary);
-  box-shadow: var(--ds-shadow-raised);
+  box-shadow: var(--ds-shadow-border);
 }
 
 [data-pond-toggle-group][data-orientation="vertical"] > .root {
@@ -153,6 +164,31 @@
   }
 }
 
+/* Rail items may sit inside a context-menu wrapper, so match any depth. */
+[data-pond-toggle-group][data-variant="rail"] .root {
+  justify-content: center;
+  width: var(--ds-size-md);
+  height: var(--ds-size-md);
+  color: var(--ds-foreground-tertiary);
+  border-radius: var(--ds-radius-md);
+  transition:
+    background var(--ds-duration-snap) var(--ds-easing-standard),
+    color var(--ds-duration-snap) var(--ds-easing-standard);
+
+  &:hover,
+  &[data-demo-state="hover"] {
+    color: var(--ds-foreground-primary);
+    background: var(--ds-surface-secondary);
+  }
+
+  &[data-pressed],
+  &[data-pressed]:hover {
+    font-weight: var(--ds-weight-regular);
+    color: var(--ds-foreground-primary);
+    background: none;
+  }
+}
+
 [data-pond-toggle-group][data-variant="outline"] > .root {
   color: var(--ds-foreground-tertiary);
   border-radius: 0;
@@ -180,7 +216,8 @@
   .root,
   [data-pond-toggle-group] > .root,
   [data-pond-toggle-group][data-variant="tiles"] > .root,
-  [data-pond-toggle-group][data-variant="list"] > .root {
+  [data-pond-toggle-group][data-variant="list"] > .root,
+  [data-pond-toggle-group][data-variant="rail"] .root {
     transition: none;
   }
 }

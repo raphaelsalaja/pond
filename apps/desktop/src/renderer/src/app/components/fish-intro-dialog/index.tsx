@@ -8,11 +8,11 @@ import { Dialog } from "@pond/ui";
 import { DEFAULT_FISH_ID, DEFAULT_FISH_NAME } from "@shared/fish-contracts";
 import { useEffect } from "react";
 import { fish, useFish, useHydrateFish } from "@/features/fish";
+import { announcements } from "@/shared/state/announcements";
 import {
   fishIntroDialog,
   useFishIntroDialogOpen,
 } from "@/shared/state/fish-intro";
-import { anotherDialogOpen, claimNoticeSlot } from "@/shared/state/notices";
 import { readWhatsNewSeen } from "@/shared/state/whats-new";
 import {
   isFishIntroDue,
@@ -22,7 +22,6 @@ import {
 import { School } from "./school";
 import styles from "./styles.module.css";
 
-const CHECK_INTERVAL_MS = 3000;
 const FISH_INTRO_NOTICE = "fish-intro";
 
 const FACTS = [
@@ -48,20 +47,19 @@ const FACTS = [
   },
 ] as const;
 
-/** Reads the last What's New version before that dialog overwrites it, then waits for a clear screen. */
+/** Reads the last What's New version before that dialog overwrites it. */
 function useIntroduceOnce(): void {
   useEffect(() => {
     if (readFishIntroState() === null && isFishIntroDue(readWhatsNewSeen()))
       writeFishIntroState("due");
     if (readFishIntroState() !== "due") return;
-    const timer = setInterval(() => {
-      if (anotherDialogOpen()) return;
-      clearInterval(timer);
-      if (!claimNoticeSlot(FISH_INTRO_NOTICE)) return;
-      writeFishIntroState("shown");
-      fishIntroDialog.open();
-    }, CHECK_INTERVAL_MS);
-    return () => clearInterval(timer);
+    announcements.post({
+      id: FISH_INTRO_NOTICE,
+      title: "Meet Your Fish",
+      description: "A fish is a chat character that knows your library.",
+      open: () => fishIntroDialog.open(),
+      markSeen: () => writeFishIntroState("shown"),
+    });
   }, []);
 }
 

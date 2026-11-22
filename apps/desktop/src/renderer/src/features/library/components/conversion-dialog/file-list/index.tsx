@@ -1,4 +1,4 @@
-import { IconXmark } from "@pond/icons";
+import { IconFileExport, IconXmark } from "@pond/icons";
 import { Button, Empty } from "@pond/ui";
 import type { ConversionPreset } from "@shared/conversion-contracts";
 import { typeLabelForPath } from "@shared/file-format";
@@ -106,7 +106,10 @@ export function FileList({
   if (rows.length === 0)
     return (
       <div className={styles.empty}>
-        <Empty.Root>
+        <Empty.Root size="card">
+          <Empty.Media>
+            <IconFileExport size={14} />
+          </Empty.Media>
           <Empty.Title>No saves to export</Empty.Title>
         </Empty.Root>
       </div>

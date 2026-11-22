@@ -6,18 +6,21 @@
   --ds-weight-regular: 400;
   --ds-weight-medium: 450;
   --ds-weight-strong: 500;
+  --ds-weight-semibold: 550;
   --ds-weight-bold: 600;
 
   --ds-text-micro: 10px;
   --ds-leading-micro: 14px;
+  --ds-text-mini: 11px;
+  --ds-leading-mini: 14px;
   --ds-text-small: 12px;
   --ds-leading-small: 16px;
-  --ds-text-body: 14px;
-  --ds-leading-body: 20px;
-  --ds-text-heading: 16px;
-  --ds-leading-heading: 20px;
-  --ds-text-title: 18px;
-  --ds-leading-title: 24px;
-  --ds-text-display: 24px;
-  --ds-leading-display: 30px;
+  --ds-text-body: 13px;
+  --ds-leading-body: 18px;
+  --ds-text-heading: 14px;
+  --ds-leading-heading: 18px;
+  --ds-text-title: 16px;
+  --ds-leading-title: 22px;
+  --ds-text-display: 20px;
+  --ds-leading-display: 26px;
 }

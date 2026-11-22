@@ -1,13 +1,10 @@
 import { IconBookmark, IconFilterOff } from "@pond/icons";
 import { isPredicate, type Predicate } from "@pond/schema/filters/types";
-import { Button, Tooltip } from "@pond/ui";
+import { Button, SplitButton, Tooltip } from "@pond/ui";
 import { useMemo } from "react";
 import { useFolders } from "@/features/library/state/folders";
 import { libraryHeader } from "@/features/library/state/library-header";
-import { savedViews } from "@/features/library/state/saved-views";
 import {
-  setSemanticQuery,
-  setVisualProbe,
   updateLocalFilters,
   useActiveViewId,
   useFilterQuery,
@@ -23,11 +20,10 @@ import {
 import { BrandTile } from "@/features/sources";
 import { useTagGroups, useTags } from "@/features/tags";
 import { FilterToolbar } from "@/shared/components/filter-toolbar";
-import { errorCopy } from "@/shared/lib/error-copy";
 import { FolderIcon } from "@/shared/lib/folder-icons";
-import { notify } from "@/shared/lib/toast";
 import { usePrefs } from "@/shared/state/prefs";
 import { AddFilter } from "./add";
+import { AppliedFilters } from "./applied";
 import { FilterCategory } from "./category";
 import { CustomizeFilters } from "./customize";
 import { choiceOptions, type FilterOption, presetOptions } from "./options";
@@ -39,6 +35,7 @@ import {
   type OverlayId,
   useFilterToolbar,
 } from "./toolbar-state";
+import { clearFilters, saveFilterView, saveViewLabel } from "./view-actions";
 
 interface FilterChoices {
   tags: FilterOption[];
@@ -100,22 +97,26 @@ export function FilterToggleView(data: FilterBarData) {
   const rows = useMemo(() => query.rules.filter(isPredicate), [query.rules]);
   const choices = useMemo(() => filterChoices(data, rows), [data, rows]);
   if (layout === "applied") {
-    return (
-      <AddFilter
-        choices={choices}
-        rows={rows}
-        onChange={updateLocalFilters}
-        applied={[
-          ...rows.map((row) => (row.field === "height" ? "width" : row.field)),
-          ...(visual ? (["visual"] as const) : []),
-          ...(semantic ? (["semantic"] as const) : []),
-        ]}
-      />
+    const applied: FilterChipId[] = [
+      ...(visual ? (["visual"] as const) : []),
+      ...(semantic ? (["semantic"] as const) : []),
+      ...new Set(
+        rows.map((row) => (row.field === "height" ? "width" : row.field)),
+      ),
+    ];
+    const props = { choices, rows, onChange: updateLocalFilters, applied };
+    return applied.length ? (
+      <SplitButton.Root variant="secondary" size="sm" aria-label="Filters">
+        <AppliedFilters {...props} />
+        <AddFilter {...props} segment />
+      </SplitButton.Root>
+    ) : (
+      <AddFilter {...props} />
     );
   }
   return (
     <FilterToolbar.Toggle
-      variant="ghost"
+      variant="secondary"
       open={open}
       active={rows.length > 0 || Boolean(semantic) || Boolean(visual)}
       controlsId="library-filter-toolbar"
@@ -199,119 +200,69 @@ export function FilterBarView(data: FilterBarData) {
   const visual = useVisualProbe();
   const activeViewId = useActiveViewId();
   const rows = useMemo(() => query.rules.filter(isPredicate), [query.rules]);
+  const choices = useMemo(() => filterChoices(data, rows), [data, rows]);
+  if (layout === "applied") return null;
   const activeFields = rows.map((row) =>
     row.field === "height" ? "width" : row.field,
   );
-  const appliedLayout = layout === "applied";
   const fields = [
     ...new Set(
-      (appliedLayout ? activeFields : [...pinned, ...activeFields]).map(
-        (field) => (field === "height" ? "width" : field),
+      [...pinned, ...activeFields].map((field) =>
+        field === "height" ? "width" : field,
       ),
     ),
   ];
-  const shownOverlays: OverlayId[] = appliedLayout
-    ? [
-        ...(visual ? (["visual"] as const) : []),
-        ...(semantic ? (["semantic"] as const) : []),
-      ]
-    : [
-        ...(overlays.includes("visual") || visual ? (["visual"] as const) : []),
-        ...(overlays.includes("semantic") || semantic
-          ? (["semantic"] as const)
-          : []),
-      ];
-  const chips: FilterChipId[] = appliedLayout
-    ? [...shownOverlays, ...fields]
-    : [
-        ...fields.filter((field) => field === "color"),
-        ...shownOverlays,
-        ...fields.filter((field) => field !== "color"),
-      ];
-  const choices = useMemo(() => filterChoices(data, rows), [data, rows]);
-
-  const apply = (next: Predicate[]) => {
-    updateLocalFilters(next);
-  };
+  const shownOverlays: OverlayId[] = [
+    ...(overlays.includes("visual") || visual ? (["visual"] as const) : []),
+    ...(overlays.includes("semantic") || semantic
+      ? (["semantic"] as const)
+      : []),
+  ];
+  const chips: FilterChipId[] = [
+    ...fields.filter((field) => field === "color"),
+    ...shownOverlays,
+    ...fields.filter((field) => field !== "color"),
+  ];
   const hasActiveFilters =
     rows.length > 0 || Boolean(semantic) || Boolean(visual);
-  const saveView = () => {
-    if (activeViewId) {
-      void savedViews.updateCurrent(activeViewId).catch((error) =>
-        notify({
-          id: "save-filter-view",
-          title: "Couldn't update the saved view",
-          description: errorCopy(error, "Try again."),
-        }),
-      );
-      return;
-    }
-    void savedViews
-      .create({ kind: "saved_view", name: "Untitled" })
-      .then((view) => savedViews.startEditing(view.id))
-      .catch((error) =>
-        notify({
-          id: "save-filter-view",
-          title: "Couldn't save the view",
-          description: errorCopy(error, "Try again."),
-        }),
-      );
-  };
-  const clearAll = () => {
-    updateLocalFilters([]);
-    setSemanticQuery(null);
-    setVisualProbe(null);
-  };
-  const saveLabel = activeViewId ? "Update View" : "Save View";
-  const viewActions = (
-    <>
-      <Tooltip label={saveLabel} side="bottom">
-        <Button
-          icon
-          size="sm"
-          variant="ghost"
-          aria-label={saveLabel}
-          onClick={saveView}
-        >
-          <IconBookmark />
-        </Button>
-      </Tooltip>
-      <Tooltip label="Clear Filters" side="bottom">
-        <Button
-          icon
-          size="sm"
-          variant="ghost"
-          aria-label="Clear Filters"
-          disabled={!hasActiveFilters}
-          onClick={clearAll}
-        >
-          <IconFilterOff />
-        </Button>
-      </Tooltip>
-    </>
-  );
+  const saveLabel = saveViewLabel(activeViewId);
   return (
     <FilterToolbar.Bar
-      open={appliedLayout ? chips.length > 0 : open}
+      open={open}
       id="library-filter-toolbar"
       label="Library Filters"
-      wrap={appliedLayout}
       actions={
-        appliedLayout ? (
-          hasActiveFilters ? (
-            viewActions
-          ) : null
-        ) : (
-          <>
-            <CustomizeFilters
-              choices={choices}
-              activeFields={activeFields}
-              semanticActive={Boolean(semantic)}
-              visualActive={Boolean(visual)}
-            />
-            {viewActions}
-          </>
-        )
+        <>
+          <CustomizeFilters
+            choices={choices}
+            activeFields={activeFields}
+            semanticActive={Boolean(semantic)}
+            visualActive={Boolean(visual)}
+          />
+          <Tooltip label={saveLabel} side="bottom">
+            <Button
+              icon
+              size="sm"
+              variant="ghost"
+              aria-label={saveLabel}
+              onClick={() => saveFilterView(activeViewId)}
+            >
+              <IconBookmark />
+            </Button>
+          </Tooltip>
+          <Tooltip label="Clear Filters" side="bottom">
+            <Button
+              icon
+              size="sm"
+              variant="ghost"
+              aria-label="Clear Filters"
+              disabled={!hasActiveFilters}
+              onClick={clearFilters}
+            >
+              <IconFilterOff />
+            </Button>
+          </Tooltip>
+        </>
       }
     >
       {chips.map((chip) =>
@@ -328,7 +279,7 @@ export function FilterBarView(data: FilterBarData) {
               presetOptions(chip)
             }
             rows={rows}
-            onChange={apply}
+            onChange={updateLocalFilters}
           />
         ),
       )}

@@ -14,7 +14,7 @@
   justify-content: center;
   width: 16px;
   height: 16px;
-  margin-right: var(--ds-space-md);
+  margin-right: var(--ds-space-sm);
   overflow: hidden;
 }
 

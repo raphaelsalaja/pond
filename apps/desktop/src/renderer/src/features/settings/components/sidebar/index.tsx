@@ -1,6 +1,4 @@
-import { IconArrowLeft } from "@pond/icons";
-import { Button, Sidebar } from "@pond/ui";
-import { useNavigate, useRouterState } from "@tanstack/react-router";
+import { Sidebar } from "@pond/ui";
 import Fuse from "fuse.js";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -14,9 +12,10 @@ import {
   type SettingsSearchEntry,
 } from "@/features/settings/lib/search-index";
 import { SECTION_PRELOADS } from "@/features/settings/lib/sections";
+import { SearchChrome } from "@/shared/components/search-chrome";
+import { useRouteLocation } from "@/shared/hooks/use-route-location";
 import { preloadWhenIdle } from "@/shared/lib/lazy-with-preload";
 import { openSettings } from "@/shared/lib/open-settings";
-import styles from "./styles.module.css";
 
 interface SectionResult {
   section: SectionDef;
@@ -24,28 +23,18 @@ interface SectionResult {
 }
 
 export function SettingsSidebar() {
-  const navigate = useNavigate();
-  const pathname = useRouterState({
-    select: (state) => state.location.pathname,
-  });
+  const pathname = useRouteLocation((location) => location.pathname);
   useEffect(() => preloadWhenIdle(...SECTION_PRELOADS), []);
   const activeSection = pathname.startsWith("/settings/")
     ? pathname.slice("/settings/".length).split("/")[0]
     : null;
-  return (
-    <SettingsSidebarView
-      activeSection={activeSection ?? null}
-      onExit={() => void navigate({ to: "/", search: {} })}
-    />
-  );
+  return <SettingsSidebarView activeSection={activeSection ?? null} />;
 }
 
 export function SettingsSidebarView({
   activeSection,
-  onExit,
 }: {
   activeSection: string | null;
-  onExit?: () => void;
 }) {
   const [query, setQuery] = useState("");
   const needle = query.trim();
@@ -105,63 +94,50 @@ export function SettingsSidebarView({
   };
 
   return (
-    <Sidebar.Root
-      className={styles.root}
-      width="full"
-      role="navigation"
-      aria-label="Settings"
-    >
-      {onExit ? (
-        <Sidebar.Header className={styles.header}>
-          <Button variant="ghost" size="sm" onClick={onExit}>
-            <IconArrowLeft aria-hidden />
-            Exit settings
-          </Button>
-        </Sidebar.Header>
-      ) : null}
-      <div className={styles.search}>
-        <Sidebar.Search
-          aria-label="Search settings"
+    <>
+      <Sidebar.GroupHeader>
+        <Sidebar.GroupLabel>Settings</Sidebar.GroupLabel>
+      </Sidebar.GroupHeader>
+      <SearchChrome.Root>
+        <SearchChrome.Field
           value={query}
-          onChange={(value) => setQuery(value.target.value)}
-          placeholder="Search…"
+          onChange={(event) => setQuery(event.target.value)}
+          aria-label="Search Settings"
         />
-      </div>
-      <Sidebar.Scroll>
-        {results === null ? (
-          SETTINGS_MASTER_GROUPS.map((group) => (
-            <Sidebar.Group key={group.group}>
-              {group.label ? (
-                <Sidebar.GroupLabel>{group.label}</Sidebar.GroupLabel>
-              ) : null}
-              {group.sections.map(sectionItem)}
-            </Sidebar.Group>
-          ))
-        ) : results.length === 0 ? (
-          <Sidebar.Group>
-            <Sidebar.Empty>No settings match.</Sidebar.Empty>
+      </SearchChrome.Root>
+      {results === null ? (
+        SETTINGS_MASTER_GROUPS.map((group) => (
+          <Sidebar.Group key={group.group}>
+            {group.label ? (
+              <Sidebar.GroupLabel>{group.label}</Sidebar.GroupLabel>
+            ) : null}
+            {group.sections.map(sectionItem)}
           </Sidebar.Group>
-        ) : (
-          results.map(({ section, items }) => (
-            <Sidebar.Group key={section.id}>
-              {sectionItem(section)}
-              {items.map((item) => (
-                <Sidebar.ResultButton
-                  key={item.id}
-                  onClick={() =>
-                    openSettings(
-                      section.path,
-                      `setting-${item.sectionId}-${item.itemKey}`,
-                    )
-                  }
-                >
-                  {item.title}
-                </Sidebar.ResultButton>
-              ))}
-            </Sidebar.Group>
-          ))
-        )}
-      </Sidebar.Scroll>
-    </Sidebar.Root>
+        ))
+      ) : results.length === 0 ? (
+        <Sidebar.Group>
+          <Sidebar.Empty>No settings match.</Sidebar.Empty>
+        </Sidebar.Group>
+      ) : (
+        results.map(({ section, items }) => (
+          <Sidebar.Group key={section.id}>
+            {sectionItem(section)}
+            {items.map((item) => (
+              <Sidebar.ResultButton
+                key={item.id}
+                onClick={() =>
+                  openSettings(
+                    section.path,
+                    `setting-${item.sectionId}-${item.itemKey}`,
+                  )
+                }
+              >
+                {item.title}
+              </Sidebar.ResultButton>
+            ))}
+          </Sidebar.Group>
+        ))
+      )}
+    </>
   );
 }

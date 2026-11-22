@@ -1,18 +1,10 @@
-import {
-  IconArrowRotateClockwise,
-  IconCircleCheck,
-  IconFile,
-  IconLink2,
-} from "@pond/icons";
+import { IconCircleCheck, IconFile, IconLink2, IconRefresh } from "@pond/icons";
 import { Button } from "@pond/ui";
 import { DataTable } from "@pond/ui/data-table";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SourcesEmpty } from "@/features/sources/components/empty";
 import { NewSourceMenu } from "@/features/sources/components/new-menu";
-import { cardModel } from "@/features/sources/components/sync-monitor/lib/helpers";
-import { useAccounts } from "@/features/sources/hooks/use-accounts";
-import { useWatchedFolder } from "@/features/sources/hooks/use-watched-folder";
-import { useWatches } from "@/features/sources/hooks/use-watches";
+import { useSourceTableRows } from "@/features/sources/hooks/use-source-table-rows";
 import {
   sourceDetail,
   useSourceDetailRevision,
@@ -28,7 +20,6 @@ import {
   useSourcesFilters,
 } from "@/features/sources/state/sources-filters";
 import { sourcesSelection } from "@/features/sources/state/sources-selection";
-import { useSyncByAccount } from "@/features/sources/state/sync-monitor";
 import { useWatchAdded, watchFlow } from "@/features/sources/state/watch-flow";
 import { MatchesEmpty } from "@/shared/components/matches-empty";
 import { SearchChrome } from "@/shared/components/search-chrome";
@@ -40,20 +31,17 @@ import {
 import { uniqueFilterOptions } from "@/shared/components/table-filters/chip-label";
 import { TableSelectionSync } from "@/shared/components/table-selection-sync";
 import { useClientHeight } from "@/shared/hooks/use-client-height";
+import { formatPlural } from "@/shared/lib/format";
 import { notify, updateNotification } from "@/shared/lib/toast";
 import { sourcesColumns } from "./columns";
 import { SourcesContextMenu } from "./context-menu";
 import {
   matchesSourceFilters,
   SOURCE_STATUS_OPTIONS,
+  type SourceFilters,
   sourceFiltersActive,
 } from "./lib/filters";
-import {
-  type SourceEntry,
-  type SourceTableRow,
-  toFolderTableRow,
-  toSourceTableRow,
-} from "./lib/helpers";
+import type { SourceEntry, SourceTableRow } from "./lib/helpers";
 import { SourcesLoading } from "./loading";
 import { SourceOptionsMenu } from "./options";
 import { SourceSelectionBar } from "./selection-bar";
@@ -65,19 +53,30 @@ function openEntry(entry: SourceEntry): void {
   else sourceDetail.openFolder(entry.row.path);
 }
 
-function SourcesMatchesEmpty() {
-  return <MatchesEmpty onReset={sourcesFilters.reset} />;
+function SourcesMatchesEmpty({
+  filters,
+  total,
+}: {
+  filters: SourceFilters;
+  total: number;
+}) {
+  return (
+    <MatchesEmpty
+      query={filters.q}
+      filtered={sourceFiltersActive(filters)}
+      hidden={formatPlural(total, { one: "source", other: "sources" })}
+      onReset={sourcesFilters.reset}
+    />
+  );
 }
 
 export function SourcesPage() {
-  const { accounts, loading: accountsLoading, refetch } = useAccounts();
   const {
-    watches,
-    loading: watchesLoading,
-    refetch: refetchWatches,
-  } = useWatches();
-  const watchedFolder = useWatchedFolder();
-  const byAccount = useSyncByAccount();
+    rows: tableRows,
+    loaded,
+    refetchAccounts: refetch,
+    refetchWatches,
+  } = useSourceTableRows();
   const addedWatchId = useWatchAdded();
   const detailRevision = useSourceDetailRevision();
   const filters = useSourcesFilters();
@@ -86,28 +85,6 @@ export function SourcesPage() {
   const [fetchingAll, setFetchingAll] = useState(false);
   const fetchingAllRef = useRef(false);
   const { ref: tableRef, height: tableHeight } = useClientHeight();
-
-  const tableRows = useMemo<SourceTableRow[]>(() => {
-    const next: SourceTableRow[] = [];
-    for (const row of accounts) {
-      next.push(
-        toSourceTableRow(
-          { kind: "account", row },
-          cardModel(byAccount[row.id]),
-        ),
-      );
-    }
-    for (const row of watches) {
-      next.push(
-        toSourceTableRow({ kind: "watch", row }, cardModel(byAccount[row.id])),
-      );
-    }
-    const folder = watchedFolder.data
-      ? toFolderTableRow(watchedFolder.data)
-      : null;
-    if (folder) next.push(folder);
-    return next;
-  }, [accounts, watches, watchedFolder.data, byAccount]);
 
   const rows = useMemo(
     () => tableRows.filter((row) => matchesSourceFilters(row, filters)),
@@ -163,8 +140,6 @@ export function SourcesPage() {
     void refetchWatches();
   }, [detailRevision, refetch, refetchWatches]);
 
-  const loaded =
-    !accountsLoading && !watchesLoading && !watchedFolder.isPending;
   const showMatchesEmpty = loaded && tableRows.length > 0 && rows.length === 0;
 
   const onRowClick = useCallback((row: SourceTableRow) => {
@@ -222,7 +197,7 @@ export function SourcesPage() {
             aria-label="Fetch All"
             onClick={() => void fetchAll()}
           >
-            <IconArrowRotateClockwise />
+            <IconRefresh />
           </Button>
           <NewSourceMenu controlled />
           <SourceOptionsMenu />
@@ -264,11 +239,9 @@ export function SourcesPage() {
         </TableFilterBar>
       }
     >
-      <SearchChrome.Input
+      <SearchChrome.Field
         value={filters.q}
         onChange={(e) => sourcesFilters.setQ(e.target.value)}
-        spellCheck={false}
-        placeholder="Search…"
         aria-label="Search Sources"
         data-sources-search=""
       />
@@ -295,6 +268,7 @@ export function SourcesPage() {
         );
       }}
       getRowId={(row) => row.id}
+      rowHeight={48}
       onSelectionChange={(ids) => {
         sourcesSelection.set(
           ids
@@ -322,13 +296,20 @@ export function SourcesPage() {
             <SourcesEmpty />
           ) : showMatchesEmpty ? (
             <div className={styles.empty}>
-              <SourcesMatchesEmpty />
+              <SourcesMatchesEmpty filters={filters} total={tableRows.length} />
             </div>
           ) : (
             <div ref={tableRef} className={styles.table}>
-              <DataTable.Root className={styles.grid} aria-label="Sources">
+              <DataTable.Root
+                className={styles.grid}
+                rows="inset"
+                aria-label="Sources"
+              >
                 <DataTable.Empty>
-                  <SourcesMatchesEmpty />
+                  <SourcesMatchesEmpty
+                    filters={filters}
+                    total={tableRows.length}
+                  />
                 </DataTable.Empty>
               </DataTable.Root>
             </div>

@@ -20,11 +20,12 @@
   },
   "exports": {
     ".": "./index.ts",
+    "./create-icon": "./create-icon.ts",
     "./social-media": "./social-media/index.ts",
     "./types": "./types.ts"
   },
   "scripts": {
-    "generate": "node scripts/build.mjs",
+    "generate": "node scripts/render.mjs && node scripts/build.mjs",
     "generate:check": "node scripts/build.mjs --check",
     "typecheck": "tsc --noEmit"
   },

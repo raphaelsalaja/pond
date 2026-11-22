@@ -1,4 +1,4 @@
-import { act } from "react";
+import { act, type ComponentProps } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { KoiQuestion } from ".";
@@ -18,95 +18,114 @@ afterEach(() => {
 });
 
 const options = ["Grid", "List"];
-const continueButton = () =>
-  [...host.querySelectorAll("button")].find(
-    (button) => button.textContent === "Continue",
+const buttonNamed = (name: string) =>
+  [...host.querySelectorAll("button")].find((button) =>
+    button.textContent?.startsWith(name),
   );
+const choices = () => [
+  ...host.querySelectorAll<HTMLButtonElement>("button[aria-pressed]"),
+];
 
-it("letters each option, then a freeform row", async () => {
+async function renderQuestion(
+  props: Partial<ComponentProps<typeof KoiQuestion>> = {},
+) {
   await act(async () =>
     root.render(
       <KoiQuestion
         question="Which layout?"
         options={options}
-        onAnswer={vi.fn()}
+        onAnswer={vi.fn(async () => {})}
+        {...props}
       />,
     ),
   );
-  const choices = [...host.querySelectorAll("button[aria-pressed]")];
-  expect(choices.map((choice) => choice.textContent)).toEqual([
-    "AGrid",
-    "BList",
+}
+
+async function press(target: Element | null | undefined, key: string) {
+  await act(async () =>
+    target?.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true })),
+  );
+}
+
+it("numbers each option, then a freeform row", async () => {
+  await renderQuestion();
+  expect(choices().map((choice) => choice.textContent)).toEqual([
+    "1Grid",
+    "2List",
   ]);
   expect(host.querySelector('input[aria-label="Your answer"]')).not.toBeNull();
-  expect(continueButton()?.disabled).toBe(true);
+  expect(buttonNamed("Continue")?.disabled).toBe(true);
 });
 
 it("sends the picked option", async () => {
   const onAnswer = vi.fn(async () => {});
-  await act(async () =>
-    root.render(
-      <KoiQuestion
-        question="Which layout?"
-        options={options}
-        onAnswer={onAnswer}
-      />,
-    ),
-  );
-  const list = host.querySelectorAll<HTMLButtonElement>(
-    "button[aria-pressed]",
-  )[1];
+  await renderQuestion({ onAnswer });
+  const list = choices()[1];
   await act(async () => list?.click());
   expect(list?.getAttribute("aria-pressed")).toBe("true");
-  await act(async () => continueButton()?.click());
+  await act(async () => buttonNamed("Continue")?.click());
   expect(onAnswer).toHaveBeenCalledWith("List");
 });
 
 it("sends an option on Enter", async () => {
   const onAnswer = vi.fn(async () => {});
-  await act(async () =>
-    root.render(
-      <KoiQuestion
-        question="Which layout?"
-        options={options}
-        onAnswer={onAnswer}
-      />,
-    ),
-  );
-  const grid = host.querySelector<HTMLButtonElement>("button[aria-pressed]");
-  await act(async () =>
-    grid?.dispatchEvent(
-      new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
-    ),
-  );
+  await renderQuestion({ onAnswer });
+  await press(choices()[0], "Enter");
   expect(onAnswer).toHaveBeenCalledWith("Grid");
 });
 
-it("hides freeform on older questions", async () => {
-  await act(async () =>
-    root.render(
-      <KoiQuestion
-        question="Which layout?"
-        options={options}
-        disabled
-        onAnswer={vi.fn()}
-      />,
-    ),
+it("sends the option a number key names", async () => {
+  const onAnswer = vi.fn(async () => {});
+  await renderQuestion({ onAnswer });
+  await press(choices()[0], "2");
+  expect(onAnswer).toHaveBeenCalledWith("List");
+});
+
+it("focuses the freeform row on the number after the last option", async () => {
+  const onAnswer = vi.fn(async () => {});
+  await renderQuestion({ onAnswer });
+  await press(choices()[0], "3");
+  expect(document.activeElement).toBe(
+    host.querySelector('input[aria-label="Your answer"]'),
   );
+  expect(onAnswer).not.toHaveBeenCalled();
+});
+
+it("ignores number keys while typing an answer", async () => {
+  const onAnswer = vi.fn(async () => {});
+  await renderQuestion({ onAnswer });
+  await press(host.querySelector("input"), "1");
+  expect(onAnswer).not.toHaveBeenCalled();
+});
+
+it("marks the recommended option", async () => {
+  await renderQuestion({ recommended: 1 });
+  expect(choices().map((choice) => choice.textContent)).toEqual([
+    "1Grid",
+    "2ListRecommended",
+  ]);
+});
+
+it("folds into a waiting receipt on Esc and reopens on Answer", async () => {
+  await renderQuestion();
+  await press(choices()[0], "Escape");
+  expect(host.textContent).toContain("Question waiting");
+  await act(async () => buttonNamed("Answer")?.click());
+  expect(choices()).toHaveLength(2);
+});
+
+it("hides freeform on older questions", async () => {
+  await renderQuestion({ disabled: true });
   expect(host.querySelector("input")).toBeNull();
 });
 
-it("shows an answered question as the question over the answer", async () => {
-  await act(async () =>
-    root.render(
-      <KoiQuestion
-        question="Which layout?"
-        options={options}
-        answered="List"
-        onAnswer={vi.fn()}
-      />,
-    ),
-  );
-  expect(host.textContent).toBe("Which layout?List");
-  expect(continueButton()).toBeUndefined();
+it("shows an answered question as a receipt that unfolds to the answer", async () => {
+  await renderQuestion({ answered: "List" });
+  expect(host.textContent).toBe("ListWhich layout?");
+  expect(buttonNamed("Continue")).toBeUndefined();
+  const toggle = host.querySelector("button[aria-expanded]");
+  expect(toggle?.getAttribute("aria-expanded")).toBe("false");
+  await act(async () => (toggle as HTMLButtonElement | null)?.click());
+  expect(toggle?.getAttribute("aria-expanded")).toBe("true");
+  expect(host.textContent).toBe("ListWhich layout?Which layout?List");
 });

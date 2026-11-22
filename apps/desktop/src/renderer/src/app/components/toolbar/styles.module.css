@@ -3,7 +3,7 @@
   grid-template-columns:
     minmax(max-content, var(--window-left-width))
     minmax(0, 1fr)
-    auto;
+    minmax(max-content, var(--window-right-width));
   flex-shrink: 0;
   align-items: center;
   width: 100%;
@@ -22,13 +22,21 @@
   justify-content: space-between;
   width: 100%;
   height: 100%;
-  padding-right: var(--ds-space-lg);
+  /* Matches the sidebar panel's border and inset so history buttons sit above its header actions. */
+  padding-right: calc(var(--ds-space-md) + var(--ds-border-width));
   padding-left: var(--ds-space-lg);
   -webkit-app-region: drag;
 }
 
 :global(html[data-platform="mac"]:not([data-full-screen])) .chrome {
   padding-left: 96px;
+}
+
+.tools {
+  display: flex;
+  gap: var(--ds-space-2xs);
+  align-items: center;
+  -webkit-app-region: no-drag;
 }
 
 .breadcrumbs {
@@ -45,15 +53,17 @@
   margin-right: var(--window-inset);
   margin-left: var(--window-inset);
   transition: margin-left var(--window-edge-duration) var(--window-edge-easing);
+}
 
-  &[data-search] {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 440px) minmax(0, 1fr);
-    gap: var(--ds-space-lg);
-  }
+.viewer {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  min-width: 0;
+  height: 100%;
 
-  &[data-search] .breadcrumbs {
-    justify-self: start;
+  & [data-viewer-bar-slot] {
+    -webkit-app-region: no-drag;
   }
 }
 
@@ -97,7 +107,7 @@
 
 .separator {
   flex: none;
-  font-size: var(--ds-text-body);
+  font-size: var(--ds-text-small);
   color: var(--ds-foreground-tertiary);
   user-select: none;
 }
@@ -114,10 +124,10 @@
   min-width: 0;
   height: var(--ds-size-sm);
   padding: 0 var(--ds-space-sm);
-  font-size: var(--ds-text-body);
+  font-size: var(--ds-text-small);
   font-weight: var(--ds-weight-medium);
-  line-height: var(--ds-leading-body);
-  color: var(--ds-foreground-primary);
+  line-height: var(--ds-leading-small);
+  color: var(--ds-foreground-secondary);
 }
 
 .current svg {
@@ -134,14 +144,6 @@
 
 .more {
   color: var(--ds-foreground-tertiary);
-}
-
-.position {
-  flex: none;
-  margin-left: var(--ds-space-2xs);
-  font-weight: var(--ds-weight-regular);
-  color: var(--ds-foreground-tertiary);
-  white-space: nowrap;
 }
 
 .actions {

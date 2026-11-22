@@ -10,8 +10,14 @@
 
 .lead {
   display: flex;
+  gap: var(--ds-space-sm);
   align-items: center;
   min-width: 0;
+
+  & > :first-child {
+    flex: none;
+    margin-right: var(--ds-space-xs);
+  }
 }
 
 .name {
@@ -23,29 +29,13 @@
   white-space: nowrap;
 }
 
-.source {
-  display: flex;
-  gap: var(--ds-space-md);
-  align-items: center;
-  min-width: 0;
-}
-
 .kind {
   display: inline-flex;
-  flex: none;
   align-items: center;
   justify-content: center;
   width: 18px;
   height: 18px;
   color: var(--ds-foreground-secondary);
-}
-
-.source > .label {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: var(--ds-text-small);
-  color: var(--ds-foreground-secondary);
-  white-space: nowrap;
 }
 
 .status {
@@ -77,7 +67,7 @@
   display: block;
 }
 
-.status > .label {
+.label {
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: var(--ds-text-body);

@@ -1,14 +1,14 @@
 .root {
   --button-height-xs: var(--ds-size-xs);
-  --button-padding-xs: 0 var(--ds-space-md);
+  --button-padding-xs: var(--ds-space-md);
   --button-font-size-xs: var(--ds-text-small);
   --button-radius-xs: var(--ds-radius-sm);
   --button-height-sm: var(--ds-size-sm);
-  --button-padding-sm: 0 var(--ds-space-lg);
+  --button-padding-sm: calc(var(--ds-space-md) + var(--ds-space-2xs));
   --button-font-size-sm: var(--ds-text-small);
   --button-radius-sm: var(--ds-radius-sm);
   --button-height-md: var(--ds-size-md);
-  --button-padding-md: 0 var(--ds-space-lg);
+  --button-padding-md: var(--ds-space-lg);
   --button-font-size-md: var(--ds-text-body);
   --button-radius-md: var(--ds-radius-md);
 
@@ -20,11 +20,11 @@
 
   &:where([data-density="compact"]) {
     --button-height-xs: calc(var(--ds-size-xs) - 4px);
-    --button-padding-xs: 0 var(--ds-space-xs);
+    --button-padding-xs: var(--ds-space-xs);
     --button-height-sm: var(--ds-size-xs);
-    --button-padding-sm: 0 var(--ds-space-sm);
+    --button-padding-sm: var(--ds-space-sm);
     --button-height-md: var(--ds-size-sm);
-    --button-padding-md: 0 var(--ds-space-sm);
+    --button-padding-md: var(--ds-space-sm);
   }
 }
 
@@ -34,18 +34,23 @@
   align-items: center;
   justify-content: center;
   height: var(--button-height);
-  font-weight: var(--ds-weight-medium);
+  font-weight: var(--ds-weight-strong);
   line-height: 1;
   text-wrap: nowrap;
   user-select: none;
   transition:
-    background-color var(--ds-duration-medium) var(--ds-easing-standard),
-    color var(--ds-duration-medium) var(--ds-easing-standard),
+    background-color var(--ds-duration-snap) var(--ds-easing-standard),
+    color var(--ds-duration-snap) var(--ds-easing-standard),
     outline-color var(--ds-duration-snap) var(--ds-easing-snap),
     outline-offset var(--ds-duration-snap) var(--ds-easing-snap),
-    box-shadow var(--ds-duration-medium) var(--ds-easing-standard),
-    opacity var(--ds-duration-medium) var(--ds-easing-standard),
-    scale var(--ds-duration-bounce) var(--ds-easing-bounce);
+    box-shadow var(--ds-duration-snap) var(--ds-easing-standard),
+    opacity var(--ds-duration-snap) var(--ds-easing-standard);
+
+  /* Highlights land instantly and only fade on the way out. */
+  &:hover,
+  &:active {
+    transition-duration: 0s;
+  }
 
   &:not(:focus-visible, [data-demo-state="focus"]) {
     outline: var(--ds-focus-width) solid transparent;
@@ -67,58 +72,54 @@
     opacity: var(--ds-opacity-disabled);
   }
 
-  &:active {
-    scale: 0.96;
-    transition:
-      background-color var(--ds-duration-medium) var(--ds-easing-standard),
-      color var(--ds-duration-medium) var(--ds-easing-standard),
-      outline-color var(--ds-duration-snap) var(--ds-easing-snap),
-      outline-offset var(--ds-duration-snap) var(--ds-easing-snap),
-      box-shadow var(--ds-duration-medium) var(--ds-easing-standard),
-      opacity var(--ds-duration-medium) var(--ds-easing-standard),
-      scale var(--ds-duration-fast) var(--ds-easing-decelerate);
-  }
-
-  /* Popups anchor to the trigger's transformed box, so a press scale drags an open popup through subpixel snaps. */
-  &[aria-expanded="true"] {
-    scale: none;
-    transition:
-      background-color var(--ds-duration-medium) var(--ds-easing-standard),
-      color var(--ds-duration-medium) var(--ds-easing-standard),
-      outline-color var(--ds-duration-snap) var(--ds-easing-snap),
-      outline-offset var(--ds-duration-snap) var(--ds-easing-snap),
-      box-shadow var(--ds-duration-medium) var(--ds-easing-standard),
-      opacity var(--ds-duration-medium) var(--ds-easing-standard);
-  }
-
   &:where([data-size="xs"]) {
     --button-height: var(--button-height-xs);
-    --button-icon-size: 12px;
+    --button-padding: var(--button-padding-xs);
+    --button-icon-size: 14px;
+    --button-icon-offset: var(--ds-space-2xs);
     --button-gap: var(--ds-space-xs);
 
-    padding: var(--button-padding-xs);
+    padding: 0 var(--button-padding);
     font-size: var(--button-font-size-xs);
     border-radius: var(--button-radius-xs);
   }
 
   &:where([data-size="sm"]) {
     --button-height: var(--button-height-sm);
+    --button-padding: var(--button-padding-sm);
     --button-icon-size: 14px;
+    --button-icon-offset: var(--ds-space-2xs);
     --button-gap: var(--ds-space-xs);
 
-    padding: var(--button-padding-sm);
+    padding: 0 var(--button-padding);
     font-size: var(--button-font-size-sm);
     border-radius: var(--button-radius-sm);
   }
 
   &:where([data-size="md"]) {
     --button-height: var(--button-height-md);
+    --button-padding: var(--button-padding-md);
     --button-icon-size: 16px;
-    --button-gap: var(--ds-space-sm);
+    --button-icon-offset: var(--ds-space-2xs);
+    --button-gap: var(--ds-space-xs);
 
-    padding: var(--button-padding-md);
+    padding: 0 var(--button-padding);
     font-size: var(--button-font-size-md);
     border-radius: var(--button-radius-md);
+  }
+
+  /* An icon's side bearing already reads as space, so that side of the label pulls in. */
+  &:where([data-icon-start]:not([data-variant="link"], [data-variant="bare"])):has(
+      > svg:first-child,
+      > .spinner:first-child + svg
+    ) {
+    padding-inline-start: calc(var(--button-padding) - var(--button-icon-offset));
+  }
+
+  &:where([data-icon-end]:not([data-variant="link"], [data-variant="bare"])):has(
+      > svg:last-child
+    ) {
+    padding-inline-end: calc(var(--button-padding) - var(--button-icon-offset));
   }
 
   &:where(:not([data-variant="bare"])) > :where(svg) {
@@ -162,24 +163,10 @@
     }
   }
 
-  &:where([data-variant="primary"]) {
-    color: var(--ds-foreground-inverse);
-    background: var(--ds-sheen), var(--ds-background-inverse);
-
-    &:where([data-icon]) {
-      background: var(--ds-sheen), var(--ds-foreground-secondary);
-    }
-
-    &:hover,
-    &[data-demo-state="hover"] {
-      opacity: 0.8;
-    }
-  }
-
   &:where([data-variant="secondary"]) {
     color: var(--ds-foreground-primary);
     background-color: var(--ds-background-primary);
-    box-shadow: var(--ds-shadow-raised);
+    box-shadow: var(--ds-shadow-border);
 
     &:hover,
     &[data-demo-state="hover"] {
@@ -198,9 +185,9 @@
     }
   }
 
-  &:where([data-variant="accent"]) {
+  &:where([data-variant="primary"], [data-variant="accent"]) {
     color: var(--ds-accent-contrast);
-    background: var(--ds-sheen), var(--ds-accent);
+    background-color: var(--ds-accent);
 
     &:hover,
     &:active,
@@ -233,6 +220,10 @@
   &:where([data-variant="ghost"]) {
     color: var(--ds-foreground-secondary);
     background-color: transparent;
+
+    &:where([data-icon]) {
+      color: var(--ds-foreground-tertiary);
+    }
 
     &:hover,
     &[data-pressed],
@@ -279,13 +270,11 @@
 
     &:hover,
     &[data-demo-state="hover"] {
+      color: var(--ds-foreground-primary);
+
       &::after {
         opacity: 1;
       }
-    }
-
-    &:active {
-      scale: none;
     }
   }
 
@@ -302,18 +291,11 @@
     &:where([data-icon][data-width="auto"]) {
       width: auto;
     }
-
-    &:active {
-      scale: none;
-    }
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .root,
-  .root:active,
-  .root[aria-expanded="true"] {
-    scale: none;
+  .root {
     transition: none;
   }
 }

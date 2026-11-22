@@ -5,19 +5,21 @@ import { stopPageHotkeys } from "../stop-page-hotkeys";
 import styles from "./styles.module.css";
 
 type InputSize = "xs" | "sm" | "md";
-type InputVariant = "primary" | "secondary" | "borderless";
+type InputVariant = "primary" | "raised" | "secondary" | "borderless";
 /** `bare` drops the field chrome for inline editors that must match the text they replace. */
 type FieldAppearance = "default" | "bare";
 
 interface RootProps extends React.ComponentPropsWithoutRef<"div"> {
   size?: InputSize;
   variant?: InputVariant;
+  rounding?: "full" | "rounded";
 }
 
 function Root({
   className,
   size = "md",
   variant = "primary",
+  rounding = "rounded",
   ...props
 }: RootProps) {
   return (
@@ -25,6 +27,7 @@ function Root({
       data-slot="root"
       data-size={size}
       data-variant={variant}
+      data-rounding={rounding}
       className={cn(styles.root, className)}
       {...props}
     />
@@ -51,6 +54,17 @@ function Action({ className, ...props }: SlotProps) {
     <div
       data-slot="action"
       className={cn(styles.action, className)}
+      {...props}
+    />
+  );
+}
+
+/** Field chrome for an editor that is not an `<input>`, like a contenteditable. */
+function Editor({ className, ...props }: SlotProps) {
+  return (
+    <div
+      data-slot="editor"
+      className={cn(styles.editor, className)}
       {...props}
     />
   );
@@ -150,5 +164,6 @@ export const Input = {
   Icon,
   Action,
   Field,
+  Editor,
   Textarea,
 };

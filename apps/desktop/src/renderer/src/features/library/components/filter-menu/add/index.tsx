@@ -2,7 +2,7 @@ import { IconBarsFilter, IconImageSparkle, IconTextToImage } from "@pond/icons";
 import type { IconComponent } from "@pond/icons/types";
 import { FIELD_META } from "@pond/schema/filters/meta";
 import type { FieldId, Predicate } from "@pond/schema/filters/types";
-import { Menu, Tooltip } from "@pond/ui";
+import { Menu, SplitButton, Tooltip } from "@pond/ui";
 import { Fragment, type ReactNode, useState } from "react";
 import { libraryHeader } from "@/features/library/state/library-header";
 import { fieldIcon } from "@/features/search/query";
@@ -50,6 +50,7 @@ interface AddFilterProps {
   rows: Predicate[];
   onChange: (rows: Predicate[]) => void;
   applied: readonly FilterChipId[];
+  segment?: boolean;
 }
 
 export function AddFilter({
@@ -57,6 +58,7 @@ export function AddFilter({
   rows,
   onChange,
   applied,
+  segment,
 }: AddFilterProps) {
   const { query: search, onValueChange, reset } = useMenuFilterQuery();
   const [open, setOpen] = useState(false);
@@ -142,7 +144,7 @@ export function AddFilter({
           {
             key: "similarity",
             items: overlays.map((overlay) => (
-              <OverlaySubmenu key={overlay.id} overlay={overlay} />
+              <OverlaySubmenu key={overlay.id} overlay={overlay.id} />
             )),
           },
         ]
@@ -182,7 +184,15 @@ export function AddFilter({
         }}
       >
         <Tooltip label="Add Filter" side="bottom">
-          <Menu.Trigger icon size="sm" variant="ghost" aria-label="Add Filter">
+          <Menu.Trigger
+            icon
+            size="sm"
+            variant="secondary"
+            aria-label="Add Filter"
+            {...(segment && {
+              render: <SplitButton.Trigger aria-label="Add Filter" />,
+            })}
+          >
             <IconBarsFilter />
           </Menu.Trigger>
         </Tooltip>
@@ -220,11 +230,13 @@ function Submenu({
   icon: Icon,
   label,
   crumb,
+  detail,
   popup,
 }: {
   icon: IconComponent;
   label: string;
   crumb?: string;
+  detail?: string;
   popup: ReactNode;
 }) {
   return (
@@ -246,13 +258,18 @@ function Submenu({
             label
           )}
         </Menu.ItemLabel>
+        {detail ? (
+          <Menu.SecondaryLabel className={styles.detail}>
+            {detail}
+          </Menu.SecondaryLabel>
+        ) : null}
       </Menu.SubmenuTrigger>
       <Menu.Portal>
         <Menu.Positioner
           side="inline-end"
           align="start"
           sideOffset={4}
-          alignOffset={-4}
+          alignOffset={-6}
         >
           {popup}
         </Menu.Positioner>
@@ -261,12 +278,23 @@ function Submenu({
   );
 }
 
-function OverlaySubmenu({ overlay }: { overlay: (typeof OVERLAYS)[number] }) {
+interface SubmenuExtras {
+  detail?: string;
+  children?: ReactNode;
+}
+
+export function OverlaySubmenu({
+  overlay: id,
+  detail,
+  children,
+}: SubmenuExtras & { overlay: OverlayId }) {
   const { query, onValueChange } = useMenuFilterQuery();
+  const overlay = OVERLAYS.find((item) => item.id === id) ?? OVERLAYS[0];
   const submenu = (
     <Submenu
       icon={overlay.icon}
       label={overlay.label}
+      detail={detail}
       popup={
         <FilterPopup layout="content" aria-label={`${overlay.label} Filter`}>
           {overlay.id === "semantic" ? (
@@ -274,6 +302,7 @@ function OverlaySubmenu({ overlay }: { overlay: (typeof OVERLAYS)[number] }) {
           ) : (
             <VisualPanel />
           )}
+          {children}
         </FilterPopup>
       }
     />
@@ -327,17 +356,20 @@ function GroupSubmenu({
   );
 }
 
-function FieldSubmenu({
+export function FieldSubmenu({
   field,
   crumb,
   options,
   rows,
   onChange,
-}: FieldProps & {
-  field: FieldId;
-  crumb?: string;
-  options: FilterOption[];
-}) {
+  detail,
+  children,
+}: FieldProps &
+  SubmenuExtras & {
+    field: FieldId;
+    crumb?: string;
+    options: FilterOption[];
+  }) {
   const { query, onValueChange } = useMenuFilterQuery();
   const label = FIELD_META[field].label;
   const submenu = (
@@ -345,6 +377,7 @@ function FieldSubmenu({
       icon={fieldIcon(field)}
       label={label}
       crumb={crumb}
+      detail={detail}
       popup={
         <FilterPopup
           layout={filterLayout(field, options.length)}
@@ -358,6 +391,7 @@ function FieldSubmenu({
             search={query}
             onChange={onChange}
           />
+          {children}
         </FilterPopup>
       }
     />

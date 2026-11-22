@@ -1,9 +1,14 @@
 import { Toast as Base } from "@base-ui/react/toast";
-import { IconXmark } from "@pond/icons";
+import {
+  IconCircleCheckFill,
+  IconCircleXmarkFill,
+  IconXmark,
+} from "@pond/icons";
 import { clsx as cn } from "clsx";
 import type { ComponentPropsWithoutRef } from "react";
 import { Button } from "../button";
-import { Spotlight } from "./spotlight";
+import { Loader } from "../loader";
+import { Swap } from "../swap";
 import styles from "./styles.module.css";
 
 function Provider(props: Base.Provider.Props) {
@@ -24,22 +29,15 @@ function Viewport({ className, ...props }: Base.Viewport.Props) {
   );
 }
 
-interface RootProps extends Base.Root.Props {
-  variant?: "default" | "spotlight";
-}
-
-function Root({ className, toast, variant = "default", ...props }: RootProps) {
+function Root({ className, toast, ...props }: Base.Root.Props) {
   const updateKey = toast.updateKey ?? 0;
   const hasProgress = Boolean(toast.data?.progress);
   const pulse = updateKey > 0 && !hasProgress;
-  const spotlight = variant === "spotlight";
   return (
     <Base.Root
       toast={toast}
       swipeDirection={["down", "left", "right"]}
       className={cn(styles.root, className)}
-      data-variant={spotlight ? variant : undefined}
-      data-theme={spotlight ? "dark" : undefined}
       data-pulse={pulse ? (updateKey % 2 === 0 ? "a" : "b") : undefined}
       data-progress={hasProgress || undefined}
       {...props}
@@ -59,6 +57,30 @@ function Icon({ className, tone = "neutral", ...props }: IconProps) {
       aria-hidden="true"
       {...props}
     />
+  );
+}
+
+interface StatusProps extends ComponentPropsWithoutRef<"span"> {
+  status: "loading" | "success" | "error";
+}
+
+/** Sits in `Icon`; the spinner morphs into the result when the toast updates. */
+function Status({ status, className, ...props }: StatusProps) {
+  return (
+    <Swap
+      value={status}
+      className={cn(styles.status, className)}
+      data-status={status}
+      {...props}
+    >
+      {status === "loading" ? (
+        <Loader.Spinner />
+      ) : status === "success" ? (
+        <IconCircleCheckFill size={16} />
+      ) : (
+        <IconCircleXmarkFill size={16} />
+      )}
+    </Swap>
   );
 }
 
@@ -101,8 +123,8 @@ function Meta({ className, ...props }: ComponentPropsWithoutRef<"span">) {
 function Action({ className, ...props }: Base.Action.Props) {
   return (
     <Base.Action
-      className={cn(styles.action, className)}
-      render={<Button size="xs" variant="text" />}
+      className={className}
+      render={<Button size="sm" variant="secondary" />}
       {...props}
     />
   );
@@ -114,7 +136,7 @@ function Close({ className, ...props }: Base.Close.Props) {
       className={cn(styles.close, className)}
       render={
         <Button icon size="xs" variant="ghost" aria-label="Dismiss">
-          <IconXmark size={12} />
+          <IconXmark size={16} />
         </Button>
       }
       {...props}
@@ -127,9 +149,9 @@ export const Toast = {
   Portal,
   Viewport,
   Root,
-  Spotlight,
   Content,
   Icon,
+  Status,
   Header,
   Title,
   Description,

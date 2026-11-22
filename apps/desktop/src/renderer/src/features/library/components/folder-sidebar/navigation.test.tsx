@@ -45,29 +45,16 @@ describe("folder sidebar navigation", () => {
     expect(harness.button("All").getAttribute("aria-current")).toBeNull();
   });
 
-  it("shows the running download count on the Downloads row", async () => {
-    queueSummary.current = { ...queueSummary.current, running: 12, waiting: 4 };
+  it("names the Downloads count on its rail button", async () => {
+    queueSummary.current = { ...queueSummary.current, actionable: 3 };
     const router = await harness.mount();
-    expect(harness.host.querySelector('[aria-label^="Downloads"]')).toBeNull();
-    const row = await vi.waitFor(() => {
-      const match = harness.host
-        .querySelector('[title="12 downloading"]')
-        ?.closest("button");
-      if (!match)
-        throw new Error("Expected the Downloads row to show 12 downloading");
-      return match;
-    });
-    expect(row.textContent).toContain("Downloads");
-    await act(async () => row.click());
+    const button = await vi.waitFor(() => harness.button("Downloads, 3"));
+    await act(async () => button.click());
     expect(router.state.location.pathname).toBe("/downloads");
   });
 
-  it("lists Sources then Downloads under Harvesting", async () => {
+  it("puts Sources before Downloads in the rail", async () => {
     await harness.mount();
-    const group = [...document.querySelectorAll("*")].find(
-      (node) => node.children.length === 0 && node.textContent === "Harvesting",
-    );
-    expect(group).toBeTruthy();
     const sources = harness.button("Sources");
     const downloads = harness.button("Downloads");
     expect(
@@ -117,17 +104,15 @@ describe("folder sidebar navigation", () => {
     sidebarCounts.current.recentlyUsed = 4;
     await harness.mount();
     expect(harness.button("Recently Used").textContent).toContain("4");
-    for (const label of ["All", "Uncategorized", "Untagged", "Tags", "Trash"]) {
+    for (const label of ["All", "Uncategorized", "Untagged"]) {
       expect(harness.button(label).textContent).toContain("0");
     }
   });
 
-  it("opens the Inbox from the header button with its count", async () => {
+  it("opens the Inbox from the rail button named with its count", async () => {
     sidebarCounts.current.inbox = 13;
     await harness.mount();
-    const inbox = harness.iconButton("Inbox, 13");
-    expect(inbox.textContent).toBe("13");
-    expect(() => harness.button("Inbox")).toThrow();
+    const inbox = await vi.waitFor(() => harness.button("Inbox, 13"));
     await act(async () => inbox.click());
     expect(libraryChrome.getState().nav).toEqual({ kind: "inbox" });
     expect(inbox.getAttribute("aria-current")).toBe("page");
@@ -141,7 +126,6 @@ describe("folder sidebar navigation", () => {
     await act(async () => tags.click());
     expect(router.state.location.pathname).toBe("/tags");
     expect(tags.getAttribute("aria-current")).toBe("page");
-    expect(harness.button("All").getAttribute("aria-current")).toBeNull();
   });
 
   it.each([
@@ -152,15 +136,14 @@ describe("folder sidebar navigation", () => {
     expect(harness.host.querySelectorAll('[aria-current="page"]')).toHaveLength(
       1,
     );
-    expect(
-      harness.rowLabel(
-        harness.host.querySelector('[aria-current="page"]') ?? harness.host,
-      ),
-    ).toBe(label);
+    const current =
+      harness.host.querySelector('[aria-current="page"]') ?? harness.host;
+    expect(current.getAttribute("aria-label") ?? harness.rowLabel(current)).toBe(
+      label,
+    );
   });
 
   it.each([
-    ["/tags", "Tags"],
     ["/untagged", "Untagged"],
   ])("updates the %s highlight across route history", async (path, label) => {
     const router = await harness.mount(path);
@@ -267,13 +250,8 @@ describe("folder sidebar navigation", () => {
     const library = labels.indexOf("All");
     const uncategorized = labels.indexOf("Uncategorized");
     const untagged = labels.indexOf("Untagged");
-    const tags = labels.indexOf("Tags");
-    const trash = labels.indexOf("Trash");
     expect(library).toBeLessThan(uncategorized);
     expect(uncategorized).toBeLessThan(untagged);
-    expect(untagged).toBeLessThan(tags);
-    expect(tags).toBeLessThan(trash);
-    expect(trash).toBeLessThan(labels.indexOf("Sources"));
     expect(labels.indexOf("Sources")).toBeLessThan(labels.indexOf("Downloads"));
   });
 

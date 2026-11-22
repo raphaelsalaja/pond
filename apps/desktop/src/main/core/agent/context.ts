@@ -14,6 +14,7 @@ import {
   assistantQuestion,
   assistantResultSet,
   assistantSource,
+  assistantSuggestionInput,
 } from "../../../shared/assistant";
 import { folderIdsForSave, listFolders } from "../folders";
 import { normalizeTagList } from "../tags";
@@ -90,6 +91,7 @@ export function libraryContext(
   const sources = new Map<string, AssistantSource>();
   const changes = new Map<string, AssistantChange>();
   let question: AssistantQuestion | undefined;
+  let suggestions: string[] | undefined;
   let results: AssistantResultSet[] = [];
   const forModel = (save: AssistantSource) =>
     boundedSource(save, [...sources.keys()].indexOf(save.id) + 1);
@@ -159,18 +161,39 @@ export function libraryContext(
     {
       name: "requestQuestion",
       description:
-        "Ask one necessary clarifying question with 2 to 4 distinct options. The user can also write their own answer. Do not repeat the question in prose.",
+        "Ask one necessary clarifying question with 2 to 4 distinct options. Set recommended to the zero-based index of the option you would pick, when one is clearly better. The user can also write their own answer. Do not repeat the question in prose.",
       schema: assistantQuestion,
       execute: async (args) => {
         input.signal.throwIfAborted();
         if (question) return { requested: true };
-        question = assistantQuestion.parse(args);
-        question.options = [...new Set(question.options)];
-        question = assistantQuestion.parse(question);
+        const parsed = assistantQuestion.parse(args);
+        const pick =
+          parsed.recommended === undefined
+            ? undefined
+            : parsed.options[parsed.recommended];
+        const options = [...new Set(parsed.options)];
+        const recommended = pick === undefined ? -1 : options.indexOf(pick);
+        question = assistantQuestion.parse({
+          question: parsed.question,
+          options,
+          ...(recommended >= 0 ? { recommended } : {}),
+        });
         return {
           requested: true,
           message: "The question is shown to the user. Wait for their answer.",
         };
+      },
+    },
+    {
+      name: "suggestReplies",
+      description:
+        'Offer one to three short follow-ups the user is likely to send next, shown as tappable chips under your reply. Write each the way the user would say it, under 40 characters, like "Tag these as posters". Skip it when no next step is obvious or when you asked a question. Do not repeat them in prose.',
+      schema: assistantSuggestionInput,
+      execute: async (args) => {
+        input.signal.throwIfAborted();
+        const parsed = assistantSuggestionInput.parse(args);
+        suggestions = [...new Set(parsed.suggestions)];
+        return { shown: suggestions.length };
       },
     },
     {
@@ -469,5 +492,6 @@ export function libraryContext(
     sources: () => [...sources.values()],
     changes: () => [...changes.values()],
     question: () => question,
+    suggestions: () => suggestions,
   };
 }

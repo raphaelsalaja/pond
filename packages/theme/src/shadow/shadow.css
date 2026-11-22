@@ -1,7 +1,9 @@
 :root,
 [data-theme] {
-  /* Surfaces in the page take an edge, not a lift; only layers above the page cast a shadow. */
-  --ds-shadow-border: 0 0 0 1px var(--ds-border-subtle);
+  /* Surfaces in the page take a hairline and a contact shadow; only layers above the page cast a drop. */
+  --ds-shadow-border:
+    0 0 0 var(--ds-border-width) var(--ds-border-subtle),
+    0 3px 6px -2px oklch(0 0 0 / 0.02), 0 1px 1px oklch(0 0 0 / 0.04);
   --ds-shadow-color: oklch(0 0 0 / 0.205);
 
   --ds-shadow-raised:
@@ -21,6 +23,8 @@
 /* Dark surfaces can't darken the page enough to read as depth, so edges move inside and drops deepen. */
 [data-theme="dark"] {
   --ds-shadow-color: oklch(0 0 0 / 0.36);
+
+  --ds-shadow-border: 0 0 0 1px var(--ds-border-subtle);
 
   --ds-shadow-raised: inset 0 0 0 var(--ds-border-width) var(--ds-border-subtle);
 

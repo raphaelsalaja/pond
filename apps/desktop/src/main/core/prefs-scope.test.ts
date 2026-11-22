@@ -35,6 +35,7 @@ it("completes saved destination order", () => {
     "sources",
     "downloads",
     "all",
+    "inbox",
     "uncategorized",
     "untagged",
     "recentlyAdded",

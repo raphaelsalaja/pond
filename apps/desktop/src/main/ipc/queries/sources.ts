@@ -7,6 +7,7 @@ import { and, desc, eq, isNull, ne, sql } from "drizzle-orm";
 import { z } from "zod";
 import type { OkResult } from "../../../shared/query-contracts-shared";
 import { getAccount, patchAccountSync } from "../../core/sync/accounts";
+import { syncBaselineWhere } from "../../core/sync/sync-baseline";
 import { getWatch, patchWatchSync } from "../../core/sync/watches";
 import { normalizeTagList } from "../../core/tags";
 import { getDb } from "../../db";
@@ -79,11 +80,15 @@ export const sourcesQueries = {
 
   "sources.overview": query(z.object({ id: StringParam }), async (params) => {
     const db = await getDb();
-    const owned = and(
-      eq(saves.accountId, params.id),
-      isNull(saves.deletedAt),
-      ne(saves.status, "skipped"),
-    );
+    const account = await getAccount(params.id);
+    /** Accounts match like `countSavesForAccount`, so saves from that source with no account count too. */
+    const owned = account
+      ? and(syncBaselineWhere(account), ne(saves.status, "skipped"))
+      : and(
+          eq(saves.accountId, params.id),
+          isNull(saves.deletedAt),
+          ne(saves.status, "skipped"),
+        );
     const [totals] = await db
       .select({
         saves: sql<number>`count(*)`,

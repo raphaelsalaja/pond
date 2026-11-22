@@ -421,10 +421,10 @@ describe("filter toolbar", () => {
       });
     }
 
-    it("shows the chip row only once a filter applies", async () => {
+    it("keeps applied filters in a menu instead of a chip row", async () => {
       await render();
-      expect(host.querySelector("fieldset")).toBeNull();
       expect(button("Add Filter")).toBeTruthy();
+      expect(() => button("1 Filter")).toThrow();
       await act(async () =>
         setSearchInput(
           [{ field: "type", operator: "eq", value: "video" }],
@@ -432,7 +432,18 @@ describe("filter toolbar", () => {
           "type:video",
         ),
       );
-      expect(host.querySelector("fieldset")).not.toBeNull();
+      expect(host.querySelector("fieldset")).toBeNull();
+      await act(async () => button("1 Filter").click());
+      const labels = menuItems().map((node) => node.textContent);
+      expect(labels.some((label) => label?.startsWith("Type"))).toBe(true);
+      expect(labels).toEqual(
+        expect.arrayContaining(["Save View", "Clear Filters"]),
+      );
+      const clear = menuItems().find(
+        (node) => node.textContent === "Clear Filters",
+      );
+      await act(async () => clear?.click());
+      expect(state().query.rules).toEqual([]);
     });
 
     it("lists fields directly and hides ones already applied", async () => {
@@ -442,7 +453,7 @@ describe("filter toolbar", () => {
         "type:video",
       );
       await render();
-      expect(button("Type: Video")).toBeTruthy();
+      expect(button("1 Filter")).toBeTruthy();
       await act(async () => button("Add Filter").click());
       const labels = menuItems().map((node) => node.textContent);
       expect(labels).toContain("Tags");

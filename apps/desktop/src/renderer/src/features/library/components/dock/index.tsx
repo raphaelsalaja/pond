@@ -1,11 +1,11 @@
-import { useRouterState } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { downloadsSelection } from "@/features/downloads";
 import { selection } from "@/features/saves/navigation";
 import { sourcesSelection } from "@/features/sources";
+import { useRouteLocation } from "@/shared/hooks/use-route-location";
 
 export function LibraryTray() {
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const pathname = useRouteLocation((location) => location.pathname);
   const isDownloads = pathname.startsWith("/downloads");
   const isSources = pathname.startsWith("/sources");
 

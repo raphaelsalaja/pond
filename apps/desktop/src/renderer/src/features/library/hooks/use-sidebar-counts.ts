@@ -1,5 +1,7 @@
 import type { LibrarySidebarCounts } from "@shared/sidebar-counts";
-import { useEffect, useState } from "react";
+import { useSelector } from "@tanstack/react-store";
+import { Store } from "@tanstack/store";
+import { useEffect } from "react";
 import { useRecents } from "@/features/saves";
 
 /** Counts refresh on every sync action, so an unchanged result keeps the old object and skips the tree render. */
@@ -40,51 +42,67 @@ const EMPTY: LibrarySidebarCounts = {
   folders: {},
   foldersDownloading: {},
 };
+
+/** The query runs synchronously on the main process, so every sidebar part shares one result instead of querying per mount. */
+const store = new Store<LibrarySidebarCounts>(EMPTY);
+let recentIds: string[] = [];
+let loadedKey: string | null = null;
+let users = 0;
+let stopListening: (() => void) | undefined;
+let pending = false;
+let dirty = false;
+let timer: ReturnType<typeof setTimeout> | undefined;
+
+function schedule(): void {
+  if (timer) return;
+  timer = setTimeout(() => {
+    timer = undefined;
+    void refresh();
+  }, 150);
+}
+
+async function refresh(): Promise<void> {
+  if (pending) {
+    dirty = true;
+    return;
+  }
+  pending = true;
+  dirty = false;
+  try {
+    const next = await window.pond.query("saves.sidebarCounts", { recentIds });
+    if (users > 0 && next)
+      store.setState((prev) => (sameCounts(prev, next) ? prev : next));
+  } catch (error) {
+    console.warn("[pond] sidebar counts failed", error);
+  } finally {
+    pending = false;
+    if (users > 0 && dirty) schedule();
+  }
+}
+
 export function useSidebarCounts(): LibrarySidebarCounts {
   const recentKey = useRecents()
     .map((entry) => entry.saveId)
     .join("\0");
-  const [counts, setCounts] = useState(EMPTY);
   useEffect(() => {
-    const recentIds = recentKey ? recentKey.split("\0") : [];
-    let active = true;
-    let pending = false;
-    let dirty = false;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const schedule = () => {
-      if (timer) return;
-      timer = setTimeout(() => {
-        timer = undefined;
-        void refresh();
-      }, 150);
-    };
-    const refresh = async () => {
-      if (pending) {
-        dirty = true;
-        return;
-      }
-      pending = true;
-      dirty = false;
-      try {
-        const next = await window.pond.query("saves.sidebarCounts", {
-          recentIds,
-        });
-        if (active && next)
-          setCounts((prev) => (sameCounts(prev, next) ? prev : next));
-      } catch (error) {
-        console.warn("[pond] sidebar counts failed", error);
-      } finally {
-        pending = false;
-        if (active && dirty) schedule();
-      }
-    };
-    void refresh();
-    const off = window.pond.onSyncAction(schedule);
+    users += 1;
+    if (users === 1) stopListening = window.pond.onSyncAction(schedule);
     return () => {
-      active = false;
-      off();
+      users -= 1;
+      if (users > 0) return;
+      stopListening?.();
+      stopListening = undefined;
       if (timer) clearTimeout(timer);
+      timer = undefined;
+      loadedKey = null;
+      store.setState(() => EMPTY);
     };
+  }, []);
+  useEffect(() => {
+    if (loadedKey === recentKey) return;
+    loadedKey = recentKey;
+    recentIds = recentKey ? recentKey.split("\0") : [];
+    void refresh();
   }, [recentKey]);
-  return counts;
+  return useSelector(store, (state) => state);
 }

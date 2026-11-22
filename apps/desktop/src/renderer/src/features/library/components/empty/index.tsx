@@ -29,7 +29,7 @@ export function LibraryEmpty() {
   return (
     <Empty.Root>
       <Empty.Media>
-        <IconAlbum2 size={32} />
+        <IconAlbum2 size={14} />
       </Empty.Media>
       <Empty.Title>No saves yet</Empty.Title>
       <Empty.Description>
@@ -52,7 +52,7 @@ export function TrashEmpty() {
   return (
     <Empty.Root>
       <Empty.Media>
-        <IconTrash size={32} />
+        <IconTrash size={14} />
       </Empty.Media>
       <Empty.Title>Trash is empty</Empty.Title>
       <Empty.Description>
@@ -83,7 +83,7 @@ export function UncategorizedEmpty() {
   return (
     <Empty.Root role="status" aria-live="polite">
       <Empty.Media>
-        <IconFolderBan size={32} />
+        <IconFolderBan size={14} />
       </Empty.Media>
       <Empty.Title>No uncategorized saves</Empty.Title>
       <Empty.Description>
@@ -109,43 +109,24 @@ export function InboxEmpty() {
     return (
       <Empty.Root role="status" aria-live="polite">
         <Empty.Media>
-          <IconClock size={32} />
+          <IconClock size={14} />
         </Empty.Media>
-        <Empty.Title>Snoozed</Empty.Title>
+        <Empty.Title>No snoozed saves</Empty.Title>
         <Empty.Description>
           Saves you snooze wait here, then return to the Inbox on time.
         </Empty.Description>
-        <Empty.Action>
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => libraryChrome.setNav({ kind: "inbox" })}
-          >
-            Open Inbox
-          </Button>
-        </Empty.Action>
       </Empty.Root>
     );
   }
   return (
     <Empty.Root role="status" aria-live="polite">
       <Empty.Media>
-        <IconInbox size={32} />
+        <IconInbox size={14} />
       </Empty.Media>
-      <Empty.Title>Inbox</Empty.Title>
+      <Empty.Title>You're all caught up</Empty.Title>
       <Empty.Description>
-        You're all caught up. New saves wait here until you process them.
+        New saves wait here until you process them.
       </Empty.Description>
-      <Empty.Action>
-        <ButtonLink
-          to="/"
-          variant="primary"
-          size="sm"
-          onClick={() => libraryChrome.setNav({ kind: "all" })}
-        >
-          Open Library
-        </ButtonLink>
-      </Empty.Action>
     </Empty.Root>
   );
 }
@@ -161,7 +142,7 @@ export function FolderEmpty({
     return (
       <Empty.Root role="status" aria-live="polite">
         <Empty.Media>
-          <IconWindowDownload size={32} />
+          <IconWindowDownload size={14} />
         </Empty.Media>
         <Empty.Title>
           {`Downloading ${formatPlural(downloading, { one: "save", other: "saves" })}`}
@@ -180,9 +161,9 @@ export function FolderEmpty({
   return (
     <Empty.Root role="status" aria-live="polite">
       <Empty.Media>
-        <IconFolderOpen size={32} />
+        <IconFolderOpen size={14} />
       </Empty.Media>
-      <Empty.Title>This folder is empty</Empty.Title>
+      <Empty.Title>No saves in this folder</Empty.Title>
       <Empty.Description>
         Paste or drop files, images, and links here.
       </Empty.Description>
@@ -234,7 +215,7 @@ export function LibrarySectionEmpty({ mode }: { mode: LibrarySection }) {
   return (
     <Empty.Root role="status" aria-live="polite">
       <Empty.Media>
-        <content.icon size={32} />
+        <content.icon size={14} />
       </Empty.Media>
       <Empty.Title>{content.title}</Empty.Title>
       <Empty.Description>{content.description}</Empty.Description>

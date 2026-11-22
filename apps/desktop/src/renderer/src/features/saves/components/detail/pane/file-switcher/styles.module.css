@@ -1,0 +1,15 @@
+.switcher {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--ds-space-xs);
+  align-items: center;
+  justify-content: center;
+}
+
+.position {
+  min-width: 40px;
+  font-size: var(--ds-text-small);
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-foreground-secondary);
+  text-align: center;
+}

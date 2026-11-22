@@ -4,6 +4,7 @@ export {
   useMultiSelectActive,
 } from "./components/card/context";
 export { CardThumb } from "./components/card/media";
+export { BlurHash } from "./components/card/media/blur-hash";
 export { useSaveCardModel } from "./components/card/model";
 export { Card } from "./components/card/parts";
 export { SaveTile } from "./components/card/tile";

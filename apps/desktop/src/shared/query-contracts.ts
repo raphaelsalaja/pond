@@ -59,6 +59,10 @@ import type {
 import type { LogoCrop, LogoSource } from "./logo-crop";
 import type { McpInstallHost } from "./mcp-hosts";
 import type {
+  NotificationQueryInputs,
+  NotificationQueryResults,
+} from "./notification-contracts";
+import type {
   MediaProcessingQueryInputs,
   MediaProcessingQueryResults,
 } from "./media-processing-contracts";
@@ -174,6 +178,7 @@ export interface QueryInputs
     ArenaLinkQueryInputs,
     LibraryRepairQueryInputs,
     LibraryHealthQueryInputs,
+    NotificationQueryInputs,
     MediaProcessingQueryInputs,
     TagGroupQueryInputs {
   "saves.understandMedia": MediaUnderstandInput;
@@ -323,6 +328,7 @@ export interface QueryInputs
   "agent.renameChat": { chatId: string; title: string };
   "agent.exportChat": { chatId: string };
   "agent.send": z.input<typeof assistantSend>;
+  "agent.regenerate": { chatId: string };
   "agent.stop": { chatId: string; requestId: string };
   "agent.searchSaves": SavesRetrievalInput;
   "agent.attachments": IdsInput;
@@ -428,6 +434,7 @@ export interface QueryResults
     ArenaLinkQueryResults,
     LibraryRepairQueryResults,
     LibraryHealthQueryResults,
+    NotificationQueryResults,
     TagGroupQueryResults {
   "folders.rules.get": { tags: string[]; inheritedTags: string[] };
   "folders.rules.set": OkResult<{ affected: number }>;

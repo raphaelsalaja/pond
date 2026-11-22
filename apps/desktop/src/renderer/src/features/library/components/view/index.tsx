@@ -12,7 +12,6 @@ import {
 import { libraryEmptyKind } from "@/features/library/components/empty/kind";
 import { FolderBrowser } from "@/features/library/components/folder-browser";
 import { HoverPreview } from "@/features/library/components/hover-preview";
-import { InboxHeader } from "@/features/library/components/inbox-header";
 import { LibraryGrid } from "@/features/library/components/layouts/grid";
 import { LayoutSwitcher } from "@/features/library/components/layouts/switcher";
 import { useFolderDownloading } from "@/features/library/hooks/use-folder-downloading";
@@ -48,6 +47,7 @@ function LibraryEmptyState({
   folderId,
   hasActiveSearch,
   hasActiveFilter,
+  searchText,
   libraryTotal,
   downloading,
 }: {
@@ -56,6 +56,7 @@ function LibraryEmptyState({
   folderId: string | undefined;
   hasActiveSearch: boolean;
   hasActiveFilter: boolean;
+  searchText: string;
   libraryTotal: number;
   downloading: number;
 }) {
@@ -75,7 +76,13 @@ function LibraryEmptyState({
   if (kind === "section" && mode !== "library" && mode !== "trash") {
     return <LibrarySectionEmpty mode={mode} />;
   }
-  return <MatchesEmpty onReset={resetFilters} />;
+  return (
+    <MatchesEmpty
+      query={searchText}
+      filtered={hasActiveFilter}
+      onReset={resetFilters}
+    />
+  );
 }
 
 export function LibraryView() {
@@ -196,9 +203,6 @@ export function LibraryView() {
         onDragOver={actions.onDragOver}
         onDrop={(e) => void actions.onDrop(e)}
       >
-        {nav.kind === "inbox" ? (
-          <InboxHeader snoozed={nav.snoozed ?? false} />
-        ) : null}
         {data.paging.error ? (
           <div role="alert">
             {data.paging.error}{" "}
@@ -223,6 +227,7 @@ export function LibraryView() {
             folderId={nav.kind === "folder" ? nav.id : undefined}
             hasActiveSearch={data.hasActiveSearch}
             hasActiveFilter={data.hasActiveFilter}
+            searchText={data.searchText}
             libraryTotal={paging.total}
             downloading={downloading}
           />

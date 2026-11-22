@@ -1,18 +1,17 @@
 .viewport {
-  --toast-width: 280px;
+  --toast-width: 340px;
+  --toast-inset: var(--ds-space-xl);
   --toast-gap: var(--ds-space-md);
+  --toast-peek: var(--ds-space-md);
+  --toast-ease: cubic-bezier(0.25, 0.75, 0.6, 0.98);
+  --toast-shadow: var(--ds-shadow-overlay);
 
   position: fixed;
-  right: 16px;
-  bottom: 16px;
-  left: auto;
+  right: var(--toast-inset);
+  bottom: var(--toast-inset);
   z-index: 50;
-  display: flex;
-  flex-direction: column-reverse;
-  gap: var(--toast-gap);
-  align-items: flex-end;
   width: var(--toast-width);
-  max-width: calc(100vw - 32px);
+  max-width: calc(100vw - var(--toast-inset) * 2);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -20,38 +19,71 @@
   -webkit-app-region: no-drag;
 }
 
+/* Collapsed toasts peek 8px and shrink 5% each, the fourth fades out; hover fans them out at their own heights. */
 .root {
-  position: relative;
+  --y: calc(var(--toast-index) * var(--toast-peek) * -1);
+  --scale: max(0, 1 - var(--toast-index) * 0.05);
+
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  z-index: calc(1000 - var(--toast-index));
   box-sizing: border-box;
-  width: var(--toast-width);
-  max-width: 100%;
+  width: 100%;
+  height: var(--toast-frontmost-height, var(--toast-height));
   color: var(--ds-foreground-primary);
   pointer-events: auto;
   cursor: default;
   user-select: none;
-  background: var(--ds-background-primary);
+  background: var(--ds-background-elevated);
   border-radius: var(--ds-radius-xl);
-  box-shadow: var(--ds-shadow-overlay);
-  transform: translateX(var(--toast-swipe-movement-x, 0px))
-    translateY(var(--toast-swipe-movement-y, 0px));
-  transition:
-    transform var(--ds-duration-bounce) var(--ds-easing-bounce),
-    opacity var(--ds-duration-snap) var(--ds-easing-standard);
+  box-shadow: var(--toast-shadow);
+  opacity: clamp(0, 3 - var(--toast-index), 1);
+  transform-origin: center;
+  translate: var(--toast-swipe-movement-x, 0px)
+    calc(var(--y) + var(--toast-swipe-movement-y, 0px));
+  scale: var(--scale);
+  transition-timing-function: var(--toast-ease);
+  transition-duration: var(--ds-duration-slow);
+  transition-property: translate, scale, opacity, height;
   -webkit-app-region: no-drag;
 
-  &[data-starting-style] {
-    opacity: 0;
-    transform: translateX(var(--toast-swipe-movement-x, 0px))
-      translateY(calc(var(--toast-swipe-movement-y, 0px) + 16px));
+  /* Bridges the gap so moving between expanded toasts doesn't collapse the stack. */
+  &::after {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    height: calc(var(--toast-gap) + 1px);
+    content: "";
   }
 
+  &[data-expanded] {
+    --y: calc(
+      var(--toast-offset-y) * -1 - var(--toast-index) * var(--toast-gap)
+    );
+    --scale: 1;
+
+    height: var(--toast-height);
+    opacity: 1;
+  }
+
+  &[data-starting-style],
   &[data-ending-style] {
     opacity: 0;
-    transform: translateX(var(--toast-swipe-movement-x, 0px))
-      translateY(calc(var(--toast-swipe-movement-y, 0px) + 8px));
-    transition:
-      transform var(--ds-duration-medium) var(--ds-easing-decelerate),
-      opacity var(--ds-duration-snap) var(--ds-easing-standard);
+    translate: 0 calc(var(--y) + 100%);
+  }
+
+  &[data-ending-style][data-swipe-direction="right"] {
+    translate: calc(var(--toast-swipe-movement-x, 0px) + 100%) var(--y);
+  }
+
+  &[data-ending-style][data-swipe-direction="left"] {
+    translate: calc(var(--toast-swipe-movement-x, 0px) - 100%) var(--y);
+  }
+
+  &[data-ending-style][data-swipe-direction="down"] {
+    translate: 0 calc(var(--toast-swipe-movement-y, 0px) + 100%);
   }
 
   &[data-limited] {
@@ -59,31 +91,11 @@
     opacity: 0;
   }
 
-  &[data-ending-style][data-swipe-direction="down"] {
-    transform: translateX(var(--toast-swipe-movement-x, 0px))
-      translateY(calc(var(--toast-swipe-movement-y, 0px) + 24px));
-  }
-
-  &[data-ending-style][data-swipe-direction="left"] {
-    transform: translateX(calc(var(--toast-swipe-movement-x, 0px) - 24px))
-      translateY(var(--toast-swipe-movement-y, 0px));
-  }
-
-  &[data-ending-style][data-swipe-direction="right"] {
-    transform: translateX(calc(var(--toast-swipe-movement-x, 0px) + 24px))
-      translateY(var(--toast-swipe-movement-y, 0px));
-  }
-
-  &[data-ending-style][data-swipe-direction="up"] {
-    transform: translateX(var(--toast-swipe-movement-x, 0px))
-      translateY(calc(var(--toast-swipe-movement-y, 0px) - 24px));
-  }
-
   &[data-swiping] {
     transition: none;
   }
 
-  /** Alternate names so upserts replay the pulse without remounting. */
+  /* Alternate names so upserts replay the pulse without remounting. */
   &[data-pulse="a"] {
     animation: toast-pulse-a var(--ds-duration-slow) var(--ds-easing-standard);
   }
@@ -93,15 +105,11 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    &,
-    &[data-ending-style] {
-      transition: opacity var(--ds-duration-snap) var(--ds-easing-standard);
-    }
+    transition-property: opacity;
 
     &[data-starting-style],
     &[data-ending-style] {
-      transform: translateX(var(--toast-swipe-movement-x, 0px))
-        translateY(var(--toast-swipe-movement-y, 0px));
+      translate: 0 var(--y);
     }
 
     &[data-pulse] {
@@ -112,57 +120,70 @@
 
 .content {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--ds-space-md);
-  align-items: center;
+  align-items: flex-start;
+  box-sizing: border-box;
+  height: 100%;
   min-width: 0;
-  padding: var(--ds-space-md) var(--ds-space-md) var(--ds-space-md)
+  padding: var(--ds-space-lg) var(--ds-space-md) var(--ds-space-lg)
     var(--ds-space-lg);
-  transition: padding-block var(--ds-duration-medium) var(--ds-easing-standard);
+  overflow: hidden;
+  border-radius: inherit;
+
+  & > * {
+    transition: opacity var(--ds-duration-slow) var(--ds-easing-standard);
+  }
+
+  &[data-behind] > * {
+    opacity: 0;
+  }
+
+  &[data-expanded] > * {
+    opacity: 1;
+  }
+
+  &:not(:has(.description, .progress, .meta)) {
+    align-items: center;
+    padding-block: var(--ds-space-md);
+  }
+
+  &:has(.description, .progress) > .actions {
+    flex-basis: 100%;
+  }
 }
 
 .header {
   display: flex;
-  flex: 1;
+  flex: 1 1 0;
   flex-direction: column;
   gap: var(--ds-space-2xs);
-  align-items: stretch;
   min-width: 0;
-}
-
-.root {
-  &[data-progress] .content {
-    padding-block: var(--ds-space-lg);
-  }
-
-  &[data-progress] .header {
-    gap: var(--ds-space-xs);
-  }
 }
 
 .title {
   margin: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
   font-size: var(--ds-text-body);
-  font-weight: var(--ds-weight-medium);
-  line-height: 1.3;
+  font-weight: var(--ds-weight-strong);
+  line-height: var(--ds-leading-body);
   color: var(--ds-foreground-primary);
-  white-space: nowrap;
+  overflow-wrap: break-word;
 }
 
 .description {
   margin: 0;
   font-size: var(--ds-text-small);
-  font-weight: var(--ds-weight-regular);
-  line-height: 1.35;
-  color: var(--ds-foreground-secondary);
+  font-weight: var(--ds-weight-medium);
+  line-height: var(--ds-leading-small);
+  color: var(--ds-foreground-tertiary);
+  text-wrap: pretty;
   overflow-wrap: break-word;
 }
 
 .progress {
   width: 100%;
   height: 4px;
-  margin-block-start: var(--ds-space-xs);
+  margin-block-start: var(--ds-space-md);
   overflow: hidden;
   color: var(--ds-accent);
   appearance: none;
@@ -178,37 +199,24 @@
 .progress::-webkit-progress-value {
   background: currentColor;
   border-radius: var(--ds-radius-full);
-  transition: inline-size var(--ds-duration-medium) var(--ds-easing-standard);
+  transition: inline-size var(--ds-duration-slow) var(--ds-easing-standard);
 }
 
 .meta {
   font-size: var(--ds-text-small);
-  line-height: 1.35;
+  line-height: var(--ds-leading-small);
   color: var(--ds-foreground-tertiary);
-}
-
-.action {
-  flex: none;
-  color: var(--ds-accent-foreground);
-}
-
-.close {
-  flex-shrink: 0;
-  color: var(--ds-foreground-secondary);
 }
 
 .icon {
   display: grid;
   flex: none;
   place-items: center;
-  width: 32px;
-  height: 32px;
+  width: 16px;
+  height: var(--ds-leading-body);
   color: var(--ds-foreground-primary);
-  background: var(--ds-background-primary);
-  border-radius: var(--ds-radius-lg);
-  box-shadow: var(--ds-shadow-overlay);
 
-  & > svg {
+  & svg {
     width: 16px;
     height: 16px;
   }
@@ -222,125 +230,30 @@
   }
 }
 
+.status {
+  place-items: center;
+  color: var(--ds-foreground-tertiary);
+
+  &[data-status="success"] {
+    color: var(--ds-green);
+  }
+
+  &[data-status="error"] {
+    color: var(--ds-danger);
+  }
+}
+
 .actions {
   display: flex;
-  grid-column: 1 / -1;
-  gap: var(--ds-space-md);
+  flex: none;
+  gap: var(--ds-space-sm);
   justify-content: flex-end;
 }
 
-.root:has(.actions) {
-  & .content {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: var(--ds-space-lg);
-    align-items: start;
-    padding: var(--ds-space-lg);
-  }
-
-  & .header {
-    gap: var(--ds-space-xs);
-  }
-
-  & .header:first-child {
-    grid-column: 1 / -1;
-  }
-
-  & .title {
-    white-space: normal;
-  }
-
-  & .meta {
-    margin-block-start: var(--ds-space-xs);
-  }
-}
-
-.root[data-variant="spotlight"] {
-  overflow: hidden;
-  isolation: isolate;
-
-  &::after {
-    position: absolute;
-    inset: 0;
-    padding: 1px;
-    pointer-events: none;
-    content: "";
-    background: linear-gradient(
-      200deg,
-      color-mix(in oklab, var(--ds-background-inverse) 32%, transparent),
-      transparent 45%
-    );
-    border-radius: inherit;
-    mask:
-      linear-gradient(#000 0 0) content-box exclude,
-      linear-gradient(#000 0 0);
-  }
-
-  & .actions [data-variant="primary"] {
-    position: relative;
-    overflow: hidden;
-    isolation: isolate;
-
-    &::before {
-      position: absolute;
-      inset: 0;
-      z-index: -1;
-      width: 60%;
-      pointer-events: none;
-      content: "";
-      background: linear-gradient(
-        105deg,
-        transparent 10%,
-        color-mix(in oklab, var(--ds-background-primary) 10%, transparent) 35%,
-        var(--ds-background-inverse) 50%,
-        color-mix(in oklab, var(--ds-background-primary) 10%, transparent) 65%,
-        transparent 90%
-      );
-      translate: -150% 0;
-    }
-
-    & > svg {
-      flex: none;
-    }
-  }
-
-  /* A looping animation keeps the compositor drawing every frame for as long as the toast is open. */
-  @media (prefers-reduced-motion: no-preference) {
-    & .actions [data-variant="primary"]::before {
-      animation: toast-glint 4s var(--ds-easing-standard) 1.2s 2;
-    }
-
-    & .actions [data-variant="primary"] > svg {
-      animation: toast-twinkle 4s var(--ds-easing-decelerate) 1.2s 2;
-    }
-  }
-}
-
-@keyframes toast-glint {
-  0% {
-    translate: -150% 0;
-  }
-
-  35%,
-  100% {
-    translate: 300% 0;
-  }
-}
-
-@keyframes toast-twinkle {
-  0%,
-  6%,
-  100% {
-    scale: 1;
-  }
-
-  18% {
-    scale: 1.25;
-  }
-
-  30% {
-    scale: 1;
-  }
+/* The 24px button sits on an 18px title line, so it pulls out vertically to keep the row at the title's height. */
+.close {
+  flex: none;
+  margin-block: calc(var(--ds-space-2xs) * -1);
 }
 
 @keyframes toast-pulse-a {

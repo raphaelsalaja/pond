@@ -28,7 +28,7 @@
     font-weight: inherit;
     font-optical-sizing: auto;
     font-feature-settings:
-      "calt", "ccmp", "locl", "kern", "tnum", "zero", "cv11", "ss01";
+      "calt", "ccmp", "locl", "kern", "tnum", "zero", "ss01", "ss03";
     font-variant-numeric: tabular-nums;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;

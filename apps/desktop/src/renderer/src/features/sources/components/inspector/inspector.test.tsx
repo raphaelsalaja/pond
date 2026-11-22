@@ -65,7 +65,9 @@ function DetailHarness(props: SourceDetailsProps) {
   const model = sourceDetailModel(props);
   return (
     <>
-      <SourceDetailNavView model={model} page={page} onSelect={setPage} />
+      <nav aria-label="Source">
+        <SourceDetailNavView model={model} page={page} onSelect={setPage} />
+      </nav>
       <SourceDetailView model={model} page={page} />
     </>
   );
@@ -285,7 +287,7 @@ it("searches pages by the rows on them", async () => {
     );
   });
   const search = host.querySelector(
-    'input[aria-label="Search source settings"]',
+    'input[aria-label="Search Source Settings"]',
   );
   if (!(search instanceof HTMLInputElement)) throw new Error("Missing search");
   const type = async (value: string) => {

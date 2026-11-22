@@ -110,8 +110,9 @@ describe("SavePreviews", () => {
   it("reserves the preview's shape before its image loads", async () => {
     await show(imageSave("wide", { width: 1600, height: 900 }));
     const image = host.querySelector<HTMLImageElement>('img[alt="wide"]');
-    if (!image) throw new Error("Missing preview image");
-    expect(Number(image.style.getPropertyValue("--preview-aspect"))).toBe(
+    const frame = image?.closest("figure");
+    if (!image || !frame) throw new Error("Missing preview image");
+    expect(Number(frame.style.getPropertyValue("--preview-aspect"))).toBe(
       1600 / 900,
     );
 
@@ -121,7 +122,7 @@ describe("SavePreviews", () => {
     });
     await act(async () => image.dispatchEvent(new Event("load")));
 
-    expect(Number(image.style.getPropertyValue("--preview-aspect"))).toBe(
+    expect(Number(frame.style.getPropertyValue("--preview-aspect"))).toBe(
       900 / 1600,
     );
   });
@@ -160,5 +161,46 @@ describe("SavePreviews", () => {
     expect(layers()).toEqual([]);
     expect(host.textContent).toContain("broken");
     expect(host.querySelector("[data-pending]")).toBeNull();
+  });
+
+  function postSave(): Save {
+    const save = imageSave("post");
+    const file = save.files[0];
+    if (!file) throw new Error("Missing fixture file");
+    save.files = ["a", "b", "c", "d", "e", "f", "g"].map((name) => ({
+      ...file,
+      path: `${name}.jpg`,
+    }));
+    return save;
+  }
+  const slots = () =>
+    Object.fromEntries(
+      [...host.querySelectorAll("[data-slot]")].map((card) => [
+        card.getAttribute("data-slot"),
+        card.querySelector("img")?.getAttribute("src")?.match(/(\w)\.jpg/)?.[1],
+      ]),
+    );
+
+  it("stacks a Save's files with the first file on top", async () => {
+    await show(postSave());
+
+    expect(slots()).toEqual({ 0: "a", 1: "b", 2: "c", 3: "d", 4: "e" });
+    expect(host.querySelectorAll("figcaption")).toHaveLength(1);
+  });
+
+  it("puts the viewer's file on top of the stack", async () => {
+    const save = postSave();
+    await act(async () =>
+      root.render(<SavePreviews saves={[save]} fileIndex={2} />),
+    );
+
+    expect(slots()).toEqual({
+      "-1": "b",
+      0: "c",
+      1: "d",
+      2: "e",
+      3: "f",
+      4: "g",
+    });
   });
 });

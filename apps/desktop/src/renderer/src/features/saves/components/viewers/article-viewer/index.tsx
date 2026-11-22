@@ -16,7 +16,6 @@ interface ArticleViewerProps {
   onUnavailable: () => void;
   toolbarStart?: ReactNode;
   toolbarActions?: ReactNode;
-  toolbarNavigation?: ReactNode;
 }
 
 const WORDS_PER_MINUTE = 230;
@@ -28,7 +27,6 @@ export function ArticleViewer({
   onUnavailable,
   toolbarStart,
   toolbarActions,
-  toolbarNavigation,
 }: ArticleViewerProps) {
   const [source, setSource] = useState<string | null>(null);
 
@@ -78,7 +76,6 @@ export function ArticleViewer({
               actions={toolbarActions}
             />
           }
-          end={toolbarNavigation}
         />
       </ChromePortal>
       {article ? (

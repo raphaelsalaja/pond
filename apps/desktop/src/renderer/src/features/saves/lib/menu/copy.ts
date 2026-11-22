@@ -1,5 +1,6 @@
 import {
   IconBinary,
+  IconChatBubble,
   IconCopy,
   IconGlobe,
   IconImage,
@@ -40,6 +41,7 @@ export function buildCopyItems({
   fileIndex,
   hasUrl,
   hasTags,
+  allTrashed,
 }: SaveMenuContext): MenuItemSpec[] {
   const more: MenuItemSpec[] = [
     {
@@ -104,6 +106,25 @@ export function buildCopyItems({
       onClick: () => {
         if (batch) void copyFilesForSelection(ids);
         else void copyPrimaryMedia(save, fileIndex);
+      },
+    },
+    {
+      label: "Copy Prompt",
+      icon: glyph(IconChatBubble),
+      keywords: "agent ai chat context markdown",
+      hidden: allTrashed,
+      onClick: () => {
+        void window.pond
+          .query("saves.copyPrompt", { ids })
+          .then((result) =>
+            notify({
+              id: "copy-prompt",
+              title: result.ok ? "Prompt copied" : "Couldn't copy prompt",
+            }),
+          )
+          .catch(() =>
+            notify({ id: "copy-prompt", title: "Couldn't copy prompt" }),
+          );
       },
     },
     {

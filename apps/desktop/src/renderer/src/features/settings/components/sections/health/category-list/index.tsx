@@ -1,7 +1,10 @@
 import { Badge, Button, Settings } from "@pond/ui";
+import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import type { DownloadHealthRow } from "@/features/downloads/health";
 import { formatNumber } from "@/shared/lib/format";
 import { THIS_DEVICE } from "@/shared/lib/platform";
+import { healthActions } from "../actions";
 import {
   categoryFact,
   type HealthCategory,
@@ -13,7 +16,10 @@ import {
 } from "../categories";
 import { HealthDrilldown } from "../drilldown";
 import { STATUS_TONES } from "../tones";
-import { useHealthCategories } from "../use-library-health";
+import {
+  useCategoryRunning,
+  useHealthCategories,
+} from "../use-library-health";
 import styles from "./styles.module.css";
 
 const COUNT_PHRASES = {
@@ -52,6 +58,71 @@ function categorySummary(category: HealthCategory): string {
   return `${parts.join(", ")}.`;
 }
 
+function CategoryRow({
+  category,
+  downloads,
+  onReview,
+}: {
+  category: HealthCategory;
+  downloads: readonly DownloadHealthRow[];
+  onReview: () => void;
+}) {
+  const qc = useQueryClient();
+  const running = useCategoryRunning(category.id);
+  const [busy, setBusy] = useState(false);
+  const action = healthActions(category.id, category.entries, {
+    qc,
+    downloads,
+  }).find((candidate) => candidate.primary && !candidate.navigates);
+
+  async function run(): Promise<void> {
+    if (!action) return;
+    setBusy(true);
+    try {
+      await action.run();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Settings.Item disabled={!category.checked}>
+      <Settings.ItemDetails>
+        <Settings.ItemTitle>{category.title}</Settings.ItemTitle>
+        <Settings.ItemDescription>
+          {categorySummary(category)}
+        </Settings.ItemDescription>
+      </Settings.ItemDetails>
+      <Settings.ItemControl className={styles.control}>
+        <Badge tone={STATUS_TONES[category.status]}>
+          {STATUS_LABELS[category.status]}
+        </Badge>
+        <Button
+          size="sm"
+          variant="secondary"
+          disabled={category.entries.length === 0}
+          aria-label={`Review ${category.title}`}
+          onClick={onReview}
+        >
+          Review
+        </Button>
+        {action ? (
+          <Button
+            size="sm"
+            variant="secondary"
+            loading={running || busy}
+            disabled={running || busy}
+            aria-label={`${action.label} ${category.title}`}
+            onClick={() => void run()}
+          >
+            {action.label}
+          </Button>
+        ) : null}
+      </Settings.ItemControl>
+    </Settings.Item>
+  );
+}
+
 export function HealthCategoryList({ group }: { group: HealthGroup }) {
   const { categories, downloads } = useHealthCategories();
   const [selected, setSelected] = useState<HealthCategoryId | null>(null);
@@ -63,31 +134,15 @@ export function HealthCategoryList({ group }: { group: HealthGroup }) {
     <>
       <Settings.List>
         {shown.map((category) => (
-          <Settings.Item key={category.id} disabled={!category.checked}>
-            <Settings.ItemDetails>
-              <Settings.ItemTitle>{category.title}</Settings.ItemTitle>
-              <Settings.ItemDescription>
-                {categorySummary(category)}
-              </Settings.ItemDescription>
-            </Settings.ItemDetails>
-            <Settings.ItemControl className={styles.control}>
-              <Badge tone={STATUS_TONES[category.status]}>
-                {STATUS_LABELS[category.status]}
-              </Badge>
-              <Button
-                size="sm"
-                variant="secondary"
-                disabled={category.entries.length === 0}
-                aria-label={`Review ${category.title}`}
-                onClick={() => {
-                  setSelected(category.id);
-                  setOpen(true);
-                }}
-              >
-                Review
-              </Button>
-            </Settings.ItemControl>
-          </Settings.Item>
+          <CategoryRow
+            key={category.id}
+            category={category}
+            downloads={downloads}
+            onReview={() => {
+              setSelected(category.id);
+              setOpen(true);
+            }}
+          />
         ))}
       </Settings.List>
       <HealthDrilldown

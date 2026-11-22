@@ -7,6 +7,7 @@ import {
   assistantProposalInput,
   assistantQuestion,
   assistantResultSet,
+  assistantSuggestionInput,
 } from "../../../shared/assistant";
 import { IPC } from "../../../shared/constants";
 import {
@@ -244,6 +245,7 @@ it("converts Assistant tool inputs to JSON Schema providers can type-check", () 
   const schemas = {
     showSaves: assistantResultSet,
     requestQuestion: assistantQuestion,
+    suggestReplies: assistantSuggestionInput,
     searchLibrary: searchLibraryInput,
     readSave: readSaveInput,
     grepLibrary: grepLibraryInput,

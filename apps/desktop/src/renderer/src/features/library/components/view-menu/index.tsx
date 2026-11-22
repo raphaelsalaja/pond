@@ -30,7 +30,7 @@ export function ViewMenu() {
           render={<Popover.Trigger />}
           icon
           size="sm"
-          variant="ghost"
+          variant="secondary"
           aria-label={LABEL}
         >
           <IconSliders />

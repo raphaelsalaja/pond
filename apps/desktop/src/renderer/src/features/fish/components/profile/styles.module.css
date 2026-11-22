@@ -96,14 +96,15 @@
   min-height: 0;
   padding-block: var(--ds-space-xs) var(--ds-space-2xl);
   overflow-y: auto;
+
+  & > .section {
+    padding-top: var(--ds-space-md);
+    border-top: none;
+  }
 }
 
 .fields {
   display: flex;
   flex-direction: column;
   gap: var(--ds-space-lg);
-}
-
-.link {
-  margin-inline: calc(var(--ds-space-md) * -1);
 }

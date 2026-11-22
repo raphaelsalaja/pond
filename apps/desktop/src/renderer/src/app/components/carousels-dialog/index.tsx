@@ -4,15 +4,12 @@ import { useEffect, useId, useState } from "react";
 import { splitAllSaves } from "@/features/saves/split-all";
 import { formatPlural } from "@/shared/lib/format";
 import { notify } from "@/shared/lib/toast";
+import { announcements } from "@/shared/state/announcements";
 import {
   carouselsIntroDialog,
   useCarouselsIntroDialog,
 } from "@/shared/state/carousels-intro";
-import {
-  anotherDialogOpen,
-  claimNoticeSlot,
-  markNoticeSeen,
-} from "@/shared/state/notices";
+import { anotherDialogOpen, markNoticeSeen } from "@/shared/state/notices";
 import { loadPrefs } from "@/shared/state/prefs";
 import {
   SPLIT_CAROUSELS_NOTICE,
@@ -24,7 +21,11 @@ const CHECK_INTERVAL_MS = 3000;
 /** Matches the Settings downloads query so its Split Into Saves switch reloads. */
 const DOWNLOADS_KEY = ["settings", "downloads"];
 
-/** Marks the notice seen before it opens, so closing it any way never brings it back. */
+function splittableCopy(count: number): string {
+  const saves = formatPlural(count, { one: "save", other: "saves" });
+  return `${saves} in your library ${count === 1 ? "has" : "have"} several images or videos.`;
+}
+
 function useAnnounceOnce(): void {
   useEffect(() => {
     let checking = false;
@@ -44,9 +45,17 @@ function useAnnounceOnce(): void {
         if (step === "wait" || (step === "show" && anotherDialogOpen())) return;
         clearInterval(timer);
         if (step === "skip") return;
-        if (step === "show" && !claimNoticeSlot(SPLIT_CAROUSELS_NOTICE)) return;
-        await markNoticeSeen(SPLIT_CAROUSELS_NOTICE);
-        if (step === "show") carouselsIntroDialog.open(count);
+        if (step === "mark-seen") {
+          await markNoticeSeen(SPLIT_CAROUSELS_NOTICE);
+          return;
+        }
+        announcements.post({
+          id: SPLIT_CAROUSELS_NOTICE,
+          title: "Split Carousels Into Saves",
+          description: splittableCopy(count),
+          open: () => carouselsIntroDialog.open(count),
+          markSeen: () => void markNoticeSeen(SPLIT_CAROUSELS_NOTICE),
+        });
       } catch {
         clearInterval(timer);
       } finally {
@@ -117,10 +126,7 @@ function Intro({ count }: { count: number }) {
           save per slide. Each slide then gets its own tags, title, and
           description, and shows on its own in your library grid.
         </Dialog.Description>
-        <p className={styles.count}>
-          {formatPlural(count, { one: "save", other: "saves" })} in your library{" "}
-          {count === 1 ? "has" : "have"} several images or videos.
-        </p>
+        <p className={styles.count}>{splittableCopy(count)}</p>
         <label className={styles.option} htmlFor={`${id}-split-new`}>
           <Checkbox.Root
             id={`${id}-split-new`}

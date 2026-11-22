@@ -19,7 +19,7 @@
   max-width: 100%;
   min-height: 0;
   color: var(--ds-foreground-primary);
-  background: var(--ds-background-primary);
+  background: var(--ds-background-elevated);
 }
 
 .header {
@@ -78,7 +78,7 @@
 .toolbar-button:hover,
 .toolbar-button[data-active] {
   color: var(--ds-foreground-primary);
-  background: var(--ds-background-primary);
+  background: var(--ds-background-elevated);
   box-shadow: var(--ds-shadow-border);
 }
 

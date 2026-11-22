@@ -1,12 +1,12 @@
 import type { McpClientStatus } from "@shared/mcp-hosts";
 import {
   type ImportedFrom,
-  isCosignVotingOpen,
+  type PromptChoice,
   type PromptId,
 } from "@/shared/state/prompts";
 import { shouldAskForSupport } from "../support-dialog/eligibility";
 
-export type PromptChoice = PromptId | "support";
+export type { PromptChoice };
 
 export interface PromptSignals {
   now: number;
@@ -34,7 +34,6 @@ function wantsMcp(signals: PromptSignals, id: McpClientStatus["id"]): boolean {
 
 /** Earlier entries win; time-limited and celebratory asks come before evergreen ones. */
 const RULES: readonly [PromptChoice, (signals: PromptSignals) => boolean][] = [
-  ["cosign", (s) => isCosignVotingOpen(s.now) && s.saves >= 25],
   ["milestone-10000", (s) => s.saves >= 10_000 && usedFor(s, 7)],
   ["milestone-1000", (s) => s.saves >= 1_000 && usedFor(s, 7)],
   ["friend", (s) => s.importedFrom !== null],

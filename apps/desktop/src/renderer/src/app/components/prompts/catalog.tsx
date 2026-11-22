@@ -1,60 +1,18 @@
-import {
-  IconBracketsCurly,
-  IconEnvelope,
-  IconLink2,
-  IconSparkle,
-  IconTrophy,
-  IconWindowDownload,
-} from "@pond/icons";
-import {
-  IconAnthropic,
-  IconGithub,
-  IconXTwitterGlyph,
-} from "@pond/icons/social-media";
-import type { ReactNode } from "react";
 import { openSettings } from "@/shared/lib/open-settings";
-import {
-  type AskOptions,
-  notify,
-  TOAST_TIMEOUT_MS,
-  type ToastData,
-  type ToastTone,
-} from "@/shared/lib/toast";
-import { type PromptId, readImportedFrom } from "@/shared/state/prompts";
+import { notify, TOAST_TIMEOUT_MS } from "@/shared/lib/toast";
+import { type PromptChoice, readImportedFrom } from "@/shared/state/prompts";
+import { supportDialog } from "@/shared/state/support";
 
 const SITE = "https://pond.raphaelsalaja.com";
-const COSIGN = "https://cosign.co/awards/design";
 const GITHUB = "https://github.com/raphaelsalaja/pond";
 const X = "https://x.com/raphaelsalaja";
 const FEEDBACK = "mailto:raphaelsalaja@gmail.com?subject=Pond%20feedback";
 
 export interface PromptSpec {
-  icon: ReactNode;
-  tone: ToastTone;
-  variant?: ToastData["variant"];
   title: string;
   description: string;
-  note?: string;
   confirm: string;
-  cancel?: string;
   run: (helpers: { openExtension: () => void }) => void | Promise<void>;
-}
-
-export function promptAsk(
-  spec: PromptSpec,
-  handlers: Pick<AskOptions, "onConfirm" | "onClose">,
-): AskOptions {
-  return {
-    title: spec.title,
-    description: spec.description,
-    icon: spec.icon,
-    tone: spec.tone,
-    note: spec.note,
-    variant: spec.variant,
-    cancel: spec.cancel ?? "Not Now",
-    confirm: spec.confirm,
-    ...handlers,
-  };
 }
 
 function visit(url: string): void {
@@ -68,12 +26,9 @@ function shareMilestone(count: string): void {
 
 function milestone(count: string): PromptSpec {
   return {
-    icon: <IconSparkle />,
-    tone: "gold",
     title: `${count} Saves`,
     description: `Your library passed ${count} saves, all kept on this computer.`,
     confirm: "Share on X",
-    cancel: "Close",
     run: () => shareMilestone(count),
   };
 }
@@ -82,19 +37,15 @@ function importedName(): string {
   return readImportedFrom() === "mymind" ? "mymind" : "Eagle";
 }
 
-export function promptSpec(id: PromptId): PromptSpec {
+export function promptSpec(id: PromptChoice): PromptSpec {
   switch (id) {
-    case "cosign":
+    case "support":
       return {
-        icon: <IconTrophy />,
-        tone: "gold",
-        variant: "spotlight",
-        title: "Cosign Awards 2026",
+        title: "Help Pond Keep Growing",
         description:
-          "Raphael, who makes Pond, is up for People Design. A vote helps more people find Pond.",
-        note: "Voting closes November 18. Your vote stays private.",
-        confirm: "Vote",
-        run: () => visit(COSIGN),
+          "Pond is made by one person. If it helps you, a coffee funds its development.",
+        confirm: "Support Pond",
+        run: () => supportDialog.open(),
       };
     case "milestone-10000":
       return milestone("10,000");
@@ -103,8 +54,6 @@ export function promptSpec(id: PromptId): PromptSpec {
     case "friend": {
       const name = importedName();
       return {
-        icon: <IconLink2 />,
-        tone: "accent",
         title: "Bring a Friend Along",
         description: `Your ${name} library lives in Pond now. Send the link to someone else moving off ${name}.`,
         confirm: "Copy Link",
@@ -120,8 +69,6 @@ export function promptSpec(id: PromptId): PromptSpec {
     }
     case "github":
       return {
-        icon: <IconGithub />,
-        tone: "neutral",
         title: "Star Pond on GitHub",
         description:
           "Pond updates from its GitHub releases. A star there helps more people find it.",
@@ -130,8 +77,6 @@ export function promptSpec(id: PromptId): PromptSpec {
       };
     case "x":
       return {
-        icon: <IconXTwitterGlyph />,
-        tone: "neutral",
         title: "Follow Along on X",
         description:
           "Your X saves are in Pond now. Follow Raphael for new features and fixes.",
@@ -140,8 +85,6 @@ export function promptSpec(id: PromptId): PromptSpec {
       };
     case "extension":
       return {
-        icon: <IconWindowDownload />,
-        tone: "accent",
         title: "Save From Your Browser",
         description:
           "The Pond extension saves pages and images from your browser into your library.",
@@ -150,8 +93,6 @@ export function promptSpec(id: PromptId): PromptSpec {
       };
     case "mcp-cursor":
       return {
-        icon: <IconBracketsCurly />,
-        tone: "neutral",
         title: "Search Pond From Cursor",
         description:
           "Connect Cursor so it can search your library. Everything stays on this computer.",
@@ -162,8 +103,6 @@ export function promptSpec(id: PromptId): PromptSpec {
       };
     case "mcp-claude":
       return {
-        icon: <IconAnthropic />,
-        tone: "neutral",
         title: "Search Pond From Claude",
         description:
           "Connect Claude Desktop so it can search your library. Everything stays on this computer.",
@@ -172,8 +111,6 @@ export function promptSpec(id: PromptId): PromptSpec {
       };
     case "feedback":
       return {
-        icon: <IconEnvelope />,
-        tone: "accent",
         title: "Share Your Feedback",
         description:
           "You've used Pond for two weeks. Tell Raphael what works and what gets in your way.",

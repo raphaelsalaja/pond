@@ -6,9 +6,9 @@ import type { LibraryNav } from "@/shared/lib/library-nav";
 
 export type { LibraryNav } from "@/shared/lib/library-nav";
 
-export const SIDEBAR_WIDTH_DEFAULT = 220;
-export const SIDEBAR_WIDTH_MIN = 256;
-export const SIDEBAR_WIDTH_MAX = 420;
+export const SIDEBAR_WIDTH_DEFAULT = 304;
+export const SIDEBAR_WIDTH_MIN = 288;
+export const SIDEBAR_WIDTH_MAX = 460;
 
 export const DETAILS_WIDTH_DEFAULT = 320;
 export const DETAILS_WIDTH_MIN = 280;
@@ -46,8 +46,18 @@ function writeWidth(key: string, width: number): void {
   } catch {}
 }
 
+export type SidebarPanel =
+  | "library"
+  | "fish"
+  | "canvases"
+  | "inbox"
+  | "downloads"
+  | "sources"
+  | "tags";
+
 interface ChromeState {
   nav: LibraryNav;
+  sidebarPanel: SidebarPanel;
   sidebarOpen: boolean;
   sidebarWidth: number;
   detailsOpen: boolean;
@@ -56,6 +66,7 @@ interface ChromeState {
 
 const store = new Store<ChromeState>({
   nav: { kind: "all" },
+  sidebarPanel: "library",
   sidebarOpen: readFlag("pond.sidebar", true),
   sidebarWidth: readWidth(
     "pond.sidebarWidth",
@@ -79,6 +90,11 @@ export const libraryChrome = {
   setNav(nav: LibraryNav): void {
     navigationHistory.record(nav);
     store.setState((s) => ({ ...s, nav }));
+  },
+  setSidebarPanel(sidebarPanel: SidebarPanel): void {
+    store.setState((s) =>
+      s.sidebarPanel === sidebarPanel ? s : { ...s, sidebarPanel },
+    );
   },
   toggleSidebar(): void {
     beginLibraryLayoutTransition();
@@ -125,6 +141,10 @@ export const libraryChrome = {
 
 export function useLibraryNav(): LibraryNav {
   return useSelector(store, (s) => s.nav);
+}
+
+export function useSidebarPanel(): SidebarPanel {
+  return useSelector(store, (s) => s.sidebarPanel);
 }
 
 export function useSidebarOpen(): boolean {

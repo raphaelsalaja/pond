@@ -1,9 +1,27 @@
 import { Slider as Base } from "@base-ui/react/slider";
 import { clsx as cn } from "clsx";
+import type { ComponentPropsWithoutRef, ReactNode } from "react";
 import styles from "./styles.module.css";
 
-function Root({ className, ...props }: Base.Root.Props) {
-  return <Base.Root className={cn(styles.root, className)} {...props} />;
+interface RootProps extends Base.Root.Props {
+  /** `stacked` puts the label above the track and `Slider.Bounds` below it. */
+  layout?: "inline" | "stacked";
+}
+
+function Root({
+  className,
+  layout = "inline",
+  thumbAlignment = "edge",
+  ...props
+}: RootProps) {
+  return (
+    <Base.Root
+      className={cn(styles.root, className)}
+      data-layout={layout === "stacked" ? layout : undefined}
+      thumbAlignment={thumbAlignment}
+      {...props}
+    />
+  );
 }
 
 function Label({ className, ...props }: Base.Label.Props) {
@@ -22,8 +40,40 @@ function Track({ className, ...props }: Base.Track.Props) {
   return <Base.Track className={cn(styles.track, className)} {...props} />;
 }
 
-function Thumb({ className, ...props }: Base.Thumb.Props) {
-  return <Base.Thumb className={cn(styles.thumb, className)} {...props} />;
+interface ThumbProps extends Base.Thumb.Props {
+  /** Shows the thumb's value in a badge under it. */
+  badge?: boolean;
+}
+
+function Thumb({ className, badge, index, children, ...props }: ThumbProps) {
+  return (
+    <Base.Thumb
+      className={cn(styles.thumb, className)}
+      index={index}
+      {...props}
+    >
+      {children}
+      {badge ? (
+        <span aria-hidden className={styles.badge}>
+          <Base.Value>{(formatted) => formatted[index ?? 0]}</Base.Value>
+        </span>
+      ) : null}
+    </Base.Thumb>
+  );
+}
+
+interface BoundsProps extends ComponentPropsWithoutRef<"div"> {
+  min: ReactNode;
+  max: ReactNode;
+}
+
+function Bounds({ className, min, max, ...props }: BoundsProps) {
+  return (
+    <div aria-hidden className={cn(styles.bounds, className)} {...props}>
+      <span>{min}</span>
+      <span>{max}</span>
+    </div>
+  );
 }
 
 function Indicator({ className, ...props }: Base.Indicator.Props) {
@@ -40,4 +90,5 @@ export const Slider = {
   Track,
   Thumb,
   Indicator,
+  Bounds,
 };

@@ -1,7 +1,6 @@
 import { useDndContext } from "@dnd-kit/core";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { IconChevronRight } from "@pond/icons";
 import type { Folder, SidebarBadgeStyle } from "@pond/schema/db";
 import { Button, cssVars, type MenuItemSpec } from "@pond/ui";
 import { useReducedMotionConfig } from "motion/react";
@@ -145,9 +144,7 @@ function FolderTreeRowInner(props: FolderTreeRowProps) {
                 ?.querySelector<HTMLElement>('[role="treeitem"]')
                 ?.focus();
             }}
-          >
-            <IconChevronRight size={12} strokeWidth={2} />
-          </Button>
+          />
         ) : null}
         {props.editing ? (
           <FolderNameEditor
@@ -172,6 +169,13 @@ function FolderTreeRowInner(props: FolderTreeRowProps) {
                 <FolderCover
                   icon={props.folderIcon}
                   coverSaveId={props.coverSaveId}
+                  state={
+                    props.hasChildren
+                      ? props.collapsed
+                        ? "closed"
+                        : "open"
+                      : undefined
+                  }
                 />
               </span>
             }

@@ -1,10 +1,9 @@
 .slot {
-  --thumb-size: 32px;
   display: grid;
   flex: none;
   place-items: center;
-  width: var(--thumb-size);
-  height: var(--thumb-size);
+  width: 32;
+  height: 32;
 }
 
 .thumb {
@@ -30,10 +29,5 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
-  }
-
-  &[data-blur] img {
-    filter: blur(4px);
-    transform: scale(1.2);
   }
 }

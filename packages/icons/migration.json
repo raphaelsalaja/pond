@@ -1,0 +1,1306 @@
+{
+  "album-2": {
+    "state": "Coupled",
+    "to": "IconAlbum2"
+  },
+  "alert-question": {
+    "state": "Removed",
+    "references": 0
+  },
+  "align-2-bottom": {
+    "state": "Coupled",
+    "to": "IconAlign2Bottom"
+  },
+  "align-2-horizontal": {
+    "state": "Coupled",
+    "to": "IconAlign2Horizontal"
+  },
+  "align-2-left": {
+    "state": "Coupled",
+    "to": "IconAlign2Left"
+  },
+  "align-2-right": {
+    "state": "Coupled",
+    "to": "IconAlign2Right"
+  },
+  "align-2-top": {
+    "state": "Coupled",
+    "to": "IconAlign2Top"
+  },
+  "align-2-vertical": {
+    "state": "Coupled",
+    "to": "IconAlign2Vertical"
+  },
+  "animation-frames": {
+    "state": "Coupled",
+    "to": "IconAnimationFrames"
+  },
+  "animation-repeat": {
+    "state": "Coupled",
+    "to": "IconAnimationRepeat"
+  },
+  "aperture": {
+    "state": "Coupled",
+    "to": "IconAperture"
+  },
+  "applications": {
+    "state": "Coupled",
+    "to": "IconApplications"
+  },
+  "archive": {
+    "state": "Coupled",
+    "to": "IconArchive"
+  },
+  "archive-download": {
+    "state": "Coupled",
+    "to": "IconArchiveDownload"
+  },
+  "archive-export": {
+    "state": "Coupled",
+    "to": "IconArchiveExport"
+  },
+  "arrow-anticlockwise-text": {
+    "state": "Coupled",
+    "to": "IconArrowAnticlockwiseText"
+  },
+  "arrow-back-to-bottom-left": {
+    "state": "Coupled",
+    "to": "IconArrowBackToBottomLeft"
+  },
+  "arrow-diagonal-in": {
+    "state": "Coupled",
+    "to": "IconArrowDiagonalIn"
+  },
+  "arrow-down": {
+    "state": "Coupled",
+    "to": "IconArrowDown"
+  },
+  "arrow-down-to-line": {
+    "state": "Coupled",
+    "to": "IconArrowDownToLine"
+  },
+  "arrow-left": {
+    "state": "Coupled",
+    "to": "IconArrowLeft"
+  },
+  "arrow-right": {
+    "state": "Coupled",
+    "to": "IconArrowRight"
+  },
+  "arrow-rotate-anticlockwise": {
+    "state": "Coupled",
+    "to": "IconArrowRotateAnticlockwise"
+  },
+  "arrow-rotate-clockwise": {
+    "state": "Coupled",
+    "to": "IconArrowRotateClockwise"
+  },
+  "arrow-up": {
+    "state": "Coupled",
+    "to": "IconArrowUp"
+  },
+  "arrow-up-right": {
+    "state": "Coupled",
+    "to": "IconArrowUpRight"
+  },
+  "arrows-expand": {
+    "state": "Coupled",
+    "to": "IconArrowsExpand"
+  },
+  "arrows-expand-diagonal": {
+    "state": "Coupled",
+    "to": "IconArrowsExpandDiagonal"
+  },
+  "arrows-expand-x": {
+    "state": "Coupled",
+    "to": "IconArrowsExpandX"
+  },
+  "arrows-expand-y": {
+    "state": "Coupled",
+    "to": "IconArrowsExpandY"
+  },
+  "ascending-sorting": {
+    "state": "Coupled",
+    "to": "IconAscendingSorting"
+  },
+  "atom": {
+    "state": "Coupled",
+    "to": "IconAtom"
+  },
+  "badge-check": {
+    "state": "Coupled",
+    "to": "IconBadgeCheck"
+  },
+  "bag-shopping": {
+    "state": "Coupled",
+    "to": "IconBagShopping"
+  },
+  "ban": {
+    "state": "Coupled",
+    "to": "IconBan"
+  },
+  "bars-filter": {
+    "state": "Coupled",
+    "to": "IconBarsFilter"
+  },
+  "bell": {
+    "state": "Coupled",
+    "to": "IconBell"
+  },
+  "binary": {
+    "state": "Coupled",
+    "to": "IconBinary"
+  },
+  "blockquote": {
+    "state": "Coupled",
+    "to": "IconBlockquote"
+  },
+  "book": {
+    "state": "Coupled",
+    "to": "IconBook"
+  },
+  "bookmark": {
+    "state": "Coupled",
+    "to": "IconBookmark"
+  },
+  "bookmark-slash": {
+    "state": "Removed",
+    "references": 0
+  },
+  "border": {
+    "state": "Coupled",
+    "to": "IconBorder"
+  },
+  "brackets-curly": {
+    "state": "Coupled",
+    "to": "IconBracketsCurly"
+  },
+  "briefcase": {
+    "state": "Coupled",
+    "to": "IconBriefcase"
+  },
+  "broom": {
+    "state": "Coupled",
+    "to": "IconBroom"
+  },
+  "bug": {
+    "state": "Coupled",
+    "to": "IconBug"
+  },
+  "building": {
+    "state": "Coupled",
+    "to": "IconBuilding"
+  },
+  "bullet-list": {
+    "state": "Coupled",
+    "to": "IconBulletList"
+  },
+  "calculator": {
+    "state": "Coupled",
+    "to": "IconCalculator"
+  },
+  "calendar": {
+    "state": "Coupled",
+    "to": "IconCalendar"
+  },
+  "calendar-check": {
+    "state": "Coupled",
+    "to": "IconCalendarCheck"
+  },
+  "calendar-date": {
+    "state": "Coupled",
+    "to": "IconCalendarDate"
+  },
+  "calendar-pen": {
+    "state": "Coupled",
+    "to": "IconCalendarPen"
+  },
+  "calendar-plus": {
+    "state": "Coupled",
+    "to": "IconCalendarPlus"
+  },
+  "camera": {
+    "state": "Coupled",
+    "to": "IconCamera"
+  },
+  "camera-2": {
+    "state": "Removed",
+    "references": 0
+  },
+  "camera-sparkle": {
+    "state": "Coupled",
+    "to": "IconCameraSparkle"
+  },
+  "canvas": {
+    "state": "Coupled",
+    "to": "IconCanvas"
+  },
+  "car": {
+    "state": "Coupled",
+    "to": "IconCar"
+  },
+  "caret-minimize": {
+    "state": "Coupled",
+    "to": "IconCaretMinimize"
+  },
+  "caret-right": {
+    "state": "Coupled",
+    "to": "IconCaretRight"
+  },
+  "cart": {
+    "state": "Coupled",
+    "to": "IconCart"
+  },
+  "chart-bar": {
+    "state": "Coupled",
+    "to": "IconChartBar"
+  },
+  "chat-bubble": {
+    "state": "Coupled",
+    "to": "IconChatBubble"
+  },
+  "check": {
+    "state": "Coupled",
+    "to": "IconCheck"
+  },
+  "check-list": {
+    "state": "Coupled",
+    "to": "IconCheckList"
+  },
+  "checkbox-checked": {
+    "state": "Coupled",
+    "to": "IconCheckboxChecked"
+  },
+  "chevron": {
+    "state": "Coupled",
+    "to": "IconChevron"
+  },
+  "chevron-down": {
+    "state": "Coupled",
+    "to": "IconChevronDown"
+  },
+  "chevron-left": {
+    "state": "Coupled",
+    "to": "IconChevronLeft"
+  },
+  "chevron-right": {
+    "state": "Coupled",
+    "to": "IconChevronRight"
+  },
+  "chip": {
+    "state": "Coupled",
+    "to": "IconChip"
+  },
+  "circle": {
+    "state": "Coupled",
+    "to": "IconCircle"
+  },
+  "circle-arrow-up": {
+    "state": "Coupled",
+    "to": "IconCircleArrowUp"
+  },
+  "circle-check": {
+    "state": "Coupled",
+    "to": "IconCircleCheck"
+  },
+  "circle-dashed-clock": {
+    "state": "Coupled",
+    "to": "IconCircleDashedClock"
+  },
+  "circle-info": {
+    "state": "Coupled",
+    "to": "IconCircleInfo"
+  },
+  "circle-question": {
+    "state": "Coupled",
+    "to": "IconCircleQuestion"
+  },
+  "circle-user": {
+    "state": "Coupled",
+    "to": "IconCircleUser"
+  },
+  "circle-warning": {
+    "state": "Coupled",
+    "to": "IconCircleWarning"
+  },
+  "circle-xmark": {
+    "state": "Coupled",
+    "to": "IconCircleXmark"
+  },
+  "clipboard": {
+    "state": "Coupled",
+    "to": "IconClipboard"
+  },
+  "clipboard-arrow-in": {
+    "state": "Coupled",
+    "to": "IconClipboardArrowIn"
+  },
+  "clock": {
+    "state": "Coupled",
+    "to": "IconClock"
+  },
+  "clock-plus": {
+    "state": "Coupled",
+    "to": "IconClockPlus"
+  },
+  "code": {
+    "state": "Coupled",
+    "to": "IconCode"
+  },
+  "code-2": {
+    "state": "Coupled",
+    "to": "IconCode2"
+  },
+  "coffee": {
+    "state": "Coupled",
+    "to": "IconCoffee"
+  },
+  "coins": {
+    "state": "Coupled",
+    "to": "IconCoins"
+  },
+  "compass": {
+    "state": "Coupled",
+    "to": "IconCompass"
+  },
+  "computer": {
+    "state": "Coupled",
+    "to": "IconComputer"
+  },
+  "contrast": {
+    "state": "Coupled",
+    "to": "IconContrast"
+  },
+  "conversion": {
+    "state": "Coupled",
+    "to": "IconConversion"
+  },
+  "copy": {
+    "state": "Coupled",
+    "to": "IconCopy"
+  },
+  "copy-id": {
+    "state": "Coupled",
+    "to": "IconCopyId"
+  },
+  "credit-card": {
+    "state": "Coupled",
+    "to": "IconCreditCard"
+  },
+  "crop": {
+    "state": "Coupled",
+    "to": "IconCrop"
+  },
+  "cube": {
+    "state": "Coupled",
+    "to": "IconCube"
+  },
+  "cursor": {
+    "state": "Coupled",
+    "to": "IconCursor"
+  },
+  "cylinder": {
+    "state": "Coupled",
+    "to": "IconCylinder"
+  },
+  "descending-sorting": {
+    "state": "Coupled",
+    "to": "IconDescendingSorting"
+  },
+  "design-file": {
+    "state": "Removed",
+    "references": 0
+  },
+  "diamond": {
+    "state": "Coupled",
+    "to": "IconDiamond"
+  },
+  "dice": {
+    "state": "Coupled",
+    "to": "IconDice"
+  },
+  "document": {
+    "state": "Coupled",
+    "to": "IconDocument"
+  },
+  "dots": {
+    "state": "Coupled",
+    "to": "IconDots"
+  },
+  "download": {
+    "state": "Coupled",
+    "to": "IconDownload"
+  },
+  "dumbbell": {
+    "state": "Coupled",
+    "to": "IconDumbbell"
+  },
+  "duplicate": {
+    "state": "Coupled",
+    "to": "IconDuplicate"
+  },
+  "envelope": {
+    "state": "Coupled",
+    "to": "IconEnvelope"
+  },
+  "eraser": {
+    "state": "Coupled",
+    "to": "IconEraser"
+  },
+  "export": {
+    "state": "Coupled",
+    "to": "IconExport"
+  },
+  "external-link": {
+    "state": "Coupled",
+    "to": "IconExternalLink"
+  },
+  "eye": {
+    "state": "Coupled",
+    "to": "IconEye"
+  },
+  "eye-2": {
+    "state": "Removed",
+    "references": 0
+  },
+  "eye-lens": {
+    "state": "Coupled",
+    "to": "IconEyeLens"
+  },
+  "face-smile": {
+    "state": "Coupled",
+    "to": "IconFaceSmile"
+  },
+  "figures": {
+    "state": "Coupled",
+    "to": "IconFigures"
+  },
+  "file": {
+    "state": "Coupled",
+    "to": "IconFile"
+  },
+  "file-alert": {
+    "state": "Coupled",
+    "to": "IconFileAlert"
+  },
+  "file-export": {
+    "state": "Coupled",
+    "to": "IconFileExport"
+  },
+  "file-settings": {
+    "state": "Coupled",
+    "to": "IconFileSettings"
+  },
+  "file-zip": {
+    "state": "Coupled",
+    "to": "IconFileZip"
+  },
+  "files-2": {
+    "state": "Removed",
+    "references": 0
+  },
+  "fill": {
+    "state": "Coupled",
+    "to": "IconFill"
+  },
+  "filter-off": {
+    "state": "Coupled",
+    "to": "IconFilterOff"
+  },
+  "filter-plus": {
+    "state": "Coupled",
+    "to": "IconFilterPlus"
+  },
+  "flag": {
+    "state": "Coupled",
+    "to": "IconFlag"
+  },
+  "flame": {
+    "state": "Coupled",
+    "to": "IconFlame"
+  },
+  "flask": {
+    "state": "Coupled",
+    "to": "IconFlask"
+  },
+  "flip-horizontal-2": {
+    "state": "Coupled",
+    "to": "IconFlipHorizontal2"
+  },
+  "flip-vertical-2": {
+    "state": "Coupled",
+    "to": "IconFlipVertical2"
+  },
+  "floppy-disk": {
+    "state": "Coupled",
+    "to": "IconFloppyDisk"
+  },
+  "focus": {
+    "state": "Coupled",
+    "to": "IconFocus"
+  },
+  "folder": {
+    "state": "Coupled",
+    "to": "IconFolder"
+  },
+  "folder-ban": {
+    "state": "Coupled",
+    "to": "IconFolderBan"
+  },
+  "folder-bolt": {
+    "state": "Coupled",
+    "to": "IconFolderBolt"
+  },
+  "folder-dots": {
+    "state": "Coupled",
+    "to": "IconFolderDots"
+  },
+  "folder-import": {
+    "state": "Coupled",
+    "to": "IconFolderImport"
+  },
+  "folder-open": {
+    "state": "Coupled",
+    "to": "IconFolderOpen"
+  },
+  "folder-pen": {
+    "state": "Coupled",
+    "to": "IconFolderPen"
+  },
+  "folder-plus": {
+    "state": "Coupled",
+    "to": "IconFolderPlus"
+  },
+  "folder-refresh": {
+    "state": "Coupled",
+    "to": "IconFolderRefresh"
+  },
+  "folder-search": {
+    "state": "Coupled",
+    "to": "IconFolderSearch"
+  },
+  "folder-send": {
+    "state": "Coupled",
+    "to": "IconFolderSend"
+  },
+  "folder-tree": {
+    "state": "Coupled",
+    "to": "IconFolderTree"
+  },
+  "folder-xmark": {
+    "state": "Coupled",
+    "to": "IconFolderXmark"
+  },
+  "fork-knife": {
+    "state": "Coupled",
+    "to": "IconForkKnife"
+  },
+  "full-screen": {
+    "state": "Coupled",
+    "to": "IconFullScreen"
+  },
+  "gamepad": {
+    "state": "Coupled",
+    "to": "IconGamepad"
+  },
+  "gauge": {
+    "state": "Coupled",
+    "to": "IconGauge"
+  },
+  "gear-3": {
+    "state": "Coupled",
+    "to": "IconGear3"
+  },
+  "gif": {
+    "state": "Coupled",
+    "to": "IconGif"
+  },
+  "gift": {
+    "state": "Coupled",
+    "to": "IconGift"
+  },
+  "globe": {
+    "state": "Coupled",
+    "to": "IconGlobe"
+  },
+  "graduation-cap": {
+    "state": "Coupled",
+    "to": "IconGraduationCap"
+  },
+  "grid": {
+    "state": "Coupled",
+    "to": "IconGrid"
+  },
+  "grid-layout-cols": {
+    "state": "Coupled",
+    "to": "IconGridLayoutCols"
+  },
+  "grid-layout-rows": {
+    "state": "Coupled",
+    "to": "IconGridLayoutRows"
+  },
+  "grid-plus": {
+    "state": "Coupled",
+    "to": "IconGridPlus"
+  },
+  "grip-dots-vertical": {
+    "state": "Coupled",
+    "to": "IconGripDotsVertical"
+  },
+  "ground-plane-detection": {
+    "state": "Coupled",
+    "to": "IconGroundPlaneDetection"
+  },
+  "group": {
+    "state": "Coupled",
+    "to": "IconGroup"
+  },
+  "hand": {
+    "state": "Coupled",
+    "to": "IconHand"
+  },
+  "hashtag": {
+    "state": "Coupled",
+    "to": "IconHashtag"
+  },
+  "heading-1": {
+    "state": "Coupled",
+    "to": "IconHeading1"
+  },
+  "heading-2": {
+    "state": "Coupled",
+    "to": "IconHeading2"
+  },
+  "heading-3": {
+    "state": "Coupled",
+    "to": "IconHeading3"
+  },
+  "heading-4": {
+    "state": "Coupled",
+    "to": "IconHeading4"
+  },
+  "headphones": {
+    "state": "Coupled",
+    "to": "IconHeadphones"
+  },
+  "heart": {
+    "state": "Coupled",
+    "to": "IconHeart"
+  },
+  "hexagon": {
+    "state": "Coupled",
+    "to": "IconHexagon"
+  },
+  "highlighter": {
+    "state": "Coupled",
+    "to": "IconHighlighter"
+  },
+  "history": {
+    "state": "Coupled",
+    "to": "IconHistory"
+  },
+  "house": {
+    "state": "Coupled",
+    "to": "IconHouse"
+  },
+  "image": {
+    "state": "Coupled",
+    "to": "IconImage"
+  },
+  "image-binary": {
+    "state": "Coupled",
+    "to": "IconImageBinary"
+  },
+  "image-minus": {
+    "state": "Coupled",
+    "to": "IconImageMinus"
+  },
+  "image-plus": {
+    "state": "Coupled",
+    "to": "IconImagePlus"
+  },
+  "image-sparkle": {
+    "state": "Coupled",
+    "to": "IconImageSparkle"
+  },
+  "image-upscale": {
+    "state": "Coupled",
+    "to": "IconImageUpscale"
+  },
+  "inbox": {
+    "state": "Coupled",
+    "to": "IconInbox"
+  },
+  "inbox-minus": {
+    "state": "Coupled",
+    "to": "IconInboxMinus"
+  },
+  "info": {
+    "state": "Removed",
+    "references": 0
+  },
+  "input-password-edit": {
+    "state": "Coupled",
+    "to": "IconInputPasswordEdit"
+  },
+  "key": {
+    "state": "Coupled",
+    "to": "IconKey"
+  },
+  "keyboard": {
+    "state": "Coupled",
+    "to": "IconKeyboard"
+  },
+  "layers": {
+    "state": "Coupled",
+    "to": "IconLayers"
+  },
+  "leaf": {
+    "state": "Coupled",
+    "to": "IconLeaf"
+  },
+  "lightbulb": {
+    "state": "Coupled",
+    "to": "IconLightbulb"
+  },
+  "line-curved": {
+    "state": "Coupled",
+    "to": "IconLineCurved"
+  },
+  "line-elbow": {
+    "state": "Coupled",
+    "to": "IconLineElbow"
+  },
+  "line-straight": {
+    "state": "Coupled",
+    "to": "IconLineStraight"
+  },
+  "line-weight": {
+    "state": "Coupled",
+    "to": "IconLineWeight"
+  },
+  "link-2": {
+    "state": "Coupled",
+    "to": "IconLink2"
+  },
+  "list-favs": {
+    "state": "Coupled",
+    "to": "IconListFavs"
+  },
+  "location": {
+    "state": "Coupled",
+    "to": "IconLocation"
+  },
+  "lock": {
+    "state": "Coupled",
+    "to": "IconLock"
+  },
+  "lock-open": {
+    "state": "Coupled",
+    "to": "IconLockOpen"
+  },
+  "magic-wand": {
+    "state": "Coupled",
+    "to": "IconMagicWand"
+  },
+  "magnifier": {
+    "state": "Coupled",
+    "to": "IconMagnifier"
+  },
+  "map": {
+    "state": "Coupled",
+    "to": "IconMap"
+  },
+  "media-fast-backwards": {
+    "state": "Coupled",
+    "to": "IconMediaFastBackwards"
+  },
+  "media-fast-forward": {
+    "state": "Coupled",
+    "to": "IconMediaFastForward"
+  },
+  "media-library": {
+    "state": "Coupled",
+    "to": "IconMediaLibrary"
+  },
+  "media-pause": {
+    "state": "Coupled",
+    "to": "IconMediaPause"
+  },
+  "media-play": {
+    "state": "Coupled",
+    "to": "IconMediaPlay"
+  },
+  "merge": {
+    "state": "Coupled",
+    "to": "IconMerge"
+  },
+  "microphone": {
+    "state": "Coupled",
+    "to": "IconMicrophone"
+  },
+  "mind-map": {
+    "state": "Coupled",
+    "to": "IconMindMap"
+  },
+  "minus": {
+    "state": "Coupled",
+    "to": "IconMinus"
+  },
+  "moon": {
+    "state": "Coupled",
+    "to": "IconMoon"
+  },
+  "mountain": {
+    "state": "Coupled",
+    "to": "IconMountain"
+  },
+  "move-obj-down": {
+    "state": "Coupled",
+    "to": "IconMoveObjDown"
+  },
+  "move-obj-up": {
+    "state": "Coupled",
+    "to": "IconMoveObjUp"
+  },
+  "movie": {
+    "state": "Coupled",
+    "to": "IconMovie"
+  },
+  "music-note": {
+    "state": "Coupled",
+    "to": "IconMusicNote"
+  },
+  "nodes-3": {
+    "state": "Coupled",
+    "to": "IconNodes3"
+  },
+  "note": {
+    "state": "Coupled",
+    "to": "IconNote"
+  },
+  "note-edit": {
+    "state": "Coupled",
+    "to": "IconNoteEdit"
+  },
+  "notepad": {
+    "state": "Coupled",
+    "to": "IconNotepad"
+  },
+  "open-in-new-window": {
+    "state": "Coupled",
+    "to": "IconOpenInNewWindow"
+  },
+  "ordered-list": {
+    "state": "Coupled",
+    "to": "IconOrderedList"
+  },
+  "package": {
+    "state": "Coupled",
+    "to": "IconPackage"
+  },
+  "paintbrush": {
+    "state": "Coupled",
+    "to": "IconPaintbrush"
+  },
+  "palette": {
+    "state": "Coupled",
+    "to": "IconPalette"
+  },
+  "paper-plane": {
+    "state": "Removed",
+    "references": 0
+  },
+  "paperclip": {
+    "state": "Coupled",
+    "to": "IconPaperclip"
+  },
+  "parallelogram": {
+    "state": "Coupled",
+    "to": "IconParallelogram"
+  },
+  "path": {
+    "state": "Coupled",
+    "to": "IconPath"
+  },
+  "paw": {
+    "state": "Coupled",
+    "to": "IconPaw"
+  },
+  "pencil": {
+    "state": "Coupled",
+    "to": "IconPencil"
+  },
+  "phone": {
+    "state": "Coupled",
+    "to": "IconPhone"
+  },
+  "pin-tack": {
+    "state": "Coupled",
+    "to": "IconPinTack"
+  },
+  "plane": {
+    "state": "Coupled",
+    "to": "IconPlane"
+  },
+  "plus": {
+    "state": "Coupled",
+    "to": "IconPlus"
+  },
+  "power-off": {
+    "state": "Coupled",
+    "to": "IconPowerOff"
+  },
+  "print": {
+    "state": "Coupled",
+    "to": "IconPrint"
+  },
+  "quick-access": {
+    "state": "Coupled",
+    "to": "IconQuickAccess"
+  },
+  "receipt": {
+    "state": "Coupled",
+    "to": "IconReceipt"
+  },
+  "refresh": {
+    "state": "Coupled",
+    "to": "IconRefresh"
+  },
+  "rename": {
+    "state": "Coupled",
+    "to": "IconRename"
+  },
+  "report-file": {
+    "state": "Coupled",
+    "to": "IconReportFile"
+  },
+  "resize-x": {
+    "state": "Coupled",
+    "to": "IconResizeX"
+  },
+  "rocket": {
+    "state": "Coupled",
+    "to": "IconRocket"
+  },
+  "rotate-image-clockwise": {
+    "state": "Coupled",
+    "to": "IconRotateImageClockwise"
+  },
+  "scan": {
+    "state": "Coupled",
+    "to": "IconScan"
+  },
+  "scan-image": {
+    "state": "Coupled",
+    "to": "IconScanImage"
+  },
+  "section": {
+    "state": "Coupled",
+    "to": "IconSection"
+  },
+  "server": {
+    "state": "Coupled",
+    "to": "IconServer"
+  },
+  "settings-wrench": {
+    "state": "Coupled",
+    "to": "IconSettingsWrench"
+  },
+  "shield-check": {
+    "state": "Coupled",
+    "to": "IconShieldCheck"
+  },
+  "shuffle": {
+    "state": "Coupled",
+    "to": "IconShuffle"
+  },
+  "sidebar-edit": {
+    "state": "Coupled",
+    "to": "IconSidebarEdit"
+  },
+  "sidebar-left": {
+    "state": "Coupled",
+    "to": "IconSidebarLeft"
+  },
+  "size-lg": {
+    "state": "Coupled",
+    "to": "IconSizeLg"
+  },
+  "sliders": {
+    "state": "Coupled",
+    "to": "IconSliders"
+  },
+  "sort-alpha-ascending": {
+    "state": "Coupled",
+    "to": "IconSortAlphaAscending"
+  },
+  "sort-arrows": {
+    "state": "Coupled",
+    "to": "IconSortArrows"
+  },
+  "sparkle": {
+    "state": "Coupled",
+    "to": "IconSparkle"
+  },
+  "spell-check": {
+    "state": "Coupled",
+    "to": "IconSpellCheck"
+  },
+  "square": {
+    "state": "Coupled",
+    "to": "IconSquare"
+  },
+  "square-code": {
+    "state": "Coupled",
+    "to": "IconSquareCode"
+  },
+  "square-rounded": {
+    "state": "Coupled",
+    "to": "IconSquareRounded"
+  },
+  "star": {
+    "state": "Coupled",
+    "to": "IconStar"
+  },
+  "star-minus": {
+    "state": "Coupled",
+    "to": "IconStarMinus"
+  },
+  "star-plus": {
+    "state": "Coupled",
+    "to": "IconStarPlus"
+  },
+  "stopwatch": {
+    "state": "Coupled",
+    "to": "IconStopwatch"
+  },
+  "suitcase": {
+    "state": "Coupled",
+    "to": "IconSuitcase"
+  },
+  "sun": {
+    "state": "Coupled",
+    "to": "IconSun"
+  },
+  "table": {
+    "state": "Coupled",
+    "to": "IconTable"
+  },
+  "table-download": {
+    "state": "Coupled",
+    "to": "IconTableDownload"
+  },
+  "tag": {
+    "state": "Coupled",
+    "to": "IconTag"
+  },
+  "tag-plus": {
+    "state": "Coupled",
+    "to": "IconTagPlus"
+  },
+  "tag-slash": {
+    "state": "Coupled",
+    "to": "IconTagSlash"
+  },
+  "terminal": {
+    "state": "Coupled",
+    "to": "IconTerminal"
+  },
+  "text": {
+    "state": "Coupled",
+    "to": "IconText"
+  },
+  "text-a": {
+    "state": "Coupled",
+    "to": "IconTextA"
+  },
+  "text-align-bottom": {
+    "state": "Coupled",
+    "to": "IconTextAlignBottom"
+  },
+  "text-align-center": {
+    "state": "Coupled",
+    "to": "IconTextAlignCenter"
+  },
+  "text-align-left": {
+    "state": "Coupled",
+    "to": "IconTextAlignLeft"
+  },
+  "text-align-middle": {
+    "state": "Coupled",
+    "to": "IconTextAlignMiddle"
+  },
+  "text-align-right": {
+    "state": "Coupled",
+    "to": "IconTextAlignRight"
+  },
+  "text-align-top": {
+    "state": "Coupled",
+    "to": "IconTextAlignTop"
+  },
+  "text-bold": {
+    "state": "Coupled",
+    "to": "IconTextBold"
+  },
+  "text-italic": {
+    "state": "Coupled",
+    "to": "IconTextItalic"
+  },
+  "text-strikethrough": {
+    "state": "Coupled",
+    "to": "IconTextStrikethrough"
+  },
+  "text-to-image": {
+    "state": "Coupled",
+    "to": "IconTextToImage"
+  },
+  "text-underline": {
+    "state": "Coupled",
+    "to": "IconTextUnderline"
+  },
+  "threads-like": {
+    "state": "Coupled",
+    "to": "IconThreadsLike"
+  },
+  "threads-logo": {
+    "state": "Coupled",
+    "to": "IconThreadsLogo"
+  },
+  "threads-reply": {
+    "state": "Coupled",
+    "to": "IconThreadsReply"
+  },
+  "threads-repost": {
+    "state": "Coupled",
+    "to": "IconThreadsRepost"
+  },
+  "threads-share": {
+    "state": "Coupled",
+    "to": "IconThreadsShare"
+  },
+  "ticket": {
+    "state": "Coupled",
+    "to": "IconTicket"
+  },
+  "trapezoid": {
+    "state": "Coupled",
+    "to": "IconTrapezoid"
+  },
+  "trash": {
+    "state": "Coupled",
+    "to": "IconTrash"
+  },
+  "trash-xmark": {
+    "state": "Coupled",
+    "to": "IconTrashXmark"
+  },
+  "triangle": {
+    "state": "Coupled",
+    "to": "IconTriangle"
+  },
+  "triangle-warning": {
+    "state": "Coupled",
+    "to": "IconTriangleWarning"
+  },
+  "trophy": {
+    "state": "Coupled",
+    "to": "IconTrophy"
+  },
+  "tv": {
+    "state": "Coupled",
+    "to": "IconTv"
+  },
+  "tweet-bookmark": {
+    "state": "Coupled",
+    "to": "IconTweetBookmark"
+  },
+  "tweet-like": {
+    "state": "Coupled",
+    "to": "IconTweetLike"
+  },
+  "tweet-reply": {
+    "state": "Coupled",
+    "to": "IconTweetReply"
+  },
+  "tweet-repost": {
+    "state": "Coupled",
+    "to": "IconTweetRepost"
+  },
+  "tweet-verified": {
+    "state": "Coupled",
+    "to": "IconTweetVerified"
+  },
+  "tweet-views": {
+    "state": "Coupled",
+    "to": "IconTweetViews"
+  },
+  "type-scale": {
+    "state": "Coupled",
+    "to": "IconTypeScale"
+  },
+  "typography": {
+    "state": "Coupled",
+    "to": "IconTypography"
+  },
+  "undo": {
+    "state": "Coupled",
+    "to": "IconUndo"
+  },
+  "ungroup": {
+    "state": "Coupled",
+    "to": "IconUngroup"
+  },
+  "upload": {
+    "state": "Coupled",
+    "to": "IconUpload"
+  },
+  "user": {
+    "state": "Coupled",
+    "to": "IconUser"
+  },
+  "user-plus": {
+    "state": "Coupled",
+    "to": "IconUserPlus"
+  },
+  "vector": {
+    "state": "Coupled",
+    "to": "IconVector"
+  },
+  "video": {
+    "state": "Coupled",
+    "to": "IconVideo"
+  },
+  "view-plus-sign": {
+    "state": "Coupled",
+    "to": "IconViewPlusSign"
+  },
+  "volume": {
+    "state": "Coupled",
+    "to": "IconVolume"
+  },
+  "volume-off": {
+    "state": "Coupled",
+    "to": "IconVolumeOff"
+  },
+  "wallet": {
+    "state": "Coupled",
+    "to": "IconWallet"
+  },
+  "window": {
+    "state": "Coupled",
+    "to": "IconWindow"
+  },
+  "window-download": {
+    "state": "Coupled",
+    "to": "IconWindowDownload"
+  },
+  "window-share": {
+    "state": "Coupled",
+    "to": "IconWindowShare"
+  },
+  "xmark": {
+    "state": "Coupled",
+    "to": "IconXmark"
+  }
+}

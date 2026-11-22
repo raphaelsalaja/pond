@@ -1,22 +1,18 @@
 import { IconCircleCheck, IconWindowDownload } from "@pond/icons";
 import { Button, Empty } from "@pond/ui";
 import { downloadDialog } from "@/features/downloads/state/download-dialog";
-import { ButtonLink } from "@/shared/components/button-link";
 
 export function DownloadsEmpty() {
   return (
     <Empty.Root>
       <Empty.Media>
-        <IconWindowDownload size={32} />
+        <IconWindowDownload size={14} />
       </Empty.Media>
       <Empty.Title>No downloads yet</Empty.Title>
       <Empty.Description>
         Files appear here while Pond downloads them for your library.
       </Empty.Description>
       <Empty.Action>
-        <ButtonLink to="/" variant="secondary" size="sm">
-          Open Library
-        </ButtonLink>
         <Button
           variant="primary"
           size="sm"
@@ -37,7 +33,7 @@ export function DownloadsCompletedHidden({
   return (
     <Empty.Root role="status" aria-live="polite">
       <Empty.Media>
-        <IconCircleCheck size={32} />
+        <IconCircleCheck size={14} />
       </Empty.Media>
       <Empty.Title>No unfinished downloads</Empty.Title>
       <Empty.Description>

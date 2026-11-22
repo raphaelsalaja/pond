@@ -49,7 +49,6 @@ export interface BarProps
   label: string;
   children: ReactNode;
   actions?: ReactNode;
-  wrap?: boolean;
 }
 
 function Bar({
@@ -58,7 +57,6 @@ function Bar({
   label,
   children,
   actions,
-  wrap,
   className,
   ...props
 }: BarProps) {
@@ -72,18 +70,13 @@ function Bar({
           id={id}
           className={cn(styles.shell, className)}
           aria-label={label}
-          initial={{ height: 0, opacity: 0, y: -4 }}
-          animate={{ height: "auto", opacity: 1, y: 0 }}
-          exit={{ height: 0, opacity: 0, y: -4, pointerEvents: "none" }}
+          exit={{ height: 0, opacity: 0, pointerEvents: "none" }}
           transition={transition}
           {...props}
         >
-          <div className={styles.bar} data-wrap={wrap || undefined}>
+          <div className={styles.bar}>
             <div className={styles.viewport}>
-              <div
-                className={styles.filters}
-                data-scroll-fade={wrap ? undefined : "horizontal"}
-              >
+              <div className={styles.filters} data-scroll-fade="horizontal">
                 {children}
               </div>
             </div>

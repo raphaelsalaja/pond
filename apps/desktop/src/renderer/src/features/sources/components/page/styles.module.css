@@ -42,6 +42,8 @@
 }
 
 .grid {
+  /* The header is the pane's first row, so it centers on the sidebar header and rail logo. */
+  --data-table-header-height: 44px;
   width: 100%;
   min-width: 0;
 }

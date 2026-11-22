@@ -1,6 +1,8 @@
+import { IconEyeSlash } from "@pond/icons";
 import { typeLabelForPath } from "@shared/file-format";
 import { isThumbnailKind } from "@shared/save-file-names";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { BlurHash } from "@/features/saves/components/card/media/blur-hash";
 import { FailedBadge } from "@/features/saves/components/card/media/failed-badge";
 import { FilePreview } from "@/features/saves/components/card/media/file-preview";
 import { HoverGallery } from "@/features/saves/components/card/media/hover-gallery";
@@ -262,7 +264,17 @@ export const PreparedCardThumb = memo(function PreparedCardThumb({
             <div className={styles.placeholder} aria-hidden />
           )
         ) : null}
+        {blurSensitive ? (
+          <div className={styles.cover} aria-hidden>
+            {save.blurhash ? <BlurHash hash={save.blurhash} /> : null}
+          </div>
+        ) : null}
       </div>
+      {blurSensitive ? (
+        <span className={styles.sensitive} aria-hidden>
+          <IconEyeSlash size={12} strokeWidth={1.5} />
+        </span>
+      ) : null}
       <FailedBadge save={save} />
     </div>
   );

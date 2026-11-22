@@ -18,13 +18,18 @@ import {
   useReportMediaReady,
 } from "@/features/saves/hooks/use-media-ready";
 import {
+  buildOriginalMediaUnits,
   cardThumbnailUrl,
   deriveTypeLabel,
   detailsPreviewUrl,
   pickCardUnit,
   pickPrimaryFile,
 } from "@/features/saves/lib/media/units";
-import { aspectFor } from "@/features/saves/state/aspect";
+import {
+  aspectDimsFor,
+  aspectFor,
+  clampRatio,
+} from "@/features/saves/state/aspect";
 import { openThumbnailViewer } from "@/features/saves/state/thumbnail-viewer";
 import type { Save } from "@/features/saves/types";
 import styles from "./styles.module.css";
@@ -47,6 +52,24 @@ function entries(saves: readonly Save[]) {
   return (withImages.length > 0 ? withImages : next).slice(0, 4);
 }
 
+interface Card {
+  key: string;
+  url: string;
+  aspect: number;
+}
+
+/** Cards kept mounted after the top card, so the next ones slide in instead of popping. */
+const STACK_DEPTH = 3;
+
+function stackCards(save: Save): Card[] {
+  return buildOriginalMediaUnits(save).flatMap((unit) => {
+    const url = detailsPreviewUrl(unit);
+    if (!url) return [];
+    const { w, h } = aspectDimsFor(save, {}, unit);
+    return [{ key: unit.key, url, aspect: w && h ? clampRatio(w, h) : 1 }];
+  });
+}
+
 interface PreviewStyle extends CSSProperties {
   "--preview-aspect": number;
 }
@@ -54,10 +77,16 @@ interface PreviewStyle extends CSSProperties {
 function Preview({
   save,
   url,
+  aspect,
+  slot,
+  caption = true,
   viewable = false,
 }: {
   save: Save;
   url: string | null;
+  aspect?: number;
+  slot?: number;
+  caption?: boolean;
   viewable?: boolean;
 }) {
   const [failed, setFailed] = useState<string | null>(null);
@@ -70,7 +99,9 @@ function Preview({
   useReportMediaReady(decoded || !url || failed === url);
   const style: PreviewStyle = {
     "--preview-aspect":
-      measured && measured.url === url ? measured.aspect : aspectFor(save),
+      measured && measured.url === url
+        ? measured.aspect
+        : (aspect ?? aspectFor(save)),
   };
   const img =
     url && failed !== url ? (
@@ -79,7 +110,6 @@ function Preview({
         src={url}
         alt={save.title || "Save preview"}
         draggable={false}
-        style={style}
         onLoad={(event) => {
           const { naturalWidth, naturalHeight } = event.currentTarget;
           if (naturalWidth > 0 && naturalHeight > 0) {
@@ -90,7 +120,7 @@ function Preview({
       />
     ) : null;
   return (
-    <figure className={styles.preview}>
+    <figure className={styles.preview} data-slot={slot} style={style}>
       {!img ? (
         <span className={styles.placeholder}>{save.title || "No preview"}</span>
       ) : viewable && cardThumbnailUrl(save) !== null ? (
@@ -106,7 +136,7 @@ function Preview({
       ) : (
         img
       )}
-      <figcaption>{inspectorFormat(save)}</figcaption>
+      {caption ? <figcaption>{inspectorFormat(save)}</figcaption> : null}
     </figure>
   );
 }
@@ -114,48 +144,81 @@ function Preview({
 interface Entry {
   save: Save;
   url: string | null;
+  stack: Card[];
 }
 
 function Layer({
   entry,
   role,
+  activePath,
   onReady,
 }: {
   entry: StageEntry<Entry>;
   role: StageRole;
+  activePath: string | null;
   onReady: (key: string) => void;
 }) {
   const { key, value } = entry;
   const report = useCallback(() => onReady(key), [key, onReady]);
   const held = role === "held";
+  const stacked = value.stack.length > 1;
+  const found = value.stack.findIndex((card) => card.key === activePath);
+  /** The file index is shared across Saves, so a held layer keeps its last card instead of reading the next Save's. */
+  const [last, setLast] = useState(Math.max(0, found));
+  if (found >= 0 && found !== last) setLast(found);
+  const top = found >= 0 ? found : last;
   return (
     <div
       className={styles.layer}
       data-pending={role === "pending" || undefined}
+      data-multiple={stacked || undefined}
       aria-hidden={held || undefined}
       inert={held}
     >
       <MediaReadyContext value={report}>
-        <Preview save={value.save} url={value.url} viewable />
+        {stacked ? (
+          value.stack.map((card, index) => {
+            const slot = index - top;
+            if (slot < -1 || slot > STACK_DEPTH + 1) return null;
+            return (
+              <Preview
+                key={card.key}
+                save={value.save}
+                url={card.url}
+                aspect={card.aspect}
+                slot={slot}
+                caption={slot === 0}
+              />
+            );
+          })
+        ) : (
+          <Preview save={value.save} url={value.url} viewable />
+        )}
       </MediaReadyContext>
     </div>
   );
 }
 
-export function SavePreviews({ saves }: { saves: readonly Save[] }) {
+export function SavePreviews({
+  saves,
+  fileIndex = null,
+}: {
+  saves: readonly Save[];
+  fileIndex?: number | null;
+}) {
   const single = saves.length === 1 ? saves[0] : undefined;
   const url = single ? detailsPreviewUrl(pickCardUnit(single)) : null;
-  const target = useMemo<StageEntry<Entry> | null>(
-    () =>
-      single
-        ? {
-            key: `${single.id}:${url}`,
-            holds: url !== null,
-            value: { save: single, url },
-          }
-        : null,
-    [single, url],
-  );
+  const activePath =
+    fileIndex === null ? null : (single?.files[fileIndex]?.path ?? null);
+  const target = useMemo<StageEntry<Entry> | null>(() => {
+    if (!single) return null;
+    const stack = stackCards(single);
+    return {
+      key: `${single.id}:${url}:${stack.map((card) => card.url).join("\0")}`,
+      holds: url !== null,
+      value: { save: single, url, stack },
+    };
+  }, [single, url]);
   const stage = useHeldStage(target);
 
   if (single) {
@@ -166,6 +229,7 @@ export function SavePreviews({ saves }: { saves: readonly Save[] }) {
             key={entry.key}
             entry={entry}
             role={role}
+            activePath={activePath}
             onReady={stage.ready}
           />
         ))}

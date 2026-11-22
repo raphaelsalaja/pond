@@ -1,0 +1,10 @@
+.dot,
+.failed {
+  position: absolute;
+  top: 0;
+  right: -2px;
+}
+
+.failed {
+  color: var(--ds-danger);
+}

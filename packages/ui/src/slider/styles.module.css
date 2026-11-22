@@ -7,43 +7,97 @@
   min-width: 168px;
 }
 
+.root[data-layout="stacked"] {
+  flex-direction: column;
+  gap: var(--ds-space-md);
+  align-items: stretch;
+
+  & > .control {
+    width: auto;
+  }
+}
+
 .label {
-  font-size: var(--ds-text-small);
-  font-weight: var(--ds-weight-medium);
-  color: var(--ds-foreground-secondary);
+  font-size: var(--ds-text-body);
+  font-weight: var(--ds-weight-strong);
+  line-height: var(--ds-leading-body);
+  color: var(--ds-foreground-primary);
 }
 
 .control {
+  --slider-inset: 3px;
+  --slider-thumb-width: 16px;
+  position: relative;
+  isolation: isolate;
   display: flex;
   flex: 1 1 auto;
   align-items: center;
   /* Fixed basis so percentage track width resolves under flex: none parents. */
   width: 120px;
   min-width: 120px;
-  height: 16px;
+  height: calc(var(--ds-size-md) - 2 * var(--slider-inset));
+  margin: var(--slider-inset);
+
+  /* Base UI places edge-aligned thumbs against the control's own width, so the tray's inset is drawn outside it. */
+  &::before {
+    position: absolute;
+    inset: calc(-1 * var(--slider-inset));
+    z-index: -1;
+    content: "";
+    background: var(--ds-surface-secondary);
+    border-radius: var(--ds-radius-full);
+    box-shadow: 0 0 0 1px var(--ds-border-subtle);
+  }
 }
 
 .track {
   position: relative;
   width: 100%;
-  height: 4px;
-  background: var(--ds-surface-tertiary);
+  height: 100%;
   border-radius: var(--ds-radius-full);
 }
 
+/* Base UI ends the indicator at the thumb's center; the padding carries it under the whole thumb. */
 .indicator {
   position: absolute;
+  box-sizing: content-box;
   height: 100%;
-  background: var(--ds-accent);
+  padding-right: calc(var(--slider-thumb-width) / 2);
+  background: var(--ds-background-elevated);
   border-radius: inherit;
+  box-shadow: var(--ds-shadow-raised);
+}
+
+.track:has(> .thumb ~ .thumb) > .indicator {
+  padding-left: calc(var(--slider-thumb-width) / 2);
+  margin-left: calc(var(--slider-thumb-width) / -2);
 }
 
 .thumb {
-  width: 14px;
-  height: 14px;
-  background: var(--ds-background-primary);
+  width: var(--slider-thumb-width);
+  height: 100%;
+  cursor: grab;
   border-radius: var(--ds-radius-full);
-  box-shadow: var(--ds-shadow-raised);
+
+  &::before {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 2px;
+    height: 50%;
+    content: "";
+    background: color-mix(in srgb, var(--ds-background-inverse) 25%, transparent);
+    border-radius: var(--ds-radius-full);
+    translate: -50% -50%;
+  }
+
+  &[data-dragging] {
+    cursor: grabbing;
+  }
+
+  &[data-disabled] {
+    cursor: not-allowed;
+  }
 
   &:has(> :focus-visible) {
     outline-color: var(--ds-focus-outline);
@@ -52,6 +106,38 @@
   > input {
     outline: none;
   }
+}
+
+.badge {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  padding-inline: var(--ds-space-sm);
+  margin-top: calc(var(--ds-space-md) + var(--slider-inset));
+  font-size: var(--ds-text-body);
+  font-weight: var(--ds-weight-strong);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--ds-leading-body);
+  color: var(--ds-foreground-inverse);
+  white-space: nowrap;
+  pointer-events: none;
+  background: var(--ds-background-inverse);
+  border-radius: var(--ds-radius-xs);
+  translate: -50% 0;
+
+  [data-disabled] > & {
+    color: var(--ds-foreground-primary);
+    background: var(--ds-surface-tertiary);
+  }
+}
+
+.bounds {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--ds-text-body);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--ds-leading-body);
+  color: var(--ds-foreground-tertiary);
 }
 
 .value {

@@ -8,12 +8,12 @@ import {
   IconLineWeight,
   IconLock,
   IconLockOpen,
-  IconRename,
+  IconPencil,
   IconSection,
   IconTable,
-  IconTextA,
   IconTextBold,
   IconTextStrikethrough,
+  IconTypeScale,
   IconTypography,
   IconUngroup,
 } from "@pond/icons";
@@ -1571,7 +1571,7 @@ export function Board({ canvas }: BoardProps) {
       {
         kind: "menu",
         label: "Size",
-        icon: <IconTextA />,
+        icon: <IconTypeScale />,
         buildItems: () =>
           sizeItems(
             sharedValue(styled.map((node) => node.data.textSize ?? "medium")),
@@ -1616,7 +1616,7 @@ export function Board({ canvas }: BoardProps) {
     extras.push({
       kind: "action",
       label: "Rename",
-      icon: <IconRename />,
+      icon: <IconPencil />,
       onClick: () => actions.startEditing(only.id),
     });
   if (arrangeable > 1)

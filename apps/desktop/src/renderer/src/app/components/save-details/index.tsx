@@ -1,4 +1,3 @@
-import { useRouterState } from "@tanstack/react-router";
 import { lazy, Suspense, useDeferredValue, useMemo } from "react";
 import {
   useFolderMemberships,
@@ -10,6 +9,7 @@ import {
   useSelectedIds,
   useSelectionCursor,
 } from "@/features/saves/state/selection";
+import { useRouteLocation } from "@/shared/hooks/use-route-location";
 import { usePrefs } from "@/shared/state/prefs";
 
 const SaveInspector = lazy(async () => {
@@ -37,9 +37,9 @@ export function inspectorSaveIds(input: {
 }
 
 function useInspectorSaveIds(): string[] {
-  const routeId = useRouterState({
-    select: (s) => saveIdFromPath(s.location.pathname),
-  });
+  const routeId = useRouteLocation((location) =>
+    saveIdFromPath(location.pathname),
+  );
   const selected = useSelectedIds();
   const primary = usePrimarySelection();
   const cursor = useSelectionCursor();

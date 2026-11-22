@@ -15,6 +15,7 @@ import {
   statusBreakdown,
 } from "../categories";
 import { HealthEntryRow } from "../entry";
+import { useCategoryRunning } from "../use-library-health";
 import styles from "./styles.module.css";
 
 type Filter = HealthStatus | "all";
@@ -35,6 +36,7 @@ export function HealthDrilldown({
   const qc = useQueryClient();
   const [filter, setFilter] = useState<Filter>("all");
   const [busy, setBusy] = useState<string | null>(null);
+  const running = useCategoryRunning(category?.id ?? null);
   const entries = category?.entries ?? [];
   const breakdown = statusBreakdown(entries);
   const active: Filter =
@@ -86,7 +88,7 @@ export function HealthDrilldown({
               size="xs"
               variant="secondary"
               loading={busy === `${entry.id}:${action.id}`}
-              disabled={busy != null}
+              disabled={busy != null || running}
               onClick={() => void run(`${entry.id}:${action.id}`, action)}
             >
               {action.label}
@@ -158,8 +160,10 @@ export function HealthDrilldown({
               <Button
                 key={action.id}
                 variant={action.primary ? "primary" : "secondary"}
-                loading={busy === `bulk:${action.id}`}
-                disabled={busy != null}
+                loading={
+                  busy === `bulk:${action.id}` || (running && action.primary)
+                }
+                disabled={busy != null || running}
                 onClick={() => void run(`bulk:${action.id}`, action)}
               >
                 {action.navigates || action.bulkOnly

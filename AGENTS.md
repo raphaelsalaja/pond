@@ -65,11 +65,15 @@ A Capture supplied when a Save is enqueued, so harvest can skip a fresh scrape w
 _Avoid_: prefill, stub, partial capture
 
 **Inbox**:
-Where new Saves wait for you to process them. Each Save records its own Inbox state: needs review, snoozed until a time, or processed. A Save with no state was never sent to the Inbox. The state is independent of Folders, so filing a Save doesn't process it. Settings choose which capture paths send new Saves here.
-_Avoid_: queue, triage folder, unread, Uncategorized (that's Saves with no Folder)
+Where Saves waiting for review and Notifications about your library land. Each Save records its own Inbox state: needs review, snoozed until a time, or processed. A Save with no state was never sent to the Inbox. The state is independent of Folders, so filing a Save doesn't process it. Settings choose which capture paths send new Saves here. The Priority tab shows Saves to review and priority Notifications; Other holds updates and finished work. Turning off Priority Inbox lists both together.
+_Avoid_: queue, triage folder, unread, Uncategorized (that's Saves with no Folder), notification center, bell
+
+**Notification**:
+A stored message in the Inbox about the library rather than a Save: something that needs attention, an announcement, or finished background work. Each one can be read or unread, snoozed, or deleted. Attention clears on its own when the problem it reports goes away.
+_Avoid_: alert, notice (that's a one-time first-open dialog), toast (that's a transient message)
 
 **Snooze**:
-Hiding a Save from the Inbox until a time, when it needs review again.
+Hiding a Save or a Notification from the Inbox until a time, when it comes back.
 _Avoid_: remind, defer, later
 
 **Tag**:

@@ -49,7 +49,7 @@ describe("FolderEmpty", () => {
   it("invites adding files instead of clearing a search", async () => {
     await act(async () => root.render(<FolderEmpty folderId="posters" />));
     const text = host.textContent ?? "";
-    expect(text).toContain("This folder is empty");
+    expect(text).toContain("No saves in this folder");
     expect(text).toContain("Paste or drop files, images, and links here.");
     expect(text).not.toContain("Import Folders");
     expect(text).not.toContain("No results found");
@@ -92,7 +92,7 @@ describe("FolderEmpty", () => {
     expect(text).toContain(
       "They appear in this folder as each download finishes.",
     );
-    expect(text).not.toContain("This folder is empty");
+    expect(text).not.toContain("No saves in this folder");
     const link = host.querySelector<HTMLAnchorElement>('a[role="link"]');
     expect(link?.textContent).toBe("Open Downloads");
     expect(link?.getAttribute("href")).toBe("/downloads");

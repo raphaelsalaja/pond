@@ -7,10 +7,13 @@ import {
   DEFAULT_FISH_NAME,
   FISH_COLORS,
   FISH_ROUTINE_CAP,
+  FISH_RUN_CAP,
   FISH_SPECIES,
   type Fish,
   type FishPatch,
   FishPatchSchema,
+  type FishPlacement,
+  FishPlacementSchema,
   type FishRoutine,
   type FishRoutineInput,
   FishRoutineInputSchema,
@@ -18,6 +21,8 @@ import {
   FishRoutinePatchSchema,
   type FishRun,
   FishSchema,
+  type FishSection,
+  FishSectionSchema,
   type FishWhen,
 } from "../../../shared/fish-contracts";
 import { readBundleJson, writeBundleJson } from "../../lib/library-config";
@@ -25,6 +30,11 @@ import { resolvePaths } from "../../paths";
 
 function fishFile(root: string): string {
   return join(root, "fish.json");
+}
+
+/** Sections live beside `fish.json` so builds that predate them still read the school. */
+function sectionsFile(root: string): string {
+  return join(root, "fish-sections.json");
 }
 
 function defaultFish(now: number): Fish {
@@ -197,6 +207,9 @@ export function recordFishRun(
   const next = FishSchema.parse({
     ...current,
     lastRun: run,
+    runs: run
+      ? [run, ...(current.runs ?? [])].slice(0, FISH_RUN_CAP)
+      : current.runs,
     routines: current.routines.map((routine) =>
       run?.routineId === routine.id ? { ...routine, lastRun: run } : routine,
     ),
@@ -208,13 +221,34 @@ export function recordFishRun(
   return next;
 }
 
+function seen(run: FishRun): FishRun {
+  return run.seen ? run : { ...run, seen: true };
+}
+
 export function markFishSeen(
   id: string,
   root = resolvePaths().libraryRoot,
 ): void {
-  const fish = readFish(id, root);
-  if (!fish?.lastRun || fish.lastRun.seen) return;
-  recordFishRun(id, { ...fish.lastRun, seen: true }, root);
+  const school = listFish(root);
+  const current = school.find((fish) => fish.id === id);
+  if (!current) return;
+  const unseen =
+    current.lastRun?.seen === false ||
+    current.runs?.some((run) => !run.seen) ||
+    current.routines.some((routine) => routine.lastRun?.seen === false);
+  if (!unseen) return;
+  const next = FishSchema.parse({
+    ...current,
+    lastRun: current.lastRun && seen(current.lastRun),
+    runs: current.runs?.map(seen),
+    routines: current.routines.map((routine) =>
+      routine.lastRun ? { ...routine, lastRun: seen(routine.lastRun) } : routine,
+    ),
+  });
+  write(
+    root,
+    school.map((fish) => (fish.id === id ? next : fish)),
+  );
 }
 
 export function deleteFish(
@@ -231,6 +265,71 @@ export function deleteFish(
     school.filter((fish) => fish.id !== id),
   );
   return { ok: true };
+}
+
+export function listFishSections(
+  root = resolvePaths().libraryRoot,
+): FishSection[] {
+  const file = sectionsFile(root);
+  const stored = readBundleJson<unknown>(file);
+  if (!stored) {
+    if (existsSync(file)) throw new Error("Your fish sections could not be read.");
+    return [];
+  }
+  return z.array(FishSectionSchema).parse(stored.data);
+}
+
+/** Replaces the section list; fish in a removed section return to the loose list. */
+export function setFishSections(
+  sections: readonly FishSection[],
+  root = resolvePaths().libraryRoot,
+): FishSection[] {
+  const parsed = z.array(FishSectionSchema).parse(sections);
+  const next = [
+    ...new Map(parsed.map((section) => [section.id, section])).values(),
+  ];
+  const seen = new Set(next.map((section) => section.id));
+  writeBundleJson(sectionsFile(root), next);
+  const school = listFish(root);
+  if (school.some((fish) => fish.section && !seen.has(fish.section)))
+    write(
+      root,
+      school.map((fish) =>
+        fish.section && !seen.has(fish.section)
+          ? { ...fish, section: undefined }
+          : fish,
+      ),
+    );
+  return next;
+}
+
+/** Fish missing from `placements` keep their place after the placed ones. */
+export function arrangeFish(
+  placements: readonly FishPlacement[],
+  root = resolvePaths().libraryRoot,
+): void {
+  const parsed = z.array(FishPlacementSchema).parse(placements);
+  const school = listFish(root);
+  const sections = new Set(listFishSections(root).map((section) => section.id));
+  const byId = new Map(school.map((fish) => [fish.id, fish]));
+  const placed = new Set<string>();
+  const arranged: Fish[] = [];
+  for (const placement of parsed) {
+    const fish = byId.get(placement.id);
+    if (!fish || placed.has(fish.id)) continue;
+    placed.add(fish.id);
+    const section =
+      !placement.pinned &&
+      placement.section &&
+      sections.has(placement.section)
+        ? placement.section
+        : undefined;
+    arranged.push({ ...fish, pinned: placement.pinned, section });
+  }
+  write(root, [
+    ...arranged,
+    ...school.filter((fish) => !placed.has(fish.id)),
+  ]);
 }
 
 function requireRoutine(fish: Fish, routineId: string): FishRoutine {

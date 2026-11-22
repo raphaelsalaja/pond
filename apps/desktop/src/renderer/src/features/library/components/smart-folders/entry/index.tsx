@@ -1,7 +1,7 @@
 import { useDndContext } from "@dnd-kit/core";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { IconChevronRight, IconDots } from "@pond/icons";
+import { IconDots } from "@pond/icons";
 import type { SavedView } from "@pond/schema/db";
 import { Button, cssVars, Menu, type MenuItemSpec, Sidebar } from "@pond/ui";
 import { useReducedMotionConfig } from "motion/react";
@@ -149,9 +149,7 @@ export function SmartFolderEntry({
                   ?.querySelector<HTMLElement>('[role="treeitem"]')
                   ?.focus();
               }}
-            >
-              <IconChevronRight size={12} strokeWidth={2} />
-            </Button>
+            />
           ) : null}
           {renaming ? (
             <div className={styles.editor}>
@@ -194,7 +192,10 @@ export function SmartFolderEntry({
               <Sidebar.Icon>
                 <span style={color ? { color } : undefined}>
                   {presentation.icon ? (
-                    <FolderIcon name={presentation.icon} />
+                    <FolderIcon
+                      name={presentation.icon}
+                      state={isGroup ? (open ? "open" : "closed") : undefined}
+                    />
                   ) : (
                     <Icon />
                   )}

@@ -16,33 +16,38 @@
   align-items: center;
   justify-content: center;
   height: var(--ds-size-sm);
-  padding: 0 var(--ds-space-lg);
+  padding: 0 calc(var(--ds-space-md) + var(--ds-space-2xs));
   font-size: var(--ds-text-small);
-  font-weight: var(--ds-weight-medium);
+  font-weight: var(--ds-weight-strong);
   line-height: 1;
-  color: var(--ds-foreground-secondary);
+  color: var(--ds-foreground-tertiary);
   cursor: var(--ds-cursor-interactive, pointer);
   user-select: none;
-  background: transparent;
+  background: var(--ds-background-primary);
   border: 0;
-  border-radius: var(--ds-radius-md);
+  border-radius: var(--ds-radius-full);
+  box-shadow: var(--ds-shadow-border);
+  --ds-focus-offset: var(--ds-focus-inset);
+
   transition:
     color var(--ds-duration-fast) var(--ds-easing-standard),
-    background var(--ds-duration-fast) var(--ds-easing-standard);
+    background var(--ds-duration-fast) var(--ds-easing-standard),
+    box-shadow var(--ds-duration-fast) var(--ds-easing-standard),
+    outline-color var(--ds-duration-snap) var(--ds-easing-snap);
 
-  &:hover {
-    color: var(--ds-foreground-primary);
-    background: var(--ds-surface-primary);
+  &:hover:not([data-active], [data-disabled]) {
+    color: var(--ds-foreground-secondary);
+    background: var(--ds-background-secondary);
   }
 
   &[data-active] {
     color: var(--ds-foreground-primary);
     background: var(--ds-background-tertiary);
+    box-shadow: 0 0 0 var(--ds-border-width) var(--ds-border-subtle);
   }
 
-  &:focus-visible {
-    outline: var(--ds-focus-width) solid var(--ds-focus-outline);
-    outline-offset: var(--ds-focus-offset);
+  &:not(:focus-visible, [data-demo-state="focus"]) {
+    outline: var(--ds-focus-width) solid transparent;
   }
 
   &[data-icon] {
@@ -54,6 +59,20 @@
     flex-shrink: 0;
     width: 14px;
     height: 14px;
+  }
+}
+
+.list[data-variant="secondary"] .tab {
+  background: transparent;
+  box-shadow: none;
+
+  &:hover:not([data-active], [data-disabled]) {
+    background: var(--ds-surface-secondary);
+  }
+
+  &[data-active] {
+    background: var(--ds-background-primary);
+    box-shadow: var(--ds-shadow-border);
   }
 }
 

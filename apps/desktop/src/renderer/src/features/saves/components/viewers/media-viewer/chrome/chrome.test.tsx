@@ -175,7 +175,7 @@ it("suppresses portal toolbars and direct HUD overlays when controls are disable
   expect(host.querySelector('[aria-label="Table of contents"]')).toBeNull();
 });
 
-it("shows the slide count beside the slide arrows", async () => {
+it("leaves slide arrows out of a gallery's top bar", async () => {
   const first = save.files[0];
   if (!first) throw new Error("Missing fixture file");
   const gallery: Save = {
@@ -205,15 +205,13 @@ it("shows the slide count beside the slide arrows", async () => {
   const zoom = labeled("Zoom In");
   const crop = labeled("Crop");
   expect(host.textContent).not.toContain("2 / 493");
-  expect(host.textContent).toContain("1 / 2");
+  expect(host.textContent).not.toContain("1 / 2");
   expect(labeled("Previous Item")).toBeUndefined();
   expect(labeled("Next Item")).toBeUndefined();
-  expect(labeled("Previous Slide")?.disabled).toBe(true);
-  expect(labeled("Next Slide")?.disabled).toBe(false);
+  expect(labeled("Previous Slide")).toBeUndefined();
+  expect(labeled("Next Slide")).toBeUndefined();
   expect(crop?.closest("[data-slot]")?.getAttribute("data-slot")).toBe("top");
-  expect(zoom?.closest("[data-slot]")?.getAttribute("data-slot")).toBe(
-    "bottom",
-  );
+  expect(zoom?.closest("[data-slot]")?.getAttribute("data-slot")).toBe("top");
   expect(crop?.closest("[data-anchor]")).toBeNull();
   expect(zoom?.closest("[data-anchor]")).toBeNull();
   expect(crop?.closest("[data-blossom-slide]")).toBeNull();
@@ -264,7 +262,6 @@ it("composes video result count and actions into one top bar", async () => {
   const center = top?.querySelector('[data-viewer-bar-slot="center"]');
   const end = top?.querySelector('[data-viewer-bar-slot="end"]');
   expect(center?.querySelector('[aria-label="Rotate Video"]')).not.toBeNull();
-  expect(end?.querySelector('[aria-label="Previous Slide"]')).not.toBeNull();
-  expect(end?.querySelector('[aria-label="Next Slide"]')).not.toBeNull();
-  expect(end?.textContent).toBe("1 / 2");
+  expect(end?.childElementCount).toBe(0);
+  expect(top?.textContent).not.toContain("1 / 2");
 });

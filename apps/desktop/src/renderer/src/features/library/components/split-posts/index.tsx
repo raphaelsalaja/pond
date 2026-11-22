@@ -108,11 +108,9 @@ export function SplitPostsPage() {
   return (
     <div className={styles.page}>
       <SearchChrome.Root>
-        <SearchChrome.Input
+        <SearchChrome.Field
           value={q}
           onChange={(event) => setQ(event.target.value)}
-          spellCheck={false}
-          placeholder="Search…"
           aria-label="Search Split Posts"
         />
       </SearchChrome.Root>
@@ -122,19 +120,15 @@ export function SplitPostsPage() {
         ) : (posts.data ?? []).length === 0 ? (
           <Empty.Root>
             <Empty.Media>
-              <IconLayers size={32} />
+              <IconLayers size={14} />
             </Empty.Media>
-            <Empty.Title>Split Posts</Empty.Title>
+            <Empty.Title>No split posts yet</Empty.Title>
             <Empty.Description>
               Split a gallery into Saves and its post stays together here.
             </Empty.Description>
           </Empty.Root>
         ) : visible.length === 0 ? (
-          <MatchesEmpty
-            actionLabel="Clear Search"
-            description="Try a different search."
-            onReset={() => setQ("")}
-          />
+          <MatchesEmpty query={q} onReset={() => setQ("")} />
         ) : (
           <ul className={styles.grid} style={{ gap }}>
             {visible.map((post) => (

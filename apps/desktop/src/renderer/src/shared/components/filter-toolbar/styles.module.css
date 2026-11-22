@@ -2,12 +2,29 @@
   flex: none;
 }
 
+/* Entry runs in CSS so the open height is always the laid-out chip row; Motion only drives the exit collapse. */
 .shell {
+  interpolate-size: allow-keywords;
   min-width: 0;
   padding: 0;
   margin: 0;
   overflow: hidden;
   border: 0;
+  animation: reveal var(--ds-duration-medium) var(--ds-easing-decelerate);
+}
+
+@keyframes reveal {
+  from {
+    height: 0;
+    opacity: 0;
+    translate: 0 -4px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shell {
+    animation: none;
+  }
 }
 
 .bar {
@@ -50,19 +67,6 @@
 
 .filters::-webkit-scrollbar {
   display: none;
-}
-
-.bar[data-wrap] {
-  & .filters {
-    flex-wrap: wrap;
-    height: auto;
-    margin-block: 0;
-    overflow: visible;
-  }
-
-  & .filters::after {
-    display: none;
-  }
 }
 
 .actions {

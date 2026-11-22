@@ -4,6 +4,7 @@ import { moveVisibleSidebarDestination } from "./sidebar-customization";
 
 const LIBRARY_DESTINATIONS = [
   "all",
+  "inbox",
   "uncategorized",
   "untagged",
   "recentlyAdded",
@@ -49,6 +50,7 @@ it("reorders visible sidebar destinations while preserving hidden slots", () => 
     ),
   ).toEqual([
     "untagged",
+    "inbox",
     "uncategorized",
     "recentlyAdded",
     "recentlyUsed",

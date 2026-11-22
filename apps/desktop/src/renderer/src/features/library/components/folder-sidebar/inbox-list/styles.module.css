@@ -1,0 +1,40 @@
+.item {
+  &[data-unread] .line {
+    color: var(--ds-foreground-primary);
+  }
+
+  &[data-inert] {
+    pointer-events: none;
+  }
+
+  &[data-tone="danger"] .glyph {
+    color: var(--ds-danger);
+  }
+
+  &[data-tone="accent"] .glyph {
+    color: var(--ds-accent);
+  }
+}
+
+.glyph {
+  color: var(--ds-foreground-tertiary);
+}
+
+.section {
+  margin-top: var(--ds-space-sm);
+}
+
+.line {
+  display: flex;
+  gap: var(--ds-space-xs);
+  align-items: center;
+  min-width: 0;
+}
+
+.time {
+  flex: none;
+  margin-left: var(--ds-space-sm);
+  font-size: var(--ds-text-small);
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-foreground-tertiary);
+}

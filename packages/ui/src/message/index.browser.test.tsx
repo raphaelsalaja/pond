@@ -58,6 +58,25 @@ describe("Message actions keyboard", () => {
       .toHaveFocus();
   });
 
+  it("offers Retry only when the reply can run again", async () => {
+    let retried = 0;
+    const screen = await render(
+      <Message.ActionBar
+        text={ANSWER}
+        onRetry={() => {
+          retried += 1;
+        }}
+      />,
+    );
+    await screen.getByRole("button", { name: "Retry" }).click();
+    await expect.poll(() => retried).toBe(1);
+
+    await screen.rerender(<Message.ActionBar text={ANSWER} />);
+    await expect
+      .element(screen.getByRole("button", { name: "Retry" }))
+      .not.toBeInTheDocument();
+  });
+
   it("keeps the HTML role attribute free", async () => {
     const screen = await render(
       <Message.Root from="user" role="listitem" aria-label="Your Question">

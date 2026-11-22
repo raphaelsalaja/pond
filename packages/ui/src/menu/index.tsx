@@ -280,7 +280,7 @@ function CheckboxItemIndicator({
         className={cn(styles["check-indicator"], className)}
         {...props}
       >
-        <IconCheck size={12} aria-hidden />
+        <IconCheck size={14} aria-hidden />
       </Base.CheckboxItemIndicator>
     );
   }

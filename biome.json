@@ -138,7 +138,10 @@
       }
     },
     {
-      "includes": ["packages/icons/svg/**/*.svg"],
+      "includes": [
+        "packages/icons/svg/**/*.svg",
+        "packages/icons/parts/**/*.svg"
+      ],
       "linter": {
         "rules": {
           "a11y": {

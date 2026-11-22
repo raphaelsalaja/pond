@@ -1,9 +1,6 @@
-import {
-  createFileRoute,
-  redirect,
-  useRouterState,
-} from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { SettingsDetail } from "@/features/settings/components/detail";
+import { useRouteLocation } from "@/shared/hooks/use-route-location";
 import {
   rememberSettingsSection,
   resolveSettingsLocation,
@@ -27,12 +24,10 @@ export const Route = createFileRoute("/_library/settings/$section")({
 
 function SettingsSectionRoute() {
   const { section } = Route.useParams();
-  const hash = useRouterState({
-    select: (state) => {
-      const value = state.location.hash;
-      if (!value) return null;
-      return value.replace(/^#/, "") || null;
-    },
+  const hash = useRouteLocation((location) => {
+    const value = location.hash;
+    if (!value) return null;
+    return value.replace(/^#/, "") || null;
   });
   return <SettingsDetail section={section} hash={hash} />;
 }

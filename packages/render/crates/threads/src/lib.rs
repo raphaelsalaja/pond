@@ -1,4 +1,4 @@
-//! Threads post layout, drawn to match Pond's Threads card (`threads/card`).
+//! Threads post layout, measured against the post page on threads.com.
 
 #![forbid(unsafe_code)]
 
@@ -7,26 +7,37 @@ use kit::{Images, Options, Rendered, Rgba, TextStyle, Theme};
 use serde::Deserialize;
 use xeet_core::inline::Span;
 
-const WIDTH_PAD: f32 = 16.0;
+const PAD_X: f32 = 24.0;
+const TOP: f32 = 20.0;
+const AVATAR: f32 = 36.0;
+const GUTTER: f32 = 48.0;
+const PARAGRAPH_GAP: f32 = 10.0;
 const SINGLE_MAX_H: f32 = 430.0;
 const SINGLE_MAX_H_COMPACT: f32 = 280.0;
 const CAROUSEL_H: f32 = 280.0;
 const CAROUSEL_H_COMPACT: f32 = 200.0;
-const MAX_TILES: usize = 8;
-const DEFAULT_RATIO: f32 = 4.0 / 5.0;
+/// The carousel's scroller keeps 5px under its tiles.
+const CAROUSEL_TAIL: f32 = 5.0;
+const TILE_GAP: f32 = 6.0;
+/// Carousel tiles crop anything taller than 3:4.
+const MIN_TILE_RATIO: f32 = 3.0 / 4.0;
+const MAX_TILES: usize = 10;
+const ACTIONS_H: f32 = 36.0;
+const BOTTOM: f32 = 18.0;
+/// Narrow posts shrink to their content so a portrait video isn't framed by an empty column.
+const MIN_WIDTH: f32 = 360.0;
 
-/// A post the host has already formatted: dates, counts and entity runs are display strings.
+/// A post the host has already formatted: the relative time, counts and entity runs are display strings.
 #[derive(Debug, Default, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 struct Post {
     author: Author,
+    time: String,
     text: Vec<Run>,
     media: Vec<Media>,
     parent: Option<Box<Nested>>,
     quoted: Option<Box<Nested>>,
     card: Option<Card>,
-    replying_to: Option<String>,
-    timestamp: String,
     metrics: Vec<Metric>,
 }
 
@@ -39,7 +50,7 @@ struct Author {
     avatar: Option<String>,
 }
 
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Default, Clone, Deserialize)]
 #[serde(default)]
 struct Run {
     text: String,
@@ -53,7 +64,6 @@ struct Media {
     width: f32,
     height: f32,
     video: bool,
-    duration: Option<String>,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -74,6 +84,7 @@ struct Card {
     large: bool,
 }
 
+/// An action button; an empty `value` draws the icon alone, as Threads does for zero.
 #[derive(Debug, Default, Deserialize)]
 #[serde(default)]
 struct Metric {
@@ -81,38 +92,48 @@ struct Metric {
     value: String,
 }
 
-/// Threads' own palette, as in the card's CSS.
+/// threads.com's computed colors for the post column.
 struct Palette {
     bg: Rgba,
     text: Rgba,
     secondary: Rgba,
-    border: Rgba,
+    icon: Rgba,
     link: Rgba,
+    line: Rgba,
+    border: Rgba,
+    avatar: Rgba,
     placeholder: Rgba,
-    overlay: Rgba,
+    pill: Rgba,
 }
 
 impl Palette {
     fn of(theme: Theme) -> Palette {
-        let overlay = Rgba::rgba(0, 0, 0, 173);
+        let pill = Rgba::rgba(40, 40, 40, 128);
+        let link = Rgba::hex(0x0095f6);
         match theme {
             Theme::Light => Palette {
                 bg: Rgba::hex(0xffffff),
                 text: Rgba::hex(0x000000),
-                secondary: Rgba::hex(0x737373),
-                border: Rgba::hex(0xe5e5e5),
-                link: Rgba::hex(0x0095f6),
-                placeholder: Rgba::hex(0xefefef),
-                overlay,
+                secondary: Rgba::hex(0x999999),
+                icon: Rgba::hex(0x424242),
+                link,
+                line: Rgba::hex(0xe5e5e5),
+                border: Rgba::rgba(0, 0, 0, 38),
+                avatar: Rgba::hex(0xfafafa),
+                placeholder: Rgba::hex(0xf5f5f5),
+                pill,
             },
             Theme::Dark => Palette {
-                bg: Rgba::hex(0x000000),
-                text: Rgba::hex(0xf5f5f5),
-                secondary: Rgba::hex(0xa3a3a3),
-                border: Rgba::hex(0x262626),
-                link: Rgba::hex(0x0095f6),
-                placeholder: Rgba::hex(0x171717),
-                overlay,
+                bg: Rgba::hex(0x181818),
+                text: Rgba::hex(0xf3f5f7),
+                secondary: Rgba::hex(0x777777),
+                icon: Rgba::hex(0xcccccc),
+                link,
+                line: Rgba::hex(0x333638),
+                border: Rgba::rgba(243, 245, 247, 38),
+                avatar: Rgba::hex(0x0a0a0a),
+                placeholder: Rgba::hex(0x262626),
+                pill,
             },
         }
     }
@@ -123,10 +144,16 @@ struct Ctx<'a> {
     images: &'a Images,
     p: Palette,
     stack: xeet_core::fonts::Stack,
+    width: f32,
+    /// The rightmost edge anything has been drawn to.
+    extent: f32,
 }
 
 impl Ctx<'_> {
-    /// `font-size`/`line-height` in the card's tokens; `normal` resolves to SF's rounded ascent plus descent.
+    fn reach(&mut self, x: f32) {
+        self.extent = self.extent.max(x);
+    }
+
     fn style(&self, size: f32, line_height: f32) -> TextStyle {
         TextStyle {
             stack: self.stack,
@@ -138,6 +165,10 @@ impl Ctx<'_> {
         }
     }
 
+    fn body_style(&self) -> TextStyle {
+        self.style(15.0, 21.0)
+    }
+
     fn icon(&mut self, name: &str, x: f32, y: f32, size: f32, color: Rgba) {
         self.list.push(Item::Icon {
             name: name.to_string(),
@@ -146,7 +177,7 @@ impl Ctx<'_> {
         });
     }
 
-    fn runs(&self, runs: &[Run], style: &TextStyle) -> Vec<Span> {
+    fn spans(&self, runs: &[Run], style: &TextStyle) -> Vec<Span> {
         let spans: Vec<Span> = runs
             .iter()
             .filter(|r| !r.text.is_empty())
@@ -162,14 +193,31 @@ impl Ctx<'_> {
         }
     }
 
-    /// A round avatar, or the card's initials fallback on the placeholder.
+    /// Body text with blank lines drawn as paragraph gaps; returns its height, 0 when empty.
+    fn body(&mut self, runs: &[Run], x: f32, y: f32, width: f32, max_lines: Option<usize>) -> f32 {
+        let mut style = self.body_style();
+        style.max_lines = max_lines;
+        let mut h = 0.0;
+        for paragraph in paragraphs(runs) {
+            if h > 0.0 {
+                h += PARAGRAPH_GAP;
+            }
+            let block = style.layout(&self.spans(&paragraph, &style), width);
+            self.list.push_text(&block, x, y + h);
+            self.reach(x + block.width);
+            h += block.height;
+        }
+        h
+    }
+
+    /// A round avatar on Threads' placeholder fill with its 0.5px ring, or initials when there are no bytes.
     fn avatar(&mut self, key: ImageRef, author: &Author, x: f32, y: f32, size: f32) {
         let shape = Shape::rounded(Rect::new(x, y, size, size), size / 2.0);
-        kit::image(&mut self.list, self.images, key.clone(), shape, self.p.placeholder);
+        kit::image(&mut self.list, self.images, key.clone(), shape, self.p.avatar);
         if self.images.aspect(&key).is_none() && !author.initials.is_empty() {
             let block = self
-                .style(16.0, 18.0)
-                .weight(700)
+                .style(size * 0.4, size * 0.5)
+                .weight(600)
                 .color(self.p.secondary)
                 .text(&author.initials, size);
             self.list.push_text(
@@ -178,21 +226,39 @@ impl Ctx<'_> {
                 y + (size - block.height) / 2.0,
             );
         }
+        self.list.push(Item::Stroke {
+            shape,
+            color: self.p.border,
+            width: 0.5,
+        });
     }
 
-    /// Username in bold with the Meta badge, clipped to one 20px line.
-    fn name(&mut self, author: &Author, x: f32, y: f32, width: f32, badge: f32) {
-        let gap = 4.0;
-        let room = if author.verified { width - badge - gap } else { width };
-        let block = self.style(16.0, 20.0).weight(700).lines(1).text(&author.name, room.max(0.0));
-        self.list.push_text(&block, x, y);
+    /// Username, verified badge and relative time on one 21px line starting at `y`.
+    fn header(&mut self, author: &Author, time: &str, x: f32, y: f32, right: f32) {
+        let time_block = (!time.is_empty())
+            .then(|| self.body_style().color(self.p.secondary).text(time, right - x));
+        let badge = if author.verified { 4.0 + 12.0 } else { 0.0 };
+        let reserved = badge + time_block.as_ref().map_or(0.0, |b| 6.0 + b.width);
+        let name = self
+            .body_style()
+            .weight(600)
+            .lines(1)
+            .text(&author.name, (right - x - reserved).max(0.0));
+        self.list.push_text(&name, x, y);
+        let mut end = x + name.width;
         if author.verified {
-            let bx = x + block.width + gap;
-            self.icon("meta-verified", bx, y + (20.0 - badge) / 2.0, badge, self.p.link);
+            let link = self.p.link;
+            self.icon("threads-verified", end + 4.0, y + 5.0, 12.0, link);
+            end += badge;
         }
+        if let Some(block) = time_block {
+            self.list.push_text(&block, end + 6.0, y);
+            end += 6.0 + block.width;
+        }
+        self.reach(end + 32.0);
     }
 
-    /// The media block for `media`, top at `y`; returns its height.
+    /// The media block for `media`, top at `y`; carousels run off the card's right edge. Returns its height.
     fn media(&mut self, media: &[Media], key: &dyn Fn(usize) -> ImageRef, x: f32, y: f32, width: f32, compact: bool) -> f32 {
         let tiles = &media[..media.len().min(MAX_TILES)];
         match tiles {
@@ -200,171 +266,187 @@ impl Ctx<'_> {
             [one] => {
                 let max_h = if compact { SINGLE_MAX_H_COMPACT } else { SINGLE_MAX_H };
                 let k = key(0);
-                let ratio = ratio_of(one).or_else(|| self.images.aspect(&k));
-                let Some(ratio) = ratio else { return 0.0 };
-                let (w, h) = if ratio_of(one).is_some() {
-                    let w = width.min(max_h * ratio);
-                    (w, (w / ratio).min(max_h))
-                } else {
-                    (width, (width / ratio).min(max_h))
+                let Some(ratio) = ratio_of(one).or_else(|| self.images.aspect(&k)) else {
+                    return 0.0;
                 };
+                let w = width.min(max_h * ratio);
+                let h = (w / ratio).min(max_h);
                 self.tile(one, k, Rect::new(x, y, w, h));
+                self.reach(x + w);
                 h
             }
             _ => {
                 let h = if compact { CAROUSEL_H_COMPACT } else { CAROUSEL_H };
                 self.list.push(Item::PushClip {
-                    shape: Shape::rect(Rect::new(x, y, width, h)),
+                    shape: Shape::rect(Rect::new(0.0, y, self.width, h)),
                 });
                 let mut tx = x;
                 for (i, m) in tiles.iter().enumerate() {
-                    if tx >= x + width {
+                    if tx >= self.width {
                         break;
                     }
-                    let w = (h * ratio_of(m).unwrap_or(DEFAULT_RATIO)).round();
-                    self.tile(m, key(i), Rect::new(tx, y, w, h));
-                    tx += w + 6.0;
+                    let k = key(i);
+                    let ratio = ratio_of(m).or_else(|| self.images.aspect(&k)).unwrap_or(MIN_TILE_RATIO);
+                    let w = h * ratio.max(MIN_TILE_RATIO);
+                    self.tile(m, k, Rect::new(tx, y, w, h));
+                    tx += w + TILE_GAP;
                 }
                 self.list.push(Item::PopClip);
-                h
+                self.reach(self.width);
+                h + CAROUSEL_TAIL
             }
         }
     }
 
+    /// One image or video poster: 8px corners, an inner hairline, and the mute pill on video.
     fn tile(&mut self, media: &Media, key: ImageRef, rect: Rect) {
-        kit::image(&mut self.list, self.images, key, Shape::rounded(rect, 8.0), self.p.placeholder);
+        let shape = Shape::rounded(rect, 8.0);
+        kit::image(&mut self.list, self.images, key, shape, self.p.placeholder);
+        kit::hairline(&mut self.list, shape, self.p.border);
         if !media.video {
             return;
         }
-        let (cx, cy) = (rect.x + rect.w / 2.0, rect.y + rect.h / 2.0);
+        let (px, py) = (rect.x + rect.w - 16.0 - 28.0, rect.y + rect.h - 16.0 - 28.0);
         self.list.push(Item::Fill {
-            shape: Shape::rounded(Rect::new(cx - 22.0, cy - 22.0, 44.0, 44.0), 22.0),
-            color: self.p.overlay,
+            shape: Shape::rounded(Rect::new(px, py, 28.0, 28.0), 14.0),
+            color: self.p.pill,
         });
-        self.icon("media-play", cx - 11.0, cy - 11.0, 22.0, Rgba::hex(0xffffff));
-        if let Some(duration) = media.duration.as_deref().filter(|d| !d.is_empty()) {
-            let block = self.style(12.0, 15.0).weight(600).color(Rgba::hex(0xffffff)).text(duration, rect.w);
-            let (bw, bh) = (block.width + 12.0, block.height + 2.0);
-            let (bx, by) = (rect.x + 8.0, rect.y + rect.h - 8.0 - bh);
-            self.list.push(Item::Fill {
-                shape: Shape::rounded(Rect::new(bx, by, bw, bh), 4.0),
-                color: self.p.overlay,
-            });
-            self.list.push_text(&block, bx + 6.0, by + 1.0);
+        self.icon("threads-muted", px + 8.0, py + 8.0, 12.0, Rgba::hex(0xffffff));
+    }
+
+    /// Like, Comment, Repost and Share in a 36px row; each count takes tabular-digit width.
+    fn actions(&mut self, metrics: &[Metric], x: f32, y: f32) {
+        let count = self.style(13.0, 18.2).color(self.p.icon);
+        let color = self.p.icon;
+        let mut bx = x;
+        for m in metrics.iter().filter(|m| !m.icon.is_empty()) {
+            let share = m.icon == "threads-share";
+            let has_count = !m.value.is_empty();
+            if share {
+                let nudge = if has_count { 0.0 } else { 1.0 };
+                self.icon(&m.icon, bx + nudge, y + 9.0, 18.0, color);
+            } else {
+                self.icon(&m.icon, bx, y + 8.0, 20.0, color);
+            }
+            let mut end = bx + 20.0;
+            if has_count {
+                let gap = if share { 22.0 } else { 24.0 };
+                let block = count.text(&m.value, 200.0);
+                self.list.push_text(&block, bx + gap, y + 8.9);
+                let tabular: String = m.value.chars().map(|c| if c.is_ascii_digit() { '0' } else { c }).collect();
+                end = bx + gap + count.text(&tabular, 200.0).width;
+            }
+            self.reach(end);
+            bx = end + 24.0;
         }
     }
 
-    /// `parent/`: avatar rail with a connector, then the parent's name, text and media.
-    fn parent(&mut self, parent: &Nested, x: f32, y: f32, width: f32) -> f32 {
-        let cx = x + 36.0 + 12.0;
-        let cw = width - 48.0;
-        let mut cy = y;
-        self.name(&parent.author, cx, cy, cw, 16.0);
-        cy += 20.0;
-        if !parent.text.is_empty() {
-            let style = self.style(16.0, 20.0);
-            let block = style.layout(&self.runs(&parent.text, &style), cw);
-            cy += 2.0;
-            self.list.push_text(&block, cx, cy);
-            cy += block.height;
+    /// The replied-to post above the focused one: indented body and a rail down to the next avatar.
+    /// Returns the top of the next avatar.
+    fn parent(&mut self, parent: &Nested, x: f32, a: f32, right: f32) -> f32 {
+        let cx = x + GUTTER;
+        let cw = right - cx;
+        self.header(&parent.author, "", cx, a - 4.0, right - 32.0);
+        let secondary = self.p.secondary;
+        self.icon("threads-more", right - 20.0, a - 3.0, 20.0, secondary);
+        let mut bottom = a - 4.0 + 21.0;
+        let text_h = self.body(&parent.text, cx, a + 20.0, cw, None);
+        if text_h > 0.0 {
+            bottom = a + 20.0 + text_h;
         }
         if !parent.media.is_empty() {
-            cy += 8.0;
-            cy += self.media(&parent.media, &|i| key(format!("parent:media:{i}")), cx, cy, cw, false);
+            let top = bottom + 8.0;
+            let h = self.media(&parent.media, &|i| key(format!("parent:media:{i}")), cx, top, cw, false);
+            if h > 0.0 {
+                bottom = top + h;
+            }
         }
-        let h = (cy - y + 16.0).max(36.0 + 12.0);
-        self.avatar(key("parent:avatar"), &parent.author, x, y, 36.0);
-        let line_top = y + 36.0 + 6.0;
-        let line_h = (y + h - 6.0 - line_top).max(0.0);
+        self.avatar(key("parent:avatar"), &parent.author, x, a, AVATAR);
+        let next = (bottom + 24.5).max(a + AVATAR + 24.5);
+        let line_top = a + AVATAR + 8.0;
         self.list.push(Item::Fill {
-            shape: Shape::rounded(Rect::new(x + 17.0, line_top, 2.0, line_h), 1.0),
-            color: self.p.border,
+            shape: Shape::rounded(Rect::new(x + 17.0, line_top, 2.0, (next - 8.5 - line_top).max(0.0)), 1.0),
+            color: self.p.line,
         });
-        h
+        next
     }
 
-    /// `quoted/`: a bordered box with a compact header, six lines of plain text and compact media.
+    /// A quoted post: a bordered box with a small header, six lines of plain text and compact media.
     fn quoted(&mut self, quoted: &Nested, x: f32, y: f32, width: f32) -> f32 {
-        let (ix, iw) = (x + 17.0, width - 34.0);
-        let mut cy = y + 17.0;
-        self.avatar(key("quoted:avatar"), &quoted.author, ix, cy, 22.0);
-        self.name(&quoted.author, ix + 22.0 + 8.0, cy + 1.0, iw - 30.0, 14.0);
-        cy += 22.0;
-        let text: String = quoted.text.iter().map(|r| r.text.as_str()).collect();
-        if !text.is_empty() {
-            let block = self.style(16.0, 20.0).lines(6).text(&text, iw);
-            cy += 8.0;
-            self.list.push_text(&block, ix, cy);
-            cy += block.height;
+        let (ix, iw) = (x + 16.0, width - 32.0);
+        let mut cy = y + 16.0;
+        self.avatar(key("quoted:avatar"), &quoted.author, ix, cy, 24.0);
+        self.header(&quoted.author, "", ix + 32.0, cy + 1.5, ix + iw);
+        cy += 24.0;
+        let text_h = self.body(&quoted.text, ix, cy + 6.0, iw, Some(6));
+        if text_h > 0.0 {
+            cy += 6.0 + text_h;
         }
         if !quoted.media.is_empty() {
             cy += 8.0;
             cy += self.media(&quoted.media, &|i| key(format!("quoted:media:{i}")), ix, cy, iw, true);
         }
-        let h = cy + 17.0 - y;
-        kit::hairline(&mut self.list, Shape::rounded(Rect::new(x, y, width, h), 8.0), self.p.border);
+        let h = cy + 16.0 - y;
+        kit::hairline(&mut self.list, Shape::rounded(Rect::new(x, y, width, h), 12.0), self.p.border);
+        self.reach(x + width);
         h
     }
 
-    /// `link-card/`: a large image card with "From domain", or a bordered row with a square thumb.
+    /// A link preview: a large image with the domain under it, or a bordered row with a square thumb.
     fn card(&mut self, card: &Card, x: f32, y: f32, width: f32) -> f32 {
+        self.reach(x + width);
         let k = key("card:image");
         let has_image = self.images.aspect(&k).is_some() || card.image.is_some();
+        let body = self.body_style();
         if card.large && has_image {
             let h = width / 1.91;
-            let outer = Shape::rounded(Rect::new(x, y, width, h), 12.0);
-            kit::image(&mut self.list, self.images, k, Shape::rounded(Rect::new(x + 1.0, y + 1.0, width - 2.0, h - 2.0), 11.0), self.p.placeholder);
-            kit::hairline(&mut self.list, outer, self.p.border);
-            if !card.title.is_empty() {
-                let block = self.style(14.0, 16.0).color(Rgba::hex(0xffffff)).lines(1).text(&card.title, width - 24.0 - 12.0);
-                let (bw, bh) = (block.width + 12.0, 20.0);
-                let (bx, by) = (x + 12.0, y + h - 12.0 - bh);
-                self.list.push(Item::Fill {
-                    shape: Shape::rounded(Rect::new(bx, by, bw, bh), 4.0),
-                    color: self.p.overlay,
-                });
-                self.list.push_text(&block, bx + 6.0, by + 2.0);
-            }
+            let shape = Shape::rounded(Rect::new(x, y, width, h), 12.0);
+            kit::image(&mut self.list, self.images, k, shape, self.p.placeholder);
+            kit::hairline(&mut self.list, shape, self.p.border);
             let mut total = h;
             if !card.domain.is_empty() {
-                let block = self.style(16.0, 20.0).color(self.p.secondary).text(&format!("From {}", card.domain), width);
+                let block = body.color(self.p.secondary).lines(1).text(&card.domain, width);
                 self.list.push_text(&block, x, y + h + 4.0);
                 total += 4.0 + block.height;
+            }
+            if !card.title.is_empty() {
+                let block = body.weight(600).lines(2).text(&card.title, width);
+                self.list.push_text(&block, x, y + total);
+                total += block.height;
             }
             return total;
         }
 
         let thumb = if has_image { 130.0 } else { 0.0 };
-        let dw = width - 2.0 - thumb - 24.0;
+        let dw = width - thumb - 32.0;
         let mut blocks = Vec::new();
         if !card.domain.is_empty() {
-            blocks.push(self.style(16.0, 20.0).color(self.p.secondary).lines(1).text(&card.domain, dw));
+            blocks.push(body.color(self.p.secondary).lines(1).text(&card.domain, dw));
         }
         if !card.title.is_empty() {
-            blocks.push(self.style(16.0, 20.0).lines(1).text(&card.title, dw));
+            blocks.push(body.weight(600).lines(2).text(&card.title, dw));
         }
         if !card.description.is_empty() {
-            blocks.push(self.style(16.0, 20.0).color(self.p.secondary).lines(2).text(&card.description, dw));
+            blocks.push(body.color(self.p.secondary).lines(2).text(&card.description, dw));
         }
-        let detail_h = blocks.iter().map(|b| b.height).sum::<f32>() + 2.0 * blocks.len().saturating_sub(1) as f32 + 24.0;
-        let inner_h = detail_h.max(thumb);
-        let h = inner_h + 2.0;
+        let detail_h = blocks.iter().map(|b| b.height).sum::<f32>() + 32.0;
+        let h = detail_h.max(thumb);
         if has_image {
             let clip = Shape {
-                rect: Rect::new(x + 1.0, y + 1.0, thumb - 1.0, inner_h),
-                radii: kit::display::Radii { tl: 11.0, tr: 0.0, br: 0.0, bl: 11.0 },
+                rect: Rect::new(x, y, thumb, h),
+                radii: kit::display::Radii { tl: 12.0, tr: 0.0, br: 0.0, bl: 12.0 },
                 corner: Default::default(),
             };
             kit::image(&mut self.list, self.images, k, clip, self.p.placeholder);
             self.list.push(Item::Fill {
-                shape: Shape::rect(Rect::new(x + thumb, y + 1.0, 1.0, inner_h)),
+                shape: Shape::rect(Rect::new(x + thumb, y, 1.0, h)),
                 color: self.p.border,
             });
         }
-        let mut ty = y + 1.0 + (inner_h - detail_h) / 2.0 + 12.0;
+        let mut ty = y + (h - detail_h) / 2.0 + 16.0;
         for block in &blocks {
-            self.list.push_text(block, x + 1.0 + thumb + 12.0, ty);
-            ty += block.height + 2.0;
+            self.list.push_text(block, x + thumb + 16.0, ty);
+            ty += block.height;
         }
         kit::hairline(&mut self.list, Shape::rounded(Rect::new(x, y, width, h), 12.0), self.p.border);
         h
@@ -377,6 +459,29 @@ fn key(name: impl Into<String>) -> ImageRef {
 
 fn ratio_of(media: &Media) -> Option<f32> {
     (media.width > 0.0 && media.height > 0.0).then(|| media.width / media.height)
+}
+
+/// Splits runs at blank lines, which Threads draws as separate paragraphs.
+fn paragraphs(runs: &[Run]) -> Vec<Vec<Run>> {
+    let mut out: Vec<Vec<Run>> = vec![Vec::new()];
+    let push = |out: &mut Vec<Vec<Run>>, text: &str, link: bool| {
+        if !text.is_empty() {
+            if let Some(last) = out.last_mut() {
+                last.push(Run { text: text.to_string(), link });
+            }
+        }
+    };
+    for run in runs {
+        let mut rest = run.text.as_str();
+        while let Some(i) = rest.find("\n\n") {
+            push(&mut out, &rest[..i], run.link);
+            rest = rest[i..].trim_start_matches('\n');
+            out.push(Vec::new());
+        }
+        push(&mut out, rest, run.link);
+    }
+    out.retain(|p| p.iter().any(|r| !r.text.trim().is_empty()));
+    out
 }
 
 fn add_media(images: &mut Images, prefix: &str, media: &[Media]) {
@@ -403,82 +508,66 @@ pub fn render(post: serde_json::Value, opts: &Options) -> Result<Rendered, Strin
         images.add(key("card:image"), card.image.as_deref());
     }
 
-    let p = Palette::of(opts.theme);
+    let (mut list, extent) = layout(&post, &images, opts.theme, opts.width);
+    let fit = (extent.ceil() + PAD_X).max(MIN_WIDTH);
+    if fit < opts.width {
+        list = layout(&post, &images, opts.theme, fit).0;
+    }
+    Ok(kit::finish(list, opts, images))
+}
+
+/// Lays `post` out at `width`; returns the display list and the rightmost edge its content reached.
+fn layout(post: &Post, images: &Images, theme: Theme, width: f32) -> (DisplayList, f32) {
+    let p = Palette::of(theme);
     let mut cx = Ctx {
-        list: DisplayList::new(opts.width, 0.0, p.bg),
-        images: &images,
+        list: DisplayList::new(width, 0.0, p.bg),
+        images,
         p,
         stack: kit::stack("threads"),
+        width,
+        extent: 0.0,
     };
-    let x = WIDTH_PAD;
-    let w = opts.width - 2.0 * WIDTH_PAD;
-    let mut y = WIDTH_PAD;
+    let x = PAD_X;
+    let right = width - PAD_X;
 
-    if let Some(parent) = &post.parent {
-        y += cx.parent(parent, x, y, w);
+    let a = match &post.parent {
+        Some(parent) => cx.parent(parent, x, TOP, right),
+        None => TOP,
+    };
+
+    cx.avatar(key("avatar"), &post.author, x, a, AVATAR);
+    cx.header(&post.author, &post.time, x + GUTTER, a + 7.5, right - 32.0);
+    let secondary = cx.p.secondary;
+    cx.icon("threads-more", right - 20.0, a + 8.5, 20.0, secondary);
+
+    let mut bottom = a + AVATAR;
+    let text_h = cx.body(&post.text, x, a + 49.0, right - x, None);
+    if text_h > 0.0 {
+        bottom = a + 49.0 + text_h;
     }
-
-    cx.avatar(key("avatar"), &post.author, x, y, 36.0);
-    let name_w = w - 36.0 - 12.0 - 12.0 - 18.0;
-    cx.name(&post.author, x + 48.0, y + 8.0, name_w, 16.0);
-    let logo = cx.p.text;
-    cx.icon("threads-logo", x + w - 18.0, y + 9.0, 18.0, logo);
-    y += 36.0;
-
-    if let (Some(handle), None) = (post.replying_to.as_deref(), &post.parent) {
-        let style = cx.style(16.0, 18.0).color(cx.p.secondary);
-        let spans = vec![style.span("Replying to "), Span::new(format!("@{handle}"), cx.p.link, 400)];
-        let block = style.layout(&spans, w);
-        y += 4.0;
-        cx.list.push_text(&block, x, y);
-        y += block.height;
-    }
-
-    if !post.text.is_empty() {
-        let style = cx.style(16.0, 20.0);
-        let block = style.layout(&cx.runs(&post.text, &style), w);
-        y += 4.0;
-        cx.list.push_text(&block, x, y);
-        y += block.height;
-    }
+    let next_top = |bottom: f32| if bottom > a + AVATAR { bottom + 8.0 } else { a + 46.0 };
 
     if !post.media.is_empty() {
-        y += 8.0;
-        y += cx.media(&post.media, &|i| key(format!("main:media:{i}")), x, y, w, false);
+        let top = next_top(bottom);
+        let h = cx.media(&post.media, &|i| key(format!("main:media:{i}")), x, top, right - x, false);
+        if h > 0.0 {
+            bottom = top + h;
+        }
     }
 
     if let Some(quoted) = &post.quoted {
-        y += 12.0;
-        y += cx.quoted(quoted, x, y, w);
+        let top = next_top(bottom);
+        bottom = top + cx.quoted(quoted, x, top, right - x);
     }
 
     if let Some(card) = &post.card {
-        y += 12.0;
-        y += cx.card(card, x, y, w);
+        let top = next_top(bottom);
+        bottom = top + cx.card(card, x, top, right - x);
     }
 
-    if !post.timestamp.is_empty() {
-        let block = cx.style(16.0, 18.0).color(cx.p.secondary).text(&post.timestamp, w);
-        y += 16.0;
-        cx.list.push_text(&block, x, y);
-        y += block.height;
-    }
+    let row = bottom + 6.0;
+    cx.actions(&post.metrics, x, row);
 
-    let metrics: Vec<&Metric> = post.metrics.iter().filter(|m| !m.icon.is_empty()).collect();
-    if !metrics.is_empty() {
-        y += 8.0;
-        let mut mx = x;
-        let secondary = cx.p.secondary;
-        for m in metrics {
-            cx.icon(&m.icon, mx, y, 18.0, secondary);
-            let block = cx.style(14.0, 17.0).weight(500).color(secondary).text(&m.value, w);
-            cx.list.push_text(&block, mx + 24.0, y + (18.0 - block.height) / 2.0);
-            mx += 24.0 + block.width + 16.0;
-        }
-        y += 18.0;
-    }
-
-    cx.list.height = (y + WIDTH_PAD).ceil();
-    let list = cx.list;
-    Ok(kit::finish(list, opts, images))
+    cx.list.height = (row + ACTIONS_H + BOTTOM).ceil();
+    (cx.list, cx.extent)
 }

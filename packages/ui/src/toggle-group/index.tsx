@@ -5,7 +5,7 @@ import styles from "./styles.module.css";
 
 export interface ToggleGroupProps extends Base.Props {
   /** `list` stacks full-width rows for picking one item from a longer set. */
-  variant?: "raised" | "outline" | "tiles" | "list";
+  variant?: "raised" | "outline" | "tiles" | "list" | "rail";
 }
 
 function pressedToggle(root: HTMLElement): HTMLElement | null {
@@ -42,7 +42,7 @@ export function ToggleGroup({
   ...props
 }: ToggleGroupProps) {
   const indicatorRef = useRef<HTMLSpanElement>(null);
-  const indicated = !multiple && variant === "raised";
+  const indicated = !multiple && (variant === "raised" || variant === "rail");
 
   useLayoutEffect(() => {
     if (!indicated) return;

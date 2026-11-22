@@ -10,7 +10,7 @@ import {
   removeFromInbox,
 } from "@/features/saves/lib/inbox-actions";
 import { buildSnoozeItems } from "@/features/saves/lib/menu/inbox";
-import { formatSnoozeTime } from "@/features/saves/lib/snooze";
+import { formatSnoozeTime } from "@/shared/lib/snooze";
 import type { Save } from "@/features/saves/types";
 import { Section } from "@/shared/components/inspector-section";
 import { ShortcutKeys } from "@/shared/components/shortcut-keys";

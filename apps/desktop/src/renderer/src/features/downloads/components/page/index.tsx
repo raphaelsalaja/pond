@@ -69,10 +69,6 @@ const initialHistoryCursor: HistoryCursor = null;
 const NO_GATES: readonly QueueSourceGate[] = [];
 type PipelineStatus = z.infer<typeof PipelineStatusSchema>;
 
-function DownloadsMatchesEmpty({ onReset }: { onReset: () => void }) {
-  return <MatchesEmpty onReset={onReset} />;
-}
-
 export function DownloadsPage() {
   const saves = useSaves();
   const qc = useQueryClient();
@@ -302,11 +298,9 @@ export function DownloadsPage() {
         </TableFilterBar>
       }
     >
-      <SearchChrome.Input
+      <SearchChrome.Field
         value={filters.q}
         onChange={(e) => downloadsFilters.setQ(e.target.value)}
-        spellCheck={false}
-        placeholder="Search…"
         aria-label="Search Downloads"
         data-downloads-search=""
       />
@@ -357,7 +351,11 @@ export function DownloadsPage() {
             </div>
           ) : showMatchesEmpty ? (
             <div className={styles.empty}>
-              <DownloadsMatchesEmpty onReset={downloadsFilters.reset} />
+              <MatchesEmpty
+                query={filters.q}
+                filtered={tableFiltersActive}
+                onReset={downloadsFilters.reset}
+              />
             </div>
           ) : null
         }

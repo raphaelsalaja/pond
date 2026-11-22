@@ -1,15 +1,16 @@
 import {
   IconArchive,
-  IconArrowRotateClockwise,
   IconArrowUpRight,
   IconCopy,
   IconCopyId,
   IconGrid,
   IconLink2,
   IconNotepad,
+  IconRefresh,
   IconSliders,
   IconTableDownload,
   IconTrash,
+  IconXmark,
 } from "@pond/icons";
 import type { Source, WatchKind } from "@pond/schema/db";
 import { watchHandleLabel } from "@pond/schema/watches";
@@ -223,13 +224,13 @@ function primaryFetchItem(target: SourceMenuTarget): MenuItemSpec {
   if (target.model.tone === "run") {
     return {
       label: "Cancel Fetch",
-      icon: <IconArrowRotateClockwise />,
+      icon: <IconXmark />,
       onClick: () => void window.pond.syncCancel(target.id),
     };
   }
   return {
     label: target.model.tone === "err" ? "Retry Fetch" : "Fetch New Saves",
-    icon: <IconArrowRotateClockwise />,
+    icon: <IconRefresh />,
     disabled: !target.model.connected,
     onClick: () => void window.pond.syncRunNow(target.id),
   };
@@ -710,7 +711,7 @@ function batchSourceMenu(targets: readonly SourceMenuTarget[]): MenuItemSpec[] {
       items: [
         {
           label: "Fetch New Saves",
-          icon: <IconArrowRotateClockwise />,
+          icon: <IconRefresh />,
           disabled: fetchable.length === 0,
           onClick: () => {
             for (const target of fetchable) {

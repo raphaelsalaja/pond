@@ -11,6 +11,7 @@ import {
   thumbUrlFor,
 } from "@/features/saves/media";
 import { ensureSaves, useSave } from "@/features/saves/pool";
+import { hideCitedSentence, showCitedSentence } from "./cited-sentence";
 import styles from "./styles.module.css";
 
 interface ThumbnailStyle extends CSSProperties {
@@ -124,8 +125,13 @@ export function SaveCitation({
       type="button"
       variant="bare"
       className={styles.citation}
+      data-citation=""
       aria-label={`Open source ${reference}: ${title}`}
       onClick={() => onOpenSave(source.id)}
+      onPointerEnter={(event) => showCitedSentence(event.currentTarget)}
+      onPointerLeave={hideCitedSentence}
+      onFocus={(event) => showCitedSentence(event.currentTarget)}
+      onBlur={hideCitedSentence}
       title={`Open ${title}`}
     >
       {compact ? (

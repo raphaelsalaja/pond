@@ -17,13 +17,11 @@ export function LivePhotoViewer({
   onUnavailable,
   toolbarStart,
   toolbarActions,
-  toolbarNavigation,
 }: {
   url: string;
   onUnavailable: () => void;
   toolbarStart?: ReactNode;
   toolbarActions?: ReactNode;
-  toolbarNavigation?: ReactNode;
 }) {
   const [media, setMedia] = useState<LivePhotoMedia>({
     image: null,
@@ -145,7 +143,6 @@ export function LivePhotoViewer({
                 actions={toolbarActions}
               />
             }
-            end={toolbarNavigation}
           />
         </ChromePortal>
       ) : null}

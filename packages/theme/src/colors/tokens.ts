@@ -85,7 +85,7 @@ const CONTRAST_STRETCH = 1.6;
 const FALLBACK: Omit<ThemeInput, "contrast"> = {
   background: "#ffffff",
   foreground: "#1b1b1b",
-  accent: "#008fff",
+  accent: "#5e6ad2",
 };
 
 const WHITE: Lch = { l: 1, c: 0, h: 0 };
@@ -417,6 +417,7 @@ const GRAY_ROLES = {
   "background-primary": "gray-1",
   "background-secondary": "gray-2",
   "background-tertiary": "gray-3",
+  "background-elevated": "gray-1",
   "background-inverse": "gray-12",
   "surface-primary": "gray-a2",
   "surface-secondary": "gray-a3",
@@ -427,6 +428,12 @@ const GRAY_ROLES = {
   "foreground-secondary": "gray-11",
   "foreground-tertiary": "gray-10",
   "foreground-inverse": "gray-1",
+} as const;
+
+/** A shadow can't darken a near-black page, so dark layers above it lift a few gray steps instead. */
+const DARK_GRAY_ROLES = {
+  ...GRAY_ROLES,
+  "background-elevated": "gray-4",
 } as const;
 
 const DANGER_ROLES = {
@@ -457,7 +464,8 @@ export function buildThemeTokens(input: ThemeInput, gamut: Gamut): ThemeTokens {
   const { mode, tokens: steps } = solveScales(input, gamut);
   const step = (name: string) => steps[`--ds-${name}`] ?? "";
   const tokens: Record<ThemeTokenName, string> = {};
-  for (const [role, source] of Object.entries(GRAY_ROLES)) {
+  const grayRoles = mode === "dark" ? DARK_GRAY_ROLES : GRAY_ROLES;
+  for (const [role, source] of Object.entries(grayRoles)) {
     tokens[`--ds-${role}`] = step(source);
   }
   const pick = (name: string, ramp: string, roles: Record<string, string>) => {

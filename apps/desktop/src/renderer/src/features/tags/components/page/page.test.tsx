@@ -18,7 +18,9 @@ import {
 import { tagCreation } from "@/features/tags/state/creation";
 import type { TagGroupRow } from "@/features/tags/state/tag-groups";
 import type { TagRow } from "@/features/tags/state/tags";
+import { tagsScope } from "@/features/tags/state/tags-scope";
 import { setAppRouter } from "@/shared/lib/app-router";
+import { TagsSidebar } from "../sidebar";
 import { TagsPage } from "./";
 
 const fixtures = {
@@ -95,6 +97,7 @@ describe("library Tags page", () => {
     await act(async () => root.unmount());
     host.remove();
     libraryChrome.setNav({ kind: "all" });
+    tagsScope.set("all");
     resetFilters();
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
@@ -110,7 +113,12 @@ describe("library Tags page", () => {
     const tagsRoute = createRoute({
       getParentRoute: () => rootRoute,
       path: "/tags",
-      component: TagsPage,
+      component: () => (
+        <>
+          <TagsSidebar />
+          <TagsPage />
+        </>
+      ),
     });
     const router = createRouter({
       routeTree: rootRoute.addChildren([indexRoute, tagsRoute]),
@@ -136,14 +144,14 @@ describe("library Tags page", () => {
 
   it("renders tag navigation and rows from the real stores", async () => {
     await mount();
-    expect(host.querySelector('[aria-current="page"]')?.textContent).toContain(
+    expect(host.querySelector('[aria-current="true"]')?.textContent).toContain(
       "All",
     );
     expect(host.textContent).toContain("Animation");
     expect(host.textContent).toContain("Typography");
     expect(host.textContent).toContain("Starred");
     expect(host.querySelector('[aria-label="New Group"]')).not.toBeNull();
-    expect(host.querySelector("h1")?.textContent).toContain("All Tags");
+    expect(host.querySelector('[aria-label="New Tag"]')).not.toBeNull();
   });
 
   it("filters tags using the existing manager", async () => {
@@ -174,7 +182,9 @@ describe("library Tags page", () => {
     );
     if (!group) throw new Error("Missing Design group");
     await act(async () => group.click());
-    expect(host.querySelector("h1")?.textContent).toContain("Design");
+    expect(host.querySelector('[aria-current="true"]')?.textContent).toContain(
+      "Design",
+    );
     expect(
       host.querySelector('[aria-label="Add Tags to Design"]'),
     ).not.toBeNull();
@@ -331,7 +341,9 @@ describe("library Tags page", () => {
       tags: ["Brand"],
       group: "Design",
     });
-    expect(host.querySelector("h1")?.textContent).toContain("Design");
+    expect(host.querySelector('[aria-current="true"]')?.textContent).toContain(
+      "Design",
+    );
   });
 
   it("creates a new tag inside the group you are viewing", async () => {
@@ -360,15 +372,17 @@ describe("library Tags page", () => {
       tags: ["Motion"],
       group: "Design",
     });
-    expect(host.querySelector("h1")?.textContent).toContain("Design");
+    expect(host.querySelector('[aria-current="true"]')?.textContent).toContain(
+      "Design",
+    );
   });
 
   it("offers New Tag in All and creates the tag without leaving it", async () => {
     await mount();
-    const newTag = [...host.querySelectorAll("button")].find(
-      (node) => node.textContent?.trim() === "New Tag",
-    );
-    if (!newTag) throw new Error("Missing New Tag in All");
+    const newTag = host.querySelector('[aria-label="New Tag"]');
+    if (!(newTag instanceof HTMLElement)) {
+      throw new Error("Missing New Tag in All");
+    }
 
     await act(async () => newTag.click());
     const draft = host.querySelector('input[placeholder="Tag name"]');
@@ -387,7 +401,9 @@ describe("library Tags page", () => {
       "tagGroups.addTags",
       expect.anything(),
     );
-    expect(host.querySelector("h1")?.textContent).toContain("All Tags");
+    expect(host.querySelector('[aria-current="true"]')?.textContent).toContain(
+      "All",
+    );
   });
 
   it("offers New Tag on Uncategorized when it already has tags", async () => {
@@ -398,10 +414,8 @@ describe("library Tags page", () => {
     if (!uncategorized) throw new Error("Missing Uncategorized");
     await act(async () => uncategorized.click());
 
-    const newTag = [...host.querySelectorAll("button")].find(
-      (node) => node.textContent?.trim() === "New Tag",
-    );
-    if (!newTag) throw new Error("Missing New Tag");
+    const newTag = host.querySelector('[aria-label="New Tag"]');
+    if (!(newTag instanceof HTMLElement)) throw new Error("Missing New Tag");
     await act(async () => newTag.click());
 
     const draft = host.querySelector('input[placeholder="Tag name"]');
@@ -416,6 +430,8 @@ describe("library Tags page", () => {
     });
 
     expect(query).toHaveBeenCalledWith("tags.create", { name: "Reading" });
-    expect(host.querySelector("h1")?.textContent).toContain("Uncategorized");
+    expect(host.querySelector('[aria-current="true"]')?.textContent).toContain(
+      "Uncategorized",
+    );
   });
 });

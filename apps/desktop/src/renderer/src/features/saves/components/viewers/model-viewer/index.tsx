@@ -1,4 +1,7 @@
-import { IconGroundPlaneDetection, IconRefresh } from "@pond/icons";
+import {
+  IconArrowRotateAnticlockwise,
+  IconGroundPlaneDetection,
+} from "@pond/icons";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import {
   AnimationMixer,
@@ -30,7 +33,6 @@ interface ModelViewerProps {
   onUnavailable: () => void;
   toolbarStart?: ReactNode;
   toolbarActions?: ReactNode;
-  toolbarNavigation?: ReactNode;
 }
 
 export function ModelViewer({
@@ -39,7 +41,6 @@ export function ModelViewer({
   onUnavailable,
   toolbarStart,
   toolbarActions,
-  toolbarNavigation,
 }: ModelViewerProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const resetRef = useRef<(() => void) | null>(null);
@@ -191,7 +192,7 @@ export function ModelViewer({
                     label="Reset View"
                     onClick={() => resetRef.current?.()}
                   >
-                    <IconRefresh />
+                    <IconArrowRotateAnticlockwise />
                   </ViewerHud.Tool>
                   <ViewerHud.Tool
                     label="Grid"
@@ -205,7 +206,6 @@ export function ModelViewer({
               actions={toolbarActions}
             />
           }
-          end={toolbarNavigation}
         />
       </ChromePortal>
     </div>

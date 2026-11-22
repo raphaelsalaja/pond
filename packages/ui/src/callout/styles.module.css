@@ -1,0 +1,46 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  padding: var(--ds-space-lg);
+  background: var(--ds-background-primary);
+  border-radius: var(--ds-radius-lg);
+  box-shadow: var(--ds-shadow-border);
+}
+
+.header {
+  display: flex;
+  gap: var(--ds-space-xs);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--ds-text-body);
+  font-weight: var(--ds-weight-strong);
+  line-height: var(--ds-leading-body);
+  color: var(--ds-foreground-primary);
+  text-wrap: balance;
+}
+
+/* Pulls the icon button into the corner so the title keeps the card's padding. */
+.close {
+  flex: none;
+  margin-inline-end: calc(var(--ds-space-sm) * -1);
+}
+
+.description {
+  margin: var(--ds-space-2xs) 0 0;
+  font-size: var(--ds-text-small);
+  line-height: 1.5;
+  color: var(--ds-foreground-secondary);
+  text-wrap: pretty;
+}
+
+.description + .description {
+  margin-top: var(--ds-space-xs);
+}
+
+.action {
+  margin-top: var(--ds-space-lg);
+}

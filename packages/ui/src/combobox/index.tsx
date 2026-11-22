@@ -197,7 +197,7 @@ function ItemMeta({ className, ...props }: React.ComponentProps<"span">) {
 function ItemIndicator({ className, ...props }: Base.ItemIndicator.Props) {
   return (
     <Base.ItemIndicator className={cn(styles.indicator, className)} {...props}>
-      <Check size={12} />
+      <Check size={14} />
     </Base.ItemIndicator>
   );
 }

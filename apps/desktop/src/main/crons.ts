@@ -3,6 +3,7 @@ import log from "electron-log/main.js";
 import { isSyncScheduleDue } from "../shared/sync-schedule";
 import { returnDueSnoozes } from "./core/inbox";
 import { emptyTrashOlderThan } from "./core/library-ops";
+import { notificationLog } from "./core/notifications";
 import { getPrefs } from "./core/prefs";
 import { maybeUpdateYtDlp, recoverYtDlp } from "./core/refresh/yt-dlp-updater";
 import { isSyncBlockedByStorageGuard } from "./core/storage-watcher";
@@ -37,6 +38,9 @@ export function registerInboxSnoozeCron() {
       const returned = await returnDueSnoozes();
       if (returned > 0)
         log.info(`[pond inbox] ${returned} snoozed saves back in review`);
+      const notifications = await notificationLog.returnDueSnoozes();
+      if (notifications > 0)
+        log.info(`[pond inbox] ${notifications} snoozed notifications back`);
     },
   });
 }

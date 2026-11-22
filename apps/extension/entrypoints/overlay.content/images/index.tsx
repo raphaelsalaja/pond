@@ -385,9 +385,9 @@ export function ImagePicker({
                 })}
               </div>
             ) : (
-              <Empty.Root className={styles.empty}>
+              <Empty.Root size="card" className={styles.empty}>
                 <Empty.Media>
-                  <IconImage size={32} />
+                  <IconImage size={14} />
                 </Empty.Media>
                 <Empty.Title>
                   {images.length === 0

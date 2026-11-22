@@ -1,2 +1,2 @@
-/** Status feed without Downloads UI, for Saves and Enrichment. */
-export { statusFeed } from "./lib/status-feed";
+/** Status feed without Downloads UI, for Saves, Enrichment, and the Inbox. */
+export { statusFeed, useStatusFeed } from "./lib/status-feed/activity";

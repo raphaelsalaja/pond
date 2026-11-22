@@ -70,7 +70,7 @@ describe("theme prefs rebuild", () => {
     expect(normalizeTheme(prefs.preferences.light)).toEqual({
       background: "#ffffff",
       foreground: "#1b1b1b",
-      accent: "#008fff",
+      accent: "#5e6ad2",
       contrast: 50,
       mode: "light",
     });
@@ -85,7 +85,7 @@ describe("theme prefs rebuild", () => {
     ).toEqual({
       background: "#ffffff",
       foreground: "#eeeeee",
-      accent: "#008fff",
+      accent: "#5e6ad2",
       contrast: 100,
       mode: "light",
     });

@@ -6,16 +6,16 @@
   --ds-empty-padding-block-end: 48px;
   --ds-empty-padding-inline: 24px;
   --ds-empty-gap: 20px;
-  --ds-empty-copy-gap: 8px;
+  --ds-empty-copy-gap: 4px;
 
-  --ds-empty-title-size: var(--ds-text-heading);
+  --ds-empty-title-size: var(--ds-text-body);
   --ds-empty-title-weight: var(--ds-weight-strong);
-  --ds-empty-title-leading: 1.3;
+  --ds-empty-title-leading: var(--ds-leading-body);
   --ds-empty-title-color: var(--ds-foreground-primary);
 
   --ds-empty-description-size: var(--ds-text-body);
   --ds-empty-description-weight: var(--ds-weight-regular);
-  --ds-empty-description-leading: 1.55;
-  --ds-empty-description-color: var(--ds-foreground-secondary);
+  --ds-empty-description-leading: var(--ds-leading-body);
+  --ds-empty-description-color: var(--ds-foreground-tertiary);
   --ds-empty-description-max-width: 36ch;
 }

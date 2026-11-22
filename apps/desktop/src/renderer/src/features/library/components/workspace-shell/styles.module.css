@@ -3,6 +3,19 @@
   --window-header-height: 56px;
   --window-inset: 8px;
   --window-left-min: 0px;
+  --window-background: var(--ds-background-secondary);
+}
+
+.shell[data-slot="window"] [data-slot="center"],
+.shell[data-slot="window"] [data-slot="right"] > div:not([role="separator"]) {
+  background: var(--ds-background-primary);
+  border-top: var(--ds-border-width) solid var(--ds-border-subtle);
+}
+
+/* The 44px toolbar row is chrome, so the column dividers start below it. */
+.shell[data-slot="window"]::before,
+.shell[data-slot="window"]::after {
+  top: 44px;
 }
 
 :global(html[data-platform="mac"]:not([data-full-screen])) .shell {
@@ -45,7 +58,7 @@
   justify-content: center;
   height: 44px;
   padding-inline: var(--ds-space-lg);
-  border-bottom: 1px solid var(--ds-border-subtle);
+  border-bottom: var(--ds-border-width) solid var(--ds-border-subtle);
 }
 
 .content {

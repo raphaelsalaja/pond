@@ -1,0 +1,8 @@
+.popup {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: min(240px, var(--available-width));
+  max-height: var(--available-height);
+  overflow-y: auto;
+}

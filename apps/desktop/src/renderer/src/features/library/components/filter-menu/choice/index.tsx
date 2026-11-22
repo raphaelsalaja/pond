@@ -1,4 +1,4 @@
-import { IconBookmarkSlash, IconFolderBan } from "@pond/icons";
+import { IconFolderBan, IconTagSlash } from "@pond/icons";
 import type { IconComponent } from "@pond/icons/types";
 import { FIELD_META } from "@pond/schema/filters/meta";
 import type { FieldId, Predicate } from "@pond/schema/filters/types";
@@ -26,7 +26,7 @@ const NOUNS = new Map<FieldId, readonly [string, string]>([
 ]);
 
 const EMPTY_ICONS = new Map<FieldId, IconComponent>([
-  ["tags", IconBookmarkSlash],
+  ["tags", IconTagSlash],
   ["folder", IconFolderBan],
 ]);
 

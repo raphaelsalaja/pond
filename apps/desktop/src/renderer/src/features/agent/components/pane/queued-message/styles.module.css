@@ -1,0 +1,31 @@
+.queued {
+  display: flex;
+  gap: var(--ds-space-sm);
+  align-items: center;
+  min-height: 36px;
+  padding: var(--ds-space-xs) var(--ds-space-xs) var(--ds-space-xs)
+    var(--ds-space-md);
+  font-size: var(--ds-text-small);
+  background: var(--message-fill, var(--ds-surface-secondary));
+  border-radius: var(--ds-radius-lg);
+}
+
+.icon {
+  flex: none;
+  color: var(--ds-foreground-tertiary);
+}
+
+.label {
+  flex: none;
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-foreground-secondary);
+}
+
+.text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ds-foreground-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

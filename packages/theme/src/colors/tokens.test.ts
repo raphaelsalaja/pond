@@ -99,15 +99,23 @@ function token(theme: ThemeTokens, name: string): string {
   return value;
 }
 
+/** Solving is slow and pure, so each case solves once and every check reuses it. */
+const solved = new Map<string, ThemeTokens>();
+
 function build(
   presetId: string,
   contrast: number,
   gamut: Gamut,
   solve = solveScales,
 ) {
+  const key = `${solve.name} ${presetId} ${contrast} ${gamut}`;
+  const hit = solved.get(key);
+  if (hit) return hit;
   const preset = THEME_PRESETS.find((p) => p.id === presetId);
   if (!preset) throw new Error(`missing preset ${presetId}`);
-  return solve({ ...preset.def, contrast }, gamut);
+  const tokens = solve({ ...preset.def, contrast }, gamut);
+  solved.set(key, tokens);
+  return tokens;
 }
 
 const cases = THEME_PRESETS.flatMap((preset) =>

@@ -1,6 +1,5 @@
 import {
   IconCheck,
-  IconChevronDown,
   IconFaceSmile,
   IconFolder,
   IconFolderOpen,
@@ -48,7 +47,7 @@ function SwitchLibraryMenu({
           side="inline-end"
           align="start"
           sideOffset={-2}
-          alignOffset={-4}
+          alignOffset={-6}
         >
           <Menu.Popup>
             <LibraryMenuContent
@@ -178,11 +177,11 @@ export function WorkspaceMenu() {
           if (next) void refetch();
         }}
       >
-        <Tooltip label={name} side="bottom">
+        <Tooltip label={name} side="right">
           <Menu.Trigger
+            icon
             variant="ghost"
-            density="compact"
-            className={styles.trigger}
+            rounding="rounded"
             aria-label={name}
           >
             <span className={styles.mark} aria-hidden>
@@ -192,11 +191,10 @@ export function WorkspaceMenu() {
                 alt=""
               />
             </span>
-            <IconChevronDown size={12} className={styles.chevron} aria-hidden />
           </Menu.Trigger>
         </Tooltip>
         <Menu.Portal>
-          <Menu.Positioner align="start" side="bottom" alignOffset={-2}>
+          <Menu.Positioner align="start" side="right">
             <Menu.Popup
               className={styles.switcher}
               style={cssVars({ "--menu-width": `${sidebarWidth - 30}px` })}

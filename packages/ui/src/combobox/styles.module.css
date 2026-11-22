@@ -39,7 +39,17 @@
 
 .popup {
   --ds-popup-width: var(--anchor-width);
+  --popup-padding-block: var(--ds-space-2xs);
+  --popup-padding-inline: var(--ds-space-2xs);
+  --popup-gap: var(--ds-space-2xs);
+  --popup-item-height: 0px;
+  --popup-item-inset: 0px;
+  --popup-item-radius: var(--ds-radius-xs);
+  --popup-separator-space: 0px;
   composes: popup from "../shared/styles/popup/styles.module.css";
+  border-radius: var(--ds-radius-md);
+  box-shadow:
+    var(--ds-shadow-overlay), 0 15px 35px -5px var(--ds-shadow-color);
 }
 
 .arrow {
@@ -47,12 +57,29 @@
 }
 
 .input {
-  composes: input from "../shared/styles/popup/styles.module.css";
+  width: calc(100% + 2 * var(--popup-padding-inline, 0px));
+  min-height: 32px;
+  padding-inline: calc(var(--ds-space-xl) + var(--popup-padding-inline, 0px));
+  padding-bottom: var(--ds-space-sm);
+  margin-inline: calc(-1 * var(--popup-padding-inline, 0px));
+  margin-bottom: var(--ds-space-2xs);
+  font-size: var(--ds-text-body);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-foreground-primary);
+  appearance: none;
+  outline: none;
+  background: transparent;
+  border-bottom: var(--ds-border-width) solid var(--ds-border-subtle);
+
+  &::placeholder {
+    color: var(--ds-foreground-tertiary);
+  }
 }
 
 .list {
   display: flex;
   flex-direction: column;
+  gap: var(--ds-space-2xs);
   max-height: min(320px, var(--available-height, 320px));
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -60,8 +87,9 @@
 }
 
 .empty {
-  padding: var(--ds-space-md) var(--ds-space-lg);
+  padding: var(--ds-space-sm) var(--ds-space-xl);
   font-size: var(--ds-text-body);
+  line-height: var(--ds-leading-body);
   color: var(--ds-foreground-tertiary);
 
   &:empty {
@@ -72,6 +100,9 @@
 .item {
   composes: item from "../shared/styles/popup/styles.module.css";
   gap: var(--ds-space-md);
+  padding: var(--ds-space-sm) var(--ds-space-xl);
+  font-weight: var(--ds-weight-regular);
+  color: var(--ds-foreground-primary);
 }
 
 .text {
@@ -109,6 +140,7 @@
 
 .heading {
   composes: heading from "../shared/styles/popup/styles.module.css";
+  padding-inline: var(--ds-space-xl);
 }
 
 .separator {

@@ -17,6 +17,7 @@ import type {
   AssistantFileAttachment,
   AssistantProvider,
   AssistantSendResult,
+  AssistantSource,
 } from "./assistant";
 import type { LibraryMarkSource } from "./library-mark";
 import type { McpClientStatus } from "./mcp-hosts";
@@ -210,6 +211,15 @@ export interface SystemQueryResults {
   "agent.renameChat": OkResult;
   "agent.exportChat": CancellableResult;
   "agent.send": AssistantSendResult;
+  "agent.regenerate":
+    | {
+        ok: true;
+        content: string;
+        attachments: AssistantSource[];
+        files: AssistantFileAttachment[];
+        replyToQuestion?: string;
+      }
+    | { ok: false; error: string };
   "agent.stop": OkResult;
   "agent.searchSaves": { saves: RetrievalSave[] };
   "agent.attachments": Attachment[];

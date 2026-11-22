@@ -1,15 +1,12 @@
 import { Dialog } from "@pond/ui";
 import { useEffect } from "react";
 import { sourceDetail } from "@/features/sources/state/source-detail";
+import { announcements } from "@/shared/state/announcements";
 import {
   instagramCollectionsDialog,
   useInstagramCollectionsDialog,
 } from "@/shared/state/instagram-collections";
-import {
-  anotherDialogOpen,
-  claimNoticeSlot,
-  markNoticeSeen,
-} from "@/shared/state/notices";
+import { anotherDialogOpen, markNoticeSeen } from "@/shared/state/notices";
 import { loadPrefs } from "@/shared/state/prefs";
 import {
   INSTAGRAM_COLLECTIONS_NOTICE,
@@ -56,9 +53,14 @@ function useNotifyOnce(): void {
         if (anotherDialogOpen()) return;
       }
       clearInterval(timer);
-      if (!claimNoticeSlot(INSTAGRAM_COLLECTIONS_NOTICE)) return;
-      void markNoticeSeen(INSTAGRAM_COLLECTIONS_NOTICE);
-      instagramCollectionsDialog.open(accountIds);
+      const ids = accountIds;
+      announcements.post({
+        id: INSTAGRAM_COLLECTIONS_NOTICE,
+        title: "Instagram Collections Now Load",
+        description: "Pick which collections to import as Folders.",
+        open: () => instagramCollectionsDialog.open(ids),
+        markSeen: () => void markNoticeSeen(INSTAGRAM_COLLECTIONS_NOTICE),
+      });
     }, CHECK_INTERVAL_MS);
     return () => clearInterval(timer);
   }, []);

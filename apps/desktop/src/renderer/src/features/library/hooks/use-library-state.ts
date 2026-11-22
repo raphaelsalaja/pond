@@ -1,4 +1,3 @@
-import { useRouterState } from "@tanstack/react-router";
 import { useMemo } from "react";
 import {
   useEffectiveFilterQuery,
@@ -13,6 +12,7 @@ import {
 } from "@/features/saves";
 import { useBootReady } from "@/features/saves/pool";
 import type { Save } from "@/features/saves/types";
+import { useRouteLocation } from "@/shared/hooks/use-route-location";
 import { useStableStrings } from "../../../shared/hooks/use-stable-array";
 import { useNarrowedSaves } from "./use-narrowed-saves";
 
@@ -36,9 +36,9 @@ export function useLibraryState(): LibraryState {
   const searchText = useSearchText();
   const filterQuery = useEffectiveFilterQuery();
 
-  const parentBase = useRouterState({
-    select: (s) => listPathForLocation(s.location.pathname),
-  });
+  const parentBase = useRouteLocation((location) =>
+    listPathForLocation(location.pathname),
+  );
   const recognized = parseMode(parentBase);
   const mode: SaveListMode = recognized ?? "library";
   const unknown = recognized === null;

@@ -1,19 +1,20 @@
 .root {
   --empty-max-width: var(--ds-empty-max-width);
-  --empty-padding-block-start: var(--ds-empty-padding-block-start);
-  --empty-padding-block-end: var(--ds-empty-padding-block-end);
-  --empty-padding-inline: var(--ds-empty-padding-inline);
+  --empty-padding-block-start: calc(var(--ds-space-2xl) + var(--ds-space-md));
+  --empty-padding-block-end: calc(var(--ds-space-2xl) + var(--ds-space-md));
+  --empty-padding-inline: var(--ds-space-xl);
   --empty-gap: var(--ds-empty-gap);
   --empty-copy-gap: var(--ds-empty-copy-gap);
-  --empty-title-size: var(--ds-empty-title-size);
+  --empty-title-size: var(--ds-text-title);
   --empty-title-weight: var(--ds-empty-title-weight);
-  --empty-title-leading: var(--ds-empty-title-leading);
+  --empty-title-leading: var(--ds-leading-title);
   --empty-title-color: var(--ds-empty-title-color);
   --empty-description-size: var(--ds-empty-description-size);
-  --empty-description-weight: var(--ds-empty-description-weight);
+  --empty-description-weight: var(--ds-weight-medium);
   --empty-description-leading: var(--ds-empty-description-leading);
   --empty-description-color: var(--ds-empty-description-color);
   --empty-description-max-width: var(--ds-empty-description-max-width);
+  --empty-media-size: 48px;
 
   box-sizing: border-box;
   display: flex;
@@ -51,20 +52,52 @@
     align-items: start;
     text-align: start;
   }
+
+  &[data-size="card"] {
+    --empty-padding-block-start: var(--ds-space-2xl);
+    --empty-padding-block-end: var(--ds-space-2xl);
+    --empty-title-size: var(--ds-text-heading);
+    --empty-title-leading: var(--ds-leading-heading);
+    --empty-media-size: 32px;
+
+    min-height: 0;
+  }
+
+  &[data-size="inline"] {
+    --empty-padding-block-start: var(--ds-space-lg);
+    --empty-padding-block-end: var(--ds-space-lg);
+    --empty-title-size: var(--ds-text-body);
+    --empty-title-leading: var(--ds-leading-body);
+
+    flex: none;
+    min-height: 0;
+  }
 }
 
 .media {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  color: var(--ds-foreground-tertiary);
-  border-radius: var(--ds-radius-sm);
+  flex: none;
+  color: color-mix(in srgb, var(--ds-foreground-tertiary) 60%, transparent);
 
   &:not(:last-child) {
-    margin-bottom: calc(var(--empty-gap) - var(--empty-copy-gap));
+    margin-bottom: calc(var(--ds-space-xl) - var(--empty-copy-gap));
   }
+
+  [data-size="inline"] & {
+    display: none;
+  }
+}
+
+/* Zero specificity so a Loader.Spinner keeps its own size. */
+:where(.media) > svg {
+  width: var(--empty-media-size);
+  height: var(--empty-media-size);
+  stroke-width: 1.5px;
+}
+
+/* Call sites size glyphs at 14px, so the stroke must not grow with the 48px box. */
+:where(.media) > svg * {
+  vector-effect: non-scaling-stroke;
 }
 
 @keyframes empty-in {

@@ -1,5 +1,6 @@
+import { IconHistory } from "@pond/icons";
 import type { Source } from "@pond/schema/db";
-import { Button, Empty, Settings } from "@pond/ui";
+import { Button, Empty, Loader, Settings } from "@pond/ui";
 import {
   runFreshCount,
   type SourceRun,
@@ -61,7 +62,10 @@ export function SourceActivity({ id, source }: { id: string; source: Source }) {
   const runs = history.data ?? [];
   if (runs.length === 0) {
     return (
-      <Empty.Root className={styles.empty}>
+      <Empty.Root size="card">
+        <Empty.Media>
+          {history.isPending ? <Loader.Spinner /> : <IconHistory size={14} />}
+        </Empty.Media>
         <Empty.Title>
           {history.isPending ? "Loading activity" : "No fetches yet"}
         </Empty.Title>

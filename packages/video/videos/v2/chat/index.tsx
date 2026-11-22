@@ -210,7 +210,9 @@ export function Chat({ t }: { t: number }) {
             style={{ transform: `translateY(${-scroll}px)` }}
           >
             <Enter t={t} at={CUES.askSend} origin="100% 100%">
-              <Message.View from={USER}>{QUESTION}</Message.View>
+              <Message.View from={USER}>
+                <Message.Bubble>{QUESTION}</Message.Bubble>
+              </Message.View>
             </Enter>
             <div
               className={styles.status}
@@ -286,15 +288,15 @@ export function Chat({ t }: { t: number }) {
                   </div>
                   <div
                     className={styles.collapse}
-                    style={{ height: mix(48, 0, close), opacity: 1 - close }}
+                    style={{ height: mix(56, 0, close), opacity: 1 - close }}
                   >
                     <Prompt.Footer>
-                      <Button size="sm" variant="ghost">
+                      <Button size="md" variant="tertiary">
                         Dismiss
                       </Button>
                       <Button
                         ref={apply}
-                        size="sm"
+                        size="md"
                         style={{
                           scale:
                             t >= CUES.applyClick && t < CUES.applyClick + 110

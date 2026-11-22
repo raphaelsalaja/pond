@@ -9,7 +9,7 @@ export interface QuerySessionState {
   loading: boolean;
   error: string | null;
 }
-interface Runtime {
+export interface QuerySessionRuntime {
   page(request: LibraryQueryRequest): Promise<LibraryQueryPage>;
   ids(request: LibraryQueryRequest): Promise<{ ids: string[] }>;
   refresh(ids: readonly string[]): Promise<void>;
@@ -18,10 +18,42 @@ function scopeKey(request: LibraryQueryRequest): string {
   return JSON.stringify({ ...request, keywords: undefined });
 }
 
+const CACHED_PAGES = 16;
+/** Revisiting a collection draws its last page at once, then the reload replaces it. */
+const caches = new WeakMap<QuerySessionRuntime, Map<string, LibraryQueryPage>>();
+
+function pagesFor(runtime: QuerySessionRuntime): Map<string, LibraryQueryPage> {
+  const existing = caches.get(runtime);
+  if (existing) return existing;
+  const pages = new Map<string, LibraryQueryPage>();
+  caches.set(runtime, pages);
+  return pages;
+}
+
+function rememberPage(
+  pages: Map<string, LibraryQueryPage>,
+  key: string,
+  page: LibraryQueryPage,
+): void {
+  pages.delete(key);
+  pages.set(key, page);
+  if (pages.size <= CACHED_PAGES) return;
+  const oldest = pages.keys().next();
+  if (!oldest.done) pages.delete(oldest.value);
+}
+
+export function cachedQueryPage(
+  runtime: QuerySessionRuntime,
+  request: LibraryQueryRequest,
+): LibraryQueryPage | null {
+  return pagesFor(runtime).get(JSON.stringify(request)) ?? null;
+}
+
 export function createQuerySession(
-  runtime: Runtime,
+  runtime: QuerySessionRuntime,
   emit: (state: QuerySessionState) => void,
 ) {
+  const pages = pagesFor(runtime);
   let request: LibraryQueryRequest | null = null;
   let key = "";
   let pageKey = "";
@@ -69,6 +101,7 @@ export function createQuerySession(
             : result.ids,
       };
       pageKey = capturedKey;
+      rememberPage(pages, capturedKey, page);
       /** Sync actions reload the page; an identical result must not rebuild the grid. */
       if (!dequal(previous, page)) update({ page });
     } catch (cause) {
@@ -99,7 +132,13 @@ export function createQuerySession(
       key = nextKey;
       sequence++;
       active = false;
-      update({ page: retyped ? state.page : null, loading: true, error: null });
+      const cached = retyped ? null : (pages.get(nextKey) ?? null);
+      if (cached) pageKey = nextKey;
+      update({
+        page: retyped ? state.page : cached,
+        loading: true,
+        error: null,
+      });
       return retyped;
     },
     load,

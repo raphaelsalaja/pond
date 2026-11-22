@@ -2,14 +2,14 @@
 @import "@pond/theme/theme.css";
 
 @font-face {
-  font-family: intern-variable;
+  font-family: allo-variable;
   font-style: normal;
   font-weight: 100 900;
   font-display: swap;
-  src: url("/fonts/intern/variable.woff2") format("woff2");
+  src: url("/fonts/allo/variable.woff2") format("woff2");
 }
 
-/* Same metrics as Intern; covers the symbols, Greek and Cyrillic Intern lacks. */
+/* Same metrics as Allo; covers the symbols, Greek and Cyrillic Allo lacks. */
 @font-face {
   font-family: inter-variable;
   font-style: normal;
@@ -30,7 +30,7 @@ body {
 
 :root {
   font-family:
-    intern-variable, inter-variable, ui-sans-serif, system-ui, -apple-system,
+    allo-variable, inter-variable, ui-sans-serif, system-ui, -apple-system,
     "SF Pro Text", "Segoe UI", sans-serif;
   font-size: var(--ds-text-small);
   color: var(--ds-foreground-primary);

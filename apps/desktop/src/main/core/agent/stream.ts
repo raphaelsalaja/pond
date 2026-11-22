@@ -122,6 +122,7 @@ export async function streamAgentTurn(
             stopped: saved.data.stopped,
             error: saved.data.error,
             routineEvents: saved.data.routineEvents,
+            suggestions: saved.data.suggestions,
           },
         });
         if (saved.data.steps?.length)

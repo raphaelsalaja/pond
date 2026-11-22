@@ -6,6 +6,10 @@
   height: 100%;
   min-height: 0;
   overflow: hidden;
+
+  & ::selection {
+    background: color-mix(in oklab, var(--ds-accent) 28%, transparent);
+  }
 }
 
 .workspace {
@@ -25,14 +29,14 @@
 }
 
 .viewport {
-  padding: var(--ds-space-2xl) var(--ds-space-2xl) var(--ds-space-lg);
+  padding: var(--ds-space-2xl);
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: none;
 }
 
 .turn[data-role="user"]:not(:first-child, .time + *) {
-  margin-top: var(--ds-space-xl);
+  margin-top: var(--ds-space-sm);
 }
 
 .time {

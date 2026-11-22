@@ -9,9 +9,6 @@
   flex-direction: column;
   gap: 28px;
 }
-.header {
-  padding-inline: var(--ds-space-lg);
-}
 .panel {
   margin-inline: calc(var(--ds-space-2xs) * -1);
 }

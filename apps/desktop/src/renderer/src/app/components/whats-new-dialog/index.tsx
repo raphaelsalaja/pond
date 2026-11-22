@@ -2,6 +2,7 @@ import type { ChangelogEntry } from "@pond/schema/changelog";
 import { Button, Changelog, Dialog } from "@pond/ui";
 import { useEffect, useRef } from "react";
 import { loadAppInfo } from "@/shared/lib/app-info";
+import { announcements } from "@/shared/state/announcements";
 import {
   readWhatsNewSeen,
   useWhatsNewDialog,
@@ -13,9 +14,10 @@ import styles from "./styles.module.css";
 
 const RELEASES_URL = "https://github.com/raphaelsalaja/pond/releases";
 const CHECK_DELAY_MS = 1500;
+const WHATS_NEW_NOTICE = "whats-new";
 
-/** Opens once per version change, after the Library has had a moment to load. */
-function useShowAfterUpdate(): void {
+/** Posts once per version change, after the Library has had a moment to load. */
+function useAnnounceAfterUpdate(): void {
   useEffect(() => {
     let active = true;
     const timer = setTimeout(async () => {
@@ -27,14 +29,24 @@ function useShowAfterUpdate(): void {
           lastSeen !== null ||
           (await window.pond.query("saves.sidebarCounts", {})).library > 0;
         if (!active) return;
-        writeWhatsNewSeen(version);
         const versions = unseenVersions({
           entries: CHANGELOG,
           current: version,
           lastSeen,
           hasSaves,
         });
-        if (versions.length > 0) whatsNewDialog.open(versions);
+        const latest = CHANGELOG.find((entry) => entry.version === versions[0]);
+        if (!latest) {
+          writeWhatsNewSeen(version);
+          return;
+        }
+        announcements.post({
+          id: WHATS_NEW_NOTICE,
+          title: `What's New in v${latest.version}`,
+          description: latest.title,
+          open: () => whatsNewDialog.open(versions),
+          markSeen: () => writeWhatsNewSeen(version),
+        });
       } catch {}
     }, CHECK_DELAY_MS);
     return () => {
@@ -79,7 +91,7 @@ function Entry({
 export function WhatsNewDialog() {
   const { open, versions } = useWhatsNewDialog();
   const doneRef = useRef<HTMLButtonElement>(null);
-  useShowAfterUpdate();
+  useAnnounceAfterUpdate();
 
   const filtered = versions
     ? CHANGELOG.filter((entry) => versions.includes(entry.version))

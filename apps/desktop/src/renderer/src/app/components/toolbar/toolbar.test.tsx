@@ -10,6 +10,7 @@ import {
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { commandMenu } from "@/features/library/state/command-menu";
 import { folders } from "@/features/library/state/folders";
 import { libraryChrome } from "@/features/library/state/library-chrome";
 import { navigationHistory } from "@/features/library/state/navigation-history";
@@ -22,7 +23,6 @@ import {
 import { rememberListPath } from "@/features/saves/lib/list-path";
 import { normalise } from "@/features/saves/lib/reconcile";
 import { pool } from "@/features/saves/state/pool";
-import { resultNavigation } from "@/features/saves/state/result-navigation";
 import { libraryViewContext } from "@/features/saves/state/view-context";
 import { setAppRouter } from "@/shared/lib/app-router";
 import { Toolbar } from "./";
@@ -132,6 +132,15 @@ describe("breadcrumb toolbar", () => {
     return router;
   }
 
+  it("opens the command menu from Search Pond", async () => {
+    const open = vi.spyOn(commandMenu, "open");
+    await mount();
+    await act(async () => button("Search Pond").click());
+    expect(open).toHaveBeenCalledOnce();
+    open.mockRestore();
+    commandMenu.close();
+  });
+
   it("leaves the fish page without a breadcrumb", async () => {
     await mount("/fish/default");
     expect(host.querySelector('nav[aria-label="Breadcrumb"]')).toBeNull();
@@ -203,28 +212,9 @@ describe("breadcrumb toolbar", () => {
     expect(getViewState().activeViewId).toBeNull();
   });
 
-  it("uses the save title and returns to its containing list", async () => {
-    const router = await mount("/save/demo");
-    expect(host.querySelector('[aria-current="page"]')?.textContent).toBe(
-      "A saved design",
-    );
-    await act(async () => button("All").click());
-    expect(router.state.location.pathname).toBe("/");
-  });
-
-  it("shows the save's position in the results after its title", async () => {
-    resultNavigation.setSource({
-      key: "test",
-      ids: ["other", "demo"],
-      total: 20,
-    });
-    try {
-      await mount("/save/demo");
-      const current = host.querySelector('[aria-current="page"]');
-      expect(current?.textContent).toBe("A saved design2 / 20");
-    } finally {
-      resultNavigation.setSource({ ids: [] });
-    }
+  it("leaves an open Save's toolbar row to the viewer bar", async () => {
+    await mount("/save/demo");
+    expect(host.querySelector('nav[aria-label="Breadcrumb"]')).toBeNull();
   });
 
   it("keeps hidden ancestors accessible through the overflow menu", async () => {
@@ -388,7 +378,7 @@ describe("breadcrumb toolbar", () => {
     expect(router.state.location.pathname).toBe("/");
   });
 
-  it("offers the details toggle on the library and while viewing a Save", async () => {
+  it("offers the details toggle on every page", async () => {
     const labels = () =>
       [...host.querySelectorAll("button")].map((node) =>
         node.getAttribute("aria-label"),
@@ -398,8 +388,10 @@ describe("breadcrumb toolbar", () => {
     await act(async () => router.history.push("/save/demo"));
     expect(labels()).toContain("Toggle Details");
     expect(labels()).not.toContain("Fish");
+    await act(async () => router.history.push("/tags"));
+    expect(labels()).toContain("Toggle Details");
     await act(async () => router.history.push("/settings"));
-    expect(labels()).not.toContain("Toggle Details");
+    expect(labels()).toContain("Toggle Details");
   });
 
   it("toggles the details column from the library toolbar", async () => {

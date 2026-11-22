@@ -3,13 +3,15 @@ import styles from "./styles.module.css";
 
 interface RootProps extends React.ComponentPropsWithoutRef<"div"> {
   align?: "start";
+  size?: "card" | "inline";
 }
 
-function Root({ className, align, ...props }: RootProps) {
+function Root({ className, align, size, ...props }: RootProps) {
   return (
     <div
       className={cn(styles.root, className)}
       data-align={align || undefined}
+      data-size={size || undefined}
       {...props}
     />
   );

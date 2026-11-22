@@ -1,4 +1,7 @@
-import { libraryChrome } from "@/features/library/state/library-chrome";
+import {
+  libraryChrome,
+  type SidebarPanel,
+} from "@/features/library/state/library-chrome";
 import { resetFilters } from "@/features/library/state/view-store";
 import { getAppRouter } from "@/shared/lib/app-router";
 import {
@@ -15,6 +18,16 @@ export function selectLibraryNav(nav: LibraryNav): void {
   if (nav.kind !== "all") resetFilters();
   libraryChrome.setNav(nav);
   goToLibraryPath(pathForLibraryNav(nav));
+}
+
+/** Rail pages are code-split, so a cold click would swap the sidebar before the page chunk arrives. */
+export async function preloadLibraryNav(nav: LibraryNav): Promise<void> {
+  await getAppRouter()?.preloadRoute({ to: pathForLibraryNav(nav) });
+}
+
+export function showSidebarPanel(panel: SidebarPanel): void {
+  libraryChrome.setSidebarPanel(panel);
+  if (!libraryChrome.getState().sidebarOpen) libraryChrome.toggleSidebar();
 }
 
 /** Walks remembered library navigation and keeps the route on that collection. */

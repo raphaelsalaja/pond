@@ -105,6 +105,35 @@ it("renders determinate toast progress", async () => {
   expect(progress?.max).toBe(10);
 });
 
+it("morphs a working toast's spinner into its result", async () => {
+  await act(async () => root.render(<ToastHost />));
+
+  let notificationId = "";
+  await act(async () => {
+    notificationId = notify({
+      id: "convert",
+      title: "Converting links",
+      status: "loading",
+      timeout: 0,
+    });
+  });
+  const status = () => document.body.querySelector("[data-status]");
+  expect(status()?.getAttribute("data-status")).toBe("loading");
+
+  await act(async () => {
+    updateNotification({
+      id: notificationId,
+      title: "Converted 3 saves",
+      status: "success",
+      timeout: 0,
+    });
+  });
+  expect(status()?.getAttribute("data-status")).toBe("success");
+  expect(status()?.closest("[data-slot='toasts']")?.textContent).toContain(
+    "Converted 3 saves",
+  );
+});
+
 it("renders and invokes a toast action", async () => {
   const onClick = vi.fn();
   await act(async () => root.render(<ToastHost />));

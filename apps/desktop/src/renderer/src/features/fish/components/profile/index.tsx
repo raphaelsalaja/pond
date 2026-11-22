@@ -1,5 +1,5 @@
-import { IconClock, IconXmark } from "@pond/icons";
-import { Button, Empty, Pane, Tabs } from "@pond/ui";
+import { IconXmark } from "@pond/icons";
+import { Button, Pane, Tabs } from "@pond/ui";
 import type { FishRoutine, FishSummary } from "@shared/fish-contracts";
 import { useEffect, useRef, useState } from "react";
 import { Section } from "@/shared/components/inspector-section";
@@ -8,15 +8,14 @@ import {
   InspectorTextField,
 } from "@/shared/components/inspector-text-field";
 import { ModelPicker } from "@/shared/components/model-picker";
-import { PropertyList } from "@/shared/components/property-list";
 import { updateFish } from "../../lib/menu";
-import { rowTime } from "../../lib/row";
 import {
   fish as fishStore,
   useFish,
   useFishEditingId,
   useOpenRoutineId,
 } from "../../state/fish";
+import { FishActivity } from "./activity";
 import { FishAppearance } from "./appearance";
 import { RoutineList } from "./routine-list";
 import { RoutineView } from "./routine-view";
@@ -34,6 +33,7 @@ interface FishProfileProps {
   tagNames: ReadonlyArray<string>;
   onClose: () => void;
   onEditRoutine?: (routine: FishRoutine) => void;
+  onOpenChat?: (chatId: string) => void;
 }
 
 export function FishProfile({
@@ -42,6 +42,7 @@ export function FishProfile({
   tagNames,
   onClose,
   onEditRoutine,
+  onOpenChat,
 }: FishProfileProps) {
   const target = useFish(fishId);
   const openRoutineId = useOpenRoutineId(fishId);
@@ -139,7 +140,11 @@ export function FishProfile({
         </Tabs.Panel>
         <Tabs.Panel value="activity" className={styles.panel}>
           <Pane.Body className={styles.scroll} data-scroll-fade="vertical">
-            <Activity fish={target} />
+            <FishActivity
+              fish={target}
+              sectionClassName={styles.section}
+              onOpenChat={onOpenChat}
+            />
           </Pane.Body>
         </Tabs.Panel>
       </div>
@@ -156,7 +161,11 @@ function Details({
 }) {
   return (
     <>
-      <Section title="Instructions" collapsible={false}>
+      <Section
+        title="Instructions"
+        className={styles.section}
+        collapsible={false}
+      >
         <InspectorTextField
           drafts={drafts}
           cacheKey={`${fish.id}:instructions`}
@@ -171,7 +180,11 @@ function Details({
           }}
         />
       </Section>
-      <Section title="Model" collapsible={false}>
+      <Section
+        title="Model"
+        className={styles.section}
+        collapsible={false}
+      >
         <ModelPicker
           layout="field"
           provider={fish.model?.provider ?? ""}
@@ -180,79 +193,15 @@ function Details({
           onUseDefault={() => updateFish(fish, { model: null })}
         />
       </Section>
-      <Section title="Routines" collapsible={false}>
+      <Section
+        title="Routines"
+        className={styles.section}
+        collapsible={false}
+      >
         <RoutineList fish={fish} />
       </Section>
     </>
   );
-}
-
-function Activity({ fish }: { fish: FishSummary }) {
-  const run = fish.lastRun;
-  const now = new Date();
-  if (!run)
-    return (
-      <Empty.Root>
-        <Empty.Media>
-          <IconClock size={32} />
-        </Empty.Media>
-        <Empty.Title>No runs yet</Empty.Title>
-        <Empty.Description>
-          {fish.routines.length
-            ? `${fish.name}'s runs show up here.`
-            : `Ask ${fish.name} in chat to set a routine, and its runs show up here.`}
-        </Empty.Description>
-      </Empty.Root>
-    );
-  return (
-    <Section title="Last Run" collapsible={false}>
-      <div className={styles.fields}>
-        <PropertyList.Root>
-          {run.routineName ? (
-            <PropertyList.Row>
-              <PropertyList.Label>Routine</PropertyList.Label>
-              <PropertyList.Value>
-                {run.routineId && routineFor(fish, run.routineId) ? (
-                  <Button
-                    type="button"
-                    size="xs"
-                    variant="ghost"
-                    className={styles.link}
-                    onClick={() =>
-                      run.routineId &&
-                      fishStore.openRoutine(fish.id, run.routineId)
-                    }
-                  >
-                    {run.routineName}
-                  </Button>
-                ) : (
-                  run.routineName
-                )}
-              </PropertyList.Value>
-            </PropertyList.Row>
-          ) : null}
-          <PropertyList.Row>
-            <PropertyList.Label>Status</PropertyList.Label>
-            <PropertyList.Value>
-              {run.status === "failed" ? "Failed" : "Done"}
-            </PropertyList.Value>
-          </PropertyList.Row>
-          <PropertyList.Row>
-            <PropertyList.Label>Ran</PropertyList.Label>
-            <PropertyList.Value>{rowTime(run.at, now)}</PropertyList.Value>
-          </PropertyList.Row>
-          <PropertyList.Row>
-            <PropertyList.Label>Changes</PropertyList.Label>
-            <PropertyList.Value>{run.changes || "None"}</PropertyList.Value>
-          </PropertyList.Row>
-        </PropertyList.Root>
-      </div>
-    </Section>
-  );
-}
-
-function routineFor(fish: FishSummary, routineId: string) {
-  return fish.routines.find((routine) => routine.id === routineId);
 }
 
 function Scope({
@@ -275,7 +224,11 @@ function Scope({
   }));
 
   return (
-    <Section title="Reads" collapsible={false}>
+    <Section
+      title="Reads"
+      className={styles.section}
+      collapsible={false}
+    >
       <div className={styles.fields}>
         <FishSelect.Multi
           label="Folders"

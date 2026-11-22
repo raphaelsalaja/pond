@@ -1,5 +1,6 @@
 "use client";
 
+import { IconMagnifier } from "@pond/icons";
 import { Empty, Keyboard, Table } from "@pond/ui";
 import { docsFor } from "@pond/ui/docs";
 import { Code } from "../code";
@@ -22,6 +23,9 @@ export function Reference({ slug }: ReferenceProps) {
   if (!docs) {
     return (
       <Empty.Root>
+        <Empty.Media>
+          <IconMagnifier size={14} />
+        </Empty.Media>
         <Empty.Title>Component not found</Empty.Title>
         <Empty.Description>
           Nothing in <Code.Inline>@pond/ui/docs</Code.Inline> uses the slug{" "}

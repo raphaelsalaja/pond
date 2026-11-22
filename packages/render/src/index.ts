@@ -74,7 +74,6 @@ export interface ThreadsMedia {
   width?: number;
   height?: number;
   video?: boolean;
-  duration?: string;
 }
 
 export interface ThreadsNested {
@@ -83,7 +82,7 @@ export interface ThreadsNested {
   media: ThreadsMedia[];
 }
 
-/** The Threads layout's input. Dates and counts arrive formatted. */
+/** The Threads layout's input. The relative time and counts arrive formatted. */
 export interface ThreadsPost extends ThreadsNested {
   parent?: ThreadsNested;
   quoted?: ThreadsNested;
@@ -94,8 +93,9 @@ export interface ThreadsPost extends ThreadsNested {
     image?: ImageData;
     large: boolean;
   };
-  replyingTo?: string;
-  timestamp: string;
+  /** As the post header shows it: `18h`, `3d`, `11/18/26`. */
+  time: string;
+  /** Every action button in order; an empty `value` draws the icon alone. */
   metrics: { icon: string; value: string }[];
 }
 

@@ -92,6 +92,33 @@ function ItemDetail({ className, ...props }: ItemDetailProps) {
   return <span className={cn(styles.detail, className)} {...props} />;
 }
 
+interface ItemTextProps extends React.ComponentPropsWithoutRef<"span"> {}
+
+function ItemText({ className, ...props }: ItemTextProps) {
+  return <span className={cn(styles.stack, className)} {...props} />;
+}
+
+interface TilesProps extends React.ComponentPropsWithoutRef<"div"> {}
+
+function Tiles({ className, ...props }: TilesProps) {
+  return <div className={cn(styles.tiles, className)} {...props} />;
+}
+
+interface TileProps extends Button.Props {}
+
+function Tile({ className, onClick, ...props }: TileProps) {
+  return (
+    <Button
+      className={cn(styles.tile, className)}
+      onClick={(event) => {
+        pop(event.currentTarget.querySelector(`.${styles.icon}`));
+        onClick?.(event);
+      }}
+      {...props}
+    />
+  );
+}
+
 interface ResultButtonProps extends Button.Props {}
 
 function ResultButton({ ...props }: ResultButtonProps) {
@@ -114,8 +141,8 @@ function Icon({ className, source, ...props }: IconProps) {
 
 interface CountProps extends React.ComponentPropsWithoutRef<"span"> {}
 
-function Count({ ...props }: CountProps) {
-  return <span className={styles.count} {...props} />;
+function Count({ className, ...props }: CountProps) {
+  return <span className={cn(styles.count, className)} {...props} />;
 }
 
 interface GroupProps extends React.ComponentPropsWithRef<"div"> {}
@@ -133,7 +160,13 @@ function GroupLabel({ className, ...props }: GroupLabelProps) {
 interface GroupHeaderProps extends React.ComponentPropsWithoutRef<"div"> {}
 
 function GroupHeader({ className, ...props }: GroupHeaderProps) {
-  return <div className={cn(styles.heading, className)} {...props} />;
+  return (
+    <div
+      className={cn(styles.heading, className)}
+      data-slot="group-header"
+      {...props}
+    />
+  );
 }
 
 interface GroupContentProps extends React.ComponentPropsWithoutRef<"div"> {}
@@ -315,6 +348,9 @@ export const Sidebar = {
   Item,
   ItemLabel,
   ItemDetail,
+  ItemText,
+  Tiles,
+  Tile,
   Icon,
   Count,
   ResultButton,

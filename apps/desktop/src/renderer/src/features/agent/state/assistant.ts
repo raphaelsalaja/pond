@@ -59,6 +59,8 @@ export interface AssistantState {
   steps: AssistantToolStep[];
   error: string | null;
   failed: DraftSnapshot | null;
+  /** Sent on its own once the running reply finishes. */
+  queued: DraftSnapshot | null;
   /** Bumped when something outside the composer wants it focused. */
   focusRequest: number;
 }
@@ -83,6 +85,7 @@ const store = new Store<AssistantWorkspace>({
   steps: [],
   error: null,
   failed: null,
+  queued: null,
   focusRequest: 0,
 });
 const patch = (value: Partial<AssistantWorkspace>) =>
@@ -477,7 +480,55 @@ export const assistant = {
           : Promise.resolve(),
         refreshChats().catch(() => undefined),
       ]);
+      const next = store.state.queued;
+      if (next && !store.state.error && !isBusy()) {
+        patch({ queued: null });
+        void assistant.send(
+          next.provider,
+          { modelId: next.modelId, controls: next.controls },
+          next,
+        );
+      }
     }
+  },
+  /** While a reply runs, holds the draft to send next instead of dropping the keypress. */
+  async queue(
+    provider: AssistantProvider,
+    run?: Pick<AssistantSend, "modelId" | "controls">,
+  ) {
+    if (!isBusy()) return assistant.send(provider, run);
+    const content = store.state.draft.trim();
+    if (!content) return;
+    const previous = store.state.queued;
+    const attachments = [
+      ...new Map(
+        [...(previous?.attachments ?? []), ...store.state.attachments].map(
+          (save) => [save.id, save],
+        ),
+      ).values(),
+    ].slice(0, 200);
+    patch({
+      queued: {
+        content: previous ? `${previous.content}\n\n${content}` : content,
+        attachments,
+        files: [...(previous?.files ?? []), ...store.state.files].slice(0, 10),
+        context: snapshotContext(attachments),
+        provider,
+        modelId: run?.modelId,
+        controls: run?.controls,
+        keepDraft: true,
+      },
+      draft: "",
+      attachments: [],
+      files: [],
+    });
+  },
+  unqueue() {
+    patch({ queued: null });
+  },
+  /** Stops the running reply; the queued message goes out as soon as it settles. */
+  sendQueuedNow() {
+    if (store.state.queued && isBusy()) assistant.stop();
   },
   async answerQuestion(
     messageId: string,
@@ -498,6 +549,16 @@ export const assistant = {
       keepDraft: true,
     });
   },
+  async suggest(content: string, provider: AssistantProvider) {
+    await assistant.send(provider, undefined, {
+      content,
+      attachments: [],
+      files: [],
+      context: snapshotContext([]),
+      provider,
+      keepDraft: true,
+    });
+  },
   stop() {
     cancelledRequest = store.state.requestId;
     stopAssistant(store.state.chatId, store.state.requestId);
@@ -510,6 +571,31 @@ export const assistant = {
         { modelId: sent.modelId, controls: sent.controls },
         sent,
       );
+  },
+  /** Replaces the latest reply by running its request again with the current model. */
+  async regenerate(
+    provider: AssistantProvider,
+    run?: Pick<AssistantSend, "modelId" | "controls">,
+  ) {
+    const chatId = store.state.chatId;
+    if (!chatId || isBusy() || store.state.loading) return;
+    const result = await window.pond.query("agent.regenerate", { chatId });
+    if (!result.ok) {
+      patch({ error: result.error });
+      return;
+    }
+    await refreshMessages(chatId).catch(() => undefined);
+    await assistant.send(provider, run, {
+      content: result.content,
+      attachments: result.attachments,
+      files: result.files,
+      context: snapshotContext(result.attachments),
+      provider,
+      modelId: run?.modelId,
+      controls: run?.controls,
+      replyToQuestion: result.replyToQuestion,
+      keepDraft: true,
+    });
   },
   async review(
     messageId: string,

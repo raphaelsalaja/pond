@@ -120,3 +120,7 @@ brag-output-*/
 .gather/
 .audit/
 .match/
+.icons/
+.iconset/
+packages/icons/REPORT.md
+packages/icons/lab/data.js

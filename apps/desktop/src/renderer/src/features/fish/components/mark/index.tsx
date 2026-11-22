@@ -35,6 +35,21 @@ export function fishColorCss(color: FishColor): string {
   return `var(--ds-${color})`;
 }
 
+/** Spread on a container to retint its accent controls, focus rings and your bubbles in the fish's color. */
+export function fishAccent(color: FishColor) {
+  return {
+    "data-accent": color,
+    style: cssVars({
+      "--accent-hue": `var(--ds-${color})`,
+      "--accent-hue-tint": `var(--ds-${color}-tint)`,
+      "--accent-hue-border": `var(--ds-${color}-border)`,
+      "--accent-hue-contrast": `var(--ds-${color}-contrast)`,
+      "--message-accent": "var(--ds-accent)",
+      "--message-accent-foreground": "var(--ds-accent-contrast)",
+    }),
+  };
+}
+
 function taskOf(activity: FishPresence, mood: FishMood): Task | null {
   if (mood === "worried" || mood === "pleased") return mood;
   if (activity === "searching") return "reading";

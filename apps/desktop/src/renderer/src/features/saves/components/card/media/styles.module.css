@@ -49,17 +49,30 @@
   transition: transform var(--ds-duration-fast) var(--ds-easing-standard);
 }
 
-.thumb[data-sensitive] .visual {
-  isolation: isolate;
+/* The blurhash keeps the image's colors without any of its shapes. */
+.cover {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: var(--ds-background-secondary);
+  border-radius: inherit;
+}
 
-  /* A backdrop overlay stays inside the clip; `filter` on the media bleeds past the card edge. */
-  &::after {
-    position: absolute;
-    inset: 0;
-    z-index: 3;
-    content: "";
-    backdrop-filter: blur(24px);
-  }
+.sensitive {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  color: white;
+  pointer-events: none;
+  background: rgb(0 0 0 / 50%);
+  border-radius: var(--ds-radius-full);
+  transform: translate(-50%, -50%);
 }
 
 @media (hover: hover) and (pointer: fine) {

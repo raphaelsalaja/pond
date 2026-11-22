@@ -1,4 +1,4 @@
-import { IconTrash, IconTriangleWarning } from "@pond/icons";
+import { IconCircleWarning, IconTrash } from "@pond/icons";
 import { domainFromUrl } from "@pond/schema/domain";
 import { cssVars } from "@pond/ui";
 import { type NodeProps, NodeResizer } from "@xyflow/react";
@@ -86,7 +86,7 @@ export function SaveItem({
             </div>
           ) : missing ? (
             <span className={styles.status}>
-              <IconTriangleWarning size={18} />
+              <IconCircleWarning size={18} />
               Not in this library
             </span>
           ) : null}

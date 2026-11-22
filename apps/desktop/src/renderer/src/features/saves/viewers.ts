@@ -6,6 +6,10 @@ export {
 } from "./components/viewers/media-viewer/lib/menu";
 export { SaveViewer } from "./components/viewers/save-viewer";
 export { TextViewer } from "./components/viewers/text-viewer";
+export type { ViewerNavigation } from "./components/viewers/viewer-toolbar-groups";
 export { hasArchive } from "./lib/media/archive";
-export { setSaveViewerFileIndex } from "./state/save-viewer";
+export {
+  setSaveViewerFileIndex,
+  setSaveViewerNavigation,
+} from "./state/save-viewer";
 export { viewerEscape } from "./state/viewer-escape";

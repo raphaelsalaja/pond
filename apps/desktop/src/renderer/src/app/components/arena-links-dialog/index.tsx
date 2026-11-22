@@ -2,11 +2,8 @@ import { Dialog } from "@pond/ui";
 import { useEffect, useState } from "react";
 import { convertArenaLinks } from "@/shared/lib/arena-links";
 import { formatPlural } from "@/shared/lib/format";
-import {
-  anotherDialogOpen,
-  claimNoticeSlot,
-  markNoticeSeen,
-} from "@/shared/state/notices";
+import { announcements } from "@/shared/state/announcements";
+import { anotherDialogOpen, markNoticeSeen } from "@/shared/state/notices";
 import { loadPrefs } from "@/shared/state/prefs";
 import { ARENA_LINKS_NOTICE, arenaLinksNoticeStep } from "./eligibility";
 import styles from "./styles.module.css";
@@ -47,7 +44,14 @@ function useAnnounceOnce(show: (pending: number) => void): void {
         if (anotherDialogOpen()) return;
       }
       clearInterval(timer);
-      if (claimNoticeSlot(ARENA_LINKS_NOTICE)) show(pending);
+      const count = pending;
+      announcements.post({
+        id: ARENA_LINKS_NOTICE,
+        title: "Are.na Links Now Save as Web Pages",
+        description: `Convert ${formatPlural(count, LINK_SAVES)} from before this change.`,
+        open: () => show(count),
+        markSeen: () => void markNoticeSeen(ARENA_LINKS_NOTICE),
+      });
     }, CHECK_INTERVAL_MS);
     return () => clearInterval(timer);
   }, [show]);

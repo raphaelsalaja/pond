@@ -10,11 +10,13 @@
   padding: 0;
   font-size: var(--ds-text-small);
   font-weight: var(--ds-weight-medium);
+  line-height: var(--ds-leading-small);
   text-align: center;
   color: var(--ds-foreground-secondary);
-  background: var(--ds-background-primary);
-  border-radius: var(--ds-radius-sm);
-  box-shadow: var(--ds-shadow-overlay);
+  background: var(--ds-background-elevated);
+  border-radius: var(--ds-radius-md);
+  /* A tooltip is a label, not a layer you work in, so it stays as flat as a card in the page. */
+  box-shadow: var(--ds-shadow-border);
   transition:
     opacity var(--ds-duration-snap) var(--ds-easing-decelerate),
     transform var(--ds-duration-snap) var(--ds-easing-decelerate);
@@ -32,11 +34,14 @@
 }
 
 .traveler {
-  transition:
-    top var(--ds-duration-slow) var(--ds-easing-decelerate),
-    left var(--ds-duration-slow) var(--ds-easing-decelerate),
-    right var(--ds-duration-slow) var(--ds-easing-decelerate),
-    bottom var(--ds-duration-slow) var(--ds-easing-decelerate);
+  /* Base UI parks an unpositioned popup at 0,0, so only travel once a trigger switch has set a direction. */
+  &:has([data-activation-direction]) {
+    transition:
+      top var(--ds-duration-slow) var(--ds-easing-snap),
+      left var(--ds-duration-slow) var(--ds-easing-snap),
+      right var(--ds-duration-slow) var(--ds-easing-snap),
+      bottom var(--ds-duration-slow) var(--ds-easing-snap);
+  }
 
   &[data-instant] {
     transition: none;
@@ -47,8 +52,8 @@
   width: var(--popup-width, auto);
   height: var(--popup-height, auto);
   transition:
-    width var(--ds-duration-slow) var(--ds-easing-decelerate),
-    height var(--ds-duration-slow) var(--ds-easing-decelerate),
+    width var(--ds-duration-slow) var(--ds-easing-snap),
+    height var(--ds-duration-slow) var(--ds-easing-snap),
     opacity var(--ds-duration-snap) var(--ds-easing-decelerate),
     transform var(--ds-duration-snap) var(--ds-easing-decelerate);
 }
@@ -91,6 +96,7 @@
 .shortcut {
   display: inline-flex;
   align-items: center;
+  margin-inline-end: calc(-1 * var(--ds-space-2xs));
 }
 
 .viewport {
@@ -108,32 +114,38 @@
     opacity: 1;
     translate: 0;
     transition:
-      translate var(--ds-duration-snap) var(--ds-easing-standard),
-      opacity var(--ds-duration-snap) var(--ds-easing-standard);
+      translate var(--ds-duration-slow) var(--ds-easing-snap),
+      opacity var(--ds-duration-snap) var(--ds-easing-snap);
 
     [data-instant] & {
       transition: none;
     }
   }
 
-  &[data-activation-direction~="left"] [data-current][data-starting-style] {
-    opacity: 0;
-    translate: -50% 0;
+  &[data-activation-direction~="left"] {
+    --slide-x: -50%;
   }
 
-  &[data-activation-direction~="right"] [data-current][data-starting-style] {
-    opacity: 0;
-    translate: 50% 0;
+  &[data-activation-direction~="right"] {
+    --slide-x: 50%;
   }
 
-  &[data-activation-direction~="left"] [data-previous][data-ending-style] {
-    opacity: 0;
-    translate: 50% 0;
+  &[data-activation-direction~="up"] {
+    --slide-y: -50%;
   }
 
-  &[data-activation-direction~="right"] [data-previous][data-ending-style] {
+  &[data-activation-direction~="down"] {
+    --slide-y: 50%;
+  }
+
+  &[data-activation-direction] [data-current][data-starting-style] {
     opacity: 0;
-    translate: -50% 0;
+    translate: var(--slide-x, 0%) var(--slide-y, 0%);
+  }
+
+  &[data-activation-direction] [data-previous][data-ending-style] {
+    opacity: 0;
+    translate: calc(-1 * var(--slide-x, 0%)) calc(-1 * var(--slide-y, 0%));
   }
 
   @media (prefers-reduced-motion: reduce) {

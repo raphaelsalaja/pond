@@ -229,7 +229,10 @@ export function ShortcutSettings({
         </div>
       ) : (
         <Empty.Root>
-          <Empty.Title>No shortcuts found</Empty.Title>
+          <Empty.Media>
+            <IconMagnifier size={14} />
+          </Empty.Media>
+          <Empty.Title>{`No shortcuts for “${search.trim()}”`}</Empty.Title>
         </Empty.Root>
       )}
       {error ? (

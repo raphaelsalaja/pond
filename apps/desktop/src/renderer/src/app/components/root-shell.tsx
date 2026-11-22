@@ -1,5 +1,6 @@
-import { Outlet, useRouterState } from "@tanstack/react-router";
+import { Outlet } from "@tanstack/react-router";
 import { lazy, Suspense, useEffect, useState } from "react";
+import { PromptCard } from "@/app/components/prompts";
 import { SaveDetails } from "@/app/components/save-details";
 import { Toolbar } from "@/app/components/toolbar";
 import { Tray } from "@/app/components/tray";
@@ -27,28 +28,14 @@ import { ViewerPreload } from "@/features/saves/effects/viewer-preload";
 import { isSaveCollectionPath } from "@/features/saves/lib/list-path";
 import { openSave, saveIdFromPath } from "@/features/saves/lib/save-nav";
 import { SourceFlowHost } from "@/features/sources/components/flow";
-import { SourceDetailSidebar } from "@/features/sources/components/inspector";
-import {
-  parseSourceDetailPath,
-  SourceDetailsPageSchema,
-} from "@/features/sources/state/source-detail";
+import { useRouteLocation } from "@/shared/hooks/use-route-location";
 import { getAppRouter } from "@/shared/lib/app-router";
-import {
-  lazyWithPreload,
-  preloadWhenIdle,
-} from "@/shared/lib/lazy-with-preload";
 import { settingsHref } from "@/shared/lib/open-settings";
 
 const FishDetails = lazy(() =>
   import("@/app/components/fish-details").then((module) => ({
     default: module.FishDetails,
   })),
-);
-
-const SettingsSidebar = lazyWithPreload(() =>
-  import("@/features/settings/components/sidebar").then(
-    (module) => module.SettingsSidebar,
-  ),
 );
 
 const DownloadDialogHost = lazy(() =>
@@ -71,20 +58,12 @@ function DownloadDialogSlot() {
 }
 
 export function RootShell() {
-  const isSettings = useRouterState({
-    select: (state) => state.location.pathname.startsWith("/settings"),
-  });
-  const pathname = useRouterState({
-    select: (state) => state.location.pathname,
-  });
-  const detailPage = useRouterState({
-    select: (state) =>
-      SourceDetailsPageSchema.safeParse(state.location.search.page).data,
-  });
-  const sourceDetail = parseSourceDetailPath(pathname, detailPage);
+  const pathname = useRouteLocation((location) => location.pathname);
   const viewingFish = fishIdFromPath(pathname) !== null;
   const viewingLibrary = isSaveCollectionPath(pathname);
   const viewingSave = saveIdFromPath(pathname) !== null;
+  const viewingSources = pathname.startsWith("/sources");
+  const viewingSettings = pathname.startsWith("/settings");
   const detailsOpen = useDetailsOpen();
   useEffect(() => {
     return window.pond.onNavigate((path) => {
@@ -118,7 +97,6 @@ export function RootShell() {
       getAppRouter()?.history.push(pathname);
     });
   }, []);
-  useEffect(() => preloadWhenIdle(SettingsSidebar.preload), []);
 
   return (
     <>
@@ -139,6 +117,7 @@ export function RootShell() {
       <ThumbnailViewerHost />
       <AppShell.Root
         header={<Toolbar />}
+        rightOpen={!viewingSources && !viewingSettings}
         right={
           viewingFish ? (
             <Suspense fallback={null}>
@@ -148,21 +127,7 @@ export function RootShell() {
             <SaveDetails />
           )
         }
-        rightOpen={viewingFish || viewingLibrary || viewingSave}
-        left={
-          isSettings ? (
-            <Suspense fallback={null}>
-              <SettingsSidebar />
-            </Suspense>
-          ) : sourceDetail ? (
-            <SourceDetailSidebar
-              key={`${sourceDetail.kind}:${sourceDetail.id}`}
-              {...sourceDetail}
-            />
-          ) : (
-            <FolderSidebar />
-          )
-        }
+        left={<FolderSidebar footer={<PromptCard />} />}
       >
         <Outlet />
       </AppShell.Root>

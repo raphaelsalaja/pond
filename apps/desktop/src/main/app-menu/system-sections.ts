@@ -70,6 +70,8 @@ export function buildDeveloperSections(context: AppMenuContext): AppMenuItem[] {
         { role: "toggleDevTools" },
         { type: "separator" },
         { label: "Download Lab", click: context.navTo("/lab/download") },
+        { label: "Fish Lab", click: context.navTo("/lab/fish") },
+        { label: "Sidebar Lab", click: context.navTo("/lab/sidebar") },
       ],
     },
   ];

@@ -86,6 +86,16 @@ function resolveRowFile(
   return { ok: true, path: absolute };
 }
 
+export function resolveOriginalFilePaths(
+  id: string,
+  files: ReadonlyArray<{ kind: string; path: string }>,
+): string[] {
+  return files.flatMap((_, index) => {
+    const target = resolveRowFile(id, files, index);
+    return target.ok ? [target.path] : [];
+  });
+}
+
 export interface SaveDragFile {
   id: string;
   path: string;

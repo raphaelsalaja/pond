@@ -19,3 +19,12 @@ export function draftInChat(text: string): void {
     assistant.requestFocus();
   });
 }
+
+/** Opens one of the fish's chats in its column, like a routine run's thread. */
+export function openFishChat(fishId: string, chatId: string): void {
+  void import("@/features/agent/state/assistant").then(({ assistant }) => {
+    assistant.selectFish(fishId);
+    getAppRouter()?.history.push(fishPath(fishId));
+    return assistant.openChat(chatId);
+  });
+}

@@ -26,6 +26,16 @@ export function relativeTime(iso: string | null): string {
   return ago(Date.now() - ms);
 }
 
+export function compactAge(ms: number): string {
+  const diff = Math.max(0, Date.now() - ms);
+  if (diff < MINUTE) return "now";
+  if (diff < HOUR) return `${Math.floor(diff / MINUTE)}m`;
+  if (diff < DAY) return `${Math.floor(diff / HOUR)}h`;
+  if (diff < 7 * DAY) return `${Math.floor(diff / DAY)}d`;
+  if (diff < YEAR) return `${Math.floor(diff / (7 * DAY))}w`;
+  return `${Math.floor(diff / YEAR)}y`;
+}
+
 export function relativeTimeFromMs(ms: number | null, fallback = "—"): string {
   if (ms == null) return fallback;
   return ago(Date.now() - ms);

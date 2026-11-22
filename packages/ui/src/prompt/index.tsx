@@ -1,3 +1,4 @@
+import { IconChevronDown } from "@pond/icons";
 import { clsx as cn } from "clsx";
 import {
   createContext,
@@ -7,6 +8,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { Button } from "../button";
 import { Reveal } from "../reveal";
 import styles from "./styles.module.css";
 
@@ -27,7 +29,7 @@ function Root({ tone = "default", visible, className, ...props }: RootProps) {
   const context = useMemo(() => ({ titleId, setTitleId }), [titleId]);
   return (
     <PromptContext value={context}>
-      <Reveal className={styles.reveal} visible={visible}>
+      <Reveal visible={visible}>
         <section
           className={cn(styles.root, className)}
           data-tone={tone === "default" ? undefined : tone}
@@ -78,13 +80,15 @@ function Choices({ className, ...props }: ChoicesProps) {
 }
 
 interface ChoiceProps extends React.ComponentPropsWithoutRef<"button"> {
-  letter: string;
+  marker: React.ReactNode;
   selected?: boolean;
+  hint?: React.ReactNode;
 }
 
 function Choice({
-  letter,
+  marker,
   selected = false,
+  hint,
   className,
   children,
   ...props
@@ -98,21 +102,22 @@ function Choice({
       {...props}
     >
       <span className={styles.badge} aria-hidden>
-        {letter}
+        {marker}
       </span>
       <span className={styles.text}>{children}</span>
+      {hint ? <span className={styles.hint}>{hint}</span> : null}
     </button>
   );
 }
 
 interface FreeformProps
   extends Omit<React.ComponentPropsWithoutRef<"input">, "type"> {
-  letter: string;
+  marker: React.ReactNode;
   selected?: boolean;
 }
 
 function Freeform({
-  letter,
+  marker,
   selected = false,
   className,
   "aria-label": ariaLabel = "Your Answer",
@@ -125,7 +130,7 @@ function Freeform({
       data-disabled={props.disabled || undefined}
     >
       <span className={styles.badge} aria-hidden>
-        {letter}
+        {marker}
       </span>
       <input
         type="text"
@@ -175,8 +180,82 @@ function AnswerText({ className, ...props }: AnswerTextProps) {
   return <p className={cn(styles.response, className)} {...props} />;
 }
 
+interface ReceiptProps
+  extends Omit<React.ComponentPropsWithoutRef<"div">, "children"> {
+  icon?: React.ReactNode;
+  label: React.ReactNode;
+  detail?: React.ReactNode;
+  action?: React.ReactNode;
+  open?: boolean;
+  /** Present when the receipt can unfold back into what it settled. */
+  onOpenChange?: (open: boolean) => void;
+  tone?: "default" | "muted";
+}
+
+function Receipt({
+  icon,
+  label,
+  detail,
+  action,
+  open = false,
+  onOpenChange,
+  tone = "default",
+  className,
+  ...props
+}: ReceiptProps) {
+  const content = (
+    <>
+      {icon ? (
+        <span className={styles.icon} aria-hidden>
+          {icon}
+        </span>
+      ) : null}
+      <span className={styles.text}>
+        <span className={styles.label}>{label}</span>
+        {detail ? (
+          <span className={styles.detail}>{detail}</span>
+        ) : null}
+      </span>
+      {onOpenChange ? (
+        <IconChevronDown
+          size={12}
+          className={styles.chevron}
+          aria-hidden
+        />
+      ) : null}
+    </>
+  );
+  return (
+    <div
+      className={cn(styles.receipt, className)}
+      data-open={open || undefined}
+      data-tone={tone === "default" ? undefined : tone}
+      {...props}
+    >
+      {onOpenChange ? (
+        <Button
+          variant="bare"
+          size="sm"
+          width="full"
+          className={styles.main}
+          aria-expanded={open}
+          onClick={() => onOpenChange(!open)}
+        >
+          {content}
+        </Button>
+      ) : (
+        <span className={styles.main}>{content}</span>
+      )}
+      {action ? (
+        <span className={styles.action}>{action}</span>
+      ) : null}
+    </div>
+  );
+}
+
 export const Prompt = {
   Root,
+  Receipt,
   Body,
   Title,
   Description,

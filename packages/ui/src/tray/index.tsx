@@ -25,6 +25,8 @@ interface PillProps
   extends Omit<Toolbar.Root.Props, "className" | "render" | "orientation"> {
   className?: string;
   orientation?: Orientation;
+  /** `plain` drops the surface for a pill that sits in a bar instead of floating. */
+  variant?: "raised" | "plain";
 }
 
 /**
@@ -59,6 +61,7 @@ function surfaceProps(
 function Pill({
   className,
   orientation = "horizontal",
+  variant = "raised",
   onFocus,
   onKeyDown,
   ...props
@@ -79,6 +82,7 @@ function Pill({
       <Toolbar.Root
         {...props}
         orientation={orientation}
+        data-variant={variant}
         className={cn(styles.pill, className)}
         onFocus={onFocus}
         onKeyDown={(event) => {

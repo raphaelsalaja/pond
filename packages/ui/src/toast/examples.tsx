@@ -77,7 +77,7 @@ export const docs: ComponentDocs = {
     {
       name: "Toast.Root",
       description:
-        'One toast. `variant="spotlight"` draws the dark promo style.',
+        "One toast. Older toasts tuck behind the newest until you hover or focus the stack.",
     },
     {
       name: "Toast.Content",
@@ -110,7 +110,12 @@ export const docs: ComponentDocs = {
     },
     {
       name: "Toast.Action",
-      description: "A text button for one follow-up action.",
+      description: "A secondary button for one follow-up action.",
+    },
+    {
+      name: "Toast.Actions",
+      description:
+        "Holds the buttons. Sits beside a one-line toast and under a description.",
     },
     { name: "Toast.Close", description: "Dismiss button labeled `Dismiss`." },
     {

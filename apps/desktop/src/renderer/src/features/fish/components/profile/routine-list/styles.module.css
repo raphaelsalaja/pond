@@ -62,22 +62,41 @@
   }
 }
 
-.name,
-.schedule {
+.name {
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: var(--ds-text-body);
   line-height: 18px;
+  color: var(--ds-foreground-primary);
   white-space: nowrap;
 }
 
-.name {
-  color: var(--ds-foreground-primary);
+.schedule {
+  max-width: 100%;
+  font-size: var(--ds-text-small);
+  line-height: var(--ds-leading-small);
+  color: var(--ds-foreground-tertiary);
+  text-align: start;
+  text-wrap: pretty;
 }
 
-.schedule {
+.run {
+  display: flex;
+  gap: var(--ds-space-sm);
+  align-items: baseline;
+  max-width: 100%;
+  margin-top: var(--ds-space-2xs);
+  font-size: var(--ds-text-small);
+  line-height: var(--ds-leading-small);
   color: var(--ds-foreground-tertiary);
+  text-align: start;
+  text-wrap: pretty;
+
+  & > :first-child {
+    flex: none;
+    align-self: center;
+  }
 }
 
 .switch {

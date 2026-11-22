@@ -1,6 +1,5 @@
 import { IconPlus } from "@pond/icons";
 import { Button, Sidebar } from "@pond/ui";
-import { useState } from "react";
 import {
   SidebarSectionMenu,
   useRevealSidebarSection,
@@ -18,14 +17,13 @@ export function CanvasesSection({ activeId }: { activeId: string | null }) {
   useHydrateCanvases();
   const list = useCanvases();
   const editingId = useCanvasEditingId();
-  const [open, setOpen] = useState(true);
   const [sidebar] = usePrefs("sidebar");
   useRevealSidebarSection("canvases", editingId !== null);
 
   if (!sidebar.sections.canvases) return null;
 
   return (
-    <Sidebar.CollapsibleGroup open={open} onOpenChange={setOpen}>
+    <Sidebar.Group>
       <SidebarSectionMenu
         section="canvases"
         search
@@ -33,28 +31,19 @@ export function CanvasesSection({ activeId }: { activeId: string | null }) {
         buildItems={sectionItems}
       >
         <Sidebar.GroupHeader>
-          <Sidebar.CollapsibleGroupLabel>
-            Canvases
-          </Sidebar.CollapsibleGroupLabel>
+          <Sidebar.GroupLabel>Canvases</Sidebar.GroupLabel>
           <Button
             icon
             size="sm"
             variant="ghost"
             aria-label="New Canvas"
-            onClick={() => {
-              setOpen(true);
-              createCanvas();
-            }}
+            onClick={() => createCanvas()}
           >
             <IconPlus />
           </Button>
         </Sidebar.GroupHeader>
       </SidebarSectionMenu>
-      <Sidebar.CollapsibleGroupContent
-        aria-label="Canvases"
-        inert={!open}
-        aria-hidden={!open}
-      >
+      <Sidebar.GroupContent aria-label="Canvases">
         {list.map((canvas) => (
           <CanvasRow
             key={canvas.id}
@@ -63,7 +52,7 @@ export function CanvasesSection({ activeId }: { activeId: string | null }) {
             renaming={canvas.id === editingId}
           />
         ))}
-      </Sidebar.CollapsibleGroupContent>
-    </Sidebar.CollapsibleGroup>
+      </Sidebar.GroupContent>
+    </Sidebar.Group>
   );
 }

@@ -12,7 +12,7 @@ export const docs: ComponentDocs = {
     {
       name: "ToggleGroup",
       description:
-        "The group. `variant` is raised, outline, tiles or list; list stacks vertically.",
+        "The group. `variant` is raised, outline, tiles, list or rail; list stacks vertically.",
     },
     { name: "Toggle", description: "One segment, identified by `value`." },
   ],

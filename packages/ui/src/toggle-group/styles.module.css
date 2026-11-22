@@ -5,7 +5,7 @@
   display: inline-flex;
   gap: var(--ds-space-2xs);
   align-items: stretch;
-  padding: var(--ds-space-xs);
+  padding: var(--ds-space-2xs);
   overflow: hidden;
   background: var(--ds-surface-secondary);
   border-radius: var(--ds-radius-full);
@@ -43,6 +43,18 @@
     background: none;
     border-radius: 0;
   }
+
+  &[data-variant="rail"] {
+    gap: var(--ds-space-xs);
+    padding: 0;
+    overflow: visible;
+    background: none;
+    border-radius: 0;
+
+    & > .indicator {
+      border-radius: var(--ds-radius-md);
+    }
+  }
 }
 
 .indicator {
@@ -55,7 +67,7 @@
   pointer-events: none;
   background: var(--ds-background-primary);
   border-radius: var(--ds-radius-full);
-  box-shadow: var(--ds-shadow-raised);
+  box-shadow: var(--ds-shadow-border);
   transform: translate(0);
   transition:
     transform var(--ds-duration-spring) var(--ds-easing-spring),

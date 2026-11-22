@@ -1,5 +1,6 @@
 import { Button as Base } from "@base-ui/react/button";
 import { clsx as cn } from "clsx";
+import { Children, isValidElement } from "react";
 import { Loader } from "../loader";
 import { pop } from "../shared/pop";
 import styles from "./styles.module.css";
@@ -55,6 +56,10 @@ export function Button({
   children,
   ...props
 }: ButtonProps) {
+  const parts = Children.toArray(children);
+  const labeled = parts.some(
+    (part) => typeof part === "string" || typeof part === "number",
+  );
   return (
     <Base
       {...props}
@@ -68,6 +73,8 @@ export function Button({
       data-density={density === "compact" ? density : undefined}
       data-rounding={rounding}
       data-icon={icon ? "" : undefined}
+      data-icon-start={(labeled && isValidElement(parts[0])) || undefined}
+      data-icon-end={(labeled && isValidElement(parts.at(-1))) || undefined}
       data-loading={loading || undefined}
       aria-busy={loading || undefined}
       disabled={disabled || loading || undefined}

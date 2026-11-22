@@ -3,12 +3,17 @@ import type {
   LibraryHealthJob,
   LibraryHealthOverview,
 } from "@shared/library-health-contracts";
-import type { LibraryRepairKind } from "@shared/library-repair-contracts";
+import type {
+  LibraryRepairJob,
+  LibraryRepairKind,
+} from "@shared/library-repair-contracts";
 import {
   type QueryClient,
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
+import { useSelector } from "@tanstack/react-store";
+import { Store } from "@tanstack/store";
 import { useEffect, useMemo } from "react";
 import {
   canRetryDownload,
@@ -17,48 +22,95 @@ import {
   useDownloadHealth,
 } from "@/features/downloads/health";
 import { useEnrichmentStatus } from "@/features/enrichment/status";
-import { openLibraryRepair } from "@/features/library/repair";
 import { savesStore } from "@/features/saves/pool";
 import { errorCopy } from "@/shared/lib/error-copy";
-import { formatPlural } from "@/shared/lib/format";
+import { formatNumber, formatPlural } from "@/shared/lib/format";
 import { THIS_DEVICE } from "@/shared/lib/platform";
-import { notify } from "@/shared/lib/toast";
-import { buildHealthCategories } from "./categories";
+import {
+  notify,
+  TOAST_TIMEOUT_MS,
+  updateNotification,
+} from "@/shared/lib/toast";
+import {
+  buildHealthCategories,
+  type HealthCategory,
+  type HealthCategoryId,
+  healthTotals,
+} from "./categories";
 
 const OVERVIEW_KEY = ["libraryHealth.overview"];
 
 /** Main caps each request so a recheck never blocks the library for long. */
 const RECHECK_BATCH = 500;
 
+const REPAIR_POLL_MS = 500;
+
+/** A repair that makes no progress for this long has stalled in main. */
+const REPAIR_STALL_MS = 120_000;
+
+const SAVES = { one: "Save", other: "Saves" };
+
+const REPAIR_NOUNS = {
+  thumbnails: "thumbnails",
+  "physical-file-names": "file names",
+  "invalid-content": "original files",
+  "save-metadata": "Save records",
+} satisfies Record<LibraryRepairKind, string>;
+
 /** Saves whose posters were retried, rechecked once the warmer lets go of them. */
 const awaitingPosters = new Set<string>();
+
+const running = new Store<ReadonlySet<HealthCategoryId>>(new Set());
+
+export function useCategoryRunning(id: HealthCategoryId | null): boolean {
+  return useSelector(running, (state) => id != null && state.has(id));
+}
+
+/** One run per category, so a second click never starts a duplicate repair. */
+export async function inBackground(
+  id: HealthCategoryId,
+  run: () => Promise<void>,
+): Promise<void> {
+  if (running.state.has(id)) return;
+  running.setState((state) => new Set(state).add(id));
+  try {
+    await run();
+  } finally {
+    running.setState((state) => {
+      const next = new Set(state);
+      next.delete(id);
+      return next;
+    });
+  }
+}
 
 function title(saveId: string): string | null {
   return savesStore.state.byId.get(saveId)?.title?.trim() || null;
 }
 
-function useHealthOverview() {
+function useHealthOverview(idleMs = 5_000) {
   return useQuery({
     queryKey: OVERVIEW_KEY,
     queryFn: () => window.pond.query("libraryHealth.overview", {}),
     refetchInterval: (query) =>
-      query.state.data?.job?.status === "running" ? 500 : 5_000,
+      query.state.data?.job?.status === "running" ? 500 : idleMs,
   });
 }
 
-export function useHealthCategories() {
-  const overview = useHealthOverview();
-  const downloads = useDownloadHealth();
+function useCategories(
+  overview: LibraryHealthOverview | null,
+  downloads: readonly DownloadHealthRow[],
+): HealthCategory[] {
   const enrichment = useEnrichmentStatus();
   const missingIds = useMemo(
     () => new Set(enrichment.missingOriginals.map((save) => save.id)),
     [enrichment.missingOriginals],
   );
-  const categories = useMemo(
+  return useMemo(
     () =>
       buildHealthCategories({
-        overview: overview.data ?? null,
-        downloads: downloads.rows,
+        overview,
+        downloads,
         enrichment: {
           inflight: enrichment.inflight,
           failures: enrichment.failures,
@@ -67,18 +119,37 @@ export function useHealthCategories() {
         title,
         device: THIS_DEVICE,
       }),
-    [
-      overview.data,
-      downloads.rows,
-      enrichment.inflight,
-      enrichment.failures,
-      missingIds,
-    ],
+    [overview, downloads, enrichment.inflight, enrichment.failures, missingIds],
   );
+}
+
+export function useHealthCategories() {
+  const overview = useHealthOverview();
+  const downloads = useDownloadHealth();
+  const categories = useCategories(overview.data ?? null, downloads.rows);
   return {
     categories,
     overview: overview.data ?? null,
     downloads: downloads.rows,
+    status: overview.status,
+    retry: () => void overview.refetch(),
+  };
+}
+
+const NO_DOWNLOADS: readonly DownloadHealthRow[] = [];
+
+/** Drives an always-mounted indicator: polls once a minute and leaves out downloads, which would subscribe it to every Save. */
+export function useHealthSignal() {
+  const overview = useHealthOverview(60_000);
+  const categories = useCategories(overview.data ?? null, NO_DOWNLOADS);
+  const totals = healthTotals(categories);
+  const job = overview.data?.job ?? null;
+  return {
+    categories,
+    loaded: overview.data != null,
+    checking: job?.status === "running" ? job : null,
+    attention: totals.attention > 0,
+    working: job?.status === "running" || totals.progress > 0,
   };
 }
 
@@ -145,14 +216,120 @@ export async function recheckSaves(
 
 export function repairSaves(
   qc: QueryClient,
+  category: HealthCategoryId,
   kind: LibraryRepairKind,
   saveIds: readonly string[],
-): void {
+): Promise<void> {
   const unique = [...new Set(saveIds)];
-  openLibraryRepair(kind, {
-    saveIds: unique,
-    onClosed: () => void recheckSaves(qc, unique),
+  const start = () =>
+    inBackground(category, () => repairInBackground(qc, kind, unique));
+  if (kind !== "invalid-content") return start();
+  Dialog.confirm({
+    title: "Repair Original Files",
+    description: `${formatPlural(unique.length, SAVES)} with missing or damaged files move to Trash. Restore the files from a backup first to keep them.`,
+    confirmLabel: "Move to Trash",
+    onConfirm: () => {
+      void start();
+    },
   });
+  return Promise.resolve();
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function followRepair(
+  first: LibraryRepairJob,
+  onProgress: (job: LibraryRepairJob) => void,
+): Promise<LibraryRepairJob> {
+  let job = first;
+  let movedAt = Date.now();
+  while (job.status === "queued" || job.status === "running") {
+    await delay(REPAIR_POLL_MS);
+    const next = await window.pond.query("libraryRepairs.get", { id: job.id });
+    if (!next) throw new Error("Pond lost track of this repair. Try again.");
+    if (next.status !== job.status || next.processed !== job.processed) {
+      movedAt = Date.now();
+    } else if (Date.now() - movedAt > REPAIR_STALL_MS) {
+      void window.pond.query("libraryRepairs.cancel", { id: job.id });
+      throw new Error("The repair stopped responding. Try again.");
+    }
+    job = next;
+    onProgress(job);
+  }
+  if (job.status === "failed") {
+    throw new Error(job.error ?? "The repair failed. Try again.");
+  }
+  return job;
+}
+
+async function repairInBackground(
+  qc: QueryClient,
+  kind: LibraryRepairKind,
+  saveIds: readonly string[],
+): Promise<void> {
+  const noun = REPAIR_NOUNS[kind];
+  const title = `Repairing ${noun}`;
+  const id = notify({
+    id: `library-health-repair-${kind}`,
+    title,
+    description: "Checking Saves",
+    progress: { label: `${title} progress` },
+    timeout: 0,
+  });
+  const progress = (job: LibraryRepairJob) => {
+    if (job.total === 0) return;
+    updateNotification({
+      id,
+      title,
+      description: `${formatNumber(job.processed)} of ${formatPlural(job.total, SAVES)}`,
+      progress: {
+        label: `${title} progress`,
+        value: job.processed,
+        max: job.total,
+      },
+      timeout: 0,
+    });
+  };
+  try {
+    const preview = await followRepair(
+      await window.pond.query("libraryRepairs.preview", {
+        kind,
+        saveIds: [...saveIds],
+      }),
+      progress,
+    );
+    const token = preview.preview?.token;
+    if (!token || preview.preview?.issues.length === 0) {
+      updateNotification({
+        id,
+        title: "Nothing to repair",
+        timeout: TOAST_TIMEOUT_MS,
+      });
+    } else {
+      const applied = await followRepair(
+        await window.pond.query("libraryRepairs.apply", { token }),
+        progress,
+      );
+      const skipped = applied.result?.skipped ?? 0;
+      updateNotification({
+        id,
+        title: `Repaired ${formatPlural(applied.result?.repaired ?? 0, SAVES)}`,
+        description:
+          skipped > 0 ? `${formatNumber(skipped)} skipped.` : undefined,
+        timeout: TOAST_TIMEOUT_MS,
+      });
+    }
+  } catch (cause) {
+    updateNotification({
+      id,
+      title: `Couldn't repair ${noun}`,
+      description: errorCopy(cause, "Try again."),
+      timeout: 5000,
+    });
+  }
+  await recheckSaves(qc, saveIds);
 }
 
 export function retryPosters(

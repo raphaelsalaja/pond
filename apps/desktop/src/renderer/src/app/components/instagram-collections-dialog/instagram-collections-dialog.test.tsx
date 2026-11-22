@@ -9,8 +9,8 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { setAppRouter } from "@/shared/lib/app-router";
+import { announcements } from "@/shared/state/announcements";
 import { instagramCollectionsDialog } from "@/shared/state/instagram-collections";
-import { claimNoticeSlot } from "@/shared/state/notices";
 import { whatsNewDialog } from "@/shared/state/whats-new";
 import { InstagramCollectionsDialog } from ".";
 import { INSTAGRAM_COLLECTIONS_NOTICE } from "./eligibility";
@@ -57,6 +57,7 @@ beforeEach(() => {
 });
 
 afterEach(async () => {
+  await act(async () => announcements.clear());
   await act(async () => root.unmount());
   host.remove();
   instagramCollectionsDialog.close();
@@ -86,15 +87,27 @@ function button(label: string): HTMLButtonElement {
   return found;
 }
 
+async function openFromInbox(): Promise<void> {
+  await act(async () => announcements.open(INSTAGRAM_COLLECTIONS_NOTICE));
+}
+
+it("posts to Notifications instead of opening over the library", async () => {
+  await launch();
+  expect(shown()).toBe(false);
+  expect(seen()).toBe(false);
+  expect(announcements.has(INSTAGRAM_COLLECTIONS_NOTICE)).toBe(true);
+});
+
 it("opens the collection picker for the first affected Account", async () => {
   accounts.push({ id: "ig-2", source: "instagram", sync: {} });
   await launch();
+  await openFromInbox();
   expect(shown()).toBe(true);
   expect(document.body.textContent).toContain(
     "Do the same for your other Instagram accounts in Sources.",
   );
   expect(seen()).toBe(true);
-  expect(claimNoticeSlot("fish-intro")).toBe(false);
+  expect(announcements.has(INSTAGRAM_COLLECTIONS_NOTICE)).toBe(false);
 
   await act(async () => button("Choose Collections").click());
   expect(router.history.location.href).toBe(
@@ -105,6 +118,7 @@ it("opens the collection picker for the first affected Account", async () => {
 
 it("stays dismissed after Escape, even on the next launch", async () => {
   await launch();
+  await openFromInbox();
   expect(shown()).toBe(true);
   await act(async () => {
     document.activeElement?.dispatchEvent(
@@ -117,7 +131,7 @@ it("stays dismissed after Escape, even on the next launch", async () => {
   await act(async () => root.unmount());
   root = createRoot(host);
   await launch();
-  expect(instagramCollectionsDialog.isOpen()).toBe(false);
+  expect(announcements.has(INSTAGRAM_COLLECTIONS_NOTICE)).toBe(false);
 });
 
 it("marks an unaffected library seen without a dialog", async () => {
@@ -129,17 +143,16 @@ it("marks an unaffected library seen without a dialog", async () => {
     },
   ];
   await launch();
-  expect(instagramCollectionsDialog.isOpen()).toBe(false);
+  expect(announcements.has(INSTAGRAM_COLLECTIONS_NOTICE)).toBe(false);
   expect(seen()).toBe(true);
 });
 
 it("waits for another dialog to close", async () => {
   whatsNewDialog.open();
   await launch();
-  expect(instagramCollectionsDialog.isOpen()).toBe(false);
-  expect(seen()).toBe(false);
+  expect(announcements.has(INSTAGRAM_COLLECTIONS_NOTICE)).toBe(false);
 
   whatsNewDialog.close();
   await act(async () => vi.advanceTimersByTimeAsync(3000));
-  expect(instagramCollectionsDialog.isOpen()).toBe(true);
+  expect(announcements.has(INSTAGRAM_COLLECTIONS_NOTICE)).toBe(true);
 });

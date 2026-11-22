@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { FishRoutine, FishWhen } from "./fish-contracts";
-import { describeWhen, isRoutineDue } from "./fish-routine";
+import { describeWhen, isRoutineDue, nextRun } from "./fish-routine";
 
 const HOUR = 60 * 60 * 1000;
 
@@ -86,5 +86,36 @@ describe("isRoutineDue", () => {
     expect(
       isRoutineDue(routine({ kind: "newSaves" }), every.createdAt + 99 * HOUR),
     ).toBe(false);
+  });
+});
+
+describe("nextRun", () => {
+  const at = (day: number, hours: number, minutes = 0) =>
+    new Date(2026, 9, day, hours, minutes).getTime();
+  const weekdays: FishWhen = {
+    kind: "daily",
+    time: "09:00",
+    days: [1, 2, 3, 4, 5],
+  };
+
+  it("finds the next daily slot, skipping days off", () => {
+    expect(nextRun(weekdays, at(26, 6), at(26, 7))).toBe(at(26, 9));
+    expect(nextRun(weekdays, at(26, 9, 1), at(26, 10))).toBe(at(27, 9));
+    expect(nextRun(weekdays, at(30, 9, 1), at(30, 10))).toBe(at(33, 9));
+  });
+
+  it("says now when a slot has passed without a run", () => {
+    expect(nextRun(weekdays, at(26, 6), at(26, 10))).toBe(at(26, 10));
+  });
+
+  it("counts intervals from the last run", () => {
+    const every: FishWhen = { kind: "every", hours: 6 };
+    expect(nextRun(every, at(26, 6), at(26, 7))).toBe(at(26, 12));
+    expect(nextRun(every, at(26, 6), at(26, 13))).toBe(at(26, 13));
+  });
+
+  it("has no clock time for event routines", () => {
+    expect(nextRun({ kind: "newSaves" }, at(26, 6), at(26, 7))).toBeNull();
+    expect(nextRun({ kind: "inbox" }, at(26, 6), at(26, 7))).toBeNull();
   });
 });

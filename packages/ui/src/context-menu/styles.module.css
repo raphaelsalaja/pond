@@ -47,10 +47,10 @@
   flex: none;
   align-items: center;
   justify-content: center;
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   margin-left: auto;
-  color: var(--ds-foreground-secondary);
+  color: var(--ds-foreground-tertiary);
 
   &[data-unchecked] {
     visibility: hidden;

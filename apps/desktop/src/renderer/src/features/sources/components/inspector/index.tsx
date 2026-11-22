@@ -1,5 +1,4 @@
 import {
-  IconArrowLeft,
   IconCalendar,
   IconFolder,
   IconGauge,
@@ -74,6 +73,7 @@ import {
   sourceDetailHref,
 } from "@/features/sources/state/source-detail";
 import { useSyncByAccount } from "@/features/sources/state/sync-monitor";
+import { SearchChrome } from "@/shared/components/search-chrome";
 import { getAppRouter } from "@/shared/lib/app-router";
 import { formatNumber, formatTimestampLine } from "@/shared/lib/format";
 import { openSettings } from "@/shared/lib/open-settings";
@@ -176,7 +176,6 @@ export function SourceDetailSidebar({ kind, id, page }: SourceDetailTarget) {
           onSelect={(next) =>
             getAppRouter()?.history.replace(sourceDetailHref(kind, id, next))
           }
-          onExit={sourceDetail.close}
         />
       )}
     </SourceDetailData>
@@ -234,12 +233,10 @@ export function SourceDetailNavView({
   model,
   page,
   onSelect,
-  onExit,
 }: {
   model: SourceDetailModel;
   page?: SourceDetailsPage;
   onSelect: (page: SourceDetailsPage) => void;
-  onExit?: () => void;
 }) {
   const active = resolveSourceDetailPage(model, page);
   const [query, setQuery] = useState("");
@@ -263,67 +260,49 @@ export function SourceDetailNavView({
       </Sidebar.Item>
     );
   };
+  if (model.status !== "ready") return null;
   return (
-    <Sidebar.Root
-      className={styles.sidebar}
-      width="full"
-      role="navigation"
-      aria-label="Source"
-    >
-      {onExit ? (
-        <Sidebar.Header className={styles.header}>
-          <Button variant="ghost" size="sm" onClick={onExit}>
-            <IconArrowLeft aria-hidden />
-            Back to Sources
-          </Button>
-        </Sidebar.Header>
-      ) : null}
-      {model.status === "ready" ? (
-        <>
-          <div className={styles.search}>
-            <Sidebar.Search
-              aria-label="Search source settings"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search…"
-            />
-          </div>
-          <Sidebar.Scroll>
-            {results === null ? (
-              groupPages(model.pages).map(({ group, pages }) => {
-                const label = group === "top" ? undefined : GROUP_LABELS[group];
-                return (
-                  <Sidebar.Group key={group}>
-                    {label ? (
-                      <Sidebar.GroupLabel>{label}</Sidebar.GroupLabel>
-                    ) : null}
-                    {pages.map(pageItem)}
-                  </Sidebar.Group>
-                );
-              })
-            ) : results.length === 0 ? (
-              <Sidebar.Group>
-                <Sidebar.Empty>No settings match.</Sidebar.Empty>
-              </Sidebar.Group>
-            ) : (
-              results.map(({ page: result, items }) => (
-                <Sidebar.Group key={result.id}>
-                  {pageItem(result)}
-                  {items.map((title) => (
-                    <Sidebar.ResultButton
-                      key={title}
-                      onClick={() => onSelect(result.id)}
-                    >
-                      {title}
-                    </Sidebar.ResultButton>
-                  ))}
-                </Sidebar.Group>
-              ))
-            )}
-          </Sidebar.Scroll>
-        </>
-      ) : null}
-    </Sidebar.Root>
+    <>
+      <Sidebar.GroupHeader>
+        <Sidebar.GroupLabel>{model.name}</Sidebar.GroupLabel>
+      </Sidebar.GroupHeader>
+      <SearchChrome.Root>
+        <SearchChrome.Field
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          aria-label="Search Source Settings"
+        />
+      </SearchChrome.Root>
+      {results === null ? (
+        groupPages(model.pages).map(({ group, pages }) => {
+          const label = group === "top" ? undefined : GROUP_LABELS[group];
+          return (
+            <Sidebar.Group key={group}>
+              {label ? <Sidebar.GroupLabel>{label}</Sidebar.GroupLabel> : null}
+              {pages.map(pageItem)}
+            </Sidebar.Group>
+          );
+        })
+      ) : results.length === 0 ? (
+        <Sidebar.Group>
+          <Sidebar.Empty>No settings match.</Sidebar.Empty>
+        </Sidebar.Group>
+      ) : (
+        results.map(({ page: result, items }) => (
+          <Sidebar.Group key={result.id}>
+            {pageItem(result)}
+            {items.map((title) => (
+              <Sidebar.ResultButton
+                key={title}
+                onClick={() => onSelect(result.id)}
+              >
+                {title}
+              </Sidebar.ResultButton>
+            ))}
+          </Sidebar.Group>
+        ))
+      )}
+    </>
   );
 }
 

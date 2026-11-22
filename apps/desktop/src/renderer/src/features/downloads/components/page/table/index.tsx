@@ -103,6 +103,7 @@ export function DownloadTable({
         );
       }}
       getRowId={(row) => row.id}
+      rowHeight={48}
       height={height}
       selectionCheckboxes
       selectOnClick
@@ -129,7 +130,11 @@ export function DownloadTable({
       }}
     >
       <DataTable.Hotkeys />
-      <DataTable.Root className={styles.grid} aria-label="Downloads">
+      <DataTable.Root
+        className={styles.grid}
+        rows="inset"
+        aria-label="Downloads"
+      >
         {extra ? <DataTable.ExtraRow>{extra}</DataTable.ExtraRow> : null}
       </DataTable.Root>
       <SelectionSync rowsById={rowsById} />

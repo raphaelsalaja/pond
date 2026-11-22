@@ -167,8 +167,11 @@ function IconChoices({
             </div>
           </section>
         ) : (
-          <Empty.Root role="status" className={styles.empty}>
-            <Empty.Title>No results found</Empty.Title>
+          <Empty.Root role="status" size="card" className={styles.empty}>
+            <Empty.Media>
+              <IconMagnifier size={14} />
+            </Empty.Media>
+            <Empty.Title>{`No results for “${query.trim()}”`}</Empty.Title>
             <Empty.Description>Try another word.</Empty.Description>
           </Empty.Root>
         )}

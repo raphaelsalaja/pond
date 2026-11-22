@@ -1,4 +1,5 @@
-import { Button, Dialog, Empty } from "@pond/ui";
+import { IconDuplicate } from "@pond/icons";
+import { Button, Dialog, Empty, Loader } from "@pond/ui";
 import {
   type DuplicateDismissal,
   type DuplicatePair,
@@ -199,11 +200,17 @@ export function DuplicateReview({
             data-scroll-fade="vertical"
           >
             {loading ? (
-              <Empty.Root>
+              <Empty.Root size="card">
+                <Empty.Media>
+                  <Loader.Spinner />
+                </Empty.Media>
                 <Empty.Title role="status">Finding duplicates</Empty.Title>
               </Empty.Root>
             ) : shown.length === 0 ? (
-              <Empty.Root>
+              <Empty.Root size="card">
+                <Empty.Media>
+                  <IconDuplicate size={14} />
+                </Empty.Media>
                 <Empty.Title>No duplicates found</Empty.Title>
               </Empty.Root>
             ) : (

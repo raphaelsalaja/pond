@@ -17,16 +17,12 @@ afterEach(async () => {
   host.remove();
 });
 
-it("starts with the search when there is no exit action", async () => {
+it("renders the settings search", async () => {
   await act(async () => {
     root.render(<SettingsSidebarView activeSection="general" />);
   });
 
-  const navigation = host.querySelector('[aria-label="Settings"]');
-  const search = host.querySelector('[aria-label="Search settings"]');
-
-  expect(navigation?.firstElementChild?.contains(search)).toBe(true);
-  expect(host.textContent).not.toContain("Exit settings");
+  expect(host.querySelector('[aria-label="Search Settings"]')).not.toBeNull();
 });
 
 it("highlights Sources while a source page is open", async () => {
@@ -38,19 +34,4 @@ it("highlights Sources while a source page is open", async () => {
 
   expect(current?.textContent).toBe("Sources");
   expect(host.textContent).not.toContain("YouTube");
-});
-
-it("keeps the exit header when an exit action is available", async () => {
-  await act(async () => {
-    root.render(
-      <SettingsSidebarView activeSection="general" onExit={() => {}} />,
-    );
-  });
-
-  const navigation = host.querySelector('[aria-label="Settings"]');
-  const exit = [...host.querySelectorAll("button")].find(
-    (button) => button.textContent === "Exit settings",
-  );
-
-  expect(navigation?.firstElementChild?.contains(exit ?? null)).toBe(true);
 });

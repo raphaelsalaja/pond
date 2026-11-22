@@ -97,14 +97,16 @@ export async function patchAccount(
   await writeAccounts((accounts) => {
     const current = accounts[accountId];
     if (!current) return accounts;
-    updated = {
-      ...current,
-      ...patch,
-      handle:
-        patch.handle !== undefined
-          ? normalizeHandle(patch.handle)
-          : current.handle,
-    };
+    const handle =
+      patch.handle !== undefined
+        ? normalizeHandle(patch.handle)
+        : current.handle;
+    /** An avatar belongs to the old handle, so a new handle starts the avatar lookup over. */
+    const avatarReset =
+      handle !== current.handle && patch.avatarUrl === undefined
+        ? { avatarUrl: null, avatarCheckedAt: null }
+        : {};
+    updated = { ...current, ...avatarReset, ...patch, handle };
     return { ...accounts, [accountId]: updated };
   });
   return updated;

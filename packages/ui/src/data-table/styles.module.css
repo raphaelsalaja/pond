@@ -1,7 +1,60 @@
 .container {
+  --data-table-selected: color-mix(in oklab, var(--ds-accent-tint) 70%, transparent);
+  --data-table-gutter: 0px;
+  --data-table-cell-padding: var(--ds-space-lg);
   width: 100%;
   min-width: 0;
   user-select: none;
+}
+
+.container[data-rows="inset"] {
+  --data-table-gutter: var(--ds-space-md);
+  --data-table-header-border: 0;
+
+  & .sheet {
+    position: relative;
+  }
+
+  & .row {
+    position: relative;
+    border-bottom: 0;
+    border-radius: var(--ds-radius-md);
+  }
+
+  & .row:hover:not([data-selected]) {
+    background: transparent;
+  }
+
+  /* A pinned cell only needs its own fill to cover columns scrolled under it. */
+  & .viewport:not([data-scrolled-x]) .cell[data-pinned] {
+    --pin-bg: transparent;
+    --pin-tint: transparent;
+  }
+
+  & .row[data-selected]:not([data-selected-start]) {
+    border-start-start-radius: 0;
+    border-start-end-radius: 0;
+  }
+
+  & .row[data-selected]:not([data-selected-end]) {
+    border-end-start-radius: 0;
+    border-end-end-radius: 0;
+  }
+}
+
+.hover {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  background: var(--ds-background-secondary);
+  border-radius: var(--ds-radius-md);
+  opacity: 0;
+  transition: transform var(--ds-duration-snap) var(--ds-easing-snap);
+
+  &[data-visible] {
+    opacity: 1;
+  }
 }
 
 .container :is(input, textarea, [contenteditable="true"]) {
@@ -16,7 +69,7 @@
 
   &[data-header] {
     --scroll-fade-start-size: 0px;
-    scroll-padding-top: var(--data-table-header-height, 40px);
+    scroll-padding-top: var(--data-table-header-height, 36px);
   }
 
   &[data-sized] {
@@ -26,7 +79,7 @@
   &[data-sized][data-header] {
     height: calc(
       var(--data-table-body-height) +
-      var(--data-table-header-height, 40px)
+      var(--data-table-header-height, 36px)
     );
   }
 }
@@ -39,7 +92,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  height: var(--data-table-header-height, 40px);
+  height: 100%;
   padding: 0;
 }
 
@@ -55,11 +108,15 @@
   display: grid;
   align-items: center;
   width: 100%;
-  height: var(--data-table-row-height, 48px);
+  height: var(--data-table-row-height, 44px);
   padding-inline: var(--data-table-inset, 0px);
   cursor: var(--ds-cursor-interactive, pointer);
-  border-radius: var(--ds-radius-md);
+  border-bottom: var(--ds-border-width) solid var(--ds-border-subtle);
   transition: background var(--ds-duration-fast) var(--ds-easing-standard);
+}
+
+.body > .row:last-child {
+  border-bottom: 0;
 }
 
 .row:hover,
@@ -69,18 +126,11 @@
 }
 
 .row[data-selected] {
+  background: var(--data-table-selected);
+}
+
+.row[data-selected]:hover {
   background: var(--ds-accent-tint);
-  border-radius: 0;
-}
-
-.row[data-selected][data-selected-start] {
-  border-top-left-radius: var(--ds-radius-md);
-  border-top-right-radius: var(--ds-radius-md);
-}
-
-.row[data-selected][data-selected-end] {
-  border-bottom-right-radius: var(--ds-radius-md);
-  border-bottom-left-radius: var(--ds-radius-md);
 }
 
 .cell {
@@ -95,8 +145,6 @@
 .cell[data-pinned] {
   --pin-bg: var(--data-table-bg, var(--ds-background-primary));
   --pin-tint: transparent;
-  border-top-left-radius: inherit;
-  border-bottom-left-radius: inherit;
 }
 
 .row:hover .cell[data-pinned],
@@ -106,6 +154,10 @@
 
 .row[data-selected] .cell[data-pinned] {
   --pin-bg: var(--data-table-bg, var(--ds-background-primary));
+  --pin-tint: var(--data-table-selected);
+}
+
+.row[data-selected]:hover .cell[data-pinned] {
   --pin-tint: var(--ds-accent-tint);
 }
 
@@ -165,6 +217,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .hover {
+    transition: none;
+  }
+
   .caret,
   .row {
     box-sizing: border-box;

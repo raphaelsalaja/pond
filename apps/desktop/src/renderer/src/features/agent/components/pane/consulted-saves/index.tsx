@@ -10,14 +10,14 @@ import { formatAbsolute } from "@/shared/lib/format";
 import { SourceThumbnail, useSourceCovers } from "../save-preview";
 import styles from "./styles.module.css";
 
-interface ReferenceItem {
+export interface ReferenceItem {
   id: string;
   title: string;
   description?: string;
   media?: ReactNode;
 }
 
-function toReferenceItems(
+export function toReferenceItems(
   ids: string[],
   sources: AssistantSource[],
   renderMedia?: (source: AssistantSource) => ReactNode,
@@ -40,7 +40,56 @@ function toReferenceItems(
   });
 }
 
-function fileType(path: string | undefined) {
+export function SavePreview({
+  item,
+  sources,
+  attachedIds,
+  onOpenSave,
+  onAttach,
+}: {
+  item: ReferenceItem;
+  sources: AssistantSource[];
+  attachedIds: string[];
+  onOpenSave: (id: string) => void;
+  onAttach: (sources: AssistantSource[]) => void;
+}) {
+  const attached = attachedIds.includes(item.id);
+  return (
+    <Popover.Portal>
+      <Popover.Positioner side="top" align="start" sideOffset={8}>
+        <Popover.Popup className={styles.preview}>
+          <Popover.Title className={styles.heading}>{item.title}</Popover.Title>
+          <Popover.Description className={styles.description}>
+            {item.description || "Only the saved title is available."}
+          </Popover.Description>
+          <div className={styles.actions}>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => onOpenSave(item.id)}
+            >
+              Open Save
+            </Button>
+            <Button
+              size="sm"
+              variant="text"
+              aria-label={`Add ${item.title}`}
+              disabled={attached}
+              onClick={() => {
+                const source = sources.find((save) => save.id === item.id);
+                if (source) onAttach([source]);
+              }}
+            >
+              {attached ? "Added to message" : "Add to message"}
+            </Button>
+          </div>
+        </Popover.Popup>
+      </Popover.Positioner>
+    </Popover.Portal>
+  );
+}
+
+export function fileType(path: string | undefined) {
   const dot = path?.lastIndexOf(".") ?? -1;
   return path && dot >= 0 ? path.slice(dot + 1).toUpperCase() : null;
 }
@@ -96,41 +145,13 @@ export function ConsultedSaves({
           </span>
           <RowMeta id={item.id} />
         </Popover.Trigger>
-        <Popover.Portal>
-          <Popover.Positioner side="top" align="start" sideOffset={8}>
-            <Popover.Popup className={styles.preview}>
-              <Popover.Title className={styles.heading}>
-                {item.title}
-              </Popover.Title>
-              <Popover.Description className={styles.description}>
-                {item.description || "Only the saved title is available."}
-              </Popover.Description>
-              <div className={styles.actions}>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => onOpenSave(item.id)}
-                >
-                  Open Save
-                </Button>
-                <Button
-                  size="sm"
-                  variant="text"
-                  aria-label={`Add ${item.title}`}
-                  disabled={attachedIds.includes(item.id)}
-                  onClick={() => {
-                    const source = sources.find((save) => save.id === item.id);
-                    if (source) onAttach([source]);
-                  }}
-                >
-                  {attachedIds.includes(item.id)
-                    ? "Added to message"
-                    : "Add to message"}
-                </Button>
-              </div>
-            </Popover.Popup>
-          </Popover.Positioner>
-        </Popover.Portal>
+        <SavePreview
+          item={item}
+          sources={sources}
+          attachedIds={attachedIds}
+          onOpenSave={onOpenSave}
+          onAttach={onAttach}
+        />
       </Popover.Root>
     </article>
   );

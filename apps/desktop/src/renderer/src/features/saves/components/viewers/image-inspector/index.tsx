@@ -11,7 +11,6 @@ import {
 } from "react";
 import { BlurHash } from "@/features/saves/components/card/media/blur-hash";
 import { useViewerChromeEnabled } from "@/features/saves/components/viewers/media-viewer/chrome";
-import type { ViewerNavigation } from "@/features/saves/components/viewers/viewer-toolbar-groups";
 import { useGifPlayer } from "@/features/saves/hooks/use-gif-player";
 import { useImageDecoded } from "@/features/saves/hooks/use-image-decoded";
 import { useReportMediaReady } from "@/features/saves/hooks/use-media-ready";
@@ -59,7 +58,6 @@ interface ImageInspectorProps {
   onNavigate?: (id: string) => void;
   edits?: "full" | "none";
   endActions?: ReactNode;
-  slideNavigation?: ViewerNavigation;
 }
 
 export function ImageInspector({
@@ -72,7 +70,6 @@ export function ImageInspector({
   onNavigate,
   edits = "full",
   endActions,
-  slideNavigation,
 }: ImageInspectorProps) {
   const [prefs] = usePrefs("viewer");
   /** Quick Preview hides the viewer chrome and uses browser-style click to zoom. */
@@ -514,7 +511,6 @@ export function ImageInspector({
         mode={mode}
         edits={edits}
         endActions={endActions}
-        slideNavigation={slideNavigation}
         onSetImageThumbnail={
           canSetImageThumbnail ? setImageThumbnail : undefined
         }

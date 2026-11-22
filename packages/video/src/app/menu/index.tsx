@@ -4,12 +4,12 @@ import {
   IconCopy,
   IconDownload,
   IconFile,
-  IconFiles2,
   IconFolder,
   IconFolderImport,
   IconFolderOpen,
   IconGlobe,
   IconImageSparkle,
+  IconLibrary,
   IconLink2,
   IconUserPlus,
 } from "@pond/icons";
@@ -29,7 +29,7 @@ export const NEW_ITEMS: MenuItem[] = [
   { label: "New", icon: <IconFolder />, submenu: true },
   { label: "Import", icon: <IconDownload />, submenu: true },
   { label: "Sources", icon: <IconUserPlus />, submenu: true },
-  { label: "Library", icon: <IconFiles2 />, submenu: true },
+  { label: "Library", icon: <IconLibrary />, submenu: true },
 ];
 
 export const IMPORT_ITEMS: MenuItem[] = [

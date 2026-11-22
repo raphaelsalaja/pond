@@ -8,7 +8,6 @@ import { IconPlus } from "@pond/icons";
 import type { SavedView } from "@pond/schema/db";
 import { EMPTY_QUERY, type Query } from "@pond/schema/filters/types";
 import { Menu, Sidebar } from "@pond/ui";
-import { useRouterState } from "@tanstack/react-router";
 import { useSelector } from "@tanstack/react-store";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -30,6 +29,7 @@ import {
   useRevealSidebarSection,
 } from "@/features/settings";
 import { useTagGroups, useTags } from "@/features/tags";
+import { useRouteLocation } from "@/shared/hooks/use-route-location";
 import { SIDEBAR_SORTABLE_SCREEN_READER_INSTRUCTIONS } from "@/shared/lib/dnd-kit";
 import { activeLibraryDestination } from "@/shared/lib/library-nav";
 import { usePrefs } from "@/shared/state/prefs";
@@ -59,9 +59,7 @@ export function SmartFoldersSection({
 }) {
   const views = useSavedViews();
   const nav = useLibraryNav();
-  const pathname = useRouterState({
-    select: (state) => state.location.pathname,
-  });
+  const pathname = useRouteLocation((location) => location.pathname);
   const destination = activeLibraryDestination(pathname, nav);
   const activeViewId = useActiveViewId();
   const [presentations] = usePrefs("savedViewViews");

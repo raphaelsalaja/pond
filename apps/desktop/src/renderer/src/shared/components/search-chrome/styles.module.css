@@ -1,27 +1,40 @@
-.root {
-  --search-chrome-inline-start: 20px;
-  --search-chrome-inline-end: 16px;
-
-  display: flex;
-  flex: none;
-  flex-direction: column;
-  min-width: 0;
-}
-
 .bar {
-  display: flex;
-  gap: var(--ds-space-sm);
+  display: grid;
+  flex: none;
+  grid-template-columns: minmax(0, 440px) 1fr;
+  gap: var(--ds-space-lg);
   align-items: center;
-  min-width: 0;
-  min-height: var(--window-header-height, 48px);
-  padding: var(--ds-space-md);
+  box-sizing: border-box;
+  /* Same height as the sidebar and Details header bars, so pane borders run as one line. */
+  height: 44px;
+  padding-inline: var(--ds-space-md);
+  border-bottom: var(--ds-border-width) solid var(--ds-border-subtle);
 }
 
-.search {
-  display: flex;
-  flex: 1;
+.shell {
   min-width: 0;
-  padding-left: var(--ds-space-md);
+  -webkit-app-region: no-drag;
+}
+
+/* Lifts the lens just above the placeholder's cap height so the two read as one line. */
+.lens {
+  translate: 0 -0.25px;
+}
+
+.actions {
+  display: flex;
+  gap: var(--ds-space-xs);
+  align-items: center;
+  justify-self: end;
+  min-width: 0;
+  -webkit-app-region: no-drag;
+}
+
+.below {
+  --filter-toolbar-inline-start: 20px;
+  --filter-toolbar-inline-end: 16px;
+
+  min-width: 0;
 }
 
 .input {
@@ -39,69 +52,9 @@
   }
 }
 
-.actions {
-  display: flex;
-  flex: none;
-  gap: var(--ds-space-xs);
-  align-items: center;
-}
-
-.root[data-tone="plain"] .bar {
-  min-height: 0;
-  padding-block: var(--ds-space-md) var(--ds-space-xs);
-}
-
-.root[data-tone="header"] {
-  flex: 1;
-  min-width: 0;
-}
-
-.root[data-tone="header"] .bar {
-  min-height: 44px;
-  padding: 0;
-}
-
-.root[data-tone="header"] .search {
-  flex: 1 1 220px;
-  max-width: 280px;
-  padding-left: 0;
-}
-
-.filters {
-  display: flex;
-  flex: none;
-  gap: var(--ds-space-sm);
-  align-items: center;
-  min-width: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.root[data-tone="header"] .filters {
-  flex: 1;
-}
-
-.filters::-webkit-scrollbar {
-  display: none;
-}
-
-.below {
-  --filter-toolbar-inline-start: var(--search-chrome-inline-start);
-  --filter-toolbar-inline-end: var(--search-chrome-inline-end);
-
-  min-width: 0;
-}
-
-.root[data-tone="header"] .search,
-.root[data-tone="header"] .filters,
-.root[data-tone="header"] .actions,
-.root[data-tone="header"] .below {
-  -webkit-app-region: no-drag;
-}
-
 @media (max-width: 620px) {
-  .root {
-    --search-chrome-inline-start: 14px;
-    --search-chrome-inline-end: 10px;
+  .below {
+    --filter-toolbar-inline-start: 14px;
+    --filter-toolbar-inline-end: 10px;
   }
 }

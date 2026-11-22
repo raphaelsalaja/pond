@@ -1,14 +1,22 @@
 import { z } from "zod";
-import { FishIdSchema, FishPatchSchema } from "../../../shared/fish-contracts";
+import {
+  FishIdSchema,
+  FishPatchSchema,
+  FishPlacementSchema,
+  FishSectionSchema,
+} from "../../../shared/fish-contracts";
 import type { QueryResult } from "../../../shared/query-contracts";
 import { announceFishChanged, fishPresence } from "../../core/fish/presence";
 import {
+  arrangeFish,
   createFish,
   deleteFish,
   deleteRoutine,
   listFish,
+  listFishSections,
   markFishSeen,
   readFish,
+  setFishSections,
   setRoutinePaused,
   updateFish,
 } from "../../core/fish/store";
@@ -84,4 +92,21 @@ export const fishQueries = {
     announceFishChanged();
     return fish;
   }),
+  "fish.arrange": query(
+    z.object({ placements: z.array(FishPlacementSchema).max(1000) }),
+    ({ placements }) => {
+      arrangeFish(placements);
+      announceFishChanged();
+      return { ok: true as const };
+    },
+  ),
+  "fish.sections": query(z.object({}), () => listFishSections()),
+  "fish.setSections": query(
+    z.object({ sections: z.array(FishSectionSchema).max(200) }),
+    ({ sections }) => {
+      const next = setFishSections(sections);
+      announceFishChanged();
+      return next;
+    },
+  ),
 };

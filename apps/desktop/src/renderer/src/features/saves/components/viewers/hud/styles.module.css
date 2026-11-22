@@ -88,37 +88,47 @@
 }
 
 .bar {
-  display: grid;
+  position: relative;
+  display: flex;
   flex: 1 1 auto;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   gap: var(--ds-space-lg);
+  align-items: center;
   width: 100%;
   min-width: 0;
   pointer-events: none;
 }
 
 .start,
+.middle,
 .center,
 .end {
   gap: var(--ds-space-2xs);
   min-width: 0;
   max-width: 100%;
+}
+
+.start {
+  flex: 0 1 auto;
+  margin-inline-end: auto;
 
   &:empty {
     visibility: hidden;
   }
 }
 
-.start {
-  justify-self: start;
+.bar > .middle {
+  position: absolute;
+  left: 50%;
+  translate: -50% 0;
 }
 
-.center {
-  justify-self: center;
-}
-
+.center,
 .end {
-  justify-self: end;
+  flex: none;
+
+  &:empty {
+    display: none;
+  }
 }
 
 .scale {

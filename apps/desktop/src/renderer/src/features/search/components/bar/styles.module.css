@@ -31,7 +31,6 @@
   overflow-x: auto;
   overflow-y: hidden;
   font: inherit;
-  font-size: var(--ds-text-body);
   line-height: 1.5;
   color: var(--ds-foreground-primary);
   word-break: normal;
@@ -63,17 +62,12 @@
   align-items: center;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-body);
-  font-weight: 400;
+  font-weight: var(--ds-weight-strong);
   line-height: 1.5;
   color: var(--ds-foreground-tertiary);
   white-space: nowrap;
   pointer-events: none;
   user-select: none;
-}
-
-.clear {
-  flex: none;
 }
 
 .thinking {

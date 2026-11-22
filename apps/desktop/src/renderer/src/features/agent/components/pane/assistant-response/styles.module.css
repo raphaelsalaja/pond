@@ -202,3 +202,8 @@
 .table :is(th, td)[align="right"] {
   text-align: right;
 }
+
+.response ::highlight(cited-sentence) {
+  color: inherit;
+  background-color: var(--ds-accent-tint);
+}

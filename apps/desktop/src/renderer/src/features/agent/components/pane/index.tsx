@@ -11,7 +11,7 @@ import {
   type AssistantProvider,
   type AssistantSource,
 } from "@shared/assistant";
-import { DEFAULT_FISH_NAME } from "@shared/fish-contracts";
+import { DEFAULT_FISH_NAME, type FishColor } from "@shared/fish-contracts";
 import { chosenModelId } from "@shared/provider-models";
 import { MotionConfig, useReducedMotion } from "motion/react";
 import { Fragment, type ReactNode, useEffect, useRef } from "react";
@@ -24,6 +24,7 @@ import { pondChatSession } from "@/features/agent/state/pond-chat";
 import { fromUIMessage } from "@/features/agent/state/pond-messages";
 import {
   FishMark,
+  fishAccent,
   fishMood,
   fish as fishStore,
   useFish,
@@ -36,7 +37,7 @@ import type { ComposerEditorHandle } from "../composer";
 import { Thread } from "../thread";
 import { AgentMessage } from "./agent-message";
 import { ChatEvent } from "./chat-event";
-import { reviewOutcomeText, routineEventText } from "./chat-event/events";
+import { routineEventText } from "./chat-event/events";
 import { ComposeArea } from "./compose-area";
 import { RoutineEvents } from "./routine-events";
 import styles from "./styles.module.css";
@@ -47,6 +48,7 @@ export { AgentMessage } from "./agent-message";
 interface AgentPersona {
   name: string;
   icon: ReactNode;
+  color?: FishColor;
   avatar?: (activity: AssistantActivity) => ReactNode;
 }
 
@@ -144,6 +146,21 @@ function AgentPaneContent({
       controls: runControlsForOptions(modelOptions),
     });
   }
+  function queue(content: string) {
+    if (!provider) return;
+    assistant.setDraft(content);
+    void assistant.queue(provider, {
+      modelId,
+      controls: runControlsForOptions(modelOptions),
+    });
+  }
+  function regenerate() {
+    if (!provider || running) return;
+    void assistant.regenerate(provider, {
+      modelId,
+      controls: runControlsForOptions(modelOptions),
+    });
+  }
   async function answerQuestion(messageId: string, answer: string) {
     if (!provider || running) return;
     await assistant.answerQuestion(messageId, answer, provider, {
@@ -161,6 +178,7 @@ function AgentPaneContent({
         className={styles.assistant}
         data-reduced-motion={reduceMotion || undefined}
         aria-label={persona.name}
+        {...(persona.color ? fishAccent(persona.color) : null)}
       >
         <div className={styles.workspace}>
           <Thread.Conversation
@@ -192,6 +210,7 @@ function AgentPaneContent({
                 focus={focus}
                 attach={attach}
                 submit={submit}
+                queue={queue}
               />
             }
           >
@@ -218,10 +237,6 @@ function AgentPaneContent({
                     </ChatEvent>
                   </Fragment>
                 );
-              const outcome =
-                message.role === "assistant" && metadata?.changes
-                  ? reviewOutcomeText(metadata.changes)
-                  : null;
               return (
                 <Fragment key={message.id}>
                   {stamp}
@@ -251,6 +266,13 @@ function AgentPaneContent({
                       entering={entering.current.get(message.id) ?? false}
                       latest={message.id === lastAssistantId}
                       onAnswer={answerQuestion}
+                      onRegenerate={
+                        message.id === lastAssistantId &&
+                        !running &&
+                        provider
+                          ? regenerate
+                          : undefined
+                      }
                       avatar={persona.avatar}
                     />
                   </article>
@@ -258,7 +280,6 @@ function AgentPaneContent({
                   metadata?.routineEvents?.length ? (
                     <RoutineEvents events={metadata.routineEvents} />
                   ) : null}
-                  {outcome ? <ChatEvent>{outcome}</ChatEvent> : null}
                 </Fragment>
               );
             })}
@@ -275,6 +296,7 @@ export function AgentPane() {
   const fish = useFish(state.fishId);
   const persona: AgentPersona = {
     name: fish?.name ?? DEFAULT_FISH_NAME,
+    color: fish?.color,
     icon: fish ? (
       <FishMark
         color={fish.color}

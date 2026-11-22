@@ -133,7 +133,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   /* The reset turns on tabular, slashed-zero digits, which read as code inside sentence-like labels. */
-  font-feature-settings: "calt", "ccmp", "locl", "kern", "cv11", "ss01";
+  font-feature-settings: "calt", "ccmp", "locl", "kern", "ss01", "ss03";
   font-variant-numeric: proportional-nums;
   line-height: 1.25;
   white-space: nowrap;

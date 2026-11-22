@@ -1,4 +1,4 @@
-import { IconArrowRotateClockwise, IconTrashXmark } from "@pond/icons";
+import { IconTrashXmark, IconUndo } from "@pond/icons";
 import type { MenuItemSpec } from "@pond/ui";
 import { confirmEmptyTrash } from "@/features/saves";
 
@@ -13,7 +13,7 @@ export function buildTrashMenuItems(hasItems: boolean): MenuItemSpec[] {
     },
     {
       label: "Restore All Items",
-      icon: <IconArrowRotateClockwise />,
+      icon: <IconUndo />,
       disabled: !hasItems,
       onClick: () => {
         void window.pond.query("saves.restoreAll", {});

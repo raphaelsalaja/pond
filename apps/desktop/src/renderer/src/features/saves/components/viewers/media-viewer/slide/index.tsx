@@ -7,11 +7,7 @@ import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/c
 import { OriginalFileActions } from "@/features/saves/components/viewers/original-file-actions";
 import { ViewerFallback } from "@/features/saves/components/viewers/viewer-fallback";
 import { ViewerSaveNav } from "@/features/saves/components/viewers/viewer-save-nav";
-import {
-  type ViewerNavigation,
-  ViewerNavigationControls,
-  ViewerToolbarGroups,
-} from "@/features/saves/components/viewers/viewer-toolbar-groups";
+import { ViewerToolbarGroups } from "@/features/saves/components/viewers/viewer-toolbar-groups";
 import type { ChapterCue } from "@/features/saves/lib/media/chapters-vtt";
 import { beginSaveDrag } from "@/features/saves/lib/start-drag";
 import type { Save } from "@/features/saves/types";
@@ -44,7 +40,6 @@ interface SlideProps {
   chapters?: ChapterCue[];
   ratio?: number;
   onRatio?: (src: string, ratio: number) => void;
-  slideNavigation?: ViewerNavigation;
 }
 
 function knownRatio(slide: MediaSlide): number | null {
@@ -62,7 +57,6 @@ export function Slide({
   chapters,
   ratio,
   onRatio,
-  slideNavigation,
 }: SlideProps) {
   const [provider, setProvider] = useState<ProviderState>(() =>
     slide.generated ? { status: "generated" } : { status: "direct" },
@@ -94,7 +88,6 @@ export function Slide({
           fileIndex={slide.fileIndex}
           reason={provider.reason}
           active={active}
-          slideNavigation={slideNavigation}
         />
       ) : slide.isVideo ? (
         inView ? (
@@ -108,7 +101,6 @@ export function Slide({
             ratioOverride={ratio}
             onRatio={onRatio}
             onError={onProviderError}
-            slideNavigation={slideNavigation}
           />
         ) : (
           <PosterSlide slide={slide} saveId={save.id} />
@@ -123,7 +115,6 @@ export function Slide({
           onRatio={onRatio}
           provider={provider.status === "generated" ? "generated" : "direct"}
           onError={onProviderError}
-          slideNavigation={slideNavigation}
         />
       )}
     </div>
@@ -145,7 +136,6 @@ function VideoSlide({
   ratioOverride,
   onRatio,
   onError,
-  slideNavigation,
 }: {
   slide: MediaSlide;
   saveId: string;
@@ -156,7 +146,6 @@ function VideoSlide({
   ratioOverride?: number;
   onRatio?: (src: string, ratio: number) => void;
   onError: () => void;
-  slideNavigation?: ViewerNavigation;
 }) {
   const { setLocal } = useResolvedRatio(slide, ratioOverride);
   const [playbackSrc, setPlaybackSrc] = useState(slide.src);
@@ -220,7 +209,6 @@ function VideoSlide({
                 label="Video"
                 start={<ViewerSaveNav saveId={saveId} />}
                 center={<ViewerToolbarGroups actions={actions} edits={edits} />}
-                end={<ViewerNavigationControls navigation={slideNavigation} />}
               />
             </ChromePortal>
           ) : null
@@ -264,7 +252,6 @@ function ImageSlide({
   onRatio,
   provider,
   onError,
-  slideNavigation,
 }: {
   slide: MediaSlide;
   active: boolean;
@@ -274,7 +261,6 @@ function ImageSlide({
   onRatio?: (src: string, ratio: number) => void;
   provider: "direct" | "generated";
   onError: () => void;
-  slideNavigation?: ViewerNavigation;
 }) {
   const { setLocal } = useResolvedRatio(slide, ratioOverride);
   return (
@@ -286,7 +272,6 @@ function ImageSlide({
           fileIndex={slide.fileIndex}
           url={slide.src}
           active={active}
-          slideNavigation={slideNavigation}
           onNavigate={onNavigate}
           onRatio={(ratio) => {
             setLocal(ratio);
@@ -304,7 +289,6 @@ function ImageSlide({
           endActions={
             <OriginalFileActions save={save} fileIndex={slide.fileIndex} />
           }
-          slideNavigation={slideNavigation}
           onNavigate={onNavigate}
           onRatio={(ratio) => {
             setLocal(ratio);
