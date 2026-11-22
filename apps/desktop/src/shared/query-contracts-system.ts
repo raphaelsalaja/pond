@@ -297,15 +297,14 @@ export interface SystemQueryResults {
   }>;
   "library.backupTo": PathResult<{ copied?: number }>;
   "reset.preferences": OkResult;
-  "reset.clearVideoCache": OkResult<{ removed: number }>;
-  "reset.clearThumbnails": OkResult<{ removed: number }>;
+  "reset.clearVideoCache": OkResult<{ removed: number; freedBytes: number }>;
+  "reset.clearThumbnails": OkResult<{ removed: number; freedBytes: number }>;
   "reset.factory": OkResult;
   "storage.largestSaves": {
     saves: LargestSave[];
     sources: string[];
     mediaTypes: MediaType[];
   };
-  "storage.clearCache": { freedBytes: number };
   "storage.snapshot": {
     pondBytes: number;
     breakdown: {

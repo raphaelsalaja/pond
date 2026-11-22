@@ -25,6 +25,16 @@ import { libraryRoot, thumbnailCacheRoot } from "../../paths";
 import { runtimeControls } from "../../runtime";
 import { type QueryHandlerMap, query } from "./params";
 
+async function clearCache(
+  dir: string,
+): Promise<{ removed: number; freedBytes: number }> {
+  const before = await measureDirectory(dir);
+  const removed = await purgeDirectory(dir);
+  const after = await measureDirectory(dir);
+  invalidateStorageSnapshot();
+  return { removed, freedBytes: Math.max(0, before - after) };
+}
+
 export const libraryMaintenanceQueries = {
   async "library.info"() {
     const path = libraryRoot();
@@ -108,13 +118,13 @@ export const libraryMaintenanceQueries = {
   },
 
   async "reset.clearVideoCache"() {
-    const removed = await purgeDirectory(join(libraryRoot(), VIDEO_CACHE_DIR));
-    return { ok: true as const, removed };
+    const cleared = await clearCache(join(libraryRoot(), VIDEO_CACHE_DIR));
+    return { ok: true as const, ...cleared };
   },
 
   async "reset.clearThumbnails"() {
-    const removed = await purgeDirectory(thumbnailCacheRoot());
-    return { ok: true as const, removed };
+    const cleared = await clearCache(thumbnailCacheRoot());
+    return { ok: true as const, ...cleared };
   },
 
   async "reset.factory"() {
@@ -137,20 +147,6 @@ export const libraryMaintenanceQueries = {
       source: z.string().min(1).max(100).optional(),
     }),
     async (params) => largestSaves(await getDb(), params),
-  ),
-  "storage.clearCache": query(
-    z.object({ cache: z.enum(["videoCache", "thumbnails"]) }),
-    async ({ cache }) => {
-      const dir =
-        cache === "videoCache"
-          ? join(libraryRoot(), VIDEO_CACHE_DIR)
-          : thumbnailCacheRoot();
-      const before = await measureDirectory(dir);
-      await purgeDirectory(dir);
-      const after = await measureDirectory(dir);
-      invalidateStorageSnapshot();
-      return { freedBytes: Math.max(0, before - after) };
-    },
   ),
   async "storage.snapshot"(): Promise<QueryResult<"storage.snapshot">> {
     const { getStorageSnapshot } = await import("../../core/storage-stats");

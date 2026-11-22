@@ -47,13 +47,17 @@ export function StorageCaches() {
     setArmed(null);
     setClearing(cache);
     try {
-      const { freedBytes } = await window.pond.query("storage.clearCache", {
-        cache,
-      });
+      const result = await window.pond.query(
+        cache === "videoCache"
+          ? "reset.clearVideoCache"
+          : "reset.clearThumbnails",
+        {},
+      );
+      if (!result.ok) throw new Error(result.error);
       notify({
         id: "storage-cache",
         title: `Cleared ${title}`,
-        description: `Freed ${formatBytes(freedBytes)}.`,
+        description: `Freed ${formatBytes(result.freedBytes)}.`,
       });
       await client.invalidateQueries({ queryKey: STORAGE_SNAPSHOT_KEY });
       await client.invalidateQueries({ queryKey: LARGEST_SAVES_KEY });

@@ -352,7 +352,6 @@ export interface QueryInputs
     mediaType?: MediaType;
     source?: string;
   };
-  "storage.clearCache": { cache: "videoCache" | "thumbnails" };
   "storage.applyGuardPrefs": EmptyInput;
   "storage.guardState": EmptyInput;
   "api.restart": EmptyInput;
