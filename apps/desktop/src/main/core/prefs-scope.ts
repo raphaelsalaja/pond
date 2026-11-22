@@ -197,6 +197,29 @@ export function mergeAppSlice(
   );
 }
 
+function withoutIds<T>(
+  record: Record<string, T> | undefined,
+  drop: ReadonlySet<string>,
+): Record<string, T> | undefined {
+  return (
+    record &&
+    Object.fromEntries(Object.entries(record).filter(([id]) => !drop.has(id)))
+  );
+}
+
+/** Removes folders' view settings and Auto-Tags, which a merge patch can only add to. */
+export function withoutFolderPrefs(
+  slice: DeepPartial<PondPrefs>,
+  ids: readonly string[],
+): DeepPartial<PondPrefs> {
+  const drop = new Set(ids);
+  return {
+    ...slice,
+    folderViews: withoutIds(slice.folderViews, drop),
+    folderRules: withoutIds(slice.folderRules, drop),
+  };
+}
+
 export function readBundlePondPrefs(): DeepPartial<PondPrefs> | null {
   const paths = resolvePaths();
   if (!existsSync(paths.settingsFile)) return null;

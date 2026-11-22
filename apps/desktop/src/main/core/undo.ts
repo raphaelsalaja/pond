@@ -6,9 +6,27 @@ import { executeBatch } from "./executor";
 
 const MAX_HISTORY = 200;
 
+/** Work outside the Library database that a step undoes and redoes with its transactions. */
+export interface UndoEffects {
+  undo: () => Promise<unknown>;
+  redo: () => Promise<unknown>;
+}
+
 interface UndoStep {
   id: string;
   transactions: Transaction[];
+  effects?: UndoEffects;
+}
+
+/** The transactions already committed, so a failed side effect is logged rather than reported as a failed step. */
+async function runEffect(
+  effect: (() => Promise<unknown>) | undefined,
+): Promise<void> {
+  try {
+    await effect?.();
+  } catch (error) {
+    log.warn("[pond undo] side effect failed", error);
+  }
 }
 
 export function createUndoHistory(
@@ -39,6 +57,7 @@ export function createUndoHistory(
           };
         }),
       );
+      await runEffect(step.effects?.undo);
       if (epoch === started) redoStack.push(step);
       return true;
     } catch (error) {
@@ -56,6 +75,7 @@ export function createUndoHistory(
           meta: { ...item.meta, actorReason: "redo" },
         })),
       );
+      await runEffect(step.effects?.redo);
       if (epoch === started) undoStack.push(step);
       return true;
     } catch (error) {
@@ -79,10 +99,14 @@ export function createUndoHistory(
     });
   }
   return {
-    record(transactions: Transaction[]): string | null {
+    record(transactions: Transaction[], effects?: UndoEffects): string | null {
       if (!transactions.length) return null;
       const id = createId();
-      undoStack.push({ id, transactions: structuredClone(transactions) });
+      undoStack.push({
+        id,
+        transactions: structuredClone(transactions),
+        effects,
+      });
       if (undoStack.length > MAX_HISTORY) undoStack.shift();
       redoStack.length = 0;
       return id;
@@ -134,8 +158,11 @@ const history = createUndoHistory(async (transactions) => {
 export function recordForUndo(transaction: Transaction): string | null {
   return history.record([transaction]);
 }
-export function recordBatchForUndo(transactions: Transaction[]): string | null {
-  return history.record(transactions);
+export function recordBatchForUndo(
+  transactions: Transaction[],
+  effects?: UndoEffects,
+): string | null {
+  return history.record(transactions, effects);
 }
 export const undoLatest = history.undoLatest;
 export const redoLatest = history.redoLatest;
