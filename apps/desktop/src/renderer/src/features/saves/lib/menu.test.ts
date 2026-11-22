@@ -387,7 +387,7 @@ describe("buildSaveMenu", () => {
   });
 
   it("confirms before replacing videos with compressed copies", async () => {
-    const query = vi.fn(async (name: string, _input?: unknown) =>
+    const query = vi.fn(async (name: string) =>
       name === "conversion.compressVideos" ? { id: "job-1" } : null,
     );
     const confirm = vi.spyOn(Dialog, "confirm").mockImplementation(() => {});
