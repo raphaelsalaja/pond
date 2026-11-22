@@ -31,7 +31,7 @@ describe("save import input normalization", () => {
     ).toEqual(["/tmp/valid.png"]);
   });
 
-  it("trims quick-add text after boundary parsing", () => {
+  it("trims the quick-add URL but keeps note spacing", () => {
     const params = QuickAddParamsSchema.parse({
       url: "  https://example.com/save  ",
       note: "  A note  ",
@@ -40,7 +40,7 @@ describe("save import input normalization", () => {
 
     expect(normalizeQuickAddInput(params)).toEqual({
       url: "https://example.com/save",
-      note: "A note",
+      note: "  A note  ",
       tags: ["Research"],
       folderId: null,
     });
