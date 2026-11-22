@@ -451,7 +451,6 @@ async function seedLibrary(ctx) {
 }
 
 module.exports = {
-  FIXTURES,
   createSandbox,
   driver,
   evalIn,
@@ -459,7 +458,6 @@ module.exports = {
   keepOffscreen,
   keepPainting,
   openLibrary,
-  resolveWindow,
   seedLibrary,
   track,
   within,
