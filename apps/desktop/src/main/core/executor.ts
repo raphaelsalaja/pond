@@ -307,10 +307,7 @@ async function applyToDisk(tx: Transaction): Promise<void> {
         await renameWithRetry(source, destination);
       }
       for (const file of tx.fileMoves ?? [])
-        await moveIntoSave(
-          file.sourcePath,
-          joinSaveFile(tx.id, file.filename),
-        );
+        await moveIntoSave(file.sourcePath, joinSaveFile(tx.id, file.filename));
       /** SAFETY: `Partial<NewSave>` and `Partial<Save>` differ only in timestamp nullability, which `patchSaveFiles` writes back unchanged. */
       const patched = await patchSaveFiles(
         tx.id,
