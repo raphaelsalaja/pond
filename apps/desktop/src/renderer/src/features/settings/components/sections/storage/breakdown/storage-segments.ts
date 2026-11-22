@@ -1,6 +1,6 @@
 import type { QueryResult } from "@shared/query-contracts";
 
-type Breakdown = QueryResult<"storage.snapshot">["breakdown"];
+export type Breakdown = QueryResult<"storage.snapshot">["breakdown"];
 
 export interface StorageSegment {
   key: keyof Breakdown;

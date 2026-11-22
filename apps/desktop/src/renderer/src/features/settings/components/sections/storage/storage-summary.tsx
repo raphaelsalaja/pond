@@ -1,9 +1,8 @@
 import { Button, Settings } from "@pond/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatBytes } from "@/shared/lib/format";
+import { StorageBreakdown } from "./breakdown";
 import { LARGEST_SAVES_KEY } from "./largest-saves";
-import { storageSegments } from "./storage-segments";
-import styles from "./styles.module.css";
 
 export const STORAGE_SNAPSHOT_KEY = ["storage-snapshot"] as const;
 
@@ -19,7 +18,6 @@ export function StorageSummary() {
   const query = useStorageSnapshot();
   const client = useQueryClient();
   const data = query.data;
-  const segments = data ? storageSegments(data.breakdown) : [];
   return (
     <Settings.List>
       <Settings.Item>
@@ -47,42 +45,7 @@ export function StorageSummary() {
           </Button>
         </Settings.ItemControl>
       </Settings.Item>
-      {segments.length ? (
-        <Settings.Item>
-          <div className={styles.breakdown}>
-            <div className={styles.bar} aria-hidden>
-              {segments
-                .filter((segment) => segment.bytes > 0)
-                .map((segment) => (
-                  <span
-                    key={segment.key}
-                    className={styles.segment}
-                    data-category={segment.key}
-                    style={{ flexGrow: segment.percent }}
-                  />
-                ))}
-            </div>
-            <ul
-              className={styles.legend}
-              aria-label="Library storage by category"
-            >
-              {segments.map((segment) => (
-                <li key={segment.key} className={styles.entry}>
-                  <span className={styles.swatch} data-category={segment.key} />
-                  <span>{segment.label}</span>
-                  <span className={styles.size}>
-                    {formatBytes(segment.bytes)} ·{" "}
-                    {segment.percent > 0 && segment.percent < 1
-                      ? "<1"
-                      : Math.round(segment.percent)}
-                    %
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </Settings.Item>
-      ) : null}
+      {data ? <StorageBreakdown breakdown={data.breakdown} /> : null}
     </Settings.List>
   );
 }
