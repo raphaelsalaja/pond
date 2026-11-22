@@ -111,6 +111,8 @@ export const queryOperationAccess = {
   "folders.setColor": "review",
   "folders.setSaveFolders": "review",
   "folders.templates.apply": "review",
+  "folders.templates.delete": "review",
+  "folders.templates.duplicate": "review",
   "folders.templates.list": "read",
   "folders.templates.saveFrom": "review",
   "library.backupTo": "review",

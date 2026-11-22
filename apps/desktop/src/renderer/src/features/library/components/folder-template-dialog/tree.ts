@@ -26,14 +26,3 @@ export function folderTemplateRows(
     return { node, depth };
   });
 }
-
-export function duplicateTemplateName(
-  name: string,
-  taken: readonly string[],
-): string {
-  const used = new Set(taken.map((entry) => entry.toLowerCase()));
-  let candidate = `${name} Copy`;
-  for (let n = 2; used.has(candidate.toLowerCase()); n++)
-    candidate = `${name} Copy ${n}`;
-  return candidate;
-}

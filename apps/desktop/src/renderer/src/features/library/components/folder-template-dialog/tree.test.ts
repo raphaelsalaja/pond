@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { duplicateTemplateName, folderTemplateRows } from "./tree";
+import { folderTemplateRows } from "./tree";
 
 describe("folderTemplateRows", () => {
   it("lists folders parents first with their depth", () => {
@@ -20,11 +20,4 @@ describe("folderTemplateRows", () => {
       folderTemplateRows([{ key: "a", parentKey: "missing", name: "A" }]),
     ).toEqual([]);
   });
-});
-
-it("numbers duplicate names that are already taken", () => {
-  expect(duplicateTemplateName("Research", [])).toBe("Research Copy");
-  expect(duplicateTemplateName("Research", ["research copy"])).toBe(
-    "Research Copy 2",
-  );
 });

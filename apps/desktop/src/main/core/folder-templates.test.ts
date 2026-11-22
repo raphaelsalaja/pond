@@ -4,6 +4,8 @@ import type { Transaction } from "@pond/schema/tx";
 import { describe, expect, it } from "vitest";
 import {
   applyFolderTemplate,
+  deleteFolderTemplate,
+  duplicateFolderTemplate,
   type FolderTemplateRuntime,
 } from "./folder-templates";
 import type { UndoEffects } from "./undo";
@@ -90,5 +92,28 @@ describe("applyFolderTemplate", () => {
       ["delete", "id-0"],
     ]);
     expect(fake.recorded).toEqual([]);
+  });
+});
+
+describe("custom template list", () => {
+  it("duplicates from the current list with a free name", async () => {
+    const fake = runtime();
+    const copy = await duplicateFolderTemplate(
+      { templateId: custom.id },
+      fake.value,
+    );
+    expect(copy).toMatchObject({ id: "custom:id-0", name: "Mine Copy" });
+    expect(
+      fake.prefs().folderTemplates.custom.map((entry) => entry.id),
+    ).toEqual([custom.id, "custom:id-0"]);
+  });
+
+  it("deletes one template and keeps the rest", async () => {
+    const fake = runtime();
+    await duplicateFolderTemplate({ templateId: custom.id }, fake.value);
+    await deleteFolderTemplate({ templateId: custom.id }, fake.value);
+    expect(
+      fake.prefs().folderTemplates.custom.map((entry) => entry.id),
+    ).toEqual(["custom:id-0"]);
   });
 });

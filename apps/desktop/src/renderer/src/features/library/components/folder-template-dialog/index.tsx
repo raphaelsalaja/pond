@@ -12,9 +12,8 @@ import { errorCopy } from "@/shared/lib/error-copy";
 import { FolderIcon } from "@/shared/lib/folder-icons";
 import { formatPlural } from "@/shared/lib/format";
 import { notify } from "@/shared/lib/toast";
-import { savePrefsSection } from "@/shared/state/prefs";
 import styles from "./styles.module.css";
-import { duplicateTemplateName, folderTemplateRows } from "./tree";
+import { folderTemplateRows } from "./tree";
 
 export function FolderTemplateDialogHost() {
   const state = useFolderTemplateDialog();
@@ -54,20 +53,23 @@ function TemplatePreview({ template }: { template: FolderTemplate }) {
   );
 }
 
+function loadTemplates() {
+  return window.pond.query("folders.templates.list", {});
+}
+
+type TemplateList = Awaited<ReturnType<typeof loadTemplates>>;
+
+const NO_TEMPLATES: TemplateList = { builtIn: [], custom: [] };
+
 function useTemplates() {
-  const [builtIn, setBuiltIn] = useState<readonly FolderTemplate[]>([]);
-  const [custom, setCustom] = useState<FolderTemplate[]>([]);
-  async function saveCustom(next: FolderTemplate[]) {
-    await savePrefsSection("folderTemplates", { custom: next });
-    setCustom(next);
-  }
+  const [templates, setTemplates] = useState(NO_TEMPLATES);
   useEffect(() => {
-    void window.pond.query("folders.templates.list", {}).then((result) => {
-      setBuiltIn(result.builtIn);
-      setCustom(result.custom);
-    });
+    void loadTemplates().then(setTemplates);
   }, []);
-  return { builtIn, custom, saveCustom };
+  async function reload() {
+    setTemplates(await loadTemplates());
+  }
+  return { ...templates, reload };
 }
 
 function ApplyTemplateDialog({
@@ -77,7 +79,7 @@ function ApplyTemplateDialog({
   open: boolean;
   parentId: string | null;
 }) {
-  const { builtIn, custom, saveCustom } = useTemplates();
+  const { builtIn, custom, reload } = useTemplates();
   const folderRows = useFolders();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [name, setName] = useState("");
@@ -90,8 +92,8 @@ function ApplyTemplateDialog({
     ? folderRows.find((row) => row.id === parentId)?.name
     : undefined;
 
-  function select(template: FolderTemplate) {
-    setSelectedId(template.id);
+  function select(id: string | null) {
+    setSelectedId(id);
     setName("");
     setError(null);
   }
@@ -119,13 +121,35 @@ function ApplyTemplateDialog({
     }
   }
 
-  async function manage(next: FolderTemplate[], nextId?: string | null) {
+  async function duplicate(template: FolderTemplate) {
     try {
-      await saveCustom(next);
-      if (nextId !== undefined) setSelectedId(nextId);
+      const copy = await window.pond.query("folders.templates.duplicate", {
+        templateId: template.id,
+      });
+      await reload();
+      select(copy.id);
     } catch (reason) {
-      setError(errorCopy(reason, "Couldn't update templates. Try again."));
+      setError(
+        errorCopy(reason, "Couldn't duplicate the template. Try again."),
+      );
     }
+  }
+
+  function confirmDelete(template: FolderTemplate) {
+    Dialog.confirm({
+      title: `Delete "${template.name}"`,
+      description:
+        "Folders you already made from it stay as they are. You can't undo this.",
+      confirmLabel: "Delete",
+      confirmVariant: "destructive",
+      onConfirm: async () => {
+        await window.pond.query("folders.templates.delete", {
+          templateId: template.id,
+        });
+        await reload();
+        select(null);
+      },
+    });
   }
 
   const rootName = selected?.nodes.find(
@@ -164,7 +188,7 @@ function ApplyTemplateDialog({
                       key={template.id}
                       template={template}
                       selected={template.id === selected?.id}
-                      onSelect={() => select(template)}
+                      onSelect={() => select(template.id)}
                     />
                   ))}
                   {custom.length ? (
@@ -175,7 +199,7 @@ function ApplyTemplateDialog({
                       key={template.id}
                       template={template}
                       selected={template.id === selected?.id}
-                      onSelect={() => select(template)}
+                      onSelect={() => select(template.id)}
                     />
                   ))}
                 </div>
@@ -206,17 +230,7 @@ function ApplyTemplateDialog({
                           variant="secondary"
                           size="sm"
                           disabled={busy}
-                          onClick={() => {
-                            const copy: FolderTemplate = {
-                              ...selected,
-                              id: `custom:${crypto.randomUUID()}`,
-                              name: duplicateTemplateName(
-                                selected.name,
-                                all.map((entry) => entry.name),
-                              ),
-                            };
-                            void manage([...custom, copy], copy.id);
-                          }}
+                          onClick={() => void duplicate(selected)}
                         >
                           Duplicate
                         </Button>
@@ -225,14 +239,7 @@ function ApplyTemplateDialog({
                           variant="secondary"
                           size="sm"
                           disabled={busy}
-                          onClick={() =>
-                            void manage(
-                              custom.filter(
-                                (entry) => entry.id !== selected.id,
-                              ),
-                              null,
-                            )
-                          }
+                          onClick={() => confirmDelete(selected)}
                         >
                           Delete Template
                         </Button>

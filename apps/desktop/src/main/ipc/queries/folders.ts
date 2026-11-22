@@ -48,6 +48,24 @@ export const foldersQueries = {
       return saveFolderAsTemplate(params);
     },
   ),
+  "folders.templates.duplicate": query(
+    z.object({ templateId: StringParam }),
+    async (params) => {
+      const { duplicateFolderTemplate } = await import(
+        "../../core/folder-templates"
+      );
+      return duplicateFolderTemplate(params);
+    },
+  ),
+  "folders.templates.delete": query(
+    z.object({ templateId: StringParam }),
+    async (params) => {
+      const { deleteFolderTemplate } = await import(
+        "../../core/folder-templates"
+      );
+      return deleteFolderTemplate(params);
+    },
+  ),
   "folders.createWithSaves": query(
     z.object({
       name: StringParam,

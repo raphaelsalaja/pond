@@ -189,6 +189,8 @@ export interface QueryInputs
     name: string;
     description?: string;
   };
+  "folders.templates.duplicate": { templateId: string };
+  "folders.templates.delete": { templateId: string };
   "folders.createWithSaves": {
     name: string;
     parentId?: string | null;
@@ -416,6 +418,8 @@ export interface QueryResults
   };
   "folders.templates.apply": { rootId: string; count: number } & UndoableChange;
   "folders.templates.saveFrom": FolderTemplate;
+  "folders.templates.duplicate": FolderTemplate;
+  "folders.templates.delete": OkSuccess;
   "folders.createWithSaves": Folder & UndoableChange;
   "folders.moveBatch": OkResult<UndoableChange>;
 

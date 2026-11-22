@@ -17,6 +17,17 @@ function tree(
   ];
 }
 
+export function duplicateTemplateName(
+  name: string,
+  taken: readonly string[],
+): string {
+  const used = new Set(taken.map((entry) => entry.toLowerCase()));
+  let candidate = `${name} Copy`;
+  for (let n = 2; used.has(candidate.toLowerCase()); n++)
+    candidate = `${name} Copy ${n}`;
+  return candidate;
+}
+
 export const BUILT_IN_FOLDER_TEMPLATES: readonly FolderTemplate[] = [
   {
     id: "built-in:research",

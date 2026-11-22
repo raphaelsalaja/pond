@@ -1,8 +1,17 @@
 import type { DeepPartial, Folder, Prefs } from "@pond/schema/db";
-import type { FolderTemplate } from "@pond/schema/folder-templates";
+import {
+  type FolderTemplate,
+  FolderTemplateSchema,
+} from "@pond/schema/folder-templates";
 import { inverse, type Transaction } from "@pond/schema/tx";
-import { BUILT_IN_FOLDER_TEMPLATES } from "@shared/folder-templates";
-import type { UndoableChange } from "@shared/query-contracts-shared";
+import {
+  BUILT_IN_FOLDER_TEMPLATES,
+  duplicateTemplateName,
+} from "@shared/folder-templates";
+import type {
+  OkSuccess,
+  UndoableChange,
+} from "@shared/query-contracts-shared";
 import log from "electron-log/main.js";
 import { ulid } from "ulid";
 import { executeBatch, withMutationScope } from "./executor";
@@ -156,5 +165,40 @@ export function saveFolderAsTemplate(
       folderTemplates: { custom: [...prefs.folderTemplates.custom, template] },
     });
     return template;
+  });
+}
+
+export function duplicateFolderTemplate(
+  input: { templateId: string },
+  runtime: FolderTemplateRuntime = defaultRuntime,
+): Promise<FolderTemplate> {
+  return runtime.run(async () => {
+    const custom = (await runtime.getPrefs()).folderTemplates.custom;
+    const source = findFolderTemplate(input.templateId, custom);
+    const copy = FolderTemplateSchema.parse({
+      ...source,
+      id: `custom:${runtime.createId()}`,
+      name: duplicateTemplateName(
+        source.name,
+        [...BUILT_IN_FOLDER_TEMPLATES, ...custom].map((entry) => entry.name),
+      ),
+    });
+    await runtime.setPrefs({ folderTemplates: { custom: [...custom, copy] } });
+    return copy;
+  });
+}
+
+export function deleteFolderTemplate(
+  input: { templateId: string },
+  runtime: FolderTemplateRuntime = defaultRuntime,
+): Promise<OkSuccess> {
+  return runtime.run(async () => {
+    const custom = (await runtime.getPrefs()).folderTemplates.custom;
+    await runtime.setPrefs({
+      folderTemplates: {
+        custom: custom.filter((entry) => entry.id !== input.templateId),
+      },
+    });
+    return { ok: true };
   });
 }
