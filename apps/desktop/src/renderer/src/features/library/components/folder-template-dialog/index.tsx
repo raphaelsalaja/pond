@@ -53,7 +53,7 @@ function TemplatePreview({ template }: { template: FolderTemplate }) {
           className={styles.row}
           style={{ paddingInlineStart: `calc(${depth} * var(--ds-space-xl))` }}
         >
-          <FolderIcon name={node.icon} size={14} color={node.color} />
+          <FolderIcon name={node.icon} size={12} color={node.color} />
           <span>{node.name}</span>
         </li>
       ))}
@@ -340,8 +340,8 @@ function SaveTemplateDialog({
             </Dialog.Header>
             <Dialog.Content className={styles.content}>
               <Dialog.Description>
-                Saves folder names, colors, icons, Auto-Tags, and view settings.
-                Saves inside the folder are not included.
+                Keeps folder names, colors, icons, Auto-Tags, and view settings,
+                but not the Saves inside.
               </Dialog.Description>
               <Field.Root>
                 <Field.Label>Name</Field.Label>
