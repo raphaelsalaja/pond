@@ -19,6 +19,7 @@ export async function getLatestRelease(): Promise<Release | null> {
       },
     );
     if (!response.ok) return null;
+    /** SAFETY: a 2xx from GitHub's release endpoint always carries `tag_name` and `assets[].name`. */
     const body = (await response.json()) as {
       tag_name: string;
       assets: { name: string }[];
@@ -81,7 +82,7 @@ export function primaryDownload(
   return { label, href: buildUrl(release, build) ?? RELEASES_PAGE };
 }
 
-const SECONDARY: Record<Platform, [string, Build][]> = {
+const SECONDARY = {
   mac: [
     ["Intel Mac", "intelMac"],
     ["Windows", "windows"],
@@ -102,14 +103,15 @@ const SECONDARY: Record<Platform, [string, Build][]> = {
     ["Linux (ARM)", "linuxArm"],
     ["Debian package (ARM)", "debArm"],
   ],
-};
+} satisfies Record<Platform, [string, Build][]>;
 
 /** Every other build the release ships, listed as secondary links. */
 export function otherDownloads(
   platform: Platform,
   release: Release | null,
 ): Download[] {
-  return SECONDARY[platform].flatMap(([label, build]) => {
+  const builds: [string, Build][] = SECONDARY[platform];
+  return builds.flatMap(([label, build]) => {
     const href = buildUrl(release, build);
     return href ? [{ label, href }] : [];
   });
