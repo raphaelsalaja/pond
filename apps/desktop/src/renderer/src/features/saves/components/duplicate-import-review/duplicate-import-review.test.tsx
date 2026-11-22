@@ -101,8 +101,7 @@ type ReviewedImport =
   | ReturnType<typeof importClipboardWithDuplicateReview>;
 
 async function startImport(
-  start: () => ReviewedImport = () =>
-    importFilesWithDuplicateReview({ paths }),
+  start: () => ReviewedImport = () => importFilesWithDuplicateReview({ paths }),
 ) {
   let pending: ReviewedImport | undefined;
   await act(async () => {
