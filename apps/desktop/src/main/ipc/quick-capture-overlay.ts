@@ -6,8 +6,9 @@ import {
   type QuickCaptureResult,
   QuickCaptureSubmitSchema,
 } from "../../shared/quick-capture-contracts";
+import { userError } from "../../shared/user-error";
 import { captures } from "../core/captures";
-import { listFolders } from "../core/folders";
+import { addSavesToFolder, listFolders } from "../core/folders";
 import { getPrefs } from "../core/prefs";
 import {
   closeQuickCapture,
@@ -20,7 +21,8 @@ import {
   setQuickCaptureDrag,
   setQuickCapturePicking,
 } from "../core/quick-capture-overlay";
-import { quickCaptureDraft } from "../core/quick-capture-overlay/draft";
+import { quickCapturePlan } from "../core/quick-capture-overlay/draft";
+import { resolveSaveDrop } from "../core/save-drag-session";
 import { resolveShellHint } from "../window";
 import { safeHandle } from "./helpers";
 
@@ -87,10 +89,21 @@ export function registerQuickCaptureIpc(): void {
         input.folderId &&
         !(await listFolders()).some((folder) => folder.id === input.folderId)
       )
-        throw new Error("That folder no longer exists.");
-      const draft = quickCaptureDraft(input, randomUUID());
-      await captures.accept(draft);
-      return { count: draft.items.length };
+        throw userError("That folder no longer exists. Pick another folder.");
+      const plan = quickCapturePlan(
+        input,
+        randomUUID(),
+        (path) => resolveSaveDrop([path])[0] ?? null,
+      );
+      if (!plan.draft && !input.folderId)
+        throw userError(
+          "These files are already in your Library. Pick a folder to file them.",
+        );
+      const filed = input.folderId ? plan.saveIds : [];
+      if (input.folderId && filed.length)
+        await addSavesToFolder(input.folderId, filed);
+      if (plan.draft) await captures.accept(plan.draft);
+      return { count: (plan.draft?.items.length ?? 0) + filed.length };
     },
   );
   safeHandle(QUICK_CAPTURE_IPC.drag, (event, raw) => {
