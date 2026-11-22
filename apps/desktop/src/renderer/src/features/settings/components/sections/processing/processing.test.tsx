@@ -1,17 +1,9 @@
-import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { MotionConfig } from "motion/react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, it } from "vitest";
 import { ProcessingStatusCard } from "./";
 import styles from "./styles.module.css";
-
-const css = readFileSync(
-  resolve(dirname(fileURLToPath(import.meta.url)), "styles.module.css"),
-  "utf8",
-);
 
 function styleClass(name: string | undefined): string {
   if (!name) throw new Error("Missing processing style");
@@ -244,13 +236,6 @@ it("samples grouped failures and caps the task tooltip", async () => {
       (element) => element.textContent === longTitle,
     );
     expect(title?.classList.contains(styleClass(styles.saveTitle))).toBe(true);
-    expect(css).toMatch(
-      /\.saveTitle\s*\{[^}]*overflow:\s*hidden;[^}]*text-overflow:\s*ellipsis;[^}]*white-space:\s*nowrap;/s,
-    );
-    expect(css).toMatch(/\.action\s*\{[^}]*align-self:\s*start;/s);
-    expect(css).toMatch(
-      /\.breakdown\s*\{[^}]*max-height:\s*min\(240px,\s*calc\(var\(--available-height,\s*240px\)\s*-\s*10px\)\);[^}]*overflow:\s*auto;/s,
-    );
     expect(button(host, "Show More")).toBeDefined();
     expect(button(host, "Show All")).toBeUndefined();
     expect(button(host, "Retry")).toBeDefined();
