@@ -10,8 +10,10 @@ import { createHapticPlayer, type HelperProcess } from "./haptic-player";
 const HELPER = "pond-haptics";
 
 function helperPath(): string | null {
-  if (process.platform !== "darwin" || !app.isPackaged) return null;
-  const path = join(process.resourcesPath, "bin", HELPER);
+  if (process.platform !== "darwin") return null;
+  const path = app.isPackaged
+    ? join(process.resourcesPath, "bin", HELPER)
+    : join(app.getAppPath(), "resources", "bin", HELPER);
   return existsSync(path) ? path : null;
 }
 
