@@ -34,6 +34,15 @@ it("cancels a running conversion and never starts the remaining selection", asyn
     async compress() {
       return { changed: 0, skipped: 0, bytesBefore: 0, bytesAfter: 0 };
     },
+    async compressVideos() {
+      return {
+        changed: 0,
+        skipped: 0,
+        failed: 0,
+        bytesBefore: 0,
+        bytesAfter: 0,
+      };
+    },
   });
   const job = jobs.start({
     ids: ["a", "b"],
@@ -66,6 +75,15 @@ it("reports completed outputs separately from a failed file", async () => {
     },
     async compress() {
       return { changed: 0, skipped: 0, bytesBefore: 0, bytesAfter: 0 };
+    },
+    async compressVideos() {
+      return {
+        changed: 0,
+        skipped: 0,
+        failed: 0,
+        bytesBefore: 0,
+        bytesAfter: 0,
+      };
     },
   });
   const job = jobs.start({
@@ -105,6 +123,15 @@ it("reports transactional compression progress and byte savings", async () => {
         bytesAfter: 600,
       };
     },
+    async compressVideos() {
+      return {
+        changed: 0,
+        skipped: 0,
+        failed: 0,
+        bytesBefore: 0,
+        bytesAfter: 0,
+      };
+    },
   });
   const job = jobs.startCompression({
     ids: ["a", "b"],
@@ -122,5 +149,50 @@ it("reports transactional compression progress and byte savings", async () => {
     progress: 1,
     bytesBefore: 1_000,
     bytesAfter: 600,
+  });
+});
+
+it("runs video compression as a compression job with its own savings", async () => {
+  const finished = Promise.withResolvers<void>();
+  const requested: string[][] = [];
+  const jobs = createConversionJobs({
+    scope: () => "fixture",
+    async resolve(id) {
+      return id;
+    },
+    async convert({ source }) {
+      return source;
+    },
+    async compress() {
+      throw new Error("Image compression must not run for videos.");
+    },
+    async compressVideos({ ids, quality, onProgress }) {
+      requested.push([...ids, quality]);
+      onProgress?.(1, 1);
+      finished.resolve();
+      return {
+        changed: 1,
+        skipped: 0,
+        failed: 1,
+        bytesBefore: 10_000,
+        bytesAfter: 4_000,
+      };
+    },
+  });
+  const job = jobs.startVideoCompression({
+    ids: ["a", "a"],
+    quality: "balanced",
+  });
+  await finished.promise;
+  await Promise.resolve();
+  expect(requested).toEqual([["a", "balanced"]]);
+  expect(jobs.status(job.id)).toMatchObject({
+    kind: "compression",
+    status: "complete",
+    total: 1,
+    changed: 1,
+    failed: 1,
+    bytesBefore: 10_000,
+    bytesAfter: 4_000,
   });
 });

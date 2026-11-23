@@ -265,6 +265,8 @@ export async function runFfmpeg(input: {
   signal: AbortSignal;
   duration: number;
   onProgress?: (progress: number) => void;
+  /** Overrides the default budget of four times the media duration. */
+  timeoutMs?: number;
 }): Promise<void> {
   await new Promise<void>((resolve, reject) => {
     const process = spawn(input.path, input.args, {
@@ -290,10 +292,9 @@ export async function runFfmpeg(input: {
     process.stderr.on("data", (chunk: Buffer) => {
       error = `${error}${chunk.toString()}`.slice(-4000);
     });
-    const timeout = Math.min(
-      2 * 60 * 60_000,
-      Math.max(120_000, input.duration * 4_000),
-    );
+    const timeout =
+      input.timeoutMs ??
+      Math.min(2 * 60 * 60_000, Math.max(120_000, input.duration * 4_000));
     const timer = setTimeout(
       () => killProcessTree(process, "SIGKILL"),
       timeout,
@@ -302,10 +303,18 @@ export async function runFfmpeg(input: {
       clearTimeout(timer);
       reject(cause);
     });
-    process.once("close", (code) => {
+    process.once("close", (code, signal) => {
       clearTimeout(timer);
       if (code === 0) resolve();
-      else reject(new Error(error || "FFmpeg conversion failed."));
+      else
+        reject(
+          new Error(
+            error ||
+              (signal
+                ? `FFmpeg stopped after ${Math.round(timeout / 1000)} seconds.`
+                : "FFmpeg conversion failed."),
+          ),
+        );
     });
   });
 }

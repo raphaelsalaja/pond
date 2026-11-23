@@ -33,8 +33,8 @@ Each scoped token has one or more of these. A request outside them gets `forbidd
 | Access | Routes |
 | --- | --- |
 | Search Saves | `GET /library/info`, `/library/tags`, `/library/folders`, `/library/views`, `/library/sources`. `POST /library/query`, `/library/search`. `/saves/get`, `GET /saves/info`, `/saves/text`, `/saves/status`, `/saves/thumb`, `/saves/file`, `/saves/related`. |
-| Export Files | Every `/library/conversion` route. |
-| Add and Edit Saves | `POST /enqueue`, `/saves/tags`, `/saves/folders`, `/saves/trash`, `/saves/restore`, `/saves/note`, `/saves/rating`, `/saves/favorite`. |
+| Export Files | Every `/library/conversion` route except `/library/conversion/compress-videos`. |
+| Add and Edit Saves | `POST /enqueue`, `/library/conversion/compress-videos`, `/saves/tags`, `/saves/folders`, `/saves/trash`, `/saves/restore`, `/saves/note`, `/saves/rating`, `/saves/favorite`. |
 
 These routes are private. Only the Local API Token reaches them, and they may change between minor versions:
 
@@ -262,6 +262,7 @@ Operations are the same actions Fish and the MCP server use, like creating folde
 | `GET`, `POST` | `/library/conversion/presets` | Read or save presets. |
 | `POST` | `/library/conversion/start` | Convert Saves. Returns a job. |
 | `POST` | `/library/conversion/compress` | Compress images. Returns a job. |
+| `POST` | `/library/conversion/compress-videos` | Replace videos with smaller HEVC copies, without Undo. Returns a job. |
 | `GET` | `/library/conversion/:id` | Job progress. |
 | `POST` | `/library/conversion/:id/cancel` | Cancel a job. |
 
@@ -277,14 +278,14 @@ Pond also runs as a Model Context Protocol server over stdio, for agents like Cu
 | --- | --- |
 | Search Saves | `query_library`, `search_library`, `read_save`, `grep_library`, `list_folders` |
 | Open in Pond | `open_save`, `apply_filter` |
-| Export Files | `list_conversion_capabilities`, `list_conversion_presets`, `save_conversion_preset`, `start_conversion`, `compress_images`, `conversion_status`, `cancel_conversion` |
+| Export Files | `list_conversion_capabilities`, `list_conversion_presets`, `save_conversion_preset`, `start_conversion`, `compress_images`, `compress_videos`, `conversion_status`, `cancel_conversion` |
 
 - `query_library` takes the same body as `POST /library/query` and returns ids with a cursor.
 - `search_library` ranks by meaning and keywords. Pass `saveId` to find Saves that look like one.
 - `read_save` returns one Save's caption, text in images, transcript, note, and metadata.
 - `grep_library` matches text inside captions, text in images, transcripts, notes, and titles.
 - `open_save` focuses a Save in the Pond window. `apply_filter` sets the library grid's filter.
-- `start_conversion` writes converted copies to a folder you choose and returns a job id for `conversion_status` and `cancel_conversion`. `compress_images` replaces originals and records Undo.
+- `start_conversion` writes converted copies to a folder you choose and returns a job id for `conversion_status` and `cancel_conversion`. `compress_images` replaces originals and records Undo. `compress_videos` replaces originals without Undo.
 
 A tool whose switch is off answers with an error that names the switch.
 

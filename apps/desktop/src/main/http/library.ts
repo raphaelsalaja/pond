@@ -4,6 +4,7 @@ import {
   ConversionApiRequestSchema,
   ConversionPresetSchema,
   ImageCompressionRequestSchema,
+  VideoCompressionRequestSchema,
 } from "../../shared/conversion-contracts";
 import { LibraryQueryRequestSchema } from "../../shared/library-query";
 import { queryActiveLibraryPage } from "../core/active-library-query";
@@ -55,6 +56,14 @@ export function libraryRoutes(runtime: ApiRuntime = apiRuntime) {
     return c.json({
       status: "success",
       data: conversionJobs.startCompression(parsed.data),
+    });
+  });
+  routes.post("/conversion/compress-videos", async (c) => {
+    const parsed = VideoCompressionRequestSchema.safeParse(await c.req.json());
+    if (!parsed.success) return invalidRequest(c, parsed.error);
+    return c.json({
+      status: "success",
+      data: conversionJobs.startVideoCompression(parsed.data),
     });
   });
   routes.get("/conversion/:id", (c) =>
