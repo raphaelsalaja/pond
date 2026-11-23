@@ -23,7 +23,7 @@ Session connect happens in the background when Pond is waiting and you open that
 
 ## Supported sources
 
-See [`docs/supported-sources.md`](../../docs/supported-sources.md) for the full list.
+See [Supported Sources](https://github.com/raphaelsalaja/pond/wiki/Supported-Sources) for the full list.
 
 ## Support Pond
 

@@ -103,7 +103,6 @@ tests travel with the code.
 ```bash
 # Add the descriptor, extractor, and registry entries described below.
 pnpm test              # offline tests
-pnpm generate          # refresh docs/supported-sources.md
 pnpm typecheck         # fix every error the compiler points at
 ```
 
@@ -192,9 +191,9 @@ parsing, plus registry/descriptor totality. They gate PR CI.
 
 ### 6. Docs
 
-`pnpm generate` rewrites [`docs/supported-sources.md`](supported-sources.md)
-from the descriptors. CI runs `pnpm generate && git diff --exit-code`, so a
-forgotten regenerate is a red build — never hand-edit that file.
+Add the source to the wiki's
+[Supported Sources](https://github.com/raphaelsalaja/pond/wiki/Supported-Sources)
+page: what it imports, how it connects, and any limits.
 
 ### 7. Optional extras
 

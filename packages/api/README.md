@@ -6,7 +6,7 @@ Typed client for [Pond](https://pond.raphaelsalaja.com)'s Local API. Pond runs t
 npm install pond-api
 ```
 
-Copy the Local API Token from **Pond Settings → General → Raycast**, then pass it to the client:
+Copy the Local API Token from **Pond Settings → Preferences → Integrations → Raycast**, then pass it to the client:
 
 ```ts
 import { PondApi } from "pond-api";
@@ -28,4 +28,14 @@ await pond.setFavorite([save.id], true, save.libraryId);
 
 Failures throw `PondApiError`. Branch on `error.code` (for example `save_not_found` or `library_mismatch`), or on `error.kind` for connection and authentication problems.
 
-See the [Local API reference](https://github.com/raphaelsalaja/pond/blob/main/docs/api.md) for every endpoint, error code, and the versioning promise.
+See the [Local API reference](https://github.com/raphaelsalaja/pond/wiki/Local-API-Reference) for every endpoint, error code, and the versioning promise.
+
+## Publishing
+
+The client bundles the schemas from `@pond/schema` and depends only on `zod`. To release a version, bump `version` in `package.json`, merge it, and push a matching tag:
+
+```sh
+git tag pond-api@0.2.0 && git push origin pond-api@0.2.0
+```
+
+The `Publish pond-api` workflow tests the package, installs the packed tarball in an empty project, and publishes it with provenance through npm trusted publishing. Run `pnpm --filter pond-api pack:check` to try the tarball locally.

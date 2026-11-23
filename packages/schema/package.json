@@ -61,8 +61,6 @@
     "./watches": "./src/watches.ts"
   },
   "scripts": {
-    "generate": "node --experimental-strip-types scripts/generate-supported-sources.ts",
-    "generate:check": "node --experimental-strip-types scripts/generate-supported-sources.ts --check",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

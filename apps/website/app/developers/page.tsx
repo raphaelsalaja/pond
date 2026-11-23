@@ -2,7 +2,7 @@ import { Wordmark } from "@pond/ui/wordmark";
 import type { Metadata } from "next";
 import styles from "./styles.module.css";
 
-const REFERENCE = "https://github.com/raphaelsalaja/pond/blob/main/docs/api.md";
+const REFERENCE = "https://github.com/raphaelsalaja/pond/wiki/Local-API-Reference";
 const CLIENT = "https://www.npmjs.com/package/pond-api";
 
 export const metadata: Metadata = {
