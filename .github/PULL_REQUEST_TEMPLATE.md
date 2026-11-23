@@ -55,7 +55,7 @@ Add manual repro steps for the desktop app or extension where relevant.
 -->
 
 - [ ] `pnpm typecheck` passes
-- [ ] `pnpm lint` and `pnpm oxlint` pass
+- [ ] `pnpm lint` passes
 - [ ] Offline tests pass
 - [ ] Manual testing notes:
 

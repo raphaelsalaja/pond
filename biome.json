@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.6.8/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -12,9 +12,10 @@
       "**",
       "!**/dist",
       "!**/node_modules/**/*",
-      "!tools/oxlint/anti-slop",
+      "!tools/biome/anti-slop",
       "!branding",
       "!docs/brand",
+      "!docs/supported-sources.md",
       "!.mobbin",
       "!.impeccable",
       "!packages/theme/src/colors/palette.css",
@@ -51,6 +52,32 @@
       "react": "recommended"
     }
   },
+  "plugins": [
+    {
+      "path": "./tools/biome/anti-slop/index.ts",
+      "includes": [
+        "**",
+        "!**/*.html",
+        "!.agent/**",
+        "!.agents/**",
+        "!.claude/**",
+        "!.codex/**",
+        "!.continue/**",
+        "!.cursor/**",
+        "!.gemini/**",
+        "!.opencode/**",
+        "!.pi/**",
+        "!.roo/**",
+        "!.windsurf/**",
+        "!apps/desktop/out/**",
+        "!apps/desktop/src/renderer/src/generated/**",
+        "!apps/desktop/src/renderer/src/lab/download/lab.js",
+        "!apps/extension/.output/**",
+        "!apps/extension/.wxt/**",
+        "!apps/website/.next/**"
+      ]
+    }
+  ],
   "javascript": {
     "formatter": {
       "quoteStyle": "double"

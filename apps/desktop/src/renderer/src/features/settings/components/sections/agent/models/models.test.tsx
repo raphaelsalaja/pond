@@ -3,7 +3,7 @@ import { Tooltip } from "@pond/ui";
 import { ASSISTANT_MODELS } from "@shared/assistant";
 import { modelsForChooser } from "@shared/provider-models";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act, type ReactNode, useState } from "react";
+import { act, type ComponentProps, type ReactNode, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { ModelCatalogTable, ModelsSection } from "./index";
@@ -17,6 +17,26 @@ const connectedProviders = ASSISTANT_MODELS.map((entry) => ({
 
 function wrap(node: ReactNode) {
   return <Tooltip.Provider>{node}</Tooltip.Provider>;
+}
+
+function CatalogHarness({
+  models,
+  onSave,
+}: {
+  models: ComponentProps<typeof ModelCatalogTable>["models"];
+  onSave: (next: Record<string, string[]>) => void;
+}) {
+  const [ids, setIds] = useState<Record<string, string[]>>({});
+  return (
+    <ModelCatalogTable
+      models={models}
+      visibleByProvider={ids}
+      onSave={async (next) => {
+        onSave(next);
+        setIds(next);
+      }}
+    />
+  );
 }
 
 function renderWithQuery(host: HTMLDivElement, node: ReactNode) {
@@ -91,25 +111,23 @@ it("persists visibility, preserves it after rejection, and restores all models",
   ];
   let reject = false;
   let saved: Record<string, string[]> | undefined;
-  function Harness() {
-    const [ids, setIds] = useState<Record<string, string[]>>({});
-    return (
-      <ModelCatalogTable
-        models={models}
-        visibleByProvider={ids}
-        onSave={async (next) => {
-          if (reject) throw new Error("Disk unavailable");
-          saved = next;
-          setIds(next);
-        }}
-      />
-    );
-  }
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
   try {
-    await act(async () => root.render(wrap(<Harness />)));
+    await act(async () =>
+      root.render(
+        wrap(
+          <CatalogHarness
+            models={models}
+            onSave={(next) => {
+              if (reject) throw new Error("Disk unavailable");
+              saved = next;
+            }}
+          />,
+        ),
+      ),
+    );
     const alpha = host.querySelector<HTMLButtonElement>(
       '[aria-label="Show Alpha in model pickers"]',
     );

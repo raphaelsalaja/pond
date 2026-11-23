@@ -80,22 +80,26 @@ export function agentStreamBridge(
   );
 }
 
+function Probe<Snapshot extends object>({
+  select,
+}: {
+  select: (state: AssistantState) => Snapshot | null;
+}) {
+  const state = useAssistant();
+  const snapshot = select(state);
+  return snapshot ? <output>{JSON.stringify(snapshot)}</output> : null;
+}
+
 export function createAssistantHarness<Snapshot extends object>(
   select: (state: AssistantState) => Snapshot | null,
 ) {
   const host = document.createElement("div");
   const root = createRoot(host);
 
-  function Probe() {
-    const state = useAssistant();
-    const snapshot = select(state);
-    return snapshot ? <output>{JSON.stringify(snapshot)}</output> : null;
-  }
-
   return {
     host,
     async mount() {
-      await act(async () => root.render(<Probe />));
+      await act(async () => root.render(<Probe select={select} />));
     },
     async hide() {
       await act(async () => root.render(null));

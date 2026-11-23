@@ -45,20 +45,20 @@ Times in milliseconds, p50 / p95. All measured repetitions published K updates
 on success and 2K for rejected-rating rollback, including K optimistic updates.
 This establishes a structural cost, not actual frame/render counts.
 
-| N | Operation | Run 1 p50 / p95 | Run 2 p50 / p95 |
-| --- | --- | --- | --- |
-| 1000 | rating | 4.92 / 6.91 | 4.87 / 6.65 |
-| 1000 | trash | 4.63 / 5.11 | 4.51 / 5.01 |
-| 1000 | purge | 2.04 / 4.40 | 1.92 / 3.82 |
-| 1000 | rollback | 9.19 / 10.52 | 8.84 / 9.04 |
-| 10000 | rating | 44.49 / 51.75 | 43.52 / 45.07 |
-| 10000 | trash | 43.59 / 45.38 | 43.68 / 44.44 |
-| 10000 | purge | 34.10 / 72.95 | 34.76 / 70.19 |
-| 10000 | rollback | 87.21 / 90.96 | 88.38 / 92.45 |
-| 50000 | rating | 328.14 / 391.99 | 330.02 / 340.86 |
-| 50000 | trash | 327.67 / 389.34 | 331.32 / 351.11 |
-| 50000 | purge | 178.82 / 203.22 | 178.28 / 202.89 |
-| 50000 | rollback | 692.86 / 1048.02 | 653.90 / 673.57 |
+| N     | Operation | Run 1 p50 / p95  | Run 2 p50 / p95 |
+| ----- | --------- | ---------------- | --------------- |
+| 1000  | rating    | 4.92 / 6.91      | 4.87 / 6.65     |
+| 1000  | trash     | 4.63 / 5.11      | 4.51 / 5.01     |
+| 1000  | purge     | 2.04 / 4.40      | 1.92 / 3.82     |
+| 1000  | rollback  | 9.19 / 10.52     | 8.84 / 9.04     |
+| 10000 | rating    | 44.49 / 51.75    | 43.52 / 45.07   |
+| 10000 | trash     | 43.59 / 45.38    | 43.68 / 44.44   |
+| 10000 | purge     | 34.10 / 72.95    | 34.76 / 70.19   |
+| 10000 | rollback  | 87.21 / 90.96    | 88.38 / 92.45   |
+| 50000 | rating    | 328.14 / 391.99  | 330.02 / 340.86 |
+| 50000 | trash     | 327.67 / 389.34  | 331.32 / 351.11 |
+| 50000 | purge     | 178.82 / 203.22  | 178.28 / 202.89 |
+| 50000 | rollback  | 692.86 / 1048.02 | 653.90 / 673.57 |
 
 At N=50k, unpinned all-Library recency queries had p95 first/next
 23.98/29.18ms (run 1) and 24.21/30.96ms (run 2). Title queries had
@@ -117,27 +117,27 @@ attempt exceeded a ceiling.
 
 Ubuntu, `ubuntu-26.04` 20261101.186.1, x64 under xvfb, four runs:
 
-| Scenario | Main | Renderer | GPU | Utility | Total |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Idle, window open | 296.9 | 334.0 | 182.4 | 93.0 | 905.6 |
-| After seeding 50 Saves | 235.3 | 576.1 | 207.9 | 92.8 | 1,107.9 |
-| Window closed | 234.9 | 0 | 140.3 | 92.8 | 467.6 |
+| Scenario               |  Main | Renderer |   GPU | Utility |   Total |
+| ---------------------- | ----: | -------: | ----: | ------: | ------: |
+| Idle, window open      | 296.9 |    334.0 | 182.4 |    93.0 |   905.6 |
+| After seeding 50 Saves | 235.3 |    576.1 | 207.9 |    92.8 | 1,107.9 |
+| Window closed          | 234.9 |        0 | 140.3 |    92.8 |   467.6 |
 
 Windows, `windows-2025-vs2026` 20261103.298.1, x64, four runs:
 
-| Scenario | Main | Renderer | GPU | Utility | Total |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Idle, window open | 163.3 | 189.3 | 72.0 | 50.3 | 475.8 |
-| After seeding 50 Saves | 148.9 | 243.3 | 82.3 | 45.2 | 520.3 |
-| Window closed | 148.9 | 0 | 63.2 | 39.1 | 251.4 |
+| Scenario               |  Main | Renderer |  GPU | Utility | Total |
+| ---------------------- | ----: | -------: | ---: | ------: | ----: |
+| Idle, window open      | 163.3 |    189.3 | 72.0 |    50.3 | 475.8 |
+| After seeding 50 Saves | 148.9 |    243.3 | 82.3 |    45.2 | 520.3 |
+| Window closed          | 148.9 |        0 | 63.2 |    39.1 | 251.4 |
 
 macOS, `macos-26-arm64` 20261102.0473.1, arm64, three runs:
 
-| Scenario | Main | Renderer | GPU | Utility | Total |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Idle, window open | 395.3 | 194.0 | 92.0 | 46.5 | 736.4 |
-| After seeding 50 Saves | 412.3 | 215.0 | 93.9 | 46.5 | 779.6 |
-| Window closed | 395.9 | 0 | 93.9 | 46.6 | 536.3 |
+| Scenario               |  Main | Renderer |  GPU | Utility | Total |
+| ---------------------- | ----: | -------: | ---: | ------: | ----: |
+| Idle, window open      | 395.3 |    194.0 | 92.0 |    46.5 | 736.4 |
+| After seeding 50 Saves | 412.3 |    215.0 | 93.9 |    46.5 | 779.6 |
+| Window closed          | 395.9 |        0 | 93.9 |    46.6 | 536.3 |
 
 The widest spread across runs was the Windows seeded renderer, 243.3 to 287.9
 MB. Linux software rendering under xvfb accounts for its larger GPU and
@@ -234,44 +234,44 @@ rollback overwrite policy for intervening edits is preserved, not redesigned.
 
 All p95 values below are milliseconds. Baseline is independent run 2 above.
 
-| N | K | Operation | Before p95 | After bulk-only p95 | After two-file p95 |
-| --- | --- | --- | --- | --- | --- |
-| 1000 | 1 | rating | 0.017 | 0.041 | 0.072 |
-| 1000 | 1 | trash | 0.013 | 0.044 | 0.077 |
-| 1000 | 1 | purge | 0.021 | 0.031 | 0.149 |
-| 1000 | 1 | rollback | 0.023 | 0.056 | 0.106 |
-| 1000 | 100 | rating | 0.657 | 0.044 | 0.100 |
-| 1000 | 100 | trash | 0.775 | 0.066 | 0.115 |
-| 1000 | 100 | purge | 0.850 | 0.070 | 0.117 |
-| 1000 | 100 | rollback | 6.110 | 0.086 | 0.209 |
-| 1000 | 1000 | rating | 6.647 | 0.293 | 0.520 |
-| 1000 | 1000 | trash | 5.009 | 0.266 | 0.512 |
-| 1000 | 1000 | purge | 3.822 | 0.231 | 0.463 |
-| 1000 | 1000 | rollback | 9.037 | 0.292 | 0.993 |
-| 10000 | 1 | rating | 0.054 | 0.174 | 0.897 |
-| 10000 | 1 | trash | 0.065 | 0.180 | 1.213 |
-| 10000 | 1 | purge | 0.052 | 0.206 | 0.379 |
-| 10000 | 1 | rollback | 0.109 | 0.369 | 0.816 |
-| 10000 | 100 | rating | 4.787 | 0.169 | 0.759 |
-| 10000 | 100 | trash | 4.643 | 0.150 | 0.815 |
-| 10000 | 100 | purge | 3.673 | 0.316 | 1.066 |
-| 10000 | 100 | rollback | 9.157 | 0.293 | 1.089 |
-| 10000 | 1000 | rating | 45.067 | 0.354 | 1.527 |
-| 10000 | 1000 | trash | 44.441 | 0.387 | 2.059 |
-| 10000 | 1000 | purge | 70.189 | 0.576 | 1.667 |
-| 10000 | 1000 | rollback | 92.448 | 0.671 | 0.915 |
-| 50000 | 1 | rating | 0.443 | 2.138 | 6.829 |
-| 50000 | 1 | trash | 0.446 | 1.743 | 3.168 |
-| 50000 | 1 | purge | 0.299 | 1.143 | 2.354 |
-| 50000 | 1 | rollback | 0.755 | 4.324 | 10.558 |
-| 50000 | 100 | rating | 33.492 | 2.193 | 3.573 |
-| 50000 | 100 | trash | 33.906 | 1.587 | 3.415 |
-| 50000 | 100 | purge | 17.911 | 2.052 | 3.900 |
-| 50000 | 100 | rollback | 83.721 | 4.305 | 4.542 |
-| 50000 | 1000 | rating | 340.859 | 2.416 | 3.290 |
-| 50000 | 1000 | trash | 351.115 | 2.559 | 4.040 |
-| 50000 | 1000 | purge | 202.887 | 2.766 | 6.460 |
-| 50000 | 1000 | rollback | 673.570 | 7.355 | 9.020 |
+| N     | K    | Operation | Before p95 | After bulk-only p95 | After two-file p95 |
+| ----- | ---- | --------- | ---------- | ------------------- | ------------------ |
+| 1000  | 1    | rating    | 0.017      | 0.041               | 0.072              |
+| 1000  | 1    | trash     | 0.013      | 0.044               | 0.077              |
+| 1000  | 1    | purge     | 0.021      | 0.031               | 0.149              |
+| 1000  | 1    | rollback  | 0.023      | 0.056               | 0.106              |
+| 1000  | 100  | rating    | 0.657      | 0.044               | 0.100              |
+| 1000  | 100  | trash     | 0.775      | 0.066               | 0.115              |
+| 1000  | 100  | purge     | 0.850      | 0.070               | 0.117              |
+| 1000  | 100  | rollback  | 6.110      | 0.086               | 0.209              |
+| 1000  | 1000 | rating    | 6.647      | 0.293               | 0.520              |
+| 1000  | 1000 | trash     | 5.009      | 0.266               | 0.512              |
+| 1000  | 1000 | purge     | 3.822      | 0.231               | 0.463              |
+| 1000  | 1000 | rollback  | 9.037      | 0.292               | 0.993              |
+| 10000 | 1    | rating    | 0.054      | 0.174               | 0.897              |
+| 10000 | 1    | trash     | 0.065      | 0.180               | 1.213              |
+| 10000 | 1    | purge     | 0.052      | 0.206               | 0.379              |
+| 10000 | 1    | rollback  | 0.109      | 0.369               | 0.816              |
+| 10000 | 100  | rating    | 4.787      | 0.169               | 0.759              |
+| 10000 | 100  | trash     | 4.643      | 0.150               | 0.815              |
+| 10000 | 100  | purge     | 3.673      | 0.316               | 1.066              |
+| 10000 | 100  | rollback  | 9.157      | 0.293               | 1.089              |
+| 10000 | 1000 | rating    | 45.067     | 0.354               | 1.527              |
+| 10000 | 1000 | trash     | 44.441     | 0.387               | 2.059              |
+| 10000 | 1000 | purge     | 70.189     | 0.576               | 1.667              |
+| 10000 | 1000 | rollback  | 92.448     | 0.671               | 0.915              |
+| 50000 | 1    | rating    | 0.443      | 2.138               | 6.829              |
+| 50000 | 1    | trash     | 0.446      | 1.743               | 3.168              |
+| 50000 | 1    | purge     | 0.299      | 1.143               | 2.354              |
+| 50000 | 1    | rollback  | 0.755      | 4.324               | 10.558             |
+| 50000 | 100  | rating    | 33.492     | 2.193               | 3.573              |
+| 50000 | 100  | trash     | 33.906     | 1.587               | 3.415              |
+| 50000 | 100  | purge     | 17.911     | 2.052               | 3.900              |
+| 50000 | 100  | rollback  | 83.721     | 4.305               | 4.542              |
+| 50000 | 1000 | rating    | 340.859    | 2.416               | 3.290              |
+| 50000 | 1000 | trash     | 351.115    | 2.559               | 4.040              |
+| 50000 | 1000 | purge     | 202.887    | 2.766               | 6.460              |
+| 50000 | 1000 | rollback  | 673.570    | 7.355               | 9.020              |
 
 ### Verification and scope
 
@@ -449,10 +449,10 @@ POND_BENCH_LIBRARY=1 ELECTRON_RUN_AS_NODE=1 pnpm --filter @pond/desktop exec ele
 
 At N=50k unpinned all-Library savedAt descending:
 
-| Page | Original plan 001 run 2 p95 | Fresh before p95 | After p95 | Repeat p95 | Approved ceiling |
-| --- | --- | --- | --- | --- | --- |
-| First | 24.21ms | 23.15ms | 12.96ms | 13.46ms | 18.16ms |
-| Next | 30.96ms | 29.15ms | 13.35ms | 14.49ms | 23.22ms |
+| Page  | Original plan 001 run 2 p95 | Fresh before p95 | After p95 | Repeat p95 | Approved ceiling |
+| ----- | --------------------------- | ---------------- | --------- | ---------- | ---------------- |
+| First | 24.21ms                     | 23.15ms          | 12.96ms   | 13.46ms    | 18.16ms          |
+| Next  | 30.96ms                     | 29.15ms          | 13.35ms   | 14.49ms    | 23.22ms          |
 
 Both runs pass both approved ceilings. Against the fresh before baseline,
 the measured saving is approximately 42–44% for the first page and 50–54% for
@@ -477,169 +477,169 @@ timing threshold was approved; no statistical significance is claimed.
 
 ### Full page-query p95 comparison (milliseconds)
 
-| N | Sort | Pins | Scope | Page | Before | After | Repeat |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| 1000 | savedAt | 0 | all | first | 0.826 | 0.536 | 0.554 |
-| 1000 | savedAt | 0 | all | next | 0.886 | 0.463 | 0.506 |
-| 1000 | savedAt | 0 | keyword | first | 2.158 | 1.886 | 1.982 |
-| 1000 | savedAt | 0 | selective | first | 0.556 | 0.459 | 0.517 |
-| 1000 | savedAt | 0 | broad | first | 1.099 | 0.719 | 0.738 |
-| 1000 | savedAt | 0 | broad | next | 1.161 | 0.715 | 0.775 |
-| 1000 | savedAt | 3 | all | first | 1.044 | 1.036 | 1.109 |
-| 1000 | savedAt | 3 | all | next | 1.426 | 1.298 | 1.367 |
-| 1000 | savedAt | 3 | keyword | first | 1.919 | 1.878 | 1.994 |
-| 1000 | savedAt | 3 | selective | first | 0.490 | 0.465 | 0.467 |
-| 1000 | savedAt | 3 | broad | first | 1.269 | 1.281 | 1.298 |
-| 1000 | savedAt | 3 | broad | next | 1.662 | 1.577 | 1.666 |
-| 1000 | title | 0 | all | first | 0.891 | 0.846 | 0.975 |
-| 1000 | title | 0 | all | next | 1.053 | 1.074 | 1.230 |
-| 1000 | title | 0 | keyword | first | 2.076 | 2.068 | 2.156 |
-| 1000 | title | 0 | selective | first | 0.482 | 0.496 | 0.638 |
-| 1000 | title | 0 | broad | first | 1.129 | 1.082 | 1.598 |
-| 1000 | title | 0 | broad | next | 1.311 | 1.322 | 1.551 |
-| 1000 | title | 3 | all | first | 1.039 | 1.029 | 1.458 |
-| 1000 | title | 3 | all | next | 1.464 | 1.481 | 2.169 |
-| 1000 | title | 3 | keyword | first | 1.908 | 1.943 | 2.249 |
-| 1000 | title | 3 | selective | first | 0.472 | 0.484 | 0.523 |
-| 1000 | title | 3 | broad | first | 1.273 | 1.253 | 1.392 |
-| 1000 | title | 3 | broad | next | 3.232 | 1.646 | 2.183 |
-| 10000 | savedAt | 0 | all | first | 10.822 | 2.743 | 3.002 |
-| 10000 | savedAt | 0 | all | next | 6.033 | 2.778 | 2.969 |
-| 10000 | savedAt | 0 | keyword | first | 18.483 | 10.801 | 16.710 |
-| 10000 | savedAt | 0 | keyword | next | 28.457 | 10.910 | 18.732 |
-| 10000 | savedAt | 0 | selective | first | 4.410 | 4.053 | 5.353 |
-| 10000 | savedAt | 0 | broad | first | 8.590 | 5.249 | 5.598 |
-| 10000 | savedAt | 0 | broad | next | 18.354 | 5.489 | 5.547 |
-| 10000 | savedAt | 3 | all | first | 8.321 | 8.093 | 8.134 |
-| 10000 | savedAt | 3 | all | next | 14.911 | 12.898 | 15.675 |
-| 10000 | savedAt | 3 | keyword | first | 18.356 | 17.921 | 30.422 |
-| 10000 | savedAt | 3 | keyword | next | 18.614 | 18.496 | 18.294 |
-| 10000 | savedAt | 3 | selective | first | 4.207 | 4.116 | 4.180 |
-| 10000 | savedAt | 3 | broad | first | 11.083 | 11.013 | 10.948 |
-| 10000 | savedAt | 3 | broad | next | 15.781 | 15.561 | 15.673 |
-| 10000 | title | 0 | all | first | 4.410 | 4.281 | 4.351 |
-| 10000 | title | 0 | all | next | 7.432 | 7.740 | 7.287 |
-| 10000 | title | 0 | keyword | first | 18.197 | 17.351 | 18.023 |
-| 10000 | title | 0 | keyword | next | 18.240 | 17.903 | 18.312 |
-| 10000 | title | 0 | selective | first | 4.108 | 4.089 | 4.523 |
-| 10000 | title | 0 | broad | first | 7.125 | 6.934 | 7.163 |
-| 10000 | title | 0 | broad | next | 10.173 | 11.395 | 10.339 |
-| 10000 | title | 3 | all | first | 5.669 | 7.601 | 5.816 |
-| 10000 | title | 3 | all | next | 11.677 | 11.449 | 12.944 |
-| 10000 | title | 3 | keyword | first | 18.483 | 17.688 | 19.215 |
-| 10000 | title | 3 | keyword | next | 18.809 | 18.732 | 22.381 |
-| 10000 | title | 3 | selective | first | 4.433 | 4.039 | 4.253 |
-| 10000 | title | 3 | broad | first | 8.739 | 8.488 | 8.636 |
-| 10000 | title | 3 | broad | next | 14.520 | 14.141 | 14.730 |
-| 50000 | savedAt | 0 | all | first | 23.147 | 12.958 | 13.462 |
-| 50000 | savedAt | 0 | all | next | 29.151 | 13.352 | 14.495 |
-| 50000 | savedAt | 0 | keyword | first | 99.089 | 48.461 | 50.611 |
-| 50000 | savedAt | 0 | keyword | next | 139.934 | 49.725 | 50.070 |
-| 50000 | savedAt | 0 | selective | first | 28.338 | 21.563 | 24.067 |
-| 50000 | savedAt | 0 | selective | next | 41.124 | 18.651 | 25.382 |
-| 50000 | savedAt | 0 | broad | first | 51.339 | 28.455 | 29.646 |
-| 50000 | savedAt | 0 | broad | next | 81.675 | 29.405 | 30.339 |
-| 50000 | savedAt | 3 | all | first | 47.235 | 40.623 | 43.722 |
-| 50000 | savedAt | 3 | all | next | 80.910 | 64.668 | 67.651 |
-| 50000 | savedAt | 3 | keyword | first | 103.766 | 94.210 | 101.046 |
-| 50000 | savedAt | 3 | keyword | next | 104.375 | 97.543 | 97.185 |
-| 50000 | savedAt | 3 | selective | first | 33.386 | 22.359 | 25.437 |
-| 50000 | savedAt | 3 | selective | next | 47.988 | 36.767 | 41.196 |
-| 50000 | savedAt | 3 | broad | first | 62.271 | 55.886 | 59.482 |
-| 50000 | savedAt | 3 | broad | next | 86.896 | 96.206 | 81.969 |
-| 50000 | title | 0 | all | first | 20.147 | 20.239 | 19.261 |
-| 50000 | title | 0 | all | next | 39.779 | 37.806 | 38.899 |
-| 50000 | title | 0 | keyword | first | 106.496 | 93.851 | 92.559 |
-| 50000 | title | 0 | keyword | next | 98.186 | 111.248 | 94.647 |
-| 50000 | title | 0 | selective | first | 22.978 | 22.418 | 22.601 |
-| 50000 | title | 0 | selective | next | 28.246 | 26.248 | 27.492 |
-| 50000 | title | 0 | broad | first | 35.556 | 36.462 | 35.182 |
-| 50000 | title | 0 | broad | next | 54.352 | 50.149 | 55.423 |
-| 50000 | title | 3 | all | first | 26.169 | 25.118 | 26.535 |
-| 50000 | title | 3 | all | next | 56.595 | 55.060 | 57.871 |
-| 50000 | title | 3 | keyword | first | 95.465 | 93.976 | 100.134 |
-| 50000 | title | 3 | keyword | next | 107.283 | 96.228 | 111.371 |
-| 50000 | title | 3 | selective | first | 23.033 | 22.508 | 26.742 |
-| 50000 | title | 3 | selective | next | 34.575 | 33.847 | 43.089 |
-| 50000 | title | 3 | broad | first | 42.772 | 41.196 | 51.809 |
-| 50000 | title | 3 | broad | next | 71.560 | 70.007 | 74.287 |
+| N     | Sort    | Pins | Scope     | Page  | Before  | After   | Repeat  |
+| ----- | ------- | ---- | --------- | ----- | ------- | ------- | ------- |
+| 1000  | savedAt | 0    | all       | first | 0.826   | 0.536   | 0.554   |
+| 1000  | savedAt | 0    | all       | next  | 0.886   | 0.463   | 0.506   |
+| 1000  | savedAt | 0    | keyword   | first | 2.158   | 1.886   | 1.982   |
+| 1000  | savedAt | 0    | selective | first | 0.556   | 0.459   | 0.517   |
+| 1000  | savedAt | 0    | broad     | first | 1.099   | 0.719   | 0.738   |
+| 1000  | savedAt | 0    | broad     | next  | 1.161   | 0.715   | 0.775   |
+| 1000  | savedAt | 3    | all       | first | 1.044   | 1.036   | 1.109   |
+| 1000  | savedAt | 3    | all       | next  | 1.426   | 1.298   | 1.367   |
+| 1000  | savedAt | 3    | keyword   | first | 1.919   | 1.878   | 1.994   |
+| 1000  | savedAt | 3    | selective | first | 0.490   | 0.465   | 0.467   |
+| 1000  | savedAt | 3    | broad     | first | 1.269   | 1.281   | 1.298   |
+| 1000  | savedAt | 3    | broad     | next  | 1.662   | 1.577   | 1.666   |
+| 1000  | title   | 0    | all       | first | 0.891   | 0.846   | 0.975   |
+| 1000  | title   | 0    | all       | next  | 1.053   | 1.074   | 1.230   |
+| 1000  | title   | 0    | keyword   | first | 2.076   | 2.068   | 2.156   |
+| 1000  | title   | 0    | selective | first | 0.482   | 0.496   | 0.638   |
+| 1000  | title   | 0    | broad     | first | 1.129   | 1.082   | 1.598   |
+| 1000  | title   | 0    | broad     | next  | 1.311   | 1.322   | 1.551   |
+| 1000  | title   | 3    | all       | first | 1.039   | 1.029   | 1.458   |
+| 1000  | title   | 3    | all       | next  | 1.464   | 1.481   | 2.169   |
+| 1000  | title   | 3    | keyword   | first | 1.908   | 1.943   | 2.249   |
+| 1000  | title   | 3    | selective | first | 0.472   | 0.484   | 0.523   |
+| 1000  | title   | 3    | broad     | first | 1.273   | 1.253   | 1.392   |
+| 1000  | title   | 3    | broad     | next  | 3.232   | 1.646   | 2.183   |
+| 10000 | savedAt | 0    | all       | first | 10.822  | 2.743   | 3.002   |
+| 10000 | savedAt | 0    | all       | next  | 6.033   | 2.778   | 2.969   |
+| 10000 | savedAt | 0    | keyword   | first | 18.483  | 10.801  | 16.710  |
+| 10000 | savedAt | 0    | keyword   | next  | 28.457  | 10.910  | 18.732  |
+| 10000 | savedAt | 0    | selective | first | 4.410   | 4.053   | 5.353   |
+| 10000 | savedAt | 0    | broad     | first | 8.590   | 5.249   | 5.598   |
+| 10000 | savedAt | 0    | broad     | next  | 18.354  | 5.489   | 5.547   |
+| 10000 | savedAt | 3    | all       | first | 8.321   | 8.093   | 8.134   |
+| 10000 | savedAt | 3    | all       | next  | 14.911  | 12.898  | 15.675  |
+| 10000 | savedAt | 3    | keyword   | first | 18.356  | 17.921  | 30.422  |
+| 10000 | savedAt | 3    | keyword   | next  | 18.614  | 18.496  | 18.294  |
+| 10000 | savedAt | 3    | selective | first | 4.207   | 4.116   | 4.180   |
+| 10000 | savedAt | 3    | broad     | first | 11.083  | 11.013  | 10.948  |
+| 10000 | savedAt | 3    | broad     | next  | 15.781  | 15.561  | 15.673  |
+| 10000 | title   | 0    | all       | first | 4.410   | 4.281   | 4.351   |
+| 10000 | title   | 0    | all       | next  | 7.432   | 7.740   | 7.287   |
+| 10000 | title   | 0    | keyword   | first | 18.197  | 17.351  | 18.023  |
+| 10000 | title   | 0    | keyword   | next  | 18.240  | 17.903  | 18.312  |
+| 10000 | title   | 0    | selective | first | 4.108   | 4.089   | 4.523   |
+| 10000 | title   | 0    | broad     | first | 7.125   | 6.934   | 7.163   |
+| 10000 | title   | 0    | broad     | next  | 10.173  | 11.395  | 10.339  |
+| 10000 | title   | 3    | all       | first | 5.669   | 7.601   | 5.816   |
+| 10000 | title   | 3    | all       | next  | 11.677  | 11.449  | 12.944  |
+| 10000 | title   | 3    | keyword   | first | 18.483  | 17.688  | 19.215  |
+| 10000 | title   | 3    | keyword   | next  | 18.809  | 18.732  | 22.381  |
+| 10000 | title   | 3    | selective | first | 4.433   | 4.039   | 4.253   |
+| 10000 | title   | 3    | broad     | first | 8.739   | 8.488   | 8.636   |
+| 10000 | title   | 3    | broad     | next  | 14.520  | 14.141  | 14.730  |
+| 50000 | savedAt | 0    | all       | first | 23.147  | 12.958  | 13.462  |
+| 50000 | savedAt | 0    | all       | next  | 29.151  | 13.352  | 14.495  |
+| 50000 | savedAt | 0    | keyword   | first | 99.089  | 48.461  | 50.611  |
+| 50000 | savedAt | 0    | keyword   | next  | 139.934 | 49.725  | 50.070  |
+| 50000 | savedAt | 0    | selective | first | 28.338  | 21.563  | 24.067  |
+| 50000 | savedAt | 0    | selective | next  | 41.124  | 18.651  | 25.382  |
+| 50000 | savedAt | 0    | broad     | first | 51.339  | 28.455  | 29.646  |
+| 50000 | savedAt | 0    | broad     | next  | 81.675  | 29.405  | 30.339  |
+| 50000 | savedAt | 3    | all       | first | 47.235  | 40.623  | 43.722  |
+| 50000 | savedAt | 3    | all       | next  | 80.910  | 64.668  | 67.651  |
+| 50000 | savedAt | 3    | keyword   | first | 103.766 | 94.210  | 101.046 |
+| 50000 | savedAt | 3    | keyword   | next  | 104.375 | 97.543  | 97.185  |
+| 50000 | savedAt | 3    | selective | first | 33.386  | 22.359  | 25.437  |
+| 50000 | savedAt | 3    | selective | next  | 47.988  | 36.767  | 41.196  |
+| 50000 | savedAt | 3    | broad     | first | 62.271  | 55.886  | 59.482  |
+| 50000 | savedAt | 3    | broad     | next  | 86.896  | 96.206  | 81.969  |
+| 50000 | title   | 0    | all       | first | 20.147  | 20.239  | 19.261  |
+| 50000 | title   | 0    | all       | next  | 39.779  | 37.806  | 38.899  |
+| 50000 | title   | 0    | keyword   | first | 106.496 | 93.851  | 92.559  |
+| 50000 | title   | 0    | keyword   | next  | 98.186  | 111.248 | 94.647  |
+| 50000 | title   | 0    | selective | first | 22.978  | 22.418  | 22.601  |
+| 50000 | title   | 0    | selective | next  | 28.246  | 26.248  | 27.492  |
+| 50000 | title   | 0    | broad     | first | 35.556  | 36.462  | 35.182  |
+| 50000 | title   | 0    | broad     | next  | 54.352  | 50.149  | 55.423  |
+| 50000 | title   | 3    | all       | first | 26.169  | 25.118  | 26.535  |
+| 50000 | title   | 3    | all       | next  | 56.595  | 55.060  | 57.871  |
+| 50000 | title   | 3    | keyword   | first | 95.465  | 93.976  | 100.134 |
+| 50000 | title   | 3    | keyword   | next  | 107.283 | 96.228  | 111.371 |
+| 50000 | title   | 3    | selective | first | 23.033  | 22.508  | 26.742  |
+| 50000 | title   | 3    | selective | next  | 34.575  | 33.847  | 43.089  |
+| 50000 | title   | 3    | broad     | first | 42.772  | 41.196  | 51.809  |
+| 50000 | title   | 3    | broad     | next  | 71.560  | 70.007  | 74.287  |
 
 ### Diagnostic overall p95 comparison at N=10k (milliseconds)
 
-| Sort | Direction | Pins | Scope | Query | Before | After |
-| --- | --- | --- | --- | --- | --- | --- |
-| savedAt | asc | 0 | all | first | 2.735 | 1.649 |
-| savedAt | asc | 0 | all | next | 5.265 | 1.611 |
-| savedAt | asc | 0 | all | ids | 5.524 | 3.957 |
-| savedAt | asc | 0 | broad | first | 5.412 | 4.370 |
-| savedAt | asc | 0 | broad | next | 7.943 | 4.360 |
-| savedAt | asc | 0 | broad | ids | 7.195 | 5.462 |
-| savedAt | asc | 0 | selective | first | 4.090 | 4.066 |
-| savedAt | asc | 0 | selective | next | 5.966 | 3.821 |
-| savedAt | asc | 0 | selective | ids | 2.212 | 2.078 |
-| savedAt | asc | 3 | all | first | 4.027 | 3.855 |
-| savedAt | asc | 3 | all | next | 9.129 | 8.853 |
-| savedAt | asc | 3 | all | ids | 6.832 | 6.814 |
-| savedAt | asc | 3 | broad | first | 6.712 | 6.671 |
-| savedAt | asc | 3 | broad | next | 11.704 | 11.525 |
-| savedAt | asc | 3 | broad | ids | 8.851 | 8.667 |
-| savedAt | asc | 3 | selective | first | 4.707 | 4.103 |
-| savedAt | asc | 3 | selective | next | 16.589 | 8.100 |
-| savedAt | asc | 3 | selective | ids | 2.224 | 2.057 |
-| savedAt | desc | 0 | all | first | 9.872 | 2.247 |
-| savedAt | desc | 0 | all | next | 7.364 | 2.261 |
-| savedAt | desc | 0 | all | ids | 6.135 | 4.453 |
-| savedAt | desc | 0 | broad | first | 7.863 | 4.888 |
-| savedAt | desc | 0 | broad | next | 10.419 | 4.966 |
-| savedAt | desc | 0 | broad | ids | 7.499 | 5.498 |
-| savedAt | desc | 0 | selective | first | 4.221 | 3.991 |
-| savedAt | desc | 0 | selective | next | 6.248 | 3.768 |
-| savedAt | desc | 0 | selective | ids | 2.173 | 2.052 |
-| savedAt | desc | 3 | all | first | 7.919 | 7.240 |
-| savedAt | desc | 3 | all | next | 12.461 | 12.139 |
-| savedAt | desc | 3 | all | ids | 13.813 | 7.352 |
-| savedAt | desc | 3 | broad | first | 10.104 | 10.356 |
-| savedAt | desc | 3 | broad | next | 16.139 | 14.959 |
-| savedAt | desc | 3 | broad | ids | 9.002 | 8.791 |
-| savedAt | desc | 3 | selective | first | 9.801 | 4.109 |
-| savedAt | desc | 3 | selective | next | 8.730 | 8.267 |
-| savedAt | desc | 3 | selective | ids | 2.273 | 2.045 |
-| title | asc | 0 | all | first | 4.861 | 3.661 |
-| title | asc | 0 | all | next | 7.269 | 6.812 |
-| title | asc | 0 | all | ids | 15.416 | 8.737 |
-| title | asc | 0 | broad | first | 6.509 | 6.334 |
-| title | asc | 0 | broad | next | 14.674 | 9.847 |
-| title | asc | 0 | broad | ids | 10.599 | 9.575 |
-| title | asc | 0 | selective | first | 4.331 | 4.117 |
-| title | asc | 0 | selective | next | 7.502 | 6.975 |
-| title | asc | 0 | selective | ids | 2.215 | 2.116 |
-| title | asc | 3 | all | first | 5.138 | 5.010 |
-| title | asc | 3 | all | next | 12.946 | 11.123 |
-| title | asc | 3 | all | ids | 28.752 | 9.488 |
-| title | asc | 3 | broad | first | 8.225 | 7.724 |
-| title | asc | 3 | broad | next | 15.788 | 13.472 |
-| title | asc | 3 | broad | ids | 15.605 | 10.840 |
-| title | asc | 3 | selective | first | 4.245 | 4.150 |
-| title | asc | 3 | selective | next | 9.918 | 9.570 |
-| title | asc | 3 | selective | ids | 2.132 | 2.012 |
-| title | desc | 0 | all | first | 3.892 | 3.573 |
-| title | desc | 0 | all | next | 9.328 | 7.035 |
-| title | desc | 0 | all | ids | 12.560 | 8.061 |
-| title | desc | 0 | broad | first | 7.040 | 6.410 |
-| title | desc | 0 | broad | next | 10.656 | 9.477 |
-| title | desc | 0 | broad | ids | 19.887 | 9.322 |
-| title | desc | 0 | selective | first | 8.563 | 4.110 |
-| title | desc | 0 | selective | next | 6.568 | 5.254 |
-| title | desc | 0 | selective | ids | 7.261 | 2.067 |
-| title | desc | 3 | all | first | 6.141 | 5.009 |
-| title | desc | 3 | all | next | 13.150 | 11.014 |
-| title | desc | 3 | all | ids | 12.234 | 9.948 |
-| title | desc | 3 | broad | first | 8.574 | 7.764 |
-| title | desc | 3 | broad | next | 19.178 | 14.006 |
-| title | desc | 3 | broad | ids | 11.917 | 10.754 |
-| title | desc | 3 | selective | first | 4.231 | 4.166 |
-| title | desc | 3 | selective | next | 7.554 | 6.723 |
-| title | desc | 3 | selective | ids | 3.510 | 2.050 |
+| Sort    | Direction | Pins | Scope     | Query | Before | After  |
+| ------- | --------- | ---- | --------- | ----- | ------ | ------ |
+| savedAt | asc       | 0    | all       | first | 2.735  | 1.649  |
+| savedAt | asc       | 0    | all       | next  | 5.265  | 1.611  |
+| savedAt | asc       | 0    | all       | ids   | 5.524  | 3.957  |
+| savedAt | asc       | 0    | broad     | first | 5.412  | 4.370  |
+| savedAt | asc       | 0    | broad     | next  | 7.943  | 4.360  |
+| savedAt | asc       | 0    | broad     | ids   | 7.195  | 5.462  |
+| savedAt | asc       | 0    | selective | first | 4.090  | 4.066  |
+| savedAt | asc       | 0    | selective | next  | 5.966  | 3.821  |
+| savedAt | asc       | 0    | selective | ids   | 2.212  | 2.078  |
+| savedAt | asc       | 3    | all       | first | 4.027  | 3.855  |
+| savedAt | asc       | 3    | all       | next  | 9.129  | 8.853  |
+| savedAt | asc       | 3    | all       | ids   | 6.832  | 6.814  |
+| savedAt | asc       | 3    | broad     | first | 6.712  | 6.671  |
+| savedAt | asc       | 3    | broad     | next  | 11.704 | 11.525 |
+| savedAt | asc       | 3    | broad     | ids   | 8.851  | 8.667  |
+| savedAt | asc       | 3    | selective | first | 4.707  | 4.103  |
+| savedAt | asc       | 3    | selective | next  | 16.589 | 8.100  |
+| savedAt | asc       | 3    | selective | ids   | 2.224  | 2.057  |
+| savedAt | desc      | 0    | all       | first | 9.872  | 2.247  |
+| savedAt | desc      | 0    | all       | next  | 7.364  | 2.261  |
+| savedAt | desc      | 0    | all       | ids   | 6.135  | 4.453  |
+| savedAt | desc      | 0    | broad     | first | 7.863  | 4.888  |
+| savedAt | desc      | 0    | broad     | next  | 10.419 | 4.966  |
+| savedAt | desc      | 0    | broad     | ids   | 7.499  | 5.498  |
+| savedAt | desc      | 0    | selective | first | 4.221  | 3.991  |
+| savedAt | desc      | 0    | selective | next  | 6.248  | 3.768  |
+| savedAt | desc      | 0    | selective | ids   | 2.173  | 2.052  |
+| savedAt | desc      | 3    | all       | first | 7.919  | 7.240  |
+| savedAt | desc      | 3    | all       | next  | 12.461 | 12.139 |
+| savedAt | desc      | 3    | all       | ids   | 13.813 | 7.352  |
+| savedAt | desc      | 3    | broad     | first | 10.104 | 10.356 |
+| savedAt | desc      | 3    | broad     | next  | 16.139 | 14.959 |
+| savedAt | desc      | 3    | broad     | ids   | 9.002  | 8.791  |
+| savedAt | desc      | 3    | selective | first | 9.801  | 4.109  |
+| savedAt | desc      | 3    | selective | next  | 8.730  | 8.267  |
+| savedAt | desc      | 3    | selective | ids   | 2.273  | 2.045  |
+| title   | asc       | 0    | all       | first | 4.861  | 3.661  |
+| title   | asc       | 0    | all       | next  | 7.269  | 6.812  |
+| title   | asc       | 0    | all       | ids   | 15.416 | 8.737  |
+| title   | asc       | 0    | broad     | first | 6.509  | 6.334  |
+| title   | asc       | 0    | broad     | next  | 14.674 | 9.847  |
+| title   | asc       | 0    | broad     | ids   | 10.599 | 9.575  |
+| title   | asc       | 0    | selective | first | 4.331  | 4.117  |
+| title   | asc       | 0    | selective | next  | 7.502  | 6.975  |
+| title   | asc       | 0    | selective | ids   | 2.215  | 2.116  |
+| title   | asc       | 3    | all       | first | 5.138  | 5.010  |
+| title   | asc       | 3    | all       | next  | 12.946 | 11.123 |
+| title   | asc       | 3    | all       | ids   | 28.752 | 9.488  |
+| title   | asc       | 3    | broad     | first | 8.225  | 7.724  |
+| title   | asc       | 3    | broad     | next  | 15.788 | 13.472 |
+| title   | asc       | 3    | broad     | ids   | 15.605 | 10.840 |
+| title   | asc       | 3    | selective | first | 4.245  | 4.150  |
+| title   | asc       | 3    | selective | next  | 9.918  | 9.570  |
+| title   | asc       | 3    | selective | ids   | 2.132  | 2.012  |
+| title   | desc      | 0    | all       | first | 3.892  | 3.573  |
+| title   | desc      | 0    | all       | next  | 9.328  | 7.035  |
+| title   | desc      | 0    | all       | ids   | 12.560 | 8.061  |
+| title   | desc      | 0    | broad     | first | 7.040  | 6.410  |
+| title   | desc      | 0    | broad     | next  | 10.656 | 9.477  |
+| title   | desc      | 0    | broad     | ids   | 19.887 | 9.322  |
+| title   | desc      | 0    | selective | first | 8.563  | 4.110  |
+| title   | desc      | 0    | selective | next  | 6.568  | 5.254  |
+| title   | desc      | 0    | selective | ids   | 7.261  | 2.067  |
+| title   | desc      | 3    | all       | first | 6.141  | 5.009  |
+| title   | desc      | 3    | all       | next  | 13.150 | 11.014 |
+| title   | desc      | 3    | all       | ids   | 12.234 | 9.948  |
+| title   | desc      | 3    | broad     | first | 8.574  | 7.764  |
+| title   | desc      | 3    | broad     | next  | 19.178 | 14.006 |
+| title   | desc      | 3    | broad     | ids   | 11.917 | 10.754 |
+| title   | desc      | 3    | selective | first | 4.231  | 4.166  |
+| title   | desc      | 3    | selective | next  | 7.554  | 6.723  |
+| title   | desc      | 3    | selective | ids   | 3.510  | 2.050  |
 
 ### Raw JSON — plan 003 before (actual SQL, parameters, plans and timings)
 

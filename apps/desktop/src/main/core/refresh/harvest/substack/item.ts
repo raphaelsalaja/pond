@@ -30,6 +30,7 @@ async function inPageSubstackHarvest(): Promise<SubstackPostPage | null> {
       ?.getAttribute("content")
       ?.trim() ?? "";
   const subtitle = document.querySelector("h3.subtitle")?.textContent?.trim();
+  // biome-ignore lint/performance/useDomNodeTextContent: the saved text needs rendered line breaks between paragraphs.
   const text = [subtitle, body()?.innerText?.trim()]
     .filter(Boolean)
     .join("\n\n");

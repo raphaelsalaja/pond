@@ -21,6 +21,7 @@ A bulk operation loops over loaded Saves and publishes each update separately. E
 ## Current state
 
 `apps/desktop/src/renderer/src/features/saves/state/pool.ts:112–124`:
+
 ```ts
 s.byId.set(save.id, save);
 const sorted =
@@ -33,6 +34,7 @@ return { byId: s.byId, sorted, revision: s.revision + 1 };
 The same file already exports `bulkUpsertSaves` and `onPoolDirty`. Its bulk fast path requires incoming recency order; unordered selections can fall back to one sort. One O(N log N) batch is acceptable initially; do not redesign pool ownership to chase O(N).
 
 `apps/desktop/src/renderer/src/features/saves/lib/mutate.ts:148–175`:
+
 ```ts
 for (const save of before) {
   if (operation.kind === "purge") pool.delete(save.id);
@@ -46,6 +48,7 @@ for (const save of before) pool.upsert(save);
 `targets` deduplicates all requested IDs; `before` contains only loaded Saves. The IPC call must retain cold IDs.
 
 Use the real-pool test pattern in `apps/desktop/src/renderer/src/features/saves/lib/mutate.test.ts`:
+
 ```ts
 const pending = Promise.withResolvers<void>();
 const tx = vi.fn(() => pending.promise);
@@ -56,6 +59,7 @@ Tests reset the pool and unstub globals. Preserve this faithful transport bounda
 ## Scope
 
 Only modify/create:
+
 - `apps/desktop/src/renderer/src/features/saves/state/pool.ts`
 - `apps/desktop/src/renderer/src/features/saves/state/pool.test.ts` (new)
 - `apps/desktop/src/renderer/src/features/saves/lib/mutate.ts`
@@ -93,6 +97,7 @@ Add publication-count tests after initialization: one publication for a changing
 ### 4. Compare scaling and run gates
 
 Run:
+
 ```sh
 POND_BENCH_LIBRARY=1 ELECTRON_RUN_AS_NODE=1 pnpm --filter @pond/desktop exec electron node_modules/vitest/vitest.mjs run src/renderer/src/features/saves/lib/bulk-performance-benchmark.test.ts
 ```
@@ -132,12 +137,12 @@ Long-running runtimes are shared and user-owned. Never launch `pnpm dev`, watch 
 
 Run commands from the repository root unless stated otherwise.
 
-| Purpose | Command | Expected result |
-| --- | --- | --- |
-| Required checks | `pnpm check` | Exit 0: lint, architecture, generated-file checks, types, offline tests |
-| Production bundles and size budgets | `pnpm build` | Exit 0; performance-size budgets pass |
-| Native SQLite baseline | `ELECTRON_RUN_AS_NODE=1 pnpm --filter @pond/desktop exec electron node_modules/vitest/vitest.mjs run src/main/db.test.ts src/main/core/vec-index.test.ts` | Exit 0; native cases execute, not skip |
-| Scope review | `git diff --stat; git status --short` | Only authorized files changed, allowing pre-existing user changes |
+| Purpose                             | Command                                                                                                                                                   | Expected result                                                         |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Required checks                     | `pnpm check`                                                                                                                                              | Exit 0: lint, architecture, generated-file checks, types, offline tests |
+| Production bundles and size budgets | `pnpm build`                                                                                                                                              | Exit 0; performance-size budgets pass                                   |
+| Native SQLite baseline              | `ELECTRON_RUN_AS_NODE=1 pnpm --filter @pond/desktop exec electron node_modules/vitest/vitest.mjs run src/main/db.test.ts src/main/core/vec-index.test.ts` | Exit 0; native cases execute, not skip                                  |
+| Scope review                        | `git diff --stat; git status --short`                                                                                                                     | Only authorized files changed, allowing pre-existing user changes       |
 
 On PowerShell set `$env:ELECTRON_RUN_AS_NODE="1"` before the native command instead of using the POSIX prefix. Do not rebuild native modules in the shared checkout while the runtime is using them. Stop and coordinate if the native ABI is unavailable.
 

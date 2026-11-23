@@ -3,7 +3,7 @@
 ## General
 
 - **Node** 24 and **pnpm** 11.27.0 (see `.nvmrc` and `package.json`).
-- **Style**: [Biome](https://biomejs.dev/) handles formatting; `pnpm lint` and `pnpm oxlint` check the repository standards.
+- **Style**: [Biome](https://biomejs.dev/) handles formatting; `pnpm lint` checks the repository standards, including the anti-slop plugin rules in `tools/biome/anti-slop`.
 - **Commits**: [Conventional Commits](https://www.conventionalcommits.org/) enforced by commitlint + husky.
 - **Checks**: run `pnpm check` and `pnpm build` before opening a PR. CI also verifies generated source documentation, and it runs the build, tests, and desktop smoke test on Ubuntu x64 and ARM, Windows, and macOS.
 - **PRs**: Keep scope focused; link issues when relevant. Lay out the body and proof as [pull requests](docs/contributing/pull-requests.md) describes. Generated source documentation must stay in sync: run `pnpm generate` after descriptor changes.
@@ -14,7 +14,7 @@ Read [code standards](docs/contributing/code-standards.md) for naming, interface
 
 Turborepo owns the build, typecheck, test, generation-check, and repository verification graphs. A transit task makes source-first package changes invalidate consuming apps without serializing unrelated work. Package-level `turbo.json` files define framework inputs and reusable outputs.
 
-`pnpm check` runs Biome, Oxlint, Knip, architecture checks, non-mutating generated-file checks, type checks, and offline tests in one cacheable graph. `pnpm architecture:check` runs the focused architecture task. `pnpm build` verifies production bundles and performance budgets. `pnpm lint:fix` applies safe fixes explicitly; `pnpm format` formats files. Pre-commit checks never rewrite your working tree.
+`pnpm check` runs Biome, Knip, architecture checks, non-mutating generated-file checks, type checks, and offline tests in one cacheable graph. `pnpm architecture:check` runs the focused architecture task. `pnpm build` verifies production bundles and performance budgets. `pnpm lint:fix` applies safe fixes explicitly; `pnpm format` formats files. Pre-commit checks never rewrite your working tree.
 
 Run `pnpm generate` only when you intend to update tracked generated files. Run `pnpm generate:check` to verify them without writing. CI runs both the non-mutating checks and a generated diff gate.
 
@@ -86,7 +86,6 @@ pnpm dist:linux
 This builds the desktop app and extension, compiles the native host, and writes `Pond-X.Y.Z-<arch>.AppImage`, `Pond-X.Y.Z-<arch>.deb`, and `latest-linux.yml` (`latest-linux-arm64.yml` on arm64) to `apps/desktop/dist/`, where `<arch>` is the host architecture. The native dependencies (better-sqlite3, sqlite-vec, sharp, onnxruntime, ffmpeg-static) all ship linux-arm64 builds, so the same steps work on 64-bit ARM. Cross-arch packaging isn't supported. Build on the architecture you're packaging for.
 
 Pond keeps per-user files in the XDG directories: configuration in `$XDG_CONFIG_HOME/pond`, the native-host socket in `$XDG_RUNTIME_DIR/pond` when the session sets it (otherwise `$XDG_CONFIG_HOME/pond`), the copied native host in `$XDG_DATA_HOME/Pond/bin`, logs in Electron's logs directory, and the autostart entry at `$XDG_CONFIG_HOME/autostart/pond.desktop`.
-
 
 ## Add a source
 
@@ -177,13 +176,13 @@ error.
 Because several registries are total `Record<Source, …>`, the compiler will
 list exactly what's missing after you add the source. Fill each:
 
-| File | What to add |
-| --- | --- |
-| `apps/desktop/src/renderer/src/features/sources/lib/registry.ts` | `SOURCE_LOGOS` — a brand icon (add the SVG to `@pond/icons` first) |
-| `apps/desktop/src/main/core/pipeline/specs.ts` | `CAPTURE_EXPECTATIONS` — required/recommended capture fields |
-| `apps/desktop/src/main/core/refresh/harvest/index.ts` | `REGISTRY` — a `Harvester` (copy the throwing `local` entry if the source has no list sync) |
-| `apps/desktop/src/main/core/refresh/harvest-window/pool.ts` | `PER_SOURCE_CAP` — concurrent harvest-window cap |
-| `apps/desktop/src/main/core/sync/index.ts` | `SYNC_WATCHDOG_MS` — per-source sync watchdog timeout |
+| File                                                             | What to add                                                                                 |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `apps/desktop/src/renderer/src/features/sources/lib/registry.ts` | `SOURCE_LOGOS` — a brand icon (add the SVG to `@pond/icons` first)                          |
+| `apps/desktop/src/main/core/pipeline/specs.ts`                   | `CAPTURE_EXPECTATIONS` — required/recommended capture fields                                |
+| `apps/desktop/src/main/core/refresh/harvest/index.ts`            | `REGISTRY` — a `Harvester` (copy the throwing `local` entry if the source has no list sync) |
+| `apps/desktop/src/main/core/refresh/harvest-window/pool.ts`      | `PER_SOURCE_CAP` — concurrent harvest-window cap                                            |
+| `apps/desktop/src/main/core/sync/index.ts`                       | `SYNC_WATCHDOG_MS` — per-source sync watchdog timeout                                       |
 
 ### 5. Tests
 

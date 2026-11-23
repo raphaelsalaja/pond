@@ -64,8 +64,8 @@
 
 @keyframes land {
   to {
-    translate: calc(var(--page-inset) + 12px - 50cqw) calc(52px - 50cqh);
     scale: 0.5;
+    translate: calc(var(--page-inset) + 12px - 50cqw) calc(52px - 50cqh);
   }
 }
 

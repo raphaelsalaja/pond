@@ -106,20 +106,20 @@ it does not include encoder cold start or warm inference. Those remain unmeasure
 
 ### p95 milliseconds
 
-| N | Channel | Scope (eligible) | Adapter | Exact SQL | Guarded blob SQL |
-| --- | --- | --- | --- | --- | --- |
-| 1000 | text | broad (1000) | 37.51 | 33.88 | 72.80 |
-| 1000 | text | ten (100) | 11.82 | 10.30 | 25.04 |
-| 1000 | text | one (10) | 12.22 | 11.39 | 90.66 |
-| 1000 | media | broad (1000) | 35.55 | 33.96 | 47.01 |
-| 1000 | media | ten (100) | 11.00 | 9.95 | 24.55 |
-| 1000 | media | one (10) | 6.62 | 5.89 | 22.36 |
-| 10000 | text | broad (10000) | 302.27 | 301.83 | 465.08 |
-| 10000 | text | ten (1000) | 138.68 | 125.75 | 382.85 |
-| 10000 | text | one (100) | 68.62 | 67.97 | 253.62 |
-| 10000 | media | broad (10000) | 300.03 | 296.72 | 470.50 |
-| 10000 | media | ten (1000) | 95.81 | 91.16 | 255.58 |
-| 10000 | media | one (100) | 74.29 | 60.88 | 240.24 |
+| N     | Channel | Scope (eligible) | Adapter | Exact SQL | Guarded blob SQL |
+| ----- | ------- | ---------------- | ------- | --------- | ---------------- |
+| 1000  | text    | broad (1000)     | 37.51   | 33.88     | 72.80            |
+| 1000  | text    | ten (100)        | 11.82   | 10.30     | 25.04            |
+| 1000  | text    | one (10)         | 12.22   | 11.39     | 90.66            |
+| 1000  | media   | broad (1000)     | 35.55   | 33.96     | 47.01            |
+| 1000  | media   | ten (100)        | 11.00   | 9.95      | 24.55            |
+| 1000  | media   | one (10)         | 6.62    | 5.89      | 22.36            |
+| 10000 | text    | broad (10000)    | 302.27  | 301.83    | 465.08           |
+| 10000 | text    | ten (1000)       | 138.68  | 125.75    | 382.85           |
+| 10000 | text    | one (100)        | 68.62   | 67.97     | 253.62           |
+| 10000 | media   | broad (10000)    | 300.03  | 296.72    | 470.50           |
+| 10000 | media   | ten (1000)       | 95.81   | 91.16     | 255.58           |
+| 10000 | media   | one (100)        | 74.29   | 60.88     | 240.24           |
 
 Logical in-memory database size via page_count × page_size:
 N=1k = 11,255,808 bytes; N=10k = 108,654,592 bytes, including both JSON/vector
@@ -197,6 +197,7 @@ measured samples; expected IDs, candidate distances, scope-aware KNN capability,
 and missing/stale fallback checks passed.
 
 At N=50k:
+
 - Text broad/10%/1% and media broad completed all three phases.
 - Media 10% adapter and exact SQL completed; candidate reached only one warm-up
   before the overall workload budget expired.
@@ -213,26 +214,26 @@ has acceptable UI latency. Main-thread blocking remains a separate follow-up.
 
 ### Final p95 milliseconds
 
-| N | Channel | Scope | Adapter | Exact SQL | Guarded blob SQL |
-| --- | --- | --- | --- | --- | --- |
-| 1000 | text | broad | 35.43 | 37.98 | 49.21 |
-| 1000 | text | ten | 11.19 | 15.63 | 25.89 |
-| 1000 | text | one | 6.72 | 6.09 | 23.02 |
-| 1000 | media | broad | 52.29 | 36.72 | 47.02 |
-| 1000 | media | ten | 11.19 | 10.24 | 25.33 |
-| 1000 | media | one | 12.33 | 6.24 | 23.39 |
-| 10000 | text | broad | 325.44 | 294.05 | 537.57 |
-| 10000 | text | ten | 92.00 | 84.93 | 256.59 |
-| 10000 | text | one | 69.77 | 82.00 | 233.83 |
-| 10000 | media | broad | 288.20 | 288.46 | 481.58 |
-| 10000 | media | ten | 88.58 | 84.37 | 259.89 |
-| 10000 | media | one | 84.40 | 69.25 | 235.23 |
-| 50000 | text | broad | 1461.04 | 1416.27 | 2371.68 |
-| 50000 | text | ten | 437.89 | 401.92 | 1284.62 |
-| 50000 | text | one | 333.85 | 301.45 | 1187.23 |
-| 50000 | media | broad | 1431.15 | 1411.33 | 2372.68 |
-| 50000 | media | ten | 760.30 | 424.31 | not measured |
-| 50000 | media | one | not measured | not measured | not measured |
+| N     | Channel | Scope | Adapter      | Exact SQL    | Guarded blob SQL |
+| ----- | ------- | ----- | ------------ | ------------ | ---------------- |
+| 1000  | text    | broad | 35.43        | 37.98        | 49.21            |
+| 1000  | text    | ten   | 11.19        | 15.63        | 25.89            |
+| 1000  | text    | one   | 6.72         | 6.09         | 23.02            |
+| 1000  | media   | broad | 52.29        | 36.72        | 47.02            |
+| 1000  | media   | ten   | 11.19        | 10.24        | 25.33            |
+| 1000  | media   | one   | 12.33        | 6.24         | 23.39            |
+| 10000 | text    | broad | 325.44       | 294.05       | 537.57           |
+| 10000 | text    | ten   | 92.00        | 84.93        | 256.59           |
+| 10000 | text    | one   | 69.77        | 82.00        | 233.83           |
+| 10000 | media   | broad | 288.20       | 288.46       | 481.58           |
+| 10000 | media   | ten   | 88.58        | 84.37        | 259.89           |
+| 10000 | media   | one   | 84.40        | 69.25        | 235.23           |
+| 50000 | text    | broad | 1461.04      | 1416.27      | 2371.68          |
+| 50000 | text    | ten   | 437.89       | 401.92       | 1284.62          |
+| 50000 | text    | one   | 333.85       | 301.45       | 1187.23          |
+| 50000 | media   | broad | 1431.15      | 1411.33      | 2372.68          |
+| 50000 | media   | ten   | 760.30       | 424.31       | not measured     |
+| 50000 | media   | one   | not measured | not measured | not measured     |
 
 ### Final verification
 

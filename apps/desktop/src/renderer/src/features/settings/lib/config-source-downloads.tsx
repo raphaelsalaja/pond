@@ -7,6 +7,7 @@ import { group } from "@/features/settings/lib/engine-types";
 
 export function sourceDownloadsSection(source: ExternalSource): SectionConfig {
   const label = sourceLabel(source);
+  // biome-ignore lint/correctness/noComponentHookFactories: settings configs are built once at module load, so the hook identity is stable.
   const useCustom = () => useSourceCustomBinding(source);
   return {
     title: label,

@@ -16,6 +16,24 @@ function toastText(): string {
   return document.body.querySelector("[data-slot='toasts']")?.textContent ?? "";
 }
 
+function DropTarget({
+  folder,
+}: {
+  folder?: Parameters<typeof useCardActions>[3];
+}) {
+  const actions = useCardActions([], "library", "", folder);
+  return (
+    <button type="button" onDrop={actions.onDrop}>
+      Drop
+    </button>
+  );
+}
+
+function PasteTarget() {
+  useCardActions([], "library", "");
+  return null;
+}
+
 it.each(["native file", "file URI"])(
   "imports a dropped %s and confirms the save",
   async (kind) => {
@@ -27,19 +45,11 @@ it.each(["native file", "file URI"])(
     vi.stubGlobal("pond", { query, pathForFile: () => "/tmp/drop image.png" });
     const host = document.createElement("div");
     const root = createRoot(host);
-    function Harness() {
-      const actions = useCardActions([], "library", "");
-      return (
-        <button type="button" onDrop={actions.onDrop}>
-          Drop
-        </button>
-      );
-    }
     try {
       await act(async () =>
         root.render(
           <>
-            <Harness />
+            <DropTarget />
             <ToastHost />
           </>,
         ),
@@ -73,19 +83,11 @@ it("starts a dropped link immediately and does not claim it is saved", async () 
   vi.stubGlobal("pond", { query });
   const host = document.createElement("div");
   const root = createRoot(host);
-  function Harness() {
-    const actions = useCardActions([], "library", "");
-    return (
-      <button type="button" onDrop={actions.onDrop}>
-        Drop
-      </button>
-    );
-  }
   try {
     await act(async () =>
       root.render(
         <>
-          <Harness />
+          <DropTarget />
           <ToastHost />
         </>,
       ),
@@ -118,15 +120,11 @@ it("starts a pasted link without selecting it", async () => {
   vi.stubGlobal("pond", { query });
   const host = document.createElement("div");
   const root = createRoot(host);
-  function Harness() {
-    useCardActions([], "library", "");
-    return null;
-  }
   try {
     await act(async () =>
       root.render(
         <>
-          <Harness />
+          <PasteTarget />
           <ToastHost />
         </>,
       ),
@@ -178,18 +176,10 @@ describe("inside an open folder", () => {
   async function mount() {
     const host = document.createElement("div");
     const root = createRoot(host);
-    function Harness() {
-      const actions = useCardActions([], "library", "", folder);
-      return (
-        <button type="button" onDrop={actions.onDrop}>
-          Drop
-        </button>
-      );
-    }
     await act(async () =>
       root.render(
         <>
-          <Harness />
+          <DropTarget folder={folder} />
           <ToastHost />
         </>,
       ),

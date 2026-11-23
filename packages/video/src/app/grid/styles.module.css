@@ -83,14 +83,6 @@
     box-shadow: var(--ds-shadow-border);
   }
 
-  & .card[data-selected] .thumb::before {
-    border-color: var(--ds-accent);
-  }
-
-  & .card[data-selected] .title {
-    color: var(--ds-foreground-primary);
-  }
-
   & .meta {
     display: flex;
     flex-direction: column;
@@ -101,6 +93,14 @@
   & .title,
   & .date {
     padding: 0 var(--ds-space-2xs);
+  }
+
+  & .card[data-selected] .thumb::before {
+    border-color: var(--ds-accent);
+  }
+
+  & .card[data-selected] .title {
+    color: var(--ds-foreground-primary);
   }
 
   & .date {

@@ -4,10 +4,10 @@ Search and save to your [Pond](https://github.com/raphaelsalaja/pond) library fr
 
 ## What it does
 
-| Keyword | What it does |
-| --- | --- |
-| `pond <query>` | Search your saves. With no query, it shows what you saved last. |
-| `psave <url>` | Save a link and show a notification. Also available as a Universal Action on URLs. |
+| Keyword        | What it does                                                                       |
+| -------------- | ---------------------------------------------------------------------------------- |
+| `pond <query>` | Search your saves. With no query, it shows what you saved last.                    |
+| `psave <url>`  | Save a link and show a notification. Also available as a Universal Action on URLs. |
 
 In `pond` results, ↵ opens the link, ⌘↵ opens the save in Pond, and ⌥↵ copies the link. Saves without a web link open in Pond.
 
@@ -41,9 +41,9 @@ Export it, then copy its `info.plist` into `workflow/`.
 
 ## Troubleshooting
 
-| What you see | What to do |
-| --- | --- |
-| Pond isn't running | Open Pond. Turn on **Launch at Login** to keep it ready. |
+| What you see                 | What to do                                                                     |
+| ---------------------------- | ------------------------------------------------------------------------------ |
+| Pond isn't running           | Open Pond. Turn on **Launch at Login** to keep it ready.                       |
 | Pond didn't accept the token | Create a new token in **Settings → Local API** and paste it into the workflow. |
-| The token can't search | Give the token **Search Saves** access. |
-| The token can't save | Give the token **Add and Edit Saves** access, then save again. |
+| The token can't search       | Give the token **Search Saves** access.                                        |
+| The token can't save         | Give the token **Add and Edit Saves** access, then save again.                 |

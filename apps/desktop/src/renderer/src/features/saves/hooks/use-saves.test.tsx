@@ -10,17 +10,26 @@ afterEach(() => {
   pagingStore.setState(() => initial);
 });
 
+function Reader({ onRender }: { onRender: () => void }) {
+  onRender();
+  useSavePaging();
+  return null;
+}
+
 it("re-renders paging readers only when a field they read changes", async () => {
   let renders = 0;
-  function Reader() {
-    renders++;
-    useSavePaging();
-    return null;
-  }
   const host = document.createElement("div");
   const root = createRoot(host);
   try {
-    await act(() => root.render(<Reader />));
+    await act(() =>
+      root.render(
+        <Reader
+          onRender={() => {
+            renders++;
+          }}
+        />,
+      ),
+    );
     const before = renders;
     await act(() =>
       pagingStore.setState((state) => ({ ...state, ready: !state.ready })),

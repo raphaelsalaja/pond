@@ -103,31 +103,32 @@ it("places image inspector controls in the integrated top toolbar", async () => 
   expect(topSlot?.parentElement?.parentElement).toBe(viewerRoot);
 });
 
+function Stage({ bars }: { bars: Record<string, Element | null | undefined> }) {
+  useLayoutEffect(() => {
+    for (const probe of host.querySelectorAll("[data-probe]")) {
+      bars[probe.getAttribute("data-probe") ?? ""] =
+        probe.closest("[data-slot]")?.parentElement;
+    }
+  }, [bars]);
+  return (
+    <>
+      <ChromePortal slot="top">
+        <span data-probe="top" />
+      </ChromePortal>
+      <ChromePortal slot="bottom">
+        <span data-probe="bottom" />
+      </ChromePortal>
+    </>
+  );
+}
+
 it("mounts toolbars in the chrome bar before stage layout effects measure", async () => {
   const bars: Record<string, Element | null | undefined> = {};
-  function Stage() {
-    useLayoutEffect(() => {
-      for (const probe of host.querySelectorAll("[data-probe]")) {
-        bars[probe.getAttribute("data-probe") ?? ""] =
-          probe.closest("[data-slot]")?.parentElement;
-      }
-    }, []);
-    return (
-      <>
-        <ChromePortal slot="top">
-          <span data-probe="top" />
-        </ChromePortal>
-        <ChromePortal slot="bottom">
-          <span data-probe="bottom" />
-        </ChromePortal>
-      </>
-    );
-  }
 
   await act(async () => {
     root.render(
       <ViewerChrome>
-        <Stage />
+        <Stage bars={bars} />
       </ViewerChrome>,
     );
   });

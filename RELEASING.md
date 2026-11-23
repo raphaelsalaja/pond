@@ -8,10 +8,10 @@ The desktop app and browser extension ship in lockstep with the `vX.Y.Z` GitHub 
 
 Update the version string in all of these before tagging:
 
-| File | Field |
-|------|-------|
-| [`apps/desktop/package.json`](apps/desktop/package.json) | `"version"` |
-| [`apps/extension/package.json`](apps/extension/package.json) | `"version"` |
+| File                                                           | Field              |
+| -------------------------------------------------------------- | ------------------ |
+| [`apps/desktop/package.json`](apps/desktop/package.json)       | `"version"`        |
+| [`apps/extension/package.json`](apps/extension/package.json)   | `"version"`        |
 | [`apps/extension/wxt.config.ts`](apps/extension/wxt.config.ts) | `manifest.version` |
 
 The website reads its download links from the latest published GitHub release, so it needs no bump and switches over when `publish` runs.
@@ -71,13 +71,13 @@ Artifact names (used by the website download links and the updater):
 
 The release workflow reads five repository secrets:
 
-| Secret | Value |
-|------|-------|
-| `CSC_LINK` | Base64 of the Developer ID Application `.p12` |
-| `CSC_KEY_PASSWORD` | Password for that `.p12` |
-| `APPLE_ID` | Apple Account email for notarization |
-| `APPLE_APP_SPECIFIC_PASSWORD` | App-specific password for that account |
-| `APPLE_TEAM_ID` | Developer team ID |
+| Secret                        | Value                                         |
+| ----------------------------- | --------------------------------------------- |
+| `CSC_LINK`                    | Base64 of the Developer ID Application `.p12` |
+| `CSC_KEY_PASSWORD`            | Password for that `.p12`                      |
+| `APPLE_ID`                    | Apple Account email for notarization          |
+| `APPLE_APP_SPECIFIC_PASSWORD` | App-specific password for that account        |
+| `APPLE_TEAM_ID`               | Developer team ID                             |
 
 The Developer ID certificate expires on November 14, 2027. Create a new one before then and replace `CSC_LINK` and `CSC_KEY_PASSWORD`.
 
@@ -87,20 +87,20 @@ Sign Windows releases. Antivirus engines such as Bitdefender quarantine unsigned
 
 Sign with [Azure Artifact Signing](https://learn.microsoft.com/azure/artifact-signing/), formerly Trusted Signing. Create a signing account and a public trust certificate profile, then create an app registration with the Artifact Signing Certificate Profile Signer role on that account. Add these repository secrets:
 
-| Secret | Value |
-|------|-------|
-| `AZURE_TENANT_ID` | Directory (tenant) ID of the app registration |
-| `AZURE_CLIENT_ID` | Application (client) ID of the app registration |
-| `AZURE_CLIENT_SECRET` | Client secret of the app registration |
+| Secret                | Value                                           |
+| --------------------- | ----------------------------------------------- |
+| `AZURE_TENANT_ID`     | Directory (tenant) ID of the app registration   |
+| `AZURE_CLIENT_ID`     | Application (client) ID of the app registration |
+| `AZURE_CLIENT_SECRET` | Client secret of the app registration           |
 
 And these repository variables:
 
-| Variable | Value |
-|------|-------|
-| `AZURE_SIGNING_ENDPOINT` | Account endpoint for its region, such as `https://eus.codesigning.azure.net/` |
-| `AZURE_SIGNING_ACCOUNT` | Signing account name |
-| `AZURE_SIGNING_PROFILE` | Certificate profile name |
-| `AZURE_SIGNING_PUBLISHER` | Certificate subject common name, exactly as validated |
+| Variable                  | Value                                                                         |
+| ------------------------- | ----------------------------------------------------------------------------- |
+| `AZURE_SIGNING_ENDPOINT`  | Account endpoint for its region, such as `https://eus.codesigning.azure.net/` |
+| `AZURE_SIGNING_ACCOUNT`   | Signing account name                                                          |
+| `AZURE_SIGNING_PROFILE`   | Certificate profile name                                                      |
+| `AZURE_SIGNING_PUBLISHER` | Certificate subject common name, exactly as validated                         |
 
 `AZURE_SIGNING_PUBLISHER` is written into the update feed. electron-updater refuses updates signed by any other publisher, so don't change it after the first signed release.
 
@@ -151,12 +151,12 @@ pnpm --filter @pond/extension zip:store
 
 The `stores` job reads these repository secrets:
 
-| Secret | Store |
-| --- | --- |
-| `CHROME_EXTENSION_ID` | Chrome Web Store item ID |
-| `CHROME_PUBLISHER_ID` | Publisher ID from the Developer Dashboard settings |
+| Secret                                                                      | Store                                                              |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `CHROME_EXTENSION_ID`                                                       | Chrome Web Store item ID                                           |
+| `CHROME_PUBLISHER_ID`                                                       | Publisher ID from the Developer Dashboard settings                 |
 | `CHROME_SERVICE_ACCOUNT_CLIENT_EMAIL`, `CHROME_SERVICE_ACCOUNT_PRIVATE_KEY` | `client_email` and `private_key` from the service account JSON key |
-| `FIREFOX_JWT_ISSUER`, `FIREFOX_JWT_SECRET` | AMO API key |
+| `FIREFOX_JWT_ISSUER`, `FIREFOX_JWT_SECRET`                                  | AMO API key                                                        |
 
 Chrome uses the Chrome Web Store API v2 with a [service account](https://developer.chrome.com/docs/webstore/service-accounts): `pond-publisher` in the `pond-512810` Google Cloud project, linked under Developer Dashboard settings. To rotate it, create a new JSON key in Google Cloud and reset both service account secrets. The Chrome Web Store assigns its own extension ID, set as `CHROME_WEB_STORE_ID` in [`packages/schema/src/native.ts`](packages/schema/src/native.ts). The native host allows both that ID and the pinned unpacked ID.
 

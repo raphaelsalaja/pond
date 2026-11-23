@@ -3,47 +3,56 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Window } from "../../../packages/ui/src/window";
 
+function Fixture({
+  onResize,
+  onCollapse,
+}: {
+  onResize: (next: number) => void;
+  onCollapse: () => void;
+}) {
+  const [open, setOpen] = useState(true);
+  const [width, setWidth] = useState(300);
+  const resize = useCallback(
+    (next: number) => {
+      onResize(next);
+      setWidth(next);
+    },
+    [onResize],
+  );
+  const collapse = useCallback(() => {
+    onCollapse();
+    setOpen(false);
+  }, [onCollapse]);
+  const style: CSSProperties & { "--window-left-track": string } = {
+    "--window-left-track": `${width}px`,
+  };
+  return (
+    <Window.Root leftOpen={open} style={style}>
+      <Window.Left
+        aria-label="Sidebar"
+        open={open}
+        minWidth={220}
+        maxWidth={420}
+        width={width}
+        onResize={resize}
+        onCollapse={collapse}
+      >
+        Sidebar
+      </Window.Left>
+      <Window.Center>
+        <button type="button" onClick={() => setOpen(true)}>
+          Reopen
+        </button>
+      </Window.Center>
+    </Window.Root>
+  );
+}
+
 describe("sidebar resize handle", () => {
   let container: HTMLDivElement;
   let root: Root;
   const resized = vi.fn();
   const collapsed = vi.fn();
-
-  function Fixture() {
-    const [open, setOpen] = useState(true);
-    const [width, setWidth] = useState(300);
-    const resize = useCallback((next: number) => {
-      resized(next);
-      setWidth(next);
-    }, []);
-    const collapse = useCallback(() => {
-      collapsed();
-      setOpen(false);
-    }, []);
-    const style: CSSProperties & { "--window-left-track": string } = {
-      "--window-left-track": `${width}px`,
-    };
-    return (
-      <Window.Root leftOpen={open} style={style}>
-        <Window.Left
-          aria-label="Sidebar"
-          open={open}
-          minWidth={220}
-          maxWidth={420}
-          width={width}
-          onResize={resize}
-          onCollapse={collapse}
-        >
-          Sidebar
-        </Window.Left>
-        <Window.Center>
-          <button type="button" onClick={() => setOpen(true)}>
-            Reopen
-          </button>
-        </Window.Center>
-      </Window.Root>
-    );
-  }
 
   function element(selector: string) {
     const node = container.querySelector<HTMLElement>(selector);
@@ -86,7 +95,9 @@ describe("sidebar resize handle", () => {
         return new DOMRect(0, 0, width, 600);
       },
     );
-    await act(() => root.render(<Fixture />));
+    await act(() =>
+      root.render(<Fixture onResize={resized} onCollapse={collapsed} />),
+    );
     Object.defineProperties(element('[data-slot="handle"]'), {
       setPointerCapture: { value: vi.fn(), configurable: true },
       releasePointerCapture: { value: vi.fn(), configurable: true },

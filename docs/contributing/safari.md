@@ -5,12 +5,12 @@ Safari target differs from Chrome, Brave, Edge, and Firefox in four places.
 
 ## Why Safari is different
 
-| | Chrome, Edge, Brave, Firefox | Safari |
-| --- | --- | --- |
-| Native messaging | `NativeMessagingHosts` manifest + `allowed_origins`, launches `pond-native-host` | `SafariWebExtensionHandler` compiled into a Safari App Extension inside Pond.app |
-| Socket | `~/Library/Application Support/Pond/native.sock` | `~/Library/Group Containers/7VFLYD5292.so.pond/native.sock` |
-| Context menus | `contextMenus` namespace | `menus` namespace |
-| MAIN-world scripts | `world: "MAIN"` since Chrome 111 | `world: "MAIN"` **only since Safari 18** |
+|                    | Chrome, Edge, Brave, Firefox                                                     | Safari                                                                           |
+| ------------------ | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Native messaging   | `NativeMessagingHosts` manifest + `allowed_origins`, launches `pond-native-host` | `SafariWebExtensionHandler` compiled into a Safari App Extension inside Pond.app |
+| Socket             | `~/Library/Application Support/Pond/native.sock`                                 | `~/Library/Group Containers/7VFLYD5292.so.pond/native.sock`                      |
+| Context menus      | `contextMenus` namespace                                                         | `menus` namespace                                                                |
+| MAIN-world scripts | `world: "MAIN"` since Chrome 111                                                 | `world: "MAIN"` **only since Safari 18**                                         |
 
 The wire protocol does not change. `apps/extension/safari/SafariWebExtensionHandler.swift`
 writes the same 4-byte little-endian length prefix and UTF-8 JSON that

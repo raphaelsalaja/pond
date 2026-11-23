@@ -31,7 +31,7 @@ jobs:
         run: node --test scripts/run-dev-singleton.test.mjs
 
       - name: Lint, architecture, and unused code
-        run: pnpm exec turbo run lint:repo oxlint:repo architecture:check:repo knip:repo generate:check
+        run: pnpm exec turbo run lint:repo architecture:check:repo knip:repo generate:check
 
   typecheck:
     runs-on: ubuntu-latest

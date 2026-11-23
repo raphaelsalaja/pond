@@ -39,6 +39,13 @@ function wait(ms: number) {
   return act(() => new Promise((resolve) => setTimeout(resolve, ms)));
 }
 
+function Registered() {
+  useCommandContext("Current Source", () => [
+    { label: "Sync Now", onClick: () => {} },
+  ]);
+  return null;
+}
+
 function RecentVisit({ saveId }: { saveId: string }) {
   useTrackVisit(saveId);
   return null;
@@ -329,12 +336,6 @@ describe("command menu", () => {
   });
 
   it("offers actions a page registers", async () => {
-    function Registered() {
-      useCommandContext("Current Source", () => [
-        { label: "Sync Now", onClick: () => {} },
-      ]);
-      return null;
-    }
     const extra = document.createElement("div");
     const extraRoot = createRoot(extra);
     await act(async () => extraRoot.render(<Registered />));

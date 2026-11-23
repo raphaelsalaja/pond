@@ -15,7 +15,6 @@
 - Planned at: `e88675ff`, 2026-10-30
 - Status: TODO
 
-
 ## Why this matters
 
 The audit identified algorithmic costs, not measured user-facing latency. Pond already logs startup milestones and slow operations, but the inspected tooling does not establish repeatable end-to-end budgets for Library browsing and bulk edits. Establish synthetic workloads and separate CPU/database work from model inference before selecting changes.
@@ -23,6 +22,7 @@ The audit identified algorithmic costs, not measured user-facing latency. Pond a
 ## Current state and exemplars
 
 - `apps/desktop/src/main/startup-timing.ts:13–40` records startup milestones and probes main-thread stalls:
+
   ```ts
   marks[mark] = Math.round(performance.now());
   const STALL_PROBE_MS = 100;
@@ -32,9 +32,11 @@ The audit identified algorithmic costs, not measured user-facing latency. Pond a
 - `scripts/check-performance-budgets.mjs` checks build bytes, not interaction latency. Preserve it.
 - `apps/desktop/src/main/core/library-query.test.ts:27–48` initializes an in-memory native SQLite database and seeds Saves in one transaction. Reuse that pattern with synthetic data; never open the user's database.
 - `apps/desktop/src/main/core/conversion-benchmark.test.ts:16` is the opt-in benchmark exemplar:
+
   ```ts
   it.skipIf(process.env.POND_BENCH_CONVERSION !== "1")(
   ```
+
   Its measurements use `performance.now()` and emit JSON.
 - `apps/desktop/src/renderer/src/features/saves/lib/mutate.test.ts:22–39` exercises the real pool and injects a pending bridge promise using `vi.stubGlobal("window", ...)`. Match this boundary technique, not module mocks.
 - Native database tests may skip under plain Node. Require Electron's Node mode for database measurements.
@@ -42,6 +44,7 @@ The audit identified algorithmic costs, not measured user-facing latency. Pond a
 ## Scope
 
 Only create/modify:
+
 - `apps/desktop/src/main/core/library-performance-benchmark.test.ts` (new)
 - `apps/desktop/src/renderer/src/features/saves/lib/bulk-performance-benchmark.test.ts` (new)
 - `docs/contributing/performance.md` (new runbook)
@@ -65,6 +68,7 @@ Emit one JSON record per case with commit, Node/Electron versions, OS/architectu
 ### 2. Run and record the baseline
 
 Run:
+
 ```sh
 POND_BENCH_LIBRARY=1 ELECTRON_RUN_AS_NODE=1 pnpm --filter @pond/desktop exec electron node_modules/vitest/vitest.mjs run src/main/core/library-performance-benchmark.test.ts src/renderer/src/features/saves/lib/bulk-performance-benchmark.test.ts
 ```
@@ -118,12 +122,12 @@ Long-running runtimes are shared and user-owned. Never launch `pnpm dev`, watch 
 
 Run commands from the repository root unless stated otherwise.
 
-| Purpose | Command | Expected result |
-| --- | --- | --- |
-| Required checks | `pnpm check` | Exit 0: lint, architecture, generated-file checks, types, offline tests |
-| Production bundles and size budgets | `pnpm build` | Exit 0; performance-size budgets pass |
-| Native SQLite baseline | `ELECTRON_RUN_AS_NODE=1 pnpm --filter @pond/desktop exec electron node_modules/vitest/vitest.mjs run src/main/db.test.ts src/main/core/vec-index.test.ts` | Exit 0; native cases execute, not skip |
-| Scope review | `git diff --stat; git status --short` | Only authorized files changed, allowing pre-existing user changes |
+| Purpose                             | Command                                                                                                                                                   | Expected result                                                         |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Required checks                     | `pnpm check`                                                                                                                                              | Exit 0: lint, architecture, generated-file checks, types, offline tests |
+| Production bundles and size budgets | `pnpm build`                                                                                                                                              | Exit 0; performance-size budgets pass                                   |
+| Native SQLite baseline              | `ELECTRON_RUN_AS_NODE=1 pnpm --filter @pond/desktop exec electron node_modules/vitest/vitest.mjs run src/main/db.test.ts src/main/core/vec-index.test.ts` | Exit 0; native cases execute, not skip                                  |
+| Scope review                        | `git diff --stat; git status --short`                                                                                                                     | Only authorized files changed, allowing pre-existing user changes       |
 
 On PowerShell set `$env:ELECTRON_RUN_AS_NODE="1"` before the native command instead of using the POSIX prefix. Do not rebuild native modules in the shared checkout while the runtime is using them. Stop and coordinate if the native ABI is unavailable.
 

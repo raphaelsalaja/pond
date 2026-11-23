@@ -97,7 +97,7 @@ function CommandMenu({
   });
   const { entries } = model;
   const found = entries.findIndex((item) => item.entry.id === activeId);
-  const activeIndex = found >= 0 ? found : 0;
+  const activeIndex = Math.max(found, 0);
   const active = entries[activeIndex]?.entry;
 
   function openPage(next: MenuPage): void {

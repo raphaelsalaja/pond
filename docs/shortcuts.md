@@ -6,11 +6,11 @@ Save to Pond from Shortcuts with a `pond://save` link. Pond saves in the backgro
 pond://save?url=https%3A%2F%2Fexample.com&tags=posters,type
 ```
 
-| Parameter | Required | Meaning |
-| --- | --- | --- |
-| `url` | Yes | The page to save, URL-encoded. Pond accepts only `http` and `https` links. |
-| `tags` | No | Comma-separated tag names. |
-| `folder` | No | A folder id. Right-click a folder, choose **Copy Folder Link**, and use the part between `pond://folder/` and `?`. |
+| Parameter | Required | Meaning                                                                                                            |
+| --------- | -------- | ------------------------------------------------------------------------------------------------------------------ |
+| `url`     | Yes      | The page to save, URL-encoded. Pond accepts only `http` and `https` links.                                         |
+| `tags`    | No       | Comma-separated tag names.                                                                                         |
+| `folder`  | No       | A folder id. Right-click a folder, choose **Copy Folder Link**, and use the part between `pond://folder/` and `?`. |
 
 Pond must be running with a library open. Pond accepts up to 20 saves a minute from links, so a site you allowed to open `pond://` can't flood your library.
 

@@ -54,17 +54,6 @@
       ],
       "outputs": []
     },
-    "//#oxlint:repo": {
-      "inputs": [
-        "$TURBO_DEFAULT$",
-        "apps/**",
-        "packages/**",
-        "scripts/**",
-        "tools/**",
-        ".oxlintrc.json"
-      ],
-      "outputs": []
-    },
     "//#knip:repo": {
       "inputs": [
         "$TURBO_DEFAULT$",

@@ -8,6 +8,29 @@ import { pool } from "@/features/saves/pool";
 import { FilterCategory } from "./category";
 import { choiceOptions, type FilterOption, presetOptions } from "./options";
 
+function Harness({
+  field,
+  initial,
+  options,
+  onRows,
+}: {
+  field: Predicate["field"];
+  initial: Predicate[];
+  options: FilterOption[];
+  onRows: (rows: Predicate[]) => void;
+}) {
+  const [value, setValue] = useState(initial);
+  onRows(value);
+  return (
+    <FilterCategory
+      field={field}
+      options={options}
+      rows={value}
+      onChange={setValue}
+    />
+  );
+}
+
 describe("filter editors", () => {
   let root: Root;
   let host: HTMLDivElement;
@@ -59,19 +82,18 @@ describe("filter editors", () => {
         ])
       : presetOptions(field),
   ) {
-    function Harness() {
-      const [value, setValue] = useState(initial);
-      rows = value;
-      return (
-        <FilterCategory
+    await act(async () =>
+      root.render(
+        <Harness
           field={field}
+          initial={initial}
           options={options}
-          rows={value}
-          onChange={setValue}
-        />
-      );
-    }
-    await act(async () => root.render(<Harness />));
+          onRows={(value) => {
+            rows = value;
+          }}
+        />,
+      ),
+    );
     const label = FIELD_META[field].label;
     await act(async () =>
       [...host.querySelectorAll<HTMLButtonElement>("button")]

@@ -18,6 +18,7 @@ const imageProgressive = (v: SettingsValues) =>
 const followsGlobal = (v: SettingsValues) => v.followsGlobal === true;
 
 export function imageDownloadGroups(source?: ExternalSource): GroupConfig[] {
+  // biome-ignore lint/correctness/noComponentHookFactories: settings configs are built once at module load, so the hook identity is stable.
   const useBinding = () => useImageDownloadBinding(source);
   /** Source pages mix image and video groups, so their titles name the kind. */
   const title = (name: string) => (source ? `Image ${name}` : name);

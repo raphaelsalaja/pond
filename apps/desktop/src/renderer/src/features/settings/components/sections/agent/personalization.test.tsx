@@ -4,33 +4,42 @@ import { expect, it, vi } from "vitest";
 import { PersonalizationForm } from "./personalization";
 import type { AgentPrefs } from "./types";
 
+function Harness({ onSave }: { onSave: (patch: Partial<AgentPrefs>) => void }) {
+  const [value, setValue] = useState({
+    userProfile: "Designer",
+    responseInstructions: "Brief replies",
+  });
+  return (
+    <PersonalizationForm
+      value={value}
+      onSave={async (patch) => {
+        onSave(patch);
+        setValue({
+          userProfile: patch.userProfile ?? "",
+          responseInstructions: patch.responseInstructions ?? "",
+        });
+      }}
+    />
+  );
+}
+
 it("saves on blur, retains edits after a failed save, and retries", async () => {
   let rejectSave = true;
   const saved: Partial<AgentPrefs>[] = [];
-  function Harness() {
-    const [value, setValue] = useState({
-      userProfile: "Designer",
-      responseInstructions: "Brief replies",
-    });
-    return (
-      <PersonalizationForm
-        value={value}
-        onSave={async (patch) => {
-          if (rejectSave) throw new Error("Disk unavailable");
-          saved.push(patch);
-          setValue({
-            userProfile: patch.userProfile ?? "",
-            responseInstructions: patch.responseInstructions ?? "",
-          });
-        }}
-      />
-    );
-  }
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
   try {
-    await act(async () => root.render(<Harness />));
+    await act(async () =>
+      root.render(
+        <Harness
+          onSave={(patch) => {
+            if (rejectSave) throw new Error("Disk unavailable");
+            saved.push(patch);
+          }}
+        />,
+      ),
+    );
     const profile = host.querySelector<HTMLTextAreaElement>("#agent-profile");
     if (!profile) throw new Error("Missing profile field");
     expect(host.querySelector('button[type="submit"]')).toBeNull();

@@ -8,17 +8,17 @@ the browser extension over native messaging.
 
 Run these commands from `apps/desktop`, or prefix them at the repository root with `pnpm --filter @pond/desktop`.
 
-| Script | What it does |
-|---|---|
-| `pnpm dev` | Launch Electron + Vite renderer in dev mode |
-| `pnpm typecheck` | Regenerate TanStack routes and check main, preload, and renderer types |
-| `pnpm test` | Run offline desktop tests |
-| `pnpm build` | Build main/preload/renderer into `out/` |
-| `pnpm dist:mac` | Build + package macOS DMG (arm64 + x64) |
-| `pnpm dist:win` | Build + package the Windows x64 NSIS installer (run on Windows) |
-| `pnpm dist:linux` | Build + package the Linux AppImage and deb for the host architecture, x64 or arm64 (run on Linux) |
-| `pnpm rebuild` | Rebuild `better-sqlite3` for the current Electron ABI |
-| `pnpm db:generate` | Generate Drizzle SQLite migrations |
+| Script             | What it does                                                                                      |
+| ------------------ | ------------------------------------------------------------------------------------------------- |
+| `pnpm dev`         | Launch Electron + Vite renderer in dev mode                                                       |
+| `pnpm typecheck`   | Regenerate TanStack routes and check main, preload, and renderer types                            |
+| `pnpm test`        | Run offline desktop tests                                                                         |
+| `pnpm build`       | Build main/preload/renderer into `out/`                                                           |
+| `pnpm dist:mac`    | Build + package macOS DMG (arm64 + x64)                                                           |
+| `pnpm dist:win`    | Build + package the Windows x64 NSIS installer (run on Windows)                                   |
+| `pnpm dist:linux`  | Build + package the Linux AppImage and deb for the host architecture, x64 or arm64 (run on Linux) |
+| `pnpm rebuild`     | Rebuild `better-sqlite3` for the current Electron ABI                                             |
+| `pnpm db:generate` | Generate Drizzle SQLite migrations                                                                |
 
 ## On disk
 

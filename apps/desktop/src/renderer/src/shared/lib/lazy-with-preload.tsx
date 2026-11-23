@@ -20,6 +20,7 @@ export function lazyWithPreload<P extends object>(
     loadOnce().then((component) => ({ default: component })),
   );
 
+  // biome-ignore lint/correctness/noComponentHookFactories: lazyWithPreload runs once per module, like React.lazy.
   function Preloadable(props: P) {
     const [Loaded] = useState(() => loaded);
     return Loaded ? <Loaded {...props} /> : <Lazy {...props} />;
