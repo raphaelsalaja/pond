@@ -420,6 +420,9 @@ function mediaFit(
 
 /** Sets the popup's enter and exit transform so it grows out of, and shrinks back into, the save's card. */
 function zoomToCard(popup: HTMLElement, saveId: string | null): void {
+  /** Measuring resolves the dialog's own starting scale first, so hold transitions until the card-sized start replaces it. */
+  const opening = popup.hasAttribute("data-starting-style");
+  if (opening) popup.style.transition = "none";
   const thumb = saveId
     ? document.querySelector(
         `[data-library-card][data-save-id="${CSS.escape(saveId)}"] [data-card-thumb]`,
@@ -435,6 +438,7 @@ function zoomToCard(popup: HTMLElement, saveId: string | null): void {
     rect.left < window.innerWidth;
   if (!visible || !popup.offsetWidth || !popup.offsetHeight) {
     delete popup.dataset.zoom;
+    popup.style.transition = "";
     return;
   }
   popup.dataset.zoom = "";
@@ -455,6 +459,8 @@ function zoomToCard(popup: HTMLElement, saveId: string | null): void {
       ),
     ),
   );
-  /** Base UI drops data-starting-style next frame, so resolve the card-sized start before it does. */
-  popup.getBoundingClientRect();
+  if (opening) {
+    popup.getBoundingClientRect();
+    popup.style.transition = "";
+  }
 }
