@@ -75,6 +75,7 @@ describe("new menu spec", () => {
       "Unsplash",
       "Bluesky",
       "Marked",
+      "LinkedIn",
       "mymind",
       "New Watch",
       "Twitter",

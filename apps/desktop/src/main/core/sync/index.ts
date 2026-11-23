@@ -74,6 +74,7 @@ const SYNC_WATCHDOG_MS = {
   unsplash: 20 * 60_000,
   bluesky: 20 * 60_000,
   marked: 20 * 60_000,
+  linkedin: 20 * 60_000,
   web: 20 * 60_000,
   local: 20 * 60_000,
 } satisfies Record<Source, number>;
@@ -99,6 +100,7 @@ const SYNCABLE_SOURCES: readonly Source[] = [
   "unsplash",
   "bluesky",
   "marked",
+  "linkedin",
 ];
 
 /** A global run is shared by menu, shortcut, IPC, and scheduled callers. */

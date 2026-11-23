@@ -39,6 +39,8 @@ export function homeUrlForSource(source: Source): string {
       return "";
     case "marked":
       return "https://marked.dev/explore";
+    case "linkedin":
+      return "https://www.linkedin.com/login";
     case "mymind":
       return "https://access.mymind.com/";
     case "web":
