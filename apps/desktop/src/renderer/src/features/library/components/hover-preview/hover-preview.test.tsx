@@ -67,7 +67,7 @@ it("hydrates and previews the next logical save beyond loaded grid rows", async 
       document.querySelector("[data-quick-preview] [aria-label='Close']"),
     ).not.toBeNull();
     await act(async () =>
-      document.dispatchEvent(
+      document.querySelector("[data-quick-preview]")?.dispatchEvent(
         new KeyboardEvent("keydown", {
           key: "ArrowRight",
           code: "ArrowRight",

@@ -13,6 +13,7 @@ import {
   activeVideoShown,
   CardThumb,
   collectionOwnsKeyboard,
+  controlKeepsKey,
   displayTitleForSave,
   inspect,
   MediaViewer,
@@ -316,6 +317,11 @@ export function HoverPreview() {
           data-fit={fit ? "" : undefined}
           data-sized={fit ? "" : undefined}
           data-quick-preview
+          onKeyDown={(event) => {
+            /** Base UI stops arrow keys at the popup, so they'd never reach the step hotkeys. */
+            if (!controlKeepsKey(event.nativeEvent))
+              event.preventBaseUIHandler();
+          }}
         >
           <PreviewBar.Bar
             title={title}
