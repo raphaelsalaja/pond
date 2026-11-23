@@ -239,6 +239,68 @@ describe("Eagle package transfer", () => {
     );
   });
 
+  it("skips standalone thumbnail items and attaches WebP sidecars", async () => {
+    const root = await temporaryRoot("thumbnail-dupes");
+    const packageRoot = join(root, "Selection.eaglepack");
+    await mkdir(packageRoot);
+    const images = [
+      { id: "png-parent", name: "Poster", ext: "jpg", folders: [], url: "" },
+      { id: "webp-parent", name: "Banner", ext: "jpg", folders: [], url: "" },
+      {
+        id: "dup",
+        name: "Poster_thumbnail",
+        ext: "webp",
+        folders: [],
+        url: "",
+        noThumbnail: true,
+      },
+    ];
+    await writeFile(join(packageRoot, "pack.json"), JSON.stringify({ images }));
+    const writeItem = async (
+      id: string,
+      name: string,
+      files: Record<string, string>,
+    ) => {
+      const directory = join(packageRoot, `${id}.info`);
+      await mkdir(directory);
+      const metadata = images.find((image) => image.id === id);
+      await writeFile(
+        join(directory, "metadata.json"),
+        JSON.stringify({ ...metadata, name }),
+      );
+      for (const [file, body] of Object.entries(files))
+        await writeFile(join(directory, file), body);
+    };
+    await writeItem("png-parent", "Poster", {
+      "Poster.jpg": "body-png-parent",
+      "Poster_thumbnail.png": "png-sidecar",
+    });
+    await writeItem("webp-parent", "Banner", {
+      "Banner.jpg": "body-webp-parent",
+      "Banner_thumbnail.webp": "webp-sidecar",
+    });
+    await writeItem("dup", "Poster_thumbnail", {
+      "Poster_thumbnail.webp": "duplicate-preview",
+    });
+    const target = fakeRuntime();
+    await expect(
+      importEaglePackage(packageRoot, target.runtime),
+    ).resolves.toEqual({ imported: 2, skipped: 0 });
+    expect(target.imported.has("dup")).toBe(false);
+    expect(target.imported.get("png-parent")).toMatchObject({
+      media: ["body-png-parent"],
+    });
+    expect(target.imported.get("png-parent")?.thumbnail?.toString()).toBe(
+      "png-sidecar",
+    );
+    expect(target.imported.get("webp-parent")).toMatchObject({
+      media: ["body-webp-parent"],
+    });
+    expect(target.imported.get("webp-parent")?.thumbnail?.toString()).toBe(
+      "webp-sidecar",
+    );
+  });
+
   it("rejects directory symlinks before importing anything", async (ctx) => {
     const fixture = await directoryFixture();
     const outside = join(fixture.root, "outside.txt");

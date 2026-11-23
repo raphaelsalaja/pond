@@ -448,6 +448,17 @@ export function buildNewMenuItems(
                   repair: "save-metadata",
                 }),
             },
+            {
+              id: "repair-eagle-previews",
+              label: "Remove Duplicate Eagle Previews",
+              icon: <IconCopy />,
+              keywords: "eagle thumbnail duplicate",
+              onClick: () =>
+                newMenuDialog.open({
+                  kind: "repair",
+                  repair: "eagle-previews",
+                }),
+            },
           ],
         },
         {

@@ -5,6 +5,7 @@ import { join } from "node:path";
 import sharp from "sharp";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  eaglePreviewName,
   type IntegritySave,
   inspectSaveIntegrity,
   type LibraryIntegrityRuntime,
@@ -224,5 +225,70 @@ describe("Library integrity repair previews", () => {
       kind: "physical-file-names",
       renames: [{ from: "bad:name.txt", to: "bad-name.txt" }],
     });
+  });
+});
+
+describe("Eagle preview duplicates", () => {
+  function eagleRuntime(
+    original: { id: string; title: string } | null,
+  ): LibraryIntegrityRuntime {
+    return {
+      ...runtime("/unused"),
+      eaglePreviewOriginal: async () => original,
+    };
+  }
+
+  it("flags a preview Save when its original is in the Library", async () => {
+    const row = { ...fixtureSave([]), title: "Sunset_thumbnail" };
+
+    const issue = await inspectSaveIntegrity({
+      kind: "eagle-previews",
+      row,
+      runtime: eagleRuntime({ id: "save-0", title: "Sunset" }),
+    });
+
+    expect(issue?.action).toEqual({
+      kind: "eagle-previews",
+      originalId: "save-0",
+    });
+    expect(issue?.detail).toContain("“Sunset”");
+  });
+
+  it("keeps a preview Save whose original is gone", async () => {
+    const row = { ...fixtureSave([]), title: "Sunset_thumbnail" };
+
+    await expect(
+      inspectSaveIntegrity({
+        kind: "eagle-previews",
+        row,
+        runtime: eagleRuntime(null),
+      }),
+    ).resolves.toBeNull();
+  });
+
+  it("never looks up a Save whose title isn't a preview name", async () => {
+    let looked = false;
+    const issue = await inspectSaveIntegrity({
+      kind: "eagle-previews",
+      row: { ...fixtureSave([]), title: "Thumbnail sketches" },
+      runtime: {
+        ...runtime("/unused"),
+        eaglePreviewOriginal: async () => {
+          looked = true;
+          return { id: "save-0", title: "Thumbnail sketches" };
+        },
+      },
+    });
+
+    expect(issue).toBeNull();
+    expect(looked).toBe(false);
+  });
+
+  it("reads the original's name from the preview title", () => {
+    expect(eaglePreviewName("Sunset_thumbnail")).toBe("Sunset");
+    expect(eaglePreviewName("Sunset_THUMBNAIL ")).toBe("Sunset");
+    expect(eaglePreviewName("_thumbnail")).toBeNull();
+    expect(eaglePreviewName("Sunset thumbnail")).toBeNull();
+    expect(eaglePreviewName(null)).toBeNull();
   });
 });
