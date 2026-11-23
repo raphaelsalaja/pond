@@ -16,7 +16,9 @@ export function SearchCard({
         ) : null}
         <span>{data.engine}</span>
       </div>
-      <p className={styles.query}>{data.query}</p>
+      <div className={styles.body}>
+        <p className={styles.query}>{data.query}</p>
+      </div>
     </div>
   );
 }
