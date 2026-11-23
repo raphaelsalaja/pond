@@ -55,11 +55,17 @@ function buildLibrary() {
   for (let index = 0; index < LIBRARY; index++) {
     const id = `save-${index}`;
     const count = 1 + (index % 4);
-    saves.push(save(id, Array.from({ length: count }, () => file(id).asset)));
+    saves.push(
+      save(
+        id,
+        Array.from({ length: count }, () => file(id).asset),
+      ),
+    );
   }
 
   for (let index = 0; index < COPIES; index++) {
-    const base = saves[index * 7] as LibrarySave;
+    const base = saves[index * 7];
+    if (!base) throw new Error(`No save-${index * 7}`);
     const id = `copy-${index}`;
     saves.push(
       save(

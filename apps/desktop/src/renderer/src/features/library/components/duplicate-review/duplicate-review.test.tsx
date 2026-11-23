@@ -60,16 +60,10 @@ function scanOf(
   return {
     groups: groups.map((group) => {
       const positions: number[] = [];
-      for (let left = 0; left < group.ids.length; left++)
-        for (let right = left + 1; right < group.ids.length; right++) {
+      for (const [offset, left] of group.ids.entries())
+        for (const right of group.ids.slice(offset + 1)) {
           positions.push(pairs.length);
-          pairs.push(
-            pairOf(
-              group.relation,
-              group.ids[left] as string,
-              group.ids[right] as string,
-            ),
-          );
+          pairs.push(pairOf(group.relation, left, right));
         }
       return { ...group, pairs: positions };
     }),

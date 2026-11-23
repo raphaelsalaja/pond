@@ -4,8 +4,6 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
-  type DuplicateGroup,
-  type DuplicatePair,
   describeDuplicate,
   describeDuplicateGroup,
 } from "../../../shared/duplicate-contracts";
@@ -98,9 +96,9 @@ describe("video matching", () => {
     expect(groups.map((group) => [group.relation, group.ids])).toEqual([
       ["near", ["one", "two"]],
     ]);
-    expect(describeDuplicateGroup(groups[0] as DuplicateGroup, pairs)).toBe(
-      "Same Video",
-    );
+    expect(
+      groups.map((group) => describeDuplicateGroup(group, pairs))[0],
+    ).toBe("Same Video");
   });
 });
 
@@ -125,9 +123,9 @@ describe("audio matching", () => {
       },
     );
     expect(groups.map((group) => group.relation)).toEqual(["near"]);
-    expect(describeDuplicateGroup(groups[0] as DuplicateGroup, pairs)).toBe(
-      "Same Audio",
-    );
+    expect(
+      groups.map((group) => describeDuplicateGroup(group, pairs))[0],
+    ).toBe("Same Audio");
   });
 
   it("never pairs two videos on a shared soundtrack alone", () => {
@@ -171,7 +169,7 @@ describe("audio matching", () => {
       "video",
       "audio",
     ]);
-    expect(describeDuplicate(pairs[0] as DuplicatePair)).toBe("Same Video");
+    expect(pairs.map(describeDuplicate)[0]).toBe("Same Video");
   });
 });
 
@@ -189,7 +187,7 @@ const ffmpeg = binariesAvailable().ffmpeg;
 
 describe.skipIf(!ffmpeg)("video fingerprints from real files", () => {
   it("matches a downscaled re-encode and not a different clip", async () => {
-    const bin = ffmpeg as string;
+    const bin = ffmpeg ?? "ffmpeg";
     const root = await mkdtemp(join(tmpdir(), "pond-video-print-"));
     const quiet = ["-hide_banner", "-loglevel", "error", "-y"];
     const source = (filter: string, out: string) =>
@@ -210,23 +208,21 @@ describe.skipIf(!ffmpeg)("video fingerprints from real files", () => {
         smaller,
       ]);
       await source("mandelbrot=size=320x240:rate=25", other);
-      const prints = await Promise.all(
-        [original, smaller, other].map(async (path) => {
-          const outcome = await computeFingerprint(
-            FINGERPRINT_ALGORITHMS.video,
-            path,
-          );
-          expect(outcome.status).toBe("ok");
-          const print = outcome.value ? decodeVideoPrint(outcome.value) : null;
-          if (!print) throw new Error(`No print for ${path}`);
-          return print;
-        }),
-      );
-      const [a, b, c] = prints as [
-        (typeof prints)[number],
-        (typeof prints)[number],
-        (typeof prints)[number],
-      ];
+      const printOf = async (path: string) => {
+        const outcome = await computeFingerprint(
+          FINGERPRINT_ALGORITHMS.video,
+          path,
+        );
+        expect(outcome.status).toBe("ok");
+        const print = outcome.value ? decodeVideoPrint(outcome.value) : null;
+        if (!print) throw new Error(`No print for ${path}`);
+        return print;
+      };
+      const [a, b, c] = await Promise.all([
+        printOf(original),
+        printOf(smaller),
+        printOf(other),
+      ]);
       expect(compareVideoPrints(a, b)).not.toBeNull();
       expect(compareVideoPrints(a, c)).toBeNull();
     } finally {

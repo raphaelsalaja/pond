@@ -103,13 +103,13 @@ describe("Hamming index", () => {
   it("returns exactly the hashes a linear scan finds", () => {
     const next = random(7);
     const hashes = Array.from({ length: 2000 }, () => randomHash(next));
-    const base = hashes[0] as bigint;
+    const base = hashes[0] ?? 0n;
     for (let flip = 0; flip < 12; flip++)
       hashes.push(base ^ (1n << BigInt(flip * 5)) ^ (1n << BigInt(flip)));
     const lookup = new HammingIndex<number>();
     for (const [index, hash] of hashes.entries()) lookup.add(hash, index);
     for (const radius of [0, 2, 6, 10]) {
-      for (const query of [base, hashes[500] as bigint, randomHash(next)]) {
+      for (const query of [base, hashes[500] ?? 0n, randomHash(next)]) {
         const expected = hashes
           .map((hash, index) => ({ index, distance: hamming64(hash, query) }))
           .filter((hit) => hit.distance <= radius)

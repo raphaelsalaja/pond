@@ -25,11 +25,7 @@ export interface VideoPrint {
   frames: bigint[];
 }
 
-export function videoSampleTimes(durationSeconds: number): {
-  windowSeconds: number;
-  count: number;
-  intervalSeconds: number;
-} {
+export function videoSampleTimes(durationSeconds: number) {
   const windowSeconds = Math.min(durationSeconds, VIDEO_PRINT_WINDOW_SECONDS);
   const count = Math.max(
     1,
@@ -107,8 +103,8 @@ export function compareVideoPrints(
       const time = (index + 0.5) * left.intervalSeconds + offsetSeconds;
       const other = Math.floor(time / right.intervalSeconds);
       if (other < 0 || other >= right.frames.length) continue;
-      const a = left.frames[index] as bigint;
-      const b = right.frames[other] as bigint;
+      const a = left.frames[index] ?? 0n;
+      const b = right.frames[other] ?? 0n;
       if (isLowDetailHash(a) || isLowDetailHash(b)) continue;
       comparedFrames += 1;
       if (hamming64(a, b) <= FRAME_DISTANCE) matchedFrames += 1;

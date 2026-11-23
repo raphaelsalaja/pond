@@ -70,20 +70,17 @@ export function audioPrintFromSamples(
   for (let frame = 0; frame < frameCount; frame++) {
     const start = frame * HOP;
     for (let index = 0; index < FRAME_SIZE; index++) {
-      real[index] = (samples[start + index] ?? 0) * (taper[index] as number);
+      real[index] = (samples[start + index] ?? 0) * (taper[index] ?? 0);
       imag[index] = 0;
     }
     fft(real, imag);
     const energy = new Float64Array(BANDS);
     for (let band = 0; band < BANDS; band++) {
       let sum = 0;
-      const to = Math.max(
-        (bandIndex[band] as number) + 1,
-        bandIndex[band + 1] as number,
-      );
-      for (let bin = bandIndex[band] as number; bin < to; bin++) {
-        const r = real[bin] as number;
-        const i = imag[bin] as number;
+      const to = Math.max((bandIndex[band] ?? 0) + 1, bandIndex[band + 1] ?? 0);
+      for (let bin = bandIndex[band] ?? 0; bin < to; bin++) {
+        const r = real[bin] ?? 0;
+        const i = imag[bin] ?? 0;
         sum += r * r + i * i;
       }
       energy[band] = sum;
@@ -91,9 +88,8 @@ export function audioPrintFromSamples(
     if (previous) {
       let bits = 0;
       for (let band = 0; band < BANDS - 1; band++) {
-        const now = (energy[band] as number) - (energy[band + 1] as number);
-        const before =
-          (previous[band] as number) - (previous[band + 1] as number);
+        const now = (energy[band] ?? 0) - (energy[band + 1] ?? 0);
+        const before = (previous[band] ?? 0) - (previous[band + 1] ?? 0);
         if (now - before > 0) bits |= 1 << (31 - band);
       }
       frames[frame - 1] = bits >>> 0;
@@ -154,9 +150,7 @@ export function compareAudioPrints(
     let errors = 0;
     for (let index = from; index < to; index++)
       errors += popcount32(
-        ((left.frames[index] as number) ^
-          (right.frames[index + shift] as number)) |
-          0,
+        ((left.frames[index] ?? 0) ^ (right.frames[index + shift] ?? 0)) | 0,
       );
     const bitErrorRate = errors / (overlap * 32);
     if (!best || bitErrorRate < best.bitErrorRate)

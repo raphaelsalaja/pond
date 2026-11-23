@@ -35,13 +35,13 @@ export function fft(real: Float64Array, imag: Float64Array): void {
   const size = real.length;
   const { cos, sin, reverse } = twiddles(size);
   for (let index = 0; index < size; index++) {
-    const swap = reverse[index] as number;
+    const swap = reverse[index] ?? 0;
     if (swap <= index) continue;
-    const r = real[index] as number;
-    real[index] = real[swap] as number;
+    const r = real[index] ?? 0;
+    real[index] = real[swap] ?? 0;
     real[swap] = r;
-    const i = imag[index] as number;
-    imag[index] = imag[swap] as number;
+    const i = imag[index] ?? 0;
+    imag[index] = imag[swap] ?? 0;
     imag[swap] = i;
   }
   for (let span = 2; span <= size; span *= 2) {
@@ -49,18 +49,18 @@ export function fft(real: Float64Array, imag: Float64Array): void {
     const stride = size / span;
     for (let start = 0; start < size; start += span) {
       for (let offset = 0; offset < half; offset++) {
-        const wr = cos[offset * stride] as number;
-        const wi = sin[offset * stride] as number;
+        const wr = cos[offset * stride] ?? 0;
+        const wi = sin[offset * stride] ?? 0;
         const even = start + offset;
         const odd = even + half;
-        const oddReal = real[odd] as number;
-        const oddImag = imag[odd] as number;
+        const oddReal = real[odd] ?? 0;
+        const oddImag = imag[odd] ?? 0;
         const tr = wr * oddReal - wi * oddImag;
         const ti = wr * oddImag + wi * oddReal;
-        real[odd] = (real[even] as number) - tr;
-        imag[odd] = (imag[even] as number) - ti;
-        real[even] = (real[even] as number) + tr;
-        imag[even] = (imag[even] as number) + ti;
+        real[odd] = (real[even] ?? 0) - tr;
+        imag[odd] = (imag[even] ?? 0) - ti;
+        real[even] = (real[even] ?? 0) + tr;
+        imag[even] = (imag[even] ?? 0) + ti;
       }
     }
   }

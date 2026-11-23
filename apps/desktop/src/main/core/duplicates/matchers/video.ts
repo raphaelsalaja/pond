@@ -30,10 +30,7 @@ function candidates(prints: readonly VideoPrint[]): Array<[number, number]> {
     const step = Math.max(1, Math.floor(frames.length / QUERY_FRAMES));
     const others = new Set<number>();
     for (let frame = 0; frame < frames.length; frame += step)
-      for (const hit of index.search(
-        frames[frame] as bigint,
-        CANDIDATE_DISTANCE,
-      ))
+      for (const hit of index.search(frames[frame] ?? 0n, CANDIDATE_DISTANCE))
         if (hit.value > position) others.add(hit.value);
     for (const other of [...others].sort((a, b) => a - b))
       pairs.push([position, other]);
@@ -61,8 +58,9 @@ export function videoMatches(
 
   const found: Found[] = [];
   for (const [from, to] of candidates(decoded.map((entry) => entry.print))) {
-    const left = decoded[from] as (typeof decoded)[number];
-    const right = decoded[to] as (typeof decoded)[number];
+    const left = decoded[from];
+    const right = decoded[to];
+    if (!left || !right) continue;
     const match = compareVideoPrints(left.print, right.print);
     if (!match) continue;
     found.push(

@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   type DuplicateGroup,
-  type DuplicatePair,
   describeDuplicate,
   describeDuplicateGroup,
 } from "../../../shared/duplicate-contracts";
@@ -60,16 +59,14 @@ describe("exact matching", () => {
       { classifyUrl: noUrls },
     );
     expect(groups).toEqual(single("exact", ["one", "two"]));
-    expect(pairs[0]?.saveEvidence).toEqual([
-      { matcher: "manifest", files: 2 },
-    ]);
+    expect(pairs[0]?.saveEvidence).toEqual([{ matcher: "manifest", files: 2 }]);
     expect(pairs[0]?.coverage).toEqual({
       left: 2,
       leftTotal: 2,
       right: 2,
       rightTotal: 2,
     });
-    expect(describeDuplicate(pairs[0] as DuplicatePair)).toBe("Same Files");
+    expect(pairs.map(describeDuplicate)[0]).toBe("Same Files");
   });
 
   it("matches each file once, so repeated hashes need repeated copies", () => {
@@ -93,9 +90,7 @@ describe("exact matching", () => {
       { classifyUrl: noUrls },
     );
     expect(groups).toEqual(single("overlap", ["one", "two"]));
-    expect(describeDuplicate(pairs[0] as DuplicatePair)).toBe(
-      "Shares 1 File",
-    );
+    expect(pairs.map(describeDuplicate)[0]).toBe("Shares 1 File");
   });
 
   it("needs a valid hash on every file to match the manifest", () => {
@@ -123,12 +118,12 @@ describe("exact matching", () => {
 
 describe("source identity", () => {
   const classify: ClassifyUrl = (url) =>
-    url.includes("/status/42") ? { source: "x", sourceId: "42" } : null;
+    url.includes("/status/42") ? { source: "twitter", sourceId: "42" } : null;
 
   it("pairs a capture with a link Save of the same post", () => {
     const { groups, pairs } = matchLibrary(
       [
-        save("capture", ["a"], { source: "x", sourceId: "42" }),
+        save("capture", ["a"], { source: "twitter", sourceId: "42" }),
         save("link", [], {
           source: "web",
           sourceId: "page",
@@ -141,12 +136,12 @@ describe("source identity", () => {
       relation: "exact",
       ids: ["capture", "link"],
     });
-    expect(describeDuplicate(pairs[0] as DuplicatePair)).toBe("Same Post");
+    expect(pairs.map(describeDuplicate)[0]).toBe("Same Post");
   });
 
   it("never pairs split pieces through the post URL they share", () => {
     const piece = (sourceId: string) => ({
-      source: "x" as const,
+      source: "twitter" as const,
       sourceId,
       url: "https://x.com/u/status/42",
       splitSourceId: "42",
@@ -201,9 +196,7 @@ describe("semantic evidence", () => {
     expect(pairs[0]?.saveEvidence).toEqual([
       { matcher: "semantic", model: "current", distance: 0.02 },
     ]);
-    expect(describeDuplicate(pairs[0] as DuplicatePair)).toBe(
-      "Similar Content",
-    );
+    expect(pairs.map(describeDuplicate)[0]).toBe("Similar Content");
   });
 
   it("does not add a related group over an exact one", () => {
@@ -274,9 +267,9 @@ describe("near grouping", () => {
       relation: "near",
       ids: ["copy", "one", "resized"],
     });
-    expect(describeDuplicateGroup(groups[0] as DuplicateGroup, pairs)).toBe(
-      "Same Image, Resized",
-    );
+    expect(
+      groups.map((group) => describeDuplicateGroup(group, pairs))[0],
+    ).toBe("Same Image, Resized");
   });
 });
 

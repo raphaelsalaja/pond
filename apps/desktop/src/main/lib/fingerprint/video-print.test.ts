@@ -71,7 +71,7 @@ describe("video alignment", () => {
   it("aligns copies sampled at different rates by timestamp", () => {
     const frames = scene(2, 30);
     const resampled = Array.from({ length: 60 }, (_, index) =>
-      noise(frames[Math.floor(index / 2)] as bigint, index),
+      noise(frames[Math.floor(index / 2)] ?? 0n, index),
     );
     const match = compareVideoPrints(video(frames), video(resampled, 0.5, 30));
     expect(match).toMatchObject({ matchedFrames: 30, comparedFrames: 30 });

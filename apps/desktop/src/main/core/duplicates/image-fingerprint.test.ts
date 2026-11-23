@@ -127,7 +127,9 @@ describe("image fingerprints", () => {
     }));
     const image = new Map<string, Uint8Array>();
     for (const [index, name] of names.entries()) {
-      const outcome = await imageFingerprint(images[name] as Buffer);
+      const file = images[name];
+      if (!file) throw new Error(`No ${name} image`);
+      const outcome = await imageFingerprint(file);
       if (outcome.value) image.set(sha(index), outcome.value);
     }
     const { pairs } = matchLibrary(saves, {

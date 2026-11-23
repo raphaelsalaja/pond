@@ -71,11 +71,12 @@ export function assetFound(
     : evidence;
   if (flipped && "offsetSeconds" in oriented)
     oriented.offsetSeconds = -oriented.offsetSeconds;
-  return {
+  const found: Found = {
     ids: [oriented.left.saveId, oriented.right.saveId],
     asset: oriented,
-    ...(supporting ? { supporting } : {}),
   };
+  if (supporting) found.supporting = true;
+  return found;
 }
 
 /** Every pair among the first `limit` ids, then each remaining id paired with the first. */
@@ -85,9 +86,9 @@ export function fanoutPairs(
 ): Array<[string, string]> {
   const pairs: Array<[string, string]> = [];
   const head = ids.slice(0, limit);
-  for (let left = 0; left < head.length; left++)
-    for (let right = left + 1; right < head.length; right++)
-      pairs.push(orderIds(head[left] as string, head[right] as string));
+  for (const [offset, left] of head.entries())
+    for (const right of head.slice(offset + 1))
+      pairs.push(orderIds(left, right));
   const anchor = ids[0];
   if (anchor)
     for (const id of ids.slice(limit)) pairs.push(orderIds(anchor, id));

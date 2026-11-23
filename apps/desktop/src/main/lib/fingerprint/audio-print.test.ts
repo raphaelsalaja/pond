@@ -41,8 +41,8 @@ function melody(seed: number): Float32Array {
     let value = 0;
     for (let tone = 0; tone < TONES; tone++)
       value +=
-        (levels[tone] as number) *
-        Math.sin(2 * Math.PI * (frequencies[tone] as number) * t);
+        (levels[tone] ?? 0) *
+        Math.sin(2 * Math.PI * (frequencies[tone] ?? 0) * t);
     samples[index] = envelope * value;
   }
   return samples;
@@ -84,7 +84,7 @@ describe("FFT", () => {
     const imag = new Float64Array(size);
     fft(real, imag);
     const magnitude = (bin: number) =>
-      Math.hypot(real[bin] as number, imag[bin] as number);
+      Math.hypot(real[bin] ?? 0, imag[bin] ?? 0);
     expect(magnitude(5)).toBeCloseTo(size / 2);
     expect(magnitude(size - 5)).toBeCloseTo(size / 2);
     expect(magnitude(6)).toBeCloseTo(0);

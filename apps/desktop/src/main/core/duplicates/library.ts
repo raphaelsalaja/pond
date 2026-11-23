@@ -15,8 +15,8 @@ const SaveRowSchema = z.object({
   status: z.string(),
   clip_model: z.string().nullable(),
   clip_embedding: z.string().nullable(),
-  capture_url: z.unknown(),
-  split_source_id: z.unknown(),
+  capture_url: z.string().min(1).nullable().catch(null),
+  split_source_id: z.string().min(1).nullable().catch(null),
 });
 
 const AssetRowSchema = z.object({
@@ -28,9 +28,6 @@ const AssetRowSchema = z.object({
   mime_type: z.string().nullable(),
   media: z.string().nullable(),
 });
-
-const text = (value: unknown) =>
-  typeof value === "string" && value ? value : null;
 
 function clipVector(
   row: z.infer<typeof SaveRowSchema>,
@@ -77,8 +74,8 @@ export function loadLibrarySaves(
       source: row.source,
       sourceId: row.source_id,
       url: row.url,
-      captureUrl: text(row.capture_url),
-      splitSourceId: text(row.split_source_id),
+      captureUrl: row.capture_url,
+      splitSourceId: row.split_source_id,
       assets: [],
       clip: clipVector(row, clipModel),
     });

@@ -99,16 +99,17 @@ export function matchLibrary(
   const scopedPairs: DuplicatePair[] = [];
   for (const group of scopedGroups) {
     for (const position of group.pairs) {
-      if (remap.has(position)) continue;
+      const pair = pairs[position];
+      if (!pair || remap.has(position)) continue;
       remap.set(position, scopedPairs.length);
-      scopedPairs.push(pairs[position] as DuplicatePair);
+      scopedPairs.push(pair);
     }
   }
   return {
     pairs: scopedPairs,
     groups: scopedGroups.map((group) => ({
       ...group,
-      pairs: group.pairs.map((position) => remap.get(position) as number),
+      pairs: group.pairs.flatMap((position) => remap.get(position) ?? []),
     })),
   };
 }

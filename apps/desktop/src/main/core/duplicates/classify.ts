@@ -39,9 +39,9 @@ function mergeSaveEvidence(list: SaveEvidence[], next: SaveEvidence): void {
     list.push(next);
     return;
   }
-  const current = list[index] as SaveEvidence;
+  const current = list[index];
   if (
-    current.matcher === "semantic" &&
+    current?.matcher === "semantic" &&
     next.matcher === "semantic" &&
     next.distance < current.distance
   )

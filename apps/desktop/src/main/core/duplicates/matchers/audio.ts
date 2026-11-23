@@ -22,7 +22,7 @@ function candidates(prints: readonly AudioPrint[]): Array<[number, number]> {
   for (const [position, print] of prints.entries()) {
     const end = Math.min(print.frames.length, INDEX_FRAMES);
     for (let frame = 0; frame < end; frame += INDEX_STRIDE) {
-      const value = print.frames[frame] as number;
+      const value = print.frames[frame] ?? 0;
       const list = lookup.get(value);
       if (!list) lookup.set(value, [position]);
       else if (list.length <= MAX_BUCKET && list.at(-1) !== position)
@@ -34,7 +34,7 @@ function candidates(prints: readonly AudioPrint[]): Array<[number, number]> {
     const votes = new Map<number, number>();
     const end = Math.min(print.frames.length, INDEX_FRAMES);
     for (let frame = 0; frame < end; frame++) {
-      const value = print.frames[frame] as number;
+      const value = print.frames[frame] ?? 0;
       for (let bit = -1; bit < 32; bit++) {
         const probe = bit < 0 ? value : (value ^ (1 << bit)) >>> 0;
         const list = lookup.get(probe);
@@ -72,8 +72,9 @@ export function audioMatches(
 
   const found: Found[] = [];
   for (const [from, to] of candidates(decoded.map((entry) => entry.print))) {
-    const left = decoded[from] as (typeof decoded)[number];
-    const right = decoded[to] as (typeof decoded)[number];
+    const left = decoded[from];
+    const right = decoded[to];
+    if (!left || !right) continue;
     const match = compareAudioPrints(left.print, right.print);
     if (!match) continue;
     found.push(

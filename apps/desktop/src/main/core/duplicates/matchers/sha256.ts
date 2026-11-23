@@ -27,7 +27,10 @@ export function sha256Matches(saves: readonly LibrarySave[]): Found[] {
         continue;
       }
       let owners = bySha.get(asset.sha256);
-      if (!owners) bySha.set(asset.sha256, (owners = new Map()));
+      if (!owners) {
+        owners = new Map();
+        bySha.set(asset.sha256, owners);
+      }
       const list = owners.get(save.id);
       if (list) list.push(asset);
       else owners.set(save.id, [asset]);
@@ -47,12 +50,13 @@ export function sha256Matches(saves: readonly LibrarySave[]): Found[] {
     for (const [left, right] of fanoutPairs([...owners.keys()].sort())) {
       const leftAssets = owners.get(left) ?? [];
       const rightAssets = owners.get(right) ?? [];
-      const count = Math.min(leftAssets.length, rightAssets.length);
-      for (let index = 0; index < count; index++) {
+      for (const [index, leftAsset] of leftAssets.entries()) {
+        const rightAsset = rightAssets[index];
+        if (!rightAsset) break;
         const match = assetFound({
           matcher: "sha256",
-          left: assetRef(leftAssets[index] as LibraryAsset),
-          right: assetRef(rightAssets[index] as LibraryAsset),
+          left: assetRef(leftAsset),
+          right: assetRef(rightAsset),
         });
         if (match) found.push(match);
       }

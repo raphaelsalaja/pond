@@ -44,11 +44,9 @@ function pairsAmong(
   index: ReadonlyMap<string, number>,
 ): number[] {
   const found: number[] = [];
-  for (let left = 0; left < ids.length; left++)
-    for (let right = left + 1; right < ids.length; right++) {
-      const position = index.get(
-        pairKey(ids[left] as string, ids[right] as string),
-      );
+  for (const [offset, left] of ids.entries())
+    for (const right of ids.slice(offset + 1)) {
+      const position = index.get(pairKey(left, right));
       if (position !== undefined) found.push(position);
     }
   return found.sort((a, b) => a - b);
@@ -71,8 +69,8 @@ export function groupPairs(pairs: readonly DuplicatePair[]): DuplicateGroup[] {
     if (pair.relation !== "exact") continue;
     for (const id of pair.ids) {
       const root = exact.find(id);
-      let members = exactComponents.get(root);
-      if (!members) exactComponents.set(root, (members = new Set()));
+      const members = exactComponents.get(root) ?? new Set<string>();
+      exactComponents.set(root, members);
       members.add(id);
     }
   }
@@ -82,8 +80,8 @@ export function groupPairs(pairs: readonly DuplicatePair[]): DuplicateGroup[] {
 
   const near = new Map<string, Set<string>>();
   const link = (left: string, right: string) => {
-    let set = near.get(left);
-    if (!set) near.set(left, (set = new Set()));
+    const set = near.get(left) ?? new Set<string>();
+    near.set(left, set);
     set.add(right);
   };
   for (const pair of pairs) {

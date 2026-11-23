@@ -42,9 +42,9 @@ export class HammingIndex<T> {
     for (const [chunk, bucket] of this.#buckets.entries()) {
       for (const key of nearbyKeys(chunkOf(hash, chunk), flips)) {
         for (const id of bucket.get(key) ?? []) {
-          if (seen.has(id)) continue;
+          const entry = this.#entries[id];
+          if (!entry || seen.has(id)) continue;
           seen.add(id);
-          const entry = this.#entries[id] as { hash: bigint; value: T };
           const distance = hamming64(entry.hash, hash);
           if (distance <= radius) found.push({ value: entry.value, distance });
         }

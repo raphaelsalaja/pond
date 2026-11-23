@@ -25,8 +25,7 @@ function file(path: string, seed: string, kind = "image") {
   return { path, kind, sha256: sha(seed).toUpperCase(), size: 10 };
 }
 
-function insert(db: Database.Database, id: string, files: unknown) {
-  const json = typeof files === "string" ? files : JSON.stringify(files);
+function insert(db: Database.Database, id: string, json: string) {
   db.prepare(
     "INSERT INTO saves (id, source, source_id, url, title, files) VALUES (?, 'local', ?, '', ?, ?)",
   ).run(id, id, id, json);
@@ -62,12 +61,16 @@ describe.skipIf(!nativeSqliteAvailable())("asset index", () => {
   it("mirrors original files and skips generated ones", () => {
     const db = open();
     try {
-      insert(db, "one", [
-        file("a.png", "a"),
-        file("thumb.webp", "f", "thumbnail"),
-        { kind: "image" },
-        "not-a-file",
-      ]);
+      insert(
+        db,
+        "one",
+        JSON.stringify([
+          file("a.png", "a"),
+          file("thumb.webp", "f", "thumbnail"),
+          { kind: "image" },
+          "not-a-file",
+        ]),
+      );
       expect(assets(db)).toEqual([
         { save_id: "one", path: "a.png", sha256: sha("a"), media: null },
       ]);
@@ -90,7 +93,11 @@ describe.skipIf(!nativeSqliteAvailable())("asset index", () => {
   it("follows updates, deletes and replaced rows", () => {
     const db = open();
     try {
-      insert(db, "one", [file("a.png", "a"), file("b.png", "b")]);
+      insert(
+        db,
+        "one",
+        JSON.stringify([file("a.png", "a"), file("b.png", "b")]),
+      );
       db.prepare("UPDATE saves SET files = ? WHERE id = 'one'").run(
         JSON.stringify([file("c.png", "c")]),
       );
@@ -112,7 +119,7 @@ describe.skipIf(!nativeSqliteAvailable())("asset index", () => {
     const db = new Database(":memory:");
     try {
       migratePond(db);
-      insert(db, "old", [file("a.png", "a")]);
+      insert(db, "old", JSON.stringify([file("a.png", "a")]));
       ensureAssetIndex(db);
       expect(assets(db).map((row) => row.save_id)).toEqual(["old"]);
       db.prepare("DELETE FROM save_assets").run();
@@ -127,9 +134,9 @@ describe.skipIf(!nativeSqliteAvailable())("asset index", () => {
   it("tags media types and finds owners of a hash, live ones first", () => {
     const db = open();
     try {
-      insert(db, "image", [file("a.png", "a")]);
-      insert(db, "doc", [file("notes.txt", "b", "document")]);
-      insert(db, "trashed", [file("a.png", "a")]);
+      insert(db, "image", JSON.stringify([file("a.png", "a")]));
+      insert(db, "doc", JSON.stringify([file("notes.txt", "b", "document")]));
+      insert(db, "trashed", JSON.stringify([file("a.png", "a")]));
       db.prepare("UPDATE saves SET deleted_at = 1 WHERE id = 'trashed'").run();
       expect(classifyPendingAssets(db)).toBe(3);
       expect(classifyPendingAssets(db)).toBe(0);
