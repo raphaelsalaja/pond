@@ -23,6 +23,7 @@ import {
 import { FILE_RING_OVERLAY_IPC } from "../shared/file-ring-overlay-contracts";
 import { FilterQuery } from "../shared/filter-query";
 import type { FishEvent, FishOpen } from "../shared/fish-contracts";
+import type { HapticPattern } from "../shared/haptics";
 import {
   type MachinePaceWire,
   MachinePaceWireSchema,
@@ -260,6 +261,10 @@ const api = {
 
   sendMenuRecents(entries: RecentMenuEntry[]): void {
     ipcRenderer.send(IPC.menuRecents, entries);
+  },
+
+  performHaptic(pattern: HapticPattern): void {
+    ipcRenderer.send(IPC.haptic, pattern);
   },
 
   onMenuOpenSave(cb: (id: string) => void): () => void {

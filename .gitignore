@@ -81,6 +81,7 @@ packages/render/target/
 # Per-architecture Mac ffmpeg fetched by apps/desktop/scripts/fetch-mac-ffmpeg.mjs
 apps/desktop/vendor/
 apps/desktop/resources/bin/pond-icon-style
+apps/desktop/resources/bin/pond-haptics
 apps/desktop/resources/DockTile/
 
 # Safari App Extension compiled by apps/desktop/scripts/build-safari-extension.mjs
