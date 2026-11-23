@@ -60,6 +60,7 @@ extraResources:
       # App extensions belong in Contents/PlugIns only; see mac.extraFiles.
       - "!SafariExtension{,/**}"
       - "!ShareExtension{,/**}"
+      - "!FinderAction{,/**}"
       - "!DockTile{,/**}"
   - from: ../../packages/icons/brand/tints
     to: app-icons
@@ -143,6 +144,9 @@ mac:
       to: PlugIns/Pond Extension.appex
     - from: resources/ShareExtension/Pond Share.appex
       to: PlugIns/Pond Share.appex
+    # Finder's Save to Pond Quick Action (scripts/build-finder-action.mjs).
+    - from: resources/FinderAction/Pond Finder Action.appex
+      to: PlugIns/Pond Finder Action.appex
     # Built by scripts/build-dock-tile.mjs; the Dock draws Pond's tile with it while Pond is not running.
     - from: resources/DockTile/PondDockTile.docktileplugin
       to: PlugIns/PondDockTile.docktileplugin

@@ -31,6 +31,7 @@ import { TerminalError, TransientError } from "../extractors/errors";
 import { expectedVideoDownloads, resolveYtDlpTarget } from "../specs";
 import { saveAuthorFrom, withYtdlpAuthor } from "../ytdlp-author";
 import { readSave, type WriteFileArgs } from "./apply";
+import { fileSizeAfterMediaWrite } from "./media-file-size";
 
 export interface FetchVideoPayload {
   requested?: boolean;
@@ -407,27 +408,6 @@ async function runCaptionsDownload(
   } finally {
     await captions.cleanup();
   }
-}
-
-/**
- * Library views display `fileSize` instead of summing files. A download
- * replaces some of those files, so the stored size has to match what remains.
- */
-function fileSizeAfterMediaWrite(
-  existing: VideoDownloadSave["files"],
-  newFiles: readonly WriteFileArgs[],
-  replaceKinds: readonly WriteFileArgs["kind"][],
-): number {
-  const replaced = new Set<WriteFileArgs["kind"]>(replaceKinds);
-  const retained = (existing ?? []).reduce(
-    (total, file) => (replaced.has(file.kind) ? total : total + file.size),
-    0,
-  );
-  const added = newFiles.reduce((total, file) => {
-    const size = file.bytes?.byteLength ?? 0;
-    return size === 0 ? total : total + size;
-  }, 0);
-  return retained + added;
 }
 
 function applyYtdlpInfo(

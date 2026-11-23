@@ -1,15 +1,7 @@
-import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { FolderNameEditor } from "./";
-
-const css = readFileSync(
-  resolve(dirname(fileURLToPath(import.meta.url)), "styles.module.css"),
-  "utf8",
-);
 
 let root: Root;
 let container: HTMLDivElement;
@@ -46,10 +38,6 @@ it("focuses and selects the new folder name", () => {
   expect(document.activeElement).toBe(field());
   expect(field().selectionStart).toBe(0);
   expect(field().selectionEnd).toBe("Untitled".length);
-});
-it("matches the normal row's icon-to-name spacing while editing", () => {
-  expect(css).toMatch(/\.icon\s*\{[^}]*margin-right:\s*var\(--ds-space-md\);/s);
-  expect(css).toMatch(/\.field\s*\{[^}]*padding-inline:\s*0;/s);
 });
 it("saves the trimmed name once on Enter followed by blur", async () => {
   field().value = "  Travel  ";

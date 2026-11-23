@@ -21,6 +21,8 @@ export interface SessionRefreshDeps {
     account: ConnectedAccount,
     cookies: ExtensionCookie[],
   ) => Promise<void>;
+  /** Persists a probed handle onto a revived Account so the next rotation matches directly. */
+  patchHandle?: (account: ConnectedAccount, handle: string) => Promise<void>;
   signedBackIn: (account: ConnectedAccount) => void;
 }
 
@@ -34,17 +36,29 @@ export function createSessionRefresh(deps: SessionRefreshDeps) {
     source: Source,
     accounts: ConnectedAccount[],
     cookies: ExtensionCookie[],
-  ): Promise<ConnectedAccount | null> {
+  ): Promise<{ account: ConnectedAccount; handle: string } | null> {
     const signedOut: ConnectedAccount[] = [];
     for (const account of accounts) {
-      if (account.handle && !(await deps.isConnected(account))) {
+      if (!(await deps.isConnected(account))) {
         signedOut.push(account);
       }
     }
     if (signedOut.length === 0) return null;
     const handle = await deps.probeHandle(source, cookies);
     if (!handle) return null;
-    return signedOut.find((account) => account.handle === handle) ?? null;
+    const match = signedOut.find((account) => account.handle === handle);
+    if (match) return { account: match, handle };
+    /** An Account connected before handle probing has nothing to compare. When it is the only signed-out candidate and no other Account claims the probed handle, this is its one possible sign-in. */
+    const sole = signedOut.length === 1 ? signedOut[0] : undefined;
+    if (
+      sole &&
+      !sole.handle &&
+      !sole.identityKey &&
+      !accounts.some((other) => other.id !== sole.id && other.handle === handle)
+    ) {
+      return { account: sole, handle };
+    }
+    return null;
   }
 
   return async function refresh(
@@ -80,10 +94,15 @@ export function createSessionRefresh(deps: SessionRefreshDeps) {
     const revived = account === null;
     if (!account) {
       if (unmatched.has(sessionId)) return { tracked: true, refreshed: false };
-      account = await signedOutAccountFor(source, accounts, own);
-      if (!account) {
+      const revival = await signedOutAccountFor(source, accounts, own);
+      if (!revival) {
         unmatched.add(sessionId);
         return { tracked: true, refreshed: false };
+      }
+      account = revival.account;
+      if (!account.handle && revival.handle) {
+        await deps.patchHandle?.(account, revival.handle);
+        account = { ...account, handle: revival.handle };
       }
     }
 

@@ -33,6 +33,30 @@ describe("Button keyboard", () => {
       .toHaveFocus();
   });
 
+  it("holds an open popup's trigger still while pressed", async () => {
+    const still = { transition: "none" };
+    const screen = await render(
+      <>
+        <Button style={still}>Save</Button>
+        <Button style={still} aria-expanded="true">
+          Sort
+        </Button>
+      </>,
+    );
+    const scale = (name: string) =>
+      getComputedStyle(screen.getByRole("button", { name }).element()).scale;
+
+    await userEvent.tab();
+    await userEvent.keyboard("[Space>]");
+    expect(scale("Save")).not.toBe("none");
+    await userEvent.keyboard("[/Space]");
+
+    await userEvent.tab();
+    await userEvent.keyboard("[Space>]");
+    expect(scale("Sort")).toBe("none");
+    await userEvent.keyboard("[/Space]");
+  });
+
   it("skips disabled and loading buttons in the tab order", async () => {
     const screen = await render(
       <>

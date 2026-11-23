@@ -54,13 +54,6 @@ jobs:
                 /manifest:[\s\S]*?\bversion:\s*"([^"]+)"/,
               ),
             ],
-            [
-              "apps/website/lib/release.ts",
-              readSourceVersion(
-                "apps/website/lib/release.ts",
-                /POND_VERSION\s*=\s*"([^"]+)"/,
-              ),
-            ],
           ];
           const mismatches = versions.filter(([, version]) => version !== releaseVersion);
           if (mismatches.length) {

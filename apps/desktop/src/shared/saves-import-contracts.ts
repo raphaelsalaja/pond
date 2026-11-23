@@ -18,7 +18,12 @@ export interface ImportFileFailure {
   error: string;
 }
 
-export type ManualSaveResult = OkResult<{ id: string; skipped?: boolean }> & {
+export type ManualSaveResult = OkResult<{
+  id: string;
+  skipped?: boolean;
+  /** The skipped match is in Trash. */
+  trashed?: boolean;
+}> & {
   failedFiles?: ImportFileFailure[];
 };
 
