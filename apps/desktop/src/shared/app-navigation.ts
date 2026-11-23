@@ -1,4 +1,4 @@
-import { QuerySchema } from "@pond/schema/filters/schema";
+import { QuerySchema } from "@pond/schema/filters";
 import { z } from "zod";
 
 export const AppNavigationSchema = z.discriminatedUnion("kind", [
