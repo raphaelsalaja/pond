@@ -53,6 +53,8 @@ export interface ImageDownloadSettings {
   preserveMetadata: boolean;
   maxFileSizeMb: number | null;
   splitPosts: boolean;
+  /** Fewest images or videos a post needs before auto-split or Split Existing Saves splits it. The Split Into Saves menu item ignores it. */
+  splitMinMedia: number;
 }
 
 export const DEFAULT_IMAGE_DOWNLOAD: ImageDownloadSettings = {
@@ -64,6 +66,7 @@ export const DEFAULT_IMAGE_DOWNLOAD: ImageDownloadSettings = {
   preserveMetadata: false,
   maxFileSizeMb: 10,
   splitPosts: false,
+  splitMinMedia: 2,
 };
 
 export type SourceOverrides<T> = Partial<Record<ExternalSource, Partial<T>>>;

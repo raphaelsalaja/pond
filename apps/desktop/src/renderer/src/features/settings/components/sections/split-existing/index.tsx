@@ -7,11 +7,13 @@ import {
   splittableDescription,
   useSplitAllRunning,
 } from "@/features/saves/split-all";
+import { useDownloadSettings } from "@/features/settings/components/sections/downloads";
 
 export function SplitExistingSaves() {
   const running = useSplitAllRunning();
+  const minMedia = useDownloadSettings().data?.imageDownload.splitMinMedia;
   const { data, refetch } = useQuery({
-    queryKey: ["saves", "splittableCount"],
+    queryKey: ["saves", "splittableCount", minMedia],
     queryFn: () => window.pond.query("saves.splittableCount", {}),
   });
   const count = data?.count ?? 0;
