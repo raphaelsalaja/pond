@@ -1,5 +1,6 @@
 import { sourceIdentity } from "@pond/schema/domain";
 import { colorNear } from "@pond/schema/filters/color";
+import { fileExtension } from "@pond/schema/filters/fields";
 import type Database from "better-sqlite3";
 import { z } from "zod";
 import { seededOrderKey } from "../../shared/order-key";
@@ -43,6 +44,10 @@ export function initializePondSchema(
       }
     },
   );
+  sqlite.function("pond_file_extension", { deterministic: true }, (path) => {
+    const text = z.string().safeParse(path);
+    return text.success ? fileExtension(text.data) : null;
+  });
   sqlite.function("pond_order_key", { deterministic: true }, (id, seed) =>
     z.string().safeParse(id).success && z.string().safeParse(seed).success
       ? seededOrderKey(z.string().parse(id), z.string().parse(seed))

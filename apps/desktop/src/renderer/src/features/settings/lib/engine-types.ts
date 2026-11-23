@@ -91,6 +91,8 @@ export type Item = FieldItem | ButtonItem | CustomItem;
 
 export interface GroupConfig {
   title?: ReactNode;
+  /** DOM id so other parts of the page can scroll to this group. */
+  anchor?: string;
   visible?: (values: SettingsValues) => boolean;
   fullWidth?: boolean;
   items?: Item[];
@@ -160,6 +162,7 @@ type TypedItem<V> =
 
 interface TypedGroupInput<V> {
   title?: ReactNode;
+  anchor?: string;
   visible?: (values: SettingsValues) => boolean;
   fullWidth?: boolean;
   items?: TypedItem<V>[];

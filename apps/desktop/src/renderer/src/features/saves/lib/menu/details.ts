@@ -151,13 +151,15 @@ export function buildDetailItems({
         label: "Find Duplicates",
         icon: glyph(IconCopy),
         hidden: batch,
-        onClick: () => saveLibraryBridge.openDuplicateReview(save.id),
+        onClick: () =>
+          saveLibraryBridge.openDuplicateReview({ saveId: save.id }),
       },
       {
         label: "Merge Duplicates",
         icon: glyph(IconMerge),
         hidden: batch,
-        onClick: () => saveLibraryBridge.openDuplicateReview(save.id),
+        onClick: () =>
+          saveLibraryBridge.openDuplicateReview({ saveId: save.id }),
       },
       {
         label: "Group Saves",

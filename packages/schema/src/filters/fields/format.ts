@@ -5,7 +5,7 @@ import { defineField } from "./descriptor";
 
 const FilePath = z.object({ path: z.string() });
 
-function extension(path: string): string | null {
+export function fileExtension(path: string): string | null {
   const name = path.split(/[\\/]/).at(-1)?.split(/[?#]/, 1)[0] ?? "";
   const dot = name.lastIndexOf(".");
   if (dot <= 0 || dot === name.length - 1) return null;
@@ -23,7 +23,7 @@ export const format = defineField({
       (save.files ?? [])
         .map((file) => {
           const parsed = FilePath.safeParse(file);
-          return parsed.success ? extension(parsed.data.path) : null;
+          return parsed.success ? fileExtension(parsed.data.path) : null;
         })
         .filter((value): value is string => value !== null),
     ),

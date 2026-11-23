@@ -1,4 +1,13 @@
 import { ArenaLinkConversion } from "@/features/settings/components/sections/storage/arena-links";
+import { StorageAttribution } from "@/features/settings/components/sections/storage/attribution";
+import { StorageCaches } from "@/features/settings/components/sections/storage/caches";
+import { StorageCleanup } from "@/features/settings/components/sections/storage/cleanup";
+import { LargestFiles } from "@/features/settings/components/sections/storage/largest-files";
+import { LargestSaves } from "@/features/settings/components/sections/storage/largest-saves";
+import {
+  CACHES_SECTION_ID,
+  INSIGHTS_SECTION_ID,
+} from "@/features/settings/components/sections/storage/lib/sections";
 import { StorageLocationSettings } from "@/features/settings/components/sections/storage/location";
 import { StorageSummary } from "@/features/settings/components/sections/storage/storage-summary";
 import {
@@ -12,8 +21,35 @@ const limitOff = (v: SettingsValues) => guardsOff(v) || v.maxLibraryGb === null;
 export const storageSection = defineSection("storage", {
   title: "Storage",
   description: "Manage disk usage, location, and size limits.",
+  keywords: ["largest files", "duplicates", "cleanup", "cache", "folders"],
   groups: [
     { title: "Overview", render: () => <StorageSummary /> },
+    {
+      title: "Largest Saves",
+      anchor: INSIGHTS_SECTION_ID,
+      fullWidth: true,
+      render: () => <LargestSaves />,
+    },
+    {
+      title: "Largest Files",
+      fullWidth: true,
+      render: () => <LargestFiles />,
+    },
+    {
+      title: "Save Storage",
+      fullWidth: true,
+      render: () => <StorageAttribution />,
+    },
+    {
+      title: "Caches",
+      anchor: CACHES_SECTION_ID,
+      render: () => <StorageCaches />,
+    },
+    {
+      title: "Cleanup",
+      fullWidth: true,
+      render: () => <StorageCleanup />,
+    },
     {
       title: "Location",
       fullWidth: true,

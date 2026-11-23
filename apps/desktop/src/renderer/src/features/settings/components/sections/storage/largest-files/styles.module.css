@@ -1,0 +1,28 @@
+.filters {
+  display: flex;
+  gap: var(--ds-space-sm);
+  align-items: center;
+  width: 100%;
+}
+
+.search {
+  flex: 1;
+  min-width: 0;
+}
+
+.files {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.size {
+  margin-inline-start: auto;
+  font-size: var(--ds-text-small);
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-foreground-secondary);
+  white-space: nowrap;
+}

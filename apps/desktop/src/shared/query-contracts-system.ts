@@ -28,6 +28,12 @@ import type {
   ReasonFailure,
   ReasonResult,
 } from "./query-contracts-shared";
+import type {
+  DuplicateStorageResult,
+  LargestFilesResult,
+  LargestSavesResult,
+  StorageAttributionResult,
+} from "./storage-insights";
 import type { UpdateNotice } from "./update-notice";
 
 export const MediaUnderstandInputSchema = z.strictObject({
@@ -296,9 +302,13 @@ export interface SystemQueryResults {
   }>;
   "library.backupTo": PathResult<{ copied?: number }>;
   "reset.preferences": OkResult;
-  "reset.clearVideoCache": OkResult<{ removed: number }>;
-  "reset.clearThumbnails": OkResult<{ removed: number }>;
+  "reset.clearVideoCache": OkResult<{ removed: number; freedBytes: number }>;
+  "reset.clearThumbnails": OkResult<{ removed: number; freedBytes: number }>;
   "reset.factory": OkResult;
+  "storage.largestSaves": LargestSavesResult;
+  "storage.largestFiles": LargestFilesResult;
+  "storage.attribution": StorageAttributionResult;
+  "storage.duplicates": DuplicateStorageResult;
   "storage.snapshot": {
     pondBytes: number;
     breakdown: {

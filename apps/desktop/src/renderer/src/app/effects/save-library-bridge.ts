@@ -31,7 +31,7 @@ registerSaveLibraryBridge({
   openRename: openRenameDialog,
   openConversion: (ids, fileIndex, mode) =>
     openConversionDialog(ids, fileIndex, mode),
-  openDuplicateReview: (saveId) => openDuplicateReview({ saveId }),
+  openDuplicateReview,
   findSimilarColor: (color) => {
     setQuery({
       combinator: "and",
@@ -44,6 +44,11 @@ registerSaveLibraryBridge({
     closeSave();
   },
   showSaves: showSavesInLibrary,
+  showLibrary: (nav, predicate) => {
+    resetFilters();
+    selectLibraryNav(nav);
+    if (predicate) setQuery({ combinator: "and", rules: [predicate] });
+  },
   setVisualProbe: ({ id, label }) =>
     setVisualProbe({ kind: "saveId", id, label }),
   foldersForSave: (id) => folders.forSave(id),

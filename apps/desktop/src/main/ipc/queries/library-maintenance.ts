@@ -1,5 +1,6 @@
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { MEDIA_TYPES } from "@pond/schema/db";
 import { dialog, session, shell } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
@@ -12,12 +13,34 @@ import {
 import { purgeDirectory, verifyLibraryIntegrity } from "../../core/library-ops";
 import { getPrefs, invalidatePrefs, setPrefs } from "../../core/prefs";
 import { reconcileLibrary } from "../../core/scan";
+import {
+  duplicateStorage,
+  largestFiles,
+  largestSaves,
+  storageAttribution,
+} from "../../core/storage-insights";
+import {
+  invalidateStorageSnapshot,
+  measureDirectory,
+} from "../../core/storage-stats";
 import { VIDEO_CACHE_DIR } from "../../core/video-preview-proxy";
-import { closeDb } from "../../db";
+import { closeDb, getDb } from "../../db";
 import { showDock } from "../../dock";
 import { libraryRoot, thumbnailCacheRoot } from "../../paths";
 import { runtimeControls } from "../../runtime";
 import { type QueryHandlerMap, query } from "./params";
+
+const StorageOrderSchema = z.enum(["largest", "smallest"]);
+
+async function clearCache(
+  dir: string,
+): Promise<{ removed: number; freedBytes: number }> {
+  const before = await measureDirectory(dir);
+  const removed = await purgeDirectory(dir);
+  const after = await measureDirectory(dir);
+  invalidateStorageSnapshot();
+  return { removed, freedBytes: Math.max(0, before - after) };
+}
 
 export const libraryMaintenanceQueries = {
   async "library.info"() {
@@ -102,13 +125,13 @@ export const libraryMaintenanceQueries = {
   },
 
   async "reset.clearVideoCache"() {
-    const removed = await purgeDirectory(join(libraryRoot(), VIDEO_CACHE_DIR));
-    return { ok: true as const, removed };
+    const cleared = await clearCache(join(libraryRoot(), VIDEO_CACHE_DIR));
+    return { ok: true as const, ...cleared };
   },
 
   async "reset.clearThumbnails"() {
-    const removed = await purgeDirectory(thumbnailCacheRoot());
-    return { ok: true as const, removed };
+    const cleared = await clearCache(thumbnailCacheRoot());
+    return { ok: true as const, ...cleared };
   },
 
   async "reset.factory"() {
@@ -123,6 +146,33 @@ export const libraryMaintenanceQueries = {
     return { ok: true as const };
   },
 
+  async "storage.attribution"() {
+    return storageAttribution(await getDb());
+  },
+  async "storage.duplicates"() {
+    return duplicateStorage(await getDb());
+  },
+  "storage.largestFiles": query(
+    z.object({
+      limit: z.number().int().min(1).max(500),
+      search: z.string().max(500).optional(),
+      kind: z.string().min(1).max(100).optional(),
+      extension: z.string().min(1).max(40).optional(),
+      order: StorageOrderSchema.optional(),
+    }),
+    async (params) => largestFiles(await getDb(), params),
+  ),
+  "storage.largestSaves": query(
+    z.object({
+      limit: z.number().int().min(1).max(500),
+      search: z.string().max(500).optional(),
+      mediaType: z.enum(MEDIA_TYPES).optional(),
+      source: z.string().min(1).max(100).optional(),
+      minBytes: z.number().int().min(0).optional(),
+      order: StorageOrderSchema.optional(),
+    }),
+    async (params) => largestSaves(await getDb(), params),
+  ),
   async "storage.snapshot"(): Promise<QueryResult<"storage.snapshot">> {
     const { getStorageSnapshot } = await import("../../core/storage-stats");
     return await getStorageSnapshot();

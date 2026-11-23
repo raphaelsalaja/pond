@@ -1,0 +1,11 @@
+.filters {
+  display: flex;
+  gap: var(--ds-space-sm);
+  align-items: center;
+  width: 100%;
+}
+
+.search {
+  flex: 1;
+  min-width: 0;
+}
