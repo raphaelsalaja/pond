@@ -30,6 +30,16 @@
   min-width: 0;
 }
 
+.kind {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  color: var(--ds-foreground-secondary);
+}
+
 .source > .label {
   overflow: hidden;
   text-overflow: ellipsis;

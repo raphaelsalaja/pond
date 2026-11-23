@@ -2,17 +2,9 @@ import { Button } from "@pond/ui";
 import type { TransferJob } from "@shared/transfer-contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { TRANSFER_LABELS as labels } from "../../lib/transfer-rows";
 import styles from "./styles.module.css";
 
-const labels = {
-  export_eagle_package: "Export Eagle Package",
-  export_files: "Export Files",
-  export_package: "Export Pond Package",
-  import_eagle_package: "Import Eagle Package",
-  import_package: "Import Pond Package",
-  copy_library: "Copy to Library",
-  merge_library: "Merge Library",
-} satisfies Record<TransferJob["request"]["kind"], string>;
 const states = {
   running: "In progress",
   cancelling: "Cancelling after this file",
@@ -37,7 +29,7 @@ function canDismiss(status: TransferJob["status"]): boolean {
   return status !== "running" && status !== "cancelling";
 }
 
-export function TransferJobsPanel({ search = "" }: { search?: string }) {
+export function TransferJobsPanel() {
   const client = useQueryClient();
   const [error, setError] = useState<string | null>(null);
   const jobs = useQuery({
@@ -64,13 +56,7 @@ export function TransferJobsPanel({ search = "" }: { search?: string }) {
     action.isPending &&
     action.variables?.id === id &&
     action.variables.kind === kind;
-  const visible = (jobs.data ?? [])
-    .filter((job) =>
-      `${labels[job.request.kind]} ${job.request.destination}`
-        .toLowerCase()
-        .includes(search.toLowerCase()),
-    )
-    .slice(0, 30);
+  const visible = (jobs.data ?? []).slice(0, 30);
   if (!visible.length && !jobs.isError) return null;
   return (
     <section className={styles.panel} aria-label="Library transfers">

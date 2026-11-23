@@ -9,6 +9,7 @@ import { type ReactNode, useCallback, useEffect, useMemo } from "react";
 import { DOWNLOAD_COLUMN_CATALOG } from "../../../lib/download-columns";
 import { downloadActivityForSave } from "../../../lib/download-progress";
 import type { DownloadRow } from "../../../lib/status-feed";
+import { transferRevealable } from "../../../lib/transfer-rows";
 import {
   downloadsColumnsLayout,
   useDownloadsColumnLayout,
@@ -20,6 +21,7 @@ import {
   downloadsColumns,
 } from "../columns";
 import { openDownloadSave } from "../context-menu";
+import { revealTransfer } from "../transfer-menu";
 import styles from "./styles.module.css";
 
 /** TanStack Store tracks reads inside `subscribe` listeners, so syncing from one would re-run on every table change and revert it. */
@@ -63,7 +65,7 @@ export function DownloadTable({
     }));
   }, [rows, paused, activities, gates]);
   const rowsById = useMemo(
-    () => new Map(rows.map((row) => [row.id, row])),
+    () => new Map(rows.flatMap((row) => (row.transfer ? [] : [[row.id, row]]))),
     [rows],
   );
   const renderRow = useCallback(
@@ -106,6 +108,11 @@ export function DownloadTable({
       selectOnClick
       onRowClick={(row, event) => {
         if (event && event.detail < 2) return;
+        if (row.transfer) {
+          if (transferRevealable(row.transfer))
+            void revealTransfer(row.transfer);
+          return;
+        }
         const current = rowsById.get(row.id);
         if (current) openDownloadSave(current);
       }}
