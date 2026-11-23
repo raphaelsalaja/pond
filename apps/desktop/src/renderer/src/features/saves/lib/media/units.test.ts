@@ -51,6 +51,45 @@ describe("buildMediaUnits video posters", () => {
     ]);
   });
 
+  it("treats a harvested post's lone image as its video's cover", () => {
+    const save = makeSave({
+      id: "reel",
+      source: "instagram",
+      files: [
+        file("video", "video-1.mp4", "video/mp4"),
+        file("image", "media-1.jpg", "image/jpeg"),
+      ],
+    });
+
+    expect(buildMediaUnits(save)).toEqual([
+      {
+        key: "video-1.mp4",
+        url: "pond://reel/video-1.mp4?v=abcdef123456",
+        isVideo: true,
+        posterUrl: "pond://reel/media-1.jpg?v=abcdef123456",
+        posterKey: "media-1.jpg",
+      },
+    ]);
+  });
+
+  it("shows every file of a local gallery with one video and one image", () => {
+    const save = makeSave({
+      id: "gallery",
+      source: "local",
+      files: [
+        file("video", "clip.mp4", "video/mp4"),
+        file("image", "photo.jpg", "image/jpeg"),
+        file("poster", "poster-1.jpg", "image/jpeg"),
+      ],
+    });
+
+    expect(buildMediaUnits(save).map((unit) => unit.key)).toEqual([
+      "clip.mp4",
+      "photo.jpg",
+    ]);
+    expect(buildMediaUnits(save)[0]?.posterKey).toBe("poster-1.jpg");
+  });
+
   it("keeps a cover as the visible unit for an image-only save", () => {
     const save = makeSave({
       id: "image-cover",
