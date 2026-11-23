@@ -128,6 +128,8 @@ async function openLibrary(sandbox, { prefs, size, onStep = () => {} } = {}) {
   win.webContents.reload();
   await sleep(500);
   await rendered(win);
+  /** A reload before the first paint swallows ready-to-show, and a hidden window never runs requestAnimationFrame. */
+  if (!win.isVisible()) win.showInactive();
   return win;
 }
 
