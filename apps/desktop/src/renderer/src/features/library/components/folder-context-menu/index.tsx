@@ -7,6 +7,7 @@ import {
   IconEye,
   IconFaceSmile,
   IconFileExport,
+  IconFileZip,
   IconFolder,
   IconFolderBolt,
   IconFolderDots,
@@ -52,6 +53,7 @@ export interface FolderMenuActions {
   onToggleAll: () => void;
   onDuplicate: () => void;
   onExportFiles: () => void;
+  onExportFilesZip: () => void;
   onExportCsv: () => void;
   onExportEaglePackage: () => void;
   onExportPackage: () => void;
@@ -152,6 +154,12 @@ export function buildFolderMenuItems(a: FolderMenuActions): MenuItemSpec[] {
           icon: <IconFileExport />,
           keywords: "files",
           onClick: a.onExportFiles,
+        },
+        {
+          label: "Export Files as ZIP",
+          icon: <IconFileZip />,
+          keywords: "files zip archive compress",
+          onClick: a.onExportFilesZip,
         },
         {
           label: "Export to CSV",
@@ -263,9 +271,15 @@ async function withFolderSaves(
   await run(ids);
 }
 
-export async function exportFolderFiles(folderIds: string[]): Promise<void> {
+export async function exportFolderFiles(
+  folderIds: string[],
+  options: { zip?: boolean } = {},
+): Promise<void> {
   await withFolderSaves(folderIds, async (ids) => {
-    const result = await exportSelectionFiles(ids);
+    const result = await exportSelectionFiles(ids, {
+      ...options,
+      fromFolders: true,
+    });
     if (!result.ok) notify({ id: "folder-export", title: result.message });
   });
 }

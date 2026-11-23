@@ -313,6 +313,7 @@ export const queryOperationAccess = {
   "transferJobs.dismiss": "hidden",
   "transferJobs.list": "read",
   "transferJobs.retry": "review",
+  "transferJobs.reveal": "hidden",
   "updates.applyPrefs": "review",
   "updates.currentNotice": "hidden",
   "updates.checkNow": "read",

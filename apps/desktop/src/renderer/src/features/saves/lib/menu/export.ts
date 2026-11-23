@@ -164,6 +164,16 @@ export function buildExportItems(context: SaveMenuContext): MenuItemSpec[] {
       },
     },
     {
+      id: "export-files-zip",
+      label: "Export Files as ZIP",
+      icon: glyph(IconFileZip),
+      keywords: "files zip archive compress",
+      hidden: !hasFiles,
+      onClick: () => {
+        void exportSelectionFiles(ids, { zip: true });
+      },
+    },
+    {
       id: "export-converted",
       label: "Export Converted Files",
       icon: glyph(IconConversion),
@@ -288,6 +298,7 @@ export function buildExportItems(context: SaveMenuContext): MenuItemSpec[] {
 
 const EXPORT_POPUP_IDS = new Set([
   "export-files",
+  "export-files-zip",
   "export-converted",
   "export-eagle-package",
   "export-csv",
