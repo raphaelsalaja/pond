@@ -139,8 +139,7 @@ const runtime: GroupSavesRuntime = {
 const REFUSALS = {
   count: "Select at least two Saves to group.",
   missing: "Some of these Saves are gone or in Trash. Select them again.",
-  busy:
-    "Some of these Saves are still downloading. Try again when they finish.",
+  busy: "Some of these Saves are still downloading. Try again when they finish.",
   media: "Only Saves with images or videos can be grouped.",
 } satisfies Record<GroupRefusal, string>;
 
