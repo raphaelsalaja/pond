@@ -211,7 +211,7 @@ forgotten regenerate is a red build — never hand-edit that file.
 > governor exists to respect each platform's limits. When adding a source, keep
 > the conservative pacing and remember that users are responsible for their own
 > use under each platform's terms of service. See the
-> [README "How sourcing works"](README.md#how-sourcing-works-and-your-responsibility)
+> [README "Your accounts, your responsibility"](README.md#your-accounts-your-responsibility)
 > note for the user-facing version of this boundary, and
 > [`core/sync/README.md`](apps/desktop/src/main/core/sync/README.md) +
 > [`core/refresh/README.md`](apps/desktop/src/main/core/refresh/README.md) for

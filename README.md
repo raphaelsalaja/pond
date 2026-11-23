@@ -1,69 +1,25 @@
 > The web is a sea of information. Everyone deserves their own pond.
 
+Pond keeps what you save from the web in a library folder on your computer: posts, images, videos, links, and pages. There's no Pond account and no Pond cloud.
+
+The [wiki](https://github.com/raphaelsalaja/pond/wiki) covers every feature, from [Sources](https://github.com/raphaelsalaja/pond/wiki/Sources) and [Fish](https://github.com/raphaelsalaja/pond/wiki/Fish) to the [Model Context Protocol](https://github.com/raphaelsalaja/pond/wiki/Model-Context-Protocol), the [Local API](https://github.com/raphaelsalaja/pond/wiki/Local-API), and [Troubleshooting](https://github.com/raphaelsalaja/pond/wiki/Troubleshooting).
+
 ## Install
 
-### macOS
-
-Download the latest `.dmg` from [GitHub Releases](https://github.com/raphaelsalaja/pond/releases), or install it with Homebrew:
+Download Pond for macOS, Windows, or Linux from [GitHub Releases](https://github.com/raphaelsalaja/pond/releases). On a Mac, you can also install it with Homebrew:
 
 ```bash
 brew tap raphaelsalaja/pond https://github.com/raphaelsalaja/pond
 brew install --cask raphaelsalaja/pond/pond
 ```
 
-Pond needs macOS 13 or later, on Apple Silicon or Intel. It's signed and notarized, and it updates itself from GitHub Releases.
+Then add the browser extension from the [Chrome Web Store](https://chromewebstore.google.com/detail/ghigndnldiagchoaifgndleogpkendbc) or [Firefox Add-ons](https://addons.mozilla.org/firefox/addon/desktop%40pond.so/). [Install Pond](https://github.com/raphaelsalaja/pond/wiki/Install-Pond) has system requirements, the Windows SmartScreen prompt, and the Linux packages.
 
-### Windows
+## Your accounts, your responsibility
 
-Download `Pond-X.Y.Z-x64.exe` from [GitHub Releases](https://github.com/raphaelsalaja/pond/releases) and run it. The installer sets Pond up for your user account and does not need administrator rights. Pond needs 64-bit Windows 10 or 11 on x64, and it updates itself from GitHub Releases.
+Sources run through your own browser session on your own computer. There are no Pond scraping servers, and Pond never sends your passwords or cookies anywhere. Pond paces every request, backs off when a site asks it to, and stops a Source if the site shows a challenge.
 
-The installer is not code-signed yet, so Windows SmartScreen may show "Windows protected your PC" on first run. Choose **More info**, then **Run anyway**. Windows on Arm is not built yet.
-
-### Linux
-
-Download `Pond-X.Y.Z-x64.deb` (or `Pond-X.Y.Z-arm64.deb` on 64-bit ARM machines, such as Asahi Linux on Apple Silicon) from [GitHub Releases](https://github.com/raphaelsalaja/pond/releases) and install it with your package manager:
-
-```bash
-sudo apt install ./Pond-X.Y.Z-x64.deb
-```
-
-The deb registers the desktop entry, the `pond://` handler, and the browser native host. Pond needs a 64-bit Linux desktop (x86_64 or ARM64) with GLIBC 2.31 or later (Ubuntu 22.04, Debian 12, and newer), and it updates itself from GitHub Releases.
-
-A portable `Pond-X.Y.Z-<arch>.AppImage` is also published for each architecture. Make it executable and run it:
-
-```bash
-chmod +x Pond-X.Y.Z-x64.AppImage
-./Pond-X.Y.Z-x64.AppImage
-```
-
-On distributions that restrict unprivileged user namespaces (Ubuntu 23.10 and later), the AppImage needs `--no-sandbox` or an AppArmor profile. Prefer the deb there. AppImage builds do not add themselves to your application menu; to install desktop integration, use [AppImageLauncher](https://github.com/TheAssassin/AppImageLauncher) or create the entry by hand.
-
-### Browser extension
-
-Saving from the web and connecting accounts in Sources both need the Pond extension. Install it from the [Chrome Web Store](https://chromewebstore.google.com/detail/ghigndnldiagchoaifgndleogpkendbc) for Chrome, Arc, Brave, and Edge, or from [Firefox Add-ons](https://addons.mozilla.org/firefox/addon/desktop%40pond.so/) for Firefox and Zen. In Pond, **Browser Extension** in the library menu links to both.
-
-Click the Pond icon or right-click a page to save. Pond must have opened once so the extension can reach it. To build the extension from source, see [`apps/extension/README.md`](apps/extension/README.md).
-
-### Raycast extension
-
-The Raycast extension searches your active Library, saves URLs, opens Saves,
-and switches recent Libraries. See
-[`apps/raycast/README.md`](apps/raycast/README.md) for setup.
-
-### CLI
-
-Install the local automation client from npm:
-
-```bash
-npm install --global @pond/cli
-pond auth authorize --token <token>
-pond doctor
-```
-
-Copy the Local API token from Pond Settings. The CLI launches Pond when needed
-and sends every Library operation through the authenticated loopback service.
-Run `pond --help` for commands and output formats. To call the API directly,
-see [Local API](docs/api.md).
+You're responsible for following each site's terms. Read [Responsible Use](RESPONSIBLE-USE.md) before you connect an account. If you're writing a source adapter, see "Add a source" in [CONTRIBUTING](CONTRIBUTING.md).
 
 ## Development
 
@@ -74,21 +30,11 @@ pnpm install
 pnpm dev
 ```
 
-Extension dev (separate terminal):
+Run each of these in its own terminal for the browser extension, the Raycast extension, and the CLI:
 
 ```bash
 pnpm --filter @pond/extension dev
-```
-
-Raycast extension dev (separate terminal):
-
-```bash
 pnpm --dir apps/raycast develop
-```
-
-CLI development:
-
-```bash
 pnpm cli -- --help
 pnpm cli:build
 ```
@@ -101,59 +47,6 @@ pnpm --filter @pond/desktop rebuild
 
 See [`apps/desktop/README.md`](apps/desktop/README.md) for architecture and on-disk layout. Before contributing, read the [contributor guide](CONTRIBUTING.md), [code standards](docs/contributing/code-standards.md), and [desktop architecture](docs/contributing/architecture.md). Run `pnpm check` and `pnpm build` from the repository root to verify a change.
 
-## Assistant and MCP
-
-Assistant lives in the right column. It searches this library with a key you paste in Settings, or a local host you run such as Ollama or LM Studio. Pond never stores those keys on a Pond server.
-
-You can also use a subscription through a local Codex or Claude Code installation. In a terminal, run `codex login` and sign in with ChatGPT, or run `claude auth login` and sign in with your Claude plan. In Settings → Providers → Subscriptions, add the provider and click Connect. Select its default model in the Assistant composer. No API key is needed. Removing a connection from Pond does not sign you out of the CLI.
-
-These connections run the official CLIs on your computer; inference still goes to OpenAI or Anthropic and counts against your plan's limits. Pond does not read or copy CLI tokens: Codex receives a narrow link to its existing file-backed ChatGPT sign-in (Windows needs Developer Mode for the symlink; without it Codex is unavailable rather than copied). Keyring-backed Codex sign-ins are rejected with instructions to create the isolated file-backed connection that Pond requires. API-key sign-ins are rejected and inherited provider credentials and routing overrides are removed from these processes. The CLI returns structured requests to Pond's existing tool loop, so Library access, citations, and review before Apply retain the same behavior. CLI tools, MCP, and user or project customizations are disabled. Organization-managed Claude Code policy hooks can still run because Claude Code applies administrator policy in safe mode; its hook-free bare mode also disables the subscription OAuth credentials this connection needs. This integration supports text and Library tools; use a vision provider for image or file attachments. The default model is selected by the CLI; custom model IDs must be available to your plan. Fast and Reasoning controls are not exposed for these connections.
-
-Cursor, Claude, and other MCP hosts can search the same library. Pond speaks MCP over stdio. This block belongs in Cursor `mcp.json`. It launches Pond as a local stdio server (`--mcp`) against the library on this computer:
-
-```json
-{
-  "mcpServers": {
-    "pond": {
-      "command": "/Applications/Pond.app/Contents/MacOS/Pond",
-      "args": ["--mcp"]
-    }
-  }
-}
-```
-
-On Windows the command is the installed `Pond.exe`, by default `C:\Users\<you>\AppData\Local\Programs\Pond\Pond.exe`. Copy the exact command from Settings → Model Context Protocol → Advanced. Pond does not host a public MCP URL.
-
-## Library
-
-The desktop library is a three-column DAM: folder sidebar, image list, Assistant. Folders, Uncategorized, List layout, and Eagle import that keeps folder trees ship in this cut.
-
-See the [roadmap](ROADMAP.md) for what's next. Not on it: Eagle Cloud, their Plugin Center store, or Photoshop-class format preview.
-
-## How sourcing works (and your responsibility)
-
-Pond's source adapters run entirely through **your own authenticated browser
-session, on your own machine**. There are no Pond-operated scraping servers and
-no credential harvesting. Pond never sees or stores your platform passwords or
-cookies on any remote service. When you import from a source, a hidden local
-browser window loads the pages you already have access to and reads what's on
-them.
-
-Because that traffic comes from your account, Pond is deliberately conservative:
-a built-in rate governor paces every request, respects platform rate-limit
-signals (`retry-after` and friends), backs off instead of escalating, persists
-cooldowns across restarts, and hard-stops a source if it detects a
-challenge/checkpoint. You can turn off automatic fetching at any time in
-Settings → Harvesting.
-
-That said, **you are responsible for your own use** of each platform under its
-Terms of Service. Pond is a personal tool for organizing things you've already
-saved; use it accordingly. If you're writing or reviewing a source adapter, see
-the [`CONTRIBUTING`](CONTRIBUTING.md) "Add a source" section for the boundaries
-adapter authors are expected to respect.
-
-Read [Responsible use](RESPONSIBLE-USE.md) before you connect an account.
-
 ## Support Pond
 
 Pond is free, open source, and made by one person. Support covers the Apple Developer membership, Windows code signing, the website, and time to keep sources working as sites change.
@@ -164,6 +57,7 @@ Pond is free, open source, and made by one person. Support covers the Apple Deve
 
 ## Documentation
 
+- [Wiki](https://github.com/raphaelsalaja/pond/wiki)
 - [License](LICENSE)
 - [Privacy](PRIVACY.md)
 - [Responsible Use](RESPONSIBLE-USE.md)
@@ -171,6 +65,7 @@ Pond is free, open source, and made by one person. Support covers the Apple Deve
 - [Security](SECURITY.md)
 - [Releasing](RELEASING.md)
 - [Contributing](CONTRIBUTING.md)
+- [Local API reference](docs/api.md)
 - [Extension](apps/extension/README.md)
 - [Raycast Extension](apps/raycast/README.md)
 - [Supported File Formats](docs/supported-formats.md)

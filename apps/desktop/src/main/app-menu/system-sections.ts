@@ -92,7 +92,7 @@ export function buildHelpSection(context: AppMenuContext): AppMenuItem {
       {
         label: "Help Center",
         click: context.openExternalUrl(
-          "https://github.com/raphaelsalaja/pond#readme",
+          "https://github.com/raphaelsalaja/pond/wiki",
         ),
       },
       {
