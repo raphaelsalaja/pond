@@ -27,6 +27,7 @@ async function fixture() {
     importedFrom?: string;
     folderIds: string[];
   }> = [];
+  const restored: Array<{ id: string; folderIds: string[] | null }> = [];
   const runtime: NonNullable<Parameters<typeof importFiles>[1]> = {
     async createFolder(input) {
       const folder = { ...input, id: `folder-${folders.length}` };
@@ -47,9 +48,35 @@ async function fixture() {
       file.folderIds = folderIds;
       return { ok: true };
     },
+    async restoreIntoFolders(id, folderIds) {
+      restored.push({ id, folderIds });
+      return { ok: true };
+    },
   };
-  return { tree, root, folders, files, runtime };
+  return { tree, root, folders, files, restored, runtime };
 }
+
+describe("restoring a trashed duplicate", () => {
+  it("restores and files the existing Save in one step instead of importing", async () => {
+    const { tree, files, restored, runtime } = await fixture();
+    const path = join(tree, "reference.png");
+    const result = await importFiles(
+      {
+        paths: [path],
+        folderIds: ["destination"],
+        useExisting: { [path]: "trashed-save" },
+        restore: new Set([path]),
+      },
+      runtime,
+    );
+    if (!result.ok) throw new Error(result.error);
+    expect(result.ids).toEqual(["trashed-save"]);
+    expect(files).toEqual([]);
+    expect(restored).toEqual([
+      { id: "trashed-save", folderIds: ["destination"] },
+    ]);
+  });
+});
 
 describe("hierarchy-preserving file import", () => {
   it("creates matching nested folders and keeps same-name files in their own folders", async () => {

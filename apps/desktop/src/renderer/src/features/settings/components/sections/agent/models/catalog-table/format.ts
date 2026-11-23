@@ -1,3 +1,4 @@
+import { formatNumber } from "@/shared/lib/format";
 import type { CatalogModel } from "../types";
 
 const priceFormat = new Intl.NumberFormat("en-US", {
@@ -38,14 +39,14 @@ export function priceHint(
 
 export function contextHint(value: number | undefined): string {
   if (!value) return "Not reported by provider";
-  return `${value.toLocaleString()} token context window`;
+  return `${formatNumber(value)} token context window`;
 }
 
 export function modelHint(model: CatalogModel): string {
   const parts: string[] = [];
   if (model.description) parts.push(model.description);
   if (model.maxOutputTokens) {
-    parts.push(`${model.maxOutputTokens.toLocaleString()} output tokens`);
+    parts.push(`${formatNumber(model.maxOutputTokens)} output tokens`);
   }
   return parts.join(". ");
 }

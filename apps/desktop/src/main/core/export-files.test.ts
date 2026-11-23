@@ -11,7 +11,12 @@ import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { isWindowsSymlinkPrivilegeError } from "../test/symlink";
-import { copyExportFile, type ExportItem, exportFiles } from "./export-files";
+import {
+  copyExportFile,
+  type ExportItem,
+  exportFiles,
+  sharedFolderPath,
+} from "./export-files";
 
 const roots: string[] = [];
 afterEach(async () => {
@@ -81,6 +86,56 @@ describe("export files", () => {
     ).toBe("second original");
     expect(await readFile(result.manifest, "utf8")).toContain('"folderIds": [');
     expect(await readdir(join(destination, "Inspiration"))).toHaveLength(2);
+  });
+
+  it("starts at the folder every exported file shares", async () => {
+    const { destination, item } = await fixture();
+    item.folderIds = ["child"];
+    const folders = [
+      { id: "root", name: "Projects", parentId: null },
+      { id: "child", name: "Geoid", parentId: "root" },
+      { id: "nested", name: "Sketches", parentId: "child" },
+    ];
+    const nested: ExportItem = {
+      ...item,
+      folderIds: ["nested"],
+      save: { ...item.save, id: "save-2", title: "Sketch" },
+    };
+    expect(sharedFolderPath([item, nested], folders)).toEqual([
+      "Projects",
+      "Geoid",
+    ]);
+    await exportFiles({
+      directory: destination,
+      items: [item, nested],
+      folders,
+      startAtSharedFolder: true,
+    });
+    expect((await readdir(destination)).sort()).toEqual([
+      "Reference-1.jpg",
+      "Reference-2.jpg",
+      "Sketches",
+      "pond-export.json",
+    ]);
+    expect(await readdir(join(destination, "Sketches"))).toEqual([
+      "Sketch-1.jpg",
+      "Sketch-2.jpg",
+    ]);
+  });
+
+  it("keeps the full path when exported files share no folder", async () => {
+    const { item } = await fixture();
+    item.folderIds = ["child"];
+    const loose = { ...item, folderIds: [] };
+    expect(
+      sharedFolderPath(
+        [item, loose],
+        [
+          { id: "root", name: "Projects", parentId: null },
+          { id: "child", name: "Geoid", parentId: "root" },
+        ],
+      ),
+    ).toEqual([]);
   });
 
   it("never overwrites existing files or case-insensitive collisions", async () => {

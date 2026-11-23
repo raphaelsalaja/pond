@@ -136,9 +136,16 @@ describe("buildSourceActionMenu", () => {
       query: vi.fn(async () => ({ ok: true, imported: 0, skipped: 0 })),
     });
     older.onClick?.();
-    await vi.waitFor(() => {
-      expect(window.pond.query).toHaveBeenCalledWith("saves.importMymind", {});
-    });
+    /** The click lazy-loads the library import module, which compiles cold in a small test shard. */
+    await vi.waitFor(
+      () => {
+        expect(window.pond.query).toHaveBeenCalledWith(
+          "saves.importMymind",
+          {},
+        );
+      },
+      { timeout: 10_000 },
+    );
     expect(window.pond.syncRunNow).not.toHaveBeenCalled();
     expect(buildSourceActionRows(target).fetch.map((row) => row.title)).toEqual(
       ["Fetch New Saves", "Import Older Saves"],

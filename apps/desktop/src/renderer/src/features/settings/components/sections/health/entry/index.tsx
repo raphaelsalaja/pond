@@ -3,6 +3,7 @@ import { Badge, Button, Reveal } from "@pond/ui";
 import type { QueueAttempt } from "@shared/queue-contracts";
 import { type ReactNode, useId, useState } from "react";
 import { formatNumber } from "@/shared/lib/format";
+import { systemLocale } from "@/shared/lib/system-locale";
 import {
   describeFinding,
   describeSize,
@@ -32,7 +33,7 @@ function Fact({ label, children }: { label: string; children: ReactNode }) {
 }
 
 function attemptLabel(attempt: QueueAttempt): string {
-  const when = new Date(attempt.ts).toLocaleString();
+  const when = new Date(attempt.ts).toLocaleString(systemLocale);
   const error = attempt.errorMessage?.trim();
   return error ? `${when}: ${error}` : `${when}: ${attempt.outcome}`;
 }
@@ -130,7 +131,7 @@ export function HealthEntryRow({
             <Fact label="Next Step">{RESOLUTION_LABELS[entry.resolution]}</Fact>
             {entry.nextAttemptAt ? (
               <Fact label="Next Attempt">
-                {new Date(entry.nextAttemptAt).toLocaleString()}
+                {new Date(entry.nextAttemptAt).toLocaleString(systemLocale)}
               </Fact>
             ) : null}
             {entry.attempts ? (

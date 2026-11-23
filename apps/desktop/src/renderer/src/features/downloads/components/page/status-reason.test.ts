@@ -182,6 +182,11 @@ describe("downloadStatusReason", () => {
     expect(reason(dead("TerminalError: web fetch 404"))).toBe(
       "The page wasn't found. It may have been deleted.",
     );
+    const blocked =
+      "TerminalError: fetch-blobs: 1/1 media blocked by bot protection";
+    expect(reason(dead(blocked))).toBe(
+      "The site's bot protection blocked the media download.",
+    );
     expect(reason(dead("GeoRestrictedError: geo restricted"))).toBe(
       "This isn't available in your region.",
     );

@@ -3,6 +3,7 @@ import {
   mkdtemp,
   readdir,
   readFile,
+  rename,
   rm,
   writeFile,
 } from "node:fs/promises";
@@ -213,4 +214,37 @@ it("recovers title-lock sidecars together with title metadata and includes lock 
     patch: { title: "Before" },
     titleLock: { before: true, after: false },
   });
+});
+
+it("restores the original file a failed batch moved a replacement over", async () => {
+  const { root } = await fixture();
+  const original = join(root, "items", "a.info", "image.jpg");
+  const replacement = join(root, "replacement.jpg");
+  await writeFile(replacement, "replacement");
+  await expect(
+    runRecoverableBatch({
+      root,
+      batchId: "file-move",
+      transactions: [
+        {
+          kind: "update",
+          model: "save",
+          id: "a",
+          patch: {},
+          before: {},
+          fileMoves: [{ sourcePath: replacement, filename: "image.jpg" }],
+        },
+      ],
+      async applyDisk() {
+        await rename(replacement, original);
+      },
+      commitIndex() {
+        throw new Error("index failure");
+      },
+      onCleanupError(error) {
+        throw error;
+      },
+    }),
+  ).rejects.toThrow("index failure");
+  expect(await readFile(original, "utf8")).toBe("original-image-a");
 });

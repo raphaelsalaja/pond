@@ -5,6 +5,7 @@ import {
   mergePondSlice,
   normalizeStoredPrefs,
   splitPrefsPatch,
+  withoutFolderPrefs,
 } from "./prefs-scope";
 
 it("keeps All and Trash visible in the sidebar", () => {
@@ -284,6 +285,19 @@ it("keeps automatic folder rules portable and isolated to their library", () => 
   const split = splitPrefsPatch({ folderRules: next.folderRules });
   expect(split.pond.folderRules).toEqual(next.folderRules);
   expect(split.app).not.toHaveProperty("folderRules");
+});
+
+it("removes only the named folders' view settings and Auto-Tags", () => {
+  const slice = {
+    folderViews: { a: { layout: "grid" as const }, b: { zoom: 200 } },
+    folderRules: { a: { automaticTags: ["Work"] } },
+    notices: { seen: ["kept"] },
+  };
+  const next = mergePondSlice(withoutFolderPrefs(slice, ["a"]));
+  expect(Object.keys(next.folderViews)).toEqual(["b"]);
+  expect(next.folderRules).toEqual({});
+  expect(next.notices.seen).toEqual(["kept"]);
+  expect(Object.keys(mergePondSlice(slice).folderViews)).toEqual(["a", "b"]);
 });
 
 it("deep-merges app feedback and sidebar destination preferences", () => {

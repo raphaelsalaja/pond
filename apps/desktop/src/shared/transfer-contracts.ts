@@ -44,10 +44,12 @@ export interface TransferQueryInputs {
   "transferJobs.cancel": { id: string };
   "transferJobs.dismiss": { id: string };
   "transferJobs.retry": { id: string };
+  "transferJobs.reveal": { path: string };
 }
 export interface TransferQueryResults {
   "transferJobs.list": TransferJob[];
   "transferJobs.cancel": OkResult;
   "transferJobs.dismiss": OkResult;
   "transferJobs.retry": OkResult;
+  "transferJobs.reveal": OkResult;
 }

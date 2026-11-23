@@ -5,7 +5,7 @@ import type { FieldId, Predicate } from "@pond/schema/filters/types";
 import { Menu } from "@pond/ui";
 import { useState } from "react";
 import { fieldIcon } from "@/features/search/query";
-import { formatPlural } from "@/shared/lib/format";
+import { formatNumber, formatPlural } from "@/shared/lib/format";
 import { choiceIsSearchable } from "../layout";
 import type { FilterOption } from "../options";
 import { isChoiceSelected } from "../selection";
@@ -148,7 +148,7 @@ export function ChoiceFilter({
           <EmptyChoice
             field={field}
             label={emptyLabel}
-            count={empty ? empty.toLocaleString() : null}
+            count={empty ? formatNumber(empty) : null}
             icon={<EmptyIcon />}
             rows={rows}
             onChange={onChange}
@@ -162,7 +162,7 @@ export function ChoiceFilter({
               option={option}
               rows={rows}
               matching={matching}
-              count={count ? count.toLocaleString() : null}
+              count={count ? formatNumber(count) : null}
               icon={option.icon ?? <FieldIcon />}
               onChange={onChange}
             />

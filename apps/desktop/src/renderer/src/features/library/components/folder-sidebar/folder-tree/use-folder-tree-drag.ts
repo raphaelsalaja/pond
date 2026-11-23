@@ -10,6 +10,7 @@ import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import type { Folder } from "@pond/schema/db";
 import { useEffect, useRef, useState } from "react";
 import { SIDEBAR_SORTABLE_KEYBOARD_CODES } from "@/shared/lib/dnd-kit";
+import { createDragHaptics } from "@/shared/lib/haptics";
 import {
   FOLDER_ROOT_DROP_ID,
   type FolderDropRow,
@@ -50,6 +51,7 @@ export function useFolderTreeDrag({
   const armTimer = useRef<number | undefined>(undefined);
   const latest = useRef<FolderDragEvent | null>(null);
   const drop = useRef<FolderDropState | null>(null);
+  const [haptics] = useState(createDragHaptics);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(KeyboardSensor, {
@@ -127,9 +129,11 @@ export function useFolderTreeDrag({
     const target = resolve(event);
     if (target) {
       drop.current = drag.previewFolderMove(String(event.active.id), target);
+      haptics.target(drop.current);
       return;
     }
     drop.current = null;
+    haptics.target(null);
     drag.clearFolderDrop();
   }
 
@@ -147,6 +151,7 @@ export function useFolderTreeDrag({
     drop.current = null;
     setActiveFolderId(String(active.id));
     setKeyboardDrag(activatorEvent.type.startsWith("key"));
+    haptics.start(activatorEvent.type.startsWith("key"));
   }
 
   /** Commits the drop the indicator shows, so a release never lands somewhere unannounced. */
@@ -155,6 +160,7 @@ export function useFolderTreeDrag({
     const id = String(active.id);
     reset();
     drop.current = target;
+    haptics.drop(target !== null);
     if (!target) return;
     setMovingFolderId(id);
     void drag.moveFolder(id, target).finally(() => setMovingFolderId(null));
@@ -162,6 +168,7 @@ export function useFolderTreeDrag({
 
   function cancel(): void {
     drop.current = null;
+    haptics.cancel();
     reset();
   }
 

@@ -103,7 +103,10 @@ export {
   type SaveDragSession,
   useSaveDragSession,
 } from "./state/drag-session";
-export { importFilesWithDuplicateReview } from "./state/duplicate-import-review";
+export {
+  importClipboardWithDuplicateReview,
+  importFilesWithDuplicateReview,
+} from "./state/duplicate-import-review";
 export { inspect, useInspect } from "./state/inspect";
 export {
   LIST_COLUMN_OPTIONS,

@@ -4,6 +4,7 @@ import {
   messageText,
   type PondUIMessage,
 } from "@/features/agent/state/pond-messages";
+import { systemLocale } from "@/shared/lib/system-locale";
 import type { ThreadMark } from "../thread";
 import { routineEventText } from "./chat-event/events";
 
@@ -17,7 +18,7 @@ function startOfDay(date: Date): number {
 }
 
 export function timeLabel(at: Date, now: Date): string {
-  const time = at.toLocaleTimeString(undefined, {
+  const time = at.toLocaleTimeString(systemLocale, {
     hour: "numeric",
     minute: "2-digit",
   });
@@ -25,8 +26,8 @@ export function timeLabel(at: Date, now: Date): string {
   if (days <= 0) return `Today ${time}`;
   if (days === 1) return `Yesterday ${time}`;
   if (days < 7)
-    return `${at.toLocaleDateString(undefined, { weekday: "long" })} ${time}`;
-  const date = at.toLocaleDateString(undefined, {
+    return `${at.toLocaleDateString(systemLocale, { weekday: "long" })} ${time}`;
+  const date = at.toLocaleDateString(systemLocale, {
     month: "short",
     day: "numeric",
     year: at.getFullYear() === now.getFullYear() ? undefined : "numeric",
