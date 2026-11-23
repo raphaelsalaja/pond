@@ -15,12 +15,12 @@
   overflow: hidden;
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
   background: var(--card-paper);
-}
 
-.card[data-scheme="dark"] {
-  --card-paper: black;
-  --card-ink: #eee;
-  --card-muted: #9a9a9a;
+  &[data-scheme="dark"] {
+    --card-paper: black;
+    --card-ink: #eee;
+    --card-muted: #9a9a9a;
+  }
 }
 
 .engine {
