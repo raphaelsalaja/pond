@@ -188,6 +188,33 @@ describe("Eagle baseline save menu", () => {
     expect(labels(items)).toContain("Combine Images");
   });
 
+  it("offers Group Saves for finished image and video saves", () => {
+    const items = buildSaveMenu(
+      [
+        { ...gifSave(), status: "complete" },
+        { ...videoSave(), status: "complete" },
+      ],
+      { clipboardEmpty: true },
+    );
+    expect(labels(items)).toContain("Group Saves");
+  });
+
+  it("hides Group Saves for one save or a save still downloading", () => {
+    const single = buildSaveMenu(
+      { ...gifSave(), status: "complete" },
+      { clipboardEmpty: true },
+    );
+    expect(labels(single)).not.toContain("Group Saves");
+    const busy = buildSaveMenu(
+      [
+        { ...gifSave(), status: "complete" },
+        { ...videoSave(), status: "ingesting" },
+      ],
+      { clipboardEmpty: true },
+    );
+    expect(labels(busy)).not.toContain("Group Saves");
+  });
+
   it("keeps the selected save count in the new-folder action", () => {
     const items = buildSaveMenu([imageSave("one"), imageSave("two")], {
       clipboardEmpty: true,

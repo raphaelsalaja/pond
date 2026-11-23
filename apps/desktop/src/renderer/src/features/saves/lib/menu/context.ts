@@ -1,6 +1,7 @@
 import { isAuxiliaryKind } from "@shared/save-file-names";
 import { isWebPageSave } from "@shared/web-page-save";
 import { resolveFileIndex } from "@/features/saves/lib/actions";
+import { canGroupSelection } from "@/features/saves/lib/group-saves";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
 import {
   cardThumbnailUrl,
@@ -118,6 +119,7 @@ export function createSaveMenuContext(
     canResetThumbnail,
     canViewThumbnail: !batch && cardThumbnailUrl(save) !== null,
     canRename: !batch && save.source === "local",
+    canGroup: canGroupSelection(saves, ids.length),
     canSplit: saves.some(saveCanSplit),
     fontActivated,
   };

@@ -403,6 +403,13 @@ export const savesMutationQueries = {
       return splitSaves(ids);
     },
   ),
+  "saves.group": query(
+    z.object({ ids: z.array(StringParam).min(2).max(500) }),
+    async ({ ids }) => {
+      const { groupSaves } = await import("../../core/group-saves");
+      return groupSaves(ids);
+    },
+  ),
   "saves.splittableCount": query(z.object({}), async () => {
     const { countSplittableSaves } = await import("../../core/split-all");
     return { count: await countSplittableSaves() };
