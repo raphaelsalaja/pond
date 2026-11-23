@@ -20,6 +20,7 @@ import { maxAttemptsFor } from "../specs";
 import { saveAuthorFrom, withYtdlpAuthor } from "../ytdlp-author";
 import { readSave } from "./apply";
 import { splitArticle } from "./article-document";
+import { keepsCurrentTitle } from "./harvest-title";
 
 interface HarvestPayload {
   force?: boolean;
@@ -79,6 +80,7 @@ export async function runHarvestMetadata(
   const pageUrl = arenaLinkUrl(rawJson.capture) ?? save.url;
   const patch = buildSavePatch(rawJson.capture, rawJson, pageUrl, save.source);
   if (pageUrl !== save.url) patch.url = pageUrl;
+  if (keepsCurrentTitle(save.title, patch.title)) delete patch.title;
   const updated = await persistSave(saveId, patch, {
     actorReason: `harvest:${extractor.id}`,
     ...files,

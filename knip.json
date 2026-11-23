@@ -9,6 +9,7 @@
         "src/renderer/src/capture.tsx",
         "src/renderer/src/combine-images.tsx",
         "src/renderer/src/file-ring.tsx",
+        "src/renderer/src/quick-capture.tsx",
         "src/renderer/src/missing-library.tsx",
         "src/renderer/src/preview.ts",
         "scripts/*.{mjs,cjs,ts}",

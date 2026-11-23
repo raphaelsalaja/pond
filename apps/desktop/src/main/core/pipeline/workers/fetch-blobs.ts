@@ -8,17 +8,23 @@ import {
   VIDEO_KIND,
 } from "@shared/save-file-names";
 import { isAvatarUrl } from "@shared/tweet-card";
+import { session } from "electron";
 import log from "electron-log/main.js";
 import { fetchMediaBatch } from "../../../lib/blob";
-import type { TransferOptions } from "../../../lib/download-transfer";
+import type {
+  MediaFetcher,
+  TransferOptions,
+} from "../../../lib/download-transfer";
 import { probeImageDims, processImage } from "../../../lib/image-process";
 import { persistSave } from "../../persist-save";
 import { getImageDownloadPrefs, getVideoDownloadPrefs } from "../../prefs";
 import { isGithubGeneratedOpenGraph } from "../../refresh/harvest/github/open-graph";
+import { browserUserAgent } from "../../refresh/harvest-window/constants";
 import {
   ensureSaveThumbnail,
   repairMismatchedThumbnail,
 } from "../../save-thumbnail";
+import { partitionForIngest } from "../../sync/accounts";
 import { TerminalError, TransientError } from "../extractors/errors";
 import {
   QueueWorkerImageDimsSchema,
@@ -88,7 +94,11 @@ async function fetchMissingMedia(
     ? imagePrefs.maxFileSizeMb * 1024 * 1024
     : null;
 
-  const results = await fetchMediaBatch(missing, { imageMaxBytes, ...ctx });
+  const results = await fetchMediaBatch(missing, {
+    imageMaxBytes,
+    challengeFetcher: harvestSessionFetcher(save),
+    ...ctx,
+  });
   const settlement = settleMediaFetches(results, {
     optionalGeneratedCard: save.source === "github",
     finalAttempt:
@@ -243,6 +253,16 @@ async function fetchMissingMedia(
   }
 }
 
+/** The harvest window passes a site's bot challenge in this partition, so its cookies and user agent let the media request through. */
+function harvestSessionFetcher(save: Save): MediaFetcher {
+  return async (url, init) => {
+    const partition = await partitionForIngest(save.source, save.accountId);
+    const headers = new Headers(init.headers);
+    headers.set("user-agent", browserUserAgent());
+    return session.fromPartition(partition).fetch(url, { ...init, headers });
+  };
+}
+
 type MediaBatchResults = Awaited<ReturnType<typeof fetchMediaBatch>>;
 
 interface FetchedMediaSummary {
@@ -265,6 +285,14 @@ export function requireFetchedMedia(
   if (transientMisses > 0) {
     throw new TransientError(
       `fetch-blobs: ${transientMisses}/${requestedCount} media transiently unavailable`,
+    );
+  }
+  const challenged = results.filter(
+    (result) => result.miss === "challenged",
+  ).length;
+  if (challenged > 0) {
+    throw new TerminalError(
+      `fetch-blobs: ${challenged}/${requestedCount} media blocked by bot protection`,
     );
   }
   throw new TerminalError(

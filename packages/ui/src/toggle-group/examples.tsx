@@ -11,7 +11,8 @@ export const docs: ComponentDocs = {
   parts: [
     {
       name: "ToggleGroup",
-      description: "The group. `variant` is raised, outline or tiles.",
+      description:
+        "The group. `variant` is raised, outline, tiles or list; list stacks vertically.",
     },
     { name: "Toggle", description: "One segment, identified by `value`." },
   ],

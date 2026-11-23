@@ -8,6 +8,11 @@ export interface TransferOptions {
   reportActivity?: ReportDownloadActivity;
 }
 
+export type MediaFetcher = (
+  url: string,
+  init: RequestInit,
+) => Promise<Response>;
+
 export class DownloadSizeError extends Error {
   constructor() {
     super("Download exceeds the file size limit");
@@ -22,7 +27,7 @@ export async function fetchDownload(
     fileCount: number;
     maxBytes: number;
     imageMaxBytes?: number | null;
-    fetcher?: typeof fetch;
+    fetcher?: MediaFetcher;
   },
 ): Promise<{ response: Response; bytes: Buffer | null }> {
   const startedAt = Date.now();

@@ -4,6 +4,7 @@ import {
   ConversionPresetSchema,
   ConversionRequestSchema,
   ImageCompressionRequestSchema,
+  VideoCompressionRequestSchema,
 } from "../../../shared/conversion-contracts";
 import { conversionCapabilities } from "../../core/conversion-capabilities";
 import {
@@ -40,6 +41,9 @@ export const conversionQueries = {
   }),
   "conversion.compress": query(ImageCompressionRequestSchema, (request) =>
     conversionJobs.startCompression(request),
+  ),
+  "conversion.compressVideos": query(VideoCompressionRequestSchema, (request) =>
+    conversionJobs.startVideoCompression(request),
   ),
   "conversion.status": query(Id, ({ id }) => conversionJobs.status(id)),
   "conversion.cancel": query(Id, ({ id }) => conversionJobs.cancel(id)),

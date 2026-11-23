@@ -2,7 +2,10 @@ import { dialog } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
 import type { QueryResult } from "../../../shared/query-contracts";
-import { reviewImportDuplicates } from "../../core/duplicate-import";
+import {
+  resolveDuplicateDecisions,
+  reviewImportDuplicates,
+} from "../../core/duplicate-import";
 import { importEaglePackage } from "../../core/eagle-package";
 import { importFiles } from "../../core/import-files";
 import { importPondPackage } from "../../core/pond-package";
@@ -150,32 +153,33 @@ export const savesImportTransferQueries = {
         .optional()
         .default("keep-both"),
       duplicateDecisions: z
-        .record(z.string(), z.enum(["use-existing", "keep-both"]))
+        .record(z.string(), z.enum(["use-existing", "keep-both", "restore"]))
         .optional()
         .default({}),
+      origin: z.enum(["files", "clipboard"]).optional(),
     }),
     async (params) => {
       const paths = params.paths.filter(Boolean);
       if (paths.length === 0) return { ok: false, error: "no_files" };
       const candidates =
         params.duplicatePolicy === "use-existing" ||
-        Object.values(params.duplicateDecisions).includes("use-existing")
+        Object.values(params.duplicateDecisions).some(
+          (choice) => choice !== "keep-both",
+        )
           ? await reviewImportDuplicates(paths)
           : [];
-      const useExisting = Object.fromEntries(
-        candidates.flatMap((candidate) => {
-          const choice =
-            params.duplicateDecisions[candidate.path] ?? params.duplicatePolicy;
-          return choice === "use-existing"
-            ? [[candidate.path, candidate.existingId]]
-            : [];
-        }),
+      const { useExisting, restore } = resolveDuplicateDecisions(
+        candidates,
+        params.duplicateDecisions,
+        params.duplicatePolicy,
       );
       return importFiles({
         paths,
         tags: params.tags,
         folderIds: params.folderIds,
         useExisting,
+        restore,
+        origin: params.origin,
       });
     },
   ),

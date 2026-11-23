@@ -13,6 +13,7 @@ const LABELS = {
   "physical-file-names": "Repair Physical File Names",
   "invalid-content": "Repair Invalid Content",
   "save-metadata": "Repair Save Metadata",
+  "eagle-previews": "Remove Duplicate Eagle Previews",
 } satisfies Record<LibraryRepairKind, string>;
 
 const DESCRIPTIONS = {
@@ -24,6 +25,8 @@ const DESCRIPTIONS = {
     "Saves whose files are all missing or damaged move to Trash.",
   "save-metadata":
     "Pond rewrites the record stored with each save when it no longer matches your library.",
+  "eagle-previews":
+    "Previews that Eagle exported as their own items move to Trash. The Saves they came from stay.",
 } satisfies Record<LibraryRepairKind, string>;
 
 export function LibraryRepairDialog({

@@ -49,6 +49,25 @@ describe("ToggleGroup keyboard", () => {
     await expect.element(toggle("After")).toHaveFocus();
   });
 
+  it("stacks the list variant and roves focus with Up and Down", async () => {
+    const screen = await render(
+      <ToggleGroup aria-label="Template" variant="list" defaultValue={["a"]}>
+        <Toggle value="a">Research</Toggle>
+        <Toggle value="b">Design Project</Toggle>
+      </ToggleGroup>,
+    );
+    const toggle = (name: string) => screen.getByRole("button", { name });
+
+    await expect
+      .element(screen.getByRole("group", { name: "Template" }))
+      .toHaveAttribute("data-orientation", "vertical");
+    await userEvent.tab();
+    await userEvent.keyboard("{ArrowDown}");
+    await expect.element(toggle("Design Project")).toHaveFocus();
+    await userEvent.keyboard("{ArrowUp}");
+    await expect.element(toggle("Research")).toHaveFocus();
+  });
+
   it("skips a disabled group in the tab order", async () => {
     const screen = await render(
       <>

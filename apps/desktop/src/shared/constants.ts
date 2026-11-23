@@ -64,6 +64,7 @@ export const IPC = {
   navigationSwipe: "pond:navigation-swipe",
   libraryId: "pond:library-id",
   menuRecents: "pond:menu-recents",
+  haptic: "pond:haptic",
   menuOpenSave: "pond:menu-open-save",
   openFiles: "pond:open-files",
   archiveNavigate: "pond:archive-navigate",

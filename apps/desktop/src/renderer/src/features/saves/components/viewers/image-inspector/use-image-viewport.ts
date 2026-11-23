@@ -33,6 +33,8 @@ interface ImageViewportOptions {
   rememberPosition: boolean;
   src: string;
   wheelBehavior: ViewerWheelBehavior;
+  /** Quick Preview keeps a fitted image still, so scrolling only pans once it's zoomed. */
+  staticAtFit: boolean;
 }
 
 interface ImageViewport {
@@ -75,6 +77,7 @@ export function useImageViewport({
   onRatio,
   rememberPosition,
   src,
+  staticAtFit,
   wheelBehavior,
 }: ImageViewportOptions): ImageViewport {
   const [pose, setPose] = useState<ImagePose>(() => viewerMemory.image(src));
@@ -179,6 +182,7 @@ export function useImageViewport({
     isDragging,
     mode,
     onNavigate,
+    staticAtFit,
     wheelBehavior,
   });
   wheelState.current = {
@@ -186,6 +190,7 @@ export function useImageViewport({
     isDragging,
     mode,
     onNavigate,
+    staticAtFit,
     wheelBehavior,
   };
   const queuePoseRef = useRef(queuePose);
@@ -211,6 +216,8 @@ export function useImageViewport({
       });
       event.preventDefault();
       event.stopPropagation();
+      if (intent === "pan" && state.staticAtFit && latestPose.current.zoom <= 1)
+        return;
       if (intent === "navigate") {
         if (state.mode === "view") state.onNavigate(event.deltaY > 0 ? 1 : -1);
         return;

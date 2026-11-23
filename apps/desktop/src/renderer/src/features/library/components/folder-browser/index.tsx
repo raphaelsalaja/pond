@@ -299,7 +299,7 @@ export function FolderBrowser({
   const divided = pinned !== undefined && !pinned.collapsed && showContents;
   const contentsHeader = (
     <div className={styles.header}>
-      <h2 id="contents-title">Contents ({contentCount.toLocaleString()})</h2>
+      <h2 id="contents-title">Contents ({formatNumber(contentCount)})</h2>
       {downloading > 0 ? (
         <span className={styles.downloading} role="status">
           {`Downloading ${formatPlural(downloading, SAVES)}`}
@@ -403,7 +403,7 @@ export function FolderBrowser({
                   onClick={pinned.onToggle}
                 >
                   <IconChevronRight size={12} strokeWidth={2} />
-                  Pinned ({pinned.count.toLocaleString()})
+                  Pinned ({formatNumber(pinned.count)})
                 </Button>
               </h2>
             </div>

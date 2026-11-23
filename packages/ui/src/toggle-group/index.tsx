@@ -4,7 +4,8 @@ import { useLayoutEffect, useRef } from "react";
 import styles from "./styles.module.css";
 
 export interface ToggleGroupProps extends Base.Props {
-  variant?: "raised" | "outline" | "tiles";
+  /** `list` stacks full-width rows for picking one item from a longer set. */
+  variant?: "raised" | "outline" | "tiles" | "list";
 }
 
 function pressedToggle(root: HTMLElement): HTMLElement | null {
@@ -37,6 +38,7 @@ export function ToggleGroup({
   children,
   multiple,
   variant = "raised",
+  orientation = variant === "list" ? "vertical" : "horizontal",
   ...props
 }: ToggleGroupProps) {
   const indicatorRef = useRef<HTMLSpanElement>(null);
@@ -78,6 +80,7 @@ export function ToggleGroup({
       data-variant={variant}
       className={cn(styles.root, className)}
       multiple={multiple}
+      orientation={orientation}
       {...props}
     >
       {indicated ? (

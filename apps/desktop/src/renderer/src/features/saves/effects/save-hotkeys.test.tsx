@@ -351,6 +351,19 @@ describe("Triage hotkeys", () => {
       },
     ]);
   });
+
+  it("restores a selected Save that is already in Trash", async () => {
+    pool.upsert(save("a", [image("a")], { deletedAt: 5 }));
+    const edits = () => calls.filter((call) => call.name === "saves.bulkEdit");
+    await press("Backspace", { code: "Backspace" });
+    await vi.waitFor(() => expect(edits()).toHaveLength(1));
+    expect(edits()).toEqual([
+      {
+        name: "saves.bulkEdit",
+        input: { ids: ["a"], operation: { kind: "untrash" } },
+      },
+    ]);
+  });
 });
 
 interface EditInput {

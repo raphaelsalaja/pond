@@ -19,6 +19,7 @@ import {
 import { hasUserTitle } from "../../core/user-metadata";
 import { openSavedFile } from "../../lib/open-saved-file";
 import { resolveSaveFilePath, safeHandle } from "../helpers";
+import { assertRendererTransactions } from "../renderer-transactions";
 
 const UndoStepIdSchema = z.string().min(1).max(64);
 
@@ -53,6 +54,7 @@ export function registerAppHandlers(): void {
   });
 
   safeHandle(IPC.tx, async (_, tx: Transaction) => {
+    assertRendererTransactions([tx]);
     if (
       tx.kind === "update" &&
       tx.model === "save" &&
@@ -66,6 +68,7 @@ export function registerAppHandlers(): void {
   });
 
   safeHandle(IPC.txBatch, async (_, txs: Transaction[]) => {
+    assertRendererTransactions(txs);
     for (const tx of txs)
       if (
         tx.kind === "update" &&

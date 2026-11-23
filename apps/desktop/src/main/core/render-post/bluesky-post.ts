@@ -7,6 +7,7 @@ import type {
 } from "@pond/render";
 import type { Capture, CaptureFacet, CaptureMedia } from "@pond/schema/raw";
 import { z } from "zod";
+import { systemLocale } from "../../lib/system-locale";
 
 const isDataUrl = (url: string | undefined): url is string =>
   url?.startsWith("data:image/") === true;
@@ -114,15 +115,14 @@ function cardOf(card: Capture["card"]): BlueskyCard | undefined {
   return out;
 }
 
-const timeShort = new Intl.DateTimeFormat(undefined, { timeStyle: "short" });
-const dateMedium = new Intl.DateTimeFormat(undefined, { dateStyle: "medium" });
-const dateShort = new Intl.DateTimeFormat(undefined);
-
 /** `niceDate(…, 'dot separated')`. */
 function niceDate(iso: string | undefined): string {
   const d = iso ? new Date(iso) : undefined;
   if (!d || !Number.isFinite(d.getTime())) return "";
-  return `${timeShort.format(d)} · ${dateMedium.format(d)}`;
+  const locale = systemLocale();
+  const time = new Intl.DateTimeFormat(locale, { timeStyle: "short" });
+  const date = new Intl.DateTimeFormat(locale, { dateStyle: "medium" });
+  return `${time.format(d)} · ${date.format(d)}`;
 }
 
 /** `useGetTimeAgo` in its narrow form: months are 30 days, a year or more is a date. */
@@ -136,12 +136,14 @@ function timeAgo(iso: string | undefined, now: Date): string {
   if (s < 86_400) return `${Math.floor(s / 3600)}h`;
   if (s < 86_400 * 30) return `${Math.floor(s / 86_400)}d`;
   const months = Math.floor(s / (86_400 * 30));
-  return months < 12 ? `${months}mo` : dateShort.format(d);
+  return months < 12
+    ? `${months}mo`
+    : new Intl.DateTimeFormat(systemLocale()).format(d);
 }
 
 /** `formatPostStatCount`: compact, truncated, whole numbers from 10,000. */
 function statCount(n: number): string {
-  return new Intl.NumberFormat(undefined, {
+  return new Intl.NumberFormat(systemLocale(), {
     notation: "compact",
     maximumFractionDigits: n >= 10_000 ? 0 : 1,
     roundingMode: "trunc",
