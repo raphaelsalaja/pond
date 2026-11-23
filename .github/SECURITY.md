@@ -2,10 +2,10 @@
 
 ## Supported versions
 
-| Version | Supported |
-| --- | --- |
-| Latest release | Yes |
-| Older releases | No |
+| Version        | Supported |
+| -------------- | --------- |
+| Latest release | Yes       |
+| Older releases | No        |
 
 ## Reporting a vulnerability
 
