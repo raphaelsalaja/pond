@@ -18,6 +18,7 @@ import {
   IconBrandCosmos,
   IconBrandDribbble,
   IconBrandGithub,
+  IconBrandLinkedIn,
   IconBrandMarked,
   IconBrandSavee,
   IconBrandSubstack,
@@ -160,6 +161,7 @@ const LOGOS = {
   unsplash: IconBrandUnsplash,
   bluesky: IconBrandBluesky,
   marked: IconBrandMarked,
+  linkedin: IconBrandLinkedIn,
   mymind: IconLightbulb,
 } satisfies Record<ExternalSource, ComponentType<SVGProps<SVGSVGElement>>>;
 

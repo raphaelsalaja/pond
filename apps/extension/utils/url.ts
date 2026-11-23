@@ -56,6 +56,8 @@ export function cookieDomainsForSource(source: Source): string[] {
       return [];
     case "marked":
       return ["marked.dev"];
+    case "linkedin":
+      return ["linkedin.com"];
     case "web":
     case "local":
     case "mymind":

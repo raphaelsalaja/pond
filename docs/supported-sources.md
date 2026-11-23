@@ -38,6 +38,7 @@ have no capture extractor.
 | Unsplash | `unsplash` | `unsplash.com` | `^https?:\/\/(?:www\.)?unsplash\.com\/(?:photos|illustrations)\/(?:[^/?#]*-)?([A-Za-z0-9_-]{11})(?=[/?#]|$)` | `cursor` | `session` |
 | Bluesky | `bluesky` | `bsky.app` | `^https?:\/\/(?:www\.)?bsky\.app\/profile\/[^/?#]+\/post\/([2-7a-z]{13})(?=[/?#]|$)` | `cursor` | `handle` |
 | Marked | `marked` | `marked.dev` | `^https?:\/\/(?:www\.)?marked\.dev\/ref\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?=[/?#]|$)` | `full` | `session` |
+| LinkedIn | `linkedin` | `linkedin.com` | `^https?:\/\/(?:[a-z]{2,3}\.)?linkedin\.com\/feed\/update\/urn(?::|%3A)li(?::|%3A)(?:activity|ugcPost|share)(?::|%3A)(\d{10,25})(?=[/?#]|$)`<br>`^https?:\/\/(?:[a-z]{2,3}\.)?linkedin\.com\/posts\/[^/?#]*?-(?:activity|ugcPost|share)-(\d{10,25})(?=[-/?#]|$)` | `cursor` | `session` |
 | mymind | `mymind` | `mymind.com` |  | `full` | `api-key` |
 
 `local` is a built-in pseudo-source for files imported directly into the

@@ -33,6 +33,10 @@ import {
   type CollectionFailureReason,
   readCollectionsReply,
 } from "../harvest/lib/collections-reply";
+import {
+  buildLinkedInListExpression,
+  LINKEDIN_LIST_URL,
+} from "../harvest/linkedin/list";
 import type {
   ListEntry,
   ListHarvestArgs,
@@ -330,6 +334,9 @@ export async function harvestSourceList(
       return { ok: false, reason: "no_match" };
     }
     if (!parsed.ok) {
+      if (parsed.error === "checkpoint") {
+        markAtRisk(source, "checkpoint", "list walk hit a checkpoint");
+      }
       if (parsed.reason === "rate_limited") {
         const { cooldownMs } = report(source, {
           ok: false,
@@ -464,6 +471,8 @@ function listUrlForSource(
       return null;
     case "marked":
       return MARKED_LIST_URL;
+    case "linkedin":
+      return LINKEDIN_LIST_URL;
     case "mymind":
       return null;
     case "web":
@@ -516,6 +525,8 @@ function buildListExpressionFor(
       return null;
     case "marked":
       return buildMarkedListExpression(args);
+    case "linkedin":
+      return buildLinkedInListExpression(args);
     case "mymind":
       return null;
     case "web":

@@ -19,6 +19,7 @@ export function looksLikeAuthWall(currentUrl: string): boolean {
       p.startsWith("/register") ||
       p.startsWith("/i/flow/login") ||
       p.startsWith("/accounts/login") ||
+      p.startsWith("/uas/login") ||
       p.startsWith("/auth")
     ) {
       return true;

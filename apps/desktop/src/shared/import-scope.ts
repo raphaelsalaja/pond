@@ -152,6 +152,7 @@ const IMPORT_SCOPE_OPTIONS = {
     since: true,
     sinceDate: "saved",
   },
+  linkedin: EVERYTHING_ONLY,
   web: EVERYTHING_ONLY,
   local: EVERYTHING_ONLY,
 } satisfies Record<Source, ImportScopeOptions>;

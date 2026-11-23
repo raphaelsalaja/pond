@@ -103,6 +103,7 @@ function profileUrlFromHandle(source: string, handle: string): string | null {
   if (source === "vimeo") return `https://vimeo.com/${h}`;
   if (source === "dribbble") return `https://dribbble.com/${h}`;
   if (source === "unsplash") return `https://unsplash.com/@${h}`;
+  if (source === "linkedin") return `https://www.linkedin.com/in/${h}/`;
   if (source === "bluesky") return `https://bsky.app/profile/${h}`;
   return null;
 }
