@@ -45,6 +45,10 @@ async function renderQuickPreview(src: string) {
   vi.spyOn(frame, "getBoundingClientRect").mockReturnValue(
     new DOMRect(0, 0, 400, 400),
   );
+  Object.defineProperties(frame, {
+    setPointerCapture: { value: () => {} },
+    hasPointerCapture: { value: () => false },
+  });
   return { frame, position };
 }
 
