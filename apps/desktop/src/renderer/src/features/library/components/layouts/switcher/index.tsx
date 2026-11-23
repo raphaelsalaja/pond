@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { type ReactNode, useMemo } from "react";
 import { GridView } from "@/features/library/components/layouts/grid-view";
 import { JustifiedView } from "@/features/library/components/layouts/justified";
 import { ListView } from "@/features/library/components/layouts/list-view";
@@ -10,6 +10,9 @@ import type { Save } from "@/features/saves/types";
 interface LayoutSwitcherProps {
   viewMode: ViewMode;
   saves: ReadonlyArray<Save>;
+  /** Packed as their own block above `saves`, in the same collection, with `divider` between the two. */
+  lead?: ReadonlyArray<Save>;
+  divider?: ReactNode;
   multiSelectActive: boolean;
   onClick: (id: string, e: React.MouseEvent) => void;
   onPick: (id: string, e: React.MouseEvent) => void;
@@ -22,6 +25,8 @@ export function LayoutSwitcher(props: LayoutSwitcherProps) {
   const {
     viewMode,
     saves,
+    lead,
+    divider,
     multiSelectActive,
     onClick,
     onPick,
@@ -34,6 +39,7 @@ export function LayoutSwitcher(props: LayoutSwitcherProps) {
     () => ({ onClick, onPick, onAuxClick, onDoubleClick }),
     [onClick, onPick, onAuxClick, onDoubleClick],
   );
+  const sections = { saves, lead, divider, onEndReached };
 
   return (
     <LibraryGridProvider
@@ -41,13 +47,13 @@ export function LayoutSwitcher(props: LayoutSwitcherProps) {
       multiSelectActive={multiSelectActive}
     >
       {viewMode === "justified" ? (
-        <JustifiedView saves={saves} onEndReached={onEndReached} />
+        <JustifiedView {...sections} />
       ) : viewMode === "waterfall" ? (
-        <WaterfallView saves={saves} onEndReached={onEndReached} />
+        <WaterfallView {...sections} />
       ) : viewMode === "list" ? (
-        <ListView saves={saves} onEndReached={onEndReached} />
+        <ListView {...sections} />
       ) : (
-        <GridView saves={saves} onEndReached={onEndReached} />
+        <GridView {...sections} />
       )}
     </LibraryGridProvider>
   );

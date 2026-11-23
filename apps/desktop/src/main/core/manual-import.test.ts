@@ -4,9 +4,21 @@ import { describe, expect, it } from "vitest";
 import {
   classifyManualSave,
   extractIptcKeywords,
+  keepNote,
   mediaTypeForImportedFiles,
   storageKindForImport,
 } from "./manual-import";
+
+describe("keepNote", () => {
+  it("keeps leading and trailing whitespace", () => {
+    expect(keepNote("  indented\n  code\n")).toBe("  indented\n  code\n");
+  });
+
+  it("treats a blank note as no note", () => {
+    expect(keepNote(" \n\t")).toBeNull();
+    expect(keepNote(undefined)).toBeNull();
+  });
+});
 
 describe("extractIptcKeywords", () => {
   it("reads repeated IPTC keyword datasets", () => {

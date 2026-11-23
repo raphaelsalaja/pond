@@ -12,6 +12,10 @@ import {
 } from "@pond/icons";
 import { Button, Empty } from "@pond/ui";
 import {
+  importPaths,
+  runNewAction,
+} from "@/features/library/components/new-menu/actions";
+import {
   libraryChrome,
   useLibraryNav,
 } from "@/features/library/state/library-chrome";
@@ -146,7 +150,13 @@ export function InboxEmpty() {
   );
 }
 
-export function FolderEmpty({ downloading = 0 }: { downloading?: number }) {
+export function FolderEmpty({
+  folderId,
+  downloading = 0,
+}: {
+  folderId?: string;
+  downloading?: number;
+}) {
   if (downloading > 0) {
     return (
       <Empty.Root role="status" aria-live="polite">
@@ -174,8 +184,21 @@ export function FolderEmpty({ downloading = 0 }: { downloading?: number }) {
       </Empty.Media>
       <Empty.Title>This folder is empty</Empty.Title>
       <Empty.Description>
-        Drag and drop onto this window to add.
+        Paste or drop files, images, and links here.
       </Empty.Description>
+      {folderId ? (
+        <Empty.Action>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() =>
+              void runNewAction(() => importPaths("files", folderId))
+            }
+          >
+            Add Files
+          </Button>
+        </Empty.Action>
+      ) : null}
     </Empty.Root>
   );
 }

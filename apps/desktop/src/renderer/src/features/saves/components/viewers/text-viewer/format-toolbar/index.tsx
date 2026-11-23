@@ -322,7 +322,10 @@ export function FormatToolbar() {
                       value={draft}
                       onChange={(event) => setDraft(event.currentTarget.value)}
                       onKeyDown={(event) => {
-                        if (event.key === "Enter") {
+                        if (
+                          event.key === "Enter" &&
+                          !event.nativeEvent.isComposing
+                        ) {
                           event.preventDefault();
                           skipBlur.current = true;
                           applyHref(draft);

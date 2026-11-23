@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { packGrid, packJustified, packList, packWaterfall } from "./packing";
+import {
+  packGrid,
+  packJustified,
+  packList,
+  packWaterfall,
+  stackSections,
+} from "./packing";
 
 describe("library layout packing", () => {
   it("keeps Grid slots uniform across mixed media", () => {
@@ -140,5 +146,37 @@ describe("library layout packing", () => {
       },
     ]);
     expect(result.totalHeight).toBe(250);
+  });
+
+  it("stacks a lead section above the rest with room for a divider", () => {
+    const lead = packList(["pinned"], 400, 64, 48);
+    const rest = packList(["a", "b"], 400, 64, 48);
+    const result = stackSections(lead, rest, 40);
+
+    expect(result.dividerTop).toBe(64);
+    expect(result.items.map(({ id, top }) => ({ id, top }))).toEqual([
+      { id: "pinned", top: 0 },
+      { id: "a", top: 104 },
+      { id: "b", top: 168 },
+    ]);
+    expect(result.totalHeight).toBe(232);
+  });
+
+  it("keeps a single section untouched without a lead or divider", () => {
+    const rest = packList(["a"], 400, 64, 48);
+    const result = stackSections(undefined, rest, 0);
+
+    expect(result.items).toBe(rest.items);
+    expect(result.totalHeight).toBe(64);
+    expect(result.dividerTop).toBe(0);
+  });
+
+  it("reserves the divider below a lead section with nothing after it", () => {
+    const lead = packList(["pinned"], 400, 64, 48);
+    const result = stackSections(lead, { items: [], totalHeight: 0 }, 40);
+
+    expect(result.items.map((item) => item.id)).toEqual(["pinned"]);
+    expect(result.dividerTop).toBe(64);
+    expect(result.totalHeight).toBe(104);
   });
 });

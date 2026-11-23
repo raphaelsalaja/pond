@@ -176,7 +176,7 @@ function TitleField({
       }}
       onBlur={() => persist.flush()}
       onKeyDown={(event) => {
-        if (event.key === "Enter") {
+        if (event.key === "Enter" && !event.nativeEvent.isComposing) {
           event.preventDefault();
           editor.focus();
         }

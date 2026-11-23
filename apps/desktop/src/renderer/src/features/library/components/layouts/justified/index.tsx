@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { type ReactNode, useMemo } from "react";
 import { SavePackedGrid } from "@/features/library/components/layouts/packed-grid";
 import { packJustified } from "@/features/library/components/layouts/packing";
 import { useLibrarySaveGap } from "@/features/library/components/layouts/save-gap";
@@ -15,10 +15,17 @@ import type { Save } from "@/features/saves/types";
 
 interface JustifiedViewProps {
   saves: ReadonlyArray<Save>;
+  lead?: ReadonlyArray<Save>;
+  divider?: ReactNode;
   onEndReached?: () => void;
 }
 
-export function JustifiedView({ saves, onEndReached }: JustifiedViewProps) {
+export function JustifiedView({
+  saves,
+  lead,
+  divider,
+  onEndReached,
+}: JustifiedViewProps) {
   const width = useDeferredGridWidth();
   const targetHeight = useGridMin();
   const gap = useLibrarySaveGap();
@@ -28,25 +35,38 @@ export function JustifiedView({ saves, onEndReached }: JustifiedViewProps) {
   const aspectVersion = useAspectVersion();
   const pickOpts = useMediaPickOptions();
 
-  const { items, totalHeight } = useMemo(() => {
+  const packs = useMemo(() => {
     void aspectVersion;
-    return packJustified(
-      saves.map((save) => ({
-        id: save.id,
-        aspect: layoutAspectFor(save, pickOpts),
-      })),
-      width,
-      targetHeight,
-      gap,
-      chromeHeight,
-    );
-  }, [saves, width, targetHeight, gap, chromeHeight, aspectVersion, pickOpts]);
+    const pack = (list: ReadonlyArray<Save>) =>
+      packJustified(
+        list.map((save) => ({
+          id: save.id,
+          aspect: layoutAspectFor(save, pickOpts),
+        })),
+        width,
+        targetHeight,
+        gap,
+        chromeHeight,
+      );
+    return { rest: pack(saves), lead: lead?.length ? pack(lead) : undefined };
+  }, [
+    saves,
+    lead,
+    width,
+    targetHeight,
+    gap,
+    chromeHeight,
+    aspectVersion,
+    pickOpts,
+  ]);
 
   return (
     <SavePackedGrid
       layout="justified"
-      items={items}
-      totalHeight={totalHeight}
+      items={packs.rest.items}
+      totalHeight={packs.rest.totalHeight}
+      lead={packs.lead}
+      divider={divider}
       onEndReached={onEndReached}
     />
   );

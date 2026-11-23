@@ -5,6 +5,18 @@ import { isEditableTarget } from "@/shared/lib/editable-target";
 const OVERLAY =
   "[role='dialog']:not([aria-modal='false']), [role='alertdialog'], [role='menu']";
 
+/** Widgets that move with arrow keys themselves. A plain button, like a viewer tool, leaves them to the open Save. */
+const ARROW_WIDGET =
+  "input, [role='slider'], [role='radiogroup'], [role='tablist'], [role='listbox']";
+
+export function controlKeepsKey(event: KeyboardEvent): boolean {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) return false;
+  if (event.key === "Enter" || event.key === " ")
+    return target.closest("button") != null;
+  return target.closest(ARROW_WIDGET) != null;
+}
+
 export function collectionOwnsKeyboard(): boolean {
   const active = document.activeElement;
   if (document.querySelector(OVERLAY)) return false;

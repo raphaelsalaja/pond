@@ -182,3 +182,21 @@ export function packJustified(
     totalHeight: Math.max(0, top - gap),
   };
 }
+
+export function stackSections(
+  lead: CardLayoutResult | undefined,
+  rest: CardLayoutResult,
+  spacing: number,
+) {
+  const dividerTop = lead?.totalHeight ?? 0;
+  const offset = dividerTop + spacing;
+  if (!lead && offset === 0) return { ...rest, dividerTop };
+  return {
+    items: [
+      ...(lead?.items ?? []),
+      ...rest.items.map((item) => ({ ...item, top: item.top + offset })),
+    ],
+    totalHeight: offset + rest.totalHeight,
+    dividerTop,
+  };
+}

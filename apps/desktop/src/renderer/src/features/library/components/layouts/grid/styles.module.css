@@ -16,3 +16,13 @@
     display: block;
   }
 }
+
+.sections {
+  position: relative;
+  min-width: 0;
+}
+
+.divider {
+  position: absolute;
+  inset-inline: 0;
+}

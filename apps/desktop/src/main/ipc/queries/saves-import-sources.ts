@@ -20,6 +20,7 @@ import { enqueue, normalizeUrl } from "../../core/pipeline/enqueue";
 import { classifyUrlToSource } from "../../core/pipeline/extractors";
 import { UnsupportedError } from "../../core/pipeline/extractors/errors";
 import { setPrefs } from "../../core/prefs";
+import { restoreSave } from "../../core/restore-save";
 import { setSaveTags } from "../../core/tags";
 import { type QueryHandlerMap, query, StringParam } from "./params";
 import {
@@ -59,15 +60,19 @@ async function quickAdd({
     return { ok: true, id: result.id, created: result.created };
   } catch (error) {
     if (error instanceof UnsupportedError) {
+      /** Keyed by the normalized link, so pasting it again reuses the Save, or restores it from Trash as #274 does for supported links. */
       const result = await createManualSave({
         url,
+        sourceId: normalizeUrl(url),
         title: note ?? url,
         note,
         tags,
         inboxChannel: "captures",
       });
+      if (result.ok && result.trashed)
+        await restoreSave(result.id, "user:quickAdd");
       return result.ok
-        ? { ok: true, id: result.id }
+        ? { ok: true, id: result.id, created: !result.skipped }
         : { ok: false, error: "unsupported_url" };
     }
     log.error("[pond ipc] quickAdd failed", error);

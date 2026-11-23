@@ -123,6 +123,8 @@ export interface SourceSyncPrefs {
   lastCollectionCheckAt?: string | null;
   /** Last time the feeds of publications you subscribe to were read; posts published after it are new. */
   lastSubscriptionCheckAt?: string | null;
+  /** Set once synced posts have their links written back from a full read; posts synced before then lost them. */
+  tweetLinksRepairedAt?: string | null;
   /** Skipped by scheduled fetches; Fetch New Saves still runs it. */
   paused?: boolean;
   /** Replaces the global interval for this source. Omitted follows the global schedule. */

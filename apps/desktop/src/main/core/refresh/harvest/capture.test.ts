@@ -169,3 +169,15 @@ it("retries when a signed-in session cannot confirm the pin is gone", async () =
     ),
   ).rejects.toBeInstanceOf(TransientError);
 });
+
+it("retries an empty scrape instead of calling the page deleted", async () => {
+  await expect(
+    captureFromSource(
+      {
+        url: "https://www.youtube.com/watch?v=abc",
+        source: "youtube",
+      },
+      { harvest: harvestOf({ ok: false, reason: "harvest_failed" }) },
+    ),
+  ).rejects.toThrow(new TransientError("scrape returned no data"));
+});

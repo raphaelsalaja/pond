@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { type ReactNode, useMemo } from "react";
 import { SavePackedGrid } from "@/features/library/components/layouts/packed-grid";
 import { packGrid } from "@/features/library/components/layouts/packing";
 import { useLibrarySaveGap } from "@/features/library/components/layouts/save-gap";
@@ -10,10 +10,17 @@ import type { Save } from "@/features/saves/types";
 
 interface GridViewProps {
   saves: ReadonlyArray<Save>;
+  lead?: ReadonlyArray<Save>;
+  divider?: ReactNode;
   onEndReached?: () => void;
 }
 
-export function GridView({ saves, onEndReached }: GridViewProps) {
+export function GridView({
+  saves,
+  lead,
+  divider,
+  onEndReached,
+}: GridViewProps) {
   const width = useDeferredGridWidth();
   const colMin = useGridMin();
   const gap = useLibrarySaveGap();
@@ -21,23 +28,25 @@ export function GridView({ saves, onEndReached }: GridViewProps) {
   const itemInfo = useItemInfo();
   const chromeHeight = chromeHeightFor(prefs, itemInfo.visible);
 
-  const { items, totalHeight } = useMemo(
-    () =>
+  const packs = useMemo(() => {
+    const pack = (list: ReadonlyArray<Save>) =>
       packGrid(
-        saves.map((s) => s.id),
+        list.map((s) => s.id),
         width,
         colMin,
         gap,
         chromeHeight,
-      ),
-    [saves, width, colMin, gap, chromeHeight],
-  );
+      );
+    return { rest: pack(saves), lead: lead?.length ? pack(lead) : undefined };
+  }, [saves, lead, width, colMin, gap, chromeHeight]);
 
   return (
     <SavePackedGrid
       layout="grid"
-      items={items}
-      totalHeight={totalHeight}
+      items={packs.rest.items}
+      totalHeight={packs.rest.totalHeight}
+      lead={packs.lead}
+      divider={divider}
       onEndReached={onEndReached}
     />
   );

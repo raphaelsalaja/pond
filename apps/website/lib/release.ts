@@ -1,57 +1,56 @@
 import type { Browser, Platform } from "./platform";
 
-/** Keep in sync with apps/desktop and apps/extension package versions on each release. */
-const POND_VERSION = "2.7.0";
+const REPO = "raphaelsalaja/pond";
+const RELEASES_PAGE = `https://github.com/${REPO}/releases`;
 
-const RELEASES_PAGE = "https://github.com/raphaelsalaja/pond/releases";
-const RELEASES_BASE = `${RELEASES_PAGE}/latest/download`;
+export interface Release {
+  tag: string;
+  assets: string[];
+}
 
-/**
- * The Linux port merged after v2.2.2 was tagged, so that release has no Linux
- * assets and its download links 404. The first release that includes them is
- * the first version at or above this one.
- */
-const FIRST_LINUX_VERSION = "2.2.3";
-/** The first release with arm64 Linux builds; earlier Linux assets are x64 only and carry no arch in the name. */
-const FIRST_LINUX_ARM_VERSION = "2.7.0";
-
-const LINUX_AVAILABLE = isAtLeast(POND_VERSION, FIRST_LINUX_VERSION);
-const LINUX_ARM_AVAILABLE = isAtLeast(POND_VERSION, FIRST_LINUX_ARM_VERSION);
-
-function isAtLeast(version: string, minimum: string): boolean {
-  const parse = (value: string) =>
-    value.split(".").map((part) => Number.parseInt(part, 10) || 0);
-  const current = parse(version);
-  const target = parse(minimum);
-  for (let index = 0; index < 3; index += 1) {
-    if ((current[index] ?? 0) !== (target[index] ?? 0)) {
-      return (current[index] ?? 0) > (target[index] ?? 0);
-    }
+/** GitHub's latest release skips drafts and prereleases, so links never point at a build that isn't out yet. */
+export async function getLatestRelease(): Promise<Release | null> {
+  try {
+    const response = await fetch(
+      `https://api.github.com/repos/${REPO}/releases/latest`,
+      {
+        headers: { Accept: "application/vnd.github+json" },
+        next: { revalidate: 300 },
+      },
+    );
+    if (!response.ok) return null;
+    /** SAFETY: a 2xx from GitHub's release endpoint always carries `tag_name` and `assets[].name`. */
+    const body = (await response.json()) as {
+      tag_name: string;
+      assets: { name: string }[];
+    };
+    return {
+      tag: body.tag_name,
+      assets: body.assets.map((asset) => asset.name),
+    };
+  } catch {
+    return null;
   }
-  return true;
 }
 
-function dmgUrl(arch: "arm64" | "x64"): string {
-  return `${RELEASES_BASE}/Pond-${POND_VERSION}-${arch}.dmg`;
-}
+/** Releases before 2.7.0 name the x64 Linux builds without an arch. */
+const BUILDS = {
+  mac: /-arm64\.dmg$/,
+  intelMac: /-x64\.dmg$/,
+  windows: /-x64\.exe$/,
+  linux: /^Pond-[\d.]+(-x64)?\.AppImage$/,
+  linuxArm: /-arm64\.AppImage$/,
+  deb: /^Pond-[\d.]+(-x64)?\.deb$/,
+  debArm: /-arm64\.deb$/,
+} as const;
 
-function windowsInstallerUrl(): string {
-  return `${RELEASES_BASE}/Pond-${POND_VERSION}-x64.exe`;
-}
+type Build = keyof typeof BUILDS;
 
-/** The x64 AppImage runs on every x86_64 distribution, so it is the default Linux build. */
-function linuxAppImageUrl(arch: "x64" | "arm64"): string {
-  return `${RELEASES_BASE}/${linuxAssetName(arch)}.AppImage`;
-}
-
-function linuxDebUrl(arch: "x64" | "arm64"): string {
-  return `${RELEASES_BASE}/${linuxAssetName(arch)}.deb`;
-}
-
-function linuxAssetName(arch: "x64" | "arm64"): string {
-  return LINUX_ARM_AVAILABLE
-    ? `Pond-${POND_VERSION}-${arch}`
-    : `Pond-${POND_VERSION}`;
+function buildUrl(release: Release | null, build: Build): string | null {
+  const name = release?.assets.find((asset) => BUILDS[build].test(asset));
+  return release && name
+    ? `${RELEASES_PAGE}/download/${release.tag}/${name}`
+    : null;
 }
 
 /** Hardcoded because importing `CHROME_WEB_STORE_ID` from `@pond/schema/native` would pull zod into this client bundle. */
@@ -70,50 +69,50 @@ interface Download {
 }
 
 /** The download offered first, matched to the visitor's system. */
-export function primaryDownload(platform: Platform): Download {
-  if (platform === "windows") {
-    return { label: "Download for Windows", href: windowsInstallerUrl() };
-  }
-  if (platform === "linux") {
-    return LINUX_AVAILABLE
-      ? { label: "Download for Linux", href: linuxAppImageUrl("x64") }
-      : { label: "Linux build coming soon", href: RELEASES_PAGE };
-  }
-  return { label: "Download for Mac", href: dmgUrl("arm64") };
+export function primaryDownload(
+  platform: Platform,
+  release: Release | null,
+): Download {
+  const [label, build]: [string, Build] =
+    platform === "windows"
+      ? ["Download for Windows", "windows"]
+      : platform === "linux"
+        ? ["Download for Linux", "linux"]
+        : ["Download for Mac", "mac"];
+  return { label, href: buildUrl(release, build) ?? RELEASES_PAGE };
 }
 
-/** Every other build, listed as secondary links. */
-export function otherDownloads(platform: Platform): Download[] {
-  const mac: Download = { label: "Mac", href: dmgUrl("arm64") };
-  const intelMac: Download = { label: "Intel Mac", href: dmgUrl("x64") };
-  const windows: Download = {
-    label: "Windows",
-    href: windowsInstallerUrl(),
-  };
-  const linux: Download[] = LINUX_AVAILABLE
-    ? [{ label: "Linux", href: linuxAppImageUrl("x64") }]
-    : [];
-  const linuxArm: Download[] =
-    LINUX_ARM_AVAILABLE && platform !== "linux"
-      ? [{ label: "Linux (ARM)", href: linuxAppImageUrl("arm64") }]
-      : [];
+const SECONDARY = {
+  mac: [
+    ["Intel Mac", "intelMac"],
+    ["Windows", "windows"],
+    ["Linux", "linux"],
+    ["Linux (ARM)", "linuxArm"],
+  ],
+  windows: [
+    ["Mac", "mac"],
+    ["Intel Mac", "intelMac"],
+    ["Linux", "linux"],
+    ["Linux (ARM)", "linuxArm"],
+  ],
+  linux: [
+    ["Mac", "mac"],
+    ["Intel Mac", "intelMac"],
+    ["Windows", "windows"],
+    ["Debian package", "deb"],
+    ["Linux (ARM)", "linuxArm"],
+    ["Debian package (ARM)", "debArm"],
+  ],
+} satisfies Record<Platform, [string, Build][]>;
 
-  if (platform === "windows") return [mac, intelMac, ...linux, ...linuxArm];
-  if (platform === "linux") {
-    return [
-      mac,
-      intelMac,
-      windows,
-      ...(LINUX_AVAILABLE
-        ? [{ label: "Debian package", href: linuxDebUrl("x64") }]
-        : []),
-      ...(LINUX_ARM_AVAILABLE
-        ? [
-            { label: "Linux (ARM)", href: linuxAppImageUrl("arm64") },
-            { label: "Debian package (ARM)", href: linuxDebUrl("arm64") },
-          ]
-        : []),
-    ];
-  }
-  return [intelMac, windows, ...linux, ...linuxArm];
+/** Every other build the release ships, listed as secondary links. */
+export function otherDownloads(
+  platform: Platform,
+  release: Release | null,
+): Download[] {
+  const builds: [string, Build][] = SECONDARY[platform];
+  return builds.flatMap(([label, build]) => {
+    const href = buildUrl(release, build);
+    return href ? [{ label, href }] : [];
+  });
 }

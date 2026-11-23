@@ -117,14 +117,20 @@ function IconChoices({
         </Input.Icon>
         <Input.Field
           aria-label="Search Icons"
-          placeholder="Search icons…"
+          placeholder="Search…"
           spellCheck={false}
           autoComplete="off"
           value={query}
           onValueChange={setQuery}
           onKeyDown={(event) => {
             const first = results[0];
-            if (event.key !== "Enter" || !query || !first) return;
+            if (
+              event.key !== "Enter" ||
+              event.nativeEvent.isComposing ||
+              !query ||
+              !first
+            )
+              return;
             event.preventDefault();
             onIconChange(first.id);
           }}

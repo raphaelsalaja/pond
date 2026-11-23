@@ -21,6 +21,8 @@ coverage/
 playwright-report/
 test-results/
 .vitest/
+.stryker-tmp/
+apps/desktop/reports/
 
 # packed tarballs
 *.tgz

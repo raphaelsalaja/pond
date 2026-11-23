@@ -6,7 +6,10 @@ import type { z } from "zod";
 import { TextCard } from "./features/captures/components/text-card";
 import { ThreadsCard } from "./features/captures/components/threads/card";
 import { TweetCard } from "./features/captures/components/tweet/card";
+import "@pond/theme/colors.css";
 import "@pond/theme/radius.css";
+import "@pond/theme/space.css";
+import "@pond/theme/typography.css";
 
 const DEFAULT_WIDTH = 550;
 const IMAGE_WAIT_MS = 6000;

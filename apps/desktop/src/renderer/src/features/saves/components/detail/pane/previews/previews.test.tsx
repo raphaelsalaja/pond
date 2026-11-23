@@ -1,6 +1,10 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import {
+  closeThumbnailViewer,
+  thumbnailViewerStore,
+} from "@/features/saves/state/thumbnail-viewer";
 import type { Save } from "@/features/saves/types";
 import { SavePreviews } from ".";
 
@@ -58,6 +62,7 @@ describe("SavePreviews", () => {
     await act(async () => root.unmount());
     Reflect.deleteProperty(HTMLImageElement.prototype, "decode");
     host.remove();
+    closeThumbnailViewer();
   });
 
   const decode = (name: string) =>
@@ -119,6 +124,29 @@ describe("SavePreviews", () => {
     expect(Number(image.style.getPropertyValue("--preview-aspect"))).toBe(
       900 / 1600,
     );
+  });
+
+  it("opens the thumbnail viewer when you click the preview", async () => {
+    await show(imageSave("photo"));
+    await decode("photo");
+    const open = host.querySelector<HTMLButtonElement>(
+      'button[aria-label="View Thumbnail"]',
+    );
+    if (!open) throw new Error("Missing View Thumbnail");
+    expect(open.querySelector("img")?.alt).toBe("photo");
+
+    await act(async () => open.click());
+    expect(thumbnailViewerStore.state?.saveId).toBe("photo");
+  });
+
+  it("keeps a multiple selection's previews inert", async () => {
+    await act(async () =>
+      root.render(
+        <SavePreviews saves={[imageSave("first"), imageSave("second")]} />,
+      ),
+    );
+    expect(host.querySelectorAll("img")).toHaveLength(2);
+    expect(host.querySelector("button")).toBeNull();
   });
 
   it("swaps at once when the next preview fails to load", async () => {

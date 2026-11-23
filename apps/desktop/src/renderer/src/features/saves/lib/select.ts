@@ -1,3 +1,4 @@
+import { resultNavigation } from "@/features/saves/state/result-navigation";
 import { primarySelection, selection } from "@/features/saves/state/selection";
 
 export function selectOnlySave(id: string): void {
@@ -8,6 +9,18 @@ export function selectOnlySave(id: string): void {
   primarySelection.set(id);
 }
 
+/** Selects exactly `ids`, puts the cursor on the first, and scrolls the grid to it. */
+export function selectSaves(ids: readonly string[]): void {
+  const [first] = ids;
+  if (!first) return;
+  selection.setPicking(false);
+  selection.setCursor(first);
+  selection.set(ids);
+  selection.setAnchor(first);
+  primarySelection.set(first);
+  void resultNavigation.reveal(first);
+}
+
 function rememberSave(id: string): void {
   selection.setAnchor(id);
   primarySelection.set(id);
@@ -16,6 +29,41 @@ function rememberSave(id: string): void {
 export function clearSaveSelection(): void {
   selection.clear();
   primarySelection.set(null);
+}
+
+function dropDepartedSaves(gone: ReadonlySet<string>): void {
+  selection.remove(gone);
+  const primary = primarySelection.get();
+  if (primary === null || !gone.has(primary)) return;
+  const anchor = selection.getAnchor();
+  primarySelection.set(
+    (anchor && selection.has(anchor) ? anchor : null) ??
+      selection.snapshot()[0] ??
+      null,
+  );
+}
+
+interface CollectionResults {
+  key: string;
+  ids: readonly string[];
+  settled: boolean;
+}
+
+/** Deselects Saves that leave the results, so the inspector never shows a Save the grid no longer has. */
+export function createSelectionReconciler(): (
+  results: CollectionResults,
+) => void {
+  let last: Omit<CollectionResults, "settled"> | null = null;
+  return ({ key, ids, settled }) => {
+    /** A refetch, or a new query still showing the previous page, must not read as Saves leaving. */
+    if (!settled) return;
+    const previous = last;
+    last = { key, ids };
+    if (previous?.key !== key) return;
+    const remaining = new Set(ids);
+    const gone = new Set(previous.ids.filter((id) => !remaining.has(id)));
+    if (gone.size > 0) dropDepartedSaves(gone);
+  };
 }
 
 export function clickSave(

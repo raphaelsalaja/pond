@@ -23,9 +23,11 @@ import {
   textCoverVersionFromRawJson,
 } from "@shared/text-card";
 import { hasArchive, isArchiveFile } from "@/features/saves/lib/media/archive";
+import { richFilePreviewKind } from "@/features/saves/lib/media/rich-file-preview";
 import {
   buildPondUrl,
   previewThumbUrlFor,
+  previewUrlFor,
 } from "@/features/saves/lib/media/url";
 import {
   arenaBlockClass,
@@ -234,6 +236,22 @@ export function detailsPreviewUrl(unit: MediaUnit | null): string | null {
   return unit.requiresGeneratedPreview
     ? previewThumbUrlFor(unit.url, 560)
     : unit.url;
+}
+
+/** Full-size URL of the image the Save's Library card shows, or null when the card draws a live file preview instead. */
+export function cardThumbnailUrl(
+  save: Save,
+  opts: MediaPickOptions = {},
+): string | null {
+  const hasThumbnail = (save.files ?? []).some((file) =>
+    isThumbnailKind(file.kind),
+  );
+  if (!hasThumbnail && richFilePreviewKind(pickPrimaryFile(save, opts)))
+    return null;
+  const unit = pickCardUnit(save, opts);
+  if (!unit) return null;
+  if (unit.isVideo) return unit.posterUrl ?? null;
+  return unit.requiresGeneratedPreview ? previewUrlFor(unit.url) : unit.url;
 }
 
 export function pickPrimaryFile(

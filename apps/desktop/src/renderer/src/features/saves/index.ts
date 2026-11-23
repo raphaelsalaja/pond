@@ -31,9 +31,13 @@ export {
   notifyFolderMembershipChange,
   notifyUndoableFolderChange,
 } from "./lib/folder-actions";
-export { canImportDrop } from "./lib/import-feedback";
+export { canImportDrop, showImportedAction } from "./lib/import-feedback";
 export { markProcessed, trashWithUndo } from "./lib/inbox-actions";
-export { collectionOwnsKeyboard, saveOwnsKeyboard } from "./lib/keyboard-owner";
+export {
+  collectionOwnsKeyboard,
+  controlKeepsKey,
+  saveOwnsKeyboard,
+} from "./lib/keyboard-owner";
 export type { FolderPickerMode } from "./lib/library-bridge";
 export { parseMode, type SaveListMode } from "./lib/list";
 export {
@@ -63,8 +67,10 @@ export { type PreviewStepBinding, previewStepRuns } from "./lib/preview-step";
 export { normalise } from "./lib/reconcile";
 export {
   clearSaveSelection,
+  createSelectionReconciler,
   isLibraryBackgroundTarget,
   selectOnlySave,
+  selectSaves,
 } from "./lib/select";
 export { selectResults } from "./lib/select-results";
 export { exportSelectionCsv, exportSelectionFiles } from "./lib/selection";

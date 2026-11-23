@@ -4,7 +4,7 @@ Pond ships via **GitHub Releases**: signed and notarized macOS `.dmg` and `.zip`
 
 ## Version bump
 
-The desktop app, browser extension, and website release metadata ship in lockstep with the `vX.Y.Z` GitHub tag. The release workflow rejects a tag when any value below differs. `@pond/cli` is published independently to npm from `packages/cli/package.json`; a desktop release does not require a CLI bump, and a CLI release does not change the desktop, extension, or website version. Other private workspace package versions are not Pond release inputs.
+The desktop app and browser extension ship in lockstep with the `vX.Y.Z` GitHub tag. The release workflow rejects a tag when any value below differs. `@pond/cli` is published independently to npm from `packages/cli/package.json`; a desktop release does not require a CLI bump, and a CLI release does not change the desktop or extension version. Other private workspace package versions are not Pond release inputs.
 
 Update the version string in all of these before tagging:
 
@@ -13,9 +13,8 @@ Update the version string in all of these before tagging:
 | [`apps/desktop/package.json`](apps/desktop/package.json) | `"version"` |
 | [`apps/extension/package.json`](apps/extension/package.json) | `"version"` |
 | [`apps/extension/wxt.config.ts`](apps/extension/wxt.config.ts) | `manifest.version` |
-| [`apps/website/lib/release.ts`](apps/website/lib/release.ts) | `POND_VERSION` |
 
-Hero and footer read the version from `POND_VERSION`, so they update with that file.
+The website reads its download links from the latest published GitHub release, so it needs no bump and switches over when `publish` runs.
 
 Then refresh the SBOM, which carries the root `package.json` version:
 

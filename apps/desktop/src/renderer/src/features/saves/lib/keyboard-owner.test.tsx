@@ -1,6 +1,10 @@
 import { afterEach, expect, it } from "vitest";
 import { primarySelection, selection } from "@/features/saves/state/selection";
-import { collectionOwnsKeyboard, saveOwnsKeyboard } from "./keyboard-owner";
+import {
+  collectionOwnsKeyboard,
+  controlKeepsKey,
+  saveOwnsKeyboard,
+} from "./keyboard-owner";
 
 const nodes: HTMLElement[] = [];
 function surface(attribute: string, value = "") {
@@ -74,6 +78,27 @@ it("keeps the open save in charge after the focused control unmounts", () => {
   document.body.append(menu);
   nodes.push(menu);
   expect(saveOwnsKeyboard(key())).toBe(false);
+});
+
+it("passes arrow keys from a plain button to the open Save but keeps them in arrow widgets", () => {
+  const press = (target: HTMLElement, key: string) => {
+    const event = new KeyboardEvent("keydown", { key, bubbles: true });
+    target.dispatchEvent(event);
+    return controlKeepsKey(event);
+  };
+  const tool = document.createElement("button");
+  const toolbar = surface("role", "toolbar");
+  toolbar.append(tool);
+  expect(press(tool, "ArrowRight")).toBe(false);
+  expect(press(tool, "Enter")).toBe(true);
+  expect(press(tool, " ")).toBe(true);
+
+  const star = document.createElement("button");
+  surface("role", "radiogroup").append(star);
+  expect(press(star, "ArrowRight")).toBe(true);
+
+  const scrubber = surface("role", "slider");
+  expect(press(scrubber, "ArrowLeft")).toBe(true);
 });
 
 it("lets a preview own Save commands while ordinary dialogs and text editors block them", () => {

@@ -170,11 +170,14 @@ describe("downloadStatusReason", () => {
     expect(reason(retrying("finalize: files are still missing"))).toBe(
       "Retrying in 2 min. Files are still missing. Attempt 3 of 5.",
     );
+    expect(reason(retrying("TransientError: scrape returned no data"))).toBe(
+      "Retrying in 2 min. Pond couldn't read this page. It may have been deleted, made private, or use a layout Pond doesn't support yet. Attempt 3 of 5.",
+    );
   });
 
-  it("says what went wrong instead of counting attempts", () => {
-    expect(reason(dead("TerminalError: scrape returned no data"))).toBe(
-      "The page had nothing to save. It may have been deleted or made private.",
+  it("explains a transient scrape miss and counts attempts on final failure", () => {
+    expect(reason(dead("TransientError: scrape returned no data", 5))).toBe(
+      "Pond couldn't read this page. It may have been deleted, made private, or use a layout Pond doesn't support yet. Gave up after 5 attempts.",
     );
     expect(reason(dead("TerminalError: web fetch 404"))).toBe(
       "The page wasn't found. It may have been deleted.",

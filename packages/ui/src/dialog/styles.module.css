@@ -66,6 +66,39 @@
     transform var(--ds-duration-snap) var(--ds-easing-standard);
 }
 
+/* The popup spans the window but lets presses through, so only its content is inside and the rest dismisses. */
+.popup[data-variant="media"] {
+  inset: 0;
+  display: grid;
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+  place-items: center;
+  width: auto;
+  max-width: none;
+  height: auto;
+  max-height: none;
+  padding: calc(var(--ds-size-sm) + var(--ds-space-2xl));
+  overflow: visible;
+  pointer-events: none;
+  background: none;
+  border-radius: 0;
+  box-shadow: none;
+  transform: none;
+  transform-origin: center;
+
+  &[data-starting-style] {
+    transform: scale(0.96);
+  }
+
+  &[data-ending-style] {
+    transform: scale(0.98);
+  }
+}
+
+.portal[data-contained] .popup[data-variant="media"] {
+  max-width: none;
+  max-height: none;
+}
+
 .header {
   display: flex;
   flex: none;
@@ -217,6 +250,11 @@
     transform: translate(-50%, var(--dialog-offset-y, -50%));
     transition: opacity var(--ds-duration-snap) linear;
   }
+
+  .popup[data-variant="media"][data-starting-style],
+  .popup[data-variant="media"][data-ending-style] {
+    transform: none;
+  }
 }
 
 .popup > form {
@@ -248,4 +286,10 @@
 
 .description[data-error] {
   color: var(--ds-danger-foreground);
+}
+
+.popup[data-variant="media"] > * {
+  max-width: 100%;
+  max-height: 100%;
+  pointer-events: auto;
 }

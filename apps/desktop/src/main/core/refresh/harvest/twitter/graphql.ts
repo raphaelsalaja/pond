@@ -36,6 +36,17 @@ const MediaEntrySchema = z
   })
   .catch({});
 
+const UrlEntitiesSchema = z
+  .array(
+    z
+      .object({ url: scrapedText, expanded_url: scrapedText })
+      .catch({ url: undefined, expanded_url: undefined }),
+  )
+  .optional()
+  .catch(undefined);
+
+type UrlEntities = z.infer<typeof UrlEntitiesSchema>;
+
 const NestedNodeSchema = z.json().optional().catch(undefined);
 type NestedNode = z.infer<typeof NestedNodeSchema>;
 
@@ -112,7 +123,12 @@ const TweetNodeSchema = z
         entities: z
           .object({
             media: z.array(MediaEntrySchema).optional().catch(undefined),
+            urls: UrlEntitiesSchema,
           })
+          .optional()
+          .catch(undefined),
+        quoted_status_permalink: z
+          .object({ url: scrapedText })
           .optional()
           .catch(undefined),
       })
@@ -136,7 +152,16 @@ const TweetNodeSchema = z
       .object({
         note_tweet_results: z
           .object({
-            result: z.object({ text: scrapedText }).optional().catch(undefined),
+            result: z
+              .object({
+                text: scrapedText,
+                entity_set: z
+                  .object({ urls: UrlEntitiesSchema })
+                  .optional()
+                  .catch(undefined),
+              })
+              .optional()
+              .catch(undefined),
           })
           .optional()
           .catch(undefined),
@@ -437,9 +462,30 @@ function pickCard(tweet: TweetNode): RichTweetCard | undefined {
 }
 
 function pickFullText(tweet: TweetNode): string {
-  const note = tweet.note_tweet?.note_tweet_results?.result?.text;
-  if (note && note.trim().length > 0) return note;
-  return tweet.legacy?.full_text ?? "";
+  const note = tweet.note_tweet?.note_tweet_results?.result;
+  if (note?.text && note.text.trim().length > 0) {
+    return expandShortUrls(tweet, note.text, note.entity_set?.urls);
+  }
+  return expandShortUrls(
+    tweet,
+    tweet.legacy?.full_text ?? "",
+    tweet.legacy?.entities?.urls,
+  );
+}
+
+/** The quoted tweet's t.co stays so the card renderer drops it, as X does. */
+function expandShortUrls(
+  tweet: TweetNode,
+  text: string,
+  urls: UrlEntities,
+): string {
+  const quotedShortUrl = tweet.legacy?.quoted_status_permalink?.url;
+  let out = text;
+  for (const { url, expanded_url } of urls ?? []) {
+    if (!url || !expanded_url || url === quotedShortUrl) continue;
+    out = out.replaceAll(url, expanded_url);
+  }
+  return out;
 }
 
 function pickAuthorHandle(tweet: TweetNode): string | null {

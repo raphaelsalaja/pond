@@ -12,6 +12,10 @@ import { libraryChrome } from "@/features/library/state/library-chrome";
 import { buildViewerMenu } from "@/features/saves/components/viewers/media-viewer/lib/menu";
 import { pool } from "@/features/saves/state/pool";
 import { selection } from "@/features/saves/state/selection";
+import {
+  closeThumbnailViewer,
+  thumbnailViewerStore,
+} from "@/features/saves/state/thumbnail-viewer";
 import type { Save } from "@/features/saves/types";
 import { REVEAL_LABEL } from "@/shared/lib/platform";
 import {
@@ -101,12 +105,37 @@ function fileSave(overrides: Partial<Save> = {}): Save {
   };
 }
 
+function photoSave(id: string): Save {
+  return fileSave({
+    id,
+    sourceId: id,
+    mediaType: "image",
+    files: [
+      {
+        kind: "image",
+        path: "photo.jpg",
+        mimeType: "image/jpeg",
+        sha256: `${id}-photo`,
+        size: 1,
+      },
+      {
+        kind: "thumbnail",
+        path: "photo_thumbnail.png",
+        mimeType: "image/png",
+        sha256: `${id}-thumbnail`,
+        size: 1,
+      },
+    ],
+  });
+}
+
 afterEach(async () => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
   selection.clear();
   pool.clear();
   closeConversionDialog();
+  closeThumbnailViewer();
   vi.stubGlobal("pond", {
     query: async () => [],
   });
@@ -142,6 +171,7 @@ describe("buildSaveMenu", () => {
       "Open in New Window",
       "Open With",
       REVEAL_LABEL,
+      "View Thumbnail",
       "Replace File",
       "Export",
       "Share",
@@ -469,6 +499,7 @@ describe("buildSaveMenu", () => {
       "Change Extension",
     ]);
     expect(visibleLabels(sectionItems(items, "Thumbnail") ?? [])).toEqual([
+      "View Thumbnail",
       "Set Thumbnail from File",
       "Set Thumbnail from Clipboard",
       "Reset Thumbnail",
@@ -682,6 +713,64 @@ describe("buildSaveMenu", () => {
     expect(labels).toContain("Export to CSV");
     expect(labels).not.toContain("Reset Thumbnail");
     expect(labels).toContain("Rename");
+  });
+
+  it("opens the card thumbnail from the Thumbnail submenu", () => {
+    const save = photoSave("photo");
+    const viewThumbnail = sectionItems(
+      buildSaveMenu(save, { clipboardEmpty: true }),
+      "Thumbnail",
+    )?.find((item) => "label" in item && item.label === "View Thumbnail");
+    if (!viewThumbnail || !("onClick" in viewThumbnail) || viewThumbnail.hidden)
+      throw new Error("Missing View Thumbnail");
+
+    viewThumbnail.onClick?.();
+    expect(thumbnailViewerStore.state?.saveId).toBe("photo");
+  });
+
+  it("opens the card thumbnail from the Save Actions menu", () => {
+    const items = buildSaveDetailMenu(photoSave("photo"), {
+      clipboardEmpty: true,
+      opened: true,
+    });
+    const viewThumbnail = items.find(
+      (item) => "label" in item && item.label === "View Thumbnail",
+    );
+    if (!viewThumbnail || !("onClick" in viewThumbnail) || viewThumbnail.hidden)
+      throw new Error("Missing View Thumbnail");
+
+    viewThumbnail.onClick?.();
+    expect(thumbnailViewerStore.state?.saveId).toBe("photo");
+  });
+
+  it("does not offer View Thumbnail for several Saves", () => {
+    const labels = visibleLabels(
+      buildSaveMenu([photoSave("first"), photoSave("second")], {
+        clipboardEmpty: true,
+      }),
+    );
+    expect(labels).not.toContain("View Thumbnail");
+  });
+
+  it("hides View Thumbnail when the card shows no image", () => {
+    const archive = fileSave({
+      id: "archive",
+      source: "local",
+      url: "pond:local/archive",
+      files: [{ kind: "file", path: "asset.zip", sha256: "a", size: 1 }],
+    });
+    const empty = fileSave({ id: "empty", mediaType: "text", files: [] });
+
+    for (const save of [archive, empty]) {
+      expect(
+        visibleLabels(buildSaveMenu(save, { clipboardEmpty: true })),
+      ).not.toContain("View Thumbnail");
+      expect(
+        topLevelLabels(
+          buildSaveDetailMenu(save, { clipboardEmpty: true, opened: true }),
+        ),
+      ).not.toContain("View Thumbnail");
+    }
   });
 
   it("hides Open Save when the save is already open", () => {

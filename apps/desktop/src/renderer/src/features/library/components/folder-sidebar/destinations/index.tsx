@@ -30,19 +30,21 @@ import {
   IconTrashXmark,
   IconWindowDownload,
 } from "@pond/icons";
-import type { SidebarDestination } from "@pond/schema";
-import { Sidebar } from "@pond/ui";
+import type { SidebarBadgeStyle, SidebarDestination } from "@pond/schema";
+import { DatePopover, Sidebar } from "@pond/ui";
 import { QueueSummarySchema } from "@shared/queue-contracts";
 import { useQuery } from "@tanstack/react-query";
 import { useReducedMotionConfig } from "motion/react";
 import {
   type ReactElement,
-  type RefAttributes,
+  useCallback,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import { createPortal } from "react-dom";
 import { useSidebarCounts } from "@/features/library/hooks/use-sidebar-counts";
+import { parseLocalDay } from "@/features/library/lib/local-day";
 import type { LibraryNav } from "@/features/library/state/library-chrome";
 import {
   reseedRandomSort,
@@ -66,6 +68,11 @@ import {
 import { usePrefs } from "@/shared/state/prefs";
 import { BuiltInVisibilityMenu } from "../built-in-visibility-menu";
 import { selectLibraryNav } from "../navigation";
+import {
+  buildRecentlyAddedMenuItems,
+  recentlyAddedDays,
+  showRecentlyAddedOn,
+} from "../recently-added-menu";
 import { Row } from "../sidebar-row";
 import { buildTrashMenuItems } from "../trash-menu";
 import styles from "./styles.module.css";
@@ -80,8 +87,7 @@ const VERTICAL_SORT_MODIFIERS = [restrictToVerticalAxis];
 type DestinationDragProps = Omit<
   React.ComponentPropsWithoutRef<typeof Row>,
   "label"
-> &
-  RefAttributes<HTMLButtonElement>;
+> & { ref: (node: HTMLElement | null) => void };
 
 function SortableDestination({
   destination,
@@ -122,6 +128,73 @@ function SortableDestination({
         ref: setActivatorNodeRef,
       })}
     </div>
+  );
+}
+
+function RecentlyAddedDestination({
+  count,
+  badgeStyle,
+  active,
+  dragProps,
+}: {
+  count: number;
+  badgeStyle: SidebarBadgeStyle;
+  active: boolean;
+  dragProps: DestinationDragProps;
+}) {
+  const row = useRef<HTMLButtonElement>(null);
+  const [picker, setPicker] = useState(() => ({
+    open: false,
+    ...recentlyAddedDays(),
+  }));
+  const { ref: dragRef } = dragProps;
+  const setRow = useCallback(
+    (node: HTMLButtonElement | null) => {
+      dragRef(node);
+      row.current = node;
+    },
+    [dragRef],
+  );
+
+  return (
+    <>
+      <BuiltInVisibilityMenu
+        destination="recentlyAdded"
+        additionalItems={() =>
+          buildRecentlyAddedMenuItems({
+            hasItems: count > 0,
+            onChooseDate: () =>
+              setPicker({ open: true, ...recentlyAddedDays() }),
+          })
+        }
+      >
+        <Row
+          label="Recently Added"
+          icon={<IconClockPlus />}
+          count={count}
+          badgeStyle={badgeStyle}
+          active={active}
+          {...dragProps}
+          ref={setRow}
+          onClick={() => {
+            resetFilters();
+            selectLibraryNav({ kind: "recentlyAdded" });
+          }}
+        />
+      </BuiltInVisibilityMenu>
+      <DatePopover
+        open={picker.open}
+        onOpenChange={(open) => setPicker((current) => ({ ...current, open }))}
+        anchor={row}
+        min={picker.min}
+        max={picker.max}
+        side="inline-end"
+        onValueChange={(value) => {
+          const day = parseLocalDay(value);
+          if (day) showRecentlyAddedOn(day);
+        }}
+      />
+    </>
   );
 }
 
@@ -304,20 +377,13 @@ export function LibraryDestinations({
         );
       case "recentlyAdded":
         return (
-          <BuiltInVisibilityMenu destination={destination} key={destination}>
-            <Row
-              label="Recently Added"
-              icon={<IconClockPlus />}
-              count={counts.recentlyAdded}
-              badgeStyle={badgeStyle}
-              active={isDestinationActive(destination)}
-              {...dragProps}
-              onClick={() => {
-                resetFilters();
-                selectLibraryNav({ kind: "recentlyAdded" });
-              }}
-            />
-          </BuiltInVisibilityMenu>
+          <RecentlyAddedDestination
+            key={destination}
+            count={counts.recentlyAdded}
+            badgeStyle={badgeStyle}
+            active={isDestinationActive(destination)}
+            dragProps={dragProps}
+          />
         );
       case "recentlyUsed":
         return (
