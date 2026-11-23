@@ -455,4 +455,6 @@ function zoomToCard(popup: HTMLElement, saveId: string | null): void {
       ),
     ),
   );
+  /** Base UI drops data-starting-style next frame, so resolve the card-sized start before it does. */
+  popup.getBoundingClientRect();
 }
