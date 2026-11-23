@@ -126,6 +126,9 @@ jobs:
           sudo chmod 4755 "$SANDBOX"
           xvfb-run -a pnpm --filter @pond/desktop smoke:desktop
 
+      - name: Desktop journeys
+        run: xvfb-run -a pnpm --filter @pond/desktop smoke:journeys
+
       - name: Desktop memory budgets
         run: xvfb-run -a pnpm --filter @pond/desktop smoke:memory
 
