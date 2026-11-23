@@ -36,7 +36,7 @@
     "test": "turbo run test",
     "perf:check": "turbo run perf:check:repo",
     "perf:check:repo": "node scripts/check-performance-budgets.mjs",
-    "sbom:generate": "pnpm sbom --sbom-format spdx --prod --out docs/pond.spdx.json",
+    "sbom:generate": "pnpm sbom --sbom-format spdx --prod --out pond.spdx.json",
     "dist": "turbo run dist",
     "dist:mac": "turbo run build --filter @pond/desktop && pnpm --filter @pond/desktop dist:mac",
     "dist:win": "turbo run build --filter @pond/desktop && pnpm --filter @pond/desktop dist:win",
