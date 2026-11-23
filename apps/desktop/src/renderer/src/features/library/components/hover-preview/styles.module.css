@@ -36,31 +36,6 @@
 }
 
 .popup {
-  /* Critically damped spring with a 0.27s response, after DiaTweaks' Peek: no overshoot, settles in 390ms. */
-  --peek-duration: 390ms;
-  --peek-spring: linear(
-    0,
-    0.079,
-    0.236,
-    0.403,
-    0.551,
-    0.671,
-    0.764,
-    0.833,
-    0.883,
-    0.919,
-    0.945,
-    0.962,
-    0.974,
-    0.983,
-    0.988,
-    0.992,
-    0.995,
-    0.997,
-    0.998,
-    0.999,
-    1
-  );
   --width: 1000px;
   --bar-height: var(--ds-title-bar-height);
   --fit-width: min(
@@ -83,9 +58,9 @@
   &[data-zoom]:not([data-ending-style]) {
     transition:
       opacity var(--ds-duration-snap) var(--ds-easing-standard),
-      transform var(--peek-duration) var(--peek-spring),
-      border-radius var(--peek-duration) var(--peek-spring),
-      box-shadow var(--peek-duration) var(--peek-spring),
+      transform var(--ds-duration-glide) var(--ds-easing-glide),
+      border-radius var(--ds-duration-glide) var(--ds-easing-glide),
+      box-shadow var(--ds-duration-glide) var(--ds-easing-glide),
       width var(--ds-duration-medium) var(--ds-easing-standard),
       height var(--ds-duration-medium) var(--ds-easing-standard);
   }
@@ -101,10 +76,11 @@
   /* Shrinks back on the same spring and only fades once it's nearly in the card. */
   &[data-zoom][data-ending-style] {
     transition:
-      opacity var(--ds-duration-medium) var(--ds-easing-standard) 80ms,
-      transform var(--peek-duration) var(--peek-spring),
-      border-radius var(--peek-duration) var(--peek-spring),
-      box-shadow var(--peek-duration) var(--peek-spring);
+      opacity var(--ds-duration-medium) var(--ds-easing-standard)
+        var(--ds-duration-fast),
+      transform var(--ds-duration-glide) var(--ds-easing-glide),
+      border-radius var(--ds-duration-glide) var(--ds-easing-glide),
+      box-shadow var(--ds-duration-glide) var(--ds-easing-glide);
   }
 }
 
