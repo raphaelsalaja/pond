@@ -7,7 +7,7 @@ export interface NeighborStore {
   ): Array<{ id: string; distance: number }>;
 }
 
-export const SEMANTIC_DISTANCE = 0.04;
+const SEMANTIC_DISTANCE = 0.04;
 
 /** Saves whose embeddings sit almost on top of each other. Meaning alone never makes Saves mergeable. */
 export function semanticMatches(

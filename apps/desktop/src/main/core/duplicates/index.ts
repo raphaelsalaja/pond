@@ -10,11 +10,7 @@ import { fingerprintIndexStatus, loadFingerprints } from "./fingerprints";
 import { loadLibrarySaves } from "./library";
 import type { ClassifyUrl } from "./matchers/source";
 
-export {
-  classifyPendingAssets,
-  findAssetsBySha256,
-  rebuildAssetIndex,
-} from "./asset-index";
+export { rebuildAssetIndex } from "./asset-index";
 export { fingerprintIndexStatus } from "./fingerprints";
 
 export interface ScanOptions {
@@ -24,7 +20,7 @@ export interface ScanOptions {
   semantic?: boolean;
 }
 
-export function scanDuplicatesIn(
+function scanDuplicatesIn(
   sqlite: Database.Database,
   options: ScanOptions,
 ): DuplicateScan {
@@ -49,7 +45,7 @@ export function scanDuplicatesIn(
 }
 
 /** Re-derives each URL's source identity the same way capture does, so two captures of one post meet. */
-export async function defaultClassifyUrl(): Promise<ClassifyUrl> {
+async function defaultClassifyUrl(): Promise<ClassifyUrl> {
   const [{ normalizeUrl }, { classifyUrlToSource }, { sourceIdFromUrl }] =
     await Promise.all([
       import("../pipeline/enqueue-input"),

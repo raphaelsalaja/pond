@@ -9,7 +9,7 @@ import {
   recordFingerprint,
 } from "./fingerprints";
 
-export const FINGERPRINT_BATCH_SIZE = 25;
+const FINGERPRINT_BATCH_SIZE = 25;
 
 export interface FingerprintBatchDeps {
   resolvePath: (saveId: string, path: string) => string;

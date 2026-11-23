@@ -6,7 +6,7 @@ import type {
 } from "../../../shared/duplicate-contracts";
 import { type Found, pairKey } from "./types";
 
-export function evidenceStrength(evidence: AssetEvidence): number {
+function evidenceStrength(evidence: AssetEvidence): number {
   switch (evidence.matcher) {
     case "sha256":
       return 0;

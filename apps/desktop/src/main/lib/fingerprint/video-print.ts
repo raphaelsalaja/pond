@@ -1,17 +1,11 @@
 import { hamming64 } from "./bits";
-import {
-  DHASH_HEIGHT,
-  DHASH_WIDTH,
-  dhashFromGray,
-  isLowDetailHash,
-} from "./dhash";
+import { dhashFromGray, isLowDetailHash } from "./dhash";
 
 export const VIDEO_PRINT_ALGORITHM = "video-dhash-seq";
 export const VIDEO_PRINT_VERSION = 1;
-export const VIDEO_PRINT_MAX_FRAMES = 180;
+const VIDEO_PRINT_MAX_FRAMES = 180;
 /** Only the opening ten minutes are sampled, so a feature-length file costs the same as a clip. */
-export const VIDEO_PRINT_WINDOW_SECONDS = 600;
-export const VIDEO_FRAME_BYTES = DHASH_WIDTH * DHASH_HEIGHT;
+const VIDEO_PRINT_WINDOW_SECONDS = 600;
 
 const HEADER_BYTES = 20;
 const FRAME_DISTANCE = 10;
