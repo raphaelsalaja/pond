@@ -15,6 +15,7 @@ import { FolderTree } from "./folder-tree";
 import { InboxButton } from "./inbox-button";
 import { selectLibraryNav } from "./navigation";
 import { SearchButton } from "./search-button";
+import { SidebarMenu } from "./sidebar-menu";
 import styles from "./styles.module.css";
 
 function WorkspaceHeader({ inbox }: { inbox: boolean }) {
@@ -50,23 +51,27 @@ export function FolderSidebar() {
     >
       <WorkspaceHeader inbox={destination?.kind === "inbox"} />
       <SearchButton />
-      <Sidebar.Scroll className={styles.scroll}>
-        <LibraryDestinations
-          activeViewId={activeViewId}
-          destination={destination}
-        />
-        <SmartFoldersSection
-          active={destination?.kind === "all"}
-          onSelect={() => selectLibraryNav({ kind: "all" })}
-        />
-        <FishSection activeId={activeFishId} />
-        <CanvasesSection activeId={activeCanvasId} />
-        <FolderTree
-          destination={destination}
-          folderRows={folderRows}
-          nav={nav}
-        />
-      </Sidebar.Scroll>
+      <SidebarMenu>
+        <div className={styles.background}>
+          <Sidebar.Scroll className={styles.scroll}>
+            <LibraryDestinations
+              activeViewId={activeViewId}
+              destination={destination}
+            />
+            <SmartFoldersSection
+              active={destination?.kind === "all"}
+              onSelect={() => selectLibraryNav({ kind: "all" })}
+            />
+            <FishSection activeId={activeFishId} />
+            <CanvasesSection activeId={activeCanvasId} />
+            <FolderTree
+              destination={destination}
+              folderRows={folderRows}
+              nav={nav}
+            />
+          </Sidebar.Scroll>
+        </div>
+      </SidebarMenu>
     </Sidebar.Root>
   );
 }
