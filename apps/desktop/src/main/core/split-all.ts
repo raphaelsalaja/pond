@@ -7,6 +7,7 @@ import { canSplitFiles } from "../../shared/save-slides";
 import type { SplitAllProgress } from "../../shared/saves-mutation-contracts";
 import { getDb } from "../db";
 import { libraryId } from "../paths";
+import { resolveImage } from "./download-prefs";
 import { getDownloadConfig } from "./prefs";
 import { type SplitSaveResult, splitSave } from "./split-save";
 
@@ -19,8 +20,8 @@ export interface SplitCandidate {
 export interface SplitAllRuntime {
   /** Complete saves outside Trash with more than one original file, by ID after `after`. */
   page(after: string | null, limit: number): Promise<SplitCandidate[]>;
-  /** Sources whose own Split Into Saves setting is off. */
-  optedOut(): Promise<ReadonlySet<Source>>;
+  /** Fewest images or videos a save from each source needs; null where the source's own Split Into Saves setting is off. */
+  minMedia(): Promise<(source: Source) => number | null>;
   split(id: string): Promise<SplitSaveResult>;
   library(): string;
   pause(): Promise<void>;
@@ -62,13 +63,17 @@ const runtime: SplitAllRuntime = {
       .limit(limit)
       .all();
   },
-  async optedOut() {
-    const { imageSources } = await getDownloadConfig();
-    return new Set(
+  async minMedia() {
+    const { imageDownload, imageSources } = await getDownloadConfig();
+    const optedOut: ReadonlySet<Source> = new Set(
       EXTERNAL_SOURCE_IDS.filter(
         (source) => imageSources[source]?.splitPosts === false,
       ),
     );
+    return (source) =>
+      optedOut.has(source)
+        ? null
+        : resolveImage(imageDownload, imageSources, source).splitMinMedia;
   },
   split: (id) => splitSave(id, "user"),
   library: libraryId,
@@ -81,13 +86,15 @@ let status: SplitAllProgress = IDLE;
 export async function splittableIds(
   dependencies: SplitAllRuntime,
 ): Promise<string[]> {
-  const skip = await dependencies.optedOut();
+  const minMedia = await dependencies.minMedia();
   const ids: string[] = [];
   let after: string | null = null;
   for (;;) {
     const rows = await dependencies.page(after, PAGE_SIZE);
-    for (const row of rows)
-      if (!skip.has(row.source) && canSplitFiles(row.files)) ids.push(row.id);
+    for (const row of rows) {
+      const min = minMedia(row.source);
+      if (min !== null && canSplitFiles(row.files, min)) ids.push(row.id);
+    }
     const last = rows.at(-1);
     if (!last || rows.length < PAGE_SIZE) return ids;
     after = last.id;

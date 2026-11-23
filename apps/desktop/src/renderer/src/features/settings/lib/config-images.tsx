@@ -112,6 +112,20 @@ export function imageDownloadGroups(source?: ExternalSource): GroupConfig[] {
             "New posts with several images or videos save each one on its own.",
         },
         {
+          control: "select",
+          key: "splitMinMedia",
+          disabled: followsGlobal,
+          title: "Split Posts With",
+          description: "Posts with fewer images or videos stay as one save.",
+          options: [
+            { value: 2, label: "2 or More" },
+            { value: 3, label: "3 or More" },
+            { value: 4, label: "4 or More" },
+            { value: 5, label: "5 or More" },
+            { value: 10, label: "10 or More" },
+          ],
+        },
+        {
           control: "custom",
           key: "split-existing",
           title: "Split Existing Saves",

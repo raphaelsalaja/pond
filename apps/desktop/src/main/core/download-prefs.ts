@@ -14,6 +14,7 @@ const ALLOWED_HEIGHTS = new Set([
 ]);
 const ALLOWED_FPS = new Set([24, 30, 60]);
 const ALLOWED_LONG_EDGES = new Set([1024, 2048, 4096, 8192]);
+const ALLOWED_SPLIT_MIN_MEDIA = new Set([2, 3, 4, 5, 10]);
 
 const VIDEO_CODECS = ["h264", "hevc", "av1", "vp9", "any"] as const;
 const AUDIO_CODECS = ["aac", "opus", "any"] as const;
@@ -46,6 +47,7 @@ const StoredImageSettingsSchema = z.object({
   preserveMetadata: z.boolean().optional().catch(undefined),
   maxFileSizeMb: z.number().nullish().catch(undefined),
   splitPosts: z.boolean().optional().catch(undefined),
+  splitMinMedia: z.number().optional().catch(undefined),
 });
 
 function snapToSet(
@@ -103,6 +105,8 @@ export function normalizeImage(
     preserveMetadata: stored.preserveMetadata ?? false,
     maxFileSizeMb: clampFilesize(stored.maxFileSizeMb, 1_000),
     splitPosts: stored.splitPosts ?? false,
+    splitMinMedia:
+      snapToSet(stored.splitMinMedia, ALLOWED_SPLIT_MIN_MEDIA, 2) ?? 2,
   };
 }
 

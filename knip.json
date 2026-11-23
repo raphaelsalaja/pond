@@ -15,6 +15,7 @@
         "scripts/*.{mjs,cjs,ts}",
         "scripts/sandbox-import-scope/{index,preload}.cjs",
         "scripts/proof-scenarios/*.cjs",
+        "scripts/journeys/*.cjs",
         "src/main/core/media-warm/service.ts",
         "src/main/core/enrichment-sidecar.ts"
       ],

@@ -64,6 +64,7 @@ const ImageDownloadPatchSchema = z.object({
   preserveMetadata: z.boolean().optional().catch(undefined),
   maxFileSizeMb: z.number().nullable().optional().catch(undefined),
   splitPosts: z.boolean().optional().catch(undefined),
+  splitMinMedia: z.number().optional().catch(undefined),
   source: ExternalSourceParam.optional(),
 });
 

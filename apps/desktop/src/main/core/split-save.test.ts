@@ -314,17 +314,25 @@ describe("buildOriginalPatch", () => {
 });
 
 describe("splitsOnImport", () => {
+  const on = { splitPosts: true, splitMinMedia: 2 };
+
   it("splits only a multi-media save's first ingest when the setting is on", () => {
     const fresh = carousel({ status: "ingesting" });
-    expect(splitsOnImport(fresh, true)).toBe(true);
-    expect(splitsOnImport(fresh, false)).toBe(false);
+    expect(splitsOnImport(fresh, on)).toBe(true);
+    expect(splitsOnImport(fresh, { ...on, splitPosts: false })).toBe(false);
     const refreshed = {
       ...fresh,
       ingestStartedAt: new Date(fresh.createdAt.getTime() + 60_000),
     };
-    expect(splitsOnImport(refreshed, true)).toBe(false);
+    expect(splitsOnImport(refreshed, on)).toBe(false);
     const single = { ...fresh, files: [file("image", "media-1.jpg")] };
-    expect(splitsOnImport(single, true)).toBe(false);
+    expect(splitsOnImport(single, on)).toBe(false);
+  });
+
+  it("keeps a post with fewer images or videos than the minimum as one save", () => {
+    const threeMedia = carousel({ status: "ingesting" });
+    expect(splitsOnImport(threeMedia, { ...on, splitMinMedia: 3 })).toBe(true);
+    expect(splitsOnImport(threeMedia, { ...on, splitMinMedia: 4 })).toBe(false);
   });
 });
 
