@@ -85,4 +85,18 @@ describe("image source overrides", () => {
     expect(resolveImage(global, overrides, "instagram").splitPosts).toBe(true);
     expect(resolveImage(global, overrides, "twitter").splitPosts).toBe(false);
   });
+
+  it("splits any multi-media post until a minimum is set", () => {
+    expect(normalizeImage({}).splitMinMedia).toBe(2);
+    expect(normalizeImage({ splitMinMedia: 1 }).splitMinMedia).toBe(2);
+    expect(normalizeImage({ splitMinMedia: 7 }).splitMinMedia).toBe(5);
+    const overrides = imageSourceOverrides({
+      ...DEFAULT_IMAGE_DOWNLOAD,
+      sources: { instagram: { splitMinMedia: 10 } },
+    });
+    const global = normalizeImage({ splitMinMedia: 3 });
+    expect(resolveImage(global, overrides, "instagram").splitMinMedia).toBe(10);
+    expect(resolveImage(global, overrides, "twitter").splitMinMedia).toBe(3);
+    expect(resolveImage(global, overrides, "local").splitMinMedia).toBe(3);
+  });
 });

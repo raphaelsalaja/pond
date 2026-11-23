@@ -58,10 +58,11 @@ import { uniqueFilterOptions } from "@/shared/components/table-filters/chip-labe
 import { shortcutGlyphs } from "@/shared/lib/shortcuts";
 import { useDownloadActivity } from "../../hooks/use-download-activity";
 import { useSourceGates } from "../../hooks/use-source-gates";
-import { TransferJobsPanel } from "../transfers";
+import { transferActive, transferToDownloadRow } from "../../lib/transfer-rows";
 import { DownloadOptionsMenu } from "./options";
 import { DownloadSelectionBar } from "./selection-bar";
 import styles from "./styles.module.css";
+import { TRANSFER_JOBS_KEY } from "./transfer-menu";
 import { DownloadsView } from "./view";
 
 const initialHistoryCursor: HistoryCursor = null;
@@ -95,6 +96,16 @@ export function DownloadsPage() {
     getNextPageParam: (page) => page.nextCursor ?? undefined,
     refetchInterval: 5_000,
   });
+  const transferJobs = useQuery({
+    queryKey: TRANSFER_JOBS_KEY,
+    queryFn: () => window.pond.query("transferJobs.list", {}),
+    refetchInterval: (query) =>
+      query.state.data?.some(transferActive) ? 1_000 : 5_000,
+  });
+  const transfers = useMemo(
+    () => (transferJobs.data ?? []).map(transferToDownloadRow),
+    [transferJobs.data],
+  );
   const completed = useMemo(() => {
     const seen = new Set(live.map((row) => row.saveId));
     return (history.data?.pages ?? [])
@@ -111,13 +122,18 @@ export function DownloadsPage() {
     [filters],
   );
   const scopedLive = useMemo(
-    () => live.filter((row) => matchesDownloadFilters(row, statuslessFilters)),
-    [live, statuslessFilters],
+    () =>
+      [...transfers.filter((row) => row.live), ...live].filter((row) =>
+        matchesDownloadFilters(row, statuslessFilters),
+      ),
+    [transfers, live, statuslessFilters],
   );
   const scopedCompleted = useMemo(
     () =>
-      completed.filter((row) => matchesDownloadFilters(row, statuslessFilters)),
-    [completed, statuslessFilters],
+      [...transfers.filter((row) => !row.live), ...completed].filter((row) =>
+        matchesDownloadFilters(row, statuslessFilters),
+      ),
+    [transfers, completed, statuslessFilters],
   );
   const rows = useMemo(
     () => scopedLive.filter((row) => matchesDownloadFilters(row, filters)),
@@ -164,7 +180,10 @@ export function DownloadsPage() {
   const nothingVisible =
     rows.length === 0 && visibleCompleted.length === 0 && !history.isPending;
   const showPlaceEmpty =
-    live.length === 0 && completed.length === 0 && !filtering;
+    live.length === 0 &&
+    completed.length === 0 &&
+    transfers.length === 0 &&
+    !filtering;
   const showCompletedHidden =
     nothingVisible &&
     !showPlaceEmpty &&
@@ -309,7 +328,6 @@ export function DownloadsPage() {
           </Button>
         </p>
       ) : null}
-      <TransferJobsPanel search={filters.q} />
       <DownloadsView
         rows={rows}
         completed={visibleCompleted}

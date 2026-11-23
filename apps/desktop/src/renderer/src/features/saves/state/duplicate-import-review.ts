@@ -1,6 +1,6 @@
 import type {
   DuplicateImportCandidate,
-  DuplicateImportChoice,
+  DuplicateImportDecision,
 } from "@shared/saves-import-contracts";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
@@ -8,7 +8,7 @@ import { Store } from "@tanstack/store";
 interface DuplicateImportReviewRequest {
   id: string;
   candidates: DuplicateImportCandidate[];
-  resolve: (decisions: Record<string, DuplicateImportChoice> | null) => void;
+  resolve: (decisions: Record<string, DuplicateImportDecision> | null) => void;
 }
 
 const store = new Store<DuplicateImportReviewRequest | null>(null);
@@ -24,7 +24,7 @@ export function closeDuplicateImportReview(): void {
 }
 
 export function completeDuplicateImportReview(
-  decisions: Record<string, DuplicateImportChoice>,
+  decisions: Record<string, DuplicateImportDecision>,
 ): void {
   const request = store.state;
   store.setState(() => null);
@@ -33,7 +33,7 @@ export function completeDuplicateImportReview(
 
 function promptForDuplicateImport(
   candidates: DuplicateImportCandidate[],
-): Promise<Record<string, DuplicateImportChoice> | null> {
+): Promise<Record<string, DuplicateImportDecision> | null> {
   return new Promise((resolve) => {
     store.setState(() => ({
       id: crypto.randomUUID(),
@@ -43,21 +43,57 @@ function promptForDuplicateImport(
   });
 }
 
-export async function importFilesWithDuplicateReview(input: {
+interface FilesImportInput {
   paths: string[];
   tags?: string[];
   folderIds?: string[];
-}) {
+  origin?: "files" | "clipboard";
+}
+
+async function importReviewed(input: FilesImportInput) {
   const review = await window.pond.query("saves.reviewImportDuplicates", {
     paths: input.paths,
   });
   if (review.candidates.length === 0)
-    return window.pond.query("saves.importFiles", input);
+    return {
+      result: await window.pond.query("saves.importFiles", input),
+      notImported: [],
+    };
   const decisions = await promptForDuplicateImport(review.candidates);
-  if (!decisions) return { ok: false as const, reason: "cancelled" as const };
-  return window.pond.query("saves.importFiles", {
+  if (!decisions)
+    return {
+      result: { ok: false as const, reason: "cancelled" as const },
+      notImported: input.paths,
+    };
+  return {
+    result: await window.pond.query("saves.importFiles", {
+      ...input,
+      duplicatePolicy: "keep-both",
+      duplicateDecisions: decisions,
+    }),
+    notImported: Object.keys(decisions).filter(
+      (path) => decisions[path] !== "keep-both",
+    ),
+  };
+}
+
+export async function importFilesWithDuplicateReview(input: FilesImportInput) {
+  return (await importReviewed(input)).result;
+}
+
+export async function importClipboardWithDuplicateReview(input: {
+  folderIds?: string[];
+}) {
+  const staged = await window.pond.query("saves.stageClipboard", {});
+  if (!staged.ok) return { ok: false as const, error: staged.error };
+  const { result, notImported } = await importReviewed({
     ...input,
-    duplicatePolicy: "keep-both",
-    duplicateDecisions: decisions,
+    paths: staged.paths,
+    origin: "clipboard",
   });
+  if (notImported.length > 0)
+    await window.pond.query("saves.discardStagedClipboard", {
+      paths: notImported,
+    });
+  return result;
 }

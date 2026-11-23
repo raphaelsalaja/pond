@@ -179,6 +179,62 @@ describe("Library repair previews", () => {
     });
   });
 
+  it("moves Eagle preview duplicates to Trash and skips one whose original left", async () => {
+    const preview: RepairSave = {
+      id: "preview-save",
+      title: "Sunset_thumbnail",
+      source: "local",
+      sourceId: "eagle-preview",
+      url: "pond:local/preview-save",
+      files: [],
+      deletedAt: null,
+    };
+    let original: { id: string; title: string } | null = {
+      id: "original-save",
+      title: "Sunset",
+    };
+    const committed: Transaction[][] = [];
+    const runtime: LibraryIntegrityRuntime = {
+      root: () => "/library",
+      listSaves: async () => [preview],
+      getSave: async () => preview,
+      inspectPayload: async () => ({
+        ok: true,
+        size: 1,
+        sha256: null,
+        reason: "ok",
+      }),
+      canRenderThumbnail: async () => true,
+      readInfo: async () => ({ status: "missing" }),
+      eaglePreviewOriginal: async () => original,
+    };
+    const service = createLibraryRepairService({
+      now: () => 1_000,
+      libraryId: () => "pond",
+      root: () => "/library",
+      integrityRuntime: runtime,
+      commit: async (transactions) => {
+        committed.push(transactions);
+      },
+      recordUndo: () => {},
+      repairMetadata: async () => {},
+    });
+
+    const first = await service.preview({ kind: "eagle-previews" });
+    expect(first.confirmation.movesToTrash).toBe(true);
+    await service.apply({ token: first.token });
+    expect(committed).toMatchObject([
+      [{ kind: "trash", model: "save", id: "preview-save" }],
+    ]);
+
+    const second = await service.preview({ kind: "eagle-previews" });
+    original = null;
+    await expect(service.apply({ token: second.token })).rejects.toThrow(
+      "changed",
+    );
+    expect(committed).toHaveLength(1);
+  });
+
   it("replaces a damaged PNG thumbnail without orphaning it and restores it on Undo", async () => {
     const root = await mkdtemp(join(tmpdir(), "pond-thumbnail-repair-"));
     roots.push(root);

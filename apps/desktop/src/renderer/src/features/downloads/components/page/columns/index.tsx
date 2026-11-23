@@ -1,14 +1,21 @@
+import { IconFileExport, IconFolderImport } from "@pond/icons";
 import { sourceLabel } from "@pond/schema/sources";
 import { Tooltip } from "@pond/ui";
 import type { RenderRowArgs, TableColumn } from "@pond/ui/data-table";
 import type { DownloadActivity } from "@shared/download-activity";
 import type { QueueSourceGate } from "@shared/queue-contracts";
+import type { TransferJob } from "@shared/transfer-contracts";
 import { useDownloadClock } from "@/features/downloads/hooks/use-download-activity";
 import type { DownloadRow } from "@/features/downloads/lib/status-feed";
 import { BrandTile } from "@/features/sources";
 import { formatBytes, formatDuration } from "@/shared/lib/format";
 import { relativeTimeFromMs } from "@/shared/lib/relative-time";
 import { describeDownloadActivity } from "../../../lib/download-progress";
+import {
+  TRANSFER_LABELS,
+  transferActive,
+  transferStatusLabel,
+} from "../../../lib/transfer-rows";
 import { downloadBrandSource } from "../brand";
 import { DownloadContextMenu } from "../context-menu";
 import {
@@ -19,6 +26,7 @@ import {
   isDownloadStopped,
 } from "../status";
 import { downloadStatusReason } from "../status-reason";
+import { TransferContextMenu } from "../transfer-menu";
 import styles from "./styles.module.css";
 
 export interface DownloadViewRow extends DownloadRow {
@@ -107,14 +115,33 @@ function NameCell({ row }: { row: DownloadViewRow }) {
   const title = row.name.trim() || row.url.trim() || "Untitled save";
   return (
     <span className={styles.lead}>
-      <span className={styles.name} title={title}>
+      <span
+        className={styles.name}
+        title={row.transfer?.request.destination ?? title}
+      >
         {title}
       </span>
     </span>
   );
 }
 
+function TransferKindCell({ job }: { job: TransferJob }) {
+  return (
+    <span className={styles.source}>
+      <span className={styles.kind}>
+        {job.request.kind.startsWith("export_") ? (
+          <IconFileExport />
+        ) : (
+          <IconFolderImport />
+        )}
+      </span>
+      <span className={styles.label}>{TRANSFER_LABELS[job.request.kind]}</span>
+    </span>
+  );
+}
+
 function SourceCell({ row }: { row: DownloadViewRow }) {
+  if (row.transfer) return <TransferKindCell job={row.transfer} />;
   const source = downloadBrandSource(row.source, row.url);
   return (
     <span className={styles.source}>
@@ -124,14 +151,23 @@ function SourceCell({ row }: { row: DownloadViewRow }) {
   );
 }
 
+function rowStatusLabel(row: DownloadViewRow): string {
+  return (
+    (row.transfer && transferStatusLabel(row.transfer)) ||
+    downloadStatusLabel(row, row.paused)
+  );
+}
+
 function StatusCell({ row }: { row: DownloadViewRow }) {
   const status = downloadTableStatus(row, row.paused);
-  const label = downloadStatusLabel(row, row.paused);
-  const reason = downloadStatusReason(row, {
-    paused: row.paused,
-    gate: row.gate,
-    now: Date.now(),
-  });
+  const label = rowStatusLabel(row);
+  const reason = row.transfer
+    ? row.error
+    : downloadStatusReason(row, {
+        paused: row.paused,
+        gate: row.gate,
+        now: Date.now(),
+      });
   const content = (
     <span className={styles.status}>
       <span className={styles.mark} data-status={status}>
@@ -231,6 +267,16 @@ function MetricCell({ value }: { value: string }) {
 }
 
 function SizeCell({ row }: { row: DownloadViewRow }) {
+  if (row.transfer)
+    return (
+      <MetricCell
+        value={
+          row.transfer.bytes > 0
+            ? formatBytes(row.transfer.bytes)
+            : EMPTY_METRIC
+        }
+      />
+    );
   const transfer = receivingTransfer(row);
   if (transfer?.receivedBytes == null)
     return <MetricCell value={EMPTY_METRIC} />;
@@ -265,6 +311,8 @@ function RemainingCell({ row }: { row: DownloadViewRow }) {
 }
 
 function elapsedMs(row: DownloadViewRow, now: number): number | null {
+  if (row.transfer && transferActive(row.transfer))
+    return Math.max(0, now - row.transfer.startedAt);
   if (row.status === "running" && row.activity?.state === "running")
     return Math.max(0, now - row.activity.startedAt);
   if (row.durationMs != null && row.durationMs >= 0) return row.durationMs;
@@ -272,7 +320,9 @@ function elapsedMs(row: DownloadViewRow, now: number): number | null {
 }
 
 function ElapsedCell({ row }: { row: DownloadViewRow }) {
-  const running = row.status === "running" && row.activity?.state === "running";
+  const running =
+    row.status === "running" &&
+    (row.activity?.state === "running" || row.transfer !== undefined);
   const now = useDownloadClock(Boolean(running));
   const ms = elapsedMs(row, now);
   return (
@@ -293,6 +343,12 @@ function activeTransfer(row: DownloadViewRow) {
 }
 
 function FilesCell({ row }: { row: DownloadViewRow }) {
+  if (row.transfer?.total)
+    return (
+      <MetricCell
+        value={`${row.transfer.completed} of ${row.transfer.total}`}
+      />
+    );
   const transfer = activeTransfer(row);
   if (!transfer) return <MetricCell value={EMPTY_METRIC} />;
   if (transfer.fileCount && transfer.fileCount > 1)
@@ -356,7 +412,10 @@ export const downloadsColumns: TableColumn<DownloadViewRow>[] = [
     id: "source",
     header: "Source",
     sortLabel: "Source",
-    accessor: (row) => sourceLabel(downloadBrandSource(row.source, row.url)),
+    accessor: (row) =>
+      row.transfer
+        ? TRANSFER_LABELS[row.transfer.request.kind]
+        : sourceLabel(downloadBrandSource(row.source, row.url)),
     width: "140px",
     reorderable: true,
     cell: (row) => <SourceCell row={row} />,
@@ -365,7 +424,7 @@ export const downloadsColumns: TableColumn<DownloadViewRow>[] = [
     id: "stage",
     header: "Status",
     sortLabel: "Status",
-    accessor: (row) => downloadStatusLabel(row, row.paused),
+    accessor: (row) => rowStatusLabel(row),
     width: "minmax(140px, 1fr)",
     reorderable: true,
     cell: (row) => <StatusCell row={row} />,
@@ -480,6 +539,19 @@ export function DownloadQueueRow({
   const running = row.status === "running";
   const now = useDownloadClock(running && row.activity?.state === "running");
   const measured = measuredActivity(row, now);
+  if (row.transfer)
+    return (
+      <TransferContextMenu job={row.transfer}>
+        <div
+          {...rowProps}
+          className={`${rowProps.className} ${styles.row}`}
+          data-status={row.status}
+          data-moving={running || undefined}
+        >
+          {cells}
+        </div>
+      </TransferContextMenu>
+    );
   return (
     <DownloadContextMenu row={row}>
       <div

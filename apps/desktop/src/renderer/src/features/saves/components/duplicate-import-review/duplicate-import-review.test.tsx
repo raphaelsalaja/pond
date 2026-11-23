@@ -5,6 +5,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import {
   closeDuplicateImportReview,
+  importClipboardWithDuplicateReview,
   importFilesWithDuplicateReview,
 } from "@/features/saves/state/duplicate-import-review";
 import { DuplicateImportReviewHost } from "./";
@@ -22,6 +23,7 @@ const query = vi.fn(async (name: string, _args?: WireJson) => {
         filename: path.split("/").pop(),
         existingId: "save-sunset",
         existingTitle: "Sunset",
+        inTrash: path === second,
       })),
     };
   if (name === "saves.getMany")
@@ -46,6 +48,7 @@ const query = vi.fn(async (name: string, _args?: WireJson) => {
         ],
       },
     ];
+  if (name === "saves.stageClipboard") return { ok: true, paths };
   if (name === "saves.importFiles") return { ok: true, ids: [] };
   return [];
 });
@@ -81,19 +84,29 @@ function dialog() {
   return element;
 }
 
-function button(name: string) {
-  const match = [...dialog().querySelectorAll("button")].find(
+function buttons(name: string) {
+  return [...dialog().querySelectorAll("button")].filter(
     (element) => element.textContent?.trim() === name,
   );
+}
+
+function button(name: string) {
+  const match = buttons(name).at(-1);
   if (!match) throw new Error(`Missing button ${name}`);
   return match;
 }
 
-async function startImport() {
-  let pending: ReturnType<typeof importFilesWithDuplicateReview> | undefined;
+type ReviewedImport =
+  | ReturnType<typeof importFilesWithDuplicateReview>
+  | ReturnType<typeof importClipboardWithDuplicateReview>;
+
+async function startImport(
+  start: () => ReviewedImport = () => importFilesWithDuplicateReview({ paths }),
+) {
+  let pending: ReviewedImport | undefined;
   await act(async () => {
     root.render(<DuplicateImportReviewHost />);
-    pending = importFilesWithDuplicateReview({ paths });
+    pending = start();
   });
   await vi.waitFor(() => {
     expect(dialog().textContent).toContain("1600 × 1000");
@@ -101,8 +114,12 @@ async function startImport() {
   return { pending };
 }
 
+function argsFor(operation: string) {
+  return query.mock.calls.find(([name]) => name === operation)?.[1];
+}
+
 function importArgs() {
-  return query.mock.calls.find(([name]) => name === "saves.importFiles")?.[1];
+  return argsFor("saves.importFiles");
 }
 
 it("compares the existing save with the new file", async () => {
@@ -113,6 +130,33 @@ it("compares the existing save with the new file", async () => {
   expect(text).toContain("Existing");
   expect(text).toContain("a.png");
   expect(text).toContain("Downloads");
+});
+
+it("offers to restore a match that is in Trash", async () => {
+  await startImport();
+  expect(dialog().textContent).toContain("already in your Library");
+  await act(async () => button("Next").click());
+  await vi.waitFor(() => expect(dialog().textContent).toContain("2 of 2"));
+  const text = dialog().textContent;
+  expect(text).toContain("This file is in Trash.");
+  expect(text).toContain("In Trash");
+  expect(buttons("Restore")).toHaveLength(2);
+});
+
+it("names the confirm button after the chosen action", async () => {
+  const { pending } = await startImport();
+  expect(buttons("Import")).toHaveLength(0);
+  await act(async () => button("Next").click());
+  await vi.waitFor(() => expect(dialog().textContent).toContain("2 of 2"));
+  await act(async () => button("Keep Both").click());
+  expect(buttons("Restore")).toHaveLength(1);
+  expect(buttons("Import")).toHaveLength(1);
+  await act(async () => buttons("Restore")[0]?.click());
+  await act(async () => button("Restore").click());
+  await pending;
+  expect(importArgs()).toMatchObject({
+    duplicateDecisions: { [first]: "use-existing", [second]: "restore" },
+  });
 });
 
 it("records each choice and applies one to the rest", async () => {
@@ -138,4 +182,39 @@ it("applies the choice to every remaining file", async () => {
   expect(importArgs()).toMatchObject({
     duplicateDecisions: { [first]: "keep-both", [second]: "keep-both" },
   });
+});
+
+it("sends an explicit restore only for the match in Trash", async () => {
+  const { pending } = await startImport();
+  await act(async () =>
+    dialog().querySelector<HTMLElement>('[role="checkbox"]')?.click(),
+  );
+  await act(async () => button("Import").click());
+  await pending;
+  expect(importArgs()).toMatchObject({
+    duplicateDecisions: { [first]: "use-existing", [second]: "restore" },
+  });
+});
+
+it("discards the staged clipboard image when the review is cancelled", async () => {
+  const { pending } = await startImport(() =>
+    importClipboardWithDuplicateReview({}),
+  );
+  await act(async () => closeDuplicateImportReview());
+  await pending;
+  expect(importArgs()).toBeUndefined();
+  expect(argsFor("saves.discardStagedClipboard")).toEqual({ paths });
+});
+
+it("discards only the staged clipboard images it didn't import", async () => {
+  const { pending } = await startImport(() =>
+    importClipboardWithDuplicateReview({}),
+  );
+  await act(async () => button("Next").click());
+  await vi.waitFor(() => expect(dialog().textContent).toContain("2 of 2"));
+  await act(async () => button("Keep Both").click());
+  await act(async () => button("Import").click());
+  await pending;
+  expect(importArgs()).toMatchObject({ origin: "clipboard" });
+  expect(argsFor("saves.discardStagedClipboard")).toEqual({ paths: [first] });
 });

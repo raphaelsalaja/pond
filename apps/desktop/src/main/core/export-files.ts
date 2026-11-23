@@ -56,7 +56,7 @@ type ExportSave = Pick<
       | "createdAt"
     >
   >;
-type ExportFolder = Pick<Folder, "id" | "name" | "parentId"> &
+export type ExportFolder = Pick<Folder, "id" | "name" | "parentId"> &
   Partial<Pick<Folder, "color" | "sortOrder">>;
 
 export interface ExportItem {
@@ -65,7 +65,7 @@ export interface ExportItem {
   folderIds: string[];
 }
 
-function safeName(value: string): string {
+export function safeName(value: string): string {
   const cleaned = Array.from(value, (character) =>
     character.charCodeAt(0) < 32 ? "_" : character,
   )
@@ -176,6 +176,44 @@ function folderPaths(folders: readonly ExportFolder[]): Map<string, string[]> {
   return paths;
 }
 
+function itemDestinations(
+  item: ExportItem,
+  paths: ReadonlyMap<string, string[]>,
+): string[][] {
+  const destinations = [...new Set(item.folderIds)].map((id) => {
+    const parts = paths.get(id);
+    if (!parts) throw new Error(`Cannot export missing folder ${id}.`);
+    return parts;
+  });
+  return destinations.length > 0 ? destinations : [[]];
+}
+
+/** The folder path every exported file shares, so an export can start at the exported folder instead of the Library root. */
+export function sharedFolderPath(
+  items: readonly ExportItem[],
+  folders: readonly ExportFolder[],
+): string[] {
+  const paths = folderPaths(folders);
+  let shared: string[] | null = null;
+  for (const item of items) {
+    for (const parts of itemDestinations(item, paths)) {
+      if (!shared) {
+        shared = parts;
+        continue;
+      }
+      let length = 0;
+      while (
+        length < shared.length &&
+        length < parts.length &&
+        shared[length] === parts[length]
+      )
+        length += 1;
+      shared = shared.slice(0, length);
+    }
+  }
+  return shared ?? [];
+}
+
 async function exportDirectory(root: string, parts: readonly string[]) {
   let directory = root;
   for (const part of parts) {
@@ -196,10 +234,14 @@ export async function exportFiles(input: {
   folders?: readonly ExportFolder[];
   includeDerived?: boolean;
   organization?: PackageOrganization;
+  startAtSharedFolder?: boolean;
 }) {
   const root = await realpath(input.directory);
   const folders = input.folders ?? [];
   const paths = folderPaths(folders);
+  const skipped = input.startAtSharedFolder
+    ? sharedFolderPath(input.items, folders).length
+    : 0;
   const exportedFiles: Array<{
     saveId: string;
     sourcePath: string;
@@ -222,13 +264,9 @@ export async function exportFiles(input: {
     const originals = item.save.files.filter(
       (file) => input.includeDerived || !isAuxiliaryKind(file.kind),
     );
-    const destinations = [...new Set(item.folderIds)].map((id) => {
-      const parts = paths.get(id);
-      if (!parts) throw new Error(`Cannot export missing folder ${id}.`);
-      return parts;
-    });
-    if (destinations.length === 0) destinations.push([]);
-    for (const parts of destinations) {
+    for (const parts of itemDestinations(item, paths).map((path) =>
+      path.slice(skipped),
+    )) {
       const directory = await exportDirectory(root, parts);
       for (const [index, file] of originals.entries()) {
         checkTransferCancellation();

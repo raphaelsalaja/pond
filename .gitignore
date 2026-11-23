@@ -81,15 +81,17 @@ packages/render/target/
 # Per-architecture Mac ffmpeg fetched by apps/desktop/scripts/fetch-mac-ffmpeg.mjs
 apps/desktop/vendor/
 apps/desktop/resources/bin/pond-icon-style
+apps/desktop/resources/bin/pond-haptics
 apps/desktop/resources/DockTile/
 
 # Safari App Extension compiled by apps/desktop/scripts/build-safari-extension.mjs
 apps/desktop/resources/SafariExtension/
 apps/desktop/.safari-build/
 
-# Share extension compiled by apps/desktop/scripts/build-share-extension.mjs
+# Share extension and Finder Quick Action compiled by apps/desktop/scripts/lib/build-appex.mjs
 apps/desktop/resources/ShareExtension/
-apps/desktop/.share-build/
+apps/desktop/resources/FinderAction/
+apps/desktop/.appex-build/
 
 # Alfred workflow staging from apps/alfred/scripts/pack.mjs
 apps/alfred/.pack/

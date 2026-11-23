@@ -1,6 +1,7 @@
 import { ASSISTANT_ACTIVITY_LABELS } from "@shared/assistant";
 import type { FishSummary } from "@shared/fish-contracts";
 import { formatPlural } from "@/shared/lib/format";
+import { systemLocale } from "@/shared/lib/system-locale";
 
 export interface RowPreview {
   text: string;
@@ -41,13 +42,14 @@ export function rowTime(at: number, now: Date): string {
   const date = new Date(at);
   const days = Math.round((startOfDay(now) - startOfDay(date)) / 86_400_000);
   if (days <= 0)
-    return date.toLocaleTimeString(undefined, {
+    return date.toLocaleTimeString(systemLocale, {
       hour: "numeric",
       minute: "2-digit",
     });
   if (days === 1) return "Yesterday";
-  if (days < 7) return date.toLocaleDateString(undefined, { weekday: "short" });
-  return date.toLocaleDateString(undefined, {
+  if (days < 7)
+    return date.toLocaleDateString(systemLocale, { weekday: "short" });
+  return date.toLocaleDateString(systemLocale, {
     month: "short",
     day: "numeric",
     year: date.getFullYear() === now.getFullYear() ? undefined : "numeric",

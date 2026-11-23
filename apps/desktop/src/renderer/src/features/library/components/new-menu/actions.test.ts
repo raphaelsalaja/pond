@@ -122,8 +122,15 @@ describe("new menu actions", () => {
   });
 
   it("shows the Saves a clipboard import returned", async () => {
-    query.mockResolvedValue({ ok: true, ids: ["pasted"] });
+    query
+      .mockResolvedValueOnce({ ok: true, paths: ["/tmp/pond-clip/a.png"] })
+      .mockResolvedValueOnce({ candidates: [] })
+      .mockResolvedValueOnce({ ok: true, ids: ["pasted"] });
     await importClipboard();
+    expect(query).toHaveBeenLastCalledWith("saves.importFiles", {
+      paths: ["/tmp/pond-clip/a.png"],
+      origin: "clipboard",
+    });
     expect(notify).toHaveBeenCalledWith(
       expect.objectContaining({ title: "Saved to Pond" }),
     );
@@ -160,7 +167,7 @@ describe("new menu actions", () => {
   });
 
   it("reports an empty clipboard", async () => {
-    query.mockResolvedValue({ ok: false, error: "no_files" });
+    query.mockResolvedValue({ ok: false, error: "empty_clipboard" });
     await expect(importClipboard()).rejects.toThrow(
       "Copy an image or files first",
     );

@@ -11,6 +11,7 @@ import { openOrganizationReview } from "@/features/library/state/organization-re
 import { savedViews } from "@/features/library/state/saved-views";
 import {
   asUrlList,
+  importClipboardWithDuplicateReview,
   importFilesWithDuplicateReview,
   libraryViewContext,
   selectOnlySave,
@@ -173,8 +174,9 @@ export function createNewActions({
 
   async function importClipboard(): Promise<void> {
     const result = SaveResultSchema.parse(
-      await window.pond.query("saves.importClipboard", {}),
+      await importClipboardWithDuplicateReview({}),
     );
+    if (result.reason === "cancelled") return;
     if (!result.ok || !result.ids?.length) {
       throw new Error(
         "Copy an image or files first. Use Import from Links for URLs.",

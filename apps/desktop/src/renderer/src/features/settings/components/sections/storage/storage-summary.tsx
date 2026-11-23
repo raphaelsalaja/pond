@@ -1,8 +1,9 @@
 import { Button, Settings } from "@pond/ui";
 import { useQuery } from "@tanstack/react-query";
+import { systemLocale } from "@/shared/lib/system-locale";
 
 const bytes = (value: number) =>
-  `${(value / 1024 ** 3).toLocaleString(undefined, { maximumFractionDigits: 2 })} GB`;
+  `${(value / 1024 ** 3).toLocaleString(systemLocale, { maximumFractionDigits: 2 })} GB`;
 
 export function StorageSummary() {
   const query = useQuery({

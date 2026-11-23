@@ -8,8 +8,11 @@ import { z } from "zod";
 import type { QueryResult } from "../../../shared/query-contracts";
 import { copyExportFile, writeExportFile } from "../../core/export-files";
 import {
-  exportSavesToDirectory,
+  availableExportPath,
+  exportFilesName,
   exportSavesToEaglePackage,
+  exportSavesToFolder,
+  exportSavesToZip,
 } from "../../core/export-saves";
 import { exportPondPackage } from "../../core/pond-package";
 import { runTransferJob } from "../../core/transfer-jobs";
@@ -161,25 +164,39 @@ export const savesExportQueries = {
   ),
 
   "saves.exportFiles": query(
-    IdListParams,
+    IdListParams.extend({
+      zip: z.boolean().optional(),
+      fromFolders: z.boolean().optional(),
+    }),
     async (params): Promise<QueryResult<"saves.exportFiles">> => {
       const ids = params.ids.filter(Boolean);
       if (ids.length === 0)
         return { ok: false, error: "Choose Saves to export." };
 
       const picked = await dialog.showOpenDialog({
+        title: params.zip ? "Export Files as ZIP" : "Export Files",
+        message: "Choose where to save the export.",
+        buttonLabel: "Export",
         properties: ["openDirectory", "createDirectory"],
       });
       if (picked.canceled || !picked.filePaths[0]) {
         return { ok: false, reason: "cancelled" };
       }
       const dir = picked.filePaths[0];
+      const path = await availableExportPath(
+        dir,
+        await exportFilesName(ids, { fromFolders: params.fromFolders }),
+        params.zip ? ".zip" : "",
+      );
 
       const { exported } = await runTransferJob(
-        { kind: "export_files", origin: libraryRoot(), destination: dir, ids },
-        () => exportSavesToDirectory(ids, dir),
+        { kind: "export_files", origin: libraryRoot(), destination: path, ids },
+        () =>
+          params.zip
+            ? exportSavesToZip(ids, path)
+            : exportSavesToFolder(ids, path),
       );
-      return { ok: true, exported, dir };
+      return { ok: true, exported, dir, path };
     },
   ),
 

@@ -22,6 +22,10 @@ _Avoid_: unbundle, explode, slide (as the Library row)
 The post a Split came from, found again through the Saves that share its Source and post Source ID. Split Posts lists every post with two or more live Saves, and Show Post opens one in post order.
 _Avoid_: gallery collection, album, carousel group
 
+**Group Saves**:
+Turning several image or video Saves into one new local Save that holds all their files, in the order you selected them, with their tags, notes, and Folders. The originals move to Trash, and Split undoes it. Not the Group under Smart Folders.
+_Avoid_: merge (that's Merge Duplicates), combine (Combine Images joins images into one picture), album
+
 **List kinds**:
 Whether you liked or saved that item, or both. Stored on the Save as `liked` and `saved`. Public like and bookmark counts on the Capture are metrics, not this.
 _Avoid_: origin, bookmark (as the Library row)

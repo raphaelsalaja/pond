@@ -15,6 +15,7 @@ import {
   IconFolderOpen,
   IconFolderRefresh,
   IconFolderSearch,
+  IconFolderTree,
   IconGlobe,
   IconImage,
   IconImageSparkle,
@@ -44,6 +45,7 @@ import {
 } from "@/features/sources";
 import { openSettings } from "@/shared/lib/open-settings";
 import { shortcutGlyphs } from "@/shared/lib/shortcuts";
+import { openFolderTemplateDialog } from "../../state/folder-template-dialog";
 import {
   createBlankDocument,
   createNote,
@@ -119,6 +121,14 @@ export function buildNewMenuItems(
           keywords: "organize directory",
           shortcut: shortcutGlyphs("library.new-folder"),
           onClick: () => newFolder(),
+        },
+        {
+          id: "folder-template",
+          label: "New Folder from Template",
+          icon: <IconFolderTree />,
+          keywords: "organize template preset structure",
+          onClick: () =>
+            openFolderTemplateDialog({ mode: "apply", parentId: null }),
         },
         {
           id: "smart-folder",
@@ -436,6 +446,17 @@ export function buildNewMenuItems(
                 newMenuDialog.open({
                   kind: "repair",
                   repair: "save-metadata",
+                }),
+            },
+            {
+              id: "repair-eagle-previews",
+              label: "Remove Duplicate Eagle Previews",
+              icon: <IconCopy />,
+              keywords: "eagle thumbnail duplicate",
+              onClick: () =>
+                newMenuDialog.open({
+                  kind: "repair",
+                  repair: "eagle-previews",
                 }),
             },
           ],

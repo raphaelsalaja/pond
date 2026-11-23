@@ -17,6 +17,8 @@ const ROUTES: ReadonlyArray<
     /^\/library\/conversion\/(presets|start|compress|[^/]+\/cancel)$/,
     "export",
   ],
+  /** Replaces originals without Undo, so it needs more than the export scope. */
+  ["POST", /^\/library\/conversion\/compress-videos$/, "write"],
   ["POST", /^\/enqueue$/, "write"],
   [
     "POST",

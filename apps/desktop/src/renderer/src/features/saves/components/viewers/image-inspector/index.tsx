@@ -10,6 +10,7 @@ import {
   useState,
 } from "react";
 import { BlurHash } from "@/features/saves/components/card/media/blur-hash";
+import { useViewerChromeEnabled } from "@/features/saves/components/viewers/media-viewer/chrome";
 import type { ViewerNavigation } from "@/features/saves/components/viewers/viewer-toolbar-groups";
 import { useGifPlayer } from "@/features/saves/hooks/use-gif-player";
 import { useImageDecoded } from "@/features/saves/hooks/use-image-decoded";
@@ -74,6 +75,9 @@ export function ImageInspector({
   slideNavigation,
 }: ImageInspectorProps) {
   const [prefs] = usePrefs("viewer");
+  /** Quick Preview hides the viewer chrome and uses browser-style click to zoom. */
+  const quick = !useViewerChromeEnabled();
+  const press = useRef<{ x: number; y: number } | null>(null);
   const instructionsId = useId();
   const { grayscale, showNavigator } = useInspect();
   const file = save.files[fileIndex];
@@ -127,6 +131,7 @@ export function ImageInspector({
     onRatio,
     rememberPosition: prefs.rememberImagePosition !== false,
     src,
+    staticAtFit: quick,
     wheelBehavior: prefs.wheelBehavior,
   });
   const decoded = useImageDecoded(viewport.image, src);
@@ -326,8 +331,11 @@ export function ImageInspector({
             ArrowUp: [0, -1],
             ArrowDown: [0, 1],
           }[event.key];
+          /** At fit, Quick Preview leaves arrow keys to step between items and Saves. */
+          const stepping = quick && !!direction && viewport.pose.zoom <= 1;
           if (
             mode === "view" &&
+            !stepping &&
             (direction || ["+", "=", "-"].includes(event.key))
           ) {
             event.preventDefault();
@@ -348,7 +356,53 @@ export function ImageInspector({
         }}
         data-background={prefs.transparentBackground ?? "none"}
         data-mode={mode}
+        data-click-zoom={
+          quick && mode === "view"
+            ? viewport.pose.zoom > 1
+              ? "out"
+              : "in"
+            : undefined
+        }
         {...gestures}
+        onPointerDownCapture={(event) => {
+          press.current = { x: event.clientX, y: event.clientY };
+        }}
+        onClick={
+          quick
+            ? (event) => {
+                const start = press.current;
+                press.current = null;
+                if (mode !== "view" || event.button !== 0) return;
+                if (
+                  event.target instanceof Element &&
+                  event.target.closest("button")
+                )
+                  return;
+                if (
+                  start &&
+                  Math.abs(event.clientX - start.x) +
+                    Math.abs(event.clientY - start.y) >
+                    4
+                )
+                  return;
+                if (viewport.pose.zoom > 1) {
+                  viewport.setPosition(() => FIT_POSE);
+                  return;
+                }
+                const rect = event.currentTarget.getBoundingClientRect();
+                viewport.setPosition((previous) =>
+                  zoomImageAt(
+                    previous,
+                    Math.min(32, Math.max(2, viewport.oneToOne ?? 0)),
+                    {
+                      x: event.clientX - rect.left - rect.width / 2,
+                      y: event.clientY - rect.top - rect.height / 2,
+                    },
+                  ),
+                );
+              }
+            : undefined
+        }
       >
         <div
           className={styles.position}

@@ -1,5 +1,6 @@
 const { spawnSync } = require("node:child_process");
 const { existsSync, readdirSync, rmSync, statSync } = require("node:fs");
+const { createRequire } = require("node:module");
 const { join, sep } = require("node:path");
 const { z } = require("zod");
 const { verifyRuntimePackages } = require("./verify-runtime-packages.cjs");
@@ -7,7 +8,10 @@ const { verifyRuntimePackages } = require("./verify-runtime-packages.cjs");
 /** Fails the pack when a bundled binary is missing; yt-dlp is fetched into userData at runtime. */
 exports.default = (context) => verify(context);
 
-async function verify(context, { runFfmpeg = runFfmpegVersion } = {}) {
+async function verify(
+  context,
+  { runFfmpeg = runFfmpegVersion, runOnnx = runOnnxSmoke } = {},
+) {
   const platform = normalizePlatform(context.electronPlatformName);
   const resourcesDir = resolveResourcesDir(context, platform);
   const arch = normalizeArch(context.arch);
@@ -17,10 +21,9 @@ async function verify(context, { runFfmpeg = runFfmpegVersion } = {}) {
   if (platform === "darwin") verifySharpRuntime(resourcesDir, arch);
   if (platform === "linux") verifySharpLinuxRuntime(resourcesDir, arch);
   if (platform === "win32") verifySharpWindowsRuntime(resourcesDir, arch);
-  if (platform === "win32" || platform === "linux") {
-    verifyOnnxRuntime(resourcesDir, platform, arch);
-    assertAppIcon(context);
-  }
+  if (platform === "win32" || platform === "linux") assertAppIcon(context);
+  assertTintIcons(resourcesDir);
+  const onnxShipped = verifyOnnxRuntime(resourcesDir, platform, arch);
   const ffmpegPath = join(resourcesDir, "bin", ffmpegName(platform));
   const nativeHostPath = join(resourcesDir, "bin", nativeHostName(platform));
 
@@ -34,6 +37,16 @@ async function verify(context, { runFfmpeg = runFfmpegVersion } = {}) {
       throw new Error(
         `[pond verify] bundled ffmpeg at ${ffmpegPath} does not run: ` +
           `${result.error?.message ?? `exit status ${result.status}`}`,
+      );
+    }
+  }
+  if (onnxShipped && process.platform === platform && arch === process.arch) {
+    const packageDir = onnxPackageDir(resourcesDir);
+    const result = runOnnx(packageDir);
+    if (result.error || result.status !== 0) {
+      throw new Error(
+        `[pond verify] bundled onnxruntime-node at ${packageDir} cannot run a CPU session: ` +
+          `${result.error?.message ?? (result.stderr?.trim() || `exit status ${result.status}`)}`,
       );
     }
   }
@@ -105,6 +118,21 @@ function assertAppIcon(context) {
   }
 }
 
+function assertTintIcons(resourcesDir) {
+  const dir = join(resourcesDir, "app-icons");
+  const tints = existsSync(dir)
+    ? readdirSync(dir).filter((tint) =>
+        existsSync(join(dir, tint, "default.png")),
+      )
+    : [];
+  if (tints.length === 0) {
+    throw new Error(
+      `[pond verify] no tint icons in ${dir}. ` +
+        "Run prepare-dock-icons so the app icon picker is not empty.",
+    );
+  }
+}
+
 const ARCH_NAMES = ["ia32", "x64", "armv7l", "arm64", "universal"];
 
 function normalizeArch(arch) {
@@ -121,15 +149,24 @@ function normalizeArch(arch) {
     .parse(arch);
 }
 
-function pruneOnnxRuntime(resourcesDir, platform, arch) {
-  const runtimeRoot = join(
+/** Pond only creates CPU sessions: GPU providers load lazily and never run, and the versioned dylib copies the one the binding links. */
+const UNUSED_ONNX_FILES = {
+  darwin: /^libonnxruntime\.\d+\.\d+\.\d+\.dylib$/,
+  linux: /^libonnxruntime_providers_(cuda|tensorrt)\.so$/,
+  win32: /^(DirectML|dxcompiler|dxil)\.dll$/,
+};
+
+function onnxPackageDir(resourcesDir) {
+  return join(
     resourcesDir,
     "app.asar.unpacked",
     "node_modules",
     "onnxruntime-node",
-    "bin",
-    "napi-v6",
   );
+}
+
+function pruneOnnxRuntime(resourcesDir, platform, arch) {
+  const runtimeRoot = join(onnxPackageDir(resourcesDir), "bin", "napi-v6");
   if (!existsSync(runtimeRoot)) return;
 
   for (const platformName of readdirSync(runtimeRoot)) {
@@ -138,13 +175,42 @@ function pruneOnnxRuntime(resourcesDir, platform, arch) {
       rmSync(platformDir, { recursive: true, force: true });
       continue;
     }
-    if (!arch || arch === "universal") continue;
     for (const archName of readdirSync(platformDir)) {
-      if (archName !== arch) {
-        rmSync(join(platformDir, archName), { recursive: true, force: true });
+      const archDir = join(platformDir, archName);
+      if (arch && arch !== "universal" && archName !== arch) {
+        rmSync(archDir, { recursive: true, force: true });
+        continue;
+      }
+      const unused = UNUSED_ONNX_FILES[platform];
+      for (const file of readdirSync(archDir)) {
+        if (unused?.test(file)) rmSync(join(archDir, file), { force: true });
       }
     }
   }
+}
+
+/** The packaged package keeps onnxruntime-common inside app.asar, so plain Node resolves it from the workspace instead. */
+function runOnnxSmoke(packageDir) {
+  const requireOnnx = createRequire(
+    createRequire(require.resolve("@huggingface/transformers")).resolve(
+      "onnxruntime-node",
+    ),
+  );
+  const common = requireOnnx.resolve("onnxruntime-common");
+  const nodePath = common.slice(
+    0,
+    common.lastIndexOf(`${sep}onnxruntime-common${sep}`),
+  );
+  return spawnSync(
+    process.execPath,
+    [join(__dirname, "onnx-cpu-smoke.cjs"), packageDir],
+    {
+      encoding: "utf8",
+      env: { ...process.env, NODE_PATH: nodePath },
+      timeout: 60_000,
+      windowsHide: true,
+    },
+  );
 }
 
 function pruneBetterSqlitePrebuilds(resourcesDir, platform, arch) {
@@ -283,22 +349,29 @@ function verifySharpWindowsRuntime(resourcesDir, arch) {
   }
 }
 
+const ONNX_LIBRARY = {
+  darwin: "libonnxruntime.1.dylib",
+  linux: "libonnxruntime.so.1",
+  win32: "onnxruntime.dll",
+};
+
+/** onnxruntime-node 1.30 publishes no Intel Mac binary, so there is nothing to bundle. */
+const UNPUBLISHED_ONNX_TARGETS = new Set(["darwin-x64"]);
+
 function verifyOnnxRuntime(resourcesDir, platform, arch) {
+  if (arch === "universal" || !ONNX_LIBRARY[platform]) return false;
+  if (UNPUBLISHED_ONNX_TARGETS.has(`${platform}-${arch}`)) return false;
   const directory = join(
-    resourcesDir,
-    "app.asar.unpacked",
-    "node_modules",
-    "onnxruntime-node",
+    onnxPackageDir(resourcesDir),
     "bin",
     "napi-v6",
     platform,
     arch,
   );
-  const library =
-    platform === "win32" ? "onnxruntime.dll" : "libonnxruntime.so.1";
-  for (const file of ["onnxruntime_binding.node", library]) {
+  for (const file of ["onnxruntime_binding.node", ONNX_LIBRARY[platform]]) {
     assertPresent(join(directory, file), `onnxruntime ${file}`);
   }
+  return true;
 }
 
 function removeSharpPackages(root, arch) {
@@ -315,6 +388,7 @@ function listFiles(root) {
   );
 }
 
+exports.pruneOnnxRuntime = pruneOnnxRuntime;
 exports.verifySharpRuntime = verifySharpRuntime;
 exports.verifyMacSlices = verifyMacSlices;
 exports.verify = verify;

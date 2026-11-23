@@ -7,6 +7,7 @@ import {
   pasteImportOf,
   runPasteImport,
 } from "@/features/saves/lib/paste-import";
+import { isPeekClick } from "@/features/saves/lib/peek-click";
 import {
   clearSaveSelection,
   clickSave,
@@ -14,6 +15,7 @@ import {
 } from "@/features/saves/lib/select";
 import { isLibrarySaveDrag } from "@/features/saves/lib/start-drag";
 import { runViewerAction } from "@/features/saves/lib/viewer-actions";
+import { requestQuickPreview } from "@/features/saves/state/quick-preview";
 import {
   useSelectionActive,
   useSelectionSize,
@@ -59,12 +61,17 @@ export function useCardActions(
 
   const handleCardClick = useCallback(
     (id: string, e: React.MouseEvent) => {
+      if (isPeekClick(e, viewer.peekClick)) {
+        e.preventDefault();
+        requestQuickPreview(id, { peek: true });
+        return;
+      }
       const meta = e.metaKey || e.ctrlKey;
       const shift = e.shiftKey;
       if (meta || shift) e.preventDefault();
       clickSave(id, { meta, shift }, filteredIds);
     },
-    [filteredIds],
+    [filteredIds, viewer.peekClick],
   );
 
   const handleCardPick = useCallback(
