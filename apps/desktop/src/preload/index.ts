@@ -87,6 +87,12 @@ const menuOpenSave = createNavigationMailbox<string>();
 ipcRenderer.on(IPC.menuOpenSave, (_: IpcRendererEvent, id: string) =>
   menuOpenSave.receive(id),
 );
+/** An MCP `apply_filter` can open the window and send its filter before the renderer subscribes. */
+const agentFilter = createNavigationMailbox<Query>();
+ipcRenderer.on(IPC.agentFilter, (_: IpcRendererEvent, query: WireJson) => {
+  const parsed = FilterQuery.safeParse(query);
+  if (parsed.success) agentFilter.receive(parsed.data);
+});
 
 const query: QueryClient = (name, ...args) =>
   ipcRenderer.invoke(IPC.query, name, args[0]);
@@ -537,12 +543,7 @@ const api = {
   },
 
   onAgentFilter(cb: (query: Query) => void): () => void {
-    const listener = (_: IpcRendererEvent, query: WireJson) => {
-      const parsed = FilterQuery.safeParse(query);
-      if (parsed.success) cb(parsed.data);
-    };
-    ipcRenderer.on(IPC.agentFilter, listener);
-    return () => ipcRenderer.off(IPC.agentFilter, listener);
+    return agentFilter.subscribe(cb);
   },
 
   onAgentCite(cb: (ids: string[]) => void): () => void {
