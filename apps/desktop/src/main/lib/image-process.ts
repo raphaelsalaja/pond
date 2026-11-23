@@ -3,7 +3,10 @@ import type { ImageDownloadSettings, ImageFormat } from "@pond/schema/db";
 import log from "electron-log/main.js";
 import sharp, { type Sharp } from "sharp";
 
-type ImageEncodeSettings = Omit<ImageDownloadSettings, "splitPosts">;
+type ImageEncodeSettings = Omit<
+  ImageDownloadSettings,
+  "splitPosts" | "splitMinMedia"
+>;
 
 interface ProcessedImage {
   bytes: Buffer;

@@ -18,7 +18,12 @@ export interface ImportFileFailure {
   error: string;
 }
 
-export type ManualSaveResult = OkResult<{ id: string; skipped?: boolean }> & {
+export type ManualSaveResult = OkResult<{
+  id: string;
+  skipped?: boolean;
+  /** The skipped match is in Trash. */
+  trashed?: boolean;
+}> & {
   failedFiles?: ImportFileFailure[];
 };
 
@@ -31,9 +36,14 @@ export interface DuplicateImportCandidate {
   filename: string;
   existingId: string;
   existingTitle: string | null;
+  /** The match is in Trash; only an explicit `restore` decision brings it back. */
+  inTrash: boolean;
 }
 
 export type DuplicateImportChoice = "use-existing" | "keep-both";
+
+/** A per-file review decision; `use-existing` never pulls a Save out of Trash, so restoring has its own choice. */
+export type DuplicateImportDecision = DuplicateImportChoice | "restore";
 
 export interface DataExportImportCounts extends SavesImportCounts {
   platforms: string[];
@@ -60,7 +70,8 @@ export interface SavesImportQueryInputs {
     tags?: string[];
     folderIds?: string[];
     duplicatePolicy?: DuplicateImportChoice;
-    duplicateDecisions?: Record<string, DuplicateImportChoice>;
+    duplicateDecisions?: Record<string, DuplicateImportDecision>;
+    origin?: "files" | "clipboard";
   };
   "saves.reviewImportDuplicates": { paths: string[] };
   "saves.createManual": {
@@ -92,6 +103,8 @@ export interface SavesImportQueryInputs {
   };
   "saves.pickEagleLibrary": EmptyInput;
   "saves.importClipboard": { folderId?: string | null };
+  "saves.stageClipboard": EmptyInput;
+  "saves.discardStagedClipboard": { paths: string[] };
   "saves.importBookmarks": EmptyInput;
   "saves.importMymind": EmptyInput;
   "saves.importDataExport": EmptyInput;
@@ -162,6 +175,10 @@ export interface SavesImportQueryResults {
   };
   "saves.pickEagleLibrary": ReasonResult<"cancelled", { path: string }>;
   "saves.importClipboard": SavesImportFilesResult;
+  "saves.stageClipboard":
+    | { ok: true; paths: string[] }
+    | { ok: false; error: string };
+  "saves.discardStagedClipboard": { ok: true };
   "saves.importBookmarks": CancellableResult<SavesImportCounts>;
   "saves.importMymind": CancellableResult<SavesImportCounts>;
   "saves.importDataExport": CancellableResult<DataExportImportCounts>;

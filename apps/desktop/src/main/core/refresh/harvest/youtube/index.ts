@@ -1,4 +1,4 @@
-export { adapt, buildExpression } from "./item";
+export { adapt, buildExpression, urlForHarvest } from "./item";
 export {
   buildYoutubeListExpression,
   YOUTUBE_LIST_URLS,

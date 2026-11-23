@@ -16,6 +16,9 @@ export function slideFiles<T extends SlideFileLike>(files: readonly T[]): T[] {
   );
 }
 
-export function canSplitFiles(files: readonly SlideFileLike[]): boolean {
-  return slideFiles(files).length > 1;
+export function canSplitFiles(
+  files: readonly SlideFileLike[],
+  minMedia = 2,
+): boolean {
+  return slideFiles(files).length >= minMedia;
 }

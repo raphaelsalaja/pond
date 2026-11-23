@@ -5,7 +5,12 @@ import type {
   ManualSaveResult,
   SavesImportFilesResult,
 } from "@shared/saves-import-contracts";
-import { createFolder, folderIdsForSave, setSaveFolders } from "./folders";
+import {
+  createFolder,
+  folderIdsForSave,
+  restoreSaveIntoFolders,
+  setSaveFolders,
+} from "./folders";
 import { runLibraryTransfer } from "./library-transfers";
 import { createManualSave } from "./manual-import";
 
@@ -21,6 +26,10 @@ interface FileImportRuntime {
   }): Promise<ManualSaveResult>;
   folderIdsForSave(id: string): Promise<string[]>;
   assignFolders(id: string, folderIds: string[]): Promise<{ ok: boolean }>;
+  restoreIntoFolders(
+    id: string,
+    folderIds: string[] | null,
+  ): Promise<{ ok: boolean }>;
 }
 
 const runtime: FileImportRuntime = {
@@ -28,6 +37,8 @@ const runtime: FileImportRuntime = {
   importFile: createManualSave,
   folderIdsForSave,
   assignFolders: setSaveFolders,
+  restoreIntoFolders: (id, folderIds) =>
+    restoreSaveIntoFolders(id, folderIds, "user:import-restore"),
 };
 
 async function importPaths(
@@ -36,6 +47,8 @@ async function importPaths(
     tags?: string[];
     folderIds?: string[];
     useExisting?: Readonly<Record<string, string>>;
+    /** Paths whose existing Save is in Trash, so using it restores it. */
+    restore?: ReadonlySet<string>;
     origin?: ImportOrigin;
   },
   dependencies: FileImportRuntime = runtime,
@@ -67,6 +80,25 @@ async function importPaths(
           ...new Set([...folderIds, ...(parentId ? [parentId] : [])]),
         ];
         const existingId = input.useExisting?.[absolute];
+        if (existingId && input.restore?.has(absolute)) {
+          const folders =
+            assigned.length > 0
+              ? [
+                  ...new Set([
+                    ...(await dependencies.folderIdsForSave(existingId)),
+                    ...assigned,
+                  ]),
+                ]
+              : null;
+          const result = await dependencies.restoreIntoFolders(
+            existingId,
+            folders,
+          );
+          if (!result.ok)
+            throw new Error("Existing file could not be restored.");
+          ids.push(existingId);
+          return;
+        }
         if (existingId) {
           if (assigned.length > 0) {
             const current = await dependencies.folderIdsForSave(existingId);
@@ -111,6 +143,8 @@ export function importFiles(
     tags?: string[];
     folderIds?: string[];
     useExisting?: Readonly<Record<string, string>>;
+    /** Paths whose existing Save is in Trash, so using it restores it. */
+    restore?: ReadonlySet<string>;
     origin?: ImportOrigin;
   },
   dependencies: FileImportRuntime = runtime,

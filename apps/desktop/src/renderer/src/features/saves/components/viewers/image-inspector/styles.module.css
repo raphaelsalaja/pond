@@ -21,6 +21,14 @@
     cursor: crosshair;
   }
 
+  &[data-click-zoom="in"] {
+    cursor: zoom-in;
+  }
+
+  &[data-click-zoom="out"] {
+    cursor: zoom-out;
+  }
+
   &[data-background="white"] {
     background: white;
   }

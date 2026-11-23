@@ -122,6 +122,12 @@ export function isEagleBookmark(meta: { ext?: string; url?: string }) {
   return meta.ext?.toLowerCase() === "url" && Boolean(meta.url?.trim());
 }
 
+export function isThumbnailSidecar(name: string): boolean {
+  const lower = name.toLowerCase();
+  return lower.endsWith("_thumbnail.png") || lower.endsWith("_thumbnail.webp");
+}
+
+/** Eagle also exports each preview as its own item whose only file is `<name>_thumbnail.webp`, so that item ends up with no media and is skipped. */
 export function partitionEagleItemFiles(
   files: readonly string[],
   bookmark = false,
@@ -131,11 +137,12 @@ export function partitionEagleItemFiles(
   );
   const thumbnail =
     visible.find((name) => name.toLowerCase().endsWith("_thumbnail.png")) ??
+    visible.find((name) => name.toLowerCase().endsWith("_thumbnail.webp")) ??
     null;
   return {
     mediaFiles: visible.filter(
       (name) =>
-        name !== thumbnail &&
+        !isThumbnailSidecar(name) &&
         !(bookmark && name.toLowerCase().endsWith(".url")),
     ),
     thumbnail,

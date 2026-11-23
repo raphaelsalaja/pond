@@ -5,6 +5,7 @@ import { MediaGrid } from "@/features/captures/components/tweet/card/media-grid"
 import { Metrics } from "@/features/captures/components/tweet/card/metrics";
 import { ParentPost } from "@/features/captures/components/tweet/card/parent";
 import { QuotedCard } from "@/features/captures/components/tweet/card/quoted-card";
+import { systemLocale } from "@/shared/lib/system-locale";
 import type { TweetCardData } from "./lib/data";
 import styles from "./styles.module.css";
 
@@ -13,11 +14,11 @@ type Scheme = "light" | "dark";
 function formatTimestamp(iso: string): string | null {
   const d = new Date(iso);
   if (!Number.isFinite(d.getTime())) return null;
-  const time = d.toLocaleTimeString(undefined, {
+  const time = d.toLocaleTimeString(systemLocale, {
     hour: "numeric",
     minute: "2-digit",
   });
-  const date = d.toLocaleDateString(undefined, {
+  const date = d.toLocaleDateString(systemLocale, {
     month: "short",
     day: "numeric",
     year: "numeric",

@@ -5,6 +5,7 @@ export const LibraryRepairKindSchema = z.enum([
   "physical-file-names",
   "invalid-content",
   "save-metadata",
+  "eagle-previews",
 ]);
 
 export type LibraryRepairKind = z.infer<typeof LibraryRepairKindSchema>;

@@ -1,4 +1,4 @@
-import { lstat } from "node:fs/promises";
+import { lstat, rm } from "node:fs/promises";
 import { join } from "node:path";
 import type { NewSave, Save, SyncAction, Tag } from "@pond/schema/db";
 import {
@@ -38,6 +38,7 @@ import {
 } from "./folder-transaction";
 import { createMutationQueue } from "./mutation-queue";
 import { writeOrganizationBundle } from "./organization-bundle";
+import { copyLibraryMediaFile } from "./storage/library-media-storage";
 import { isTagModel, scheduleTagsDump } from "./tags-bundle";
 import { setUserTitleLock } from "./user-metadata";
 
@@ -305,6 +306,8 @@ async function applyToDisk(tx: Transaction): Promise<void> {
           throw new Error(`A file named ${file.to} already exists.`);
         await renameWithRetry(source, destination);
       }
+      for (const file of tx.fileMoves ?? [])
+        await moveIntoSave(file.sourcePath, joinSaveFile(tx.id, file.filename));
       /** SAFETY: `Partial<NewSave>` and `Partial<Save>` differ only in timestamp nullability, which `patchSaveFiles` writes back unchanged. */
       const patched = await patchSaveFiles(
         tx.id,
@@ -366,6 +369,29 @@ async function applyToDisk(tx: Transaction): Promise<void> {
       await setSaveDeleted(tx.id, null);
       return;
   }
+}
+
+/** Temp files can sit on another volume than the Library, where rename fails with EXDEV. */
+async function moveIntoSave(
+  source: string,
+  destination: string,
+): Promise<void> {
+  try {
+    await renameWithRetry(source, destination);
+    return;
+  } catch (error) {
+    if (!(error instanceof Error && "code" in error && error.code === "EXDEV"))
+      throw error;
+  }
+  const staged = `${destination}.pond-move`;
+  try {
+    await copyLibraryMediaFile(source, staged);
+    await renameWithRetry(staged, destination);
+  } catch (error) {
+    await rm(staged, { force: true });
+    throw error;
+  }
+  await rm(source, { force: true });
 }
 
 function joinSaveFile(id: string, filename: string): string {

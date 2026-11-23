@@ -267,13 +267,14 @@ async function applyIssue(
       await dependencies.commit([transaction]);
       return [transaction];
     }
-    case "invalid-content": {
+    case "invalid-content":
+    case "eagle-previews": {
       if (row.deletedAt) return [];
       const transaction: Transaction = {
         kind: "trash",
         model: "save",
         id: row.id,
-        meta: { actor: "user", actorReason: "library-repair:invalid-content" },
+        meta: { actor: "user", actorReason: `library-repair:${issue.kind}` },
       };
       await dependencies.commit([transaction]);
       return [transaction];
@@ -349,7 +350,9 @@ function confirmationFor(
     affectedSaves,
     createsBackups: affectedSaves > 0,
     canUndo: kind !== "save-metadata" && affectedSaves > 0,
-    movesToTrash: kind === "invalid-content" && affectedSaves > 0,
+    movesToTrash:
+      (kind === "invalid-content" || kind === "eagle-previews") &&
+      affectedSaves > 0,
     rewritesMetadata: kind === "save-metadata" && affectedSaves > 0,
     renamesFiles: kind === "physical-file-names" && affectedSaves > 0,
     regeneratesThumbnails: kind === "thumbnails" && affectedSaves > 0,

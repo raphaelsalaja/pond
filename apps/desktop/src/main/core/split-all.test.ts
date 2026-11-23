@@ -44,7 +44,7 @@ function fakeRuntime(
   let pauses = 0;
   const runtime: SplitAllRuntime = {
     page: pager(rows),
-    optedOut: async () => new Set(),
+    minMedia: async () => () => 2,
     async split(id) {
       split.push(id);
       return { ok: true, created: [`${id}-slide`] };
@@ -98,9 +98,34 @@ describe("splittableIds", () => {
   it("leaves sources whose own setting turns splitting off", async () => {
     const library = fakeRuntime(
       [candidate("a", "instagram"), candidate("b", "pinterest")],
-      { optedOut: async () => new Set<Source>(["instagram"]) },
+      {
+        minMedia: async () => (source: Source) =>
+          source === "instagram" ? null : 2,
+      },
     );
     expect(await splittableIds(library.runtime)).toEqual(["b"]);
+  });
+
+  it("keeps only posts that reach their source's minimum", async () => {
+    const sized = (id: string, source: Source, count: number) => ({
+      id,
+      source,
+      files: Array.from({ length: count }, (_, i) =>
+        file("image", `${id}-${i + 1}.jpg`),
+      ),
+    });
+    const library = fakeRuntime(
+      [
+        sized("x-pair", "twitter", 2),
+        sized("x-four", "twitter", 4),
+        sized("ig-pair", "instagram", 2),
+      ],
+      {
+        minMedia: async () => (source: Source) =>
+          source === "twitter" ? 4 : 2,
+      },
+    );
+    expect(await splittableIds(library.runtime)).toEqual(["ig-pair", "x-four"]);
   });
 });
 
@@ -267,7 +292,7 @@ function carouselLibrary(count: number) {
   function backfill(): SplitAllRuntime {
     return {
       page,
-      optedOut: async () => new Set(),
+      minMedia: async () => () => 2,
       split: (id) =>
         quit()
           ? Promise.reject(new Error("Pond quit"))

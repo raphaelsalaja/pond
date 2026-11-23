@@ -207,6 +207,11 @@ export function storageKindForImport(
   }
 }
 
+/** A note keeps its own spacing, such as an indented first line; one that is only whitespace counts as no note. */
+export function keepNote(note: string | null | undefined): string | null {
+  return note?.trim() ? note : null;
+}
+
 export async function createManualSave(
   input: ManualSaveInput,
 ): Promise<ManualSaveResult> {
@@ -242,13 +247,18 @@ async function importManualSave(
           requestedFileCount,
         ))
       )
-        return { ok: true, id: existing.id, skipped: true };
+        return {
+          ok: true,
+          id: existing.id,
+          skipped: true,
+          trashed: existing.deletedAt != null,
+        };
       id = existing.id;
       recovering = true;
     }
   }
 
-  const note = input.note?.trim() || null;
+  const note = keepNote(input.note);
   const inspected = await inspectImportPaths(input.filePaths ?? []);
   const failedFiles = inspected.failures.length
     ? inspected.failures
@@ -287,7 +297,7 @@ async function importManualSave(
   const storesFiles = hasFiles || Boolean(customThumbnail);
   const onlyTextFiles =
     hasFiles && readable.every((item) => item.format.mediaType === "text");
-  const textBody = (importedText || note)?.trim() || null;
+  const textBody = keepNote(importedText || note);
   const classified = classifyManualSave({
     hasFiles,
     hasUrl,

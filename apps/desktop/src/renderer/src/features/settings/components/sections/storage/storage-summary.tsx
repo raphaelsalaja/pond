@@ -1,6 +1,7 @@
 import { Button, Settings } from "@pond/ui";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatBytes } from "@/shared/lib/format";
+import { systemLocale } from "@/shared/lib/system-locale";
 import { StorageBreakdown } from "./breakdown";
 import { refreshStorage, useStorageSnapshot } from "./lib/queries";
 
@@ -15,7 +16,7 @@ export function StorageSummary() {
           <Settings.ItemTitle>Library Size</Settings.ItemTitle>
           <Settings.ItemDescription>
             {data
-              ? `${formatBytes(data.pondBytes)} used · ${formatBytes(data.deviceFreeBytes)} available of ${formatBytes(data.deviceTotalBytes)} · Updated ${new Date(data.computedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`
+              ? `${formatBytes(data.pondBytes)} used · ${formatBytes(data.deviceFreeBytes)} available of ${formatBytes(data.deviceTotalBytes)} · Updated ${new Date(data.computedAt).toLocaleTimeString(systemLocale, { hour: "numeric", minute: "2-digit" })}`
               : query.isError
                 ? "Couldn't measure storage."
                 : "Measuring storage"}

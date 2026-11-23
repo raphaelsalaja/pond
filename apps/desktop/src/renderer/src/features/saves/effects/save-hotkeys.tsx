@@ -40,6 +40,7 @@ import {
   openInBrowserForSelection,
   pasteTagsForSelection,
   refreshDetailsForSelection,
+  restoreSelection,
   revealFilesForSelection,
   type SelectionActionResult,
 } from "@/features/saves/lib/selection";
@@ -357,7 +358,9 @@ export function SaveHotkeys() {
         callback: () => {
           const ids = selection.snapshot();
           if (ids.length > 0) {
-            void moveSelectionToTrash(ids);
+            if (ids.every((id) => pool.get(id)?.deletedAt))
+              void restoreSelection(ids);
+            else void moveSelectionToTrash(ids);
             return;
           }
           const save = primarySave();

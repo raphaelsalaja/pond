@@ -3,7 +3,7 @@ import type { ExtensionCookie } from "@pond/schema/session";
 import { describe, expect, it, vi } from "vitest";
 import { createSessionRefresh } from "./session-refresh";
 
-function youtubeAccount(id: string, handle: string): ConnectedAccount {
+function youtubeAccount(id: string, handle: string | null): ConnectedAccount {
   return {
     id,
     source: "youtube",
@@ -63,6 +63,7 @@ function setup(pond: Partial<Pond> = {}) {
   };
   const probeHandle = vi.fn(async () => state.probedHandle);
   const writeCookies = vi.fn(async () => {});
+  const patchHandle = vi.fn(async () => {});
   const signedBackIn = vi.fn();
   const refresh = createSessionRefresh({
     listAccounts: async () => state.accounts,
@@ -73,9 +74,10 @@ function setup(pond: Partial<Pond> = {}) {
       ["LOGIN_INFO", "auth_token", "user_session"].includes(name),
     probeHandle,
     writeCookies,
+    patchHandle,
     signedBackIn,
   });
-  return { refresh, probeHandle, writeCookies, signedBackIn };
+  return { refresh, probeHandle, writeCookies, patchHandle, signedBackIn };
 }
 
 describe("createSessionRefresh", () => {
@@ -141,6 +143,69 @@ describe("createSessionRefresh", () => {
     await refresh("youtube", rotated);
     expect(writeCookies).not.toHaveBeenCalled();
     expect(probeHandle).toHaveBeenCalledTimes(1);
+  });
+
+  it("adopts the sole signed-out Account that predates handle probing", async () => {
+    const account = youtubeAccount("a", null);
+    const { refresh, writeCookies, patchHandle, signedBackIn } = setup({
+      accounts: [account],
+      probedHandle: "raphael",
+    });
+
+    await expect(refresh("youtube", rotated)).resolves.toEqual({
+      tracked: true,
+      refreshed: true,
+    });
+    expect(patchHandle).toHaveBeenCalledWith(account, "raphael");
+    expect(writeCookies).toHaveBeenCalledWith(
+      { ...account, handle: "raphael" },
+      rotated.slice(0, 3),
+    );
+    expect(signedBackIn).toHaveBeenCalledWith({
+      ...account,
+      handle: "raphael",
+    });
+  });
+
+  it("does not adopt a sign-in when a second Account is also signed out", async () => {
+    const { refresh, writeCookies } = setup({
+      accounts: [youtubeAccount("a", null), youtubeAccount("b", "raphael")],
+      probedHandle: "someone-else",
+    });
+
+    await expect(refresh("youtube", rotated)).resolves.toEqual({
+      tracked: true,
+      refreshed: false,
+    });
+    expect(writeCookies).not.toHaveBeenCalled();
+  });
+
+  it("does not adopt into a handle-less Account that has an identity key", async () => {
+    const account = { ...youtubeAccount("a", null), identityKey: "123" };
+    const { refresh, writeCookies } = setup({
+      accounts: [account],
+      probedHandle: "raphael",
+    });
+
+    await expect(refresh("youtube", rotated)).resolves.toEqual({
+      tracked: true,
+      refreshed: false,
+    });
+    expect(writeCookies).not.toHaveBeenCalled();
+  });
+
+  it("does not adopt a sign-in that a connected Account already claims", async () => {
+    const { refresh, writeCookies } = setup({
+      accounts: [youtubeAccount("a", null), youtubeAccount("b", "raphael")],
+      connected: new Set(["b"]),
+      probedHandle: "raphael",
+    });
+
+    await expect(refresh("youtube", rotated)).resolves.toEqual({
+      tracked: true,
+      refreshed: false,
+    });
+    expect(writeCookies).not.toHaveBeenCalled();
   });
 
   it("leaves a connected Account alone when another session rotates", async () => {

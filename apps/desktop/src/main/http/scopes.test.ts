@@ -15,6 +15,7 @@ describe("routeAccess", () => {
     ["GET", "/api/v2/library/conversion/job-1", "export"],
     ["POST", "/api/v2/library/conversion/start", "export"],
     ["POST", "/api/v2/library/conversion/job-1/cancel", "export"],
+    ["POST", "/api/v2/library/conversion/compress-videos", "write"],
     ["POST", "/api/v2/enqueue", "write"],
     ["POST", "/api/v2/saves/tags", "write"],
     ["POST", "/api/v2/saves/trash", "write"],

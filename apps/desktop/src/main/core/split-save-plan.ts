@@ -1,5 +1,10 @@
 import { isManualSensitiveDecision } from "@pond/schema/content-safety";
-import type { NewSave, Save, SaveFile } from "@pond/schema/db";
+import type {
+  ImageDownloadSettings,
+  NewSave,
+  Save,
+  SaveFile,
+} from "@pond/schema/db";
 import {
   type Capture,
   type CaptureMedia,
@@ -14,7 +19,7 @@ import {
   pickCardFile,
   thumbnailSidecarCandidates,
 } from "@shared/save-file-names";
-import { slideFiles } from "@shared/save-slides";
+import { canSplitFiles, slideFiles } from "@shared/save-slides";
 import { isAvatarUrl } from "@shared/tweet-card";
 
 export interface SaveSlide {
@@ -44,12 +49,12 @@ export function postSourceId(save: Pick<Save, "sourceId" | "rawJson">): string {
 /** A refresh restarts ingest with a later start time, so only a save's first ingest matches its creation. */
 export function splitsOnImport(
   save: Pick<Save, "createdAt" | "ingestStartedAt" | "files">,
-  splitPosts: boolean,
+  prefs: Pick<ImageDownloadSettings, "splitPosts" | "splitMinMedia">,
 ): boolean {
   return (
-    splitPosts &&
+    prefs.splitPosts &&
     save.ingestStartedAt?.getTime() === save.createdAt.getTime() &&
-    slideFiles(save.files).length > 1
+    canSplitFiles(save.files, prefs.splitMinMedia)
   );
 }
 
