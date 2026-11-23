@@ -63,7 +63,7 @@ Pond is free, open source, and made by one person. Support covers the Apple Deve
 - [Responsible Use](RESPONSIBLE-USE.md)
 - [Roadmap](ROADMAP.md)
 - [Security](SECURITY.md)
-- [Releasing](RELEASING.md)
+- [Releasing](docs/contributing/releasing.md)
 - [Contributing](CONTRIBUTING.md)
 - [Local API reference](docs/api.md)
 - [Extension](apps/extension/README.md)
