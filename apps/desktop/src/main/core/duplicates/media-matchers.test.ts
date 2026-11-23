@@ -96,9 +96,9 @@ describe("video matching", () => {
     expect(groups.map((group) => [group.relation, group.ids])).toEqual([
       ["near", ["one", "two"]],
     ]);
-    expect(
-      groups.map((group) => describeDuplicateGroup(group, pairs))[0],
-    ).toBe("Same Video");
+    expect(groups.map((group) => describeDuplicateGroup(group, pairs))[0]).toBe(
+      "Same Video",
+    );
   });
 });
 
@@ -123,9 +123,9 @@ describe("audio matching", () => {
       },
     );
     expect(groups.map((group) => group.relation)).toEqual(["near"]);
-    expect(
-      groups.map((group) => describeDuplicateGroup(group, pairs))[0],
-    ).toBe("Same Audio");
+    expect(groups.map((group) => describeDuplicateGroup(group, pairs))[0]).toBe(
+      "Same Audio",
+    );
   });
 
   it("never pairs two videos on a shared soundtrack alone", () => {

@@ -279,9 +279,7 @@ async function extractJpeg(
   }
 }
 
-export async function probeMediaDuration(
-  path: string,
-): Promise<number | null> {
+export async function probeMediaDuration(path: string): Promise<number | null> {
   const { ffmpeg } = binariesAvailable();
   return ffmpeg ? probeDuration(ffmpeg, path) : null;
 }

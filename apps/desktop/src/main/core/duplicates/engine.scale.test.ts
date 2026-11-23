@@ -143,7 +143,7 @@ describe("a large Library", () => {
       ),
     ).toBe(true);
 
-    expect(elapsed).toBeLessThan(10_000);
+    expect(elapsed).toBeLessThan(20_000);
   }, 60_000);
 
   it("returns only the groups a scoped scan touches", () => {

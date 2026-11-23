@@ -384,7 +384,9 @@ export const savesMutationQueries = {
         .max(10_000),
     }),
     async ({ pairs }) => {
-      const { addDismissals } = await import("../../core/duplicates/dismissals");
+      const { addDismissals } = await import(
+        "../../core/duplicates/dismissals"
+      );
       return { ok: true as const, dismissed: addDismissals(pairs) };
     },
   ),

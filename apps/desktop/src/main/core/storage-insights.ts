@@ -332,9 +332,7 @@ export function duplicateStorage(db: Db): DuplicateStorageResult {
     group.ids.push(row.id);
     byContent.set(key, group);
   }
-  const exact = [...byContent.values()].filter(
-    (group) => group.ids.length > 1,
-  );
+  const exact = [...byContent.values()].filter((group) => group.ids.length > 1);
   let extraBytes = 0;
   for (const group of exact)
     if (group.bytes !== null)

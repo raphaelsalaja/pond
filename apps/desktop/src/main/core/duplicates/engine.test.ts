@@ -267,9 +267,9 @@ describe("near grouping", () => {
       relation: "near",
       ids: ["copy", "one", "resized"],
     });
-    expect(
-      groups.map((group) => describeDuplicateGroup(group, pairs))[0],
-    ).toBe("Same Image, Resized");
+    expect(groups.map((group) => describeDuplicateGroup(group, pairs))[0]).toBe(
+      "Same Image, Resized",
+    );
   });
 });
 

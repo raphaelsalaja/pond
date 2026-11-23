@@ -46,9 +46,14 @@ function pairOf(relation: DuplicateRelation, left: string, right: string) {
       left: file(left),
       right: file(right),
     });
-  if (relation === "overlap") pair.coverage = { ...pair.coverage, leftTotal: 2 };
+  if (relation === "overlap")
+    pair.coverage = { ...pair.coverage, leftTotal: 2 };
   if (relation === "related")
-    pair.saveEvidence.push({ matcher: "semantic", model: "clip", distance: 0.02 });
+    pair.saveEvidence.push({
+      matcher: "semantic",
+      model: "clip",
+      distance: 0.02,
+    });
   return pair;
 }
 
