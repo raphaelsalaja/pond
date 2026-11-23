@@ -108,6 +108,17 @@
   }
 }
 
+/* The global reduced-motion override shortens durations but keeps delays. */
+@media (prefers-reduced-motion: reduce) {
+  .popup[data-zoom][data-ending-style] {
+    transition-delay: 0s;
+  }
+}
+
+:global(html[data-reduce-motion="true"]) .popup[data-zoom][data-ending-style] {
+  transition-delay: 0s;
+}
+
 .viewer {
   position: relative;
   flex: 1;
