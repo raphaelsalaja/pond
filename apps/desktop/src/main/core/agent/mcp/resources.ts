@@ -26,8 +26,10 @@ function json(uri: URL, value: McpToolBody): ReadResourceResult {
 }
 
 function variable(variables: Variables, name: string): string {
-  const value = variables[name];
-  return decodeURIComponent(Array.isArray(value) ? (value[0] ?? "") : value);
+  const raw = variables[name];
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  if (value === undefined) throw new Error(`The URI has no ${name}.`);
+  return decodeURIComponent(value);
 }
 
 async function requireSearch(): Promise<void> {
