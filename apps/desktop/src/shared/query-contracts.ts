@@ -103,6 +103,7 @@ import type {
   SavesReadQueryInputs,
   SavesReadQueryResults,
 } from "./saves-read-contracts";
+import type { StorageOrder } from "./storage-insights";
 import type {
   TagGroupQueryInputs,
   TagGroupQueryResults,
@@ -351,7 +352,18 @@ export interface QueryInputs
     search?: string;
     mediaType?: MediaType;
     source?: string;
+    minBytes?: number;
+    order?: StorageOrder;
   };
+  "storage.largestFiles": {
+    limit: number;
+    search?: string;
+    kind?: string;
+    extension?: string;
+    order?: StorageOrder;
+  };
+  "storage.attribution": EmptyInput;
+  "storage.duplicates": EmptyInput;
   "storage.applyGuardPrefs": EmptyInput;
   "storage.guardState": EmptyInput;
   "api.restart": EmptyInput;

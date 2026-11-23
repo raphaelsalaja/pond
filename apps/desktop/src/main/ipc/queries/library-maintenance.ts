@@ -13,7 +13,12 @@ import {
 import { purgeDirectory, verifyLibraryIntegrity } from "../../core/library-ops";
 import { getPrefs, invalidatePrefs, setPrefs } from "../../core/prefs";
 import { reconcileLibrary } from "../../core/scan";
-import { largestSaves } from "../../core/storage-insights";
+import {
+  duplicateStorage,
+  largestFiles,
+  largestSaves,
+  storageAttribution,
+} from "../../core/storage-insights";
 import {
   invalidateStorageSnapshot,
   measureDirectory,
@@ -24,6 +29,8 @@ import { showDock } from "../../dock";
 import { libraryRoot, thumbnailCacheRoot } from "../../paths";
 import { runtimeControls } from "../../runtime";
 import { type QueryHandlerMap, query } from "./params";
+
+const StorageOrderSchema = z.enum(["largest", "smallest"]);
 
 async function clearCache(
   dir: string,
@@ -139,12 +146,30 @@ export const libraryMaintenanceQueries = {
     return { ok: true as const };
   },
 
+  async "storage.attribution"() {
+    return storageAttribution(await getDb());
+  },
+  async "storage.duplicates"() {
+    return duplicateStorage(await getDb());
+  },
+  "storage.largestFiles": query(
+    z.object({
+      limit: z.number().int().min(1).max(500),
+      search: z.string().max(500).optional(),
+      kind: z.string().min(1).max(100).optional(),
+      extension: z.string().min(1).max(40).optional(),
+      order: StorageOrderSchema.optional(),
+    }),
+    async (params) => largestFiles(await getDb(), params),
+  ),
   "storage.largestSaves": query(
     z.object({
       limit: z.number().int().min(1).max(500),
       search: z.string().max(500).optional(),
       mediaType: z.enum(MEDIA_TYPES).optional(),
       source: z.string().min(1).max(100).optional(),
+      minBytes: z.number().int().min(0).optional(),
+      order: StorageOrderSchema.optional(),
     }),
     async (params) => largestSaves(await getDb(), params),
   ),
