@@ -248,7 +248,7 @@ async function compressSaveVideos(input: {
       encoded.push({
         file,
         output,
-        path: file.path.replace(/\.[^.]+$/, ".mp4"),
+        path: mp4Path(file.path),
         bytesBefore: before,
         size: after,
         sha256: await operations.hash(output),
@@ -284,7 +284,14 @@ function isCompressibleVideo(file: SaveFile): boolean {
   return VIDEO_EXTENSIONS.has(extname(file.path).toLowerCase());
 }
 
-/** The encoded source still sits at its path unchanged, and its MP4 name is free. */
+/** An `.mp4` keeps its name, since a case-only rename like `.MP4` to `.mp4` collides with itself on macOS and Windows. */
+function mp4Path(path: string): string {
+  return extname(path).toLowerCase() === ".mp4"
+    ? path
+    : path.replace(/\.[^.]+$/, ".mp4");
+}
+
+/** The encoded source still sits at its path unchanged, and its MP4 name is free on a case-insensitive disk. */
 function isStillReplaceable(save: VideoSave, item: EncodedVideo): boolean {
   const files = save.files ?? [];
   const source = files.find((file) => file.path === item.file.path);
@@ -294,9 +301,19 @@ function isStillReplaceable(save: VideoSave, item: EncodedVideo): boolean {
     source.size !== item.file.size
   )
     return false;
+  const target = item.path.toLowerCase();
   return !files.some(
-    (file) => file.path === item.path && file.path !== item.file.path,
+    (file) =>
+      file.path.toLowerCase() === target && file.path !== item.file.path,
   );
+}
+
+/** Windows and Linux builds may lack the HEVC decoder and `libx265` encoder the compressed copies need. */
+export function assertVideoCompressionSupported(
+  platform: NodeJS.Platform = process.platform,
+): void {
+  if (platform !== "darwin")
+    throw new Error("Video compression is available on macOS only.");
 }
 
 /** Only one-stream, 8-bit SDR 4:2:0 sources with a known length keep everything through `yuv420p` and `0:v:0`. */

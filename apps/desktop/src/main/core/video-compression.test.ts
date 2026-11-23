@@ -11,6 +11,7 @@ import { afterEach, expect, it } from "vitest";
 import { saveDirIn } from "../paths";
 import { runFfmpeg } from "./convert-media";
 import {
+  assertVideoCompressionSupported,
   compressExistingVideos,
   encodeTimeout,
   hevcArguments,
@@ -242,6 +243,46 @@ it("renames MOV sources to MP4 after re-encoding them", async () => {
     "clip.mp4",
   ]);
   expect(transaction.patch.bitrate).toBeNull();
+});
+
+it("keeps an uppercase MP4 name instead of renaming it by case", async () => {
+  const library = fakeLibrary({
+    saves: [
+      {
+        id: "save-1",
+        files: [videoFile("CLIP.MP4", 1000)],
+        fileSize: 1000,
+        videoCodec: "h264",
+        bitrate: null,
+      },
+    ],
+    source: h264,
+    encoded: hevc,
+    outputSize: 300,
+  });
+
+  await compressExistingVideos(
+    {
+      ids: ["save-1"],
+      quality: "balanced",
+      signal: new AbortController().signal,
+    },
+    library.runtime,
+  );
+
+  const [transaction] = library.commits;
+  if (transaction?.kind !== "update" || transaction.model !== "save")
+    throw new Error("Expected one Save update.");
+  expect(transaction.fileRenames).toBeUndefined();
+  expect(transaction.fileMoves?.map((file) => file.filename)).toEqual([
+    "CLIP.MP4",
+  ]);
+});
+
+it("offers video compression on macOS only", () => {
+  expect(() => assertVideoCompressionSupported("darwin")).not.toThrow();
+  expect(() => assertVideoCompressionSupported("linux")).toThrow("macOS only");
+  expect(() => assertVideoCompressionSupported("win32")).toThrow("macOS only");
 });
 
 it("leaves unsafe sources, missing Saves, and small gains untouched", async () => {

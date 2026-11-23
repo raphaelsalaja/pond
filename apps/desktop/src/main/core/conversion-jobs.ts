@@ -13,7 +13,10 @@ import { readBundleJson, writeBundleJson } from "../lib/library-config";
 import { resolvePaths } from "../paths";
 import { convertMedia } from "./convert-media";
 import { compressExistingImages } from "./image-compression";
-import { compressExistingVideos } from "./video-compression";
+import {
+  assertVideoCompressionSupported,
+  compressExistingVideos,
+} from "./video-compression";
 
 export function conversionPresets(
   root = resolvePaths().libraryRoot,
@@ -70,7 +73,10 @@ const runtime: ConversionRuntime = {
   },
   convert: convertMedia,
   compress: compressExistingImages,
-  compressVideos: compressExistingVideos,
+  compressVideos(input, operations) {
+    assertVideoCompressionSupported();
+    return compressExistingVideos(input, operations);
+  },
 };
 export function createConversionJobs(operations: ConversionRuntime) {
   const jobs = new Map<

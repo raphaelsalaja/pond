@@ -222,7 +222,7 @@ export async function startPondMcp(): Promise<void> {
     "compress_videos",
     {
       description:
-        "Re-encode the videos of selected Saves as HEVC to reclaim disk space. Replaces the original files without Undo. Verifies each output against its original first and leaves videos that would not shrink by at least 10%.",
+        "Re-encode the videos of selected Saves as HEVC to reclaim disk space. Replaces the original files without Undo. Verifies each output against its original first and leaves videos that would not shrink by at least 10%. Available on macOS only.",
       inputSchema: VideoCompressionRequestSchema,
       annotations: { destructiveHint: true },
     },
