@@ -10,6 +10,7 @@ import type {
   VideoDownloadSettings,
 } from "@pond/schema/db";
 import type { Query } from "@pond/schema/filters/types";
+import type { FolderTemplate } from "@pond/schema/folder-templates";
 import type { ExternalSource } from "@pond/schema/sources";
 import type { z } from "zod";
 import type {
@@ -176,6 +177,20 @@ export interface QueryInputs
   "folders.rules.get": { id: string };
   "folders.rules.set": { id: string; tags: string[]; applyExisting?: boolean };
   "folders.createBatch": { names: string[]; parentId?: string | null };
+  "folders.templates.list": EmptyInput;
+  "folders.templates.apply": {
+    templateId: string;
+    parentId?: string | null;
+    name?: string;
+  };
+  "folders.templates.saveFrom": {
+    folderId: string;
+    includeSubfolders: boolean;
+    name: string;
+    description?: string;
+  };
+  "folders.templates.duplicate": { templateId: string };
+  "folders.templates.delete": { templateId: string };
   "folders.createWithSaves": {
     name: string;
     parentId?: string | null;
@@ -397,6 +412,14 @@ export interface QueryResults
   "folders.rules.get": { tags: string[]; inheritedTags: string[] };
   "folders.rules.set": OkResult<{ affected: number }>;
   "folders.createBatch": Folder[];
+  "folders.templates.list": {
+    builtIn: readonly FolderTemplate[];
+    custom: FolderTemplate[];
+  };
+  "folders.templates.apply": { rootId: string; count: number } & UndoableChange;
+  "folders.templates.saveFrom": FolderTemplate;
+  "folders.templates.duplicate": FolderTemplate;
+  "folders.templates.delete": OkSuccess;
   "folders.createWithSaves": Folder & UndoableChange;
   "folders.moveBatch": OkResult<UndoableChange>;
 

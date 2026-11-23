@@ -4,7 +4,10 @@ import { readdir, stat } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
 import { saves } from "@pond/schema/db";
 import { isAuxiliaryKind } from "@shared/save-file-names";
-import { isNull } from "drizzle-orm";
+import type {
+  DuplicateImportChoice,
+  DuplicateImportDecision,
+} from "@shared/saves-import-contracts";
 import { getDb } from "../db";
 
 export interface DuplicateImportCandidate {
@@ -12,6 +15,7 @@ export interface DuplicateImportCandidate {
   filename: string;
   existingId: string;
   existingTitle: string | null;
+  inTrash: boolean;
 }
 
 export async function hashImportFile(path: string): Promise<string> {
@@ -52,17 +56,27 @@ export async function reviewImportDuplicates(
 ): Promise<DuplicateImportCandidate[]> {
   const db = await getDb();
   const rows = await db
-    .select({ id: saves.id, title: saves.title, files: saves.files })
-    .from(saves)
-    .where(isNull(saves.deletedAt));
-  const byHash = new Map<string, { id: string; title: string | null }>();
+    .select({
+      id: saves.id,
+      title: saves.title,
+      files: saves.files,
+      deletedAt: saves.deletedAt,
+    })
+    .from(saves);
+  /** A Save in Trash still matches, so importing the file again offers it back instead of piling up copies; a match outside Trash wins. */
+  const byHash = new Map<
+    string,
+    { id: string; title: string | null; inTrash: boolean }
+  >();
   for (const row of rows)
-    for (const file of row.files)
-      if (!isAuxiliaryKind(file.kind) && file.sha256)
-        byHash.set(file.sha256.toLowerCase(), {
-          id: row.id,
-          title: row.title,
-        });
+    for (const file of row.files) {
+      if (isAuxiliaryKind(file.kind) || !file.sha256) continue;
+      const hash = file.sha256.toLowerCase();
+      const inTrash = row.deletedAt != null;
+      const current = byHash.get(hash);
+      if (!current || (current.inTrash && !inTrash))
+        byHash.set(hash, { id: row.id, title: row.title, inTrash });
+    }
   const candidates: DuplicateImportCandidate[] = [];
   for (const path of await importableFiles(paths)) {
     const existing = byHash.get((await hashImportFile(path)).toLowerCase());
@@ -72,7 +86,31 @@ export async function reviewImportDuplicates(
         filename: basename(path),
         existingId: existing.id,
         existingTitle: existing.title,
+        inTrash: existing.inTrash,
       });
   }
   return candidates;
+}
+
+interface ResolvedDuplicates {
+  useExisting: Record<string, string>;
+  restore: Set<string>;
+}
+
+/** Only the review dialog sends `restore`, so callers that ask for `use-existing` import a file whose match is in Trash as new. */
+export function resolveDuplicateDecisions(
+  candidates: readonly DuplicateImportCandidate[],
+  decisions: Readonly<Record<string, DuplicateImportDecision>>,
+  policy: DuplicateImportChoice,
+): ResolvedDuplicates {
+  const useExisting: Record<string, string> = {};
+  const restore = new Set<string>();
+  for (const candidate of candidates) {
+    const choice = decisions[candidate.path] ?? policy;
+    if (choice === "keep-both") continue;
+    if (candidate.inTrash && choice !== "restore") continue;
+    useExisting[candidate.path] = candidate.existingId;
+    if (candidate.inTrash) restore.add(candidate.path);
+  }
+  return { useExisting, restore };
 }

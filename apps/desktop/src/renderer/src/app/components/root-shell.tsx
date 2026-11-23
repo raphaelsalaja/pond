@@ -11,6 +11,7 @@ import { useDownloadDialog } from "@/features/downloads/state/download-dialog";
 import { fishIdFromPath } from "@/features/fish";
 import { FolderSidebar } from "@/features/library/components/folder-sidebar";
 import { selectLibraryNav } from "@/features/library/components/folder-sidebar/navigation";
+import { FolderTemplateDialogHost } from "@/features/library/components/folder-template-dialog";
 import { NewMenuDialogHost } from "@/features/library/components/new-menu";
 import { OrganizationRenameDialogHost } from "@/features/library/components/organization-rename-dialog";
 import { AppShell } from "@/features/library/components/workspace-shell";
@@ -131,6 +132,7 @@ export function RootShell() {
       <AppHotkeys />
       <NewMenuDialogHost />
       <OrganizationRenameDialogHost />
+      <FolderTemplateDialogHost />
       <DuplicateImportReviewHost />
       <SaveTagPickerHost />
       <SnoozeDialogHost />

@@ -2,6 +2,7 @@ import { Badge, Button, Checkbox, Dialog, Toggle, ToggleGroup } from "@pond/ui";
 import type {
   DuplicateImportCandidate,
   DuplicateImportChoice,
+  DuplicateImportDecision,
 } from "@shared/saves-import-contracts";
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { CardThumb } from "@/features/saves/components/card/media";
@@ -98,7 +99,7 @@ function DuplicateImportReview({
   const [choice, setChoice] = useState<DuplicateImportChoice>("use-existing");
   const [applyToAll, setApplyToAll] = useState(false);
   const [decisions, setDecisions] = useState<
-    Record<string, DuplicateImportChoice>
+    Record<string, DuplicateImportDecision>
   >({});
   const candidate = candidates[index];
   const existingId = candidate?.existingId;
@@ -117,11 +118,16 @@ function DuplicateImportReview({
   );
   const source = parentFolder(candidate.path);
   const meta = describe(save);
+  const applied = applyToAll ? candidates.slice(index) : [candidate];
+  const restoring =
+    choice === "use-existing" && applied.every((item) => item.inTrash);
+  const confirmLabel = !last ? "Next" : restoring ? "Restore" : "Import";
 
   const submit = () => {
     const next = { ...decisions };
-    for (const item of applyToAll ? candidates.slice(index) : [candidate])
-      next[item.path] = choice;
+    for (const item of applied)
+      next[item.path] =
+        choice === "use-existing" && item.inTrash ? "restore" : choice;
     if (last) {
       completeDuplicateImportReview(next);
       return;
@@ -150,11 +156,13 @@ function DuplicateImportReview({
           </Dialog.Header>
           <Dialog.Content className={styles.content}>
             <Dialog.Description>
-              This file is already in your Library.
+              {candidate.inTrash
+                ? "This file is in Trash."
+                : "This file is already in your Library."}
             </Dialog.Description>
             <div className={styles.compare}>
               <Side
-                label="Existing"
+                label={candidate.inTrash ? "In Trash" : "Existing"}
                 tone="existing"
                 save={save}
                 name={existingName}
@@ -196,7 +204,7 @@ function DuplicateImportReview({
                   }}
                 >
                   <Toggle type="button" size="sm" value="use-existing">
-                    Use Existing
+                    {candidate.inTrash ? "Restore" : "Use Existing"}
                   </Toggle>
                   <Toggle type="button" size="sm" value="keep-both">
                     Keep Both
@@ -221,7 +229,7 @@ function DuplicateImportReview({
           >
             <Dialog.Cancel />
             <Button ref={confirmRef} onClick={submit}>
-              {last ? "Import" : "Next"}
+              {confirmLabel}
             </Button>
           </Dialog.Footer>
         </Dialog.Popup>

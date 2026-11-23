@@ -39,6 +39,7 @@ const CHECK: LibraryHealthCheck = {
     "physical-file-names": 0,
     "invalid-content": 1,
     "save-metadata": 0,
+    "eagle-previews": 0,
     posters: 3,
     unverified: 1,
   },

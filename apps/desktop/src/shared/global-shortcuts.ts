@@ -15,6 +15,11 @@ export const GLOBAL_SHORTCUTS = {
     label: "Open File To Ring",
     group: "Global",
   },
+  /** Ships unbound for the same reason as the File To ring. */
+  "app.quick-capture": {
+    label: "Quick Capture",
+    group: "Global",
+  },
 } as const;
 
 export type GlobalShortcutId = keyof typeof GLOBAL_SHORTCUTS;

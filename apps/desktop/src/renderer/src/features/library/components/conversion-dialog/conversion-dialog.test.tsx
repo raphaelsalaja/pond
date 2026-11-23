@@ -153,6 +153,7 @@ it("shows conversion progress and cancellation while preserving completed output
     outputs: ["/export/one.webp"],
     changed: 1,
     skipped: 0,
+    failed: 0,
     bytesBefore: 0,
     bytesAfter: 0,
     error: null,

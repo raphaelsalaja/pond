@@ -6,6 +6,7 @@ import {
   FolderPresentationSchema,
 } from "./folder-presentation";
 import { FolderRulesSchema } from "./folder-rules";
+import { FolderTemplatePrefsSchema } from "./folder-templates";
 import { DEFAULT_INBOX_CHANNELS } from "./inbox";
 import {
   DEFAULT_APP_ICON,
@@ -492,6 +493,9 @@ const PrefsObject = z.object({
   folderViews: z.record(z.string(), FolderPresentationSchema).catch({}),
   folderAppearance: FolderAppearancePrefsSchema.catch(
     FolderAppearancePrefsSchema.parse({}),
+  ),
+  folderTemplates: FolderTemplatePrefsSchema.catch(
+    FolderTemplatePrefsSchema.parse({}),
   ),
   fileRing: FileRingPrefsSchema.catch(FileRingPrefsSchema.parse({})),
   savedViewViews: z.record(z.string(), SavedViewPresentationSchema).catch({}),

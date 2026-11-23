@@ -6,7 +6,10 @@ import {
 } from "@/features/saves/lib/import-feedback";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
 import { asUrlList, filePathsFromText } from "@/features/saves/lib/url-list";
-import { importFilesWithDuplicateReview } from "@/features/saves/state/duplicate-import-review";
+import {
+  importClipboardWithDuplicateReview,
+  importFilesWithDuplicateReview,
+} from "@/features/saves/state/duplicate-import-review";
 import { notify } from "@/shared/lib/toast";
 
 export type PasteImport =
@@ -120,7 +123,9 @@ async function importPlan(
     }
     case "clipboard": {
       const reply = ImportReplySchema.parse(
-        await window.pond.query("saves.importClipboard", into),
+        await importClipboardWithDuplicateReview(
+          folderId ? { folderIds: [folderId] } : {},
+        ),
       );
       return replyResult(reply, 1);
     }

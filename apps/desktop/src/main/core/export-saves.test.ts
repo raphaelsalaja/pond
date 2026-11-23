@@ -1,7 +1,8 @@
 import type { savedViews } from "@pond/schema/db";
 import type { Query } from "@pond/schema/filters/types";
 import { describe, expect, it } from "vitest";
-import { selectionViews } from "./export-saves";
+import type { ExportFolder, ExportItem } from "./export-files";
+import { exportName, selectionViews } from "./export-saves";
 
 function view(
   id: string,
@@ -56,5 +57,36 @@ describe("selection organization export", () => {
     expect(
       selectionViews(rows, new Set(["selected-folder"])).map((row) => row.id),
     ).toEqual(["group", "included", "global"]);
+  });
+});
+
+describe("export names", () => {
+  const now = new Date(2026, 10, 22);
+  const folders: ExportFolder[] = [
+    { id: "projects", name: "Projects", parentId: null },
+    { id: "geoid", name: "Geoid", parentId: "projects" },
+  ];
+  const item = (title: string): ExportItem => ({
+    directory: "",
+    folderIds: ["geoid"],
+    save: { id: title, title, url: "", tags: [], notes: "", files: [] },
+  });
+
+  it("names a single Save after its title even when it's filed in a folder", () => {
+    expect(exportName([item("Survey")], folders, {}, now)).toBe(
+      "Survey (Pond Export 2026-11-22)",
+    );
+  });
+
+  it("names a folder export after the folder even when it holds one Save", () => {
+    expect(
+      exportName([item("Survey")], folders, { fromFolders: true }, now),
+    ).toBe("Geoid (Pond Export 2026-11-22)");
+  });
+
+  it("names several Saves after their shared folder", () => {
+    expect(exportName([item("A"), item("B")], folders, {}, now)).toBe(
+      "Geoid (Pond Export 2026-11-22)",
+    );
   });
 });

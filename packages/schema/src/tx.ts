@@ -49,6 +49,8 @@ export type Transaction =
       titleLock?: { before: boolean; after: boolean };
       fileRenames?: Array<{ from: string; to: string }>;
       files?: TxSaveFile[];
+      /** Main-process temp files moved into the Save so large media is never buffered; renderers can't send these. */
+      fileMoves?: Array<{ sourcePath: string; filename: string }>;
       beforeFiles?: TxSaveFile[];
       meta?: TxMeta;
     }

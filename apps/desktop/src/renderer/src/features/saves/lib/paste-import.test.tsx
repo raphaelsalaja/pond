@@ -51,9 +51,12 @@ interface ImportReply {
 }
 
 function stubImport(reply: ImportReply) {
-  const query = vi.fn(async (operation: string) =>
-    operation === "saves.reviewImportDuplicates" ? { candidates: [] } : reply,
-  );
+  const query = vi.fn(async (operation: string) => {
+    if (operation === "saves.reviewImportDuplicates") return { candidates: [] };
+    if (operation === "saves.stageClipboard")
+      return { ok: true, paths: ["/tmp/pond-clip/clipboard.png"] };
+    return reply;
+  });
   vi.stubGlobal("pond", { query });
   return query;
 }

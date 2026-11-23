@@ -1,3 +1,5 @@
+import { systemLocale } from "./system-locale";
+
 const SECOND = 1000;
 const MINUTE = 60 * SECOND;
 const HOUR = 60 * MINUTE;
@@ -5,7 +7,7 @@ const DAY = 24 * HOUR;
 const MONTH = 30 * DAY;
 const YEAR = 365 * DAY;
 
-const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: "always" });
+const rtf = new Intl.RelativeTimeFormat(systemLocale, { numeric: "always" });
 
 function ago(diff: number): string {
   if (diff < MINUTE)

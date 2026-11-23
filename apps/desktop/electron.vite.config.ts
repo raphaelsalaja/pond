@@ -110,6 +110,7 @@ export default defineConfig({
           index: resolve(__dirname, "src/preload/index.ts"),
           "combine-images": resolve(__dirname, "src/preload/combine-images.ts"),
           "file-ring": resolve(__dirname, "src/preload/file-ring.ts"),
+          "quick-capture": resolve(__dirname, "src/preload/quick-capture.ts"),
           "missing-library": resolve(
             __dirname,
             "src/preload/missing-library.ts",
@@ -215,6 +216,10 @@ export default defineConfig({
             "src/renderer/combine-images.html",
           ),
           "file-ring": resolve(__dirname, "src/renderer/file-ring.html"),
+          "quick-capture": resolve(
+            __dirname,
+            "src/renderer/quick-capture.html",
+          ),
           "missing-library": resolve(
             __dirname,
             "src/renderer/missing-library.html",

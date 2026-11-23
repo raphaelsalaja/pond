@@ -1,6 +1,7 @@
 import { PrefsSchema } from "@pond/schema";
 import { Settings } from "@pond/ui";
 import { useQuery } from "@tanstack/react-query";
+import { systemLocale } from "@/shared/lib/system-locale";
 
 export function BackupSummary() {
   const backup = useQuery({
@@ -23,7 +24,7 @@ export function BackupSummary() {
           <Settings.ItemTitle>Last Backup</Settings.ItemTitle>
           <Settings.ItemDescription>
             {lastBackup
-              ? `${new Date(lastBackup.completedAt).toLocaleString()} · ${lastBackup.path}`
+              ? `${new Date(lastBackup.completedAt).toLocaleString(systemLocale)} · ${lastBackup.path}`
               : "No backup recorded for this library yet."}
           </Settings.ItemDescription>
         </Settings.ItemDetails>
