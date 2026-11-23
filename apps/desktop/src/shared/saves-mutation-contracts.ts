@@ -5,6 +5,7 @@ import type {
   EmptyInput,
   OkResult,
   OkSuccess,
+  UndoableChange,
 } from "./query-contracts-shared";
 import type { SavesDerivedPatch, SavesIdInput } from "./saves-contracts-shared";
 
@@ -32,6 +33,7 @@ export interface SavesMutationQueryInputs {
   "saves.ensureTextCover": { id: string; force?: boolean };
   "saves.mergeDuplicates": { keepId: string; ids: string[] };
   "saves.split": { ids: string[] };
+  "saves.group": { ids: string[] };
   "saves.splittableCount": EmptyInput;
   "saves.splitAll": EmptyInput;
   "saves.splitAllStatus": EmptyInput;
@@ -96,6 +98,7 @@ export interface SavesMutationQueryResults {
   "saves.ensureTextCover": OkResult<{ captured: number }>;
   "saves.mergeDuplicates": OkResult<{ trashed: number }>;
   "saves.split": OkResult<{ split: number; created: number }>;
+  "saves.group": OkResult<{ id: string; grouped: number } & UndoableChange>;
   "saves.splittableCount": { count: number };
   "saves.splitAll": SplitAllProgress;
   "saves.splitAllStatus": SplitAllProgress;
