@@ -57,6 +57,7 @@ import type {
   LibraryRepairQueryResults,
 } from "./library-repair-contracts";
 import type { LogoCrop, LogoSource } from "./logo-crop";
+import type { McpInstallHost } from "./mcp-hosts";
 import type {
   MediaProcessingQueryInputs,
   MediaProcessingQueryResults,
@@ -351,7 +352,7 @@ export interface QueryInputs
   "agent.newChat": { fishId?: string };
   "agent.mcpSnippet": EmptyInput;
   "agent.mcpClients": EmptyInput;
-  "agent.openMcpInstall": { id: "cursor" | "vscode" };
+  "agent.openMcpInstall": { id: McpInstallHost };
   "library.info": EmptyInput;
   "library.rescan": EmptyInput;
   "library.openInFinder": EmptyInput;

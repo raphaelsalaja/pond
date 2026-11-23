@@ -10,11 +10,13 @@ import { pondMcpSnippet } from "../core/agent/mcp-hosts";
 import { getPrefs } from "../core/prefs";
 import { getIngestToken } from "../keychain";
 import { apiTokens } from "./api-tokens";
+import { appNavigateHandler } from "./app-navigate";
 import { createAuthLimiter, createRequireAuth } from "./auth";
 import { enqueueHandler } from "./enqueue";
 import { apiError, handleApiError } from "./errors";
 import { libraryRoutes } from "./library";
 import { libraryLocationRoutes } from "./library-locations";
+import { isLoopback } from "./loopback";
 import { operationRoutes } from "./operations";
 import { savesRoutes } from "./saves";
 import { sessionImportHandler } from "./session-import";
@@ -37,14 +39,6 @@ export function isAllowedOrigin(
     }
   }
   return false;
-}
-
-function isLoopback(address: string | undefined): boolean {
-  return (
-    address === "127.0.0.1" ||
-    address === "::1" ||
-    address === "::ffff:127.0.0.1"
-  );
 }
 
 const authLimiter = createAuthLimiter();
@@ -94,12 +88,14 @@ function buildApp(): Hono {
     remoteAddress: (c) => getConnInfo(c).remote.address,
   });
 
+  api.use("/api/v2/app/navigate", requireAuth);
   api.use("/api/v2/enqueue", requireAuth);
   api.use("/api/v2/saves/*", requireAuth);
   api.use("/api/v2/library/*", requireAuth);
   api.use("/api/v2/operations/*", requireAuth);
   api.use("/api/v2/session/*", requireAuth);
 
+  api.post("/api/v2/app/navigate", appNavigateHandler);
   api.post("/api/v2/enqueue", enqueueHandler);
   api.route("/api/v2/saves", savesRoutes());
   api.route("/api/v2/library", libraryRoutes());

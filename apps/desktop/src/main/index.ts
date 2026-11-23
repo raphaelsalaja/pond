@@ -308,8 +308,13 @@ app.whenReady().then(async () => {
     await ensureIngestToken().catch((err) =>
       log.error("[pond] ingest token init failed; MCP starts without one", err),
     );
-    const { startPondMcp } = await import("./core/agent/mcp");
-    await startPondMcp();
+    try {
+      const { startPondMcp } = await import("./core/agent/mcp");
+      await startPondMcp();
+    } catch (error) {
+      log.error("[pond mcp] server failed to start", error);
+      app.exit(1);
+    }
     return;
   }
 

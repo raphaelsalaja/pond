@@ -2,7 +2,7 @@ import { IconCircleQuestion as Help } from "@pond/icons";
 import { Button, Popover } from "@pond/ui";
 import {
   hostSetupCommands,
-  isMcpDeeplinkHost,
+  isMcpInstallHost,
   type McpHostDefinition,
   mcpHostConfigPath,
 } from "@shared/mcp-hosts";
@@ -29,17 +29,17 @@ export function HostPopover({
     ? hostSetupCommands(host.id, snippet.command, snippet.args)
     : [];
   const json = snippet?.json ?? "";
-  const deeplink = isMcpDeeplinkHost(host.id) ? host.id : null;
+  const installable = isMcpInstallHost(host.id) ? host.id : null;
   const configPath = mcpHostConfigPath(
     host,
     globalThis.navigator?.platform ?? "",
   );
 
   async function addToClient() {
-    if (!deeplink) return;
+    if (!installable) return;
     setError("");
     const result = await window.pond.query("agent.openMcpInstall", {
-      id: deeplink,
+      id: installable,
     });
     if (!result.ok) {
       setError(
@@ -68,7 +68,7 @@ export function HostPopover({
           <Popover.Popup className={styles.popup}>
             <Popover.Title className={styles.title}>{host.name}</Popover.Title>
             <p className={styles.lead}>The agent can search and read saves.</p>
-            {deeplink ? (
+            {installable ? (
               <Button size="sm" onClick={() => void addToClient()}>
                 {host.addLabel}
               </Button>
@@ -83,7 +83,7 @@ export function HostPopover({
             {commands.length === 0 ? (
               <>
                 <p className={styles.merge}>
-                  {deeplink
+                  {installable
                     ? `Or merge into ${configPath}:`
                     : `Merge into ${configPath}:`}
                 </p>
