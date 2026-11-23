@@ -10,6 +10,7 @@ export { IconBrandGithub } from "./custom/github-tile";
 export { IconGoogle } from "./custom/google";
 export { IconGoogleChrome } from "./custom/google-chrome";
 export { IconBrandInstagram as IconInstagram } from "./custom/instagram";
+export { IconBrandLinkedIn } from "./custom/linkedin";
 export { IconLmStudio } from "./custom/lmstudio";
 export { IconSourceLocal } from "./custom/local";
 export { IconBrandMarked } from "./custom/marked";
