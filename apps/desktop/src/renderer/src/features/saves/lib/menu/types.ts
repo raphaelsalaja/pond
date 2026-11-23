@@ -44,6 +44,7 @@ export interface SaveMenuContext {
   canResetThumbnail: boolean;
   canViewThumbnail: boolean;
   canRename: boolean;
+  canGroup: boolean;
   canSplit: boolean;
   fontActivated: boolean;
 }
