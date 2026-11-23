@@ -1,6 +1,5 @@
-import { Wordmark } from "@pond/ui/wordmark";
 import type { Metadata } from "next";
-import styles from "./styles.module.css";
+import { Policy } from "../components/policy";
 
 const GITHUB_ISSUES = "https://github.com/raphaelsalaja/pond/issues";
 
@@ -12,98 +11,121 @@ export const metadata: Metadata = {
 
 export default function Privacy() {
   return (
-    <main className={styles.page}>
-      <a className={styles.home} href="/" aria-label="Pond">
-        <Wordmark size={24} />
-      </a>
-      <article className={styles.article}>
-        <header className={styles.section}>
-          <h1 className={styles.title}>Privacy</h1>
-          <p>
-            Pond keeps your library on your computer. There are no Pond
-            accounts, no Pond servers, and no analytics in the app, the browser
-            extension, or this website.
-          </p>
-          <p className={styles.muted}>Updated October 20, 2026</p>
-        </header>
+    <Policy.Page>
+      <Policy.Header>
+        <Policy.Title>Privacy</Policy.Title>
+        <p>
+          Pond keeps your library on your computer. There are no Pond accounts,
+          no Pond servers, and no analytics in the app, the browser extension,
+          or this website.
+        </p>
+        <Policy.Updated>November 23, 2026</Policy.Updated>
+      </Policy.Header>
 
-        <section className={styles.section}>
-          <h2 className={styles.heading}>Browser extension</h2>
-          <p>
-            The extension only talks to the Pond app on your computer, through
-            your browser's native messaging. It never sends data to Pond or
-            anyone else over the internet.
-          </p>
-          <p>When you save something, it hands Pond:</p>
-          <ul className={styles.list}>
-            <li>The page's address and title</li>
-            <li>
-              The images or screenshots you picked, with the name, rating,
-              notes, tags, and folders you set
-            </li>
-            <li>
-              The site's cookies for that page, so Pond can open it signed in as
-              you. Pond uses them in a temporary browser session and drops them
-              after the save.
-            </li>
-          </ul>
-          <p>
-            On supported sites like X, Instagram, and Pinterest, the extension
-            watches the site's own save and like requests. When you bookmark a
-            post there, it sends that post's address to Pond. Turn this off for
-            any site in Pond under Settings, Browser Extension, Sources.
-          </p>
-          <p>
-            When you connect a source in Pond, the extension sends Pond the
-            cookies for that site so Pond can sync your saves from it. Pond
-            keeps them in a private browser session on your computer.
-          </p>
-          <p>
-            The extension stores its settings and your recent folders and tags
-            in your browser's extension storage.
-          </p>
-        </section>
+      <Policy.Section>
+        <Policy.Heading>Browser extension</Policy.Heading>
+        <p>
+          The extension only talks to the Pond app on your computer, through
+          your browser's native messaging. It never sends data to Pond or anyone
+          else over the internet.
+        </p>
+        <p>When you save something, it hands Pond:</p>
+        <Policy.List>
+          <li>The page's address and title</li>
+          <li>
+            The images or screenshots you picked, with the name, rating, notes,
+            tags, and folders you set
+          </li>
+          <li>
+            The site's cookies for that page, so Pond can open it signed in as
+            you. Pond uses them in a temporary browser session and drops them
+            after the save.
+          </li>
+        </Policy.List>
+        <p>
+          On supported sites like X, Instagram, and Pinterest, the extension
+          watches the site's own save and like requests. When you bookmark a
+          post there, it sends that post's address to Pond. Turn this off for
+          any site in Pond under Settings, Browser Extension, Sources.
+        </p>
+        <p>
+          When you connect a source in Pond, the extension sends Pond the
+          cookies for that site so Pond can sync your saves from it. Pond keeps
+          them in a private browser session on your computer.
+        </p>
+        <p>
+          The extension stores its settings and your recent folders and tags in
+          your browser's extension storage.
+        </p>
+      </Policy.Section>
 
-        <section className={styles.section}>
-          <h2 className={styles.heading}>Pond app</h2>
-          <p>
-            Your library is a folder on your computer. Captions, text in images,
-            and transcription run on your computer. Pond connects to:
-          </p>
-          <ul className={styles.list}>
-            <li>The sites you save from, to download posts and media</li>
-            <li>GitHub, to check for updates</li>
-            <li>
-              The AI provider you set up for Assistant, with your own key, and
-              only when you use it. A local host you run works too.
-            </li>
-          </ul>
-        </section>
+      <Policy.Section>
+        <Policy.Heading>Pond app</Policy.Heading>
+        <p>
+          Your library is a folder on your computer, and it's the source of
+          truth for your saves. Preferences, logs, and the search index stay on
+          your computer too. Pond keeps API keys in your operating system's
+          secure storage. Pond connects to:
+        </p>
+        <Policy.List>
+          <li>The sites you save from, to download posts and media</li>
+          <li>GitHub, to check for updates</li>
+          <li>Hugging Face, once per model, to download on-device models</li>
+          <li>
+            The AI provider you set up for Fish, with your own key, and only
+            when you use it. A local host you run works too.
+          </li>
+        </Policy.List>
+      </Policy.Section>
 
-        <section className={styles.section}>
-          <h2 className={styles.heading}>This website</h2>
-          <p>
-            This site sets no cookies and runs no analytics. Vercel hosts it and
-            keeps standard request logs.
-          </p>
-        </section>
+      <Policy.Section>
+        <Policy.Heading>Platform sync</Policy.Heading>
+        <p>
+          When you sync a source like X, Instagram, or Pinterest, Pond uses your
+          own signed-in browser session on your computer. Pond never asks for
+          your platform passwords or stores them anywhere. Requests come from
+          your account, so each platform's terms apply.
+        </p>
+      </Policy.Section>
 
-        <section className={styles.section}>
-          <h2 className={styles.heading}>Questions</h2>
-          <p>
-            Open an issue on{" "}
-            <a
-              className={styles.link}
-              href={GITHUB_ISSUES}
-              target="_blank"
-              rel="noreferrer"
-            >
-              GitHub
-            </a>
-            .
-          </p>
-        </section>
-      </article>
-    </main>
+      <Policy.Section>
+        <Policy.Heading>Fish and enrichments</Policy.Heading>
+        <p>
+          Captions, text in images, transcription, and search run on your
+          computer. Once Pond downloads a model, it runs without a network call.
+        </p>
+        <p>
+          Fish use a key you add or a local host you run. Pond sends your
+          prompts and the saves a fish reads only to the provider you choose.
+        </p>
+      </Policy.Section>
+
+      <Policy.Section>
+        <Policy.Heading>This website</Policy.Heading>
+        <p>
+          This site sets no cookies and runs no analytics. Vercel hosts it and
+          keeps standard request logs.
+        </p>
+      </Policy.Section>
+
+      <Policy.Section>
+        <Policy.Heading>Changes</Policy.Heading>
+        <p>
+          This page changes when Pond does. The date at the top shows the last
+          update.
+        </p>
+      </Policy.Section>
+
+      <Policy.Section>
+        <Policy.Heading>Questions</Policy.Heading>
+        <p>
+          Open an issue on{" "}
+          <Policy.Link href={GITHUB_ISSUES} target="_blank" rel="noreferrer">
+            GitHub
+          </Policy.Link>
+          .
+        </p>
+      </Policy.Section>
+    </Policy.Page>
   );
 }

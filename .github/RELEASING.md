@@ -10,9 +10,9 @@ Update the version string in all of these before tagging:
 
 | File                                                           | Field              |
 | -------------------------------------------------------------- | ------------------ |
-| [`apps/desktop/package.json`](../../apps/desktop/package.json)       | `"version"`        |
-| [`apps/extension/package.json`](../../apps/extension/package.json)   | `"version"`        |
-| [`apps/extension/wxt.config.ts`](../../apps/extension/wxt.config.ts) | `manifest.version` |
+| [`apps/desktop/package.json`](../apps/desktop/package.json)       | `"version"`        |
+| [`apps/extension/package.json`](../apps/extension/package.json)   | `"version"`        |
+| [`apps/extension/wxt.config.ts`](../apps/extension/wxt.config.ts) | `manifest.version` |
 
 The website reads its download links from the latest published GitHub release, so it needs no bump and switches over when `publish` runs.
 
@@ -33,7 +33,7 @@ git tag v1.0.1
 git push origin v1.0.1
 ```
 
-Pushing a tag matching `v*` triggers [`.github/workflows/release.yml`](../../.github/workflows/release.yml), which runs these jobs:
+Pushing a tag matching `v*` triggers [`.github/workflows/release.yml`](workflows/release.yml), which runs these jobs:
 
 1. `draft`: verifies the version in every file listed above, stops if any Apple signing secret is missing, and creates a draft release for the tag unless one exists
 2. `macos`, `windows`, `linux`, and `linux-arm64`, in parallel, each uploading into the draft:
@@ -42,7 +42,7 @@ Pushing a tag matching `v*` triggers [`.github/workflows/release.yml`](../../.gi
    - `linux` (x64 runner) and `linux-arm64` (arm64 runner) build the workspace, run the desktop smoke test, and run `pnpm dist:linux:publish`, which uploads that architecture's AppImage, deb, and update manifest. Native modules rebuild for the build host, so each architecture packages on its own runner.
 3. `publish`: checks that every artifact listed below is attached, then publishes the release, which makes it visible to the updater
 4. `stores`: submits the extension zips to the Chrome Web Store and Firefox Add-ons for review. Each store is skipped with a warning until its secrets are set (see [Extension stores](#extension-stores))
-5. `homebrew`: updates [`Casks/pond.rb`](../../Casks/pond.rb) with the release version and DMG checksums
+5. `homebrew`: updates [`Casks/pond.rb`](../Casks/pond.rb) with the release version and DMG checksums
 
 Nothing is public until `publish` runs, so a failed platform build never ships a partial release. To write release notes before it goes live, edit the draft while the workflow runs.
 
@@ -111,7 +111,7 @@ A signature gives a new release a known publisher, but reputation still builds p
 ## Homebrew
 
 The repository contains a tap-compatible cask at
-[`Casks/pond.rb`](../../Casks/pond.rb). Install it with:
+[`Casks/pond.rb`](../Casks/pond.rb). Install it with:
 
 ```bash
 brew tap raphaelsalaja/pond https://github.com/raphaelsalaja/pond
@@ -130,9 +130,9 @@ pnpm dist:win   # on Windows
 pnpm dist:linux # on Linux (packages the host architecture, x64 or arm64)
 ```
 
-Artifacts land in `apps/desktop/dist/`. `dist:win` needs the Visual Studio C++ Build Tools; see [Windows development](../CONTRIBUTING.md#windows-development). `dist:linux` needs a C compiler (for the native host), `fakeroot` (deb), and packages the architecture it runs on. To build for arm64, run it on an arm64 machine, such as Asahi Linux.
+Artifacts land in `apps/desktop/dist/`. `dist:win` needs the Visual Studio C++ Build Tools; see [Windows development](CONTRIBUTING.md#windows-development). `dist:linux` needs a C compiler (for the native host), `fakeroot` (deb), and packages the architecture it runs on. To build for arm64, run it on an arm64 machine, such as Asahi Linux.
 
-To try a pull request without building it, download the unsigned test installers that [`package.yml`](../../.github/workflows/package.yml) attaches to each run (`Pond-windows-x64`, `Pond-macos`). They are kept for 7 days, are not notarized, and cannot auto-update.
+To try a pull request without building it, download the unsigned test installers that [`package.yml`](workflows/package.yml) attaches to each run (`Pond-windows-x64`, `Pond-macos`). They are kept for 7 days, are not notarized, and cannot auto-update.
 
 `dist:win` also needs network access to GitHub for the `ffmpeg-static` download at install. Its afterPack gate fails the pack when the native host, sharp, onnxruntime, ffmpeg, or the app icon is missing. `pnpm install` itself only warns when MSVC is absent.
 
@@ -158,7 +158,7 @@ The `stores` job reads these repository secrets:
 | `CHROME_SERVICE_ACCOUNT_CLIENT_EMAIL`, `CHROME_SERVICE_ACCOUNT_PRIVATE_KEY` | `client_email` and `private_key` from the service account JSON key |
 | `FIREFOX_JWT_ISSUER`, `FIREFOX_JWT_SECRET`                                  | AMO API key                                                        |
 
-Chrome uses the Chrome Web Store API v2 with a [service account](https://developer.chrome.com/docs/webstore/service-accounts): `pond-publisher` in the `pond-512810` Google Cloud project, linked under Developer Dashboard settings. To rotate it, create a new JSON key in Google Cloud and reset both service account secrets. The Chrome Web Store assigns its own extension ID, set as `CHROME_WEB_STORE_ID` in [`packages/schema/src/native.ts`](../../packages/schema/src/native.ts). The native host allows both that ID and the pinned unpacked ID.
+Chrome uses the Chrome Web Store API v2 with a [service account](https://developer.chrome.com/docs/webstore/service-accounts): `pond-publisher` in the `pond-512810` Google Cloud project, linked under Developer Dashboard settings. To rotate it, create a new JSON key in Google Cloud and reset both service account secrets. The Chrome Web Store assigns its own extension ID, set as `CHROME_WEB_STORE_ID` in [`packages/schema/src/native.ts`](../packages/schema/src/native.ts). The native host allows both that ID and the pinned unpacked ID.
 
 ## CLI publishing
 

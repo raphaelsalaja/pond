@@ -1,7 +1,7 @@
 <!--
 Thanks for contributing to pond! Please fill in the sections below.
 Keep PRs focused: one feature or fix per PR.
-Layout and proof rules: docs/contributing/pull-requests.md
+Layout and proof rules: .github/PULL_REQUESTS.md
 If this PR is stacked, start with: > Stacked on #123. Merge that first.
 -->
 

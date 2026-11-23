@@ -9,8 +9,7 @@ under a running app. Obtain explicit permission before any restart or temporary
 Library switch. Coordinate a quiet measurement window rather than stopping
 competing processes yourself.
 
-The local baseline and pending approvals are in
-[performance-baseline.md](../../plans/performance-baseline.md).
+Earlier baseline runs and their approvals live in git history: `git log -p -- plans/performance-baseline.md`.
 Bundle byte budgets remain in `scripts/check-performance-budgets.mjs` and
 whole-app memory ceilings in `apps/desktop/scripts/memory-budgets.json`; these
 benchmarks neither replace them nor introduce CI latency thresholds.
@@ -93,13 +92,13 @@ test worker do not represent the complete Electron app, GPU, or all native memor
    memory separately using OS/Electron tools. Heap snapshots alone do not capture
    native/GPU memory; redact or avoid personal content.
 7. Semantic measurements must independently time encoder cold start, warm encoder
-   execution, and retrieval SQL. Record model/version and query scope. Plan 004
+   execution, and retrieval SQL. Record model/version and query scope. Plan 004, in git history,
    supplies isolated native SQL fixtures; do not call an encoder or download a
    model as part of these baseline microbenchmarks.
 
 Until real captures are attached, startup, scroll/filter response, bulk-renderer
 long tasks, and encoder cold/warm execution remain **not measured**. Isolated native retrieval SQL was measured in the
-[vector retrieval decision](../../plans/vector-retrieval-decision.md); that report
+vector retrieval decision (`git log -p -- plans/vector-retrieval-decision.md`); that report
 also records incomplete benchmark phases and the rejected prototype. Those SQL
 measurements are not end-to-end semantic search latency.
 

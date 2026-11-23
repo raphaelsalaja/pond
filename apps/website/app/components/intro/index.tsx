@@ -14,7 +14,6 @@ import styles from "./styles.module.css";
 const GITHUB = "https://github.com/raphaelsalaja/pond";
 const TWITTER = "https://x.com/raphaelsalaja";
 const BUY_ME_A_COFFEE = "https://buymeacoffee.com/raphaelsalaja";
-const RESPONSIBLE_USE = `${GITHUB}/blob/main/docs/responsible-use.md`;
 
 interface IntroProps {
   release: Release | null;
@@ -74,12 +73,7 @@ export function Intro({ release }: IntroProps) {
           >
             Buy Me a Coffee
           </a>
-          <a
-            className={styles.link}
-            href={RESPONSIBLE_USE}
-            target="_blank"
-            rel="noreferrer"
-          >
+          <a className={styles.link} href="/responsible-use">
             Responsible Use
           </a>
           <a className={styles.link} href="/developers">

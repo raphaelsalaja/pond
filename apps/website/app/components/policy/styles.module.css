@@ -1,4 +1,4 @@
-/* `main` is one screen tall on the homepage; this page scrolls. */
+/* `main` is one screen tall on the homepage; policy pages scroll. */
 .page {
   gap: 32px;
   max-width: calc(560px + 2 * var(--page-inset));

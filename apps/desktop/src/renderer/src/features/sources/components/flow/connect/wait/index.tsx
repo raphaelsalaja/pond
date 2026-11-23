@@ -113,8 +113,7 @@ export function ConnectWaitSection() {
   );
 }
 
-const RESPONSIBLE_USE_URL =
-  "https://github.com/raphaelsalaja/pond/blob/main/docs/responsible-use.md";
+const RESPONSIBLE_USE_URL = "https://pond.raphaelsalaja.com/responsible-use";
 
 const SESSION_PROMISES = [
   "Keep your session on this device",

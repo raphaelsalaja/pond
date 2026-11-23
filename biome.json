@@ -14,7 +14,6 @@
       "!**/node_modules/**/*",
       "!tools/biome/anti-slop",
       "!branding",
-      "!docs/brand",
       "!.mobbin",
       "!.impeccable",
       "!packages/theme/src/colors/palette.css",
