@@ -58,22 +58,41 @@
   &[data-zoom]:not([data-ending-style]) {
     transition:
       opacity var(--ds-duration-snap) var(--ds-easing-standard),
-      transform var(--ds-duration-spring) var(--ds-easing-spring),
+      transform var(--ds-duration-glide) var(--ds-easing-glide),
+      border-radius var(--ds-duration-glide) var(--ds-easing-glide),
+      box-shadow var(--ds-duration-glide) var(--ds-easing-glide),
       width var(--ds-duration-medium) var(--ds-easing-standard),
       height var(--ds-duration-medium) var(--ds-easing-standard);
   }
 
   &[data-zoom][data-starting-style],
   &[data-zoom][data-ending-style] {
+    border-radius: calc(var(--ds-radius-xs) / var(--zoom-scale));
+    box-shadow: none;
     transform: translate(calc(-50% + var(--zoom-x)), calc(-50% + var(--zoom-y)))
       scale(var(--zoom-scale));
   }
 
+  /* Shrinks back on the same spring and only fades once it's nearly in the card. */
   &[data-zoom][data-ending-style] {
     transition:
-      opacity var(--ds-duration-emphasized) var(--ds-easing-standard),
-      transform var(--ds-duration-emphasized) var(--ds-easing-decelerate);
+      opacity var(--ds-duration-medium) var(--ds-easing-standard)
+      var(--ds-duration-fast),
+      transform var(--ds-duration-glide) var(--ds-easing-glide),
+      border-radius var(--ds-duration-glide) var(--ds-easing-glide),
+      box-shadow var(--ds-duration-glide) var(--ds-easing-glide);
   }
+}
+
+/* The global reduced-motion override shortens durations but keeps delays. */
+@media (prefers-reduced-motion: reduce) {
+  .popup[data-zoom][data-ending-style] {
+    transition-delay: 0s;
+  }
+}
+
+:global(html[data-reduce-motion="true"]) .popup[data-zoom][data-ending-style] {
+  transition-delay: 0s;
 }
 
 .viewer {

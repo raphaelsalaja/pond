@@ -13,6 +13,7 @@ const DURATIONS = [
   { token: "--ds-duration-emphasized", easing: "--ds-easing-emphasized" },
   { token: "--ds-duration-slow", easing: "--ds-easing-standard" },
   { token: "--ds-duration-spring", easing: "--ds-easing-spring" },
+  { token: "--ds-duration-glide", easing: "--ds-easing-glide" },
   { token: "--ds-duration-bounce", easing: "--ds-easing-bounce" },
 ] as const;
 
