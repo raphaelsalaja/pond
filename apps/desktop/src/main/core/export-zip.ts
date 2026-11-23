@@ -1,7 +1,7 @@
 import { createReadStream, createWriteStream, type ReadStream } from "node:fs";
 import { readdir, rename, rm, stat } from "node:fs/promises";
-import { join, relative, sep } from "node:path";
-import { pipeline } from "node:stream/promises";
+import { dirname, join, relative, sep } from "node:path";
+import { finished, pipeline } from "node:stream/promises";
 import { ZipFile } from "yazl";
 import {
   checkTransferCancellation,
@@ -9,42 +9,43 @@ import {
   transferProgress,
 } from "./transfer-jobs";
 
-async function listFiles(root: string): Promise<string[]> {
-  const files: string[] = [];
+async function listFiles(root: string) {
+  const files: Array<{ path: string; size: number }> = [];
   for (const entry of await readdir(root, {
     recursive: true,
     withFileTypes: true,
   })) {
-    if (entry.isFile()) files.push(join(entry.parentPath, entry.name));
+    if (!entry.isFile()) continue;
+    const path = join(entry.parentPath, entry.name);
+    files.push({ path, size: (await stat(path)).size });
   }
-  return files.sort();
+  return files.sort((a, b) => a.path.localeCompare(b.path));
 }
 
 /** Writes `source` into a ZIP at `destination`, with `source`'s own folder as the archive's top level. */
 export async function zipDirectory(source: string, destination: string) {
   const files = await listFiles(source);
   await transferPhase("Compressing", files.length);
-  const parent = join(source, "..");
+  const parent = dirname(source);
   const zip = new ZipFile();
   const partial = `${destination}.partial`;
   await rm(partial, { force: true });
   const output = createWriteStream(partial, { flags: "wx" });
-  const written = pipeline(zip.outputStream, output);
-  const open = new Set<ReadStream>();
+  /** yazl reports entry failures on the ZipFile, not its output stream. */
+  const failed = new Promise<never>((_, reject) => zip.once("error", reject));
+  const written = Promise.race([pipeline(zip.outputStream, output), failed]);
+  let input: ReadStream | null = null;
   try {
-    for (const path of files) {
+    for (const { path, size } of files) {
       checkTransferCancellation();
-      const { size } = await stat(path);
+      const current = createReadStream(path);
+      input = current;
       zip.addReadStreamLazy(
         relative(parent, path).split(sep).join("/"),
         { compress: path.endsWith(".json"), size },
-        (callback) => {
-          const input = createReadStream(path);
-          open.add(input);
-          input.once("close", () => open.delete(input));
-          callback(null, input);
-        },
+        (callback) => callback(null, current),
       );
+      await Promise.race([finished(current), written]);
       await transferProgress(path, size);
     }
     zip.end();
@@ -52,7 +53,7 @@ export async function zipDirectory(source: string, destination: string) {
     checkTransferCancellation();
     await rename(partial, destination);
   } catch (error) {
-    for (const input of open) input.destroy();
+    input?.destroy();
     output.destroy();
     await written.catch(() => {});
     await rm(partial, { force: true });
