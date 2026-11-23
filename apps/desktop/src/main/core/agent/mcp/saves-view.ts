@@ -104,7 +104,7 @@ export const SAVES_VIEW_HTML = `<!doctype html>
     if (!saves || saves.length === 0) {
       var empty = document.createElement("p");
       empty.className = "empty";
-      empty.textContent = "No saves to show";
+      empty.textContent = "No Saves to Show";
       grid.appendChild(empty);
       return;
     }
@@ -129,7 +129,7 @@ export const SAVES_VIEW_HTML = `<!doctype html>
         status.textContent = "";
         callTool("open_save", { id: save.id }).then(function (result) {
           if (result && result.isError) status.textContent = errorText(result);
-        }).catch(function () { status.textContent = "Pond couldn't open this save."; });
+        }).catch(function () { status.textContent = "Pond couldn't open this Save."; });
       });
       card.addEventListener("contextmenu", function (event) {
         if (!save.url) return;

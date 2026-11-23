@@ -7,7 +7,7 @@ description: Work with the person's Pond Library, their local archive of saved p
 
 # Pond Library
 
-Pond keeps every Save on the person's own Mac. Nothing you read leaves it unless you send it somewhere.
+Pond keeps every Save on the person's own computer. Nothing you read leaves it unless you send it somewhere.
 
 ## Find
 
@@ -40,4 +40,4 @@ Pond keeps every Save on the person's own Mac. Nothing you read leaves it unless
 `;
 
 export const POND_INSTRUCTIONS =
-  "Pond is the person's local library of saved posts, images, videos, articles and files, stored on their Mac. Start with library_overview. Use search_library for requests by meaning, query_library for exact filters and paging, grep_library for exact words, and read_save for a Save's text. Use view_saves to look at images and show_saves to show results. open_save and apply_filter move the Pond window. A tool group that's off in Settings returns an error naming the setting.";
+  "Pond is the person's local library of saved posts, images, videos, articles and files, stored on their computer. Start with library_overview. Use search_library for requests by meaning, query_library for exact filters and paging, grep_library for exact words, and read_save for a Save's text. Use view_saves to look at images and show_saves to show results. open_save and apply_filter move the Pond window. A tool group that's off in Settings returns an error naming the setting.";
