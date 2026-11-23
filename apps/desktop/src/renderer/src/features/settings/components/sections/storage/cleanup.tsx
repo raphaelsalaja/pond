@@ -1,5 +1,9 @@
 import { Button, Settings } from "@pond/ui";
-import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { useState, useTransition } from "react";
 import { reviewDuplicates, trashWithUndo } from "@/features/saves";
 import { formatBytes, formatPlural } from "@/shared/lib/format";
@@ -12,7 +16,9 @@ const LIMIT = 100;
 
 const MIB = 1024 * 1024;
 
-const THRESHOLDS = [100 * MIB, 500 * MIB, 1024 * MIB].map((bytes) => ({
+const FIRST_THRESHOLD = 100 * MIB;
+
+const THRESHOLDS = [FIRST_THRESHOLD, 500 * MIB, 1024 * MIB].map((bytes) => ({
   value: String(bytes),
   label: `Over ${formatBytes(bytes)}`,
 }));
@@ -53,7 +59,7 @@ function ExactDuplicates() {
 
 function LargeSaves() {
   const client = useQueryClient();
-  const [threshold, setThreshold] = useState(THRESHOLDS[0].value);
+  const [threshold, setThreshold] = useState(String(FIRST_THRESHOLD));
   const [moving, startMoving] = useTransition();
   const minBytes = Number(threshold);
   const query = useQuery({

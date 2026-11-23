@@ -13,8 +13,8 @@ export function useStorageSnapshot() {
   });
 }
 
-export function refreshStorage(client: QueryClient): Promise<unknown> {
-  return Promise.all([
+export async function refreshStorage(client: QueryClient): Promise<void> {
+  await Promise.all([
     client.invalidateQueries({ queryKey: STORAGE_SNAPSHOT_KEY }),
     client.invalidateQueries({ queryKey: STORAGE_INSIGHTS_KEY }),
   ]);

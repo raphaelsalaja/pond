@@ -1,11 +1,10 @@
 import { FIELD_DESCRIPTORS } from "@pond/schema/filters/fields";
 import { SOURCES, sourceLabel } from "@pond/schema/source-ids";
-import { getSourceDefForIdentity } from "@/features/sources";
 
-const KIND_LABELS: Record<string, string> = {
-  thumbnail_dark: "Dark Thumbnail",
-  source_icon: "Source Icon",
-};
+const KIND_LABELS = new Map([
+  ["thumbnail_dark", "Dark Thumbnail"],
+  ["source_icon", "Source Icon"],
+]);
 
 function titleCase(value: string): string {
   return value
@@ -20,12 +19,6 @@ export function labelForSource(source: string): string {
   return known ? sourceLabel(known) : source;
 }
 
-export function labelForSourceIdentity(identity: string): string {
-  const source = getSourceDefForIdentity(identity);
-  if (source?.source === "local") return "Local Files";
-  return source?.label ?? identity;
-}
-
 export function labelForType(type: string): string {
   const preset = FIELD_DESCRIPTORS.type.presets?.find(
     (entry) => entry.value === type,
@@ -34,7 +27,7 @@ export function labelForType(type: string): string {
 }
 
 export function labelForKind(kind: string): string {
-  return KIND_LABELS[kind] ?? titleCase(kind);
+  return KIND_LABELS.get(kind) ?? titleCase(kind);
 }
 
 export function labelForExtension(extension: string): string {

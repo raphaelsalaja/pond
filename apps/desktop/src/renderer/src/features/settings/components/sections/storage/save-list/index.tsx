@@ -112,9 +112,7 @@ function Items({ rows, selection, className, ...props }: ItemsProps) {
                       .join(" · ")}
                   </ContentRow.Description>
                 </ContentRow.Content>
-                <span className={styles.size}>
-                  {formatBytes(row.fileSize)}
-                </span>
+                <span className={styles.size}>{formatBytes(row.fileSize)}</span>
               </ContentRow.Trigger>
             </ContentRow.Root>
           </li>

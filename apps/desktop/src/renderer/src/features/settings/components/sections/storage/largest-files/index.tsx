@@ -97,8 +97,8 @@ export function LargestFiles() {
       <Settings.Item>
         {files.length ? (
           <ol className={styles.files} aria-label="Largest Files">
-            {files.map((file, index) => (
-              <li key={`${file.saveId}:${file.name}:${index}`}>
+            {files.map((file) => (
+              <li key={`${file.saveId}:${file.fileIndex}`}>
                 <ContentRow.Root>
                   <ContentRow.Trigger onClick={() => openSave(file.saveId)}>
                     <ContentRow.Content>

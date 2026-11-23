@@ -1,19 +1,10 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
   formatShare,
   labelForExtension,
   labelForKind,
-  labelForSourceIdentity,
   labelForType,
 } from "./labels";
-
-vi.mock("@/features/sources", () => {
-  const defs: Record<string, { source: string; label: string }> = {
-    local: { source: "local", label: "Local" },
-    "rss:feed": { source: "rss", label: "RSS" },
-  };
-  return { getSourceDefForIdentity: (identity: string) => defs[identity] };
-});
 
 describe("storage labels", () => {
   it("names media types the way the Library filter does", () => {
@@ -26,12 +17,6 @@ describe("storage labels", () => {
     expect(labelForKind("thumbnail_dark")).toBe("Dark Thumbnail");
     expect(labelForKind("video")).toBe("Video");
     expect(labelForExtension("mp4")).toBe("MP4");
-  });
-
-  it("names sources by identity", () => {
-    expect(labelForSourceIdentity("local")).toBe("Local Files");
-    expect(labelForSourceIdentity("rss:feed")).toBe("RSS");
-    expect(labelForSourceIdentity("unknown")).toBe("unknown");
   });
 
   it("rounds shares and keeps tiny ones visible", () => {

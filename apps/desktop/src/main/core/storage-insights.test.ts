@@ -6,8 +6,8 @@ import { afterEach, describe, expect, it } from "vitest";
 import { type Db, initializePondSchema } from "../db";
 import {
   duplicateStorage,
-  largestFiles,
   type LargestFilesInput,
+  largestFiles,
   largestSaves,
   storageAttribution,
 } from "./storage-insights";
@@ -172,6 +172,7 @@ describe.skipIf(!nativeAvailable())("largest files", () => {
 
   it("returns the file name, never its folder", () => {
     expect(files({ limit: 1 }).files[0]).toMatchObject({
+      fileIndex: 0,
       name: "reel.mp4",
       kind: "video",
       extension: "mp4",

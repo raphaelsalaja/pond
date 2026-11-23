@@ -2,13 +2,9 @@ import { ContentRow, Empty, Settings, Tabs } from "@pond/ui";
 import type { StorageAttributionResult } from "@shared/storage-insights";
 import { useQuery } from "@tanstack/react-query";
 import { showFolderInLibrary, showMatchingInLibrary } from "@/features/saves";
+import { getSourceDefForIdentity } from "@/features/sources";
 import { formatBytes, formatPlural } from "@/shared/lib/format";
-import {
-  formatShare,
-  labelForExtension,
-  labelForSourceIdentity,
-  labelForType,
-} from "../lib/labels";
+import { formatShare, labelForExtension, labelForType } from "../lib/labels";
 import { STORAGE_INSIGHTS_KEY } from "../lib/queries";
 import { ListEmpty } from "../list-empty";
 import styles from "./styles.module.css";
@@ -19,6 +15,12 @@ interface Share {
   bytes: number;
   saves: number;
   open: () => void;
+}
+
+function labelForSourceIdentity(identity: string): string {
+  const source = getSourceDefForIdentity(identity);
+  if (source?.source === "local") return "Local Files";
+  return source?.label ?? identity;
 }
 
 function shareRows(data: StorageAttributionResult) {

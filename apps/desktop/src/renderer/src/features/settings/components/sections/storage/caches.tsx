@@ -46,7 +46,7 @@ function confirmClear(
     confirmLabel: "Clear Cache",
     onConfirm: async () => {
       const result = await window.pond.query(cache.query, {}).catch(() => null);
-      if (!result || !result.ok) {
+      if (!result?.ok) {
         throw new Error(`Couldn't clear the ${cache.title}. Try again.`);
       }
       notify({

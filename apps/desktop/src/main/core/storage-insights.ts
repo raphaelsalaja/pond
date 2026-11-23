@@ -74,6 +74,7 @@ const FileRows = z.array(
     saveId: z.string(),
     saveTitle: z.string().nullable(),
     saveUrl: z.string(),
+    fileIndex: z.number(),
     path: z.string(),
     kind: z.string(),
     size: z.number(),
@@ -180,7 +181,8 @@ export function largestFiles(
   const rows = FileRows.parse(
     db.all(
       sql`select ${saves.id} as saveId, ${saves.title} as saveTitle,
-        ${saves.url} as saveUrl, coalesce(${FILE_PATH}, '') as path, ${FILE_KIND} as kind,
+        ${saves.url} as saveUrl, file.key as fileIndex,
+        coalesce(${FILE_PATH}, '') as path, ${FILE_KIND} as kind,
         ${FILE_SIZE} as size
       from ${FILES}
       where ${sql.join(filters, sql` and `)}
@@ -210,6 +212,7 @@ export function largestFiles(
       saveId: row.saveId,
       saveTitle: row.saveTitle,
       saveUrl: row.saveUrl,
+      fileIndex: row.fileIndex,
       name: fileName(row.path),
       kind: row.kind,
       extension: fileExtension(row.path),
@@ -280,6 +283,7 @@ export function storageAttribution(db: Db): StorageAttributionResult {
       where ${LIVE} and coalesce(${FILE_SIZE} > 0, 0) = 0`,
     ),
   );
+  /** Grouped by position because `json_each` has its own `key` column, which shadows the alias. */
   const extensions = ShareRows.parse(
     db.all(
       sql`select pond_file_extension(${FILE_PATH}) as key,
@@ -287,7 +291,7 @@ export function storageAttribution(db: Db): StorageAttributionResult {
       from ${FILES}
       where ${LIVE} and ${FILE_SIZE} > 0
         and pond_file_extension(${FILE_PATH}) is not null
-      group by key
+      group by 1
       order by bytes desc
       limit ${SHARE_LIMIT}`,
     ),

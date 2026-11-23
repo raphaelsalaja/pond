@@ -102,9 +102,7 @@ export function LargestSaves() {
             size="sm"
             variant="secondary"
             disabled={!selection.chosen.length}
-            onClick={() =>
-              showInLibrary(selection.chosen.map((row) => row.id))
-            }
+            onClick={() => showInLibrary(selection.chosen.map((row) => row.id))}
           >
             Show in Library
           </Button>

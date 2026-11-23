@@ -1,7 +1,7 @@
 import { Button, Settings } from "@pond/ui";
 import { useReducedMotion } from "motion/react";
 import { formatBytes } from "@/shared/lib/format";
-import { SECTION_FOR_CATEGORY } from "../lib/sections";
+import { sectionForCategory } from "../lib/sections";
 import {
   type Breakdown,
   type StorageSegment,
@@ -54,7 +54,7 @@ export function StorageBreakdown({ breakdown }: { breakdown: Breakdown }) {
         </div>
         <ul className={styles.legend} aria-label="Library storage by category">
           {segments.map((segment) => {
-            const target = SECTION_FOR_CATEGORY[segment.key];
+            const target = sectionForCategory(segment.key);
             return (
               <li key={segment.key} className={styles.entry}>
                 {target ? (

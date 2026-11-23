@@ -22,6 +22,7 @@ export interface LargestFile {
   saveId: string;
   saveTitle: string | null;
   saveUrl: string;
+  fileIndex: number;
   name: string;
   kind: string;
   extension: string | null;

@@ -4,7 +4,7 @@ interface ListQuery {
   isError: boolean;
   isPending: boolean;
   isFetching: boolean;
-  refetch: () => unknown;
+  refetch: () => void;
 }
 
 /** The empty, loading, and error states every storage list shares. */
