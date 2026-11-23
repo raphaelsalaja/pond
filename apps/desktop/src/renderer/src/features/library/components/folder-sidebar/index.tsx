@@ -1,5 +1,6 @@
 import { Sidebar } from "@pond/ui";
 import { useRouterState } from "@tanstack/react-router";
+import type { MouseEvent } from "react";
 import { CanvasesSection, canvasIdFromPath } from "@/features/canvas";
 import { FishSection, fishIdFromPath } from "@/features/fish";
 import { NewMenu } from "@/features/library/components/new-menu";
@@ -17,6 +18,16 @@ import { selectLibraryNav } from "./navigation";
 import { SearchButton } from "./search-button";
 import { SidebarMenu } from "./sidebar-menu";
 import styles from "./styles.module.css";
+
+/** Dialogs rendered from sidebar rows portal out of the sidebar, but React still bubbles their right-clicks here. */
+function keepPortaledContextMenus(event: MouseEvent<HTMLDivElement>) {
+  if (
+    event.target instanceof Node &&
+    !event.currentTarget.contains(event.target)
+  ) {
+    event.stopPropagation();
+  }
+}
 
 function WorkspaceHeader({ inbox }: { inbox: boolean }) {
   return (
@@ -53,7 +64,10 @@ export function FolderSidebar() {
       <SearchButton />
       <SidebarMenu>
         <div className={styles.background}>
-          <Sidebar.Scroll className={styles.scroll}>
+          <Sidebar.Scroll
+            className={styles.scroll}
+            onContextMenu={keepPortaledContextMenus}
+          >
             <LibraryDestinations
               activeViewId={activeViewId}
               destination={destination}

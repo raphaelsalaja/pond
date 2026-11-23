@@ -162,4 +162,26 @@ describe("sidebar background menu", () => {
     await act(async () => harness.menuItem("Customize Sidebar").click());
     expect(document.querySelector('[role="dialog"]')).not.toBeNull();
   });
+
+  it("leaves the text menu to fields in dialogs opened from the sidebar", async () => {
+    await harness.mount();
+    const scroll = harness.host.querySelector('[data-scroll-fade="vertical"]');
+    if (!scroll) throw new Error("Missing sidebar scroll");
+    await rightClick(scroll);
+    await act(async () => harness.menuItem("New Smart Folder").click());
+    const field = document.querySelector('[role="dialog"] input');
+    if (!field) throw new Error("Missing Smart Folder editor field");
+    expect(harness.host.contains(field)).toBe(false);
+
+    const event = new MouseEvent("contextmenu", {
+      bubbles: true,
+      cancelable: true,
+      button: 2,
+    });
+    await act(async () => {
+      field.dispatchEvent(event);
+    });
+    expect(event.defaultPrevented).toBe(false);
+    expect(hasMenuItem("Sections")).toBe(false);
+  });
 });
