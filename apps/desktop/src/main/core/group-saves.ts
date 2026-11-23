@@ -136,13 +136,13 @@ const runtime: GroupSavesRuntime = {
   newId: ulid,
 };
 
-const REFUSALS: Record<GroupRefusal, string> = {
+const REFUSALS = {
   count: "Select at least two Saves to group.",
   missing: "Some of these Saves are gone or in Trash. Select them again.",
   busy:
     "Some of these Saves are still downloading. Try again when they finish.",
   media: "Only Saves with images or videos can be grouped.",
-};
+} satisfies Record<GroupRefusal, string>;
 
 /** Copies every file into the gallery before any member moves to Trash, so a failure leaves the Saves as they were. */
 export async function runGroupSaves(
