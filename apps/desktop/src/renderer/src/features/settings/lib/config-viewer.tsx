@@ -56,7 +56,7 @@ export const viewerSection = defineCustomSection({
           key: "peekClick",
           title: "Peek Click",
           description:
-            "Opens a Save in Quick Preview. Click outside it to go back.",
+            "Opens a Save in Quick Preview until you click outside it.",
           options: [
             { value: "option", label: IS_MAC ? "Option-Click" : "Alt-Click" },
             {
