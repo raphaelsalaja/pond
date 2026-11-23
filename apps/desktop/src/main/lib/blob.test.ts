@@ -1,6 +1,6 @@
 import sharp from "sharp";
-import { expect, it } from "vitest";
-import { isReadableImage } from "./blob";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { fetchMediaBatch, isReadableImage } from "./blob";
 
 const png = () =>
   sharp({
@@ -47,4 +47,69 @@ it("accepts an ICO file that holds a PNG", async () => {
 it("rejects an ICO file whose entry points past the end", async () => {
   const bytes = await png();
   expect(await isReadableImage(ico(bytes, bytes.length + 100))).toBe(false);
+});
+
+describe("bot challenges", () => {
+  const url = "https://site.example/_next/image?url=%2Fa.png&w=3840";
+  const challenge = () =>
+    new Response("<html>challenge</html>", {
+      status: 429,
+      headers: { "x-vercel-mitigated": "challenge" },
+    });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("retries a challenged download in the harvest session", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => challenge()),
+    );
+    const image = await png();
+    const challengeFetcher = vi.fn(
+      async () =>
+        new Response(new Uint8Array(image), {
+          headers: { "content-type": "image/png" },
+        }),
+    );
+
+    const [entry] = await fetchMediaBatch([url], { challengeFetcher });
+
+    expect(challengeFetcher).toHaveBeenCalledTimes(1);
+    expect(entry?.file?.bytes).toEqual(image);
+    expect(entry?.miss).toBeUndefined();
+  });
+
+  it("reports a challenge the harvest session cannot pass", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          new Response("", {
+            status: 403,
+            headers: { "cf-mitigated": "challenge" },
+          }),
+      ),
+    );
+
+    const [entry] = await fetchMediaBatch([url], {
+      challengeFetcher: async () => challenge(),
+    });
+
+    expect(entry).toMatchObject({ file: null, miss: "challenged" });
+  });
+
+  it("still retries an ordinary rate limit later", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("", { status: 429 })),
+    );
+    const challengeFetcher = vi.fn();
+
+    const [entry] = await fetchMediaBatch([url], { challengeFetcher });
+
+    expect(challengeFetcher).not.toHaveBeenCalled();
+    expect(entry).toMatchObject({ file: null, miss: "transient" });
+  });
 });

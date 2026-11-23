@@ -100,6 +100,16 @@ it("fails the task when every captured media URL is permanently unavailable", ()
   ).toThrow(TerminalError);
 });
 
+it("fails with a bot protection error when a challenge blocks every download", () => {
+  const mediaUrl = "https://site.example/_next/image?url=%2Fa.png&w=3840";
+
+  expect(() =>
+    requireFetchedMedia([{ url: mediaUrl, file: null, miss: "challenged" }], 1),
+  ).toThrow(
+    new TerminalError("fetch-blobs: 1/1 media blocked by bot protection"),
+  );
+});
+
 const tweetWithVideo = storedAsRawJson({
   capture: {
     media: [

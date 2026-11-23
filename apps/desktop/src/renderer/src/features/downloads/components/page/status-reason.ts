@@ -54,6 +54,7 @@ const EXPLANATIONS: readonly (readonly [RegExp, string])[] = [
     /no data|empty (body|document)/i,
     "Pond couldn't read this page. It may have been deleted, made private, or use a layout Pond doesn't support yet.",
   ],
+  [/bot protection/i, "The site's bot protection blocked the media download."],
   [/\b(401|403)\b/, "The site refused access to this page."],
   [/could not parse/i, "Pond couldn't read this link."],
   [/^blocked by failed/i, "An earlier step of this download failed."],
