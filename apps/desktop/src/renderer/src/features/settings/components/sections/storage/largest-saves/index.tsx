@@ -158,7 +158,7 @@ export function LargestSaves() {
           </ol>
         ) : query.isError ? (
           <Empty.Root role="alert">
-            <Empty.Title>Couldn't load Saves</Empty.Title>
+            <Empty.Title>Couldn't Load Saves</Empty.Title>
             <Empty.Description>
               Check that the Library is available, then try again.
             </Empty.Description>
@@ -180,7 +180,7 @@ export function LargestSaves() {
         ) : filtered ? (
           <Empty.Root role="status">
             <Empty.Title>
-              {term ? `No results for “${term}”` : "No matching Saves"}
+              {term ? `No Results for “${term}”` : "No Matching Saves"}
             </Empty.Title>
             <Empty.Action>
               <Button size="sm" variant="secondary" onClick={clearFilters}>
@@ -190,7 +190,7 @@ export function LargestSaves() {
           </Empty.Root>
         ) : (
           <Empty.Root role="status">
-            <Empty.Title>No Saves with file sizes</Empty.Title>
+            <Empty.Title>No Saves with File Sizes</Empty.Title>
           </Empty.Root>
         )}
       </Settings.Item>
