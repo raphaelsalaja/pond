@@ -21,6 +21,25 @@ directories:
   buildResources: build
   output: dist
 
+# Chromium's own strings only; a bare language keeps its regional variants.
+# Dates and numbers follow the OS region via app.getSystemLocale(), not this list.
+electronLanguages:
+  - en
+  - de
+  - fr
+  - es
+  - it
+  - pt
+  - nl
+  - sv
+  - da
+  - nb
+  - fi
+  - pl
+  - ja
+  - ko
+  - zh
+
 # Windows / Linux app icon (from packages/icons/brand/tints/aqua via prepare-app-icon).
 icon: icon.png
 
@@ -62,12 +81,10 @@ extraResources:
       - "!ShareExtension{,/**}"
       - "!FinderAction{,/**}"
       - "!DockTile{,/**}"
-  - from: ../../packages/icons/brand/tints
+  # Both written by scripts/prepare-dock-icons.mjs from packages/icons/brand/tints:
+  # each tint's own image at 512 px, and the Dock-ready copies.
+  - from: build/app-icons
     to: app-icons
-    # Each tint's own image only; the macos-NN exports ship as Dock-ready copies in dock-icons.
-    filter:
-      - "*/default.png"
-  # Written by scripts/prepare-dock-icons.mjs from packages/icons/brand/tints.
   - from: build/dock-icons
     to: dock-icons
 
@@ -165,6 +182,8 @@ mac:
 
 dmg:
   title: "${productName}"
+  # scripts/fix-dmg-window.cjs re-converts each DMG and keeps the same format.
+  format: ULFO
   sign: false
   background: packaging/dmg/background.png
   iconSize: 96

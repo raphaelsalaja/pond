@@ -12,6 +12,7 @@ import type {
   TweetCardMetrics,
 } from "@shared/tweet-card";
 import prettyMs from "pretty-ms";
+import { systemLocale } from "../../lib/system-locale";
 
 const isDataUrl = (url: string | undefined): url is string =>
   url?.startsWith("data:image/") === true;
@@ -50,26 +51,29 @@ function initials(name: string): string {
   return name.trim().slice(0, 2).toUpperCase();
 }
 
-const compact = new Intl.NumberFormat(undefined, {
-  notation: "compact",
-  compactDisplay: "short",
-  maximumFractionDigits: 1,
-});
-const tsTime = new Intl.DateTimeFormat(undefined, {
-  hour: "numeric",
-  minute: "2-digit",
-});
-const tsDate = new Intl.DateTimeFormat(undefined, {
-  month: "short",
-  day: "numeric",
-  year: "numeric",
-});
+function compact(value: number): string {
+  return new Intl.NumberFormat(systemLocale(), {
+    notation: "compact",
+    compactDisplay: "short",
+    maximumFractionDigits: 1,
+  }).format(value);
+}
 
 function timestampLine(value: string | undefined): string {
   if (!value) return "";
   const d = new Date(value);
   if (!Number.isFinite(d.getTime())) return "";
-  return `${tsTime.format(d)} · ${tsDate.format(d)}`;
+  const locale = systemLocale();
+  const time = new Intl.DateTimeFormat(locale, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  const date = new Intl.DateTimeFormat(locale, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+  return `${time.format(d)} · ${date.format(d)}`;
 }
 
 function author(a: TweetCardAuthor): ThreadsAuthor {
@@ -152,7 +156,7 @@ export function cardDataToThreadsPost(data: TweetCardData): ThreadsPost | null {
     for (const { key, icon } of METRICS) {
       const value = m[key];
       if (value !== undefined)
-        post.metrics.push({ icon, value: compact.format(value) });
+        post.metrics.push({ icon, value: compact(value) });
     }
   }
   return post;

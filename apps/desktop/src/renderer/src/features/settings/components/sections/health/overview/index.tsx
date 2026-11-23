@@ -12,6 +12,7 @@ import {
 } from "@/features/library/maintenance";
 import { formatNumber, formatPlural } from "@/shared/lib/format";
 import { relativeTimeFromMs } from "@/shared/lib/relative-time";
+import { systemLocale } from "@/shared/lib/system-locale";
 import { type HealthCategory, healthTotals } from "../categories";
 import {
   cancelCheck,
@@ -144,7 +145,7 @@ export function HealthOverview() {
           {check ? (
             <p className={styles.meta}>
               <time dateTime={new Date(check.checkedAt).toISOString()}>
-                {`Checked At ${new Date(check.checkedAt).toLocaleString()}`}
+                {`Checked At ${new Date(check.checkedAt).toLocaleString(systemLocale)}`}
               </time>
               <span>
                 {formatPlural(check.saves, { one: "Save", other: "Saves" })}

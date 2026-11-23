@@ -1,3 +1,5 @@
+import { systemLocale } from "@/shared/lib/system-locale";
+
 export interface SnoozeOption {
   id: "later-today" | "tomorrow" | "weekend" | "next-week";
   label: string;
@@ -63,7 +65,7 @@ export function snoozeUntil(
 
 export function formatSnoozeTime(until: number, now = Date.now()): string {
   return new Intl.DateTimeFormat(
-    undefined,
+    systemLocale,
     until - now < WEEK_MS
       ? { weekday: "short", hour: "numeric", minute: "2-digit" }
       : { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" },

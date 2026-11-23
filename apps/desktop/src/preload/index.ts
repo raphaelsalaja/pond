@@ -42,6 +42,7 @@ import {
   ShellHintSchema,
 } from "../shared/shell-hint";
 import type { ShortcutId } from "../shared/shortcuts";
+import { canonicalLocale, SYSTEM_LOCALE_ARG } from "../shared/system-locale";
 import {
   type UpdateNotice,
   type UpdateNoticeInput,
@@ -118,7 +119,13 @@ export interface StorageGuardStatusWire {
 
 let cachedLibraryId: string | null = null;
 
+function readSystemLocale(): string | undefined {
+  const arg = process.argv.find((a) => a.startsWith(SYSTEM_LOCALE_ARG));
+  return canonicalLocale(arg?.slice(SYSTEM_LOCALE_ARG.length));
+}
+
 const api = {
+  systemLocale: readSystemLocale(),
   openCombineImagesWindow(input: CombineImagesWindowOpen): Promise<void> {
     return ipcRenderer.invoke(COMBINE_IMAGES_WINDOW_IPC.open, input);
   },
