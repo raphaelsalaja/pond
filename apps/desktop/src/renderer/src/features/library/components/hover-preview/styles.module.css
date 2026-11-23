@@ -92,7 +92,7 @@
 
   &[data-zoom][data-starting-style],
   &[data-zoom][data-ending-style] {
-    border-radius: calc(4px / var(--zoom-scale));
+    border-radius: calc(var(--ds-radius-xs) / var(--zoom-scale));
     box-shadow: none;
     transform: translate(calc(-50% + var(--zoom-x)), calc(-50% + var(--zoom-y)))
       scale(var(--zoom-scale));
