@@ -44,6 +44,14 @@ _Avoid_: gallery collection, album, carousel group
 Turning several image or video Saves into one new local Save that holds all their files, in the order you selected them, with their tags, notes, and Folders. The originals move to Trash, and Split undoes it. Not the Group under Smart Folders.
 _Avoid_: merge (that's Merge Duplicates), combine (Combine Images joins images into one picture), album
 
+**Asset**:
+One original file of a Save, named by its path in the Save's folder and identified by its SHA-256. Thumbnails, posters, avatars, source icons, and article bodies Pond makes for a Save are not Assets.
+_Avoid_: attachment, media item, blob
+
+**Duplicate**:
+Two Saves Pond pairs because they hold the same content. A pair has one relation: exact (the same files, post, or link), near (every file matches a re-encoded, resized, or trimmed copy), overlap (they share some files), or related (only their content looks alike). Only exact and near Duplicates can be merged. Keep Separate stores the pair and its relation in the Library, and the pair comes back only if newer evidence makes the relation stronger.
+_Avoid_: copy, clone, match (as the Library row)
+
 **List kinds**:
 Whether you liked or saved that item, or both. Stored on the Save as `liked` and `saved`. Public like and bookmark counts on the Capture are metrics, not this.
 _Avoid_: origin, bookmark (as the Library row)

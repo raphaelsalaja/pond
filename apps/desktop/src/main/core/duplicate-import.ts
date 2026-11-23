@@ -2,21 +2,15 @@ import { createHash } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { readdir, stat } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
-import { saves } from "@pond/schema/db";
-import { isAuxiliaryKind } from "@shared/save-file-names";
 import type {
+  DuplicateImportCandidate,
   DuplicateImportChoice,
   DuplicateImportDecision,
 } from "@shared/saves-import-contracts";
 import { getDb } from "../db";
+import { findAssetsBySha256 } from "./duplicates/asset-index";
 
-export interface DuplicateImportCandidate {
-  path: string;
-  filename: string;
-  existingId: string;
-  existingTitle: string | null;
-  inTrash: boolean;
-}
+export type { DuplicateImportCandidate };
 
 export async function hashImportFile(path: string): Promise<string> {
   const hash = createHash("sha256");
@@ -54,42 +48,29 @@ async function importableFiles(paths: readonly string[]): Promise<string[]> {
 export async function reviewImportDuplicates(
   paths: readonly string[],
 ): Promise<DuplicateImportCandidate[]> {
+  const files = await importableFiles(paths);
+  const hashed: Array<{ path: string; sha256: string }> = [];
+  for (const path of files)
+    hashed.push({ path, sha256: (await hashImportFile(path)).toLowerCase() });
   const db = await getDb();
-  const rows = await db
-    .select({
-      id: saves.id,
-      title: saves.title,
-      files: saves.files,
-      deletedAt: saves.deletedAt,
-    })
-    .from(saves);
-  /** A Save in Trash still matches, so importing the file again offers it back instead of piling up copies; a match outside Trash wins. */
-  const byHash = new Map<
-    string,
-    { id: string; title: string | null; inTrash: boolean }
-  >();
-  for (const row of rows)
-    for (const file of row.files) {
-      if (isAuxiliaryKind(file.kind) || !file.sha256) continue;
-      const hash = file.sha256.toLowerCase();
-      const inTrash = row.deletedAt != null;
-      const current = byHash.get(hash);
-      if (!current || (current.inTrash && !inTrash))
-        byHash.set(hash, { id: row.id, title: row.title, inTrash });
-    }
-  const candidates: DuplicateImportCandidate[] = [];
-  for (const path of await importableFiles(paths)) {
-    const existing = byHash.get((await hashImportFile(path)).toLowerCase());
-    if (existing)
-      candidates.push({
-        path,
-        filename: basename(path),
-        existingId: existing.id,
-        existingTitle: existing.title,
-        inTrash: existing.inTrash,
-      });
-  }
-  return candidates;
+  const assets = findAssetsBySha256(
+    db.$raw,
+    hashed.map((file) => file.sha256),
+  );
+  return hashed.flatMap(({ path, sha256 }) => {
+    const existing = assets.get(sha256)?.[0];
+    return existing
+      ? [
+          {
+            path,
+            filename: basename(path),
+            existingId: existing.saveId,
+            existingTitle: existing.title,
+            inTrash: existing.inTrash,
+          },
+        ]
+      : [];
+  });
 }
 
 interface ResolvedDuplicates {

@@ -26,3 +26,8 @@
   margin: 0;
   color: var(--ds-danger-foreground);
 }
+
+.note {
+  margin: 0;
+  color: var(--ds-foreground-secondary);
+}

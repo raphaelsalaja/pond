@@ -183,6 +183,7 @@ const initialDeepLink = deepLinkArg(process.argv);
 let nativeServer: NetServer | null = null;
 let safariServer: NetServer | null = null;
 let stopMediaWarmer: (() => void) | null = null;
+let stopFingerprintWorker: (() => void) | null = null;
 let stopLibraryDisplacementWatch: (() => void) | null = null;
 
 let signalRendererReady: (() => void) | null = null;
@@ -523,17 +524,26 @@ async function startDeferredMaintenance(): Promise<void> {
     void resumeReconcilerAfterSuspend();
   });
 
-  const [scanModule, mediaModule, enrichmentModule] = await Promise.all([
-    import("./core/scan"),
-    import("./core/media-warm/service"),
-    import("./core/enrichment-sidecar"),
-  ]);
+  const [scanModule, mediaModule, enrichmentModule, fingerprintModule] =
+    await Promise.all([
+      import("./core/scan"),
+      import("./core/media-warm/service"),
+      import("./core/enrichment-sidecar"),
+      import("./core/duplicates/fingerprint-worker"),
+    ]);
   stopMediaWarmer = mediaModule.stopMediaWarmer;
+  stopFingerprintWorker = fingerprintModule.stopFingerprintWorker;
+  registerSyncActionListener(() => fingerprintModule.kickFingerprintWorker());
 
   void scanModule
     .reconcileLibrary()
     .catch((err) => log.warn("[pond] scan failed", err))
-    .finally(() => mediaModule.startMediaWarmer())
+    .finally(() => {
+      mediaModule.startMediaWarmer();
+      void fingerprintModule
+        .startFingerprintWorker()
+        .catch((err) => log.warn("[pond] fingerprint worker failed", err));
+    })
     .then(async () =>
       (await import("./core/refresh/archive-backfill")).startArchiveBackfill(),
     )
@@ -664,6 +674,7 @@ function armQuitStall(): void {
 
 async function shutdownForQuit(): Promise<void> {
   stopMediaWarmer?.();
+  stopFingerprintWorker?.();
   globalShortcut.unregisterAll();
   try {
     await waitForLibraryLocationChanges();

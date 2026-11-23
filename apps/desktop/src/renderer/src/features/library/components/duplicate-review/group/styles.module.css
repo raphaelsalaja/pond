@@ -1,7 +1,13 @@
 .header {
   display: flex;
+  gap: var(--ds-space-md);
   align-items: center;
   min-height: 20px;
+}
+
+.count {
+  font-size: var(--ds-text-body);
+  color: var(--ds-foreground-tertiary);
 }
 
 .include {

@@ -1,5 +1,10 @@
 import type { ExternalSource } from "@pond/schema/sources";
 import type {
+  DuplicateDismissal,
+  DuplicateIndexStatus,
+  DuplicateScan,
+} from "./duplicate-contracts";
+import type {
   BatchRenameInput,
   CancellableResult,
   EmptyInput,
@@ -67,25 +72,11 @@ export interface SavesMutationQueryInputs {
   "saves.removeVideo": { ids: string[] };
   "saves.missingVideoCount": { source?: ExternalSource };
   "saves.downloadMissingVideos": { source?: ExternalSource };
-  "saves.findDuplicates": { visualDistance?: number };
+  "saves.findDuplicates": { ids?: string[] };
+  "saves.duplicateIndexStatus": EmptyInput;
+  "saves.rebuildDuplicateIndex": EmptyInput;
+  "saves.dismissDuplicates": { pairs: DuplicateDismissal[] };
 }
-
-export type DuplicateGroupResult =
-  | {
-      kind: "exact";
-      ids: string[];
-      evidence: { sha256Equal: true };
-    }
-  | {
-      kind: "visual-near";
-      ids: string[];
-      evidence: { distance: number };
-    }
-  | {
-      kind: "semantic-near";
-      ids: string[];
-      evidence: { model: string; distance: number };
-    };
 
 export interface SavesMutationQueryResults {
   "saves.emptyTrash": OkResult<{ count: number }>;
@@ -129,10 +120,8 @@ export interface SavesMutationQueryResults {
   "saves.removeVideo": OkResult<{ removed: number }>;
   "saves.missingVideoCount": { count: number };
   "saves.downloadMissingVideos": OkResult<{ queued: number }>;
-  "saves.findDuplicates": {
-    groups: DuplicateGroupResult[];
-    visualIndexed: number;
-    visualDistance: number;
-    total: number;
-  };
+  "saves.findDuplicates": DuplicateScan;
+  "saves.duplicateIndexStatus": DuplicateIndexStatus;
+  "saves.rebuildDuplicateIndex": OkResult<{ assets: number }>;
+  "saves.dismissDuplicates": OkResult<{ dismissed: number }>;
 }

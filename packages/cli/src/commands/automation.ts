@@ -28,6 +28,27 @@ export function registerAutomationCommands(program: Command): void {
     "saves.mergeDuplicates",
     "Merge duplicate Saves",
   );
+  operationCommand(
+    program,
+    duplicates,
+    "status",
+    "saves.duplicateIndexStatus",
+    "Show how many files are fingerprinted",
+  );
+  operationCommand(
+    program,
+    duplicates,
+    "rebuild",
+    "saves.rebuildDuplicateIndex",
+    "Rebuild the file index and fingerprint every file again",
+  );
+  operationCommand(
+    program,
+    duplicates,
+    "dismiss",
+    "saves.dismissDuplicates",
+    "Keep pairs of Saves separate in future scans",
+  );
 
   const views = program.command("views");
   operationCommand(

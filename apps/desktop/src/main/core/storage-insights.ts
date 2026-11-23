@@ -25,7 +25,6 @@ import type {
   StorageShare,
 } from "../../shared/storage-insights";
 import type { Db } from "../db";
-import { duplicateGroups } from "./duplicate-groups";
 
 export interface LargestSavesInput {
   limit: number;
@@ -314,21 +313,32 @@ export function duplicateStorage(db: Db): DuplicateStorageResult {
     .from(saves)
     .where(and(isNull(saves.deletedAt), ne(saves.status, "skipped")))
     .all();
-  const filesById = new Map(rows.map((row) => [row.id, row.files ?? []]));
-  const { groups } = duplicateGroups(
-    [...filesById].map(([id, files]) => ({ id, files, phash: null })),
-  );
-  const exact = groups.filter((group) => group.kind === "exact");
-  let extraBytes = 0;
-  for (const group of exact) {
-    const originals = (filesById.get(group.ids[0] ?? "") ?? []).filter(
+  const byContent = new Map<string, { ids: string[]; bytes: number | null }>();
+  for (const row of rows) {
+    const originals = (row.files ?? []).filter(
       (file) => !isAuxiliaryKind(file.kind),
     );
-    if (!originals.length || originals.some((file) => !(file.size > 0)))
-      continue;
-    const copy = originals.reduce((sum, file) => sum + file.size, 0);
-    extraBytes += copy * (group.ids.length - 1);
+    if (!originals.length || originals.some((file) => !file.sha256)) continue;
+    const key = originals
+      .map((file) => file.sha256.toLowerCase())
+      .sort()
+      .join(":");
+    const group = byContent.get(key) ?? {
+      ids: [],
+      bytes: originals.every((file) => file.size > 0)
+        ? originals.reduce((sum, file) => sum + file.size, 0)
+        : null,
+    };
+    group.ids.push(row.id);
+    byContent.set(key, group);
   }
+  const exact = [...byContent.values()].filter(
+    (group) => group.ids.length > 1,
+  );
+  let extraBytes = 0;
+  for (const group of exact)
+    if (group.bytes !== null)
+      extraBytes += group.bytes * (group.ids.length - 1);
   const ids = exact.flatMap((group) => group.ids);
   return { groups: exact.length, saves: ids.length, extraBytes, ids };
 }

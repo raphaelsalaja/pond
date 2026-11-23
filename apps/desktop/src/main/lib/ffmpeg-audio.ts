@@ -8,6 +8,7 @@ export function decodeAudioSamples(
   file: string,
   maxSamples: number,
   offsetSeconds: number,
+  sampleRate = SAMPLE_RATE,
 ): Promise<{ audio: Float32Array; hasMore: boolean }> {
   const { ffmpeg } = binariesAvailable();
   if (!ffmpeg)
@@ -34,14 +35,14 @@ export function decodeAudioSamples(
         "-i",
         file,
         "-t",
-        String((maxSamples + 1) / SAMPLE_RATE),
+        String((maxSamples + 1) / sampleRate),
         "-vn",
         "-sn",
         "-dn",
         "-ac",
         "1",
         "-ar",
-        String(SAMPLE_RATE),
+        String(sampleRate),
         "-f",
         "f32le",
         "pipe:1",

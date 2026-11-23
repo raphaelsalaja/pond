@@ -7,12 +7,11 @@ import type { Transaction } from "@pond/schema/tx";
 import { classifyLibraryFile } from "@shared/file-format";
 import { SavesDerivedPatchSchema } from "@shared/saves-contracts-shared";
 import { decodeTextBytes } from "@shared/text-encoding";
-import { eq, isNotNull, isNull } from "drizzle-orm";
+import { eq, isNotNull } from "drizzle-orm";
 import { z } from "zod";
-import { mediaEmbeddingVersion } from "../../../shared/embeddings";
+import { DUPLICATE_RELATIONS } from "../../../shared/duplicate-contracts";
 import type { QueryResult } from "../../../shared/query-contracts";
 import type { OkFailure } from "../../../shared/query-contracts-shared";
-import { duplicateGroups } from "../../core/duplicate-groups";
 import { executeBatch } from "../../core/executor";
 import { extractImageMetadata } from "../../core/image-metadata";
 import { extractMediaMetadata } from "../../core/media-metadata";
@@ -28,10 +27,9 @@ import {
   removeVideos,
 } from "../../core/refresh/video-downloads";
 import { replaceSaveFile } from "../../core/replace-file";
-import { findSemanticDuplicateGroups } from "../../core/semantic-duplicates";
 import { readLibraryMedia } from "../../core/storage/library-media-storage";
 import { recordForUndo } from "../../core/undo";
-import { knnVec, parseJsonVector, upsertVec } from "../../core/vec-index";
+import { parseJsonVector, upsertVec } from "../../core/vec-index";
 import { getDb } from "../../db";
 import { saveFile } from "../../paths";
 import {
@@ -345,49 +343,49 @@ export const savesMutationQueries = {
   ),
 
   "saves.findDuplicates": query(
+    z.object({ ids: z.array(StringParam).max(100_000).optional() }),
+    async ({ ids }) => {
+      const { scanDuplicates } = await import("../../core/duplicates");
+      return scanDuplicates({ ids });
+    },
+  ),
+
+  "saves.duplicateIndexStatus": query(z.object({}), async () => {
+    const { fingerprintIndexStatus } = await import("../../core/duplicates");
+    return fingerprintIndexStatus((await getDb()).$raw);
+  }),
+
+  "saves.rebuildDuplicateIndex": query(z.object({}), async () => {
+    const [{ rebuildAssetIndex }, { clearFingerprints }, worker] =
+      await Promise.all([
+        import("../../core/duplicates"),
+        import("../../core/duplicates/fingerprints"),
+        import("../../core/duplicates/fingerprint-worker"),
+      ]);
+    const sqlite = (await getDb()).$raw;
+    const assets = sqlite.transaction(() => {
+      clearFingerprints(sqlite);
+      return rebuildAssetIndex(sqlite);
+    })();
+    worker.kickFingerprintWorker();
+    return { ok: true as const, assets };
+  }),
+
+  "saves.dismissDuplicates": query(
     z.object({
-      visualDistance: z.number().int().min(0).max(64).optional(),
+      pairs: z
+        .array(
+          z.object({
+            ids: z.tuple([StringParam, StringParam]),
+            relation: z.enum(DUPLICATE_RELATIONS),
+          }),
+        )
+        .min(1)
+        .max(10_000),
     }),
-    async (params) => {
-      const db = await getDb();
-      const rows = await db
-        .select({
-          id: saves.id,
-          title: saves.title,
-          phash: saves.phash,
-          files: saves.files,
-          status: saves.status,
-          clipEmbedding: saves.clipEmbedding,
-          clipModel: saves.clipModel,
-        })
-        .from(saves)
-        .where(isNull(saves.deletedAt));
-      const base = duplicateGroups(rows, {
-        visualDistance: params.visualDistance,
-      });
-      const excludedPairs: Array<[string, string]> = [];
-      for (const group of base.groups) {
-        for (let left = 0; left < group.ids.length; left++) {
-          for (let right = left + 1; right < group.ids.length; right++) {
-            const leftId = group.ids[left];
-            const rightId = group.ids[right];
-            if (leftId && rightId) excludedPairs.push([leftId, rightId]);
-          }
-        }
-      }
-      const semantic = findSemanticDuplicateGroups(
-        rows.map((row) => ({
-          id: row.id,
-          vector: parseJsonVector(row.clipEmbedding),
-          model: row.clipModel,
-          status: row.status,
-        })),
-        {
-          neighbors: (vector, limit) => knnVec(db.$raw, "clip", vector, limit),
-        },
-        { model: mediaEmbeddingVersion(), excludedPairs },
-      );
-      return { ...base, groups: [...base.groups, ...semantic] };
+    async ({ pairs }) => {
+      const { addDismissals } = await import("../../core/duplicates/dismissals");
+      return { ok: true as const, dismissed: addDismissals(pairs) };
     },
   ),
 

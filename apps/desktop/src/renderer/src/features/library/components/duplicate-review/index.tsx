@@ -1,4 +1,11 @@
 import { Button, Dialog, Empty } from "@pond/ui";
+import {
+  type DuplicateDismissal,
+  type DuplicatePair,
+  describeDuplicateGroup,
+  isMergeableRelation,
+  relationRank,
+} from "@shared/duplicate-contracts";
 import { useSelector } from "@tanstack/react-store";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -12,30 +19,34 @@ import { notify } from "@/shared/lib/toast";
 import { type DuplicateGroup, defaultKeeper, Group, groupKey } from "./group";
 import styles from "./styles.module.css";
 
-const GROUP_ORDER = {
-  exact: 0,
-  "visual-near": 1,
-  "semantic-near": 2,
-} satisfies Record<DuplicateGroup["kind"], number>;
-
 function isMergeable(group: DuplicateGroup) {
-  return group.kind !== "semantic-near";
+  return isMergeableRelation(group.relation);
 }
 
-/** Saves that open the review come first; near matches already covered by an exact group are dropped. */
+/** Saves that open the review come first, then the strongest relations. */
 function arrange(groups: DuplicateGroup[], saveId: string | null) {
-  const sorted = [...groups].sort(
+  return [...groups].sort(
     (a, b) =>
       Number(Boolean(saveId && b.ids.includes(saveId))) -
         Number(Boolean(saveId && a.ids.includes(saveId))) ||
-      GROUP_ORDER[a.kind] - GROUP_ORDER[b.kind],
+      relationRank(a.relation) - relationRank(b.relation),
   );
-  const exact = sorted.filter((group) => group.kind === "exact");
-  return sorted.filter(
-    (group) =>
-      group.kind === "exact" ||
-      !exact.some((match) => group.ids.every((id) => match.ids.includes(id))),
+}
+
+function dismissalsFor(
+  groups: readonly DuplicateGroup[],
+  pairs: readonly DuplicatePair[],
+): DuplicateDismissal[] {
+  return groups.flatMap((group) =>
+    group.pairs.flatMap((index) => {
+      const pair = pairs[index];
+      return pair ? [{ ids: pair.ids, relation: pair.relation }] : [];
+    }),
   );
+}
+
+function indexingNote(pending: number) {
+  return `Still indexing ${pending.toLocaleString()} ${pending === 1 ? "file" : "files"}. Results may be incomplete.`;
 }
 
 export function DuplicateReviewHost() {
@@ -57,6 +68,8 @@ export function DuplicateReview({
   ids?: string[] | null;
 }) {
   const [groups, setGroups] = useState<DuplicateGroup[]>([]);
+  const [pairs, setPairs] = useState<DuplicatePair[]>([]);
+  const [pending, setPending] = useState(0);
   const [loading, setLoading] = useState(true);
   const [merging, setMerging] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -66,16 +79,12 @@ export function DuplicateReview({
   useEffect(() => {
     let active = true;
     void window.pond
-      .query("saves.findDuplicates", {})
+      .query("saves.findDuplicates", ids ? { ids } : {})
       .then((result) => {
         if (!active) return;
-        setGroups(
-          ids
-            ? result.groups.filter((group) =>
-                group.ids.some((id) => ids.includes(id)),
-              )
-            : result.groups,
-        );
+        setGroups(result.groups);
+        setPairs(result.pairs);
+        setPending(result.index.pending);
         setLoading(false);
       })
       .catch((reason) => {
@@ -110,6 +119,9 @@ export function DuplicateReview({
     return [{ keepId, ids: selected }];
   });
   const hasMergeable = shown.some(isMergeable);
+  const keptSeparate = shown.filter(
+    (group) => isMergeable(group) && skipped.has(groupKey(group)),
+  );
 
   const listRef = useRef<HTMLDivElement>(null);
   const virtual = useVirtualizer({
@@ -120,11 +132,22 @@ export function DuplicateReview({
   });
 
   const merge = async () => {
-    if (merging || plan.length === 0) return;
+    if (merging || (plan.length === 0 && keptSeparate.length === 0)) return;
     setMerging(true);
     setError(null);
     const merged: { keepId: string; ids: string[] }[] = [];
     try {
+      if (keptSeparate.length > 0) {
+        const result = await window.pond.query("saves.dismissDuplicates", {
+          pairs: dismissalsFor(keptSeparate, pairs),
+        });
+        if (!result.ok)
+          throw Error(result.error ?? "Couldn't keep these saves separate.");
+        const separate = new Set(keptSeparate.map(groupKey));
+        setGroups((items) =>
+          items.filter((item) => !separate.has(groupKey(item))),
+        );
+      }
       for (const item of plan) {
         const result = await window.pond.query("saves.mergeDuplicates", item);
         if (!result.ok)
@@ -202,6 +225,7 @@ export function DuplicateReview({
                     >
                       <Group
                         group={group}
+                        evidence={describeDuplicateGroup(group, pairs)}
                         keepId={keeperOf(group)}
                         included={!skipped.has(key)}
                         mergeable={isMergeable(group)}
@@ -230,6 +254,10 @@ export function DuplicateReview({
                 <p className={styles.error} role="alert">
                   {error}
                 </p>
+              ) : !loading && pending > 0 ? (
+                <p className={styles.note} role="status">
+                  {indexingNote(pending)}
+                </p>
               ) : null
             }
           >
@@ -237,11 +265,17 @@ export function DuplicateReview({
               <>
                 <Dialog.Cancel disabled={merging} />
                 <Button
-                  disabled={merging || plan.length === 0}
+                  disabled={
+                    merging || (plan.length === 0 && keptSeparate.length === 0)
+                  }
                   loading={merging}
                   onClick={() => void merge()}
                 >
-                  {plan.length > 0 ? `Merge (${plan.length})` : "Merge"}
+                  {plan.length > 0
+                    ? `Merge (${plan.length})`
+                    : keptSeparate.length > 0
+                      ? "Keep Separate"
+                      : "Merge"}
                 </Button>
               </>
             ) : (

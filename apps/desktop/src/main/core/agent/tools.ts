@@ -14,6 +14,10 @@ import {
 } from "drizzle-orm";
 import { z } from "zod";
 import { IPC } from "../../../shared/constants";
+import {
+  describeDuplicateGroup,
+  isMergeableRelation,
+} from "../../../shared/duplicate-contracts";
 import { getDb } from "../../db";
 import { broadcast } from "../../lib/broadcast";
 import { folderIdsForSave, listFolders } from "../folders";
@@ -117,7 +121,9 @@ export const describeSavesInput = z.object({
   ids: z.array(z.string()).min(1).max(24),
 });
 
-export const findDuplicatesInput = z.object({});
+export const findDuplicatesInput = z.object({
+  ids: z.array(z.string()).min(1).max(500).optional(),
+});
 
 export type LibraryScope = LibraryRetrievalScope;
 
@@ -466,30 +472,19 @@ export async function describeSaves(input: z.infer<typeof describeSavesInput>) {
   };
 }
 
-export async function findDuplicateSaves() {
-  const db = await getDb();
-  const rows = await db
-    .select({
-      id: saves.id,
-      title: saves.title,
-      phash: saves.phash,
-      files: saves.files,
-    })
-    .from(saves)
-    .where(isNull(saves.deletedAt));
-  const byHash = new Map<string, string[]>();
-  for (const row of rows) {
-    const file = row.files?.[0];
-    const key = file?.sha256 || row.phash;
-    if (!key) continue;
-    const list = byHash.get(key) ?? [];
-    list.push(row.id);
-    byHash.set(key, list);
-  }
+export async function findDuplicateSaves(
+  input: z.infer<typeof findDuplicatesInput> = {},
+) {
+  const { scanDuplicates } = await import("../duplicates");
+  const scan = await scanDuplicates({ ids: input.ids });
   return {
-    groups: [...byHash.values()]
-      .filter((ids) => ids.length > 1)
-      .slice(0, 40)
-      .map((ids) => ({ ids })),
+    groups: scan.groups.slice(0, 40).map((group) => ({
+      ids: group.ids,
+      relation: group.relation,
+      mergeable: isMergeableRelation(group.relation),
+      evidence: describeDuplicateGroup(group, scan.pairs),
+    })),
+    total: scan.groups.length,
+    stillIndexing: scan.index.pending,
   };
 }
