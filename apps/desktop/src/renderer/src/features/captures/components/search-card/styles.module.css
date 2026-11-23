@@ -1,0 +1,55 @@
+.card {
+  /* The card renders in its own scheme, so paper and ink stay fixed instead of following the app theme. */
+  --card-paper: white;
+  --card-ink: #111;
+  --card-muted: #6b6b6b;
+
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2xl);
+  width: 100%;
+  aspect-ratio: 1.91 / 1;
+  padding: calc(var(--ds-space-2xl) + var(--ds-space-md));
+  overflow: hidden;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--card-paper);
+}
+
+.card[data-scheme="dark"] {
+  --card-paper: black;
+  --card-ink: #eee;
+  --card-muted: #9a9a9a;
+}
+
+.engine {
+  display: flex;
+  gap: var(--ds-space-lg);
+  align-items: center;
+  font-size: var(--ds-text-title);
+  font-weight: var(--ds-weight-strong);
+  line-height: var(--ds-leading-title);
+  color: var(--card-muted);
+}
+
+.icon {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  border-radius: var(--ds-space-sm);
+}
+
+.query {
+  display: -webkit-box;
+  flex: 1;
+  -webkit-box-orient: vertical;
+  margin: 0;
+  overflow: hidden;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  font-size: 40px;
+  font-weight: var(--ds-weight-bold);
+  line-height: 1.15;
+  color: var(--card-ink);
+  word-break: break-word;
+}

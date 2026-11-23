@@ -19,6 +19,7 @@ type WebExtras = {
   publisher?: string;
   faviconUrl?: string;
   product?: boolean;
+  search?: { engine: string; query: string };
 };
 
 const PRODUCT_FLAG = "true";
@@ -217,10 +218,11 @@ export class WebPageExtractor implements Extractor {
     if (publisher) extras.publisher = publisher;
     if (faviconUrl) extras.faviconUrl = faviconUrl;
     if (meta.product === PRODUCT_FLAG) extras.product = true;
+    if (search) extras.search = search;
 
     const title = search?.query ?? pickString(meta.title);
-    /** The query doubles as the description so the Save gets a text cover instead of the engine's favicon. */
-    const description = search?.query ?? pickString(meta.description);
+    /** A results page's description is boilerplate, and one would open the Save as text instead of the page. */
+    const description = search ? undefined : pickString(meta.description);
     const capture: Capture = {
       id: canonical,
       source: "web",
