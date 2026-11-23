@@ -21,15 +21,29 @@
 .legend {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: var(--ds-space-xs) var(--ds-space-lg);
+  gap: 0 var(--ds-space-xs);
   font-size: var(--ds-text-small);
   color: var(--ds-foreground-primary);
 }
 
 .entry {
   display: flex;
+  min-width: 0;
+}
+
+.link,
+.static {
   gap: var(--ds-space-sm);
+  justify-content: flex-start;
+}
+
+/* Matches the small ghost button beside it so linked and plain rows align. */
+.static {
+  display: flex;
+  flex: 1;
   align-items: center;
+  height: var(--ds-size-sm);
+  padding: 0 var(--ds-space-lg);
 }
 
 .swatch {

@@ -192,7 +192,10 @@ function Group({
   if (group.render === undefined && items.length === 0) return null;
 
   return (
-    <Settings.Section span={group.fullWidth ? "full" : undefined}>
+    <Settings.Section
+      id={group.anchor}
+      span={group.fullWidth ? "full" : undefined}
+    >
       {group.title ? (
         <Settings.SectionTitle>{group.title}</Settings.SectionTitle>
       ) : null}

@@ -1,86 +1,49 @@
 import { MEDIA_TYPES } from "@pond/schema/db";
-import { SOURCES, sourceLabel } from "@pond/schema/source-ids";
-import { Button, ContentRow, Empty, Input, Select, Settings } from "@pond/ui";
+import { Button, Input, Settings } from "@pond/ui";
+import type { StorageOrder } from "@shared/storage-insights";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { openSave } from "@/features/saves";
-import { formatBytes } from "@/shared/lib/format";
+import { showInLibrary } from "@/features/saves";
+import { FilterSelect } from "../filter-select";
+import { labelForSource, labelForType } from "../lib/labels";
+import { ORDER_OPTIONS } from "../lib/order";
+import { STORAGE_INSIGHTS_KEY } from "../lib/queries";
+import { ListEmpty } from "../list-empty";
+import { SaveList, useSaveSelection } from "../save-list";
 import styles from "./styles.module.css";
 
 const LIMIT = 50;
 
 const ALL = "all";
 
-export const LARGEST_SAVES_KEY = ["storage-largest-saves"] as const;
-
-interface FilterOption {
-  value: string;
-  label: string;
-}
-
-function labelForSource(source: string): string {
-  const known = SOURCES.find((entry) => entry === source);
-  return known ? sourceLabel(known) : source;
-}
-
-function labelForType(type: string): string {
-  return type.charAt(0).toUpperCase() + type.slice(1);
-}
-
-function Filter({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  options: FilterOption[];
-  onChange: (value: string) => void;
-}) {
-  return (
-    <Select.Root
-      value={value}
-      onValueChange={(next) =>
-        onChange(options.find((option) => option.value === next)?.value ?? ALL)
-      }
-    >
-      <Select.Trigger size="sm" aria-label={label}>
-        <Select.Value>
-          {(current: string) =>
-            options.find((option) => option.value === current)?.label ?? current
-          }
-        </Select.Value>
-      </Select.Trigger>
-      <Select.Portal>
-        <Select.Positioner sideOffset={6}>
-          <Select.Popup>
-            <Select.Items items={options} />
-          </Select.Popup>
-        </Select.Positioner>
-      </Select.Portal>
-    </Select.Root>
-  );
-}
-
 export function LargestSaves() {
   const [search, setSearch] = useState("");
   const [mediaType, setMediaType] = useState(ALL);
   const [source, setSource] = useState(ALL);
+  const [order, setOrder] = useState<StorageOrder>("largest");
+  const term = search.trim();
   const query = useQuery({
-    queryKey: [...LARGEST_SAVES_KEY, search, mediaType, source],
+    queryKey: [
+      ...STORAGE_INSIGHTS_KEY,
+      "largest-saves",
+      term,
+      mediaType,
+      source,
+      order,
+    ],
     queryFn: () =>
       window.pond.query("storage.largestSaves", {
         limit: LIMIT,
-        search: search.trim() || undefined,
+        search: term || undefined,
         mediaType: MEDIA_TYPES.find((type) => type === mediaType),
         source: source === ALL ? undefined : source,
+        order,
       }),
     placeholderData: keepPreviousData,
   });
   const data = query.data;
   const rows = data?.saves ?? [];
-  const term = search.trim();
+  const selection = useSaveSelection(rows);
   const filtered = term !== "" || mediaType !== ALL || source !== ALL;
 
   function clearFilters() {
@@ -101,7 +64,7 @@ export function LargestSaves() {
               onChange={(event) => setSearch(event.currentTarget.value)}
             />
           </Input.Root>
-          <Filter
+          <FilterSelect
             label="Media Type"
             value={mediaType}
             onChange={setMediaType}
@@ -113,7 +76,7 @@ export function LargestSaves() {
               })),
             ]}
           />
-          <Filter
+          <FilterSelect
             label="Source"
             value={source}
             onChange={setSource}
@@ -125,73 +88,42 @@ export function LargestSaves() {
               })),
             ]}
           />
+          <FilterSelect
+            label="Order"
+            value={order}
+            onChange={setOrder}
+            options={ORDER_OPTIONS}
+          />
         </div>
       </Settings.Item>
       <Settings.Item>
+        <SaveList.Selection rows={rows} selection={selection}>
+          <Button
+            size="sm"
+            variant="secondary"
+            disabled={!selection.chosen.length}
+            onClick={() =>
+              showInLibrary(selection.chosen.map((row) => row.id))
+            }
+          >
+            Show in Library
+          </Button>
+        </SaveList.Selection>
+      </Settings.Item>
+      <Settings.Item>
         {rows.length ? (
-          <ol className={styles.saves} aria-label="Largest Saves">
-            {rows.map((row) => (
-              <li key={row.id}>
-                <ContentRow.Root>
-                  <ContentRow.Trigger onClick={() => openSave(row.id)}>
-                    <ContentRow.Content>
-                      <ContentRow.Title>
-                        {row.title || row.url}
-                      </ContentRow.Title>
-                      <ContentRow.Description>
-                        {[
-                          row.mediaType ? labelForType(row.mediaType) : null,
-                          labelForSource(row.source),
-                          `${row.fileCount} ${row.fileCount === 1 ? "file" : "files"}`,
-                        ]
-                          .filter(Boolean)
-                          .join(" · ")}
-                      </ContentRow.Description>
-                    </ContentRow.Content>
-                    <span className={styles.size}>
-                      {formatBytes(row.fileSize)}
-                    </span>
-                  </ContentRow.Trigger>
-                </ContentRow.Root>
-              </li>
-            ))}
-          </ol>
-        ) : query.isError ? (
-          <Empty.Root role="alert">
-            <Empty.Title>Couldn't Load Saves</Empty.Title>
-            <Empty.Description>
-              Check that the Library is available, then try again.
-            </Empty.Description>
-            <Empty.Action>
-              <Button
-                size="sm"
-                variant="secondary"
-                loading={query.isFetching}
-                onClick={() => void query.refetch()}
-              >
-                Try Again
-              </Button>
-            </Empty.Action>
-          </Empty.Root>
-        ) : query.isPending ? (
-          <Empty.Root role="status">
-            <Empty.Title>Loading Saves</Empty.Title>
-          </Empty.Root>
-        ) : filtered ? (
-          <Empty.Root role="status">
-            <Empty.Title>
-              {term ? `No Results for “${term}”` : "No Matching Saves"}
-            </Empty.Title>
-            <Empty.Action>
-              <Button size="sm" variant="secondary" onClick={clearFilters}>
-                Clear Filters
-              </Button>
-            </Empty.Action>
-          </Empty.Root>
+          <SaveList.Items
+            aria-label="Largest Saves"
+            rows={rows}
+            selection={selection}
+          />
         ) : (
-          <Empty.Root role="status">
-            <Empty.Title>No Saves with File Sizes</Empty.Title>
-          </Empty.Root>
+          <ListEmpty
+            query={query}
+            noun="Saves"
+            filter={filtered ? { term, clear: clearFilters } : undefined}
+            emptyTitle="No Saves with File Sizes"
+          />
         )}
       </Settings.Item>
     </Settings.List>

@@ -1,18 +1,8 @@
 import { Button, Settings } from "@pond/ui";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { formatBytes } from "@/shared/lib/format";
 import { StorageBreakdown } from "./breakdown";
-import { LARGEST_SAVES_KEY } from "./largest-saves";
-
-export const STORAGE_SNAPSHOT_KEY = ["storage-snapshot"] as const;
-
-export function useStorageSnapshot() {
-  return useQuery({
-    queryKey: STORAGE_SNAPSHOT_KEY,
-    queryFn: () => window.pond.query("storage.snapshot", {}),
-    refetchInterval: 60_000,
-  });
-}
+import { refreshStorage, useStorageSnapshot } from "./lib/queries";
 
 export function StorageSummary() {
   const query = useStorageSnapshot();
@@ -36,10 +26,7 @@ export function StorageSummary() {
             size="sm"
             variant="secondary"
             loading={query.isFetching}
-            onClick={() => {
-              void query.refetch();
-              void client.invalidateQueries({ queryKey: LARGEST_SAVES_KEY });
-            }}
+            onClick={() => void refreshStorage(client)}
           >
             Refresh
           </Button>
