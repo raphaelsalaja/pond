@@ -1,0 +1,32 @@
+---
+description: Space between groups must clearly exceed space within them
+globs: "**/*.css"
+alwaysApply: false
+---
+
+# Spacing rhythm
+
+A group's inner gap is the smallest step on the scale. The gap between groups is at least two steps larger, and the gap between sections is larger again. Start with too much space and pull back.
+
+```css
+/* Bad: a row's two lines and the next row are 0px and 2px apart, so rows blur together */
+.rows { gap: var(--ds-space-2xs); }
+.text { gap: 0; }
+
+/* Good: lines inside a row 2px, rows 12px, header to list 16px */
+.rows { gap: var(--ds-space-lg); }
+.text { gap: var(--ds-space-2xs); }
+.description + .rows { margin-top: var(--ds-space-xl); }
+```
+
+Never fix tight rows with `min-height`. Fix the gap.
+
+Line height already adds space above and below text, so a text container's vertical padding is one step under its horizontal padding.
+
+```css
+/* Bad */
+.body { padding: var(--ds-space-xl); }
+
+/* Good */
+.body { padding: var(--ds-space-lg) var(--ds-space-xl); }
+```

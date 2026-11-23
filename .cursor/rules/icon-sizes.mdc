@@ -1,0 +1,31 @@
+---
+description: One scalable glyph per icon; size with the size prop
+alwaysApply: true
+---
+
+# Icon sizes
+
+Every `@pond/icons` glyph is one scalable drawing. Set the size with the `size` prop. There are no size packs.
+
+## Do
+
+```tsx
+import { IconXmark } from "@pond/icons";
+
+<IconXmark size={12} />
+```
+
+- Default `size` is 18. Use 12 for compact UI (chips, dense rows, tight icon buttons).
+- The stroke is a fixed 1.25px at every size up to 18, and stays exact when CSS resizes the icon. Icons take no `strokeWidth` prop. Every icon shares one weight.
+
+## Don't
+
+```tsx
+<IconXmark width={10} height={10} />
+<IconXmark style={{ transform: "scale(0.6)" }} />
+<IconXmark strokeWidth={2} />
+```
+
+## Missing glyph
+
+Draw it under `packages/icons/svg/` and run `pnpm --filter @pond/icons generate`. Do not pull icons from another set.

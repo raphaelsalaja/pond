@@ -1,0 +1,67 @@
+---
+description: CSS Modules — no class prefixes, states via data-*
+alwaysApply: true
+---
+
+# CSS Modules
+
+Modules already hash class names. Do not prefix classes with the component or element (`tab-icon`, `tab-active`). Parts are the thing they are. States are `data-*` attributes, nested with `&`.
+
+## Parts
+
+```css
+/* Bad */
+.tab-icon { }
+.tab-label { }
+.tab-close { }
+
+/* Good */
+.icon { }
+.label { }
+.close { }
+```
+
+```tsx
+<span className={styles.icon} />
+<span className={styles.label} />
+```
+
+Kebab-case for multi-word parts (`drag-spacer`, `new-tab`). Never camelCase.
+
+## States
+
+Boolean or mode variants are `data-*` on the element, never extra classes. Omit the attribute when false (`value || undefined`). Style with nested `&[data-x]`.
+
+```tsx
+<div
+  className={styles.tab}
+  data-active={active || undefined}
+  data-pinned={pinned || undefined}
+/>
+```
+
+```css
+.tab {
+  background: transparent;
+
+  &[data-active] {
+    background: var(--ds-background-primary);
+  }
+
+  &[data-pinned] {
+    width: var(--tab-height);
+  }
+
+  &[data-pinned] .label {
+    display: none;
+  }
+}
+```
+
+```css
+/* Bad */
+.tab-active { }
+.tab-pinned .tab-label { }
+```
+
+Local tokens (`--tab-height`) may keep a short prefix. Class names may not.

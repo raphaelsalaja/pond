@@ -1,0 +1,30 @@
+---
+description: Protect TanStack root route from scaffold overwrites
+globs: apps/desktop/src/renderer/src/routes/__root.tsx
+alwaysApply: false
+---
+
+# TanStack root route
+
+`routes/__root.tsx` must stay a thin wrapper. App chrome lives in `@/app/components/root-shell.tsx`.
+
+## Do
+
+- Keep `__root.tsx` as `createRootRoute({ component: RootShell })` only
+- Edit layout and IPC navigation in `root-shell.tsx`
+
+## Don't
+
+- Replace `__root.tsx` with TanStack's default scaffold (`Hello "__root__"!`)
+- Move `Tray.Library` or `window.pond.onNavigate` into `__root.tsx`
+- Delete `root-shell.tsx` without moving its contents somewhere equivalent
+
+```tsx
+// Good: thin route file
+import { createRootRoute } from "@tanstack/react-router";
+import { RootShell } from "@/app/components/root-shell";
+
+export const Route = createRootRoute({ component: RootShell });
+```
+
+The TanStack Router Vite plugin can overwrite route files with boilerplate while dev is running. Never scaffold this file manually.

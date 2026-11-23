@@ -1,0 +1,41 @@
+---
+description: Prefer Pond UI primitives over custom-styled controls
+alwaysApply: true
+---
+
+# Prefer Pond UI
+
+Use `@pond/ui` for interactive controls. Do not hand-roll buttons, menus, dialogs, inputs, or similar chrome with local CSS when a Pond UI primitive exists.
+
+## Do
+
+- `Button` (`variant`, `size`, `icon`) for clicks and icon actions
+- `Empty` for empty states
+- `Menu`, `Dialog`, `Popover`, `Tooltip`, `TitleBar`, etc. for their jobs
+- Local CSS only for layout composition (flex/grid/gap) and one-off product surfaces that are not controls
+
+## Don't
+
+```tsx
+// Bad: restyled native control that duplicates Button
+<button type="button" className={styles.close} aria-label="Close">
+  <IconXmarkOutline18 />
+</button>
+```
+
+```tsx
+// Good: Pond UI owns the control chrome
+<Button icon size="xs" variant="ghost" aria-label="Close">
+  <IconXmarkOutline18 />
+</Button>
+```
+
+## Allowed local CSS on Pond UI
+
+- Positioning and flex layout around the control
+- Visibility that is product-specific (e.g. show close on tab hover)
+- Not colors, radii, paddings, or hover fills that the primitive already defines
+
+If a needed variant is missing from Pond UI, add it there instead of copying the pattern into app CSS.
+
+Do not introduce Tailwind, shadcn, StyleX, raw `@base-ui/react`, or raw `@ui-sdk/*` in app code. Pond UI already wraps Base UI and UI SDK. A behavior Pond UI lacks (reorder, resize, tree, roving focus) gets built in `packages/ui` from UI SDK, then used from the app. Style with CSS Modules. Merge `className` with `import { clsx as cn } from "clsx"`. Do not write a local `cn` helper.

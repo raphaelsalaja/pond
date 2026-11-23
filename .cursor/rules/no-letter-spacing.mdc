@@ -1,0 +1,24 @@
+---
+description: Do not set letter-spacing; Allo opsz already handles optical sizing
+globs: "**/*.{css,tsx}"
+alwaysApply: false
+---
+
+# No letter-spacing
+
+Do not set `letter-spacing`. Pond uses Allo variable with `opsz`, which already adjusts glyph spacing for the rendered size. Manual tracking fights that and looks wrong.
+
+```css
+/* Bad */
+.title {
+  font-size: 18px;
+  letter-spacing: -0.02em;
+}
+
+/* Good */
+.title {
+  font-size: 18px;
+}
+```
+
+Never add negative tracking on titles/headings “for polish,” and never add positive tracking on labels for the same reason. Leave spacing to the font.

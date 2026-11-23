@@ -1,0 +1,18 @@
+---
+description: Never use em dashes in user-facing copy or generated text
+alwaysApply: true
+---
+
+# No em dashes
+
+Never use em dashes (—), or a spaced hyphen standing in for one, in UI copy, error messages, placeholders, tooltips, or any other user-facing text. Rewrite with a period, comma, or colon instead.
+
+```
+❌ "Session expired — sign back in to resume syncing."
+✅ "Session expired. Sign back in to resume syncing."
+
+❌ "Optional — shown in the menu"
+✅ "Optional, shown in the menu"
+```
+
+The bare "—" glyph used as an empty-value placeholder in tables and stats is allowed.

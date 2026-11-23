@@ -1,0 +1,45 @@
+---
+description: Colors, radius, shadow, and motion come from --ds-* tokens only
+globs: "**/*.{css,tsx}"
+alwaysApply: false
+---
+
+# Design tokens
+
+All visual values come from `@pond/theme` as `var(--ds-*)`. Do not invent hex, rgb, or `--pond-*` tokens.
+
+## Do
+
+```css
+.card {
+  color: var(--ds-foreground-primary);
+  background: var(--ds-background-secondary);
+  padding: var(--ds-space-lg);
+  border-radius: var(--ds-radius-md);
+  box-shadow: var(--ds-shadow-border);
+}
+
+.row {
+  --ds-focus-offset: var(--ds-focus-inset);
+}
+```
+
+- Color: roles, not steps. `--ds-background-primary|secondary|tertiary|inverse`, `--ds-background-elevated` for layers above the page (popups, dialogs, toasts), `--ds-foreground-primary|secondary|tertiary|inverse`, `--ds-surface-primary|secondary|tertiary` for fills, `--ds-border-subtle|strong`. `--ds-accent` and `--ds-danger` take `[-hover|-foreground|-tint|-border|-contrast]`.
+- Status: errors and destructive actions use `--ds-danger*`. There is no success or warning color: done and connected states use accent or foreground, paused and skipped use `--ds-foreground-tertiary`.
+- Palette: `--ds-red|orange|gold|yellow|lime|green|jade|teal|cyan|blue|indigo|violet|purple|magenta|pink[-tint|-border|-contrast]` is only for colors you pick (folders, canvas notes, logos, fish) and decoration. Never use a palette hue for status.
+- Spacing: `--ds-space-2xs|xs|sm|md|lg|xl|2xl` (2, 4, 6, 8, 12, 16, 24px) for gap, padding and margin. Never `gap: 8px`.
+- Height: `--ds-size-xs|sm|md` (24, 28, 32px) for controls.
+- Grid: every length is a multiple of 2px. That covers gap, padding, margin, insets, offsets, widths, heights and radii. When a value is derived, such as centering an icon in a pill, snap it with `round(down, …, 2px)`. Never `gap: 7px`, `inset: 5px` or `width: 13px`.
+- Rows: list rows sit flush with no `gap: 1px`. Draw selected fills on an inset `::before` (`inset: calc(var(--ds-space-2xs) / 2) 0; z-index: -1`) so neighbors keep a 2px seam. In a sidebar, set `--sidebar-fill` instead of `background`.
+- Row hover: never a per-row `:hover` background in a list. Mark rows `data-hover-row` and put one `HoverHighlight` from `@pond/ui` in the list, which needs `position: relative; isolation: isolate`. `Sidebar.Scroll` and inset `DataTable` rows already have one.
+- Exempt from the grid: hairlines (`1px`, `--ds-border-width`), icon stroke weights, the type scale, shadows and blurs, and geometry measured from a reference you're replicating.
+- Radius: `--ds-radius-xs|sm|md|lg|xl|2xl|full`. Never `border-radius: 8px`.
+- Text: `--ds-text-micro|small|body|heading|title|display` (10, 12, 13, 14, 16, 20px), each with a matching `--ds-leading-*` line height. Pair them: `font-size: var(--ds-text-body); line-height: var(--ds-leading-body);`.
+- Weight: `--ds-weight-regular|medium|strong|semibold|bold` (400, 450, 500, 550, 600).
+- Tracking: never set `letter-spacing` to tune Allo. Its `opsz` axis follows the font size through `font-optical-sizing: auto` in the reset.
+- Shadow: `--ds-shadow-border` for surfaces in the page, `-raised` for raised controls, `-overlay` for popovers, menus and tooltips, `-dialog` for dialogs. Focus is `outline`, not a box-shadow halo.
+- Motion: `--ds-duration-*`, `--ds-easing-*`.
+- Disabled: `opacity: var(--ds-opacity-disabled)`. The reset already dims `:disabled`, `[data-disabled]` and the label right after them, so only restate it when a component needs a different cursor or hover.
+- Focus lives in `@pond/ui/reset.css` via `--ds-focus-*`. Do not re-declare the ring unless the control needs a different color, offset, or no ring. Override with `--ds-focus-offset` or `--ds-focus-outline` on the element.
+
+Component-local variables (`--card-padding`) are fine on the root class. They must resolve to `--ds-*` or a layout length, not a raw color.

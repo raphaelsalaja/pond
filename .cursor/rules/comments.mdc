@@ -1,0 +1,49 @@
+---
+description: Comment standard — JSDoc only, one line, only where absolutely needed
+alwaysApply: true
+---
+
+# Comments
+
+A comment may only state something the code cannot say: an external-system fact,
+a rationale for a choice that would otherwise look wrong, a workaround, or a
+perf/safety constraint. If it fails that test, do not write it.
+
+## Form
+
+- Every comment in TS/TSX is a JSDoc block. No bare `//` comments.
+- One line ideally, two max: `/** Summary sentence. */`
+- If it needs more than two lines, move the explanation to a README and leave `@see`.
+- CSS uses a one-line `/* … */` with the same content test.
+
+## Allowed JSDoc properties
+
+- Summary line — one sentence; this is the whole comment in most cases
+- `@remarks` — a second line of rationale when the summary alone isn't enough (rare)
+- `@todo` — actionable follow-ups
+- `@see` — cross-reference to the README, ADR, or symbol holding the longer explanation
+- `@deprecated` — with the replacement named
+- Never `@param` / `@returns` — TypeScript signatures already carry that
+
+## Content rules
+
+- **Why, never what.** If the code already says it, no comment.
+- **No history.** Never reference how the code used to work or why it changed. Git holds that.
+- **No asides.** No parentheticals, hedges, hypotheticals ("raise only if…"), or best-practice sermons.
+- **No editorializing.** State the constraint, not the drama.
+- **File headers:** a single one-line JSDoc block, only when the module's purpose isn't obvious from its name.
+- **Exempt:** tool directives (`biome-ignore`, `ts-expect-error`), license headers, generated files.
+
+## Example
+
+```ts
+// Bad (5 lines of narration, asides, editorializing):
+// Auto-stop when the window is hidden/occluded (tray, another Space, minimized).
+// Background GPU/CPU inference is the worst kind of heat — the machine warms up
+// for work the user can't even see — so we gate scheduling on visibility.
+// (Best practice: only do heavy on-device inference while the surface is
+// actually on screen.)
+
+// Good:
+/** Inference runs on the UI renderer; pause while hidden so it never burns CPU/GPU invisibly. */
+```

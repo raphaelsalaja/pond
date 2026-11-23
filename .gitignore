@@ -8,12 +8,17 @@ dist
 build
 out
 *.tsbuildinfo
+next-env.d.ts
 
 # env
-.env
-.env.local
-.env.*.local
+.env*
 !.env.example
+
+# Apple signing material
+*.p12
+*.p8
+*.mobileprovision
+*.provisionprofile
 
 # logs / test output
 *.log
@@ -45,16 +50,16 @@ apps/raycast/raycast-env.d.ts
 # vercel
 .vercel
 
-# agent caches
+# agent skills, installed from skills-lock.json
 .agents
+.claude/skills/
 
-# cursor local config, skills, prototype assets
+# cursor local config; project rules are shared
 .cursor/*
-!.cursor/hooks.json
+!.cursor/rules/
 
-# Repository hooks are shared; Codex local state remains private.
-.codex/*
-!.codex/hooks.json
+# codex local state
+.codex/
 
 # mobbin UI evidence boards (design-exploration scratch)
 .mobbin/
@@ -113,3 +118,5 @@ __pycache__/
 brag-output/
 brag-output-*/
 .gather/
+.audit/
+.match/

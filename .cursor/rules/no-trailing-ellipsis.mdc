@@ -1,0 +1,19 @@
+---
+description: Never use ellipsis in UI copy except placeholders and truncation
+alwaysApply: true
+---
+
+# No ellipsis in UI copy
+
+Never use an ellipsis (… or ...) in user-facing text: buttons, menu items, dialog titles, busy states, or status messages. This applies in the renderer and the main process (app menu, tray menu, sync status).
+
+```
+❌ "Export files…"   ✅ "Export files"
+❌ "Tagging…"        ✅ "Tagging"
+❌ "Syncing…"        ✅ "Syncing"
+```
+
+Allowed uses:
+
+- Search input placeholders, which are always exactly "Search…". Never name the target ("Search tags…"); put that in `aria-label` instead
+- Truncating long user content, like a clipped description or chart label: `${label.slice(0, 8)}…`

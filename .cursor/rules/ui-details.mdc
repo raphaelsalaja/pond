@@ -1,0 +1,36 @@
+---
+description: Concentric radii and first-line icon alignment
+globs: "**/*.{css,tsx}"
+alwaysApply: false
+---
+
+# UI details
+
+## Concentric radii
+
+When a rounded child sits 8px or less inside a rounded parent, its radius is the parent's radius minus the gap.
+
+```css
+/* Bad: 10px inside a 16px card with 4px padding */
+.main { border-radius: var(--ds-radius-lg); }
+
+/* Good: 16 - 4 = 12 */
+.main { border-radius: var(--ds-radius-xl); }
+```
+
+## Icons sit on the first line
+
+An icon or dot beside multi-line text centers on the first line, not the whole block. Wrap it in a box one line tall.
+
+```css
+/* Bad: the row centers the dot between the title and its detail */
+.row { align-items: center; }
+
+/* Good */
+.marker {
+  display: flex;
+  align-items: center;
+  align-self: flex-start;
+  height: var(--ds-leading-body);
+}
+```

@@ -1,0 +1,43 @@
+---
+description: Styled components live in a folder with index and styles.module.css
+alwaysApply: true
+---
+
+# Component styles
+
+A styled component is a folder: `index.tsx` plus `styles.module.css`. Do not put a named CSS module next to a named component file.
+
+## Do
+
+```
+search/bar/
+  index.tsx
+  styles.module.css
+  typeahead/
+    index.tsx
+    styles.module.css
+```
+
+```tsx
+import styles from "./styles.module.css";
+```
+
+## Don't
+
+```
+search/bar/lib/
+  typeahead.tsx
+  typeahead.module.css
+```
+
+```tsx
+import styles from "./typeahead.module.css";
+```
+
+## Details
+
+- One CSS module per component folder, always named `styles.module.css`.
+- CSS-less helpers (`editor-state.ts`, plugins, data) stay as named files.
+- Sibling files that share styles belong in one folder and import that folder's `styles.module.css`. Do not add `foo.module.css` beside `foo.tsx`.
+- Import the folder (`./typeahead`, `@/components/search/bar/lib/help`). Do not import `styles.module.css` from another component.
+- A large or multi-section CSS file means the TSX should split. Extract the sub-UI into its own folder and take the CSS with it. Never carve CSS into partials while leaving one god-component.

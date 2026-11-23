@@ -1,0 +1,44 @@
+---
+description: Pond writing voice for UI copy, menus, errors, website, and docs
+alwaysApply: true
+---
+
+# Writing guidelines
+
+Voice from [Vercel](https://github.com/vercel-labs/writing-guidelines) and Linear. Pond overrides those sources where they conflict. Full handbook: `.agents/skills/writing-guidelines/SKILL.md`.
+
+## Voice
+
+- MUST: Active voice. Direct address (`you`). Imperative for steps. Present tense. Contractions.
+- SHOULD: Sentences under 20 words. One idea per sentence.
+- NEVER: `the user`, `one can`, or `we` as a stand-in for `you`
+- NEVER: `easy`, `simple`, `quick`, `just`, `really`, `very`, `simply`, `powerful`, `seamless`, `magical`
+- NEVER: Rhetorical questions, marketing platform-speak ("your everything locker", "where the work happens")
+- MUST: Name the thing the reader already looks for: library, save, source, extension, Mac
+
+## Pond
+
+- MUST: Local-first. Copy never implies a Pond cloud, hosted model, or account Pond operates
+- MUST: Enrichments run on-device. Fish use your key or a local host you run. Pond does not bundle a chat model
+- MUST: Place-name **Fish** for the sidebar group, the right column, and its toggle. Each fish goes by its own name (`Koi`). Not Assistant, Ask, Agent, or Bot
+- MUST: `fish` is both singular and plural (`your fish`, `New Fish`). Never `fishes`
+- NEVER: Algorithm names in titles (`CLIP`, `OCR`, `GGUF`, `Whisper`). Outcome language instead (`Text in Images`, `Transcription`)
+- MUST: American English in product UI (`Color`, `Trash`). Match the file for existing markdown
+
+## Product UI (Linear-shaped)
+
+- MUST: Title case for buttons, menus, nav, settings titles, dialog titles (`New Source`, `Natural-Language Search`)
+- MUST: Empty titles say what's missing, in title case, five words max, no period (`No Saves Yet`, `No Results for “march”`). Never `Nothing here` or the bare place name. Status titles are title case too (`Not Linked`, `Loading Library`). A quoted search term keeps its typed case
+- MUST: An empty state has one action, a verb plus noun, as a secondary button. None when the place is done (`You're All Caught Up`). No-results titles quote the search
+- MUST: Settings descriptions are one sentence and add a fact the title does not already say
+- MUST: Keep nested settings visible. Disable and dim them (`Settings.Item disabled`) until the parent switch is on. Never hide a setting that's only off
+- Ellipses follow `no-trailing-ellipsis.mdc`. Em dashes follow `no-em-dashes.mdc`
+- MUST: Loading copy is a gerund or a short status, no ellipsis (`Loading Library`, `Getting your saves ready.`)
+- MUST: Errors state what happened, then what to do. No apology theater
+
+## Website and docs
+
+- MUST: Specific over vague. "Your personal social media archiver", not a work-platform slogan
+- MUST: Lead with the claim, then the mechanism
+- MUST: Changelog entries live in `changelog/<version>.md`: a sentence-case title, a one-sentence summary, a `media` image or video from `changelog/media/`, then `Important`, `New`, `Improved`, `Fixed` sections in that order, one-sentence bullets
+- NEVER: Drop a code block without saying what it does. Language tag on every fence
