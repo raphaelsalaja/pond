@@ -71,13 +71,14 @@ const NO_TEMPLATES: TemplateList = { builtIn: [], custom: [] };
 
 function useTemplates() {
   const [templates, setTemplates] = useState(NO_TEMPLATES);
+  const [failed, setFailed] = useState(false);
   useEffect(() => {
-    void loadTemplates().then(setTemplates);
+    loadTemplates().then(setTemplates, () => setFailed(true));
   }, []);
   async function reload() {
     setTemplates(await loadTemplates());
   }
-  return { ...templates, reload };
+  return { ...templates, failed, reload };
 }
 
 function ApplyTemplateDialog({
@@ -87,11 +88,14 @@ function ApplyTemplateDialog({
   open: boolean;
   parentId: string | null;
 }) {
-  const { builtIn, custom, reload } = useTemplates();
+  const { builtIn, custom, failed, reload } = useTemplates();
   const folderRows = useFolders();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [name, setName] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [actionError, setError] = useState<string | null>(null);
+  const error =
+    actionError ??
+    (failed ? "Couldn't load templates. Close this and try again." : null);
   const [busy, setBusy] = useState(false);
   const all = useMemo(() => [...builtIn, ...custom], [builtIn, custom]);
   const selected = all.find((entry) => entry.id === selectedId) ?? all[0];
