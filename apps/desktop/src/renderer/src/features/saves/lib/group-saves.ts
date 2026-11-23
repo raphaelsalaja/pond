@@ -6,7 +6,7 @@ import { notify } from "@/shared/lib/toast";
 import { notifyUndoable } from "@/shared/lib/undo-toast";
 
 /** Same rule the main process checks before grouping. */
-export function saveCanGroup(save: Save): boolean {
+function saveCanGroup(save: Save): boolean {
   return (
     !save.deletedAt &&
     save.status === "complete" &&

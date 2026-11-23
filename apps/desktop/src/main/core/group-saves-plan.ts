@@ -46,7 +46,7 @@ interface MemberMedia {
 }
 
 /** Same rule as the viewer: a harvested post's lone video shows its one image as the poster, not as a slide. */
-export function memberMedia(save: Pick<Save, "source" | "files">): MemberMedia {
+function memberMedia(save: Pick<Save, "source" | "files">): MemberMedia {
   const slides = slideFiles(save.files);
   const posters = save.files.filter((file) => file.kind === POSTER_KIND);
   const videos = slides.filter((file) => isVideoFile(file));
