@@ -7,7 +7,7 @@ import {
 import { LibraryQueryRequestSchema } from "../../../../shared/library-query";
 import { queryActiveLibraryPage } from "../../active-library-query";
 import { libraryOverview, listLibraryFolders, readSave } from "../tools";
-import { accessError } from "./results";
+import { accessError, type McpToolBody } from "./results";
 import {
   MCP_APP_MIME_TYPE,
   SAVES_VIEW_HTML,
@@ -17,7 +17,7 @@ import {
 const JSON_TYPE = "application/json";
 const FOLDER_PAGE = 100;
 
-function json(uri: URL, value: unknown): ReadResourceResult {
+function json(uri: URL, value: McpToolBody): ReadResourceResult {
   return {
     contents: [
       { uri: uri.href, mimeType: JSON_TYPE, text: JSON.stringify(value) },

@@ -104,6 +104,11 @@ const SaveCardSchema = z.object({
   savedAt: z.string().nullable(),
 });
 
+interface PreviewCaption
+  extends Pick<z.infer<typeof SaveCardSchema>, "id" | "title" | "source"> {
+  error?: string;
+}
+
 const TagsOutputSchema = z.object({
   tags: z.array(
     z.object({ name: z.string(), count: z.number(), starred: z.boolean() }),
@@ -303,15 +308,13 @@ function registerSearchTools(server: McpServer): void {
       const content: ContentBlock[] = [];
       for (const card of cards) {
         const image = await savePreview(card, size ?? "medium");
-        content.push({
-          type: "text",
-          text: JSON.stringify({
-            id: card.id,
-            title: card.title,
-            source: card.source,
-            ...(image ? {} : { error: "No image to show for this Save." }),
-          }),
-        });
+        const caption: PreviewCaption = {
+          id: card.id,
+          title: card.title,
+          source: card.source,
+        };
+        if (!image) caption.error = "No image to show for this Save.";
+        content.push({ type: "text", text: JSON.stringify(caption) });
         if (image) content.push(image);
       }
       const found = new Set(cards.map((card) => card.id));

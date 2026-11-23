@@ -1,13 +1,13 @@
-import { InMemoryTransport } from "@modelcontextprotocol/server";
+import {
+  InMemoryTransport,
+  isJSONRPCResultResponse,
+  type JSONRPCRequest,
+  type JSONRPCResultResponse,
+} from "@modelcontextprotocol/server";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { MCP_APP_MIME_TYPE, SAVES_VIEW_URI } from "./saves-view";
 import { createPondServer, loadPondSkills } from "./server";
-
-const ResponseSchema = z.object({
-  id: z.number(),
-  result: z.record(z.string(), z.unknown()),
-});
 
 const ToolsSchema = z.object({
   tools: z.array(
@@ -24,18 +24,20 @@ const ToolsSchema = z.object({
 async function connect() {
   const [client, transport] = InMemoryTransport.createLinkedPair();
   await createPondServer("0.0.0", await loadPondSkills()).connect(transport);
-  const waiting = new Map<number, (result: Record<string, unknown>) => void>();
+  const waiting = new Map<
+    JSONRPCResultResponse["id"],
+    (result: JSONRPCResultResponse["result"]) => void
+  >();
   client.onmessage = (message) => {
-    const response = ResponseSchema.safeParse(message);
-    if (!response.success) return;
-    waiting.get(response.data.id)?.(response.data.result);
+    if (!isJSONRPCResultResponse(message)) return;
+    waiting.get(message.id)?.(message.result);
   };
   await client.start();
   let next = 0;
-  const call = (method: string, params: Record<string, unknown> = {}) => {
+  const call = (method: string, params: JSONRPCRequest["params"] = {}) => {
     next += 1;
     const id = next;
-    return new Promise<Record<string, unknown>>((resolve) => {
+    return new Promise<JSONRPCResultResponse["result"]>((resolve) => {
       waiting.set(id, resolve);
       void client.send({ jsonrpc: "2.0", id, method, params });
     });
