@@ -222,3 +222,20 @@ it("does not acquire a browser when the direct fetch succeeds", async () => {
   ).resolves.toMatchObject({ title: "Fetched page" });
   expect(renderHtml).not.toHaveBeenCalled();
 });
+
+it("titles a search results page with its query instead of the engine's favicon", async () => {
+  const capture = await extractFrom(
+    "https://www.google.com/search?q=malaga",
+    `<html><head><title>Google Search</title><link rel="icon" href="/favicon.ico"></head></html>`,
+  );
+
+  expect(capture).toMatchObject({
+    title: "malaga",
+    description: "malaga",
+    media: [],
+    extras: {
+      publisher: "Google Search",
+      faviconUrl: "https://www.google.com/favicon.ico",
+    },
+  });
+});

@@ -12,6 +12,7 @@ import { z } from "zod";
 import { renderPageHtml } from "../../../refresh/web-page-renderer";
 import { TerminalError, TransientError } from "../errors";
 import type { Capture, ExtractInput, Extractor } from "../types";
+import { searchPageQuery } from "./search-page";
 import { fetchHtml } from "./web-fetch";
 
 type WebExtras = {
@@ -197,8 +198,11 @@ export class WebPageExtractor implements Extractor {
 
     const canonical = pickString(meta.url) ?? input.url.href;
 
+    const search = searchPageQuery(input.url);
     const faviconUrl = pickString(meta.logo);
-    const coverUrl = pickString(meta.image) ?? faviconUrl;
+    const coverUrl = search
+      ? undefined
+      : (pickString(meta.image) ?? faviconUrl);
     const media: CaptureMedia[] = coverUrl
       ? [{ url: coverUrl, type: "image" }]
       : [];
@@ -207,15 +211,16 @@ export class WebPageExtractor implements Extractor {
     const author = authorName ? { name: authorName } : undefined;
 
     const publishedAt = pickString(meta.date);
-    const publisher = pickString(meta.publisher);
+    const publisher = search?.engine ?? pickString(meta.publisher);
 
     const extras: WebExtras = {};
     if (publisher) extras.publisher = publisher;
     if (faviconUrl) extras.faviconUrl = faviconUrl;
     if (meta.product === PRODUCT_FLAG) extras.product = true;
 
-    const title = pickString(meta.title);
-    const description = pickString(meta.description);
+    const title = search?.query ?? pickString(meta.title);
+    /** The query doubles as the description so the Save gets a text cover instead of the engine's favicon. */
+    const description = search?.query ?? pickString(meta.description);
     const capture: Capture = {
       id: canonical,
       source: "web",
