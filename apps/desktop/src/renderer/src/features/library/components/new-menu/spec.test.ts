@@ -29,6 +29,7 @@ describe("new menu spec", () => {
     expect(labels).toEqual([
       "New",
       "New Folder",
+      "New Folder from Template",
       "New Smart Folder",
       "New Watched Folder",
       "New Tag",
