@@ -21,10 +21,8 @@ directories:
   buildResources: build
   output: dist
 
-# Chromium locales to ship; a bare language keeps its regional variants
-# (en keeps en_GB, zh keeps zh_CN and zh_TW). Pond's copy is English, so the
-# rest only localize Chromium's own strings. Dates and numbers follow the OS
-# region through app.getSystemLocale() whatever ships here.
+# Chromium's own strings only; a bare language keeps its regional variants.
+# Dates and numbers follow the OS region via app.getSystemLocale(), not this list.
 electronLanguages:
   - en
   - de
