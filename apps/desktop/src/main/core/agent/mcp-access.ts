@@ -6,8 +6,7 @@ export type McpAccessGroup = "search" | "open" | "export";
 export const MCP_ACCESS_OFF = {
   search:
     "Search Saves is off. Turn it on in Pond Settings, Model Context Protocol.",
-  open:
-    "Open in Pond is off. Turn it on in Pond Settings, Model Context Protocol.",
+  open: "Open in Pond is off. Turn it on in Pond Settings, Model Context Protocol.",
   export:
     "Export Files is off. Turn it on in Pond Settings, Model Context Protocol.",
 } satisfies Record<McpAccessGroup, string>;

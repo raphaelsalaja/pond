@@ -1,4 +1,7 @@
-import type { CallToolResult, ServerContext } from "@modelcontextprotocol/server";
+import type {
+  CallToolResult,
+  ServerContext,
+} from "@modelcontextprotocol/server";
 import type { JsonObject } from "@pond/schema/json";
 import log from "electron-log/main.js";
 import { z } from "zod";

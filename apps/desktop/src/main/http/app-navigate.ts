@@ -7,7 +7,11 @@ import { isLoopback } from "./loopback";
 /** Lets the headless `--mcp` process drive the open Library window, which it cannot reach over IPC. */
 export async function appNavigateHandler(c: Context) {
   if (!isLoopback(getConnInfo(c).remote.address)) {
-    return apiError(c, "forbidden", "Only this computer can move the Pond window.");
+    return apiError(
+      c,
+      "forbidden",
+      "Only this computer can move the Pond window.",
+    );
   }
   const parsed = AppNavigationSchema.safeParse(
     await c.req.json().catch(() => null),
