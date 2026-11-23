@@ -22,6 +22,10 @@ export const ViewerPrefsSchema = z.object({
   spaceAction: ViewerActionSchema.catch(IS_DARWIN ? "quick-look" : "preview"),
   doubleClickAction: ViewerActionSchema.catch("open"),
   middleClickAction: ViewerActionSchema.catch("open"),
+  /** The click that peeks at a Save in Quick Preview, whatever Space and double-click do. */
+  peekClick: z
+    .enum(["off", "option", "option-shift", "option-command"])
+    .catch("option"),
   dragToFile: z.boolean().catch(true),
   wheelBehavior: z.enum(["scroll", "zoom", "navigate"]).catch("scroll"),
   defaultImageSize: z.enum(["fit", "actual"]).catch("fit"),

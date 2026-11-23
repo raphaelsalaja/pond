@@ -53,6 +53,25 @@ export const viewerSection = defineCustomSection({
         },
         {
           control: "select",
+          key: "peekClick",
+          title: "Peek Click",
+          description:
+            "Opens a Save in Quick Preview. Click outside it to go back.",
+          options: [
+            { value: "option", label: IS_MAC ? "Option-Click" : "Alt-Click" },
+            {
+              value: "option-shift",
+              label: IS_MAC ? "Option-Shift-Click" : "Alt-Shift-Click",
+            },
+            {
+              value: "option-command",
+              label: IS_MAC ? "Option-Command-Click" : "Alt-Ctrl-Click",
+            },
+            { value: "off", label: "Off" },
+          ],
+        },
+        {
+          control: "select",
           key: "middleClickAction",
           title: "Middle-Click Action",
           description: "What opens when you middle-click a Save.",

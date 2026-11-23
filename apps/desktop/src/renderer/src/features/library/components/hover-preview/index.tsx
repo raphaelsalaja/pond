@@ -48,6 +48,7 @@ import { PreviewBar } from "./title-bar";
 
 export function HoverPreview() {
   const [open, setOpen] = useState(false);
+  const [peek, setPeek] = useState(false);
   const [hoverId, setHoverId] = useState<string | null>(null);
   const [compareZoom, setCompareZoom] = useState(1);
   const [position, setPosition] = useState<{
@@ -100,6 +101,7 @@ export function HoverPreview() {
         runViewerAction(selected, prefs.spaceAction);
         return;
       }
+      setPeek(false);
       setOpen(true);
     },
     { preventDefault: false, ignoreInputs: true },
@@ -111,8 +113,11 @@ export function HoverPreview() {
   }, []);
   useEffect(
     () =>
-      onQuickPreviewRequest((saveId) => {
-        void showSave(saveId).then(() => setOpen(true));
+      onQuickPreviewRequest((saveId, options) => {
+        void showSave(saveId).then(() => {
+          setPeek(options.peek === true);
+          setOpen(true);
+        });
       }),
     [showSave],
   );
@@ -259,6 +264,7 @@ export function HoverPreview() {
 
   const close = () => {
     setOpen(false);
+    setPeek(false);
     inspect.setCompare(false);
   };
 
@@ -300,12 +306,13 @@ export function HoverPreview() {
     <Dialog.Root
       open={(open || compare) && !!(save || comparing)}
       modal={false}
-      disablePointerDismissal
+      disablePointerDismissal={!peek || compare}
       onOpenChange={(next) => {
         if (!next) close();
       }}
     >
       <Dialog.Portal>
+        {peek && !compare ? <Dialog.Backdrop data-peek-backdrop /> : null}
         <Dialog.Popup
           ref={attachPopup}
           initialFocus={popupRef}

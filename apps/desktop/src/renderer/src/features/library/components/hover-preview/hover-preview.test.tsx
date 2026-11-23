@@ -5,6 +5,7 @@ import { expect, it, vi } from "vitest";
 import { normalise } from "@/features/saves";
 import { resultNavigation, selection } from "@/features/saves/navigation";
 import { pool } from "@/features/saves/pool";
+import { requestQuickPreview } from "@/features/saves/state/quick-preview";
 import { HoverPreview } from "./";
 
 it("hydrates and previews the next logical save beyond loaded grid rows", async () => {
@@ -96,6 +97,57 @@ it("hydrates and previews the next logical save beyond loaded grid rows", async 
   } finally {
     await act(async () => root.unmount());
     resultNavigation.setSource({ ids: [] });
+    selection.clear();
+    host.remove();
+    vi.unstubAllGlobals();
+  }
+});
+
+it("dims the grid for a peek and closes on a click outside", async () => {
+  const save = normalise({
+    id: "peek-save",
+    source: "web",
+    sourceId: "peek",
+    url: "https://fixture.test/peek",
+    title: "Peeked reference",
+    files: [],
+  });
+  if (!save) throw new Error("Invalid fixture");
+  pool.upsert(save);
+  vi.stubGlobal("pond", {
+    query: vi.fn(async () => PrefsSchema.parse({})),
+    onPreviewNeighborRequested: () => () => {},
+  });
+  const host = document.createElement("div");
+  document.body.append(host);
+  const root = createRoot(host);
+  try {
+    await act(async () => root.render(<HoverPreview />));
+    await act(async () => requestQuickPreview(save.id, { peek: true }));
+    expect(
+      document.querySelector("[data-quick-preview][data-open]"),
+    ).not.toBeNull();
+    const backdrop = document.querySelector<HTMLElement>(
+      "[data-peek-backdrop]",
+    );
+    expect(backdrop).not.toBeNull();
+    await act(async () => {
+      backdrop?.dispatchEvent(
+        new PointerEvent("pointerdown", { bubbles: true, button: 0 }),
+      );
+      backdrop?.dispatchEvent(
+        new MouseEvent("mousedown", { bubbles: true, button: 0 }),
+      );
+      backdrop?.dispatchEvent(
+        new PointerEvent("pointerup", { bubbles: true, button: 0 }),
+      );
+      backdrop?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(
+      document.querySelector("[data-quick-preview][data-open]"),
+    ).toBeNull();
+  } finally {
+    await act(async () => root.unmount());
     selection.clear();
     host.remove();
     vi.unstubAllGlobals();
