@@ -8,5 +8,6 @@ export {
   resolveSidebarBadgeStyle,
   SIDEBAR_DESTINATION_GROUPS,
   SIDEBAR_DESTINATION_LABELS,
+  SIDEBAR_SECTION_LABELS,
   useRevealSidebarSection,
 } from "./lib/sidebar-customization";

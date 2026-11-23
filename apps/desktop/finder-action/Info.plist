@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleDevelopmentRegion</key><string>en</string>
+  <key>CFBundleDisplayName</key><string>Save to Pond</string>
+  <key>CFBundleExecutable</key><string>PondFinderAction</string>
+  <key>CFBundleIdentifier</key><string>__BUNDLE_ID__</string>
+  <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
+  <key>CFBundleName</key><string>Pond Finder Action</string>
+  <key>CFBundlePackageType</key><string>XPC!</string>
+  <key>CFBundleShortVersionString</key><string>__VERSION__</string>
+  <key>CFBundleVersion</key><string>__VERSION__</string>
+  <key>LSMinimumSystemVersion</key><string>13.5</string>
+  <key>NSExtension</key>
+  <dict>
+    <key>NSExtensionPointIdentifier</key><string>com.apple.services</string>
+    <key>NSExtensionPrincipalClass</key><string>PondFinderAction.ActionRequestHandler</string>
+    <key>NSExtensionAttributes</key>
+    <dict>
+      <!-- Any file or folder Finder hands over; folders conform to public.item too. -->
+      <key>NSExtensionActivationRule</key>
+      <string>SUBQUERY(extensionItems, $item, SUBQUERY($item.attachments, $attachment, ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "public.item").@count >= 1).@count >= 1</string>
+      <key>NSExtensionServiceAllowsFinderPreviewItem</key><true/>
+      <key>NSExtensionServiceAllowsTouchBarItem</key><false/>
+      <key>NSExtensionServiceFinderPreviewIconName</key><string>NSActionTemplate</string>
+    </dict>
+  </dict>
+</dict>
+</plist>

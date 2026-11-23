@@ -23,6 +23,7 @@ import {
 import { FILE_RING_OVERLAY_IPC } from "../shared/file-ring-overlay-contracts";
 import { FilterQuery } from "../shared/filter-query";
 import type { FishEvent, FishOpen } from "../shared/fish-contracts";
+import type { HapticPattern } from "../shared/haptics";
 import {
   type MachinePaceWire,
   MachinePaceWireSchema,
@@ -42,6 +43,7 @@ import {
   ShellHintSchema,
 } from "../shared/shell-hint";
 import type { ShortcutId } from "../shared/shortcuts";
+import { canonicalLocale, SYSTEM_LOCALE_ARG } from "../shared/system-locale";
 import {
   type UpdateNotice,
   type UpdateNoticeInput,
@@ -87,6 +89,12 @@ const menuOpenSave = createNavigationMailbox<string>();
 ipcRenderer.on(IPC.menuOpenSave, (_: IpcRendererEvent, id: string) =>
   menuOpenSave.receive(id),
 );
+/** An MCP `apply_filter` can open the window and send its filter before the renderer subscribes. */
+const agentFilter = createNavigationMailbox<Query>();
+ipcRenderer.on(IPC.agentFilter, (_: IpcRendererEvent, query: WireJson) => {
+  const parsed = FilterQuery.safeParse(query);
+  if (parsed.success) agentFilter.receive(parsed.data);
+});
 
 const query: QueryClient = (name, ...args) =>
   ipcRenderer.invoke(IPC.query, name, args[0]);
@@ -118,7 +126,13 @@ export interface StorageGuardStatusWire {
 
 let cachedLibraryId: string | null = null;
 
+function readSystemLocale(): string | undefined {
+  const arg = process.argv.find((a) => a.startsWith(SYSTEM_LOCALE_ARG));
+  return canonicalLocale(arg?.slice(SYSTEM_LOCALE_ARG.length));
+}
+
 const api = {
+  systemLocale: readSystemLocale(),
   openCombineImagesWindow(input: CombineImagesWindowOpen): Promise<void> {
     return ipcRenderer.invoke(COMBINE_IMAGES_WINDOW_IPC.open, input);
   },
@@ -253,6 +267,10 @@ const api = {
 
   sendMenuRecents(entries: RecentMenuEntry[]): void {
     ipcRenderer.send(IPC.menuRecents, entries);
+  },
+
+  performHaptic(pattern: HapticPattern): void {
+    ipcRenderer.send(IPC.haptic, pattern);
   },
 
   onMenuOpenSave(cb: (id: string) => void): () => void {
@@ -537,12 +555,7 @@ const api = {
   },
 
   onAgentFilter(cb: (query: Query) => void): () => void {
-    const listener = (_: IpcRendererEvent, query: WireJson) => {
-      const parsed = FilterQuery.safeParse(query);
-      if (parsed.success) cb(parsed.data);
-    };
-    ipcRenderer.on(IPC.agentFilter, listener);
-    return () => ipcRenderer.off(IPC.agentFilter, listener);
+    return agentFilter.subscribe(cb);
   },
 
   onAgentCite(cb: (ids: string[]) => void): () => void {

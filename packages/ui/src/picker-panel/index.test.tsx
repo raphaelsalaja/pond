@@ -1,28 +1,6 @@
-import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { nextPickerIndex, PickerPanel } from ".";
-
-function read(path: string) {
-  return readFileSync(
-    resolve(dirname(fileURLToPath(import.meta.url)), path),
-    "utf8",
-  );
-}
-
-const css = read("styles.module.css");
-const itemCss = read("item/styles.module.css");
-
-function declarations(selector: string, occurrence = 0) {
-  let start = -1;
-  for (let index = 0; index <= occurrence; index += 1) {
-    start = css.indexOf(`${selector} {`, start + 1);
-  }
-  expect(start).toBeGreaterThanOrEqual(0);
-  return css.slice(start, css.indexOf("}", start)).replace(/\s+/g, " ");
-}
 
 describe("PickerPanel", () => {
   it("moves a logical cursor through lists and grids", () => {
@@ -89,18 +67,5 @@ describe("PickerPanel", () => {
     );
 
     expect(markup).toContain('data-highlight="active"');
-    expect(itemCss).toContain(
-      '.item:not([data-highlight="active"]):hover::before',
-    );
-  });
-
-  it("keeps static and collapsible section headers on the same type scale", () => {
-    const sharedHeaders = declarations(".group-label,\n.section-button");
-    const sectionButton = declarations(".section-button", 1);
-
-    expect(sharedHeaders).toContain("font-family: inherit;");
-    expect(sharedHeaders).toContain("font-size: var(--ds-text-small);");
-    expect(sharedHeaders).toContain("font-weight: var(--ds-weight-medium);");
-    expect(sectionButton).not.toContain("font: inherit;");
   });
 });

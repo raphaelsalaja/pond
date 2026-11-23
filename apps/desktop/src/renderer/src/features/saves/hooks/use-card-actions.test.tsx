@@ -165,6 +165,8 @@ describe("inside an open folder", () => {
       if (operation === "saves.reviewImportDuplicates")
         return { candidates: [] };
       if (operation === "saves.quickAdd") return { ok: true, id: "new-save" };
+      if (operation === "saves.stageClipboard")
+        return { ok: true, paths: ["/tmp/pond-clip/clipboard.png"] };
       return { ok: true, ids: ["new-save"] };
     });
     vi.stubGlobal("pond", { query, pathForFile: () => "/tmp/drop image.png" });
@@ -230,8 +232,10 @@ describe("inside an open folder", () => {
       const view = await mount();
       try {
         await view.paste({ files: [], types: [type], getData: () => "" });
-        expect(query).toHaveBeenCalledWith("saves.importClipboard", {
-          folderId: "type",
+        expect(query).toHaveBeenCalledWith("saves.importFiles", {
+          paths: ["/tmp/pond-clip/clipboard.png"],
+          folderIds: ["type"],
+          origin: "clipboard",
         });
         expect(toastText()).toContain('Saved to "Type"');
       } finally {

@@ -10,7 +10,7 @@ import {
   useRetainedSaves,
 } from "@/features/saves/pool";
 import type { Save } from "@/features/saves/types";
-import { formatBytes } from "@/shared/lib/format";
+import { formatBytes, formatNumber } from "@/shared/lib/format";
 import styles from "./styles.module.css";
 
 export type DuplicateGroup = DuplicateGroupResult;
@@ -133,7 +133,7 @@ export function Group({
   }, [group.ids]);
   const keeper =
     keepId ?? defaultKeeper(group.ids, (id) => saves[group.ids.indexOf(id)]);
-  const summary = `${group.ids.length.toLocaleString()} ${SUMMARY[group.kind]}`;
+  const summary = `${formatNumber(group.ids.length)} ${SUMMARY[group.kind]}`;
   return (
     <section className={styles.group} data-skipped={!included || undefined}>
       <header className={styles.header}>

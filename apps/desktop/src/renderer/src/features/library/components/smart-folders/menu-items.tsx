@@ -4,6 +4,7 @@ import {
   IconExport,
   IconFaceSmile,
   IconFileExport,
+  IconFileZip,
   IconFolderSearch,
   IconGrid,
   IconGridPlus,
@@ -230,6 +231,15 @@ export function entryItems({
             void runAction(async () => {
               const ids = await saveIdsForView(view, views);
               await exportSelectionFiles(ids);
+            }),
+        },
+        {
+          label: "Export Files as ZIP",
+          icon: <IconFileZip />,
+          onClick: () =>
+            void runAction(async () => {
+              const ids = await saveIdsForView(view, views);
+              await exportSelectionFiles(ids, { zip: true });
             }),
         },
         {

@@ -1,0 +1,90 @@
+.breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-md);
+  width: 100%;
+}
+
+.bar {
+  display: flex;
+  gap: var(--ds-space-2xs);
+  height: 10px;
+  overflow: hidden;
+  background: var(--ds-background-secondary);
+  border-radius: var(--ds-radius-full);
+}
+
+.segment {
+  min-width: 2px;
+}
+
+.legend {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0 var(--ds-space-xs);
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-primary);
+}
+
+.entry {
+  display: flex;
+  min-width: 0;
+}
+
+.link,
+.static {
+  gap: var(--ds-space-sm);
+  justify-content: flex-start;
+}
+
+/* Matches the small ghost button beside it so linked and plain rows align. */
+.static {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  height: var(--ds-size-sm);
+  padding: 0 var(--ds-space-lg);
+}
+
+.swatch {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--ds-radius-full);
+}
+
+.segment,
+.swatch {
+  background: var(--category);
+
+  &[data-category="items"] {
+    --category: var(--ds-blue);
+  }
+
+  &[data-category="videoCache"] {
+    --category: var(--ds-purple);
+  }
+
+  &[data-category="thumbs"] {
+    --category: var(--ds-green);
+  }
+
+  &[data-category="meta"] {
+    --category: var(--ds-orange);
+  }
+
+  &[data-category="db"] {
+    --category: var(--ds-pink);
+  }
+
+  &[data-category="other"] {
+    --category: var(--ds-foreground-tertiary);
+  }
+}
+
+.size {
+  margin-inline-start: auto;
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-foreground-secondary);
+  white-space: nowrap;
+}

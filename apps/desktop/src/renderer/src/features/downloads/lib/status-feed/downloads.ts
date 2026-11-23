@@ -7,6 +7,7 @@ import {
 } from "@pond/schema/db";
 import { INGEST_OUTCOMES } from "@pond/schema/events";
 import { hostToSource } from "@pond/schema/sources";
+import type { TransferJob } from "@shared/transfer-contracts";
 import type { WireTask } from "@shared/wire";
 import { z } from "zod";
 import type { Save } from "@/features/saves/types";
@@ -83,6 +84,8 @@ export interface DownloadRow {
   nextRunAt?: number | null;
   live: boolean;
   interactive?: boolean;
+  /** Set on rows that show a Library Transfer instead of a Save's download. */
+  transfer?: TransferJob;
 }
 
 export interface DownloadFilters {

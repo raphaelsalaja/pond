@@ -10,6 +10,7 @@ import sharp from "sharp";
 import {
   DownloadSizeError,
   fetchDownload,
+  type MediaFetcher,
   type TransferOptions,
 } from "./download-transfer";
 
@@ -20,14 +21,30 @@ const DOWNLOAD_TIMEOUT_MS = 30_000;
 interface FetchMediaOptions extends TransferOptions {
   fileCount?: number;
   imageMaxBytes?: number | null;
+  /** Fetches through the harvest session, whose cookies hold a bot challenge the harvest window already solved. */
+  challengeFetcher?: MediaFetcher;
 }
 
-type BlobMiss = "transient" | "permanent";
+type BlobMiss = "transient" | "permanent" | "challenged";
 
 function classifyHttpStatus(status: number): BlobMiss {
   if (status === 408 || status === 425 || status === 429) return "transient";
   if (status >= 500) return "transient";
   return "permanent";
+}
+
+/** Vercel and Cloudflare mark challenge pages with these headers; a bare request gets the same challenge on every retry. */
+function isBotChallenge(response: Response): boolean {
+  return (
+    response.headers.get("x-vercel-mitigated") === "challenge" ||
+    response.headers.get("cf-mitigated") === "challenge"
+  );
+}
+
+function classifyMiss(response: Response): BlobMiss {
+  return isBotChallenge(response)
+    ? "challenged"
+    : classifyHttpStatus(response.status);
 }
 
 type MediaFetchOutcome = { file: TxSaveFile } | { miss: BlobMiss };
@@ -62,14 +79,15 @@ function kindFor(mimeType: string | null): "image" | "video" | "other" {
   return "other";
 }
 
-async function fetchMediaToTxFile(
+async function downloadMedia(
   mediaUrl: string,
-  index = 0,
-  options: FetchMediaOptions = {},
-): Promise<MediaFetchOutcome> {
-  let result: Awaited<ReturnType<typeof fetchDownload>>;
+  index: number,
+  options: Omit<FetchMediaOptions, "challengeFetcher"> & {
+    fetcher?: MediaFetcher;
+  },
+): Promise<Awaited<ReturnType<typeof fetchDownload>> | { miss: BlobMiss }> {
   try {
-    result = await fetchDownload({
+    return await fetchDownload({
       url: mediaUrl,
       fileIndex: index + 1,
       fileCount: options.fileCount ?? 1,
@@ -83,8 +101,29 @@ async function fetchMediaToTxFile(
       miss: error instanceof DownloadSizeError ? "permanent" : "transient",
     };
   }
+}
+
+async function fetchMediaToTxFile(
+  mediaUrl: string,
+  index = 0,
+  options: FetchMediaOptions = {},
+): Promise<MediaFetchOutcome> {
+  const { challengeFetcher, ...transfer } = options;
+  let result = await downloadMedia(mediaUrl, index, transfer);
+  if ("miss" in result) return result;
+  if (!result.bytes && challengeFetcher && isBotChallenge(result.response)) {
+    log.info("[pond blob] bot challenge, retrying in the harvest session", {
+      url: mediaUrl,
+      status: result.response.status,
+    });
+    result = await downloadMedia(mediaUrl, index, {
+      ...transfer,
+      fetcher: challengeFetcher,
+    });
+    if ("miss" in result) return result;
+  }
   const { response: res, bytes: buf } = result;
-  if (!buf) return { miss: classifyHttpStatus(res.status) };
+  if (!buf) return { miss: classifyMiss(res) };
   const mime = res.headers.get("content-type")?.split(";")[0]?.trim() ?? null;
 
   const ext = extensionFor(mime, mediaUrl);

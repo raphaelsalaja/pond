@@ -17,6 +17,10 @@ import {
 } from "../../core/pipeline/reconciler-client";
 import { invalidatePrefs } from "../../core/prefs";
 import { closePreviewWindows } from "../../core/preview-windows";
+import {
+  closeQuickCapture,
+  keepQuickCaptureDraft,
+} from "../../core/quick-capture-overlay";
 import { reconcileLibrary } from "../../core/scan";
 import { flushTagsDump, hydrateTagsFromBundle } from "../../core/tags-bundle";
 import { clearUndoHistory } from "../../core/undo";
@@ -116,6 +120,8 @@ async function softRepointInDev(): Promise<void> {
   closePreviewWindows();
   closeCombineImagesWindow();
   closeFileRingOverlay();
+  closeQuickCapture();
+  keepQuickCaptureDraft(null);
   for (const win of BrowserWindow.getAllWindows()) {
     if (!win.isDestroyed()) win.webContents.reload();
   }

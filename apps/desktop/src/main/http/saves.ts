@@ -13,34 +13,21 @@ import {
   type ApiSaveState,
   ApiSavesGetParamsSchema,
   type ApiSaveText,
-  type ApiThumbnailSize,
 } from "@pond/schema/api";
-import { folders, type SaveFile, SOURCES, saves, tasks } from "@pond/schema/db";
+import { folders, SOURCES, saves, tasks } from "@pond/schema/db";
 import type { JsonValue } from "@pond/schema/json";
-import { pickCardFile } from "@shared/save-file-names";
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { type Context, Hono } from "hono";
 import mime from "mime-types";
 import { z } from "zod";
 import type { BulkEdit } from "../../shared/bulk-contracts";
+import { savePreviewFile } from "../core/save-preview-file";
 import { readLibraryMedia } from "../core/storage/library-media-storage";
-import { getOrCreateThumbnail } from "../core/thumbnail";
 import { PondError } from "../lib/pond-error";
 import { saveFile } from "../paths";
 import { type ApiRuntime, apiRuntime, requireLibrary } from "./api-runtime";
 import { apiSavesByIds, requireSaves, selectApiSaves } from "./api-saves";
 import { apiError, handleApiError, invalidRequest } from "./errors";
-
-const IMAGE_TYPES = new Map([
-  [".jpg", "image/jpeg"],
-  [".jpeg", "image/jpeg"],
-  [".png", "image/png"],
-  [".gif", "image/gif"],
-  [".webp", "image/webp"],
-  [".avif", "image/avif"],
-]);
-
-const THUMBNAIL_WIDTHS = { small: 160, medium: 480, large: 1024 } as const;
 
 const IdQuerySchema = z.object({
   id: z.string().min(1),
@@ -84,39 +71,6 @@ async function saveRow(runtime: ApiRuntime, id: string) {
     .limit(1);
   if (!row) throw new PondError("save_not_found", `No Save has the id ${id}.`);
   return row;
-}
-
-function noThumbnail(): never {
-  throw new PondError("no_thumbnail", "This Save has no image to show.");
-}
-
-async function thumbnailFile(
-  id: string,
-  files: SaveFile[],
-  size: ApiThumbnailSize,
-) {
-  const cover = pickCardFile(files);
-  if (!cover) noThumbnail();
-  /** File names come from our own DB, but basename() keeps a corrupted row from escaping the Save directory. */
-  const path = saveFile(id, basename(cover.path));
-  if (!existsSync(path)) noThumbnail();
-  if (size === "original") {
-    const type =
-      cover.mimeType?.startsWith("image/") === true
-        ? cover.mimeType
-        : IMAGE_TYPES.get(extname(cover.path).toLowerCase());
-    if (!type) noThumbnail();
-    return { path, type };
-  }
-  const width = THUMBNAIL_WIDTHS[size];
-  const thumb = await getOrCreateThumbnail({
-    saveId: id,
-    sourcePath: path,
-    width,
-    version: null,
-  });
-  if (!thumb) noThumbnail();
-  return { path: thumb.path, type: "image/webp" };
 }
 
 async function editedCount<Value>(
@@ -228,7 +182,7 @@ export function savesRoutes(runtime: ApiRuntime = apiRuntime): Hono {
         `Pass size as one of ${API_THUMBNAIL_SIZES.join(", ")}.`,
       );
     const { files } = await saveRow(runtime, id);
-    const { path, type } = await thumbnailFile(id, files, size);
+    const { path, type } = await savePreviewFile(id, files, size);
     const info = await stat(path);
     const etag = `"${info.size.toString(36)}-${info.mtimeMs.toString(36)}-${size}"`;
     const headers = {

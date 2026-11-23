@@ -33,8 +33,8 @@ Each scoped token has one or more of these. A request outside them gets `forbidd
 | Access             | Routes                                                                                                                                                                                                                                                      |
 | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Search Saves       | `GET /library/info`, `/library/tags`, `/library/folders`, `/library/views`, `/library/sources`. `POST /library/query`, `/library/search`. `/saves/get`, `GET /saves/info`, `/saves/text`, `/saves/status`, `/saves/thumb`, `/saves/file`, `/saves/related`. |
-| Export Files       | Every `/library/conversion` route.                                                                                                                                                                                                                          |
-| Add and Edit Saves | `POST /enqueue`, `/saves/tags`, `/saves/folders`, `/saves/trash`, `/saves/restore`, `/saves/note`, `/saves/rating`, `/saves/favorite`.                                                                                                                      |
+| Export Files       | Every `/library/conversion` route except `/library/conversion/compress-videos`.                                                                                                                                                                             |
+| Add and Edit Saves | `POST /enqueue`, `/library/conversion/compress-videos`, `/saves/tags`, `/saves/folders`, `/saves/trash`, `/saves/restore`, `/saves/note`, `/saves/rating`, `/saves/favorite`.                                                                               |
 
 These routes are private. Only the Local API Token reaches them, and they may change between minor versions:
 
@@ -262,14 +262,15 @@ Operations are the same actions Fish and the MCP server use, like creating folde
 
 ## Conversion
 
-| Method        | Path                               | Purpose                               |
-| ------------- | ---------------------------------- | ------------------------------------- |
-| `GET`         | `/library/conversion/capabilities` | Formats this Mac can convert between. |
-| `GET`, `POST` | `/library/conversion/presets`      | Read or save presets.                 |
-| `POST`        | `/library/conversion/start`        | Convert Saves. Returns a job.         |
-| `POST`        | `/library/conversion/compress`     | Compress images. Returns a job.       |
-| `GET`         | `/library/conversion/:id`          | Job progress.                         |
-| `POST`        | `/library/conversion/:id/cancel`   | Cancel a job.                         |
+| Method        | Path                                  | Purpose                                                               |
+| ------------- | ------------------------------------- | --------------------------------------------------------------------- |
+| `GET`         | `/library/conversion/capabilities`    | Formats this Mac can convert between.                                 |
+| `GET`, `POST` | `/library/conversion/presets`         | Read or save presets.                                                 |
+| `POST`        | `/library/conversion/start`           | Convert Saves. Returns a job.                                         |
+| `POST`        | `/library/conversion/compress`        | Compress images. Returns a job.                                       |
+| `POST`        | `/library/conversion/compress-videos` | Replace videos with smaller HEVC copies, without Undo. Returns a job. |
+| `GET`         | `/library/conversion/:id`             | Job progress.                                                         |
+| `POST`        | `/library/conversion/:id/cancel`      | Cancel a job.                                                         |
 
 ## App
 
@@ -277,24 +278,45 @@ Operations are the same actions Fish and the MCP server use, like creating folde
 
 ## MCP server
 
-Pond also runs as a Model Context Protocol server over stdio, for agents like Cursor and Claude. Copy the command from **Settings → Model Context Protocol**, or read it from `/app/info`. It needs no token: the switches under **Access** on that page decide which tools answer.
+Pond also runs as a Model Context Protocol server over stdio, for agents like Cursor and Claude. Copy the command from **Settings → Model Context Protocol**, or read it from `/app/info`. Cursor and VS Code install from a link. Claude Desktop installs from a `.mcpb` extension that Pond writes and opens. It needs no token: the switches under **Access** on that page decide which tools answer.
 
-| Access       | Tools                                                                                                                                                                |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Search Saves | `query_library`, `search_library`, `read_save`, `grep_library`, `list_folders`                                                                                       |
-| Open in Pond | `open_save`, `apply_filter`                                                                                                                                          |
-| Export Files | `list_conversion_capabilities`, `list_conversion_presets`, `save_conversion_preset`, `start_conversion`, `compress_images`, `conversion_status`, `cancel_conversion` |
+The server speaks the 2026-07-28 revision and still serves clients that open with `initialize`. It sends instructions on connect, so agents know where to start.
 
+| Access       | Tools                                                                                                                                                                                   |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Search Saves | `library_overview`, `query_library`, `search_library`, `read_save`, `grep_library`, `list_folders`, `list_tags`, `list_views`, `find_duplicates`, `view_saves`, `show_saves`            |
+| Open in Pond | `open_save`, `apply_filter`                                                                                                                                                             |
+| Export Files | `list_conversion_capabilities`, `list_conversion_presets`, `save_conversion_preset`, `start_conversion`, `compress_images`, `compress_videos`, `conversion_status`, `cancel_conversion` |
+
+- `library_overview` counts Saves, folders and tags, and lists the top folders, tags and sources.
 - `query_library` takes the same body as `POST /library/query` and returns ids with a cursor.
-- `search_library` ranks by meaning and keywords. Pass `saveId` to find Saves that look like one.
+- `search_library` ranks by meaning and keywords. Pass `saveId` to find Saves that look like one. Pass `detail: "concise"` for ids, titles, sources and URLs only.
 - `read_save` returns one Save's caption, text in images, transcript, note, and metadata.
 - `grep_library` matches text inside captions, text in images, transcripts, notes, and titles.
-- `open_save` focuses a Save in the Pond window. `apply_filter` sets the library grid's filter.
-- `start_conversion` writes converted copies to a folder you choose and returns a job id for `conversion_status` and `cancel_conversion`. `compress_images` replaces originals and records Undo.
+- `list_tags` returns tags in use with counts. `list_views` returns saved Views with their filters.
+- `find_duplicates` groups Saves that look like the same image or file. It changes nothing.
+- `view_saves` returns preview images for up to 8 Saves, so a model can look at them.
+- `show_saves` renders a clickable grid in hosts that support MCP Apps, and returns the list as structured content everywhere else.
+- `open_save` opens a Save in the Pond window. `apply_filter` sets the library grid's filter. Both open Pond if it's closed.
+- `start_conversion` writes converted copies to a folder you choose and returns a job id for `conversion_status` and `cancel_conversion`. `compress_images` replaces originals and records Undo. `compress_videos` replaces originals without Undo.
+- `conversion_status` takes `waitSeconds` to wait for a job, and sends progress notifications while it runs.
 
-A tool whose switch is off answers with an error that names the switch.
+Every tool has a title and annotations. Only `compress_images` and `compress_videos` are marked destructive. Job and tag tools also return structured content that matches their output schema.
 
-Each MCP client starts its own server process. It quits when the client closes its stdin or exits, so restarting a host doesn't leave servers behind.
+| Kind     | Name                      | Purpose                                                       |
+| -------- | ------------------------- | ------------------------------------------------------------- |
+| Resource | `pond://library/overview` | Same body as `library_overview`.                              |
+| Resource | `pond://save/{id}`        | One Save, as `read_save` returns it.                          |
+| Resource | `pond://folder/{id}`      | A folder's newest 100 Saves. Folder ids complete as you type. |
+| Prompt   | `find_saves`              | Search for a topic and show the results.                      |
+| Prompt   | `summarize_folder`        | Summarize a folder. Folder names complete as you type.        |
+| Prompt   | `recent_saves`            | Review the last few days of Saves.                            |
+| Prompt   | `tidy_library`            | Report untagged, unfiled and duplicate Saves.                 |
+| Skill    | `pond-library`            | A guide to the tools, served through the skills extension.    |
+
+A tool whose switch is off answers with an error that names the switch. Resources follow the Search Saves switch.
+
+Each MCP client starts its own server process. It quits when the client closes its stdin or exits, so restarting a host doesn't leave servers behind. The process has no window, so `open_save` and `apply_filter` ask the running app to move its own window through `POST /app/navigate`, a private route that only answers loopback callers with the Local API Token.
 
 ## Publishing the client
 

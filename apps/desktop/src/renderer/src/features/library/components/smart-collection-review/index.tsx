@@ -9,6 +9,7 @@ import {
 } from "@/features/library/state/organization-review";
 import { useRetainedDialogPayload } from "@/shared/hooks/use-retained-dialog-payload";
 import { errorCopy } from "@/shared/lib/error-copy";
+import { formatNumber } from "@/shared/lib/format";
 import styles from "./styles.module.css";
 
 type Cluster =
@@ -308,7 +309,7 @@ export function SmartCollectionReview({
                         </Field.Root>
                         <div className={styles.members}>
                           <p className={styles.meta}>
-                            {cluster.memberIds.length.toLocaleString()} Saves,
+                            {formatNumber(cluster.memberIds.length)} Saves,
                             including
                           </p>
                           <ul className={styles.representatives}>
@@ -341,7 +342,7 @@ export function SmartCollectionReview({
                     )}
                     {unclustered.length > 0 ? (
                       <p className={styles.meta}>
-                        {unclustered.length.toLocaleString()}{" "}
+                        {formatNumber(unclustered.length)}{" "}
                         {unclustered.length === 1
                           ? "Save didn't fit a suggestion."
                           : "Saves didn't fit a suggestion."}
@@ -386,7 +387,7 @@ export function SmartCollectionReview({
                       <ul className={styles.scores}>
                         {classificationSummary.map((summary) => (
                           <li key={summary.label}>
-                            {summary.label}: {summary.count.toLocaleString()}{" "}
+                            {summary.label}: {formatNumber(summary.count)}{" "}
                             Saves,{" "}
                             {Math.round(
                               (summary.totalScore / summary.count) * 100,
@@ -397,7 +398,7 @@ export function SmartCollectionReview({
                       </ul>
                       {classification.excludedIds.length > 0 ? (
                         <p className={styles.meta}>
-                          {classification.excludedIds.length.toLocaleString()}{" "}
+                          {formatNumber(classification.excludedIds.length)}{" "}
                           Saves skipped because they haven't been analyzed yet.
                         </p>
                       ) : null}

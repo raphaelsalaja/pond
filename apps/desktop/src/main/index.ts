@@ -34,6 +34,7 @@ import {
 import { disposeQueueWorkerHost } from "./core/pipeline/worker-host";
 import { getPrefs, subscribePrefs } from "./core/prefs";
 import { closePreviewWindows } from "./core/preview-windows";
+import { closeQuickCapture } from "./core/quick-capture-overlay";
 import { disposeHiddenWindow } from "./core/refresh/harvest-window";
 import { disposeRenderCardWindow } from "./core/render-card";
 import {
@@ -68,6 +69,10 @@ import {
   toggleFileRing,
 } from "./ipc/file-ring-overlay";
 import { waitForLibraryLocationChanges } from "./ipc/queries/library-locations";
+import {
+  registerQuickCaptureIpc,
+  toggleQuickCapture,
+} from "./ipc/quick-capture-overlay";
 import { ensureIngestToken } from "./keychain";
 import { broadcast } from "./lib/broadcast";
 import { rotateBundleBackups } from "./lib/library-config";
@@ -303,8 +308,13 @@ app.whenReady().then(async () => {
     await ensureIngestToken().catch((err) =>
       log.error("[pond] ingest token init failed; MCP starts without one", err),
     );
-    const { startPondMcp } = await import("./core/agent/mcp");
-    await startPondMcp();
+    try {
+      const { startPondMcp } = await import("./core/agent/mcp");
+      await startPondMcp();
+    } catch (error) {
+      log.error("[pond mcp] server failed to start", error);
+      app.exit(1);
+    }
     return;
   }
 
@@ -314,6 +324,7 @@ app.whenReady().then(async () => {
   subscribePrefs((prefs) => broadcast(IPC.prefsChanged, prefs));
   registerCombineImagesWindowIpc();
   registerFileRingOverlayIpc();
+  registerQuickCaptureIpc();
   const menuPrefs = await getPrefs();
   installAppMenu({
     shortcuts: menuPrefs.shortcuts,
@@ -587,6 +598,7 @@ async function registerSummonHotkey() {
         await summonMainWindow();
       }),
       "app.file-ring": run(toggleFileRing),
+      "app.quick-capture": run(toggleQuickCapture),
     },
     (await getPrefs()).shortcuts.overrides,
   );
@@ -692,6 +704,7 @@ async function shutdownForQuit(): Promise<void> {
   closePreviewWindows();
   closeCombineImagesWindow();
   closeFileRingOverlay();
+  closeQuickCapture();
   try {
     await withDeadline(
       Promise.all([

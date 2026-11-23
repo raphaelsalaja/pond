@@ -1,0 +1,53 @@
+name: Mutation
+
+on:
+  schedule:
+    - cron: "0 4 * * 1"
+  workflow_dispatch:
+    inputs:
+      mutate:
+        description: Comma-separated globs to mutate, relative to apps/desktop
+        default: src/shared/**/*.ts
+  pull_request:
+    paths:
+      - .github/workflows/mutation.yml
+      - apps/desktop/stryker.config.mjs
+
+permissions:
+  contents: read
+
+jobs:
+  desktop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Mutation testing
+        working-directory: apps/desktop
+        env:
+          MUTATE: ${{ inputs.mutate }}
+        run: |
+          if [ -n "$MUTATE" ]; then
+            pnpm test:mutation --mutate "$MUTATE,!src/**/*.test.ts,!src/**/*.d.ts"
+          else
+            pnpm test:mutation
+          fi
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: mutation-report
+          path: apps/desktop/reports/mutation
+          if-no-files-found: ignore

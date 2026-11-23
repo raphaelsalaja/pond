@@ -144,3 +144,28 @@ pluginkit -m -p com.apple.share-services | rg pond
 
 macOS registers app extensions only from a signed app, so test against a signed
 `dist:mac:arm64` build in `/Applications`.
+
+## Finder Quick Action
+
+**Save to Pond** shows under Quick Actions when you right-click files or folders in
+Finder, and in Finder's preview pane. It lives in `apps/desktop/finder-action`, and
+`apps/desktop/scripts/build-finder-action.mjs` compiles it the same way as the Share
+extension, through `scripts/lib/build-appex.mjs`.
+
+```bash
+pnpm --filter @pond/desktop build:finder-action
+```
+
+It has no user interface and no socket. It opens the selected items with the Pond app
+that contains it through `NSWorkspace`, so Launch Services launches Pond if it's closed
+and delivers the items as `open-file`. That's the same import as dropping files on the
+Dock icon: duplicate review applies and a folder keeps its nested folders. Pond stays an
+`Alternate` handler for `public.item`, so it never becomes the default app for a file
+type.
+
+Turn it on or off in **System Settings → General → Login Items & Extensions → Finder**.
+To check whether macOS registered it, run:
+
+```bash
+pluginkit -m -p com.apple.services | rg pond
+```

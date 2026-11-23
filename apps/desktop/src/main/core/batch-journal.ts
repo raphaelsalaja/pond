@@ -92,6 +92,12 @@ function targetsFor(
           inside(directory, path);
           add(path, "file");
         }
+      if ("fileMoves" in tx)
+        for (const file of tx.fileMoves ?? []) {
+          const path = join(directory, file.filename);
+          inside(directory, path);
+          add(path, "file");
+        }
       if ("fileRenames" in tx)
         for (const file of tx.fileRenames ?? []) {
           const source = join(directory, file.from);

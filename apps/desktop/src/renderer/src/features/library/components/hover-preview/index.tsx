@@ -13,6 +13,7 @@ import {
   activeVideoShown,
   CardThumb,
   collectionOwnsKeyboard,
+  controlKeepsKey,
   displayTitleForSave,
   inspect,
   MediaViewer,
@@ -48,6 +49,7 @@ import { PreviewBar } from "./title-bar";
 
 export function HoverPreview() {
   const [open, setOpen] = useState(false);
+  const [peek, setPeek] = useState(false);
   const [hoverId, setHoverId] = useState<string | null>(null);
   const [compareZoom, setCompareZoom] = useState(1);
   const [position, setPosition] = useState<{
@@ -100,6 +102,7 @@ export function HoverPreview() {
         runViewerAction(selected, prefs.spaceAction);
         return;
       }
+      setPeek(false);
       setOpen(true);
     },
     { preventDefault: false, ignoreInputs: true },
@@ -111,8 +114,11 @@ export function HoverPreview() {
   }, []);
   useEffect(
     () =>
-      onQuickPreviewRequest((saveId) => {
-        void showSave(saveId).then(() => setOpen(true));
+      onQuickPreviewRequest((saveId, options) => {
+        void showSave(saveId).then(() => {
+          setPeek(options.peek === true);
+          setOpen(true);
+        });
       }),
     [showSave],
   );
@@ -259,6 +265,7 @@ export function HoverPreview() {
 
   const close = () => {
     setOpen(false);
+    setPeek(false);
     inspect.setCompare(false);
   };
 
@@ -300,12 +307,13 @@ export function HoverPreview() {
     <Dialog.Root
       open={(open || compare) && !!(save || comparing)}
       modal={false}
-      disablePointerDismissal
+      disablePointerDismissal={!peek || compare}
       onOpenChange={(next) => {
         if (!next) close();
       }}
     >
       <Dialog.Portal>
+        {peek && !compare ? <Dialog.Backdrop data-peek-backdrop /> : null}
         <Dialog.Popup
           ref={attachPopup}
           initialFocus={popupRef}
@@ -316,6 +324,11 @@ export function HoverPreview() {
           data-fit={fit ? "" : undefined}
           data-sized={fit ? "" : undefined}
           data-quick-preview
+          onKeyDown={(event) => {
+            /** Base UI stops arrow keys at the popup, so they'd never reach the step hotkeys. */
+            if (!controlKeepsKey(event.nativeEvent))
+              event.preventBaseUIHandler();
+          }}
         >
           <PreviewBar.Bar
             title={title}
@@ -420,6 +433,9 @@ function mediaFit(
 
 /** Sets the popup's enter and exit transform so it grows out of, and shrinks back into, the save's card. */
 function zoomToCard(popup: HTMLElement, saveId: string | null): void {
+  /** Measuring resolves the dialog's own starting scale first, so hold transitions until the card-sized start replaces it. */
+  const opening = popup.hasAttribute("data-starting-style");
+  if (opening) popup.style.transition = "none";
   const thumb = saveId
     ? document.querySelector(
         `[data-library-card][data-save-id="${CSS.escape(saveId)}"] [data-card-thumb]`,
@@ -435,6 +451,7 @@ function zoomToCard(popup: HTMLElement, saveId: string | null): void {
     rect.left < window.innerWidth;
   if (!visible || !popup.offsetWidth || !popup.offsetHeight) {
     delete popup.dataset.zoom;
+    popup.style.transition = "";
     return;
   }
   popup.dataset.zoom = "";
@@ -455,4 +472,8 @@ function zoomToCard(popup: HTMLElement, saveId: string | null): void {
       ),
     ),
   );
+  if (opening) {
+    popup.getBoundingClientRect();
+    popup.style.transition = "";
+  }
 }

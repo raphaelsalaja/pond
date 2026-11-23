@@ -80,22 +80,41 @@ export type ImageCompressionRequest = z.infer<
   typeof ImageCompressionRequestSchema
 >;
 
-export interface ConversionJob {
-  id: string;
-  kind: "export" | "compression";
-  status: "running" | "complete" | "cancelled" | "failed";
-  completed: number;
-  total: number;
-  progress: number;
-  currentId: string | null;
-  directory: string;
-  outputs: string[];
-  changed: number;
-  skipped: number;
-  bytesBefore: number;
-  bytesAfter: number;
-  error: string | null;
-}
+export const VideoCompressionQualitySchema = z.enum([
+  "high",
+  "balanced",
+  "small",
+]);
+export type VideoCompressionQuality = z.infer<
+  typeof VideoCompressionQualitySchema
+>;
+export const VideoCompressionRequestSchema = z.object({
+  ids: z.array(z.string().min(1)).min(1).max(10_000),
+  quality: VideoCompressionQualitySchema.default("balanced"),
+});
+export type VideoCompressionRequest = z.infer<
+  typeof VideoCompressionRequestSchema
+>;
+
+export const ConversionJobSchema = z.object({
+  id: z.string(),
+  kind: z.enum(["export", "compression"]),
+  status: z.enum(["running", "complete", "cancelled", "failed"]),
+  completed: z.number(),
+  total: z.number(),
+  progress: z.number(),
+  currentId: z.string().nullable(),
+  directory: z.string(),
+  outputs: z.array(z.string()),
+  changed: z.number(),
+  skipped: z.number(),
+  /** Saves left unchanged because their videos could not be compressed. */
+  failed: z.number(),
+  bytesBefore: z.number(),
+  bytesAfter: z.number(),
+  error: z.string().nullable(),
+});
+export type ConversionJob = z.infer<typeof ConversionJobSchema>;
 export interface ConversionQueryInputs {
   "conversion.capabilities": Record<string, never>;
   "conversion.presets": Record<string, never>;
@@ -103,6 +122,7 @@ export interface ConversionQueryInputs {
   "conversion.deletePreset": { id: string };
   "conversion.start": z.infer<typeof ConversionRequestSchema>;
   "conversion.compress": z.infer<typeof ImageCompressionRequestSchema>;
+  "conversion.compressVideos": z.infer<typeof VideoCompressionRequestSchema>;
   "conversion.status": { id: string };
   "conversion.cancel": { id: string };
 }
@@ -113,6 +133,7 @@ export interface ConversionQueryResults {
   "conversion.deletePreset": { ok: true };
   "conversion.start": ConversionJob | null;
   "conversion.compress": ConversionJob;
+  "conversion.compressVideos": ConversionJob;
   "conversion.status": ConversionJob | null;
   "conversion.cancel": ConversionJob | null;
 }

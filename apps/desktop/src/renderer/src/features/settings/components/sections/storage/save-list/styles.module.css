@@ -1,0 +1,36 @@
+.selection {
+  display: flex;
+  gap: var(--ds-space-md);
+  align-items: center;
+  width: 100%;
+}
+
+.summary {
+  font-size: var(--ds-text-small);
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-foreground-secondary);
+}
+
+.actions {
+  display: flex;
+  gap: var(--ds-space-sm);
+  align-items: center;
+  margin-inline-start: auto;
+}
+
+.saves {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.size {
+  margin-inline-start: auto;
+  font-size: var(--ds-text-small);
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-foreground-secondary);
+  white-space: nowrap;
+}

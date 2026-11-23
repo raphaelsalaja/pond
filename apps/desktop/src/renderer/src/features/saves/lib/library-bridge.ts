@@ -7,6 +7,11 @@ export interface SaveFolderReference {
   parentId?: string | null;
 }
 
+export interface DuplicateReviewRequest {
+  saveId?: string;
+  ids?: readonly string[];
+}
+
 /** `recent` lists recent destinations for one-key assignment; `multiple` opens straight into staged selection. */
 export type FolderPickerMode = "all" | "multiple" | "recent";
 
@@ -30,10 +35,11 @@ export interface SaveLibraryBridge {
     fileIndex: number,
     mode?: "files" | "converted",
   ): void;
-  openDuplicateReview(saveId: string): void;
+  openDuplicateReview(request: DuplicateReviewRequest): void;
   findSimilarColor(color: string): void;
   showMatching(predicate: Predicate): void;
   showSaves(ids: readonly string[], folderId?: string): void;
+  showLibrary(nav: LibraryNav, predicate?: Predicate): void;
   setVisualProbe(input: { id: string; label: string }): void;
   foldersForSave(id: string): readonly SaveFolderReference[];
   foldersSnapshot(): readonly SaveFolderReference[];
@@ -68,6 +74,7 @@ let current: SaveLibraryBridge = {
   findSimilarColor: unavailable,
   showMatching: unavailable,
   showSaves: unavailable,
+  showLibrary: unavailable,
   setVisualProbe: unavailable,
   foldersForSave: unavailable,
   foldersSnapshot: unavailable,
@@ -96,10 +103,11 @@ export const saveLibraryBridge: SaveLibraryBridge = {
   openRename: (ids) => current.openRename(ids),
   openConversion: (ids, fileIndex, mode) =>
     current.openConversion(ids, fileIndex, mode),
-  openDuplicateReview: (saveId) => current.openDuplicateReview(saveId),
+  openDuplicateReview: (request) => current.openDuplicateReview(request),
   findSimilarColor: (color) => current.findSimilarColor(color),
   showMatching: (predicate) => current.showMatching(predicate),
   showSaves: (ids, folderId) => current.showSaves(ids, folderId),
+  showLibrary: (nav, predicate) => current.showLibrary(nav, predicate),
   setVisualProbe: (input) => current.setVisualProbe(input),
   foldersForSave: (id) => current.foldersForSave(id),
   foldersSnapshot: () => current.foldersSnapshot(),

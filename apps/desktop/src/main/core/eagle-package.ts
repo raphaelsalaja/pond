@@ -37,6 +37,7 @@ import {
   EagleVideoNotesSchema,
   foldAnnotationsIntoNotes,
 } from "../lib/eagle-annotations";
+import { isThumbnailSidecar } from "./eagle-import";
 import { EaglePaletteSchema, eaglePaletteColor } from "./eagle-metadata";
 import { executeBatch } from "./executor";
 import {
@@ -685,17 +686,27 @@ async function parsePackage(
         : "";
       return Boolean(child) && !child.includes("/") && visibleItemFile(child);
     });
-    const thumbnails = siblings.filter((file) =>
+    const sidecars = siblings.filter((file) =>
+      isThumbnailSidecar(basename(file.path)),
+    );
+    const pngThumbnails = sidecars.filter((file) =>
       basename(file.path).toLowerCase().endsWith("_thumbnail.png"),
     );
-    if (thumbnails.length > 1)
+    if (pngThumbnails.length > 1 || sidecars.length - pngThumbnails.length > 1)
       throw new Error(
         `The Eagle package item ${metadata.id} has multiple thumbnails.`,
       );
-    const thumbnail = thumbnails[0] ?? null;
-    const media = siblings.filter((file) => file !== thumbnail);
+    const thumbnail = pngThumbnails[0] ?? sidecars[0] ?? null;
+    const media = siblings.filter((file) => !sidecars.includes(file));
     if (media.length === 0 && !metadata.url?.trim() && !thumbnail)
       throw new Error(`The Eagle package item ${metadata.id} has no content.`);
+    /** Eagle exports each preview again as an item named `<parent>_thumbnail` with nothing of its own. */
+    if (
+      media.length === 0 &&
+      thumbnail &&
+      (metadata.name ?? "").trim().toLowerCase().endsWith("_thumbnail")
+    )
+      continue;
     items.push({
       metadata,
       mediaPaths: media.map((file) => file.absolutePath),

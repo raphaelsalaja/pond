@@ -29,6 +29,7 @@ export type HealthCategoryId =
   | "previews"
   | "records"
   | "file-names"
+  | "duplicates"
   | "index"
   | "posters"
   | "processing"
@@ -191,6 +192,10 @@ const INTEGRITY = {
     category: "file-names",
     expected: "File names that every computer can store.",
   },
+  "eagle-previews": {
+    category: "duplicates",
+    expected: "One Save for each Eagle item.",
+  },
 } satisfies Record<
   LibraryRepairKind,
   { category: HealthCategoryId; expected: string }
@@ -198,6 +203,7 @@ const INTEGRITY = {
 
 function integrityEntry(issue: HealthIntegrityIssue): HealthEntry {
   const userFix = issue.kind === "invalid-content";
+  const duplicate = issue.kind === "eagle-previews";
   return {
     id: `${issue.kind}:${issue.saveId}`,
     saveId: issue.saveId,
@@ -206,10 +212,14 @@ function integrityEntry(issue: HealthIntegrityIssue): HealthEntry {
     resolution: "repair",
     summary: issue.summary,
     expected: INTEGRITY[issue.kind].expected,
-    found: foundFromFiles(issue.files),
+    found: duplicate
+      ? "A second Save holding only the preview."
+      : foundFromFiles(issue.files),
     reason: userFix
       ? `${issue.detail} Repair moves it to Trash. Restore the files from a backup first to keep it.`
-      : issue.detail,
+      : duplicate
+        ? `${issue.detail} Moving it to Trash leaves the original untouched.`
+        : issue.detail,
     originals: issue.originals,
     files: issue.files,
     attempts: null,
@@ -296,6 +306,13 @@ function fileCategories(input: HealthInput): HealthCategory[] {
       input.overview,
       issues("physical-file-names"),
       count("physical-file-names"),
+    ),
+    checkCategory(
+      "duplicates",
+      "Eagle Previews",
+      input.overview,
+      issues("eagle-previews"),
+      count("eagle-previews"),
     ),
     indexCategory(input),
   ];
@@ -639,6 +656,8 @@ export function categoryFact(id: HealthCategoryId, device: string): string {
       return "Compares the record in each Save folder with the library index.";
     case "file-names":
       return "Finds file names that other computers can't store.";
+    case "duplicates":
+      return "Finds Eagle previews that came in as Saves of their own.";
     case "index":
       return "Matches the Save folders on disk with the library index.";
     case "posters":

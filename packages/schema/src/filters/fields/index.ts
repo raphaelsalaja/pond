@@ -47,6 +47,7 @@ export type {
   FieldPreset,
 } from "./descriptor";
 export { aspectFromDims, orientationFromDims } from "./dims";
+export { fileExtension } from "./format";
 export {
   parseSplitPostKey,
   type SplitPostRef,

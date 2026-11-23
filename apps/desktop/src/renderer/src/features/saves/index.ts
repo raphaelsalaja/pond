@@ -39,6 +39,12 @@ export {
   saveOwnsKeyboard,
 } from "./lib/keyboard-owner";
 export type { FolderPickerMode } from "./lib/library-bridge";
+export {
+  reviewDuplicates,
+  showFolderInLibrary,
+  showInLibrary,
+  showMatchingInLibrary,
+} from "./lib/library-links";
 export { parseMode, type SaveListMode } from "./lib/list";
 export {
   getLastListPath,
@@ -65,6 +71,7 @@ export {
 } from "./lib/paste-import";
 export { type PreviewStepBinding, previewStepRuns } from "./lib/preview-step";
 export { normalise } from "./lib/reconcile";
+export { openSave } from "./lib/save-nav";
 export {
   clearSaveSelection,
   createSelectionReconciler,
@@ -103,7 +110,10 @@ export {
   type SaveDragSession,
   useSaveDragSession,
 } from "./state/drag-session";
-export { importFilesWithDuplicateReview } from "./state/duplicate-import-review";
+export {
+  importClipboardWithDuplicateReview,
+  importFilesWithDuplicateReview,
+} from "./state/duplicate-import-review";
 export { inspect, useInspect } from "./state/inspect";
 export {
   LIST_COLUMN_OPTIONS,

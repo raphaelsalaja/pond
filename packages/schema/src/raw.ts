@@ -150,6 +150,8 @@ export interface CaptureExtras {
   publisher?: string;
   replyParentUnavailable?: boolean;
   replyRecaptureQueued?: boolean;
+  /** The page is a search engine's results for this query. */
+  search?: { engine: string; query: string };
   subreddit?: string;
   tileType?: string;
 }
