@@ -6,11 +6,11 @@
 - **Style**: [Biome](https://biomejs.dev/) handles formatting; `pnpm lint` checks the repository standards, including the anti-slop plugin rules in `tools/biome/anti-slop`.
 - **Commits**: [Conventional Commits](https://www.conventionalcommits.org/) enforced by commitlint + husky.
 - **Checks**: run `pnpm check` and `pnpm build` before opening a PR. CI also verifies generated source documentation, and it runs the build, tests, and desktop smoke test on Ubuntu x64 and ARM, Windows, and macOS.
-- **PRs**: Keep scope focused; link issues when relevant. Lay out the body and proof as [pull requests](docs/contributing/pull-requests.md) describes. Generated source documentation must stay in sync: run `pnpm generate` after descriptor changes.
+- **PRs**: Keep scope focused; link issues when relevant. Lay out the body and proof as [pull requests](contributing/pull-requests.md) describes. Generated source documentation must stay in sync: run `pnpm generate` after descriptor changes.
 
 ## Engineering standards
 
-Read [code standards](docs/contributing/code-standards.md) for naming, interfaces, React, types, and tests. Read [desktop architecture](docs/contributing/architecture.md) when adding a feature or changing ownership or process interfaces. Both human and automated contributors use these documents.
+Read [code standards](contributing/code-standards.md) for naming, interfaces, React, types, and tests. Read [desktop architecture](contributing/architecture.md) when adding a feature or changing ownership or process interfaces. Both human and automated contributors use these documents.
 
 Turborepo owns the build, typecheck, test, generation-check, and repository verification graphs. A transit task makes source-first package changes invalidate consuming apps without serializing unrelated work. Package-level `turbo.json` files define framework inputs and reusable outputs.
 
@@ -24,7 +24,7 @@ Use `pnpm knip` when removing unused code or dependencies. Check worker, HTML, g
 
 `ELECTRON_RUN_AS_NODE=1 pnpm --filter @pond/desktop exec electron node_modules/vitest/vitest.mjs run src/main/db.test.ts src/main/core/vec-index.test.ts src/main/core/pipeline/task-recovery.test.ts src/main/core/pipeline/enqueue-scheduling.test.ts src/main/core/refresh/archive-backfill.test.ts src/main/core/session-downloads.test.ts` runs the native database and download recovery checks with Electron’s ABI. CI runs this separately from the Node test suite.
 
-After building the desktop, `pnpm --filter @pond/desktop exec electron scripts/smoke-desktop.cjs` verifies visible startup and preload queries using a temporary isolated library. It requires a desktop session. `pnpm --filter @pond/desktop smoke:memory` launches the same way, records per-process memory with the window open, after seeding synthetic Saves, and after closing the window, then fails when a ceiling in `apps/desktop/scripts/memory-budgets.json` is exceeded ([details](docs/contributing/performance.md#whole-app-memory-budgets)). `pnpm --filter @pond/desktop exec electron scripts/smoke-agent-stream.cjs` verifies reply streaming, completion, and cancellation through the real isolated preload bridge with offline fixtures and no provider credentials. `pnpm --filter @pond/desktop exec electron scripts/smoke-agent-operations.cjs` checks capability registration, persisted review, replay prevention, and Undo using a temporary isolated Library.
+After building the desktop, `pnpm --filter @pond/desktop exec electron scripts/smoke-desktop.cjs` verifies visible startup and preload queries using a temporary isolated library. It requires a desktop session. `pnpm --filter @pond/desktop smoke:memory` launches the same way, records per-process memory with the window open, after seeding synthetic Saves, and after closing the window, then fails when a ceiling in `apps/desktop/scripts/memory-budgets.json` is exceeded ([details](contributing/performance.md#whole-app-memory-budgets)). `pnpm --filter @pond/desktop exec electron scripts/smoke-agent-stream.cjs` verifies reply streaming, completion, and cancellation through the real isolated preload bridge with offline fixtures and no provider credentials. `pnpm --filter @pond/desktop exec electron scripts/smoke-agent-operations.cjs` checks capability registration, persisted review, replay prevention, and Undo using a temporary isolated Library.
 
 The desktop package also retains focused manual checks outside `pnpm check`. Run `pnpm --filter @pond/desktop smoke:folder-tags` for folder rules, Undo, import recovery, and transfers. Run `pnpm --filter @pond/desktop smoke:library-trust` for backup manifests and detection of password-protected folders in imported Eagle metadata. These checks require a built desktop and a desktop session. Run `pnpm --filter @pond/desktop smoke:sensitive-content` to download the pinned on-device model, verify its checksum, and exercise one inference without Electron. Run `pnpm --filter @pond/desktop smoke:source-drift` to check, without signing in, that Cosmos, Instagram, Threads, Pinterest, TikTok, and YouTube still serve the fields Pond's harvesters read. It needs network access.
 
@@ -39,7 +39,7 @@ pnpm --filter @pond/desktop build
 pnpm --filter @pond/desktop exec electron scripts/capture-proof.cjs --scenario=$PWD/apps/desktop/scripts/proof-scenarios/library.cjs --out=$PWD/.artifacts/proof
 ```
 
-A scenario exports `async function run(ctx)`; `proof-scenarios/library.cjs` shows `ctx.shot`, `ctx.record`, `ctx.key` and `ctx.waitFor`, and `capture-proof.cjs` defines the rest. Options are `--theme=light|dark`, `--size=1440x1000`, `--crop=x,y,width`, `--wallpaper=<path>` and `--radius=22`. Wrap the build and capture in `until mkdir /tmp/pond-capture.lock 2>/dev/null; do sleep 15; done` and `rmdir /tmp/pond-capture.lock` (also on failure) so only one capture runs per machine. Write to `.artifacts/proof/<branch>/` and name shots `NN-state-theme`. Upload the files with `gh image <files>` from [gh-image](https://github.com/drogers0/gh-image) and lay them out as [pull requests](docs/contributing/pull-requests.md#proof) describes. Don't commit them; `.artifacts/` is ignored.
+A scenario exports `async function run(ctx)`; `proof-scenarios/library.cjs` shows `ctx.shot`, `ctx.record`, `ctx.key` and `ctx.waitFor`, and `capture-proof.cjs` defines the rest. Options are `--theme=light|dark`, `--size=1440x1000`, `--crop=x,y,width`, `--wallpaper=<path>` and `--radius=22`. Wrap the build and capture in `until mkdir /tmp/pond-capture.lock 2>/dev/null; do sleep 15; done` and `rmdir /tmp/pond-capture.lock` (also on failure) so only one capture runs per machine. Write to `.artifacts/proof/<branch>/` and name shots `NN-state-theme`. Upload the files with `gh image <files>` from [gh-image](https://github.com/drogers0/gh-image) and lay them out as [pull requests](contributing/pull-requests.md#proof) describes. Don't commit them; `.artifacts/` is ignored.
 
 ## Windows development
 
@@ -64,7 +64,7 @@ After `pnpm build`, run the end-to-end smoke test from a normal desktop session 
 pnpm --filter @pond/desktop smoke:desktop
 ```
 
-Pull requests that touch the desktop app, extension, or packages also run [`package.yml`](.github/workflows/package.yml), which builds unsigned test installers. Reviewers can download `Pond-windows-x64` (the installer and `latest.yml`), `Pond-linux-x64` (the x64 AppImage, deb, and `latest-linux.yml`), `Pond-linux-arm64` (the arm64 AppImage, deb, and `latest-linux-arm64.yml`), and `Pond-macos` (Apple Silicon and Intel disk images) from the workflow run's artifacts; they are kept for 7 days and cannot auto-update. The same workflow can be started manually with `workflow_dispatch`.
+Pull requests that touch the desktop app, extension, or packages also run [`package.yml`](../.github/workflows/package.yml), which builds unsigned test installers. Reviewers can download `Pond-windows-x64` (the installer and `latest.yml`), `Pond-linux-x64` (the x64 AppImage, deb, and `latest-linux.yml`), `Pond-linux-arm64` (the arm64 AppImage, deb, and `latest-linux-arm64.yml`), and `Pond-macos` (Apple Silicon and Intel disk images) from the workflow run's artifacts; they are kept for 7 days and cannot auto-update. The same workflow can be started manually with `workflow_dispatch`.
 
 Keep platform-specific code behind `process.platform` checks and add tests that pass the platform in as a parameter, so every platform's behavior is covered on every CI runner.
 
@@ -192,7 +192,7 @@ parsing, plus registry/descriptor totality. They gate PR CI.
 
 ### 6. Docs
 
-`pnpm generate` rewrites [`docs/supported-sources.md`](docs/supported-sources.md)
+`pnpm generate` rewrites [`docs/supported-sources.md`](supported-sources.md)
 from the descriptors. CI runs `pnpm generate && git diff --exit-code`, so a
 forgotten regenerate is a red build — never hand-edit that file.
 
@@ -211,8 +211,8 @@ forgotten regenerate is a red build — never hand-edit that file.
 > governor exists to respect each platform's limits. When adding a source, keep
 > the conservative pacing and remember that users are responsible for their own
 > use under each platform's terms of service. See the
-> [README "Your accounts, your responsibility"](README.md#your-accounts-your-responsibility)
+> [README "Your accounts, your responsibility"](../README.md#your-accounts-your-responsibility)
 > note for the user-facing version of this boundary, and
-> [`core/sync/README.md`](apps/desktop/src/main/core/sync/README.md) +
-> [`core/refresh/README.md`](apps/desktop/src/main/core/refresh/README.md) for
+> [`core/sync/README.md`](../apps/desktop/src/main/core/sync/README.md) +
+> [`core/refresh/README.md`](../apps/desktop/src/main/core/refresh/README.md) for
 > how the governor, watermark cursors, and ingest path fit together.

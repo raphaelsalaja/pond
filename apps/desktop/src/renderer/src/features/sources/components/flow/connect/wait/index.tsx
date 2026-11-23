@@ -114,7 +114,7 @@ export function ConnectWaitSection() {
 }
 
 const RESPONSIBLE_USE_URL =
-  "https://github.com/raphaelsalaja/pond/blob/main/RESPONSIBLE-USE.md";
+  "https://github.com/raphaelsalaja/pond/blob/main/docs/responsible-use.md";
 
 const SESSION_PROMISES = [
   "Keep your session on this device",

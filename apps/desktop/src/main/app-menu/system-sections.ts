@@ -98,7 +98,7 @@ export function buildHelpSection(context: AppMenuContext): AppMenuItem {
       {
         label: "Responsible Use",
         click: context.openExternalUrl(
-          "https://github.com/raphaelsalaja/pond/blob/main/RESPONSIBLE-USE.md",
+          "https://github.com/raphaelsalaja/pond/blob/main/docs/responsible-use.md",
         ),
       },
       {

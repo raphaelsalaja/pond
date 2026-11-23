@@ -38,4 +38,4 @@ Main owns persistence and background operations under `src/main/core/`. The rend
 
 Renderer code is grouped into product features. `app` composes windows and features; `shared` holds reusable controls and infrastructure. TanStack route definitions remain under `routes` and their generated tree stays at the renderer root. Preload exposes the typed desktop query and event contracts.
 
-Read the [architecture guide](../../docs/contributing/architecture.md), [code standards](../../docs/contributing/code-standards.md), and [contributor workflow](../../CONTRIBUTING.md) before changing ownership or adding an operation. From the repository root, run `pnpm check` and `pnpm build` before submitting a PR.
+Read the [architecture guide](../../docs/contributing/architecture.md), [code standards](../../docs/contributing/code-standards.md), and [contributor workflow](../../docs/CONTRIBUTING.md) before changing ownership or adding an operation. From the repository root, run `pnpm check` and `pnpm build` before submitting a PR.

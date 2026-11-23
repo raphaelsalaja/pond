@@ -14,7 +14,7 @@ import styles from "./styles.module.css";
 const GITHUB = "https://github.com/raphaelsalaja/pond";
 const TWITTER = "https://x.com/raphaelsalaja";
 const BUY_ME_A_COFFEE = "https://buymeacoffee.com/raphaelsalaja";
-const RESPONSIBLE_USE = `${GITHUB}/blob/main/RESPONSIBLE-USE.md`;
+const RESPONSIBLE_USE = `${GITHUB}/blob/main/docs/responsible-use.md`;
 
 interface IntroProps {
   release: Release | null;

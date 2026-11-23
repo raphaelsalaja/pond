@@ -112,7 +112,7 @@ Keep large benchmarks opt-in and separate from deterministic correctness tests. 
 
 Pond is a local-first Electron application. A **Library** is the authoritative on-disk archive; SQLite is its index. A **Save** is one archived item. Main owns persistence and privileged operations; renderer owns presentation and optimistic state. Preserve stored formats, IPC contracts, source identities, and Library isolation.
 
-Read `CONTRIBUTING.md`, `docs/contributing/code-standards.md`, `docs/contributing/architecture.md`, and `CONTEXT.md` before implementation. Use kebab-case files, typed domain interfaces, and colocated tests. Inject external capabilities rather than mocking module imports. Do not weaken lint/type rules or add dependencies without approval.
+Read `docs/CONTRIBUTING.md`, `docs/contributing/code-standards.md`, `docs/contributing/architecture.md`, and `docs/context.md` before implementation. Use kebab-case files, typed domain interfaces, and colocated tests. Inject external capabilities rather than mocking module imports. Do not weaken lint/type rules or add dependencies without approval.
 
 Use the user-created branch `perf/library-performance`, or an explicitly approved isolated worktree. Preserve unrelated changes. Use Conventional Commits if asked to commit (for example, `perf(desktop): batch optimistic Save updates`); do not commit, push, or open a PR without authorization.
 

@@ -1,10 +1,10 @@
 # Repository instructions
 
-Before changing code, read [CONTRIBUTING.md](CONTRIBUTING.md) and [code standards](docs/contributing/code-standards.md).
+Before changing code, read [CONTRIBUTING.md](docs/CONTRIBUTING.md) and [code standards](docs/contributing/code-standards.md).
 
 For PR bodies, screenshots, and clips, read [pull requests](docs/contributing/pull-requests.md).
 
-For module moves, state ownership, or main/preload/renderer interfaces, read [desktop architecture](docs/contributing/architecture.md). For domain naming, read [CONTEXT.md](CONTEXT.md). For UI behavior, read [design principles](apps/desktop/src/renderer/src/PRINCIPLES.md).
+For module moves, state ownership, or main/preload/renderer interfaces, read [desktop architecture](docs/contributing/architecture.md). For domain naming, read [domain context](docs/context.md). For UI behavior, read [design principles](apps/desktop/src/renderer/src/PRINCIPLES.md).
 
 ## Shared development runtime
 

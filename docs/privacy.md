@@ -27,4 +27,4 @@ Some features (e.g. local embeddings) run entirely on your computer via Transfor
 
 ## Changes
 
-This policy may be updated as Pond evolves. The canonical copy lives in the [GitHub repository](https://github.com/raphaelsalaja/pond/blob/main/PRIVACY.md).
+This policy may be updated as Pond evolves. The canonical copy lives in the [GitHub repository](https://github.com/raphaelsalaja/pond/blob/main/docs/privacy.md).

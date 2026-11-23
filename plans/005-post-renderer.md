@@ -100,7 +100,7 @@ STOP if upstream `cargo test -p xeet-core` fails after step 2. The X stack must 
 
 - Per source, a harness renders fixture Captures with both the old path and the new one and writes a side-by-side sheet. Pixel diffs are informational until a source is signed off.
 - Fixtures come from synthetic Captures. Real Saves are checked locally and never committed.
-- Checks run once before push: `cargo test` in the fork and `packages/render`, then the desktop checks from `CONTRIBUTING.md`.
+- Checks run once before push: `cargo test` in the fork and `packages/render`, then the desktop checks from `docs/CONTRIBUTING.md`.
 
 ## Risks
 

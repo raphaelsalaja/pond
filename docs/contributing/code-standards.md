@@ -4,7 +4,7 @@ These standards apply to hand-written repository code. Generated output follows 
 
 ## Naming and files
 
-Use Pond's domain names from [CONTEXT.md](../../CONTEXT.md). Files and directories use kebab-case; components and types use PascalCase; functions and values use camelCase. Name an operation for what it does: `createTag`, `loadNextPage`, `cancelSync`.
+Use Pond's domain names from [domain context](../context.md). Files and directories use kebab-case; components and types use PascalCase; functions and values use camelCase. Name an operation for what it does: `createTag`, `loadNextPage`, `cancelSync`.
 
 Keep names required by tooling: TanStack route filenames such as `__root.tsx` and `$saveId.tsx`, Next.js `page.tsx` and `layout.tsx`, WXT entrypoints, configuration files, generated `routeTree.gen.ts`, and generated icon component names. Existing shared UI package entrypoints remain stable public imports.
 

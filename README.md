@@ -19,11 +19,11 @@ Then add the browser extension from the [Chrome Web Store](https://chromewebstor
 
 Sources run through your own browser session on your own computer. There are no Pond scraping servers, and Pond never sends your passwords or cookies anywhere. Pond paces every request, backs off when a site asks it to, and stops a Source if the site shows a challenge.
 
-You're responsible for following each site's terms. Read [Responsible Use](RESPONSIBLE-USE.md) before you connect an account. If you're writing a source adapter, see "Add a source" in [CONTRIBUTING](CONTRIBUTING.md).
+You're responsible for following each site's terms. Read [Responsible Use](docs/responsible-use.md) before you connect an account. If you're writing a source adapter, see "Add a source" in [CONTRIBUTING](docs/CONTRIBUTING.md).
 
 ## Development
 
-Requires Node.js 24 (see `.nvmrc`) and pnpm 11.27.0. On Windows, see [Windows development](CONTRIBUTING.md#windows-development) for the extra prerequisites.
+Requires Node.js 24 (see `.nvmrc`) and pnpm 11.27.0. On Windows, see [Windows development](docs/CONTRIBUTING.md#windows-development) for the extra prerequisites.
 
 ```bash
 pnpm install
@@ -45,7 +45,7 @@ If native modules fail after an Electron upgrade:
 pnpm --filter @pond/desktop rebuild
 ```
 
-See [`apps/desktop/README.md`](apps/desktop/README.md) for architecture and on-disk layout. Before contributing, read the [contributor guide](CONTRIBUTING.md), [code standards](docs/contributing/code-standards.md), and [desktop architecture](docs/contributing/architecture.md). Run `pnpm check` and `pnpm build` from the repository root to verify a change.
+See [`apps/desktop/README.md`](apps/desktop/README.md) for architecture and on-disk layout. Before contributing, read the [contributor guide](docs/CONTRIBUTING.md), [code standards](docs/contributing/code-standards.md), and [desktop architecture](docs/contributing/architecture.md). Run `pnpm check` and `pnpm build` from the repository root to verify a change.
 
 ## Support Pond
 
@@ -59,12 +59,12 @@ Pond is free, open source, and made by one person. Support covers the Apple Deve
 
 - [Wiki](https://github.com/raphaelsalaja/pond/wiki)
 - [License](LICENSE)
-- [Privacy](PRIVACY.md)
-- [Responsible Use](RESPONSIBLE-USE.md)
-- [Roadmap](ROADMAP.md)
-- [Security](SECURITY.md)
+- [Privacy](docs/privacy.md)
+- [Responsible Use](docs/responsible-use.md)
+- [Roadmap](docs/roadmap.md)
+- [Security](docs/SECURITY.md)
 - [Releasing](docs/contributing/releasing.md)
-- [Contributing](CONTRIBUTING.md)
+- [Contributing](docs/CONTRIBUTING.md)
 - [Local API reference](docs/api.md)
 - [Extension](apps/extension/README.md)
 - [Raycast Extension](apps/raycast/README.md)
