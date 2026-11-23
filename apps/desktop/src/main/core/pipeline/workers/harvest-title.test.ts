@@ -22,6 +22,6 @@ it("takes the harvested title when the Save has none", () => {
   expect(keepsCurrentTitle("  ", "Google Search")).toBe(false);
 });
 
-it("keeps the current title when the harvest found none", () => {
+it("leaves a harvest without a title to the regular patch", () => {
   expect(keepsCurrentTitle("malaga - Google Search", null)).toBe(false);
 });

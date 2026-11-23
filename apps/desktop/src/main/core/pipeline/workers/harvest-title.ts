@@ -1,8 +1,4 @@
-/**
- * A page read without scripts often has only the site's name as its title, like
- * "Google Search", while the browser tab already said "malaga - Google Search".
- * A harvested title that is only part of the current one would lose detail.
- */
+/** A page read without scripts is often titled with only the site name ("Google Search") where the tab said "malaga - Google Search". */
 export function keepsCurrentTitle(
   current: string | null | undefined,
   harvested: string | null | undefined,
