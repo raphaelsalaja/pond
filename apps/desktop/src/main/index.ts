@@ -34,6 +34,7 @@ import {
 import { disposeQueueWorkerHost } from "./core/pipeline/worker-host";
 import { getPrefs, subscribePrefs } from "./core/prefs";
 import { closePreviewWindows } from "./core/preview-windows";
+import { closeQuickCapture } from "./core/quick-capture-overlay";
 import { disposeHiddenWindow } from "./core/refresh/harvest-window";
 import { disposeRenderCardWindow } from "./core/render-card";
 import {
@@ -698,6 +699,7 @@ async function shutdownForQuit(): Promise<void> {
   closePreviewWindows();
   closeCombineImagesWindow();
   closeFileRingOverlay();
+  closeQuickCapture();
   try {
     await withDeadline(
       Promise.all([
