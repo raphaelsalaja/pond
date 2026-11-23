@@ -1,8 +1,10 @@
+import { SearchCardDataSchema } from "@shared/search-card";
 import { TextCardDataSchema } from "@shared/text-card";
 import { TweetCardDataSchema } from "@shared/tweet-card";
 import { useEffect, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import type { z } from "zod";
+import { SearchCard } from "./features/captures/components/search-card";
 import { TextCard } from "./features/captures/components/text-card";
 import { ThreadsCard } from "./features/captures/components/threads/card";
 import { TweetCard } from "./features/captures/components/tweet/card";
@@ -19,7 +21,9 @@ document.documentElement.dataset.card = params.get("card") ?? "";
 delete document.documentElement.dataset.ready;
 const kindParam = params.get("kind");
 const KIND =
-  kindParam === "text" ? "text" : kindParam === "threads" ? "threads" : "tweet";
+  kindParam === "text" || kindParam === "search" || kindParam === "threads"
+    ? kindParam
+    : "tweet";
 const SCHEME: "light" | "dark" =
   params.get("scheme") === "dark" ? "dark" : "light";
 const WIDTH = Number(params.get("w") ?? DEFAULT_WIDTH) || DEFAULT_WIDTH;
@@ -42,6 +46,10 @@ const TWEET_PAYLOAD = decodePayload(TweetCardDataSchema, {
   author: { name: "", handle: "" },
 });
 const TEXT_PAYLOAD = decodePayload(TextCardDataSchema, { text: "" });
+const SEARCH_PAYLOAD = decodePayload(SearchCardDataSchema, {
+  engine: "",
+  query: "",
+});
 
 function waitForImages(root: HTMLElement): Promise<void> {
   const imgs = Array.from(root.querySelectorAll("img")).filter((img) =>
@@ -88,6 +96,8 @@ function CaptureCard() {
     <div ref={ref} data-capture-card style={{ width: WIDTH }}>
       {KIND === "text" ? (
         <TextCard data={TEXT_PAYLOAD} scheme={SCHEME} />
+      ) : KIND === "search" ? (
+        <SearchCard data={SEARCH_PAYLOAD} scheme={SCHEME} />
       ) : KIND === "threads" ? (
         <ThreadsCard data={TWEET_PAYLOAD} scheme={SCHEME} />
       ) : (

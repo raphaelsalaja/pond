@@ -27,8 +27,18 @@ function setup() {
     width: 550,
     height: 1400,
   }));
-  const runtime: RenderTextCoverRuntime = { readSave, persistSave, renderCard };
-  return { runtime, readSave, persistSave, renderCard };
+  const renderSearchCard = vi.fn(async () => ({
+    bytes: Buffer.from("png"),
+    width: 550,
+    height: 288,
+  }));
+  const runtime: RenderTextCoverRuntime = {
+    readSave,
+    persistSave,
+    renderCard,
+    renderSearchCard,
+  };
+  return { runtime, readSave, persistSave, renderCard, renderSearchCard };
 }
 
 describe("runRenderTextCover", () => {
@@ -66,6 +76,40 @@ describe("runRenderTextCover", () => {
 
     await expect(runRenderTextCover("save-1", {}, runtime)).resolves.toBe(0);
     expect(renderCard).not.toHaveBeenCalled();
+  });
+
+  it("draws a search card for a search results page without a description", async () => {
+    const { runtime, renderCard, renderSearchCard } = setup();
+    const url = "https://www.google.com/search?q=malaga";
+    vi.mocked(runtime.readSave).mockResolvedValueOnce({
+      ...save,
+      url,
+      title: "malaga",
+      description: null,
+      files: [{ kind: "source_icon", path: "icon.png", sha256: "", size: 1 }],
+      rawJson: {
+        capture: {
+          id: url,
+          source: "web",
+          url,
+          media: [],
+          extras: { search: { engine: "Google Search", query: "malaga" } },
+        },
+        extractorId: "web",
+        extractedAt: "2026-11-22T00:00:00.000Z",
+      },
+    });
+
+    await expect(runRenderTextCover("save-1", {}, runtime)).resolves.toBe(2);
+    expect(renderCard).not.toHaveBeenCalled();
+    expect(renderSearchCard).toHaveBeenCalledWith(
+      expect.objectContaining({ engine: "Google Search", query: "malaga" }),
+      "light",
+    );
+    expect(renderSearchCard).toHaveBeenCalledWith(
+      expect.objectContaining({ engine: "Google Search", query: "malaga" }),
+      "dark",
+    );
   });
 
   it("keeps the save when the card cannot be captured", async () => {

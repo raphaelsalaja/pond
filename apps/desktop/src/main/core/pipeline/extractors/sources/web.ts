@@ -12,12 +12,14 @@ import { z } from "zod";
 import { renderPageHtml } from "../../../refresh/web-page-renderer";
 import { TerminalError, TransientError } from "../errors";
 import type { Capture, ExtractInput, Extractor } from "../types";
+import { searchPageQuery } from "./search-page";
 import { fetchHtml } from "./web-fetch";
 
 type WebExtras = {
   publisher?: string;
   faviconUrl?: string;
   product?: boolean;
+  search?: { engine: string; query: string };
 };
 
 const PRODUCT_FLAG = "true";
@@ -197,8 +199,11 @@ export class WebPageExtractor implements Extractor {
 
     const canonical = pickString(meta.url) ?? input.url.href;
 
+    const search = searchPageQuery(input.url);
     const faviconUrl = pickString(meta.logo);
-    const coverUrl = pickString(meta.image) ?? faviconUrl;
+    const coverUrl = search
+      ? undefined
+      : (pickString(meta.image) ?? faviconUrl);
     const media: CaptureMedia[] = coverUrl
       ? [{ url: coverUrl, type: "image" }]
       : [];
@@ -207,15 +212,17 @@ export class WebPageExtractor implements Extractor {
     const author = authorName ? { name: authorName } : undefined;
 
     const publishedAt = pickString(meta.date);
-    const publisher = pickString(meta.publisher);
+    const publisher = search?.engine ?? pickString(meta.publisher);
 
     const extras: WebExtras = {};
     if (publisher) extras.publisher = publisher;
     if (faviconUrl) extras.faviconUrl = faviconUrl;
     if (meta.product === PRODUCT_FLAG) extras.product = true;
+    if (search) extras.search = search;
 
-    const title = pickString(meta.title);
-    const description = pickString(meta.description);
+    const title = search?.query ?? pickString(meta.title);
+    /** A results page's description is boilerplate, and one would open the Save as text instead of the page. */
+    const description = search ? undefined : pickString(meta.description);
     const capture: Capture = {
       id: canonical,
       source: "web",

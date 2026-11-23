@@ -80,7 +80,7 @@ export async function runHarvestMetadata(
   const pageUrl = arenaLinkUrl(rawJson.capture) ?? save.url;
   const patch = buildSavePatch(rawJson.capture, rawJson, pageUrl, save.source);
   if (pageUrl !== save.url) patch.url = pageUrl;
-  if (keepsCurrentTitle(save.title, patch.title)) delete patch.title;
+  if (keepsCurrentTitle(save.title, rawJson.capture)) delete patch.title;
   const updated = await persistSave(saveId, patch, {
     actorReason: `harvest:${extractor.id}`,
     ...files,

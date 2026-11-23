@@ -9,6 +9,7 @@ import {
   THUMBNAIL_DARK_KIND,
   THUMBNAIL_KIND,
 } from "@shared/save-file-names";
+import { searchCardFromSave } from "@shared/search-card";
 import {
   RENDER_TEXT_COVER_VERSION,
   textBodyFromFields,
@@ -16,7 +17,11 @@ import {
 } from "@shared/text-card";
 import log from "electron-log/main.js";
 import { persistSave } from "../../persist-save";
-import { type RenderedCard, renderTextCardPng } from "../../render-card";
+import {
+  type RenderedCard,
+  renderSearchCardPng,
+  renderTextCardPng,
+} from "../../render-card";
 import { readSave } from "./apply";
 
 /** The fields a text cover needs; the full save row satisfies it. */
@@ -36,19 +41,24 @@ export interface RenderTextCoverRuntime {
   readSave: (saveId: string) => Promise<TextCoverSave | null>;
   persistSave: typeof persistSave;
   renderCard: typeof renderTextCardPng;
+  renderSearchCard: typeof renderSearchCardPng;
 }
 
 const defaultRuntime: RenderTextCoverRuntime = {
   readSave,
   persistSave,
   renderCard: renderTextCardPng,
+  renderSearchCard: renderSearchCardPng,
 };
 
 function needsTextCover(save: TextCoverSave, imageFallback = false): boolean {
+  const search = searchCardFromSave(save) !== null;
   const hasProse =
-    Boolean(save.description?.trim()) || save.mediaType === "text";
+    search || Boolean(save.description?.trim()) || save.mediaType === "text";
   if (!hasProse) return false;
-  if (!textBodyFromFields(save.description, save.title)) return false;
+  if (!search && !textBodyFromFields(save.description, save.title)) {
+    return false;
+  }
   const files = save.files ?? [];
   /*
    * An image save waits for its file. The generated GitHub card can miss
@@ -171,10 +181,15 @@ async function renderTextCover(
     }
   }
 
+  const search = searchCardFromSave(save);
   const body = textBodyFromFields(save.description, save.title);
-  const light = await runtime.renderCard(body, "light");
+  const render = (scheme: "light" | "dark") =>
+    search
+      ? runtime.renderSearchCard(search, scheme)
+      : runtime.renderCard(body, scheme);
+  const light = await render("light");
   if (!light) return 0;
-  const dark = await runtime.renderCard(body, "dark");
+  const dark = await render("dark");
   if (!dark) return 0;
 
   await writeCover(runtime, saveId, THUMBNAIL_KIND, TEXT_THUMBNAIL_FILE, light);
