@@ -10,6 +10,7 @@ import * as dribbble from "./dribbble/item";
 import type { HarvestAdaptCtx } from "./from-page";
 import * as github from "./github/item";
 import * as instagram from "./instagram";
+import * as linkedin from "./linkedin/item";
 import * as marked from "./marked/item";
 import * as pinterest from "./pinterest";
 import * as reddit from "./reddit";
@@ -128,6 +129,11 @@ const REGISTRY = {
     buildExpression: marked.buildExpression,
     adapt: marked.adapt,
     sourceIdFromUrl: (url) => sourceIdFromUrl("marked", url),
+  },
+  linkedin: {
+    buildExpression: linkedin.buildExpression,
+    adapt: linkedin.adapt,
+    sourceIdFromUrl: (url) => sourceIdFromUrl("linkedin", url),
   },
   mymind: {
     buildExpression: () => {

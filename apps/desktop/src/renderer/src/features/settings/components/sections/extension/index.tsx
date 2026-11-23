@@ -34,6 +34,7 @@ const SAVES = {
   unsplash: "Save photos with the Pond toolbar button.",
   bluesky: "Save posts with the Pond toolbar button.",
   marked: "Save refs with the Pond toolbar button.",
+  linkedin: "Save posts with the Pond toolbar button.",
   mymind: "Import cards through the mymind API.",
 } satisfies Record<ExternalSource, string>;
 

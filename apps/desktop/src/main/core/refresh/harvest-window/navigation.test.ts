@@ -8,6 +8,12 @@ describe("looksLikeAuthWall", () => {
     expect(looksLikeAuthWall("https://dribbble.com/signups/new")).toBe(true);
   });
 
+  it("catches LinkedIn's sign-in and auth wall", () => {
+    const signIn = "https://www.linkedin.com/uas/login?session_redirect=%2F";
+    expect(looksLikeAuthWall(signIn)).toBe(true);
+    expect(looksLikeAuthWall("https://www.linkedin.com/authwall")).toBe(true);
+  });
+
   it("leaves content pages alone", () => {
     expect(looksLikeAuthWall("https://dribbble.com/simplebits/likes")).toBe(
       false,

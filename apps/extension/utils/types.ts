@@ -75,6 +75,7 @@ const ALL_SOURCES_ON = {
   unsplash: true,
   bluesky: true,
   marked: true,
+  linkedin: true,
   mymind: false,
   web: false,
   local: false,

@@ -214,6 +214,7 @@ function probeUrlForSource(source: Source): string {
   if (source === "dribbble") return "https://dribbble.com/";
   if (source === "unsplash") return "https://unsplash.com/";
   if (source === "marked") return "https://marked.dev/explore";
+  if (source === "linkedin") return "https://www.linkedin.com/feed/";
   return homeUrlForSource(source);
 }
 

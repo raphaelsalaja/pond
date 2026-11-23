@@ -201,6 +201,14 @@ export const CAPTURE_EXPECTATIONS = {
     required: ["mediaUrl"],
     recommended: ["title", "author", "capture.upstream.url"],
   },
+  linkedin: {
+    required: ["author"],
+    recommended: [
+      "description",
+      "capture.publishedAt",
+      "capture.author.avatarUrl",
+    ],
+  },
   mymind: { required: [], recommended: [] },
   web: {
     required: ["title"],

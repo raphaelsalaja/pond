@@ -19,6 +19,7 @@ export const DRIBBBLE_PATTERNS = descriptorFor("dribbble").urlPatterns;
 export const UNSPLASH_PATTERNS = descriptorFor("unsplash").urlPatterns;
 export const BLUESKY_PATTERNS = descriptorFor("bluesky").urlPatterns;
 export const MARKED_PATTERNS = descriptorFor("marked").urlPatterns;
+export const LINKEDIN_PATTERNS = descriptorFor("linkedin").urlPatterns;
 
 export function firstMatch(
   url: URL,

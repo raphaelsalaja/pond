@@ -8,6 +8,7 @@ import { matches as cosmos } from "./cosmos/matches";
 import { matches as dribbble } from "./dribbble/matches";
 import { matches as github } from "./github/matches";
 import { matches as instagram } from "./instagram/matches";
+import { matches as linkedin } from "./linkedin/matches";
 import { matches as marked } from "./marked/matches";
 import { matches as pinterest } from "./pinterest/matches";
 import { matches as reddit } from "./reddit/matches";
@@ -48,6 +49,7 @@ export const HOOK_SOURCES = {
   unsplash: { matches: unsplash, likes: [], item: "Photo" },
   bluesky: { matches: bluesky, likes: [], item: "Post" },
   marked: { matches: marked, likes: [], item: "Ref" },
+  linkedin: { matches: linkedin, likes: [], item: "Post" },
   mymind: { matches: [], likes: [], item: "Card" },
 } as const satisfies Record<ExternalSource, HookSource>;
 

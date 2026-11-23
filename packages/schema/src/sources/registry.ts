@@ -233,6 +233,26 @@ export const SOURCE_DESCRIPTORS = [
     sync: { strategy: "full" },
   },
   {
+    id: "linkedin",
+    label: "LinkedIn",
+    hosts: ["linkedin.com"],
+    /** Keys by the numeric id, which reads the same in a feed URN and in a `/posts/` slug. */
+    urlPatterns: [
+      /^https?:\/\/(?:[a-z]{2,3}\.)?linkedin\.com\/feed\/update\/urn(?::|%3A)li(?::|%3A)(?:activity|ugcPost|share)(?::|%3A)(\d{10,25})(?=[/?#]|$)/i,
+      /^https?:\/\/(?:[a-z]{2,3}\.)?linkedin\.com\/posts\/[^/?#]*?-(?:activity|ugcPost|share)-(\d{10,25})(?=[-/?#]|$)/i,
+    ],
+    /** LinkedIn restricts accounts that page quickly, so sync runs slower than Instagram. */
+    sync: {
+      strategy: "cursor",
+      rate: {
+        minDelayMs: 4000,
+        maxPerWindow: 15,
+        maxPerHour: 90,
+        maxPerDay: 400,
+      },
+    },
+  },
+  {
     id: "mymind",
     label: "mymind",
     hosts: ["mymind.com"],

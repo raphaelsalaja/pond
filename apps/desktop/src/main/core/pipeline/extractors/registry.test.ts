@@ -50,7 +50,7 @@ describe("sync config totality", () => {
   }
 
   it("paces the sources that block accounts harder than the default", () => {
-    for (const source of ["twitter", "instagram"] as const) {
+    for (const source of ["twitter", "instagram", "linkedin"] as const) {
       const rate = syncConfigFor(source).rate;
       expect(rate.maxPerHour).toBeLessThan(DEFAULT_RATE_PROFILE.maxPerHour);
       expect(rate.maxPerDay).toBeLessThan(DEFAULT_RATE_PROFILE.maxPerDay);

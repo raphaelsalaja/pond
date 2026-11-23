@@ -109,6 +109,13 @@ filtered afterward.
   records from your own PDS, then hydrates the posts through the public
   AppView. Nothing is signed in, so `auth_required` means the Account has no
   DID yet.
+- LinkedIn reads saved posts from `/my-items/saved-posts/`. The walk replays
+  the page's own Voyager search request with your session's CSRF token and
+  pages it by offset, so the resume cursor is the next `start`. When no request
+  can be found, it reads the rendered results and clicks "Show more results"
+  instead, which never marks the list `complete`. A checkpoint, a challenge,
+  or status 999 stops the walk and marks the Account at risk. The list shows
+  no save date, so posts carry the publish time held in their activity id.
 
 A save harvested from chosen collections is filed into Folders named
 `<Source>/<collection>` (`collection-folders.ts`). Harvesters tag each entry
