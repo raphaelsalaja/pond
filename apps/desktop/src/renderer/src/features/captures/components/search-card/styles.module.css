@@ -7,10 +7,11 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: var(--ds-space-2xl);
+  gap: var(--ds-space-xl);
   width: 100%;
   aspect-ratio: 1.91 / 1;
-  padding: calc(var(--ds-space-2xl) + var(--ds-space-md));
+  /* Grid tiles shrink the card to about a quarter of its width, so the type is sized for the tile, not the card. */
+  padding: calc(var(--ds-space-2xl) + var(--ds-space-xl));
   overflow: hidden;
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
   background: var(--card-paper);
@@ -24,32 +25,38 @@
 
 .engine {
   display: flex;
-  gap: var(--ds-space-lg);
+  gap: var(--ds-space-xl);
   align-items: center;
-  font-size: var(--ds-text-title);
+  font-size: 30px;
   font-weight: var(--ds-weight-strong);
-  line-height: var(--ds-leading-title);
+  line-height: 1.2;
   color: var(--card-muted);
 }
 
 .icon {
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   object-fit: contain;
-  border-radius: var(--ds-space-sm);
+  border-radius: var(--ds-space-md);
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  min-height: 0;
 }
 
 .query {
   display: -webkit-box;
-  flex: 1;
   -webkit-box-orient: vertical;
   margin: 0;
   overflow: hidden;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
-  font-size: 40px;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  font-size: 72px;
   font-weight: var(--ds-weight-bold);
-  line-height: 1.15;
+  line-height: 1.1;
   color: var(--card-ink);
   word-break: break-word;
 }
