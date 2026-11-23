@@ -48,6 +48,7 @@ export type ImageDownloadPrefs = {
   preserveMetadata: boolean;
   maxFileSizeMb: number | null;
   splitPosts: boolean;
+  splitMinMedia: number;
 };
 
 export const DEFAULT_IMAGE_DOWNLOAD: ImageDownloadPrefs = {
@@ -59,6 +60,7 @@ export const DEFAULT_IMAGE_DOWNLOAD: ImageDownloadPrefs = {
   preserveMetadata: false,
   maxFileSizeMb: 10,
   splitPosts: false,
+  splitMinMedia: 2,
 };
 
 export interface DownloadSettings {
