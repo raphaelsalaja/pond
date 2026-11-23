@@ -29,7 +29,7 @@ Pond keeps every Save on the person's own computer. Nothing you read leaves it u
 
 ## Export
 
-- \`start_conversion\` writes converted copies and never touches originals. \`compress_images\` replaces originals, with Undo in Pond.
+- \`start_conversion\` writes converted copies and never touches originals. \`compress_images\` replaces originals, with Undo in Pond. \`compress_videos\` replaces originals with no Undo, so confirm first.
 - Poll \`conversion_status\` with \`waitSeconds\` instead of calling it in a loop.
 
 ## Rules

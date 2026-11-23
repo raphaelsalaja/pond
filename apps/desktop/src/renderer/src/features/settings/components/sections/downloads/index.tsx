@@ -43,6 +43,7 @@ const ImageDownloadSchema = z.object({
   preserveMetadata: z.boolean(),
   maxFileSizeMb: z.number().nullable(),
   splitPosts: z.boolean(),
+  splitMinMedia: z.number(),
 }) satisfies z.ZodType<ImageDownloadPrefs>;
 
 const SourceSchema = z.enum(EXTERNAL_SOURCE_IDS);

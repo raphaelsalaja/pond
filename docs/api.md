@@ -33,8 +33,8 @@ Each scoped token has one or more of these. A request outside them gets `forbidd
 | Access | Routes |
 | --- | --- |
 | Search Saves | `GET /library/info`, `/library/tags`, `/library/folders`, `/library/views`, `/library/sources`. `POST /library/query`, `/library/search`. `/saves/get`, `GET /saves/info`, `/saves/text`, `/saves/status`, `/saves/thumb`, `/saves/file`, `/saves/related`. |
-| Export Files | Every `/library/conversion` route. |
-| Add and Edit Saves | `POST /enqueue`, `/saves/tags`, `/saves/folders`, `/saves/trash`, `/saves/restore`, `/saves/note`, `/saves/rating`, `/saves/favorite`. |
+| Export Files | Every `/library/conversion` route except `/library/conversion/compress-videos`. |
+| Add and Edit Saves | `POST /enqueue`, `/library/conversion/compress-videos`, `/saves/tags`, `/saves/folders`, `/saves/trash`, `/saves/restore`, `/saves/note`, `/saves/rating`, `/saves/favorite`. |
 
 These routes are private. Only the Local API Token reaches them, and they may change between minor versions:
 
@@ -262,6 +262,7 @@ Operations are the same actions Fish and the MCP server use, like creating folde
 | `GET`, `POST` | `/library/conversion/presets` | Read or save presets. |
 | `POST` | `/library/conversion/start` | Convert Saves. Returns a job. |
 | `POST` | `/library/conversion/compress` | Compress images. Returns a job. |
+| `POST` | `/library/conversion/compress-videos` | Replace videos with smaller HEVC copies, without Undo. Returns a job. |
 | `GET` | `/library/conversion/:id` | Job progress. |
 | `POST` | `/library/conversion/:id/cancel` | Cancel a job. |
 
@@ -279,7 +280,7 @@ The server speaks the 2026-07-28 revision and still serves clients that open wit
 | --- | --- |
 | Search Saves | `library_overview`, `query_library`, `search_library`, `read_save`, `grep_library`, `list_folders`, `list_tags`, `list_views`, `find_duplicates`, `view_saves`, `show_saves` |
 | Open in Pond | `open_save`, `apply_filter` |
-| Export Files | `list_conversion_capabilities`, `list_conversion_presets`, `save_conversion_preset`, `start_conversion`, `compress_images`, `conversion_status`, `cancel_conversion` |
+| Export Files | `list_conversion_capabilities`, `list_conversion_presets`, `save_conversion_preset`, `start_conversion`, `compress_images`, `compress_videos`, `conversion_status`, `cancel_conversion` |
 
 - `library_overview` counts Saves, folders and tags, and lists the top folders, tags and sources.
 - `query_library` takes the same body as `POST /library/query` and returns ids with a cursor.
@@ -291,10 +292,10 @@ The server speaks the 2026-07-28 revision and still serves clients that open wit
 - `view_saves` returns preview images for up to 8 Saves, so a model can look at them.
 - `show_saves` renders a clickable grid in hosts that support MCP Apps, and returns the list as structured content everywhere else.
 - `open_save` opens a Save in the Pond window. `apply_filter` sets the library grid's filter. Both open Pond if it's closed.
-- `start_conversion` writes converted copies to a folder you choose and returns a job id for `conversion_status` and `cancel_conversion`. `compress_images` replaces originals and records Undo.
+- `start_conversion` writes converted copies to a folder you choose and returns a job id for `conversion_status` and `cancel_conversion`. `compress_images` replaces originals and records Undo. `compress_videos` replaces originals without Undo.
 - `conversion_status` takes `waitSeconds` to wait for a job, and sends progress notifications while it runs.
 
-Every tool has a title and annotations. Only `compress_images` is marked destructive. Job and tag tools also return structured content that matches their output schema.
+Every tool has a title and annotations. Only `compress_images` and `compress_videos` are marked destructive. Job and tag tools also return structured content that matches their output schema.
 
 | Kind | Name | Purpose |
 | --- | --- | --- |

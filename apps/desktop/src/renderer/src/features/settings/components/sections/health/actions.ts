@@ -62,14 +62,15 @@ export function healthActions(
     case "originals":
     case "previews":
     case "records":
-    case "file-names": {
+    case "file-names":
+    case "duplicates": {
       const repairable = entries.filter((entry) => entry.repair != null);
       const kind = repairable[0]?.repair;
       return [
         ...(kind
           ? action(
               "repair",
-              "Repair",
+              category === "duplicates" ? "Move to Trash" : "Repair",
               repairable,
               () => repairSaves(qc, kind, ids(repairable)),
               { primary: true },

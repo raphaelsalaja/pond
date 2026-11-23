@@ -9,7 +9,7 @@ import {
   isThumbnailKind,
   thumbnailFilename,
 } from "@shared/save-file-names";
-import { eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, ne, sql } from "drizzle-orm";
 import { z } from "zod";
 import type {
   HealthFileCheck,
@@ -59,7 +59,8 @@ export interface InternalLibraryRepairIssue extends LibraryRepairIssue {
         renames: Array<{ from: string; to: string }>;
       }
     | { kind: "invalid-content" }
-    | { kind: "save-metadata" };
+    | { kind: "save-metadata" }
+    | { kind: "eagle-previews"; originalId: string };
 }
 
 export interface LibraryIntegrityRuntime {
@@ -74,6 +75,10 @@ export interface LibraryIntegrityRuntime {
     sourcePath: string,
   ): Promise<boolean | null>;
   readInfo(path: string): Promise<InfoInspection>;
+  /** The Eagle Save a `<name>_thumbnail` Save was exported from, or null when it isn't one. */
+  eaglePreviewOriginal?(
+    saveId: string,
+  ): Promise<{ id: string; title: string | null } | null>;
 }
 
 async function thumbnailMatchesSource(
@@ -131,6 +136,9 @@ const defaultRuntime: LibraryIntegrityRuntime = {
     return (await renderThumbnail(path).catch(() => null)) !== null;
   },
   thumbnailMatchesSource,
+  async eaglePreviewOriginal(saveId) {
+    return findEaglePreviewOriginal(await getDb(), saveId);
+  },
   async readInfo(path) {
     let decoded: Buffer;
     try {
@@ -218,7 +226,63 @@ export async function inspectSaveIntegrity(input: {
       return inspectInvalidContent(input.row, input.runtime);
     case "save-metadata":
       return inspectSaveMetadata(input.row, input.runtime);
+    case "eagle-previews":
+      return inspectEaglePreview(input.row, input.runtime);
   }
+}
+
+export function findEaglePreviewOriginal(
+  db: Awaited<ReturnType<typeof getDb>>,
+  saveId: string,
+): { id: string; title: string | null } | null {
+  const row = db.select().from(saves).where(eq(saves.id, saveId)).get();
+  if (
+    !row ||
+    row.deletedAt ||
+    row.importedFrom !== "eagle" ||
+    row.mediaType !== "image"
+  )
+    return null;
+  const name = eaglePreviewName(row.title);
+  if (!name) return null;
+  return (
+    db
+      .select({ id: saves.id, title: saves.title })
+      .from(saves)
+      .where(
+        and(
+          ne(saves.id, saveId),
+          isNull(saves.deletedAt),
+          eq(saves.importedFrom, "eagle"),
+          sql`lower(${saves.title}) = ${name.toLowerCase()}`,
+        ),
+      )
+      .get() ?? null
+  );
+}
+
+export function eaglePreviewName(title: string | null): string | null {
+  const match = /^(.+)_thumbnail$/iu.exec(title?.trim() ?? "");
+  return match?.[1]?.trim() || null;
+}
+
+async function inspectEaglePreview(
+  row: IntegritySave,
+  runtime: LibraryIntegrityRuntime,
+): Promise<InternalLibraryRepairIssue | null> {
+  if (!eaglePreviewName(row.title) || !runtime.eaglePreviewOriginal)
+    return null;
+  const original = await runtime.eaglePreviewOriginal(row.id);
+  if (!original) return null;
+  return issue({
+    kind: "eagle-previews",
+    row,
+    evidence: { originals: "usable", files: [] },
+    summary: "Duplicate of an Eagle preview",
+    detail: `Eagle exported this preview of “${original.title ?? "Untitled"}” as its own item.`,
+    observed: { files: fileFacts(row.files), originalId: original.id },
+    action: { kind: "eagle-previews", originalId: original.id },
+  });
 }
 
 async function inspectThumbnail(

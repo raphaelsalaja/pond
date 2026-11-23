@@ -1,5 +1,6 @@
 import { setTimeout as sleep } from "node:timers/promises";
 import type { Capture } from "@pond/schema/raw";
+import type { SearchCardData } from "@shared/search-card";
 import { buildTextCardData, type TextCardData } from "@shared/text-card";
 import { buildTweetCardData, type TweetCardData } from "@shared/tweet-card";
 import { BrowserWindow, nativeImage } from "electron";
@@ -20,7 +21,8 @@ export interface RenderedCard {
   height: number;
 }
 
-type CaptureKind = "tweet" | "text" | "threads";
+type CaptureKind = "tweet" | "text" | "search" | "threads";
+type CardData = TweetCardData | TextCardData | SearchCardData;
 
 const CARD_WIDTH = 550;
 const INITIAL_HEIGHT = 1400;
@@ -110,7 +112,7 @@ async function loadCapture(
   target: BrowserWindow,
   kind: CaptureKind,
   scheme: "light" | "dark",
-  data: TweetCardData | TextCardData,
+  data: CardData,
 ): Promise<string> {
   const documentTarget = captureDocumentTarget(
     kind,
@@ -286,7 +288,7 @@ async function pad(
 
 async function renderOne(
   kind: CaptureKind,
-  data: TweetCardData | TextCardData,
+  data: CardData,
   scheme: "light" | "dark",
   padCss: number,
   radiusCss: number,
@@ -318,7 +320,7 @@ async function renderOne(
 
 async function enqueueRender(
   kind: CaptureKind,
-  data: TweetCardData | TextCardData,
+  data: CardData,
   scheme: "light" | "dark",
   padCss: number,
   radiusCss = 0,
@@ -396,6 +398,13 @@ export async function renderTextCardPng(
   const data = buildTextCardData(text);
   if (!data) return null;
   return enqueueRender("text", data, scheme, 0);
+}
+
+export function renderSearchCardPng(
+  data: SearchCardData,
+  scheme: "light" | "dark",
+): Promise<RenderedCard | null> {
+  return enqueueRender("search", data, scheme, 0);
 }
 
 export function disposeRenderCardWindow(): void {

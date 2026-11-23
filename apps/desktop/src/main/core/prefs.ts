@@ -36,6 +36,7 @@ import {
   type StoredPrefs,
   type StoredPrefsInput,
   splitPrefsPatch,
+  withoutFolderPrefs,
   writeBundlePondPrefs,
 } from "./prefs-scope";
 
@@ -197,34 +198,51 @@ export async function getDownloadConfig(): Promise<DownloadConfig> {
 
 let prefsQueue = Promise.resolve();
 
-export function setPrefs(patch: DeepPartial<Prefs>): Promise<Prefs> {
-  const operation = prefsQueue.then(() => applyPrefs(patch));
-  prefsQueue = operation.then(
+type PondPrune = (slice: DeepPartial<PondPrefs>) => DeepPartial<PondPrefs>;
+
+function enqueuePrefs(operation: () => Promise<Prefs>): Promise<Prefs> {
+  const result = prefsQueue.then(operation);
+  prefsQueue = result.then(
     () => {},
     () => {},
   );
-  return operation;
+  return result;
 }
 
-async function applyPrefs(patch: DeepPartial<Prefs>): Promise<Prefs> {
+export function setPrefs(patch: DeepPartial<Prefs>): Promise<Prefs> {
+  return enqueuePrefs(() => applyPrefs(patch));
+}
+
+export function removeFolderPrefs(ids: readonly string[]): Promise<Prefs> {
+  return enqueuePrefs(() =>
+    applyPrefs({}, (slice) => withoutFolderPrefs(slice, ids)),
+  );
+}
+
+async function applyPrefs(
+  patch: DeepPartial<Prefs>,
+  prune?: PondPrune,
+): Promise<Prefs> {
   const libraryId = currentLibraryId();
   const current = await loadSettings();
   const { app, pond } = splitPrefsPatch(patch);
+  const writesPond = Object.keys(pond).length > 0 || prune !== undefined;
 
   let stored = normalizeStoredPrefs(await readRawStoredPrefs());
 
   let pondSlice: PondPrefs;
   if (isUnboundLibraryId(libraryId)) {
-    if (Object.keys(pond).length > 0) {
+    if (writesPond) {
+      const pending = stored.pending ?? {};
       stored = {
         ...stored,
-        pending: mergePondSlice(stored.pending ?? {}, pond),
+        pending: mergePondSlice(prune ? prune(pending) : pending, pond),
       };
     }
     pondSlice = mergePondSlice(stored.pending ?? {});
   } else {
     const base = readBundlePondPrefs() ?? mergePondSlice({});
-    pondSlice = mergePondSlice(base, pond);
+    pondSlice = mergePondSlice(prune ? prune(base) : base, pond);
   }
 
   if (Object.keys(app).length > 0) {
@@ -235,7 +253,7 @@ async function applyPrefs(patch: DeepPartial<Prefs>): Promise<Prefs> {
     ? prepareGlobalShortcuts(merged.shortcuts.overrides)
     : null;
   try {
-    if (!isUnboundLibraryId(libraryId) && Object.keys(pond).length > 0)
+    if (!isUnboundLibraryId(libraryId) && writesPond)
       writeBundlePondPrefs(pondSlice);
     await persistStoredPrefs(stored);
     shortcutChange?.commit();

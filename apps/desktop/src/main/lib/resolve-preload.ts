@@ -14,6 +14,7 @@ export function resolvePreload(
     | "index.cjs"
     | "combine-images.cjs"
     | "file-ring.cjs"
+    | "quick-capture.cjs"
     | "missing-library.cjs"
     | "preview.cjs"
     | "settings.cjs"

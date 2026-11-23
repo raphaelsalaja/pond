@@ -78,6 +78,7 @@ async function defaultQuery(name: string) {
   if (name === "downloads.ingestingOrFailed") return [];
   if (name === "saves.getMany") return [];
   if (name === "queue.sourceGates") return [];
+  if (name === "transferJobs.list") return [];
   throw new Error(`Unexpected query: ${name}`);
 }
 const pipelinePause = vi.fn(async (paused: boolean) => ({ ok: true, paused }));
@@ -969,4 +970,37 @@ it("bounds the initial render before the downloads table is measured", async () 
   await render();
 
   expect(host.querySelectorAll('[role="row"]').length).toBeLessThan(100);
+});
+
+it("shows Library Transfers as rows in the Downloads table", async () => {
+  query.mockImplementation(async (name: string) => {
+    if (name === "transferJobs.list")
+      return [
+        {
+          id: "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+          request: {
+            kind: "export_files",
+            origin: "/Users/user/Pond",
+            destination: "/Users/user/Downloads/Geoid (Pond Export 2026-11-22)",
+          },
+          status: "running",
+          phase: "Copying files",
+          completed: 3,
+          total: 12,
+          bytes: 0,
+          currentFile: null,
+          error: null,
+          startedAt: Date.now(),
+          updatedAt: Date.now(),
+        },
+      ];
+    return defaultQuery(name);
+  });
+  await render();
+  expect(rowNames()[0]).toBe(
+    "/Users/user/Downloads/Geoid (Pond Export 2026-11-22)",
+  );
+  expect(host.textContent).toContain("Export Files");
+  expect(host.textContent).toContain("Copying files 3 of 12");
+  expect(host.textContent).not.toContain("Library Transfers");
 });

@@ -1,0 +1,37 @@
+name: Set up workspace
+description: Install pnpm, Node, and dependencies, and restore the Turborepo cache.
+
+inputs:
+  turbo-cache:
+    description: Cache key for Turborepo task results, unique per job. Leave empty for jobs that need real build output.
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - uses: pnpm/action-setup@v6
+
+    - uses: actions/setup-node@v6
+      with:
+        node-version-file: .nvmrc
+        cache: pnpm
+
+    - if: runner.os == 'Windows'
+      uses: actions/setup-python@v6
+      with:
+        python-version: "3.13"
+
+    - name: Install dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile
+
+    # Tasks declare no outputs, so a hit replays the result without restoring files.
+    - if: inputs.turbo-cache != ''
+      name: Restore Turborepo cache
+      uses: actions/cache@v6
+      with:
+        path: .turbo/cache
+        key: turbo-${{ runner.os }}-${{ runner.arch }}-${{ inputs.turbo-cache }}-${{ github.sha }}
+        restore-keys: |
+          turbo-${{ runner.os }}-${{ runner.arch }}-${{ inputs.turbo-cache }}-

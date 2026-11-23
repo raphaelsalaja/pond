@@ -1,4 +1,5 @@
 const assert = require("node:assert/strict");
+const { existsSync, readdirSync } = require("node:fs");
 const { mkdir, mkdtemp, rm, writeFile } = require("node:fs/promises");
 const { tmpdir } = require("node:os");
 const { join } = require("node:path");
@@ -17,9 +18,12 @@ function buildContext(appOutDir, electronPlatformName) {
   };
 }
 
-/** Packaging hosts that are not Windows skip the ffmpeg run; the fake keeps both identical. */
+/** Packaging hosts that are not Windows skip the ffmpeg and onnx runs; the fakes keep both identical. */
 function verify(context) {
-  return verifyBinaries.verify(context, { runFfmpeg: () => ({ status: 0 }) });
+  return verifyBinaries.verify(context, {
+    runFfmpeg: () => ({ status: 0 }),
+    runOnnx: () => ({ status: 0 }),
+  });
 }
 
 async function withTemporaryDirectory(run) {
@@ -29,6 +33,12 @@ async function withTemporaryDirectory(run) {
   } finally {
     await rm(directory, { force: true, recursive: true });
   }
+}
+
+async function writeTintIcon(resourcesDirectory) {
+  const tint = join(resourcesDirectory, "app-icons", "aqua");
+  await mkdir(tint, { recursive: true });
+  await writeFile(join(tint, "default.png"), "binary");
 }
 
 async function writeWindowsRuntime(resourcesDirectory, options = {}) {
@@ -74,6 +84,7 @@ async function writeWindowsRuntime(resourcesDirectory, options = {}) {
     await writeFile(join(bin, "onnxruntime_binding.node"), "binary");
     await writeFile(join(bin, "onnxruntime.dll"), "binary");
   }
+  if (options.tints !== false) await writeTintIcon(resourcesDirectory);
   if (options.icon !== false) {
     const build = join(resourcesDirectory, "..", "build");
     await mkdir(build, { recursive: true });
@@ -158,6 +169,17 @@ test("rejects a Windows package built without the app icon", async () => {
   });
 });
 
+test("rejects a package without the tint icons", async () => {
+  await withTemporaryDirectory(async (appOutDir) => {
+    await writeWindowsRuntime(join(appOutDir, "resources"), { tints: false });
+
+    await assert.rejects(
+      verify(buildContext(appOutDir, "win32")),
+      /no tint icons/,
+    );
+  });
+});
+
 async function writeLinuxRuntime(resourcesDirectory, options = {}) {
   const binaryDirectory = join(resourcesDirectory, "bin");
   await mkdir(binaryDirectory, { recursive: true });
@@ -206,6 +228,7 @@ async function writeLinuxRuntime(resourcesDirectory, options = {}) {
     await writeFile(join(bin, "onnxruntime_binding.node"), "binary");
     await writeFile(join(bin, "libonnxruntime.so.1"), "binary");
   }
+  await writeTintIcon(resourcesDirectory);
   const build = join(resourcesDirectory, "..", "build");
   await mkdir(build, { recursive: true });
   await writeFile(join(build, "icon.png"), "binary");
@@ -263,8 +286,84 @@ test("rejects a bundled ffmpeg that does not run", {
     await assert.rejects(
       verifyBinaries.verify(buildContext(appOutDir, "win32"), {
         runFfmpeg: () => ({ status: 1 }),
+        runOnnx: () => ({ status: 0 }),
       }),
       /does not run/,
     );
   });
 });
+
+const hostPlatform =
+  process.platform === "win32" || process.platform === "linux"
+    ? process.platform
+    : null;
+
+test("rejects an onnxruntime that cannot run a CPU session", {
+  skip: !hostPlatform || process.arch !== "x64",
+}, async () => {
+  await withTemporaryDirectory(async (appOutDir) => {
+    const resources = join(appOutDir, "resources");
+    if (hostPlatform === "win32") await writeWindowsRuntime(resources);
+    else await writeLinuxRuntime(resources);
+
+    await assert.rejects(
+      verifyBinaries.verify(buildContext(appOutDir, hostPlatform), {
+        runFfmpeg: () => ({ status: 0 }),
+        runOnnx: () => ({ status: 1, stderr: "missing DirectML.dll" }),
+      }),
+      /cannot run a CPU session/,
+    );
+  });
+});
+
+async function writeOnnxFiles(resourcesDirectory, platform, arch, files) {
+  const directory = join(
+    resourcesDirectory,
+    "app.asar.unpacked/node_modules/onnxruntime-node/bin/napi-v6",
+    platform,
+    arch,
+  );
+  await mkdir(directory, { recursive: true });
+  for (const file of files) await writeFile(join(directory, file), "binary");
+  return directory;
+}
+
+for (const [platform, kept, pruned] of [
+  [
+    "darwin",
+    ["libonnxruntime.1.dylib", "onnxruntime_binding.node"],
+    ["libonnxruntime.1.30.0.dylib"],
+  ],
+  [
+    "linux",
+    [
+      "libonnxruntime.so.1",
+      "libonnxruntime_providers_shared.so",
+      "onnxruntime_binding.node",
+    ],
+    [
+      "libonnxruntime_providers_cuda.so",
+      "libonnxruntime_providers_tensorrt.so",
+    ],
+  ],
+  [
+    "win32",
+    ["onnxruntime.dll", "onnxruntime_binding.node"],
+    ["DirectML.dll", "dxcompiler.dll", "dxil.dll"],
+  ],
+]) {
+  test(`prunes onnxruntime libraries a ${platform} CPU session never loads`, async () => {
+    await withTemporaryDirectory(async (resources) => {
+      const directory = await writeOnnxFiles(resources, platform, "x64", [
+        ...kept,
+        ...pruned,
+      ]);
+      await writeOnnxFiles(resources, platform, "arm64", kept);
+
+      verifyBinaries.pruneOnnxRuntime(resources, platform, "x64");
+
+      assert.deepEqual(readdirSync(directory).sort(), [...kept].sort());
+      assert.equal(existsSync(join(directory, "..", "arm64")), false);
+    });
+  });
+}

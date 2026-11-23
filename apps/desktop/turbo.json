@@ -16,7 +16,8 @@
       "outputs": [
         "out/**",
         "src/renderer/src/generated/**",
-        "build/dock-icons/**"
+        "build/dock-icons/**",
+        "build/app-icons/**"
       ]
     },
     "dist": {

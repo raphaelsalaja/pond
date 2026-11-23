@@ -14,6 +14,7 @@ import {
   ConversionJobSchema,
   ConversionPresetSchema,
   ImageCompressionRequestSchema,
+  VideoCompressionRequestSchema,
 } from "../../../../shared/conversion-contracts";
 import { LibraryQueryRequestSchema } from "../../../../shared/library-query";
 import { queryActiveLibraryPage } from "../../active-library-query";
@@ -490,6 +491,25 @@ function registerExportTools(server: McpServer): void {
     },
     withAccess("export", async (request) =>
       structuredResult(conversionJobs.startCompression(request)),
+    ),
+  );
+  server.registerTool(
+    "compress_videos",
+    {
+      title: "Compress Videos",
+      description:
+        "Re-encode the videos of selected Saves as HEVC to reclaim disk space. Replaces the original files without Undo. Verifies each output against its original first and leaves videos that would not shrink by at least 10%. Available on macOS only.",
+      inputSchema: VideoCompressionRequestSchema,
+      outputSchema: ConversionJobSchema,
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: false,
+        openWorldHint: false,
+      },
+    },
+    withAccess("export", async (request) =>
+      structuredResult(conversionJobs.startVideoCompression(request)),
     ),
   );
   server.registerTool(

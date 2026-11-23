@@ -19,6 +19,13 @@
   margin-left: auto;
 }
 
+.background {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .scroll {
   padding-top: var(--ds-space-md);
   padding-left: var(--ds-space-xl);

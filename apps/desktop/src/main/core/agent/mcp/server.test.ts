@@ -80,13 +80,14 @@ describe("pond mcp server", () => {
         "save_conversion_preset",
         "start_conversion",
         "compress_images",
+        "compress_videos",
         "conversion_status",
         "cancel_conversion",
       ]),
     );
   });
 
-  it("marks only compress_images as destructive", async () => {
+  it("marks only the compress tools as destructive", async () => {
     const tools = await listTools();
     for (const tool of tools) {
       expect(tool.title, tool.name).toBeTruthy();
@@ -95,7 +96,7 @@ describe("pond mcp server", () => {
     const destructive = tools
       .filter((tool) => tool.annotations?.destructiveHint === true)
       .map((tool) => tool.name);
-    expect(destructive).toEqual(["compress_images"]);
+    expect(destructive).toEqual(["compress_images", "compress_videos"]);
     const search = tools.find((tool) => tool.name === "search_library");
     expect(search?.annotations?.readOnlyHint).toBe(true);
   });

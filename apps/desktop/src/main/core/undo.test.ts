@@ -145,6 +145,28 @@ it("undoes and redoes a step only while it is the latest change in that directio
   expect(committed).toEqual(["a:0", "a:5", "b:0"]);
 });
 
+it("runs a step's side effects after its transactions in each direction", async () => {
+  const order: string[] = [];
+  const history = createUndoHistory(async (transactions) => {
+    for (const transaction of transactions)
+      if (transaction.kind === "update" && transaction.model === "save")
+        order.push(`commit:${transaction.patch.rating}`);
+  });
+  history.record([ratingChange("a", 5)], {
+    undo: async () => {
+      order.push("undo");
+    },
+    redo: async () => {
+      order.push("redo");
+      throw new Error("Prefs unavailable");
+    },
+  });
+  expect(await history.undo()).toBe(true);
+  expect(await history.redo()).toBe(true);
+  expect(order).toEqual(["commit:0", "undo", "commit:5", "redo"]);
+  expect(history.canUndo()).toBe(true);
+});
+
 it("keeps a step in place when its scoped undo fails", async () => {
   let failing = true;
   const history = createUndoHistory(async () => {

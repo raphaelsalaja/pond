@@ -1,0 +1,62 @@
+.card {
+  /* The card renders in its own scheme, so paper and ink stay fixed instead of following the app theme. */
+  --card-paper: white;
+  --card-ink: #111;
+  --card-muted: #6b6b6b;
+
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-xl);
+  width: 100%;
+  aspect-ratio: 1.91 / 1;
+  /* Grid tiles shrink the card to about a quarter of its width, so the type is sized for the tile, not the card. */
+  padding: calc(var(--ds-space-2xl) + var(--ds-space-xl));
+  overflow: hidden;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--card-paper);
+
+  &[data-scheme="dark"] {
+    --card-paper: black;
+    --card-ink: #eee;
+    --card-muted: #9a9a9a;
+  }
+}
+
+.engine {
+  display: flex;
+  gap: var(--ds-space-xl);
+  align-items: center;
+  font-size: 30px;
+  font-weight: var(--ds-weight-strong);
+  line-height: 1.2;
+  color: var(--card-muted);
+}
+
+.icon {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  border-radius: var(--ds-space-md);
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  min-height: 0;
+}
+
+.query {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  margin: 0;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  font-size: 72px;
+  font-weight: var(--ds-weight-bold);
+  line-height: 1.1;
+  color: var(--card-ink);
+  word-break: break-word;
+}

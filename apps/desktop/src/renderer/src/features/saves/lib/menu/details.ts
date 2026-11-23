@@ -21,6 +21,7 @@ import {
 import { splitPostKey } from "@pond/schema/filters/fields";
 import type { MenuItemSpec } from "@pond/ui";
 import { createElement } from "react";
+import { groupSaves } from "@/features/saves/lib/group-saves";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
 import { deriveTypeKind } from "@/features/saves/lib/media/units";
 import { pondFileUrl } from "@/features/saves/lib/media/url";
@@ -140,6 +141,7 @@ export function buildDetailItems({
   canViewThumbnail,
   hasUrl,
   archivable,
+  canGroup,
   canSplit,
 }: SaveMenuContext): DetailMenuItems {
   const post = batch ? null : splitPostKey(save);
@@ -156,6 +158,12 @@ export function buildDetailItems({
         icon: glyph(IconMerge),
         hidden: batch,
         onClick: () => saveLibraryBridge.openDuplicateReview(save.id),
+      },
+      {
+        label: "Group Saves",
+        icon: glyph(IconGroup),
+        hidden: !canGroup,
+        onClick: () => void groupSaves(ids),
       },
       {
         label: "Split Into Saves",

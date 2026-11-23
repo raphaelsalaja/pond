@@ -10,6 +10,7 @@ function fixture() {
   const actions = {
     "app.summon": vi.fn(),
     "app.file-ring": vi.fn(),
+    "app.quick-capture": vi.fn(),
   };
   const controller = new GlobalShortcutController(
     {
@@ -90,6 +91,7 @@ describe("global shortcut registration", () => {
       {
         "app.summon": vi.fn(),
         "app.file-ring": vi.fn(),
+        "app.quick-capture": vi.fn(),
       },
       true,
     );
@@ -114,6 +116,7 @@ describe("global shortcut registration", () => {
       {
         "app.summon": vi.fn(),
         "app.file-ring": vi.fn(),
+        "app.quick-capture": vi.fn(),
       },
       true,
     );

@@ -6,12 +6,17 @@ import {
   type ConversionPreset,
   ConversionPresetSchema,
   type ImageCompressionRequest,
+  type VideoCompressionRequest,
 } from "../../shared/conversion-contracts";
 import { resolveSaveFilePath } from "../ipc/helpers";
 import { readBundleJson, writeBundleJson } from "../lib/library-config";
 import { resolvePaths } from "../paths";
 import { convertMedia } from "./convert-media";
 import { compressExistingImages } from "./image-compression";
+import {
+  assertVideoCompressionSupported,
+  compressExistingVideos,
+} from "./video-compression";
 
 export function conversionPresets(
   root = resolvePaths().libraryRoot,
@@ -53,6 +58,7 @@ interface ConversionRuntime {
   ): Promise<T>;
   convert: typeof convertMedia;
   compress: typeof compressExistingImages;
+  compressVideos: typeof compressExistingVideos;
 }
 const runtime: ConversionRuntime = {
   scope: () => resolvePaths().libraryRoot,
@@ -67,12 +73,95 @@ const runtime: ConversionRuntime = {
   },
   convert: convertMedia,
   compress: compressExistingImages,
+  compressVideos(input, operations) {
+    assertVideoCompressionSupported();
+    return compressExistingVideos(input, operations);
+  },
 };
 export function createConversionJobs(operations: ConversionRuntime) {
   const jobs = new Map<
     string,
     { value: ConversionJob; controller: AbortController }
   >();
+  function runCompression(
+    requested: readonly string[],
+    compress: (
+      ids: string[],
+      hooks: {
+        signal: AbortSignal;
+        assertActive: () => void;
+        onProgress: (completed: number, total: number) => void;
+      },
+    ) => Promise<{
+      changed: number;
+      skipped: number;
+      failed?: number;
+      bytesBefore: number;
+      bytesAfter: number;
+    }>,
+  ): ConversionJob {
+    if (
+      [...jobs.values()].filter((job) => job.value.status === "running")
+        .length >= 2
+    )
+      throw new Error(
+        "Two conversion jobs are already running. Wait or cancel one before starting another.",
+      );
+    const scope = operations.scope();
+    const ids = [...new Set(requested)];
+    const value: ConversionJob = {
+      id: crypto.randomUUID(),
+      kind: "compression",
+      status: "running",
+      completed: 0,
+      total: ids.length,
+      progress: 0,
+      currentId: null,
+      directory: "",
+      outputs: [],
+      changed: 0,
+      skipped: 0,
+      failed: 0,
+      bytesBefore: 0,
+      bytesAfter: 0,
+      error: null,
+    };
+    const controller = new AbortController();
+    jobs.set(value.id, { value, controller });
+    void (async () => {
+      try {
+        const result = await compress(ids, {
+          signal: controller.signal,
+          assertActive() {
+            if (operations.scope() !== scope)
+              throw new Error(
+                "The active library changed. Start the compression again.",
+              );
+          },
+          onProgress(completed, total) {
+            value.completed = completed;
+            value.progress = total > 0 ? completed / total : 0;
+            value.currentId = ids[completed] ?? null;
+          },
+        });
+        value.completed = value.total;
+        value.progress = 1;
+        value.currentId = null;
+        value.changed = result.changed;
+        value.skipped = result.skipped;
+        value.failed = result.failed ?? 0;
+        value.bytesBefore = result.bytesBefore;
+        value.bytesAfter = result.bytesAfter;
+        value.status = "complete";
+      } catch (error) {
+        value.currentId = null;
+        value.status = controller.signal.aborted ? "cancelled" : "failed";
+        value.error =
+          error instanceof Error ? error.message : "Compression failed.";
+      }
+    })();
+    return structuredClone(value);
+  }
   return {
     start(input: {
       ids: readonly string[];
@@ -101,6 +190,7 @@ export function createConversionJobs(operations: ConversionRuntime) {
         outputs: [],
         changed: 0,
         skipped: 0,
+        failed: 0,
         bytesBefore: 0,
         bytesAfter: 0,
         error: null,
@@ -158,67 +248,14 @@ export function createConversionJobs(operations: ConversionRuntime) {
       return structuredClone(value);
     },
     startCompression(input: ImageCompressionRequest): ConversionJob {
-      if (
-        [...jobs.values()].filter((job) => job.value.status === "running")
-          .length >= 2
-      )
-        throw new Error(
-          "Two conversion jobs are already running. Wait or cancel one before starting another.",
-        );
-      const scope = operations.scope();
-      const ids = [...new Set(input.ids)];
-      const value: ConversionJob = {
-        id: crypto.randomUUID(),
-        kind: "compression",
-        status: "running",
-        completed: 0,
-        total: ids.length,
-        progress: 0,
-        currentId: null,
-        directory: "",
-        outputs: [],
-        changed: 0,
-        skipped: 0,
-        bytesBefore: 0,
-        bytesAfter: 0,
-        error: null,
-      };
-      const controller = new AbortController();
-      jobs.set(value.id, { value, controller });
-      void (async () => {
-        try {
-          const result = await operations.compress({
-            ...input,
-            ids,
-            signal: controller.signal,
-            assertActive() {
-              if (operations.scope() !== scope)
-                throw new Error(
-                  "The active library changed. Start the compression again.",
-                );
-            },
-            onProgress(completed, total) {
-              value.completed = completed;
-              value.progress = total > 0 ? completed / total : 0;
-              value.currentId = ids[completed] ?? null;
-            },
-          });
-          value.completed = value.total;
-          value.progress = 1;
-          value.currentId = null;
-          value.changed = result.changed;
-          value.skipped = result.skipped;
-          value.bytesBefore = result.bytesBefore;
-          value.bytesAfter = result.bytesAfter;
-          value.status = "complete";
-        } catch (error) {
-          value.currentId = null;
-          value.status = controller.signal.aborted ? "cancelled" : "failed";
-          value.error =
-            error instanceof Error ? error.message : "Compression failed.";
-        }
-      })();
-      return structuredClone(value);
+      return runCompression(input.ids, (ids, hooks) =>
+        operations.compress({ ...input, ids, ...hooks }),
+      );
+    },
+    startVideoCompression(input: VideoCompressionRequest): ConversionJob {
+      return runCompression(input.ids, (ids, hooks) =>
+        operations.compressVideos({ ...input, ids, ...hooks }),
+      );
     },
     status(id: string): ConversionJob | null {
       const job = jobs.get(id);

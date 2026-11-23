@@ -7,6 +7,8 @@ const { execFileSync } = require("node:child_process");
 const WINDOW = { width: 720, height: 440, x: 400, y: 160 };
 const ICON_SIZE = 96;
 const SECTORS_PER_MB = 2048;
+/** LZFSE, readable on macOS 10.11 and later; about a tenth smaller than zlib UDZO for Pond. Matches dmg.format. */
+const FORMAT = "ULFO";
 
 exports.default = async function fixDmgWindows(buildResult) {
   if (process.platform !== "darwin") return;
@@ -32,7 +34,7 @@ async function bakeFinderLayout(dmgPath) {
       execFileSync("hdiutil", ["detach", device, "-force"], { stdio: "pipe" });
       waitUntilUnmounted();
     }
-    execFileSync("hdiutil", ["convert", rw, "-format", "UDZO", "-o", out], {
+    execFileSync("hdiutil", ["convert", rw, "-format", FORMAT, "-o", out], {
       stdio: "pipe",
     });
     execFileSync("cp", [out, dmgPath]);

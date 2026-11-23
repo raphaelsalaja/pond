@@ -102,7 +102,10 @@ export function buildOriginalMediaUnits(save: Save): MediaUnit[] {
   const videos = files.filter(isRenderableVideoFile);
   const images = files.filter(isImageFile);
 
-  if (videos.length === 1 && images.length <= 1) {
+  /** A harvested post ships a cover image beside a lone video; every file in a local Save is one the user chose. */
+  const imageIsCover =
+    images.length === 0 || (images.length === 1 && save.source !== "local");
+  if (videos.length === 1 && imageIsCover) {
     const video = videos[0];
     if (!video) return [];
     const poster = posters[0] ?? images[0];
