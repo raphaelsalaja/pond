@@ -46,6 +46,31 @@
     1.0003,
     1
   );
+  /* Critically damped spring with a 270ms response: no overshoot, and settles in this time. */
+  --ds-duration-glide: 390ms;
+  --ds-easing-glide: linear(
+    0,
+    0.0765,
+    0.2303,
+    0.3948,
+    0.5417,
+    0.6619,
+    0.7554,
+    0.8257,
+    0.8773,
+    0.9144,
+    0.9408,
+    0.9593,
+    0.9722,
+    0.9811,
+    0.9872,
+    0.9914,
+    0.9942,
+    0.9961,
+    0.9974,
+    0.9983,
+    1
+  );
   /* Damped spring with a 300ms response and 0.45 bounce: overshoots 12.6%, wobbles once, and settles in this time. */
   --ds-duration-bounce: 544ms;
   --ds-easing-bounce: linear(

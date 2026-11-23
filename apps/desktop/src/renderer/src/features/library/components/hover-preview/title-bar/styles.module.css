@@ -7,64 +7,6 @@
 
 .group {
   gap: var(--ds-space-2xs);
-
-  /* Buttons pop in one after another as the preview opens, after DiaTweaks' Peek. */
-  & > * {
-    animation: pop 450ms
-      linear(
-        0,
-        0.058,
-        0.192,
-        0.357,
-        0.524,
-        0.673,
-        0.797,
-        0.892,
-        0.96,
-        1.005,
-        1.031,
-        1.043,
-        1.046,
-        1.043,
-        1.036,
-        1.029,
-        1.021,
-        1.014,
-        1.009,
-        1.004,
-        1
-      )
-      backwards;
-  }
-
-  & > :nth-child(2) {
-    animation-delay: 50ms;
-  }
-
-  & > :nth-child(3) {
-    animation-delay: 100ms;
-  }
-
-  & > :nth-child(n + 4) {
-    animation-delay: 150ms;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    & > * {
-      animation: none;
-    }
-  }
-}
-
-:global(html[data-reduce-motion="true"]) .group > * {
-  animation: none;
-}
-
-@keyframes pop {
-  from {
-    opacity: 0;
-    transform: scale(0.4);
-  }
 }
 
 .title {
