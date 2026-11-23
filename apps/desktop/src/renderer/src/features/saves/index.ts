@@ -39,6 +39,12 @@ export {
   saveOwnsKeyboard,
 } from "./lib/keyboard-owner";
 export type { FolderPickerMode } from "./lib/library-bridge";
+export {
+  reviewDuplicates,
+  showFolderInLibrary,
+  showInLibrary,
+  showMatchingInLibrary,
+} from "./lib/library-links";
 export { parseMode, type SaveListMode } from "./lib/list";
 export {
   getLastListPath,
