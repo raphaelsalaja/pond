@@ -29,7 +29,7 @@ function canDismiss(status: TransferJob["status"]): boolean {
   return status !== "running" && status !== "cancelling";
 }
 
-export function TransferJobsPanel({ search = "" }: { search?: string }) {
+export function TransferJobsPanel() {
   const client = useQueryClient();
   const [error, setError] = useState<string | null>(null);
   const jobs = useQuery({
@@ -56,13 +56,7 @@ export function TransferJobsPanel({ search = "" }: { search?: string }) {
     action.isPending &&
     action.variables?.id === id &&
     action.variables.kind === kind;
-  const visible = (jobs.data ?? [])
-    .filter((job) =>
-      `${labels[job.request.kind]} ${job.request.destination}`
-        .toLowerCase()
-        .includes(search.toLowerCase()),
-    )
-    .slice(0, 30);
+  const visible = (jobs.data ?? []).slice(0, 30);
   if (!visible.length && !jobs.isError) return null;
   return (
     <section className={styles.panel} aria-label="Library transfers">
