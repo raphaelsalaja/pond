@@ -213,6 +213,8 @@ export const queryOperationAccess = {
   "saves.importMymind": "review",
   "saves.importDataExport": "review",
   "saves.importClipboard": "review",
+  "saves.stageClipboard": "hidden",
+  "saves.discardStagedClipboard": "hidden",
   "saves.importEagleLibrary": "review",
   "saves.importEaglePackage": "review",
   "saves.importFiles": "review",
