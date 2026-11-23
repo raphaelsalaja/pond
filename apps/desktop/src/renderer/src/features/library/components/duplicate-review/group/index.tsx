@@ -1,5 +1,5 @@
 import { Checkbox } from "@pond/ui";
-import type { DuplicateGroupResult } from "@shared/saves-mutation-contracts";
+import type { DuplicateGroup } from "@shared/duplicate-contracts";
 import { useSelector } from "@tanstack/react-store";
 import { type ReactNode, useEffect, useId } from "react";
 import { SaveTile } from "@/features/saves";
@@ -13,10 +13,10 @@ import type { Save } from "@/features/saves/types";
 import { formatBytes, formatNumber } from "@/shared/lib/format";
 import styles from "./styles.module.css";
 
-export type DuplicateGroup = DuplicateGroupResult;
+export type { DuplicateGroup };
 
 export function groupKey(group: DuplicateGroup) {
-  return `${group.kind}:${group.ids.join(":")}`;
+  return `${group.relation}:${group.ids.join(":")}`;
 }
 
 function rank(save: Save | undefined) {
@@ -46,12 +46,6 @@ export function defaultKeeper(
   }
   return best;
 }
-
-const SUMMARY = {
-  exact: "matching saves",
-  "visual-near": "similar saves",
-  "semantic-near": "related saves",
-} satisfies Record<DuplicateGroup["kind"], string>;
 
 function Tile({
   save,
@@ -103,6 +97,7 @@ function Strip({ children }: { children: ReactNode }) {
 
 export function Group({
   group,
+  evidence,
   keepId,
   included,
   mergeable,
@@ -111,6 +106,7 @@ export function Group({
   onInclude,
 }: {
   group: DuplicateGroup;
+  evidence: string;
   keepId: string | undefined;
   included: boolean;
   mergeable: boolean;
@@ -133,7 +129,7 @@ export function Group({
   }, [group.ids]);
   const keeper =
     keepId ?? defaultKeeper(group.ids, (id) => saves[group.ids.indexOf(id)]);
-  const summary = `${formatNumber(group.ids.length)} ${SUMMARY[group.kind]}`;
+  const count = `${formatNumber(group.ids.length)} Saves`;
   return (
     <section className={styles.group} data-skipped={!included || undefined}>
       <header className={styles.header}>
@@ -147,11 +143,12 @@ export function Group({
             >
               <Checkbox.Indicator />
             </Checkbox.Root>
-            <span>{summary}</span>
+            <span>{evidence}</span>
           </label>
         ) : (
-          <span className={styles.include}>{summary}</span>
+          <span className={styles.include}>{evidence}</span>
         )}
+        <span className={styles.count}>{count}</span>
       </header>
       <Strip>
         {group.ids.map((id, index) => (

@@ -279,6 +279,129 @@ async function extractJpeg(
   }
 }
 
+export async function probeMediaDuration(path: string): Promise<number | null> {
+  const { ffmpeg } = binariesAvailable();
+  return ffmpeg ? probeDuration(ffmpeg, path) : null;
+}
+
+const GRAY_TIMEOUT_MS = 120_000;
+
+/** Decodes evenly spaced frames straight to tiny greyscale buffers over a pipe, so nothing touches disk. */
+export async function sampleGrayFrames(
+  videoPath: string,
+  options: {
+    windowSeconds: number;
+    count: number;
+    width: number;
+    height: number;
+  },
+): Promise<Uint8Array[] | null> {
+  const { ffmpeg } = binariesAvailable();
+  if (!ffmpeg) return null;
+  const { windowSeconds, count, width, height } = options;
+  if (!(windowSeconds > 0) || count < 1) return null;
+  const frameBytes = width * height;
+  const outcome = await runCapturingStdout(
+    ffmpeg,
+    [
+      "-nostdin",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-threads",
+      "1",
+      "-i",
+      videoPath,
+      "-t",
+      String(windowSeconds),
+      "-an",
+      "-sn",
+      "-dn",
+      "-vf",
+      `fps=${(count / windowSeconds).toFixed(6)},scale=${width}:${height}:flags=area,format=gray`,
+      "-frames:v",
+      String(count),
+      "-f",
+      "rawvideo",
+      "-pix_fmt",
+      "gray",
+      "pipe:1",
+    ],
+    GRAY_TIMEOUT_MS,
+    (count + 1) * frameBytes,
+  );
+  if (outcome.code !== 0) {
+    log.warn(
+      "[pond ffmpeg-frame] gray sampling failed",
+      outcome.code,
+      videoPath,
+      outcome.stderr.slice(-400),
+    );
+    return null;
+  }
+  const frames: Uint8Array[] = [];
+  for (
+    let offset = 0;
+    offset + frameBytes <= outcome.stdout.length && frames.length < count;
+    offset += frameBytes
+  )
+    frames.push(
+      Uint8Array.from(outcome.stdout.subarray(offset, offset + frameBytes)),
+    );
+  return frames;
+}
+
+function runCapturingStdout(
+  bin: string,
+  argv: string[],
+  timeoutMs: number,
+  byteLimit: number,
+): Promise<ProcOutcome & { stdout: Buffer }> {
+  return new Promise((resolve) => {
+    const child = spawn(bin, argv, {
+      stdio: ["ignore", "pipe", "pipe"],
+      windowsHide: true,
+    });
+    const chunks: Buffer[] = [];
+    let bytes = 0;
+    let stderr = "";
+    let settled = false;
+    const finish = (code: number, note = "") => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve({
+        code,
+        stderr: note ? `${stderr}\n${note}` : stderr,
+        stdout: Buffer.concat(chunks, Math.min(bytes, byteLimit)),
+      });
+    };
+    const kill = (code: number, note: string) => {
+      try {
+        killProcessTree(child, "SIGKILL");
+      } catch {}
+      finish(code, note);
+    };
+    const timer = setTimeout(
+      () => kill(124, "[pond ffmpeg-frame] timeout"),
+      timeoutMs,
+    );
+    child.stdout?.on("data", (chunk: Buffer) => {
+      if (bytes + chunk.length > byteLimit) {
+        kill(125, "[pond ffmpeg-frame] output budget exceeded");
+        return;
+      }
+      bytes += chunk.length;
+      chunks.push(chunk);
+    });
+    child.stderr?.on("data", (chunk: Buffer) => {
+      stderr = (stderr + chunk.toString("utf8")).slice(-8_000);
+    });
+    child.on("error", (err) => finish(-1, String(err)));
+    child.on("close", (code) => finish(code ?? -1));
+  });
+}
+
 async function probeDuration(
   ffmpeg: string,
   videoPath: string,

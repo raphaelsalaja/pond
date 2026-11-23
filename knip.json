@@ -17,7 +17,8 @@
         "scripts/proof-scenarios/*.cjs",
         "scripts/journeys/*.cjs",
         "src/main/core/media-warm/service.ts",
-        "src/main/core/enrichment-sidecar.ts"
+        "src/main/core/enrichment-sidecar.ts",
+        "src/main/core/duplicates/fingerprint-worker.ts"
       ],
       "project": ["src/**/*.{ts,tsx}", "scripts/**/*.{mjs,cjs,ts}"],
       "ignoreDependencies": [

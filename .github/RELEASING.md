@@ -8,8 +8,8 @@ The desktop app and browser extension ship in lockstep with the `vX.Y.Z` GitHub 
 
 Update the version string in all of these before tagging:
 
-| File                                                           | Field              |
-| -------------------------------------------------------------- | ------------------ |
+| File                                                              | Field              |
+| ----------------------------------------------------------------- | ------------------ |
 | [`apps/desktop/package.json`](../apps/desktop/package.json)       | `"version"`        |
 | [`apps/extension/package.json`](../apps/extension/package.json)   | `"version"`        |
 | [`apps/extension/wxt.config.ts`](../apps/extension/wxt.config.ts) | `manifest.version` |

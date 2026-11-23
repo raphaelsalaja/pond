@@ -259,11 +259,12 @@ export function libraryContext(
     },
     {
       name: "findDuplicates",
-      description: "Find duplicate Saves by file hash or perceptual hash.",
+      description:
+        "Find Saves that hold the same files, post or link, re-encoded copies, or shared files. Pass ids to check only those Saves. Only mergeable groups are true duplicates.",
       schema: findDuplicatesInput,
-      execute: async () => {
+      execute: async (args) => {
         input.signal.throwIfAborted();
-        return deps.findDuplicateSaves();
+        return deps.findDuplicateSaves(args);
       },
     },
     {
