@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
 import { SETTINGS_GROUP_LABELS, SETTINGS_SECTIONS } from "@pond/schema";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
   SETTINGS_MASTER_GROUPS,
   sectionForId,
   sectionForPath,
 } from "./registry";
-import { SETTINGS_SEARCH_INDEX } from "./search-index";
+import { SETTINGS_SEARCH_INDEX, sectionEntries } from "./search-index";
 
 function entry(id: string) {
   const result = SETTINGS_SEARCH_INDEX.find((candidate) => candidate.id === id);
@@ -114,23 +114,41 @@ describe("settings child sections", () => {
   });
 });
 
-async function indexFor(isMac: boolean) {
-  vi.resetModules();
-  vi.stubGlobal("navigator", { platform: isMac ? "MacIntel" : "Win32" });
-  return (await import("./search-index")).SETTINGS_SEARCH_INDEX;
-}
-
 describe("settings search index platform rows", () => {
-  afterEach(() => vi.unstubAllGlobals());
-
-  it("hides macOS-only rows off macOS", async () => {
-    const ids = (await indexFor(false)).map((candidate) => candidate.id);
-    expect(ids).not.toContain("general:dockVisibility");
-    expect(ids).not.toContain("general:raycast");
+  it("hides rows whose visibility never depends on a setting", () => {
+    const general = sectionForId("general");
+    if (!general) {
+      throw new Error("Missing General settings section");
+    }
+    const ids = sectionEntries({
+      ...general,
+      config: {
+        groups: [
+          {
+            items: [
+              {
+                control: "switch",
+                key: "otherPlatform",
+                title: "Other Platform",
+                visible: () => false,
+              },
+              {
+                control: "switch",
+                key: "darkOnly",
+                title: "Dark Only",
+                visible: (values) => values.appearance === "dark",
+              },
+            ],
+          },
+        ],
+      },
+    }).map((candidate) => candidate.id);
+    expect(ids).not.toContain("general:otherPlatform");
+    expect(ids).toContain("general:darkOnly");
   });
 
-  it("keeps macOS-only rows on macOS", async () => {
-    const ids = (await indexFor(true)).map((candidate) => candidate.id);
+  it("keeps macOS-only rows on macOS", () => {
+    const ids = SETTINGS_SEARCH_INDEX.map((candidate) => candidate.id);
     expect(ids).toContain("general:dockVisibility");
     expect(ids).toContain("general:raycast");
   });
