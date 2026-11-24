@@ -22,6 +22,7 @@ import {
 } from "@/features/library/state/library-chrome";
 import {
   useHiddenSidebar,
+  useRailOnlySidebar,
   useShellDetails,
 } from "@/features/library/state/shell-layout";
 import { useHasActiveSearch } from "@/features/library/state/view-store";
@@ -248,10 +249,13 @@ function Breadcrumbs() {
 function Leading() {
   const sidebarOpen = useSidebarOpen();
   const sidebarHidden = useHiddenSidebar();
+  const railOnly = useRailOnlySidebar();
   return (
     <Window.Leading>
       <div className={styles.tools}>
-        {sidebarHidden ? null : <SidebarToggle open={sidebarOpen} />}
+        {sidebarHidden || railOnly ? null : (
+          <SidebarToggle open={sidebarOpen} />
+        )}
         <ChromeHistoryNav />
       </div>
       <div className={styles.tools}>
@@ -284,5 +288,14 @@ function Trailing() {
   );
 }
 
-/** Leading and Trailing pin to the window corners; Bar goes inside `Window.Center`. */
-export const Toolbar = { Leading, Bar, Trailing };
+function Root() {
+  return (
+    <Window.Toolbar>
+      <Leading />
+      <Bar />
+      <Trailing />
+    </Window.Toolbar>
+  );
+}
+
+export const Toolbar = { Root };

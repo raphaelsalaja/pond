@@ -21,50 +21,54 @@ function PanesExample() {
         height: 240,
       }}
     >
-      <Window.Leading>
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() => setSidebarOpen((open) => !open)}
-        >
-          Sidebar
-        </Button>
-      </Window.Leading>
-      <Window.Left
-        aria-label="Sidebar"
-        minWidth={160}
-        maxWidth={320}
-        width={sidebar}
-        onResize={setSidebar}
-        onCollapse={() => setSidebarOpen(false)}
-      >
-        <Window.Body>Folders</Window.Body>
-      </Window.Left>
-      <Window.Center>
+      <Window.Toolbar>
+        <Window.Leading>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setSidebarOpen((open) => !open)}
+          >
+            Sidebar
+          </Button>
+        </Window.Leading>
         <Window.Bar>Location</Window.Bar>
-        <Window.Header>Page controls</Window.Header>
-        <Window.Body>Content</Window.Body>
-      </Window.Center>
-      <Window.Right
-        aria-label="Details"
-        minWidth={180}
-        maxWidth={320}
-        width={details}
-        resizeLabel="Resize Details"
-        onResize={setDetails}
-        onCollapse={() => setDetailsOpen(false)}
-      >
-        <Window.Body>Details</Window.Body>
-      </Window.Right>
-      <Window.Trailing>
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() => setDetailsOpen((open) => !open)}
+        <Window.Trailing>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setDetailsOpen((open) => !open)}
+          >
+            Details
+          </Button>
+        </Window.Trailing>
+      </Window.Toolbar>
+      <Window.Panes>
+        <Window.Left
+          aria-label="Sidebar"
+          minWidth={160}
+          maxWidth={320}
+          width={sidebar}
+          onResize={setSidebar}
+          onCollapse={() => setSidebarOpen(false)}
         >
-          Details
-        </Button>
-      </Window.Trailing>
+          <Window.Body>Folders</Window.Body>
+        </Window.Left>
+        <Window.Center>
+          <Window.Header>Page controls</Window.Header>
+          <Window.Body>Content</Window.Body>
+        </Window.Center>
+        <Window.Right
+          aria-label="Details"
+          minWidth={180}
+          maxWidth={320}
+          width={details}
+          resizeLabel="Resize Details"
+          onResize={setDetails}
+          onCollapse={() => setDetailsOpen(false)}
+        >
+          <Window.Body>Details</Window.Body>
+        </Window.Right>
+      </Window.Panes>
     </Window.Root>
   );
 }
@@ -82,14 +86,28 @@ export const docs: ComponentDocs = {
         "The grid. `leftOpen` and `rightOpen` control the columns, `--window-left-track` and `--window-right-track` set their widths, and `instant` skips the animation for one change.",
     },
     {
+      name: "Toolbar",
+      description:
+        "The top row. Holds Leading, Bar and Trailing in cells that line up with the panes below.",
+    },
+    {
       name: "Leading",
       description:
-        "Controls pinned to the top left. Spans the sidebar when it's open and stays in place when it closes.",
+        "Controls over the sidebar. Spans it when it's open and keeps its own width when it closes.",
     },
     {
       name: "Trailing",
+      description: "Controls over the details column. Spans it when it's open.",
+    },
+    {
+      name: "Rail",
       description:
-        "Controls pinned to the top right. Spans the details column when it's open.",
+        "Fixed chrome before the panes, like a section rail. Stays put when the sidebar closes.",
+    },
+    {
+      name: "Panes",
+      description:
+        'The one container for Left, Center and Right. Clips all three, and with `surface="island"` it\'s rounded and inset from the window edges.',
     },
     {
       name: "Left",
@@ -108,12 +126,12 @@ export const docs: ComponentDocs = {
     {
       name: "Bar",
       description:
-        "The title bar row of a column. Drags the window. In Center it starts after Leading and ends before Trailing.",
+        "The Toolbar cell over Center, between Leading and Trailing. Drags the window.",
     },
     {
       name: "Header",
       description:
-        "The row under the bar, `--window-header-height` tall in every column. Collapses when it has no content.",
+        "The top row of a column, `--window-header-height` tall in every column. Collapses when it has no content.",
     },
     { name: "Body", description: "The rest of the column." },
   ],

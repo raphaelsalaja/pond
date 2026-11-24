@@ -22,7 +22,16 @@ import { startViewUrlSync } from "@/features/library/state/view-url";
 import type { SaveDragDataTransfer } from "@/features/saves";
 import { selection } from "@/features/saves/navigation";
 import { ToastHost } from "@/shared/components/toast-host";
-import { FolderSidebar } from ".";
+import { FolderRail, FolderSidebar } from ".";
+
+function RailAndSidebar() {
+  return (
+    <>
+      <FolderRail />
+      <FolderSidebar />
+    </>
+  );
+}
 
 interface SavedViewFixtures {
   current: SavedView[];
@@ -281,7 +290,7 @@ export function createFolderSidebarHarness() {
     async mount(path = "/"): Promise<LibraryTestRouter> {
       if (!root) throw new Error("Sidebar harness isn't set up");
       const next = createLibraryTestRouter(path, {
-        component: FolderSidebar,
+        component: RailAndSidebar,
         routes: (library) => [
           createRoute({
             getParentRoute: () => library,

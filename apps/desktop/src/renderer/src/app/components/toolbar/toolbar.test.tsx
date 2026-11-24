@@ -42,9 +42,7 @@ function Shell({ children }: { children: ReactNode }) {
   return (
     <>
       {children}
-      <Toolbar.Leading />
-      <Toolbar.Bar />
-      <Toolbar.Trailing />
+      <Toolbar.Root />
     </>
   );
 }

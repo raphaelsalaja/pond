@@ -1,23 +1,8 @@
 .root {
   --folder-indent: 20px;
 
-  flex-direction: row;
-  overflow: hidden;
-}
-
-.panel {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
   min-width: 0;
-  background: var(--ds-background-primary);
-  border-top: var(--ds-border-width) solid var(--ds-border-subtle);
-  border-left: var(--ds-border-width) solid var(--ds-border-subtle);
-  border-top-left-radius: var(--ds-radius-xl);
-
-  &[data-hidden] {
-    display: none;
-  }
+  overflow: hidden;
 }
 
 .background {

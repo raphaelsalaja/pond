@@ -28,21 +28,23 @@ function Fixture({
   };
   return (
     <Window.Root leftOpen={open} style={style}>
-      <Window.Left
-        aria-label="Sidebar"
-        minWidth={220}
-        maxWidth={420}
-        width={width}
-        onResize={resize}
-        onCollapse={collapse}
-      >
-        Sidebar
-      </Window.Left>
-      <Window.Center>
-        <button type="button" onClick={() => setOpen(true)}>
-          Reopen
-        </button>
-      </Window.Center>
+      <Window.Panes>
+        <Window.Left
+          aria-label="Sidebar"
+          minWidth={220}
+          maxWidth={420}
+          width={width}
+          onResize={resize}
+          onCollapse={collapse}
+        >
+          Sidebar
+        </Window.Left>
+        <Window.Center>
+          <button type="button" onClick={() => setOpen(true)}>
+            Reopen
+          </button>
+        </Window.Center>
+      </Window.Panes>
     </Window.Root>
   );
 }

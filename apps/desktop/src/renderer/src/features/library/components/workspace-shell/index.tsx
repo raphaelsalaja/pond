@@ -1,5 +1,10 @@
 import { cn, cssVars, Window } from "@pond/ui";
-import { type ComponentPropsWithoutRef, useEffect, useState } from "react";
+import {
+  type ComponentPropsWithoutRef,
+  useDeferredValue,
+  useEffect,
+  useState,
+} from "react";
 import {
   DETAILS_WIDTH_DEFAULT,
   DETAILS_WIDTH_MAX,
@@ -17,9 +22,6 @@ import {
 } from "@/features/library/state/shell-layout";
 import { ShortcutKeys } from "@/shared/components/shortcut-keys";
 import styles from "./styles.module.css";
-
-/** The rail's own width: one rail button plus its padding. */
-const RAIL_TRACK = "calc(var(--ds-size-md) + var(--ds-space-md) * 2)";
 
 /** A route that swaps or removes a column snaps it, so the new page mounts at its final width instead of reflowing through the push. */
 function useInstantOnChange(
@@ -47,8 +49,13 @@ function useInstantOnChange(
 interface RootProps extends ComponentPropsWithoutRef<"div"> {}
 
 function Root({ className, style, ...props }: RootProps) {
-  const { details, railOnly, sidebarHidden, leftOpen, rightOpen } =
-    useShellLayout();
+  const layout = useShellLayout();
+  /** Commits with the grid's deferred repack, so the slide starts after that render instead of stalling on it. */
+  const details = useDeferredValue(layout.details);
+  const railOnly = useDeferredValue(layout.railOnly);
+  const sidebarHidden = useDeferredValue(layout.sidebarHidden);
+  const leftOpen = useDeferredValue(layout.leftOpen);
+  const rightOpen = useDeferredValue(layout.rightOpen);
   const sidebarWidth = useSidebarWidth();
   const detailsWidth = useDetailsWidth();
   const instant = useInstantOnChange(details, railOnly, sidebarHidden);
@@ -59,10 +66,10 @@ function Root({ className, style, ...props }: RootProps) {
       leftOpen={leftOpen}
       rightOpen={rightOpen}
       instant={instant}
-      leftEdge={railOnly ? "rounded" : "divider"}
+      surface="island"
       style={{
         ...cssVars({
-          "--window-left-track": railOnly ? RAIL_TRACK : `${sidebarWidth}px`,
+          "--window-left-track": `${sidebarWidth}px`,
           "--window-right-track": `${detailsWidth}px`,
         }),
         ...style,
@@ -72,11 +79,18 @@ function Root({ className, style, ...props }: RootProps) {
   );
 }
 
+interface RailProps extends ComponentPropsWithoutRef<"div"> {}
+
+function Rail(props: RailProps) {
+  const { sidebarHidden } = useShellLayout();
+  if (sidebarHidden) return null;
+  return <Window.Rail {...props} />;
+}
+
 interface ColumnProps extends ComponentPropsWithoutRef<"aside"> {}
 
 function Sidebar(props: ColumnProps) {
   const width = useSidebarWidth();
-  const { railOnly } = useShellLayout();
   return (
     <Window.Left
       aria-label="Sidebar"
@@ -84,7 +98,6 @@ function Sidebar(props: ColumnProps) {
       maxWidth={SIDEBAR_WIDTH_MAX}
       defaultWidth={SIDEBAR_WIDTH_DEFAULT}
       width={width}
-      resizable={!railOnly}
       collapseShortcut={<ShortcutKeys id="view.sidebar" />}
       onResize={libraryChrome.setSidebarWidth}
       onCollapse={libraryChrome.toggleSidebar}
@@ -117,4 +130,4 @@ function Content({ className, ...props }: ContentProps) {
   return <div className={cn(styles.content, className)} {...props} />;
 }
 
-export const AppShell = { Root, Sidebar, Details, Content };
+export const AppShell = { Root, Rail, Sidebar, Details, Content };
